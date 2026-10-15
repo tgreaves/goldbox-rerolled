@@ -10,7 +10,7 @@ Part of [[spec/README]]. Ordered by what a browser reimplementation needs first.
 ## Needed to walk around
 
 1. ~~8X8D tile format and EGA palette~~ done, see [[spec/graphics]]
-2. WALLDEF 156-byte view table layout (what to draw at each depth and side)
+2. ~~WALLDEF view layout~~ done in [[spec/maps]]; remaining: background, alternate view, tile bank loader
 3. Area types (`DS:84DC`) and how they change movement/drawing
 4. Text window geometry (`FUN_1709_*`); font done
 
