@@ -131,7 +131,7 @@ Count = fixed operands; `+N` = variadic. Validated: every opcode appears in data
 | 21 | LOAD_AREA | 3 | load GEO record a (255/127 = keep); c = sound/music (**?**) | O/I |
 | 22 | PARTY_HAS_RANGER | 2 | dest1 = 1 if any member's class is Ranger or Cleric/Ranger; dest2 = 0 | O |
 | 23 | SURPRISE | 4 | d6 surprise rolls → result 0–3 at 0x6DCB | O/I |
-| 24 | COMBAT | 0 | start combat with loaded monsters | I |
+| 24 | COMBAT | 0 | shop if `B[0x6D8]`=1, temple if `B[0x5C4]`=1, else battle with the loaded monsters (or treasure only); see [[spec/town]] | O |
 | 25 | ON_GOTO | 2+N | index, N, N targets | O |
 | 26 | ON_GOSUB | 2+N | as ON_GOTO with push | O |
 | 27 | TREASURE | 8 | 7 money amounts; item record (≥0x80 = random d100 tables) | O/I |
