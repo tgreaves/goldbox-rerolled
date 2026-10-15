@@ -96,11 +96,63 @@ Delay (`FUN_4B46_03D5`, same as ECL 0x34), round counter `DS:6DE3` +1, `FUN_3aae
 4. `FUN_2e08_0916`: experience message; `FUN_2e08_0ecd`: treasure menu (View, Take, Pool, Share, Detect, Exit)
 5. If the party was destroyed: "The monsters rejoice for the party has been destroyed"
 
+## Computer-controlled combatants (O, `FUN_3334_000f`)
+
+Used for monsters, NPCs and party members in quick-combat (char[0x10F] ≠ 0).
+
+```
+if key pressed (FUN_3334_0fc1):
+    '2'   toggle "magic on/off" for auto party members (DS:6E30)
+    space return control: char[0x10F] = 0 for every non-NPC, non-animated party member; end this turn
+    '-'   FUN_3aae_3b93 (?)
+C[0x15] = movement preference: kept unless 0 or > 4 or 1-in-4; else d8 == 8 ? 4 + d2 : d4
+morale check (FUN_3334_10d7)                    → may flee / surrender
+if C[0] (queued spell): cast it (FUN_4e53_0c20)
+elif use magic item (FUN_3334_03e4)
+elif turn undead (FUN_3334_0203)
+elif cast spell (FUN_3334_0545)
+else:
+    choose and ready weapons (FUN_3334_13ca)
+    repeat until turn over:
+        if target reachable this turn (FUN_3aae_37e4): melee/missile loop (FUN_3334_0b3c)
+        else: move or guard (FUN_3334_0f4f)
+```
+
+### Morale (`FUN_3334_10d7`), monsters and NPCs only (char[0x84] ≥ 0x80)
+
+1. `m = (char[0x84] & 0x7F) * 2`, 0 if > 102; effect hook 17 may change it
+2. If `m < 100 − 100·HP/maxHP` or `m == 0`: second check against a side-wide value (`DS:6E2F`, hook 17) and `100 − B[0x58C]`; if it fails (or the combatant is a monster):
+   - outnumbered (`FUN_3aae_2908` > moves/2) and INT (char[0x11]) > 5 → message and end turn (**I** surrender)
+   - otherwise **flee**: combat record [0x14] = 1, add effects 0x4A and 0x4B
+
+### Magic items (`FUN_3334_03e4`)
+
+Only if combat record [2] is set, enemies remain, and area flag `A[0x1CA]` is 0. Up to d7 passes with falling priority (7, 6, …) over carried items whose spell byte (item[0x3D], minus 0x17 if > 0x38) is usable, item[0x3E] < 0x80 and readied (item[0x34]); `FUN_3334_02eb(priority, spell)` decides. Use via `FUN_4894_1a8a`.
+
+### Turn undead (`FUN_3334_0203`)
+
+If combat record [0x11] = 0, cleric level (char[0x96]) > 0 and `FUN_3aae_1351` finds targets → `FUN_3aae_116a`.
+
+### Spells (`FUN_3334_0545`)
+
+If combat record [1] is set: collect the non-zero memorised spells in char[0x18..0x2C] (21 slots). Allowed for monsters/NPCs, or for party members when magic is on. Up to d7 passes × 3 random picks with falling priority; first spell accepted by `FUN_3334_02eb` is cast (`FUN_3aae_2414`).
+
+### Weapon choice (`FUN_3334_13ca`)
+
+- Free hands char[0x100] are reduced by hands used by readied weapon (char[0xCC]) and shield (char[0xD0])
+- Scan carried items usable by class (`ITEMS[t][13] & char[0xB0]`): weapons (slot 0) scored by `FUN_3334_128d`; ranged weapons are those with `ITEMS[t][14]` bit 0x08 (needs ammo: bit 0x01 arrows from char[0xF8], 0x80 quarrels from char[0xFC]) or 0x10 (thrown); shields (slot 1) scored by plus
+- Natural attack score = char[0xA5] × char[0xA3] (+ 2 × char[0xA7] if positive)
+- Prefer the best ranged weapon if it beats half the best melee score, has ammo, and no enemy is adjacent; ready it (`FUN_4894_14d0`); ready a shield if hands allow
+
+### Melee / missile loop (`FUN_3334_0b3c`)
+
+Effect hook 14; up to 20 attempts: keep the current target (combat record [10..13]) if it is still a valid enemy and reachable by path-finding (`FUN_56c1_0422` on the battlefield map `DS:6716`) within weapon range, else pick a random nearby enemy (`DS:6DE4` list); step towards it (`FUN_3334_07f2`) or attack it (`FUN_3aae_1884` → attack sequence). Missile users avoid shooting when an enemy is adjacent.
+
 ## Still open
 
-- Battlefield construction and positions (`FUN_34c7_1e31`)
+- Battlefield construction and positions (`FUN_34c7_1e31`); path-finding details
 - Player combat menu and actions (`FUN_320c_031a`)
-- Monster AI (`FUN_3334_000f`), movement, fleeing and morale
+- AI scoring helpers (`FUN_3334_02eb`, `FUN_3334_128d`) and movement step (`FUN_3334_07f2`)
 - Spell casting and spell effects (spell list in character bytes 0x18–0x69, **I**)
 - Experience and treasure awards after combat
 - Saving throw roll, effect types

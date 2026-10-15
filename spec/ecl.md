@@ -154,6 +154,6 @@ Count = fixed operands; `+N` = variadic. Validated: every opcode appears in data
 | 38 | PROGRAM | 1 | built-in mode: 0 ?, 8 ?, 9 = camp | O/? |
 | 39 | WHO | 1 | prompt, player picks current character | O |
 | 3A | CLEAR_BOX | 0 | clear text box | O |
-| 3B | FIND_IN_CHAR_LIST | 3 | search members' 82-slot list for value → index, count (spells?) | O/I |
+| 3B | FIND_IN_CHAR_LIST | 3 | for each member, scan char bytes 0x18–0x69 for a value → index, member count. The range overruns the 21 memorised-spell slots into race/class/age (original behaviour) | O |
 | 3C | ? | 1 | print a list from a table | ? |
 | 3D | ? | 0 | clear area and mark redraw | ? |

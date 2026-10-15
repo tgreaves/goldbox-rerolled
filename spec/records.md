@@ -29,7 +29,7 @@ O = read by the character sheet (`FUN_4894_004a`, `050d`, `0608`, `0901`, `FUN_1
 | 0x00 | u8 + 15 chars | name (Pascal string) | O |
 | 0x10–0x15 | u8 ×6 | STR, INT, WIS, DEX, CON, CHA | O |
 | 0x16 | u8 | exceptional strength % (shown when STR = 18; 100 shown as "00") | O |
-| 0x18–0x69 | u8 ×82 | per-character list searched by ECL 0x3B (spells, **I**) | O |
+| 0x18–0x2C | u8 ×21 | memorised spells (spell ids, 0 = empty) | O (AI casting) |
 | 0x2E | u8 | race (table below) | O |
 | 0x2F | u8 | class (table below) | O |
 | 0x30 | u16 | age | O |
@@ -43,9 +43,13 @@ O = read by the character sheet (`FUN_4894_004a`, `050d`, `0608`, `0901`, `FUN_1
 | 0x9E | u8 | gender: 0 Male, 1 Female | O |
 | 0xA0 | u8 | alignment (table below) | O |
 | 0xAC | u32 | experience | O |
+| 0xA3, 0xA5, 0xA7 | u8 | natural attack values used by AI weapon scoring (**?** exact meaning) | O |
+| 0xB0 | u8 | class bitmask for item use (`ITEMS[t][13] & char[0xB0]`) | O |
 | 0xBF | u8 | combat icon / picture id for monsters (**I**, set by `LOAD_MONSTER`) | O |
 | 0xC8 | ptr | item list head (in memory) | O |
-| 0xCC, 0xD4 | ptr | readied weapon, readied armour (shown on sheet) | O |
+| 0xCC, 0xD0, 0xD4 | ptr | readied weapon, shield, armour | O |
+| 0xF8, 0xFC | ptr | readied arrows, quarrels | O |
+| 0x100 | u8 | free hands | O |
 | 0x102 | u16 | encumbrance | O |
 | 0x104 | ptr | next record (in memory) | O |
 | 0x10C | u8 | status (table below) | O |
@@ -102,7 +106,8 @@ Display name = words[n3−1], words[n2−1], words[n1−1], space-separated, ski
 | 4 | bonus vs large | 0 | 0 |
 | 9, 10 | damage dice vs small/medium | 1d6 | 1d10 |
 | 11 | bonus vs small/medium | +1 | 0 |
-| 13 | class-use flags (**?**) | 0x4A | 0x48 |
+| 13 | class-use bitmask (AND with char[0xB0]) | 0x4A | 0x48 |
+| 14 | weapon flags: 0x08 needs ammo, 0x01 arrows, 0x80 quarrels, 0x10 thrown | | |
 | 12 | range (missile range bands = (range−1)/3) | | |
 | 5–8, 14, 15 | **?** (attacks, AC for armour) | | |
 
