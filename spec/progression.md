@@ -43,8 +43,29 @@ Training is refused ("Not Enough Experience" path skipped) when the character is
 - If the magic-user level rose, the player picks a new spell to learn (`FUN_4894_299c`), marked in the spell-known list at char[0x32 + spell] (**I**)
 - **HP gain**: roll `FUN_417f_4235(classes)`, divide by number of classes (min 1), add CON bonus (`FUN_417f_3f31`) and divide again; max and current HP both rise by that amount. A byte at char[0xB1] accumulates the raw roll (**?**)
 
+## Hit points per level (O)
+
+`FUN_417f_4235`: for each class gaining a level, roll `count × d(sides)` from `DS:08B6` / `DS:08BE`; when the class was level 1, the roll is raised to at least `2·sides/3`.
+
+| Class | Cleric | Druid | Fighter | Paladin | Ranger | Magic-User | Thief | Monk |
+|---|---|---|---|---|---|---|---|---|
+| Hit dice | 1d8 | 1d8 | 1d10 | 1d10 | 2d8 | 1d4 | 1d6 | 2d4 |
+
+`FUN_417f_3f31` CON bonus, per class the character has (`DS:408E[CON]`): CON 3 → −2, 4–6 → −1, 7–14 → 0, 15 → +1, 16–18 → +2; a pure Fighter (class 2) gets +1 more at CON 17 and +2 more at CON 18.
+
+Gain = `max(1, Σ rolls / classes)` to the raw counter char[0xB1]; HP gain = `max(1, (Σ rolls + CON bonus) / classes)`.
+
+## Combat experience (O, `FUN_2e08_0000`)
+
+Summed over monsters (side 1) that did not flee (status ≠ Running):
+
+- `xp += word[0xB8] + byte[0xBA] × byte[0xB1]` (base value + value per hit die/point, **I** on field names)
+- the monster's 7 money words go into the treasure table (`DS:67F4`)
+- its items go into the treasure list if they have a value (item[0x3A] ≠ 0), else with 30% chance (d10 < 4), at most 8 such drops
+- plus a share of the treasure money converted to experience (Turbo Pascal real arithmetic, **?** exact rates), plus **400 × plus** for each magic item in the treasure
+- Result distributed by `FUN_2e08_0355` (**?** split rule)
+- Special case (non-combat resolution `DS:84D4` with `B[0x5CC]` set): `100 × char[0x73]` of the current character
+
 ## Open
 
-- HP dice per class (`FUN_417f_4235`) and CON bonus table (`FUN_417f_3f31`)
-- Experience awards per monster (`FUN_2e08_0000`)
 - Thief skills, turn undead table, spell slots per level
