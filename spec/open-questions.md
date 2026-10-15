@@ -23,8 +23,8 @@ Part of [[spec/README]]. Ordered by what a browser reimplementation needs first.
 ## Needed for the rules
 
 8. ~~Character, item, monster records~~ main fields done in [[spec/records]]; remaining: unlabelled character bytes, item fields 0x32–0x3E, ITEMS bytes 5–8/12–15, effect types
-11. Combat engine, spells, saving throws, experience
-12. ~~Save game format~~ done in [[spec/savegame]]; load routine not traced
+11. ~~Combat engine, spells, saving throws, experience~~ done in [[spec/combat]], [[spec/spells]], [[spec/progression]]; remaining: overland tile ids behind the wilderness terrain flags, the cell table's movement byte reader
+12. ~~Save game format and load routine~~ done in [[spec/savegame]]
 
 ## Effects (from [[spec/effects]])
 
