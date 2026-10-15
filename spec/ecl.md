@@ -144,7 +144,7 @@ Count = fixed operands; `+N` = variadic. Validated: every opcode appears in data
 | 2E | DAMAGE | 5 | dice damage to random members, saving throw | O/I |
 | 2F | AND | 3 | `dest = a & b`; flags vs 0 | O |
 | 30 | OR | 3 | `dest = a | b`; flags vs 0 | O |
-| 31 | SPRITE_OFF | 0 | remove encounter sprite if shown | I |
+| 31 | REDRAW | 0 | if a picture/sprite is showing (`DS:84E3`), redraw the 3D view and clear the flag | O |
 | 32 | FIND_ITEM | 1 | EQ = any party member carries item type t | O |
 | 33 | NEWLINE | 0 | text cursor to next line | O |
 | 34 | DELAY | 1 | pause (`FUN_4B46_03D5(1, n)`, same routine as the combat round delay) | O/I |
@@ -155,8 +155,8 @@ Count = fixed operands; `+N` = variadic. Validated: every opcode appears in data
 | 39 | WHO | 1 | prompt, player picks current character | O |
 | 3A | CLEAR_BOX | 0 | clear text box | O |
 | 3B | FIND_IN_CHAR_LIST | 3 | for each member, scan char bytes 0x18–0x69 for a value → index, member count. The range overruns the 21 memorised-spell slots into race/class/age (original behaviour) | O |
-| 3C | ? | 1 | print a list from a table | ? |
-| 3D | ? | 0 | clear area and mark redraw | ? |
+| 3C | PRINT_LIST | 1 | print entries `mem[addr+i]` (as values+1) one per line until a value of 0 or 0xFF; advances the text cursor | O/I |
+| 3D | CLEAR_TOP | 0 | clear the upper text region (rows 1–15) and set `DS:84DE` (next print starts lower) | O/I |
 
 ## CALL targets (O, `FUN_29c3_2ccf`)
 

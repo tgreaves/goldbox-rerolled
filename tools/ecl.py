@@ -39,13 +39,13 @@ OPS = {
     0x2A: ('GET_TABLE', 3, None),       0x2B: ('HMENU', 2, 1),
     0x2C: ('PARLAY', 6, None),       0x2D: ('CALL', 1, None),
     0x2E: ('DAMAGE', 5, None),       0x2F: ('AND', 3, None),
-    0x30: ('OR', 3, None),          0x31: ('OP_31', 0, None),
+    0x30: ('OR', 3, None),          0x31: ('REDRAW', 0, None),
     0x32: ('FIND_ITEM', 1, None),       0x33: ('NEWLINE', 0, None),
     0x34: ('DELAY', 1, None),       0x35: ('SAVE_TABLE', 3, None),
     0x36: ('ADD_NPC', 2, None),       0x37: ('LOAD_WALLSETS', 3, None),
     0x38: ('PROGRAM', 1, None),       0x39: ('WHO', 1, None),
     0x3A: ('CLEAR_BOX', 0, None),   0x3B: ('FIND_IN_CHAR_LIST', 3, None),
-    0x3C: ('OP_3C', 1, None),       0x3D: ('OP_3D', 0, None),
+    0x3C: ('PRINT_LIST', 1, None),       0x3D: ('CLEAR_TOP', 0, None),
 }
 TERMINAL = {0x00, 0x01, 0x13, 0x20}
 BRANCH_TARGETS = {0x01: [0], 0x02: [0]}
