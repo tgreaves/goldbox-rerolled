@@ -55,6 +55,32 @@ Training is refused ("Not Enough Experience" path skipped) when the character is
 
 Gain = `max(1, Σ rolls / classes)` to the raw counter char[0xB1]; HP gain = `max(1, (Σ rolls + CON bonus) / classes)`.
 
+## Derived statistics (O, `FUN_51cf_0000`, run after creation and training)
+
+- char[0x2D] = best over classes of `DS:3C7C[class·11 + level]` = **60 − base THAC0** (then adjusted by STR etc. into char[0x110], **I**)
+- char[0x73] = highest class level
+- Fighter level ≥ 7: char[0xA1] = 3 (3 attacks per 2 rounds), else 2 (half-attacks per round, **I**)
+- Cleric level ≥ 2: slots char[0xB2..0xB4] (spell levels 1–3) from `DS:40BC[level·3 + n]`, plus WIS bonus spells (`FUN_51cf_01af`); the cleric then knows every cleric spell of any level with a slot
+- Magic-User level ≥ 2: slots char[0xB5..0xB7] from `DS:41D4[level·3 + n]`
+- Level 1 slots are set at creation (cleric 0xB2 = 1, magic-user 0xB5 = 1)
+- `FUN_51cf_0255` (**?**), and thief skills (`FUN_51cf_0329`) when the character has thief levels
+
+### Base THAC0 by level (60 − table value)
+
+| Class | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Cleric, Druid, Monk | 20 | 20 | 20 | 18 | 18 | 18 | 16 | 16 | 16 | 14 |
+| Fighter, Paladin, Ranger | 20 | 19 | 18 | 17 | 16 | 15 | 14 | 13 | 12 | 11 |
+| Magic-User | 20 | 20 | 20 | 20 | 20 | 19 | 19 | 19 | 19 | 19 |
+| Thief | 20 | 20 | 20 | 20 | 19 | 19 | 19 | 19 | 16 | 16 |
+
+### Spell slots (spell levels 1 / 2 / 3)
+
+| Level | 1 | 2 | 3 | 4 | 5 | 6 |
+|---|---|---|---|---|---|---|
+| Cleric | 1 / 0 / 0 | 2 / 0 / 0 | 2 / 1 / 0 | 3 / 2 / 0 | 3 / 3 / 1 | 3 / 3 / 2 |
+| Magic-User | 1 / 0 / 0 | 2 / 0 / 0 | 2 / 1 / 0 | 3 / 2 / 0 | 4 / 2 / 1 | 4 / 2 / 2 |
+
 ## Combat experience (O, `FUN_2e08_0000`)
 
 Summed over monsters (side 1) that did not flee (status ≠ Running):
@@ -68,4 +94,4 @@ Summed over monsters (side 1) that did not flee (status ≠ Running):
 
 ## Open
 
-- Thief skills, turn undead table, spell slots per level
+- Thief skills (`FUN_51cf_0329`), WIS bonus spells (`FUN_51cf_01af`), STR to-hit/damage adjustments

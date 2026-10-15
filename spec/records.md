@@ -38,13 +38,19 @@ O = read by the character sheet (`FUN_4894_004a`, `050d`, `0608`, `0901`, `FUN_1
 | 0x6C | u8 | size/type flags; large if > 0x80 or `(v & 7) > 1` | O |
 | 0x6D–0x71 | u8 ×5 | saving throws: death/poison, petrification, rod/staff/wand, breath, spell | O (storage), I (order, matches AD&D) |
 | 0x79 | u8 | attribute averaged by `CHECK_PARTY` mode 0x6BA7 (**?**) | O |
+| 0x2D | u8 | 60 − base THAC0 (best class) | O |
+| 0x73 | u8 | highest class level | O |
 | 0x84 | u8 | NPC morale; bit 7 set = NPC | O |
 | 0x88 | u16 ×7 | money: copper, silver, electrum, gold, platinum, gems, jewelry | O |
 | 0x96–0x9D | u8 ×8 | level in Cleric, Druid, Fighter, Paladin, Ranger, Magic-User, Thief, Monk | O |
 | 0x9E | u8 | gender: 0 Male, 1 Female | O |
 | 0xA0 | u8 | alignment (table below) | O |
 | 0xAC | u32 | experience | O |
+| 0xA1 | u8 | attacks per round × 2 (fighters 3 from level 7) | O/I |
 | 0xA3, 0xA5, 0xA7 | u8 | natural attack values used by AI weapon scoring (**?** exact meaning) | O |
+| 0xB1 | u8 | hit dice / HP-roll counter (monster XP uses it) | O/I |
+| 0xB2–0xB4 | u8 ×3 | cleric spell slots, spell levels 1–3 | O |
+| 0xB5–0xB7 | u8 ×3 | magic-user spell slots, spell levels 1–3 | O |
 | 0xB0 | u8 | class bitmask for item use (`ITEMS[t][13] & char[0xB0]`) | O |
 | 0xBF | u8 | combat icon / picture id for monsters (**I**, set by `LOAD_MONSTER`) | O |
 | 0xC8 | ptr | item list head (in memory) | O |
