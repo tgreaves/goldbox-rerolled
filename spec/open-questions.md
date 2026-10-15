@@ -26,6 +26,11 @@ Part of [[spec/README]]. Ordered by what a browser reimplementation needs first.
 11. Combat engine, spells, saving throws, experience
 12. ~~Save game format~~ done in [[spec/savegame]]; load routine not traced
 
+## Effects (from [[spec/effects]])
+
+- Exact HP recalculation in effect 7; creature classes behind effects 3/6; one save-bonus condition in effect 82; item weapon-class flags
+- Effect 88 is fired at event 14 but has no handler (original behaviour: nothing)
+
 ## Smaller loose ends
 
 - Edge-consistency outliers in GEO records 30, 23, 16, 7, 0

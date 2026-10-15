@@ -47,13 +47,13 @@ Hand 1 uses the fields shown on the character sheet (0x115/0x117/0x119).
 
 Used by ECL `DAMAGE` (traps): `r = d20` (1 fails, 20 → 100), `effects(target, 16)`, hit if `target[0x111] < r + bonus`.
 
-## Saving throws (O for storage, I for roll)
+## Saving throws (O)
 
-Character bytes 0x6D–0x71 hold save targets in the order: death/poison/paralysis, petrification/polymorph, rod/staff/wand, breath weapon, spell. Values match the AD&D tables (best of each class for multi-class). The roll is presumably `d20 ≥ value` (**I**; routine not yet traced).
+Character bytes 0x6D–0x71 hold save targets: death/poison/paralysis, petrification/polymorph, rod/staff/wand, breath weapon, spell (tables in [[spec/progression]]). Roll (`FUN_5216_0d63`): `DS:6816 = d20 + char[0x101] + bonus`, effect hook 12 may modify it; success if `char[0x6D + type] ≤ DS:6816`.
 
 ## Effects hook (O, `FUN_5216_02fa(char, event)`)
 
-Called at fixed points with event codes: 4 (attacker after damage), 5 (target after damage), 10 (attacker before to-hit), 11 (start of attack), 13 (death/drop), 16 (target before to-hit or save). It walks the character's effect list (9-byte records) and applies type-specific code. Effect types and handlers: **?**
+A switch over 20 event codes, each firing a fixed list of effect types (targeting, after hit, damage, turn start, effect added, to-hit, saving throw, death, morale, rate, round end). Full event table and all handlers in [[spec/effects]]. The saving-throw roll is `DS:6816 = d20 + char[0x101] + bonus`, success if `save ≤ roll`.
 
 ## Combat statistics (O, `FUN_10ba_0bb8`)
 
@@ -243,4 +243,3 @@ Finishing pass (`FUN_34c7_0000`): on every floor cell (icon property `DS:2747[ic
 - AI scoring helpers (`FUN_3334_02eb`, `FUN_3334_128d`) and movement step (`FUN_3334_07f2`)
 - Spell casting and spell effects (spell list in character bytes 0x18–0x69, **I**)
 - Experience and treasure awards after combat
-- Saving throw roll, effect types

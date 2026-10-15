@@ -69,7 +69,7 @@ O = read by the character sheet (`FUN_4894_004a`, `050d`, `0608`, `0901`, `FUN_1
 | 0x116, 0x118, 0x11A | u8 | second hand damage dice count, sides, bonus | O |
 | 0x115, 0x117, 0x119 | u8, u8, s8 | damage dice count, sides, bonus | O |
 | 0x11B | u8 | current HP | O |
-| 0x11C | u8 | movement; the character sheet doubles it if effect 0x2A is present and halves it for 0x27 (conflicts with the spell table, see [[spec/spells]]) | O |
+| 0x11C | u8 | movement; Haste (effect 0x27) doubles, Slow (0x2A) halves; the original character sheet displays this reversed (bug) | O |
 
 Pointer fields are stale in files and must be ignored on load.
 
@@ -124,4 +124,4 @@ Display name = words[n3−1], words[n2−1], words[n1−1], space-separated, ski
 
 ## Effect record (9 bytes, I)
 
-`u8 type, u16 duration, u8 power, u8 ?, ptr next`. Effect type numbers are referenced by engine checks (0x27 slow, 0x2A haste, inferred from movement). Full list **?**.
+`u8 type, u16 duration (0 = permanent), u8 power, u8 call-on-removal flag, ptr next`. List head at char[0x7F]. Full type list in [[spec/effects]].

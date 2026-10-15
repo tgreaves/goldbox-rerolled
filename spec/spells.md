@@ -102,7 +102,7 @@ Ranges are in game squares; durations are in the engine's units (rounds for most
 
 ## Open
 
-- Effect type handlers (`FUN_5216_02fa` dispatch) and what each effect does per event
-- Haste/Slow: spell table gives Haste effect 0x27 and Slow 0x2A, but the character sheet doubles movement for 0x2A and halves it for 0x27; `FUN_10ba_2199` semantics need checking
+- ~~Effect handlers~~ see [[spec/effects]]
+- ~~Haste/Slow~~ resolved: Haste (0x27) doubles attacks and movement, Slow (0x2A) halves them (combat code 0x31E9C/0x31EBF); the original character sheet shows them reversed (display bug)
 - Immediate effects (damage spells, cures) in `FUN_5216_1344`
 - Spell memorisation and learning rules, spell slots per level
