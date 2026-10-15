@@ -147,7 +147,7 @@ Count = fixed operands; `+N` = variadic. Validated: every opcode appears in data
 | 31 | SPRITE_OFF | 0 | remove encounter sprite if shown | I |
 | 32 | FIND_ITEM | 1 | EQ = any party member carries item type t | O |
 | 33 | NEWLINE | 0 | text cursor to next line | O |
-| 34 | ? | 1 | calls `4B46:03D5(1, n)` | ? |
+| 34 | DELAY | 1 | pause (`FUN_4B46_03D5(1, n)`, same routine as the combat round delay) | O/I |
 | 35 | SAVE_TABLE | 3 | `mem[base + index] = value` | O |
 | 36 | ADD_NPC | 2 | add NPC id with morale | O |
 | 37 | LOAD_WALLSETS | 3 | load WALLDEF records into slots 1–3 | O |

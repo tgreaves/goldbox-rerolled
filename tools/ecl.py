@@ -41,7 +41,7 @@ OPS = {
     0x2E: ('DAMAGE', 5, None),       0x2F: ('AND', 3, None),
     0x30: ('OR', 3, None),          0x31: ('OP_31', 0, None),
     0x32: ('FIND_ITEM', 1, None),       0x33: ('NEWLINE', 0, None),
-    0x34: ('OP_34', 1, None),       0x35: ('SAVE_TABLE', 3, None),
+    0x34: ('DELAY', 1, None),       0x35: ('SAVE_TABLE', 3, None),
     0x36: ('ADD_NPC', 2, None),       0x37: ('LOAD_WALLSETS', 3, None),
     0x38: ('PROGRAM', 1, None),       0x39: ('WHO', 1, None),
     0x3A: ('CLEAR_BOX', 0, None),   0x3B: ('FIND_IN_CHAR_LIST', 3, None),
