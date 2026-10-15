@@ -115,6 +115,31 @@ If the combatant cannot act (char[0x10D] = 0) the turn ends. If a spell is queue
 | Ctrl-P (0x10) | Quick mode for everyone, end turn | |
 | − | `FUN_3aae_3b93` (**?**) | |
 
+## Turn undead (O, `FUN_3aae_116a`)
+
+- One d20 roll `r` for the whole attempt; up to **d12** undead affected (AD&D uses 2d6); combat record [0x11] = 1 (cleric has turned this battle)
+- Column = cleric level 1–8; 9–13 → 9; 14+ → 10
+- Targets chosen by `FUN_3aae_1351` (nearest undead, **I**); for each: `v = DS:0447[undead_type · 10 + column]` with undead type = char[0x76]
+  - `r < |v|` → stop (failure)
+  - `v ≥ 1` → turned: combat record [0x10] = 1 (flees), message
+  - `v ≤ 0` → destroyed: status 8, cannot act
+- "Nothing happens" message if no target was affected
+
+| Undead type (char[0x76]) | L1 | L2 | L3 | L4 | L5 | L6 | L7 | L8 | L9–13 | L14+ |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 10 | 7 | 4 | T | T | D | D | D* | D* | D* |
+| 2 | 13 | 10 | 7 | T | T | D | D | D | D* | D* |
+| 3 | 16 | 13 | 10 | 4 | T | T | D | D | D | D* |
+| 4 | 19 | 16 | 13 | 7 | 4 | T | T | D | D | D* |
+| 5 | 20 | 19 | 16 | 10 | 7 | 4 | T | T | D | D |
+| 6 | – | 20 | 19 | 13 | 10 | 7 | 4 | T | T | D |
+| 7 | – | – | 20 | 16 | 13 | 10 | 7 | 4 | T | D |
+| 8 | – | – | – | 20 | 16 | 13 | 10 | 7 | 4 | T |
+| 9 | – | – | – | – | 20 | 16 | 13 | 10 | 7 | T |
+| 10 | – | – | – | – | – | 20 | 16 | 13 | 10 | 4 |
+
+T = value 1 (automatic turn), D = 0, D* = −1 (both automatic destroy), – = 99 (impossible). Matches the AD&D 1st edition table (types 1–10 = skeleton … vampire, **I**).
+
 ## Computer-controlled combatants (O, `FUN_3334_000f`)
 
 Used for monsters, NPCs and party members in quick-combat (char[0x10F] ≠ 0).
