@@ -12,6 +12,8 @@ const V_BUSY = 0x1d8, V_CHLOOP = 0x1d9, V_STRUCTSZ = 0x1da, V_EFFECT = 0x1ff, V_
 const V_CHBASE = 0x203, V_FREQTAB = 0x205, V_RETADDR = 0x207, V_CHEFFECT = 0x209, V_ENABLE = 0x20d
 const V_JUMPTAB = 0x221, V_PCSEL = 0x3c5
 const PC_CHAN = 0x22d, PC_FREQ = 0x3ad, PC_TABLE = 0x55f
+const TY_CHAN = 0x3c7, TY_FREQ = 0x547, TY_TABLE = 0x607
+const TANDY_CLOCK = 3579545
 export const NUM_EFFECTS = 21
 
 const s16 = (v: number) => ((v & 0xffff) << 16) >> 16
@@ -34,15 +36,16 @@ class Driver {
     this.m[(a + 1) & 0xffff] = (v >> 8) & 0xff
   }
 
-  /** CS:1742: start effect index e (= effect number - 1) on the PC speaker. */
-  start(e: number) {
+  /** CS:1742 (PC speaker) / CS:17AE (Tandy): start effect index e (= effect number - 1). */
+  start(e: number, tandy = false) {
+    const table = tandy ? TY_TABLE : PC_TABLE
     this.sw(V_EFFECT, e)
     let si = (e * 8) & 0xffff
     this.sb(V_BUSY, 1)
     this.sb(V_CHLOOP, 4)
-    let di = PC_CHAN
+    let di = tandy ? TY_CHAN : PC_CHAN
     for (;;) {
-      const ax = this.w(PC_TABLE + si)
+      const ax = this.w(table + si)
       if (ax !== 0) {
         for (let bx = 0x2e; bx >= 0; bx -= 2) this.sw(di + bx, 0)
         this.sw(di + 2, ax)
@@ -57,11 +60,20 @@ class Driver {
     this.sb(V_BUSY, 0)
   }
 
-  /** CS:13EA timer interrupt, PC speaker part (CS:1477). */
+  snWrites: number[] = []
+
+  /** CS:13EA timer interrupt: PC speaker part (CS:1477), then Tandy part (CS:14EC). */
   tick() {
     this.out42 = []
+    this.snWrites = []
     if (this.b(V_BUSY) !== 0) return
     this.sb(V_BUSY, 1)
+    this.pcTick()
+    this.tandyTick()
+    this.sb(V_BUSY, 0)
+  }
+
+  private pcTick() {
     let bl = 0
     if (this.w(V_EFFECT) !== 0) {
       this.sw(V_PCSEL, 0)
@@ -89,7 +101,34 @@ class Driver {
       }
     }
     this.port61 = (this.port61 & 0xfc) | bl
-    this.sb(V_BUSY, 0)
+  }
+
+  /** CS:14EC: step the Tandy channels and write all four SN76489 voices. */
+  private tandyTick() {
+    const silence = [0x9f, 0xbf, 0xdf, 0xff]
+    if (this.w(V_EFFECT) === 0) { this.snWrites.push(...silence); return }
+    this.sb(V_CHLOOP, 4)
+    this.sw(V_FREQTAB, TY_FREQ)
+    let si = TY_CHAN
+    this.sw(V_CHBASE, si)
+    for (;;) {
+      if (this.w(si) !== 0) this.step(si)
+      si += 0x30
+      this.sb(V_CHLOOP, this.b(V_CHLOOP) - 1)
+      if (this.b(V_CHLOOP) === 0) break
+    }
+    if (this.b(V_ENABLE) === 0) { this.snWrites.push(...silence); return }
+    si = TY_CHAN
+    let dl = 0x80
+    for (let v = 0; v < 4; v++) {
+      const ax = (this.w(si + 8) >> 2) & 0xffff
+      this.snWrites.push(((ax & 0xff) >> 4) ^ dl)
+      if (dl !== 0xe0) this.snWrites.push(ax >> 8)
+      const att = ((0xffff - this.w(si + 0xa)) & 0xffff) >> 12
+      this.snWrites.push(((att ^ dl) + 0x10) & 0xff)
+      dl += 0x20
+      si += 0x30
+    }
   }
 
   /** CS:157A: one channel step. */
@@ -231,8 +270,9 @@ class Driver {
     for (const f of [4, 6, 8, 0xa, 0xc, 0x10, 0x12, 0x16, 0x18, 0x1a, 0x1c, 0x1e, 0x20, 0x22, 0x24]) this.sw(si + f, 0)
   }
 
-  active() {
-    for (let c = 0; c < 4; c++) if (this.w(PC_CHAN + c * 0x30) !== 0) return true
+  active(tandy = false) {
+    const base = tandy ? TY_CHAN : PC_CHAN
+    for (let c = 0; c < 4; c++) if (this.w(base + c * 0x30) !== 0) return true
     return false
   }
 }
@@ -343,6 +383,95 @@ export function renderEffect(image: Uint8Array, n: number, rate: number, cut?: n
     py = x - px + r * py
     px = x
     out[i] = py * 0.35
+  }
+  return out
+}
+
+/**
+ * Texas Instruments SN76489 as in the Tandy 1000 / PCjr: three square-wave voices and a noise
+ * channel, 2 dB attenuation steps. An approximation: the Tandy chip's noise taps may differ
+ * (spec/sound.md).
+ */
+class SN76489 {
+  private reg = [0, 0xf, 0, 0xf, 0, 0xf, 0, 0xf] // tone0, att0, tone1, att1, tone2, att2, noise, att3
+  private latch = 0
+  private cnt = [1, 1, 1, 1]
+  private out = [1, 1, 1, 1]
+  private lfsr = 0x4000
+  private readonly vol = [...Array.from({ length: 15 }, (_, i) => 10 ** ((-2 * i) / 20)), 0]
+
+  write(v: number) {
+    let r: number
+    if (v & 0x80) {
+      this.latch = (v >> 4) & 7
+      r = this.latch
+      this.reg[r] = r === 0 || r === 2 || r === 4 ? (this.reg[r] & 0x3f0) | (v & 0xf) : v & 0xf
+    } else {
+      r = this.latch
+      this.reg[r] = r === 0 || r === 2 || r === 4 ? (this.reg[r] & 0xf) | ((v & 0x3f) << 4) : v & 0xf
+    }
+    if (r === 6) this.lfsr = 0x4000 // a write to the noise register resets the shift register
+  }
+
+  private shift() {
+    const fb = this.reg[6] & 4 ? (this.lfsr ^ (this.lfsr >> 1)) & 1 : this.lfsr & 1
+    this.lfsr = (this.lfsr >> 1) | (fb << 14)
+  }
+
+  /** One internal clock (master / 16); returns the mixed output. */
+  clock(): number {
+    for (let ch = 0; ch < 3; ch++) {
+      if (--this.cnt[ch] <= 0) {
+        this.cnt[ch] = this.reg[ch * 2] & 0x3ff || 0x400
+        this.out[ch] ^= 1
+        if (ch === 2 && (this.reg[6] & 3) === 3 && this.out[2]) this.shift()
+      }
+    }
+    if ((this.reg[6] & 3) !== 3 && --this.cnt[3] <= 0) {
+      this.cnt[3] = 0x10 << (this.reg[6] & 3)
+      this.out[3] ^= 1
+      if (this.out[3]) this.shift()
+    }
+    let s = 0
+    for (let ch = 0; ch < 3; ch++) s += this.vol[this.reg[ch * 2 + 1]] * (this.out[ch] ? 1 : -1)
+    s += this.vol[this.reg[7]] * (this.lfsr & 1 ? 1 : -1)
+    return s / 4
+  }
+}
+
+/** Render effect n on the Tandy / PCjr sound chip (same driver, Tandy tables). */
+export function renderTandy(image: Uint8Array, n: number, rate: number, cut?: number): Float32Array {
+  const d = new Driver(image)
+  const sn = new SN76489()
+  for (const v of [0x9f, 0xbf, 0xdf, 0xff]) sn.write(v)
+  d.start(n - 1, true)
+  const internal = TANDY_CLOCK / 16
+  const perTick = (internal * TICK_DIV) / PIT_HZ
+  const perSample = internal / rate
+  const acc: number[] = []
+  let clocks = 0, due = 0
+  for (let k = 0; k < 2400; k++) {
+    if (cut !== undefined && k >= cut) break
+    d.tick()
+    for (const v of d.snWrites) sn.write(v)
+    due += perTick
+    while (clocks < due) {
+      const v = sn.clock()
+      const idx = Math.floor(clocks / perSample)
+      while (acc.length <= idx) acc.push(0)
+      acc[idx] += v / perSample
+      clocks++
+    }
+    if (!d.active(true)) break
+  }
+  for (let i = 0; i < Math.floor(0.02 * rate); i++) acc.push(0)
+  const r = 1 - (2 * Math.PI * 10) / rate
+  let px = 0, py = 0
+  const out = new Float32Array(acc.length)
+  for (let i = 0; i < acc.length; i++) {
+    py = acc[i] - px + r * py
+    px = acc[i]
+    out[i] = py * 2.5 * 0.875
   }
   return out
 }
