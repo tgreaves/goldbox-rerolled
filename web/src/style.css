@@ -147,3 +147,18 @@ dialog.panel form { display: flex; justify-content: flex-end; }
   .game .menu { flex: 1; }
   .game .menu button { flex: 1 1 auto; padding: 0.3rem 0.4rem; }
 }
+
+.game .overlay {
+  position: absolute; inset: 0; margin: auto; height: 100%; width: auto; aspect-ratio: 1;
+  max-width: 100%; image-rendering: pixelated; pointer-events: none;
+}
+.game .text .screen { padding-top: 0.4rem; border-top: 1px solid #ffffff14; }
+.game .text .screen:first-child { border-top: none; }
+.game .pad.disabled button { opacity: 0.35; pointer-events: none; }
+.game ol.choices { list-style: none; margin: 0.3rem 0; padding: 0; display: grid; gap: 0.3rem; }
+.game ol.choices button { width: 100%; text-align: left; min-height: 36px; }
+.game form.entry { display: flex; gap: 0.4rem; margin: 0.3rem 0; }
+.game form.entry input {
+  flex: 1; background: #0b1218; border: 1px solid var(--line); border-radius: 4px; padding: 0.3rem 0.5rem;
+  color: var(--ega-green); min-height: 36px; text-transform: uppercase;
+}

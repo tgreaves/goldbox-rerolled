@@ -124,6 +124,7 @@ Variables the engine itself reads or writes, so a port must give them meaning. E
 | 0x49C5 | current GEO record (restored on load) | [[spec/savegame]] |
 | 0x49E5 | area flag: no item Use / no AI item use | [[spec/town]], [[spec/combat]] |
 | 0x49E6 | ≠ 0: areas 25–27 behave as map areas instead of overland travel | [[spec/architecture]] |
+| 0x49E7, 0x49E8 | both ≠ 0: `LOAD_WALLSETS` loads only operands 1 and 3 (slots 1 and 3), so a two-set record in slot 1 keeps slot 2. Block 4 and 5 scripts set both before using two-set records such as WALLDEF5 #24 | this file |
 | 0x49F0, 0x49F1 | party X, Y before the last move | [[spec/architecture]] |
 | 0x49F2 | current area id (written by `NEW_ECL`) | this file |
 | 0x49FB | ≠ 0: the Area (overhead map) command answers "Not Here" | [[spec/architecture]] |

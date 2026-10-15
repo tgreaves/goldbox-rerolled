@@ -1,0 +1,909 @@
+// ECL interpreter and exploration loop (spec/ecl.md, spec/architecture.md).
+// A port of tools/eclvm.py; every opcode, including the original's quirks, follows spec/ecl.md.
+// The interpreter is async: menus, input and screen refreshes await the front end (Io).
+
+import type { GameFiles } from '../store/gamefiles'
+import { GeoMap, STEP } from '../data/geo'
+import { WallSets } from '../data/walls'
+import { unpackText } from '../data/text'
+import { CHAR_SIZE } from '../data/character'
+
+export const A0 = 0x4900
+export const B0 = 0x6b00
+export const C0 = 0x9700
+export const CODE = 0x9900
+const CODE_END = 0xb700
+
+// engine-visible ECL variables (spec/ecl.md)
+const AREA_ID = 0x49f2, PREV_X = 0x49f0, PREV_Y = 0x49f1, GEO_ID = 0x49c5, NO_OVERLAND = 0x49e6, NO_ITEM_USE = 0x49e5
+const CANCEL_MOVE = 0x6dc9, SEARCH_LOOK = 0x6dca, SURPRISE_RESULT = 0x6dcb, EDGE = 0x6dd5
+const OUTCOME = 0x6dc7, DEFEATED = 0x6dc8, SPRITE_MAX = 0x6dc0, SPRITE_DIST = 0x6dc1
+const REST_INTERVAL = 0x6dd2, REST_CHANCE = 0x6dd3, PORTRAIT = 0x6de1, TEMPLE_FLAG = 0x6de2
+const SHOP_FLAG = 0x6e6c, PARTY_SIZE = 0x6e3e
+
+/** Operand counts used by the IF skip routine FUN_2fea_1ea6 (others skip one byte). */
+const SKIP: Record<number, number> = {}
+for (const [n, ops] of [
+  [1, [0x01, 0x02, 0x0a, 0x0e, 0x11, 0x12, 0x1d, 0x20, 0x2d, 0x32, 0x34, 0x36, 0x38, 0x39, 0x3c]],
+  [2, [0x03, 0x08, 0x09, 0x0c, 0x0f, 0x10, 0x1f, 0x22]],
+  [3, [0x04, 0x05, 0x06, 0x07, 0x0b, 0x21, 0x28, 0x2a, 0x2f, 0x30, 0x35, 0x37, 0x3b]],
+  [4, [0x14, 0x23]], [5, [0x2e]], [6, [0x1e, 0x2c]], [8, [0x27]], [14, [0x29]],
+] as [number, number[]][]) for (const o of ops) SKIP[o] = n
+
+/** ENCOUNTER_MENU reactions: code -> choice (0 COMBAT, 1 WAIT, 2 FLEE, 3 ADVANCE, 4 PARLAY) -> action. */
+type Act = number | 'wait' | 'approach' | 'parlay' | 'flee' | 'pursue'
+const ENCOUNTER: Act[][] = [
+  [1, 1, 'flee', 1, 1],
+  [1, 'wait', 2, 'approach', 'parlay'],
+  ['pursue', 0, 0, 0, 0],
+  [1, 'approach', 2, 'approach', 'parlay'],
+  [1, 'parlay', 2, 'parlay', 'parlay'],
+]
+
+export interface Io {
+  /** Text for the text window; clear = PRINT_CLEAR / new screen of text. */
+  print(text: string, clear: boolean): void
+  /** A menu; resolves to the 0-based choice. `enter` = a one-item "press Enter" prompt. */
+  menu(items: string[], opts?: { prompt?: string; vertical?: boolean }): Promise<number>
+  inputNumber(): Promise<number>
+  inputText(): Promise<string>
+  /** Show a picture (null clears). */
+  picture(p: { pic: number } | { head: number; body: number } | null): void
+  /** Encounter sprite at a distance (0 nearest), or the picture once it is at distance 0. */
+  sprite(sprite: number, picture: number, distance: number): void
+  /** Bring the view up to date with position, map and wall sets (CALL 0x2C90, area entry). */
+  refresh(): Promise<void>
+  /** Engine screens that are not implemented yet (combat, shops, camp ...). */
+  engine(what: string, info?: Record<string, unknown>): Promise<void>
+}
+
+export class Hang extends Error {}
+
+export class Engine {
+  A = new Uint16Array(0x400)
+  B = new Uint16Array(0x400)
+  C = new Uint16Array(0x200)
+  code = new Uint8Array(0x1e00)
+  nodes: Uint8Array[] = []
+  cur!: Uint8Array
+  savedCur!: Uint8Array
+  restoreCur = false
+  block = 1
+  area = 0
+  geo: GeoMap | null = null
+  walls: WallSets
+  x = 0
+  y = 0
+  facing2 = 0
+  regs = new Map<number, number>()
+  flags = { EQ: 0, NE: 0, LT: 0, GT: 0, LE: 0, GE: 0 }
+  stack: number[] = []
+  vectors = [CODE + 0x14, CODE + 0x14, CODE + 0x14, CODE + 0x14, CODE + 0x14]
+  monsters = 0
+  monstersLoaded = false
+  iconSlot = 8
+  money = [0, 0, 0, 0, 0, 0, 0]
+  areaChanged = false
+  quit = false
+  /** set when the map or wall sets change, cleared by the front end */
+  mapDirty = true
+  private stop = false
+  private pc = CODE
+  private kind = new Uint8Array(33)
+  private lo = new Uint8Array(33)
+  private hi = new Uint8Array(33)
+  private sbuf: string[] = new Array(33).fill('')
+  private opstr = new Map<number, string>()
+  private readonly files: GameFiles
+  readonly io: Io
+  private rng: () => number
+
+  constructor(files: GameFiles, io: Io, seed = Date.now()) {
+    this.files = files
+    this.io = io
+    this.walls = new WallSets(files, 1)
+    let s = seed >>> 0 || 1
+    this.rng = () => {
+      s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0
+      return s / 4294967296
+    }
+  }
+
+  // ---------------------------------------------------------------- state
+  get facing() { return this.facing2 >> 1 }
+
+  rand(n: number) { return Math.floor(this.rng() * n) }
+
+  roll(count: number, sides: number) {
+    let t = 0
+    for (let i = 0; i < count; i++) t += this.rand(sides) + 1
+    return sides ? t : 0
+  }
+
+  /** A new game: fresh variables, the given party, block 3 area 0 (New Phlan), as after "Begin". */
+  newGame(party: Uint8Array[]) {
+    this.A.fill(0); this.B.fill(0); this.C.fill(0)
+    this.nodes = party.map((c) => c.slice())
+    this.cur = this.savedCur = this.nodes[0]
+    this.B[PARTY_SIZE - B0] = this.nodes.length
+    this.setBlock(3)
+    this.area = 0
+    this.loadEcl(0)
+    this.resetVm(false)
+  }
+
+  /** Resume from a save game (SAVGAM*.DAT layout, spec/savegame.md). */
+  loadSave(d: Uint8Array, party: Uint8Array[]) {
+    const w = (o: number, n: number) => {
+      const out = new Uint16Array(n)
+      for (let i = 0; i < n; i++) out[i] = d[o + 2 * i] | (d[o + 2 * i + 1] << 8)
+      return out
+    }
+    this.A = w(1, 0x400); this.B = w(0x801, 0x400); this.C = w(0x1001, 0x200)
+    this.code = d.slice(0x1401, 0x3201)
+    this.x = d[0x3201]; this.y = d[0x3202]; this.facing2 = d[0x3203]
+    this.nodes = party.map((c) => c.slice())
+    this.cur = this.savedCur = this.nodes[0]
+    this.setBlock(this.B[0x6e12 - B0])
+    this.area = this.A[AREA_ID - A0]
+    this.loadGeo(this.A[GEO_ID - A0])
+    ;[0x4afa, 0x4afb, 0x4afc].forEach((a, i) => {
+      const r = this.A[a - A0]
+      if (r !== 0xffff) this.walls.load(i + 1, r)
+    })
+    this.resetVm(true)
+  }
+
+  private setBlock(b: number) {
+    this.block = b
+    this.walls = new WallSets(this.files, b)
+    this.mapDirty = true
+  }
+
+  private loadGeo(rid: number) {
+    const raw = this.files.record(`GEO${this.block}`, rid)
+    this.geo = raw ? new GeoMap(raw) : null
+    this.mapDirty = true
+  }
+
+  private loadEcl(rid: number) {
+    const raw = this.files.record(`ECL${this.block}`, rid)
+    if (!raw) throw new Error(`no ECL record ${rid} in block ${this.block}`)
+    this.code = new Uint8Array(0x1e00)
+    this.code.set(raw.subarray(2, 2 + 0x1e00))
+  }
+
+  /** FUN_2fea_01b6 */
+  private resetVm(keep: boolean) {
+    this.stack = []
+    this.clearFlags()
+    this.vectors = [0, 1, 2, 3, 4].map((i) => {
+      const save = this.pc
+      this.pc = CODE + 4 * i
+      this.readops(1)
+      this.pc = save
+      return this.addr(1)
+    })
+    this.iconSlot = 8
+    this.B[PORTRAIT - B0] = 0xff
+    this.B[REST_INTERVAL - B0] = this.B[REST_CHANCE - B0] = 0
+    this.A[NO_ITEM_USE - A0] = 0
+    this.A[NO_OVERLAND - A0] = 1
+    if (!keep) {
+      for (let a = 0x4a00; a < 0x4a20; a++) this.A[a - A0] = 0
+      for (let a = 0x6e79; a <= 0x6e82; a++) this.B[a - B0] = 0
+    }
+  }
+
+  private clearFlags() {
+    this.flags = { EQ: 0, NE: 0, LT: 0, GT: 0, LE: 0, GE: 0 }
+  }
+
+  /** Wall ahead and event byte (engine registers 0xC04E, 0xC04F). */
+  square(): [number, number] {
+    if (!this.geo) return [0, 0]
+    return [this.geo.wall(this.x, this.y, this.facing), this.geo.event(this.x, this.y)]
+  }
+
+  // --------------------------------------------------------------- memory
+  read(a: number): number {
+    if (a >= A0 && a < 0x4d00) return this.A[a - A0]
+    if (a >= B0 && a < 0x6f00) {
+      const v = this.charRead(a - B0)
+      return v ?? this.B[a - B0]
+    }
+    if (a >= C0 && a < CODE) return this.C[a - C0]
+    if (a >= CODE && a < CODE_END) return this.code[a - CODE]
+    switch (a) {
+      case 0xc04b: return this.x
+      case 0xc04c: return this.y
+      case 0xc04d: return this.facing
+      case 0xc04e: return this.square()[0]
+      case 0xc04f: return this.square()[1]
+      case 0x033d: return this.facing2
+    }
+    return this.regs.get(a) ?? 0 // undefined in the original
+  }
+
+  write(a: number, v: number) {
+    v &= 0xffff
+    if (a >= A0 && a < 0x4d00) this.A[a - A0] = v
+    else if (a >= B0 && a < 0x6f00) {
+      this.B[a - B0] = v
+      this.charWrite(a - B0, v)
+    } else if (a >= C0 && a < CODE) this.C[a - C0] = v
+    else if (a >= CODE && a < CODE_END) this.code[a - CODE] = v & 0xff
+    else if (a === 0xc04b) this.x = v & 0xff
+    else if (a === 0xc04c) this.y = v & 0xff
+    else if (a === 0xc04d) this.facing2 = (v % 4) * 2
+    else if ([0xc059, 0xc05f, 0x3de, 0xb8, 0xb9].includes(a)) this.regs.set(a, v)
+  }
+
+  /** B as a view of the current character (FUN_2fea_07bc). */
+  private charRead(k: number): number | undefined {
+    const c = this.cur
+    const u16 = (o: number) => c[o] | (c[o + 1] << 8)
+    const s8 = (o: number) => ((c[o] << 24) >> 24) & 0xffff
+    if (k === 0x18) return c[0x14]
+    if (k === 0x9b) return c[0x6e]
+    if (k === 0xa0) return s8(0x73)
+    if (k >= 0xa5 && k <= 0xac) return c[0x76 + k - 0xa4]
+    if (k === 0xb8) return c[0x84]
+    if ([0xbb, 0xbd, 0xbf, 0xc1, 0xc3].includes(k)) return u16(0x88 + k - 0xbb)
+    if (k === 0xd8) return s8(0xa0)
+    if (k === 0xf7) return u16(0xb8)
+    if (k === 0xf9) return c[0xba]
+    if (k === 0x100) return c[0x10d] === 0 ? 0x80 : 1
+    if (k === 0x10c) {
+      if (c[0x10e] === 0 && c[0x10f] !== 0) return 0x80
+      return c[0x10e] === 1 ? 0x81 : 0
+    }
+    if (k === 0x10d) return 0
+    if (k === 0x11b) return c[0x11c]
+    if (k === 0x2b1 || k === 0x2b4) return Math.max(0, this.nodes.indexOf(c))
+    if (k === 0x2cf) {
+      const cha = c[0x15]
+      if (cha >= 8 && cha <= 12) return 25
+      if (cha >= 18 && cha <= 25) return 60
+      return ({ 3: 0, 4: 5, 5: 10, 6: 15, 7: 20, 13: 30, 14: 35, 15: 40, 16: 50, 17: 55 } as Record<number, number>)[cha] ?? 0
+    }
+    if (k === 0x312) return this.block
+    return undefined
+  }
+
+  /** FUN_2fea_0a74 */
+  private charWrite(k: number, v: number) {
+    const c = this.cur
+    if (k >= 0x20 && k <= 0x70) c[0x17 + k - 0x20] = v & 0xff
+    else if (k === 0xb8) c[0x84] = (v > 0xb2 ? v - 0x32 : v) & 0xff
+    else if ([0xbb, 0xbd, 0xbf, 0xc1, 0xc3].includes(k)) {
+      c[0x88 + k - 0xbb] = v & 0xff
+      c[0x89 + k - 0xbb] = v >> 8
+    } else if (k === 0xf7) { c[0xb8] = v & 0xff; c[0xb9] = v >> 8 }
+    else if (k === 0xf9) c[0xba] = v & 0xff
+    else if (k === 0x100) {
+      if (v > 0x7f) {
+        c[0x10d] = 0
+        if (v === 0x87) c[0x10c] = 7
+      }
+    } else if (k === 0x10c) {
+      if (v === 0) { c[0x10e] = 0; c[0x10f] = 0 }
+      else if (v === 0x80) { c[0x10e] = 0; c[0x10f] = 1 }
+      else if (v === 0x81) { c[0x10e] = 1; c[0x10f] = 1 }
+    } else if (k === 0x312) this.setBlock(v)
+    else if ((k === 0x322 || k === 0x324 || k === 0x326) && v > 0x80) {
+      this.walls.load((k - 0x320) / 2, v & 0x7f)
+      this.mapDirty = true
+    }
+  }
+
+  private readString(a: number): string {
+    if (a === B0) return String.fromCharCode(...this.cur.subarray(1, 1 + this.cur[0]))
+    const valid = (a >= A0 && a < 0x4d00) || (a >= B0 && a < 0x6f00) || (a >= C0 && a < CODE) || (a >= CODE && a < CODE_END)
+    if (!valid) return ''
+    let s = ''
+    for (let i = 0; i < 255; i++) {
+      const v = this.read(a + i) & 0xff
+      if (!v) break
+      s += String.fromCharCode(v)
+    }
+    return s
+  }
+
+  private storeString(a: number, s: string) {
+    if (a === B0) {
+      const n = s.slice(0, 15)
+      this.cur[0] = n.length
+      for (let i = 0; i < n.length; i++) this.cur[1 + i] = n.charCodeAt(i)
+      return
+    }
+    for (const ch of s) this.write(a++, ch.charCodeAt(0))
+    this.write(a, 0)
+  }
+
+  // ------------------------------------------------------------- operands
+  /** FUN_2fea_0000, entered with PC on the opcode byte. */
+  private readops(n: number) {
+    let k = 0
+    this.opstr.clear()
+    for (let i = 1; i <= n; i++) {
+      const p = this.pc - CODE
+      this.kind[i] = this.code[p + 1]
+      this.lo[i] = this.code[p + 2]
+      this.pc += 2
+      if ([1, 2, 3, 0x81].includes(this.kind[i])) {
+        this.hi[i] = this.code[this.pc - CODE + 1]
+        this.pc += 1
+      }
+      if (this.kind[i] === 0x80) {
+        k++
+        const q = this.pc - CODE + 1
+        this.sbuf[k] = unpackText(this.code.subarray(q, q + this.lo[i]))
+        this.pc += this.lo[i]
+        this.opstr.set(i, this.sbuf[k])
+      } else if (this.kind[i] === 0x81) {
+        k++
+        this.sbuf[k] = this.readString(this.addr(i))
+        this.opstr.set(i, this.sbuf[k])
+      }
+    }
+    this.pc += 1
+  }
+
+  private addr(i: number) { return (this.hi[i] << 8) | this.lo[i] }
+
+  private val(i: number): number {
+    const k = this.kind[i]
+    if (k === 0) return this.lo[i]
+    if (k === 1 || k === 3 || k === 0x80) return this.read(this.addr(i))
+    if (k === 2 || k === 0x81) return this.addr(i)
+    return 0
+  }
+
+  private text(i: number) { return this.opstr.get(i) ?? String(this.val(i)) }
+
+  /** Variadic opcodes: fixed operands, then N more read into slots 1..N. */
+  private variadic(fixed: number, countIndex: number) {
+    this.readops(fixed)
+    const n = this.val(countIndex) & 0xff
+    const head = Array.from({ length: fixed }, (_, j) => ({
+      addr: this.addr(j + 1),
+      str: this.opstr.get(j + 1),
+    }))
+    this.pc -= 1
+    this.readops(n)
+    return { n, head }
+  }
+
+  private setFlags(a: number | string, b: number | string) {
+    const f = this.flags
+    f.EQ = +(a === b); f.NE = +(a !== b); f.LT = +(a < b)
+    f.GT = +(a > b); f.LE = +(a <= b); f.GE = +(a >= b)
+  }
+
+  // -------------------------------------------------------------- running
+  /** FUN_29c3_3171 */
+  async run(start: number) {
+    this.pc = start
+    this.stop = false
+    let steps = 0
+    while (!this.stop && !this.quit) {
+      if (++steps > 200000) throw new Error(`runaway script at ${this.pc.toString(16)}`)
+      await this.step()
+    }
+  }
+
+  private async step() {
+    const op = this.code[this.pc - CODE]
+    switch (op) {
+      case 0x00: this.readops(0); this.exit(); break
+      case 0x01: this.readops(1); this.pc = this.addr(1); break
+      case 0x02: this.readops(1); this.stack.push(this.pc); this.pc = this.addr(1); break
+      case 0x03: {
+        this.readops(2)
+        if (this.kind[1] >= 0x80 || this.kind[2] >= 0x80) this.setFlags(this.sbuf[1], this.sbuf[2])
+        else this.setFlags(this.val(1), this.val(2))
+        break
+      }
+      case 0x04: this.readops(3); this.write(this.addr(3), this.val(1) + this.val(2)); break
+      case 0x05: this.readops(3); this.write(this.addr(3), this.val(2) - this.val(1)); break
+      case 0x06: {
+        this.readops(3)
+        if (this.val(2) === 0) throw new Error('DIVIDE by 0 (runtime error 200 in the original)')
+        this.write(this.addr(3), Math.floor(this.val(1) / this.val(2)))
+        break
+      }
+      case 0x07: this.readops(3); this.write(this.addr(3), this.val(1) * this.val(2)); break
+      case 0x08: {
+        this.readops(2)
+        let m = this.val(1) & 0xff
+        if (m < 255) m++
+        this.write(this.addr(2), this.rand(m))
+        break
+      }
+      case 0x09: {
+        this.readops(2)
+        if (this.kind[1] < 0x80) this.write(this.addr(2), this.val(1))
+        else this.storeString(this.addr(2), this.sbuf[1])
+        break
+      }
+      case 0x0a: {
+        this.readops(1)
+        this.restoreCur = true
+        const n = this.val(1) & 0x7f
+        if (n < this.nodes.length) this.cur = this.nodes[n]
+        break
+      }
+      case 0x0b: await this.loadMonster(); break
+      case 0x0c: {
+        this.readops(3)
+        this.B[SPRITE_MAX - B0] = this.val(2)
+        this.B[SPRITE_DIST - B0] = Math.min(this.val(2), this.ahead())
+        this.spriteNow = { sprite: this.val(1), picture: this.val(3) }
+        this.io.sprite(this.val(1), this.val(3), this.B[SPRITE_DIST - B0])
+        break
+      }
+      case 0x0d: {
+        this.readops(0)
+        if (this.B[SPRITE_DIST - B0]) {
+          this.B[SPRITE_DIST - B0]--
+          if (this.spriteNow) this.io.sprite(this.spriteNow.sprite, this.spriteNow.picture, this.B[SPRITE_DIST - B0])
+        }
+        break
+      }
+      case 0x0e: {
+        this.readops(1)
+        const n = this.val(1)
+        if (n === 255) {
+          this.spriteNow = null
+          this.io.picture(null)
+        } else if (this.B[PORTRAIT - B0] === 0xff) this.io.picture({ pic: n })
+        else this.io.picture({ head: this.B[PORTRAIT - B0], body: n })
+        break
+      }
+      case 0x0f: this.readops(2); this.write(this.addr(2), (await this.io.inputNumber()) & 0xffff); break
+      case 0x10: {
+        this.readops(2)
+        const s = (await this.io.inputText()).toUpperCase().slice(0, 40) || ' '
+        this.storeString(this.addr(2), s)
+        break
+      }
+      case 0x11: this.readops(1); this.io.print(this.text(1), false); break
+      case 0x12: this.readops(1); this.io.print(this.text(1), true); break
+      case 0x13: this.readops(0); if (this.stack.length) this.pc = this.stack.pop()!; break
+      case 0x14: {
+        this.readops(4)
+        this.clearFlags()
+        if (this.val(1) === this.val(2) && this.val(3) === this.val(4)) this.flags.EQ = 1
+        else this.flags.NE = 1
+        break
+      }
+      case 0x15: {
+        const { n, head } = this.variadic(3, 3)
+        const items = Array.from({ length: n }, (_, i) => this.text(i + 1))
+        if (head[1].str) this.io.print(head[1].str, true)
+        this.write(head[0].addr, await this.io.menu(items, { vertical: true }))
+        break
+      }
+      case 0x16: case 0x17: case 0x18: case 0x19: case 0x1a: case 0x1b: {
+        this.readops(0)
+        const flag = (['EQ', 'NE', 'LT', 'GT', 'LE', 'GE'] as const)[op - 0x16]
+        if (!this.flags[flag]) {
+          const next = this.code[this.pc - CODE]
+          if (SKIP[next] !== undefined) this.readops(SKIP[next])
+          else this.pc += 1
+        }
+        break
+      }
+      case 0x1c: {
+        this.readops(0)
+        this.monsters = 0; this.monstersLoaded = false; this.iconSlot = 8
+        this.money = [0, 0, 0, 0, 0, 0, 0]
+        break
+      }
+      case 0x1d: {
+        this.readops(1)
+        let t = 0
+        for (const c of this.nodes) {
+          t = (t + Math.floor((c[0x11b] + 5 * Math.max(c[0x111] - 60, 0) + 5 * Math.max(c[0x110] - 39, 0)
+            + 8 * c[0x9b] + 4 * c[0x96]) / 10)) & 0xff
+        }
+        this.write(this.addr(1), t)
+        break
+      }
+      case 0x1e: {
+        this.readops(6)
+        const sel = this.kind[1] === 1 ? this.addr(1) : this.val(1)
+        const dest = [3, 4, 5, 6].map((i) => this.addr(i))
+        let vals: number[]
+        if (sel === 0) vals = [0, 0, 0, 0] // effects are not modelled yet
+        else if (sel === 0x6ba7 || sel === 0x6c1b) {
+          const off = sel === 0x6ba7 ? 0x79 : 0x11c
+          const xs = this.nodes.map((c) => c[off])
+          vals = [Math.min(...xs), Math.max(...xs), Math.floor(xs.reduce((a, b) => a + b, 0) / xs.length), 0]
+        } else break
+        dest.forEach((d, i) => this.write(d, vals[i]))
+        break
+      }
+      case 0x20: {
+        this.readops(1)
+        this.A[AREA_ID - A0] = this.area
+        this.area = this.val(1)
+        this.loadEcl(this.area)
+        this.resetVm(false)
+        this.stop = true
+        this.areaChanged = true
+        break
+      }
+      case 0x21: {
+        this.readops(3)
+        const b1 = this.val(1) & 0xff
+        if (b1 !== 0xff && b1 !== 0x7f && this.A[NO_OVERLAND - A0]) {
+          this.A[GEO_ID - A0] = b1
+          this.loadGeo(b1)
+          this.B[CANCEL_MOVE - B0] = 0
+        }
+        break
+      }
+      case 0x22: {
+        this.readops(2)
+        this.write(this.addr(1), +this.nodes.some((c) => c[0x2f] === 4 || c[0x2f] === 10))
+        this.write(this.addr(2), 0)
+        break
+      }
+      case 0x23: {
+        this.readops(4)
+        const v = [1, 2, 3, 4].map((i) => this.val(i) & 0xff)
+        const s8 = (n: number) => ((n & 0xff) << 24) >> 24
+        const a = s8(v[3] + 2 - v[0]), b = s8(v[1] + 2 - v[2])
+        const r1 = this.roll(1, 6), r2 = this.roll(1, 6)
+        let res = 0
+        if (r1 <= a) res = r2 <= b ? 3 : 1
+        if (r2 <= b) res = 2
+        this.write(SURPRISE_RESULT, res)
+        break
+      }
+      case 0x24: await this.combat(); break
+      case 0x25: case 0x26: {
+        this.readops(2)
+        const i = this.val(1) & 0xff, n = this.val(2) & 0xff
+        this.pc -= 1
+        this.readops(n)
+        if (i < n) {
+          if (op === 0x26) this.stack.push(this.pc)
+          this.pc = this.addr(i + 1)
+        }
+        break
+      }
+      case 0x27: {
+        this.readops(8)
+        this.money = [1, 2, 3, 4, 5, 6, 7].map((i) => this.val(i))
+        await this.io.engine('treasure', { money: this.money.join('/'), items: this.val(8) & 0xff })
+        break
+      }
+      case 0x28: {
+        this.readops(3)
+        const p = this.val(2)
+        for (const c of this.val(1) === 0 ? [this.cur] : this.nodes) {
+          for (let j = 0; j < 7; j++) {
+            const o = 0x88 + 2 * j
+            const v = Math.floor(((c[o] | (c[o + 1] << 8)) * (100 - p)) / 100)
+            c[o] = v & 0xff; c[o + 1] = v >> 8
+          }
+        }
+        break
+      }
+      case 0x29: await this.encounterMenu(); break
+      case 0x2a: this.readops(3); this.write(this.addr(3), this.read(this.addr(1) + (this.val(2) & 0xff))); break
+      case 0x2b: {
+        const { n, head } = this.variadic(2, 2)
+        const items = Array.from({ length: n }, (_, i) => this.text(i + 1))
+        this.write(head[0].addr, (await this.io.menu(items)) & 0xff)
+        break
+      }
+      case 0x2c: {
+        this.readops(6)
+        const c = await this.io.menu(['HAUGHTY', 'SLY', 'NICE', 'MEEK', 'ABUSIVE'])
+        this.write(this.addr(6), this.val(c + 1) & 0xff)
+        break
+      }
+      case 0x2d: await this.call(); break
+      case 0x2e: await this.damage(); break
+      case 0x2f: case 0x30: {
+        this.readops(3)
+        const r = (op === 0x2f ? this.val(1) & this.val(2) : this.val(1) | this.val(2)) & 0xff
+        this.setFlags(0, r)
+        this.write(this.addr(3), r)
+        break
+      }
+      case 0x31: this.readops(0); break
+      case 0x32: {
+        this.readops(1)
+        // items are not loaded yet; FIND_ITEM reports "not found"
+        this.clearFlags()
+        this.flags.NE = 1
+        break
+      }
+      case 0x33: this.readops(0); this.io.print('', false); break
+      case 0x34: this.readops(1); break // passes game time; the clock is not modelled yet
+      case 0x35: this.readops(3); this.write((this.addr(2) + this.val(3)) & 0xffff, this.val(1)); break
+      case 0x36: this.readops(2); await this.io.engine('add NPC', { id: this.val(1) }); break
+      case 0x37: this.loadWallsets(); break
+      case 0x38: await this.program(); break
+      case 0x39: {
+        this.readops(1)
+        const names = this.nodes.slice(0, this.B[PARTY_SIZE - B0] || this.nodes.length)
+          .map((c) => String.fromCharCode(...c.subarray(1, 1 + c[0])))
+        this.cur = this.nodes[await this.io.menu(names, { prompt: this.text(1), vertical: true })]
+        break
+      }
+      case 0x3a: this.readops(0); break
+      case 0x3b: {
+        this.readops(3)
+        // the original writes both results to engine space (addr & 0xFF): they are lost
+        break
+      }
+      case 0x3c: this.readops(1); break
+      case 0x3d: this.readops(0); break
+      default: throw new Hang(`no handler for opcode ${op.toString(16)} at ${this.pc.toString(16)}`)
+    }
+  }
+
+  private spriteNow: { sprite: number; picture: number } | null = null
+
+  private exit() {
+    if (this.restoreCur) {
+      this.cur = this.savedCur
+      this.restoreCur = false
+    }
+    this.stop = true
+    this.stack = []
+  }
+
+  private ahead(): number {
+    if (this.A[NO_OVERLAND - A0] === 0 || !this.geo) return 2
+    let x = this.x, y = this.y, n = 0
+    while (n < 2 && this.geo.passage(x, y, this.facing) === 1) {
+      const [dx, dy] = STEP[this.facing]
+      x = (x + dx) & 15; y = (y + dy) & 15; n++
+    }
+    return n
+  }
+
+  private loadWallsets() {
+    this.readops(3)
+    const b = [1, 2, 3].map((i) => this.val(i) & 0xff)
+    if (b[0] === 0x7f) this.walls.load(1, 0)
+    else if (this.A[0x49e7 - A0] && this.A[0x49e8 - A0]) {
+      this.walls.load(1, b[0])
+      this.walls.load(3, b[2])
+    } else b.forEach((r, i) => { if (r !== 0xff) this.walls.load(i + 1, r) })
+    this.mapDirty = true
+  }
+
+  private async loadMonster() {
+    this.readops(3)
+    if (this.monsters >= 63) return
+    const raw = this.files.record(`MON${this.block}CHA`, this.val(1))
+    if (!raw) return
+    const count = Math.max(this.val(2), 1)
+    for (let i = 0; i < count && this.monsters < 63; i++) {
+      const m = new Uint8Array(CHAR_SIZE)
+      m.set(raw.subarray(0, CHAR_SIZE))
+      m[0xbf] = this.iconSlot
+      this.nodes.push(m)
+      this.monsters++
+    }
+    this.iconSlot++
+    this.monstersLoaded = true
+  }
+
+  private async combat() {
+    this.readops(0)
+    if (!this.monstersLoaded) {
+      if (this.B[SHOP_FLAG - B0] === 1) {
+        this.B[SHOP_FLAG - B0] = 0
+        await this.io.engine('shop')
+      } else if (this.B[TEMPLE_FLAG - B0] === 1) {
+        this.B[TEMPLE_FLAG - B0] = 0
+        await this.io.engine('temple')
+      } else await this.io.engine('treasure')
+    } else {
+      const names = this.nodes.slice(this.nodes.length - this.monsters)
+        .map((m) => String.fromCharCode(...m.subarray(1, 1 + m[0])))
+      await this.io.engine('combat', { monsters: [...new Set(names)].join(', '), count: names.length })
+      // placeholder for the battle: the party wins and every monster is defeated
+      this.B[OUTCOME - B0] = 0
+      this.B[DEFEATED - B0] = this.monsters
+      this.nodes.splice(this.nodes.length - this.monsters)
+      this.monsters = 0
+      this.monstersLoaded = false
+      for (const a of [0x6de3, 0x6de6, 0x6e70, 0x6e71, 0x6e72]) this.B[a - B0] = 0
+    }
+    this.B[SEARCH_LOOK - B0] &= 1
+  }
+
+  private async encounterMenu() {
+    this.readops(14)
+    const moves = this.nodes.map((c) => c[0x11c])
+    const slow = Math.min(...moves), fast = Math.max(...moves)
+    const r = [5, 6, 7, 8, 9].map((i) => this.val(i) & 0xff)
+    const texts = [10, 11, 12].map((i) => this.opstr.get(i) ?? '')
+    const f = this.val(13), g = this.val(14), dest = this.addr(4)
+    const sprite = this.val(1), picture = this.val(3)
+    let dist = Math.min(this.val(2), this.ahead())
+    this.B[SPRITE_DIST - B0] = dist
+    this.spriteNow = { sprite, picture }
+    for (let guard = 0; guard < 100; guard++) {
+      this.io.sprite(sprite, picture, dist)
+      const t = [0, 1, 2].map((j) => texts[(dist + j) % 3]).find((s) => s)
+      if (t) this.io.print(t, true)
+      const close = dist === 0 || this.A[NO_OVERLAND - A0] === 0
+      let c = await this.io.menu(['COMBAT', 'WAIT', 'FLEE', close ? 'PARLAY' : 'ADVANCE'])
+      if (c === 3 && close) c = 4
+      if (r[c] >= 5) return
+      const act = ENCOUNTER[r[c]][c]
+      let v: number
+      if (act === 'wait') { this.io.print('Both sides wait.', false); continue }
+      if (act === 'approach' || (act === 'parlay' && dist > 0)) {
+        if (dist === 0) this.io.print('Both sides wait.', false)
+        else { dist--; this.B[SPRITE_DIST - B0] = dist }
+        continue
+      }
+      if (act === 'parlay') v = 3
+      else if (act === 'flee') v = slow < f ? 1 : 2
+      else if (act === 'pursue') v = fast < g ? 0 : 1
+      else v = act
+      if (v === 0) this.io.print('The monsters flee.', false)
+      this.write(dest, v)
+      return
+    }
+  }
+
+  private async damage() {
+    this.readops(5)
+    const [flags, count, sides, bonus, save] = [1, 2, 3, 4, 5].map((i) => this.val(i) & 0xff)
+    const party = this.nodes.slice(0, this.B[PARTY_SIZE - B0] || this.nodes.length)
+    const dmg = () => bonus + this.roll(count, sides)
+    const saved = (c: Uint8Array, kind: number, b: number) => {
+      const r = this.roll(1, 20)
+      if (r === 1) return false
+      if (r === 20) return true
+      return c[0x6d + kind] <= r + ((c[0x101] << 24) >> 24) + b
+    }
+    const hit = (c: Uint8Array) => {
+      let r = this.roll(1, 20)
+      if (r === 1) return false
+      if (r === 20) r = 100
+      return c[0x111] < r + save
+    }
+    const hurt = (c: Uint8Array, d: number) => { c[0x11b] = Math.max(c[0x11b] - d, 0) }
+    if (!(flags & 0x80)) {
+      for (let i = 0; i < flags; i++) {
+        const c = party[this.rand(party.length)]
+        if (hit(c)) hurt(c, dmg())
+      }
+    } else {
+      const b = flags & 0x1f, kind = save & 7
+      if (!(flags & 0x40)) {
+        if (!(save & 0x80)) {
+          const c = party[this.rand(party.length)]
+          if (!saved(c, kind, b)) hurt(c, dmg())
+        } else if (!(kind && saved(this.cur, kind - 1, b))) hurt(this.cur, dmg())
+      } else {
+        for (const c of party) if (flags & 0x20 || !saved(c, kind, b)) hurt(c, dmg())
+      }
+    }
+    if (party.every((c) => c[0x11b] === 0)) {
+      await this.io.engine('party dead')
+      this.quit = true
+    }
+  }
+
+  private async call() {
+    this.readops(1)
+    const a = this.addr(1)
+    if (a === 0x2c90) await this.io.refresh()
+    else if (a === 0xc01e) {
+      const [dx, dy] = STEP[this.facing]
+      this.x = (this.x + dx) & 15
+      this.y = (this.y + dy) & 15
+    } else if (a === 0x8000 || a === 0x8001) await this.io.engine(a === 0x8000 ? 'duel' : 'solo combat')
+    // 0xBA03 sound, 0xC018 wall-ahead refresh and 0xC01B (dead in the DOS port) need nothing here
+  }
+
+  private async program() {
+    this.readops(1)
+    if (this.restoreCur) {
+      this.cur = this.savedCur
+      this.restoreCur = false
+    }
+    const n = this.val(1)
+    if (n === 9) {
+      const pc = this.pc
+      await this.run(this.vectors[2])
+      await this.io.engine('camp')
+      this.pc = pc
+    } else await this.io.engine(n === 0 ? 'party screen' : n === 8 ? 'ending' : `program ${n}`)
+    this.stop = true
+    this.stack = []
+  }
+
+  // ---------------------------------------------------------- game loop
+  /** Start of play (FUN_29c3_32f8): run on_enter. */
+  async start() {
+    this.areaChanged = false
+    await this.run(this.vectors[4])
+    await this.io.refresh()
+    if (this.areaChanged) await this.enter()
+  }
+
+  /** FUN_29c3_31b4: re-enter after an area change. */
+  async enter() {
+    for (;;) {
+      this.areaChanged = false
+      this.B[EDGE - B0] = 0
+      await this.run(this.vectors[4])
+      if (this.quit) return
+      this.areaChanged = false
+      await this.run(this.vectors[0])
+      if (!this.areaChanged && !this.quit) await this.run(this.vectors[1])
+      await this.io.refresh()
+      if (!this.areaChanged || this.quit) return
+    }
+  }
+
+  /** One exploration command in a map area: f, l, r, b (turn round), s (search), L (look), e (encamp). */
+  async command(c: string) {
+    if (c === 'l' || c === 'r' || c === 'b') {
+      this.facing2 = (this.facing2 + ({ l: 6, r: 2, b: 4 } as Record<string, number>)[c]) % 8
+      await this.io.refresh()
+      return
+    }
+    if (c === 's') { this.B[SEARCH_LOOK - B0] ^= 1; return }
+    if (c === 'e') {
+      this.areaChanged = false
+      await this.run(this.vectors[2])
+      await this.io.engine('camp')
+      if (this.areaChanged) await this.enter()
+      return
+    }
+    if (c === 'L') {
+      const keep = this.B[SEARCH_LOOK - B0] & 1
+      this.B[SEARCH_LOOK - B0] = 1
+      this.areaChanged = false
+      await this.run(this.vectors[1])
+      if (this.areaChanged) await this.enter()
+      this.B[SEARCH_LOOK - B0] = keep
+      await this.io.refresh()
+      return
+    }
+    // forward: FUN_3e76_068d flags a move off the map edge, then on_move, the move, on_step
+    this.B[EDGE - B0] = 0
+    if (this.geo && this.geo.passage(this.x, this.y, this.facing)) {
+      const [dx, dy] = STEP[this.facing]
+      if (this.x + dx < 0 || this.x + dx > 15 || this.y + dy < 0 || this.y + dy > 15) this.B[EDGE - B0] = 1
+    }
+    this.areaChanged = false
+    await this.run(this.vectors[0])
+    if (this.areaChanged) { await this.enter(); return }
+    this.A[PREV_X - A0] = this.x
+    this.A[PREV_Y - A0] = this.y
+    let blocked = 0
+    if (this.B[CANCEL_MOVE - B0] >= 0xff) this.B[CANCEL_MOVE - B0] = 0
+    else if (this.geo) {
+      const p = this.geo.passage(this.x, this.y, this.facing)
+      if (p === 1) {
+        const [dx, dy] = STEP[this.facing]
+        this.x = (this.x + dx) & 15
+        this.y = (this.y + dy) & 15
+      } else blocked = p === 0 ? 1 : 2
+    }
+    await this.io.refresh()
+    if (blocked) await this.io.engine(blocked === 1 ? 'blocked' : 'locked door')
+    this.areaChanged = false
+    await this.run(this.vectors[1])
+    if (this.areaChanged) await this.enter()
+    await this.io.refresh()
+  }
+}
