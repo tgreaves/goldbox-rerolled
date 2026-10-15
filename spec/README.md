@@ -25,6 +25,7 @@ Formal description of the DOS *Pool of Radiance* engine (GOG release 1.3) and it
 | [[spec/records]] | Characters, monsters, items, item types, effects | v0.4 |
 | [[spec/spells]] | Spell table (56 spells), casting, targeting, saves | v0.4 |
 | [[spec/effects]] | Effect types 1–139: event hooks, handlers, durations, item effects | v0.8 |
+| [[spec/camp]] | Encamp, memorise, rest (healing, spell learning, encounters), time units | v0.6 |
 | [[spec/savegame]] | Save slot files and the 13 137-byte world state | v0.8 |
 | [[spec/chargen]] | Character creation: rolling, racial/class/age tables, starting spells and gold | v0.6 |
 | [[spec/progression]] | Experience table, level caps, demi-human limits, training | v0.5 |
