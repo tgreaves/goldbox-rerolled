@@ -2,12 +2,12 @@
 // "Screen layout"): 3D view top left, party roster to its right, text window below,
 // command line at the bottom. Area scripts run through the ECL engine (src/vm/engine.ts).
 import type { GameFiles } from '../store/gamefiles'
-import { parseSave } from '../data/save'
 import { parseCharacter, MONEY, type Character } from '../data/character'
 import { parseRecord, toImageData, type Picture } from '../data/image'
 import { World } from '../render/world'
 import { Engine, A0, type Io } from '../vm/engine'
 import { drawMap } from './areamap'
+import { listSaves, writeSave } from '../store/user'
 import { initSound, play, setSoundDevice, soundAvailable, soundDevice, unlockAudio } from '../audio/sfx'
 
 const FACING = ['North', 'East', 'South', 'West']
@@ -16,10 +16,12 @@ const CONTINUE_PROMPTS = ['PRESS <RETURN> OR BUTTON TO CONTINUE', 'PRESS <ENTER>
 
 const escape = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`)
 
-export type Start = { kind: 'new'; party: Uint8Array[] } | { kind: 'save'; name: string }
+type CharFiles = { sav: Uint8Array; itm?: Uint8Array; spc?: Uint8Array }
+export type Start =
+  | { kind: 'new'; party: CharFiles[] }
+  | { kind: 'load'; dat: Uint8Array; party: CharFiles[]; label: string }
 
 export function showExplore(app: HTMLElement, files: GameFiles, start: Start, back: () => void) {
-  const partyRaw = (names: string[]) => names.map((s) => files.get(`${s}.SAV`)).filter((d): d is Uint8Array => !!d)
 
   app.innerHTML = `
     <div class="game">
@@ -217,8 +219,27 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   initSound(files.get('START.EXE'))
   const engine = new Engine(files, io)
-  if (start.kind === 'new') engine.newGame(start.party)
-  else engine.loadSave(files.get(start.name)!, partyRaw(parseSave(files.get(start.name)!).party))
+  if (start.kind === 'new') engine.newGame(start.party.map((c) => c.sav))
+  else engine.loadSave(start.dat, start.party.map((c) => c.sav))
+  /** item and effect files travel with each member; only the records are live in the engine */
+  const extras = start.party.map((c) => ({ itm: c.itm, spc: c.spc }))
+
+  /** Save anywhere (IMPROVEMENTS.md IMP-002): slots A-J, the original file layout. */
+  async function saveGame() {
+    const saves = await listSaves()
+    const slots = [...'ABCDEFGHIJ'].map((slot) => {
+      const g = saves.find((x) => x.slot === slot)
+      return `${slot}: ${g ? `${g.label} (${new Date(g.savedAt).toLocaleString()})` : 'empty'}`
+    })
+    const i = await menu(slots, { prompt: 'Save in which slot?', vertical: true })
+    const slot = 'ABCDEFGHIJ'[i]
+    const members = engine.party()
+    const stems = members.map((_, n) => `CHRDAT${slot}${n + 1}`)
+    const label = `${parseCharacter(members[0]).name}'s party, block ${engine.block} area ${engine.area}`
+    await writeSave({ slot, dat: engine.toSave(stems), label, savedAt: Date.now(),
+      chars: members.map((c, n) => ({ sav: c.slice(), ...extras[n] })) })
+    note(`Game saved in slot ${slot}.`)
+  }
 
   // ------------------------------------------------------------- view sync
   let animDone: (() => void) | null = null
@@ -310,6 +331,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       (soundAvailable()
         ? `<button class="sound" data-cmd="sound" title="Sound device: PC speaker, Tandy/PCjr or off">♪ ${({ pc: 'PC speaker', tandy: 'Tandy', off: 'Off' })[soundDevice()]}</button>`
         : '<button class="sound" data-cmd="nosound" title="Re-import the POOLRAD folder with START.EXE for sound">♪ n/a</button>') +
+      '<button data-cmd="save" title="Save the game (any time)">Save</button>' +
       '<button class="assets" data-cmd="assets" title="Leave the game">Quit</button>'
     menuBar.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => command(b.dataset.cmd!)))
   }
@@ -337,6 +359,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         break
       }
       case 'nosound': note('Sound needs START.EXE: go back to Assets and re-import the POOLRAD folder.'); break
+      case 'save': act(() => saveGame()); break
       case 'assets': leave(); break
     }
   }
@@ -421,5 +444,6 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   commandBar()
   sync(0)
   if (start.kind === 'new') note('A new game: Begin Adventuring from the party screen.')
+  else note(`Loaded: ${start.label}.`)
   act(() => engine.start())
 }

@@ -90,3 +90,23 @@ describe.skipIf(!have)('ECL engine', () => {
     expect(runs).toBeGreaterThan(2000)
   }, 120000)
 })
+
+describe.skipIf(!have)('save games', () => {
+  it('writes back the shipped saves byte for byte', async () => {
+    const files = load()
+    for (const slot of ['A', 'J']) {
+      const dat = files.get(`SAVGAM${slot}.DAT`)!
+      const stems = parseSave(dat).party
+      const h = headless()
+      const e = h.bind(new Engine(files, h.io, 1))
+      e.loadSave(dat, stems.map((s) => files.get(`${s}.SAV`)!))
+      const out = e.toSave(stems)
+      const diffs: string[] = []
+      // stem fields are 41-byte Pascal strings; bytes after each name, and unused fields, hold leftovers
+      const padding = (i: number) => i >= 0x3209 + 41 * dat[0x3208] ||
+        (i >= 0x3209 && (i - 0x3209) % 41 > dat[0x3209 + 41 * Math.floor((i - 0x3209) / 41)])
+      for (let i = 0; i < dat.length; i++) if (out[i] !== dat[i] && !padding(i)) diffs.push(`${i.toString(16)}: ${dat[i]} -> ${out[i]}`)
+      expect(diffs.slice(0, 10), slot).toEqual([])
+    }
+  })
+})

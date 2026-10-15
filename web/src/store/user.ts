@@ -5,6 +5,7 @@ import type { GameFiles } from './gamefiles'
 const DB = 'poolrad-user'
 const CHARS = 'characters'
 const META = 'meta'
+const SAVES = 'saves'
 
 export interface StoredCharacter {
   /** file stem as the original names it, e.g. CHRDATA1 */
@@ -16,10 +17,11 @@ export interface StoredCharacter {
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB, 1)
+    const req = indexedDB.open(DB, 2)
     req.onupgradeneeded = () => {
-      req.result.createObjectStore(CHARS)
-      req.result.createObjectStore(META)
+      for (const name of [CHARS, META, SAVES]) {
+        if (!req.result.objectStoreNames.contains(name)) req.result.createObjectStore(name)
+      }
     }
     req.onsuccess = () => resolve(req.result)
     req.onerror = () => reject(req.error)
@@ -72,4 +74,28 @@ export async function seedRoster(files: GameFiles) {
     await saveCharacter({ stem: m[1], sav: files.get(name)!, itm: files.get(`${m[1]}.ITM`), spc: files.get(`${m[1]}.SPC`) })
   }
   await run(META, 'readwrite', (s) => s.put(true, 'seeded'))
+}
+
+/** A saved game: the original SAVGAM<x>.DAT image plus each party member's files. */
+export interface SavedGame {
+  slot: string
+  dat: Uint8Array
+  chars: { sav: Uint8Array; itm?: Uint8Array; spc?: Uint8Array }[]
+  label: string
+  savedAt: number
+}
+
+export async function listSaves(): Promise<SavedGame[]> {
+  const out: SavedGame[] = []
+  for (const slot of 'ABCDEFGHIJ') {
+    const v = await run<{ dat: ArrayBuffer; chars: { sav: ArrayBuffer; itm?: ArrayBuffer; spc?: ArrayBuffer }[]; label: string; savedAt: number } | undefined>(SAVES, 'readonly', (s) => s.get(slot))
+    if (v) out.push({ slot, dat: new Uint8Array(v.dat), label: v.label, savedAt: v.savedAt,
+      chars: v.chars.map((c) => ({ sav: new Uint8Array(c.sav), itm: arr(c.itm), spc: arr(c.spc) })) })
+  }
+  return out
+}
+
+export async function writeSave(g: SavedGame) {
+  await run(SAVES, 'readwrite', (s) => s.put({ dat: buf(g.dat), label: g.label, savedAt: g.savedAt,
+    chars: g.chars.map((c) => ({ sav: buf(c.sav), itm: buf(c.itm), spc: buf(c.spc) })) }, g.slot))
 }

@@ -158,7 +158,47 @@ export class Engine {
       const r = this.A[a - A0]
       if (r !== 0xffff) this.walls.load(i + 1, r)
     })
-    this.resetVm(true)
+    // the VM is reset when play starts (FUN_29c3_32f8), keeping the saved per-area variables
+    this.restoring = true
+  }
+
+  private restoring = false
+
+  /** Party members (the list without loaded monsters). */
+  party(): Uint8Array[] {
+    return this.nodes.slice(0, this.B[PARTY_SIZE - B0] || this.nodes.length)
+  }
+
+  /**
+   * The SAVGAM<x>.DAT image (13 137 bytes, spec/savegame.md), with the engine globals copied into
+   * ECL variables first as FUN_45c5_1d58 does. stems: the character file stems for the party.
+   */
+  toSave(stems: string[]): Uint8Array {
+    for (let s = 1; s <= 3; s++) {
+      const r = this.walls.records[s]
+      this.A[0x4afa + s - 1 - A0] = r
+      this.A[0x4afd + s - 1 - A0] = r === 0xffff ? 0xffff : s
+    }
+    this.A[0x49fc - A0] = this.speed
+    this.A[0x49ff - A0] = 3 // monster pictures and portraits on
+    this.A[AREA_ID - A0] = this.area
+    this.B[0x6e12 - B0] = this.block
+    const d = new Uint8Array(13137)
+    d[0] = this.block
+    const put = (o: number, words: Uint16Array) => words.forEach((v, i) => { d[o + 2 * i] = v & 0xff; d[o + 2 * i + 1] = v >> 8 })
+    put(1, this.A); put(0x801, this.B); put(0x1001, this.C)
+    d.set(this.code.subarray(0, 0x1e00), 0x1401)
+    const [wall, event] = this.square()
+    d.set([this.x, this.y, this.facing2, wall, event], 0x3201)
+    d[0x3206] = 1 // map area (overland areas are not modelled separately yet)
+    d[0x3207] = 2
+    d[0x3208] = stems.length
+    stems.forEach((st, i) => {
+      const o = 0x3209 + 41 * i
+      d[o] = Math.min(st.length, 40)
+      for (let j = 0; j < d[o]; j++) d[o + 1 + j] = st.charCodeAt(j)
+    })
+    return d
   }
 
   private setBlock(b: number) {
@@ -685,7 +725,7 @@ export class Engine {
     else if (this.A[0x49e7 - A0] && this.A[0x49e8 - A0]) {
       this.walls.load(1, b[0])
       this.walls.load(3, b[2])
-    } else b.forEach((r, i) => { if (r !== 0xff) this.walls.load(i + 1, r) })
+    } else b.forEach((r, i) => { if (r !== 0xff) this.walls.load(i + 1, r); else this.walls.clear(i + 1) })
     this.mapDirty = true
   }
 
@@ -843,8 +883,12 @@ export class Engine {
   }
 
   // ---------------------------------------------------------- game loop
-  /** Start of play (FUN_29c3_32f8): run on_enter. */
+  /** Start of play (FUN_29c3_32f8): reset the VM if resuming a save, then run on_enter. */
   async start() {
+    if (this.restoring) {
+      this.resetVm(true)
+      this.restoring = false
+    }
     this.areaChanged = false
     await this.run(this.vectors[4])
     await this.io.refresh()

@@ -9,14 +9,16 @@ import { RACES, CLASSES, ALIGNMENTS } from '../data/character'
 import { RACE_MENU, Tables, abilityRange, alignmentsFor, begin, bodyRecord, classesFor, combatStats, fileStem, headRecord, hpMax, hpMin, modifyStep, rollAbilities, setName } from '../rules/chargen'
 import { buildIcon } from '../render/icon'
 import { EGA, type Picture } from '../data/image'
-import { saveCharacter } from '../store/user'
+import { saveCharacter, listSaves } from '../store/user'
+import { parseSave, saveArea, saveBlock } from '../data/save'
+import type { Start } from './explore'
 
 const MAX_PARTY = 6
 
 export async function showParty(app: HTMLElement, files: GameFiles, nav: {
   title: () => void
   assets: () => void
-  play: (party: StoredCharacter[]) => void
+  play: (start: Start) => void
 }) {
   await seedRoster(files)
   let roster = await listCharacters()
@@ -63,7 +65,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
       ['V', 'View character', has],
       ['A', 'Add character', party.length < MAX_PARTY && roster.some((c) => !party.includes(c.stem))],
       ['R', 'Remove character', has],
-      ['L', 'Load saved game', false],
+      ['L', 'Load saved game', true],
       ['S', 'Save current game', false],
       ['B', 'Begin adventuring', has],
       ['E', 'Exit', true],
@@ -366,8 +368,28 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
         break
       }
       case 'B':
-        nav.play(party.map(byStem))
+        nav.play({ kind: 'new', party: party.map(byStem) })
         return
+      case 'L': {
+        // browser saves first, then the saves that came with the game files
+        const saves = (await listSaves()).map((g) => ({ title: `${g.slot}: ${g.label}`, note: new Date(g.savedAt).toLocaleString(),
+          start: { kind: 'load' as const, dat: g.dat, party: g.chars, label: `slot ${g.slot}, ${g.label}` } }))
+        for (const slot of 'ABCDEFGHIJ') {
+          const dat = files.get(`SAVGAM${slot}.DAT`)
+          if (!dat) continue
+          const sv = parseSave(dat)
+          const chars = sv.party.map((st) => ({ sav: files.get(`${st}.SAV`)!, itm: files.get(`${st}.ITM`), spc: files.get(`${st}.SPC`) }))
+          if (chars.some((c) => !c.sav)) continue
+          const names = chars.map((c) => parseCharacter(c.sav).name)
+          saves.push({ title: `${slot} (game files): ${names[0]}'s party`, note: `block ${saveBlock(sv)} area ${saveArea(sv)}`,
+            start: { kind: 'load', dat, party: chars, label: `game-file save ${slot}` } })
+        }
+        if (!saves.length) { say('There are no saved games.'); break }
+        const i = await pick('Load saved game', saves.map((g) => `${g.title} — ${g.note}`))
+        if (i === null) break
+        nav.play(saves[i].start)
+        return
+      }
       case 'E':
         nav.title()
         return

@@ -21,8 +21,7 @@ function party(files: GameFiles) {
   showParty(app, files, {
     title: () => title(files),
     assets: () => showViewer(app, files, showImport, () => party(files)),
-    play: (members) => import('./ui/explore').then((m) =>
-      m.showExplore(app, files, { kind: 'new', party: members.map((c) => c.sav) }, () => party(files))),
+    play: (start) => import('./ui/explore').then((m) => m.showExplore(app, files, start, () => party(files))),
   })
 }
 

@@ -24,7 +24,6 @@ export function showViewer(app: HTMLElement, files: GameFiles, reimport: () => v
         <select aria-label="Asset family">${shown.map((f) => `<option>${f}</option>`).join('')}</select>
         ${shown.map((f) => `<button data-f="${f}">${f}</button>`).join('')}
         ${back ? '<button id="back" class="primary">◀ Party screen</button>' : ''}
-        ${files.get('SAVGAMA.DAT') ? '<button id="loadsave">Continue save A</button>' : ''}
         ${files.get('START.EXE') ? '' : '<p class="muted hint">Sound needs START.EXE: re-import the POOLRAD folder to include it.</p>'}
         <button id="reimport" class="muted">Re-import files…</button>
       </nav>
@@ -59,12 +58,7 @@ export function showViewer(app: HTMLElement, files: GameFiles, reimport: () => v
   app.querySelectorAll<HTMLButtonElement>('nav button[data-f]').forEach((b) => b.addEventListener('click', () => open(b.dataset.f!)))
   select.addEventListener('change', () => open(select.value))
   app.querySelector('#reimport')!.addEventListener('click', reimport)
-  const play = (start: { kind: 'save'; name: string }) => {
-    timers.forEach(clearInterval)
-    import('./explore').then((m) => m.showExplore(app, files, start, () => showViewer(app, files, reimport, back)))
-  }
   app.querySelector('#back')?.addEventListener('click', () => { timers.forEach(clearInterval); back?.() })
-  app.querySelector('#loadsave')?.addEventListener('click', () => play({ kind: 'save', name: 'SAVGAMA.DAT' }))
   if (shown.length) open(shown[0])
 }
 

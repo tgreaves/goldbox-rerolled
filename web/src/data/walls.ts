@@ -24,6 +24,8 @@ export class WallSets {
   /** 15 wall types x 156 tile ids, as in the engine's table at DS:6A58 */
   readonly table = new Uint8Array(3 * SET_SIZE)
   readonly banks: (Picture[] | undefined)[] = []
+  /** per slot 1-3: WALLDEF record loaded there, 0xFFFF when empty or filled by a multi-set record (DS:6AAE + 4·slot) */
+  readonly records = [0xffff, 0xffff, 0xffff, 0xffff]
   private readonly files: GameFiles
   private readonly block: number
 
@@ -40,6 +42,7 @@ export class WallSets {
     const sets = Math.floor(def.length / SET_SIZE)
     const shift = BANK_BASE[slot] - BANK_BASE[1]
     for (let f = 0; f < sets && slot + f <= 3; f++) {
+      this.records[slot + f] = 0xffff
       const dst = (slot + f - 1) * SET_SIZE
       for (let i = 0; i < SET_SIZE; i++) {
         const v = def[f * SET_SIZE + i]
@@ -48,6 +51,12 @@ export class WallSets {
       const tileRecord = sets < 2 ? record : (record || 10) * 10 + f + 1
       this.banks[slot + f] = tiles(this.files.record(`8X8D${this.block}`, tileRecord))
     }
+    this.records[slot] = record
+  }
+
+  /** LOAD_WALLSETS with 0xFF: the slot is marked empty. */
+  clear(slot: number) {
+    this.records[slot] = 0xffff
   }
 
   tile(id: number): Picture | undefined {
