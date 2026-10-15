@@ -97,6 +97,10 @@ Repeated while scripts keep changing area:
 3. If ECL 0x49E6 = 0: area 25 → kind 2, area 26 → kind 3, area 27 → kind 4, all in mode 3 (overland). On entering area 26 with ECL 0x4AB3 = 0xFE and 0x4AA2 = 0, `FUN_4804_06b3(1)` also runs (**?** a story event).
 4. Run **`on_move`**, then, if the area did not change again, **`on_step`**. Restore the current character and redraw.
 
+## Starting a new game (I)
+
+"Begin adventuring" on the party screen switches to block 3 (O) and enters the main loop with fresh ECL variables, so the current area (ECL 0x49F2) is 0: New Phlan, `ECL3` record 0. Its `on_enter` loads GEO 0 and wall sets (`LOAD_WALLSETS 127,127,127` → WALLDEF3 #0, three sets) and, while script variable 0x4AC5 is 0, plays the opening tour: Rolf (sprite 12, portrait head 8 / body 9) greets the party, then the script walks it through a 34-step waypoint table (x, y, facing and a stop number at `0xB5B4`, `0xB5D6`, `0xB5F8`, `0xB592`), printing commentary at five stops, and sets 0x4AC5 = 1. The browser port's new game reproduces this and plays the same way (tested).
+
 ## Built-in screens (O)
 
 Entered through ECL `PROGRAM n` (0x38) or the main loop:
