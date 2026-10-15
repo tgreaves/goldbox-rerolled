@@ -44,7 +44,7 @@ OPS = {
     0x34: ('DELAY', 1, None),       0x35: ('SAVE_TABLE', 3, None),
     0x36: ('ADD_NPC', 2, None),       0x37: ('LOAD_WALLSETS', 3, None),
     0x38: ('PROGRAM', 1, None),       0x39: ('WHO', 1, None),
-    0x3A: ('CLEAR_BOX', 0, None),   0x3B: ('FIND_IN_CHAR_LIST', 3, None),
+    0x3A: ('PAUSE', 0, None)    ,   0x3B: ('FIND_IN_CHAR_LIST', 3, None),
     0x3C: ('PRINT_LIST', 1, None),       0x3D: ('CLEAR_TOP', 0, None),
 }
 TERMINAL = {0x00, 0x01, 0x13, 0x20}

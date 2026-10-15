@@ -236,7 +236,7 @@ Operands are numbered from 1. *val n* is the numeric value of operand n, *addr n
 | 11 | PRINT | val/str 1 | numbers as unsigned decimal; word-wrapped into the text window (columns 1–38, rows 17–22) from the cursor; a full window waits for a key and clears | O |
 | 12 | PRINT_CLEAR | as PRINT | cursor to (1, 17) and clear the window first | O |
 | 33 | NEWLINE | — | column 1, next row | O |
-| 3A | CLEAR_BOX | — | clear the text window | O |
+| 3A | PAUSE | — | wait game speed × 225 ms (`FUN_1709_0dbe`; speed 0–9 from the Alter menu, so 0–2 s). Scripts use it to pace animation, e.g. an encounter sprite approaching, or each step of Rolf's tour. Earlier versions of this spec called it CLEAR_BOX | O |
 | 3D | CLEAR_TOP | — | clear columns 1–15, rows 1–15; the next PRINT_LIST starts at (2, 5) | O |
 | 3C | PRINT_LIST | addr 1 | draw raw font glyphs `(mem[a+i] + 1) & 0xFF` along one row in colour 15 until a value of 0 or 0xFF, then move to the next row | O |
 | 0F | INPUT_NUMBER | (op 1 unused), addr 2 | up to 6 digits, re-prompted until valid and ≤ 65536; dest = value & 0xFFFF | O |

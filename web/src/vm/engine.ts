@@ -53,6 +53,8 @@ export interface Io {
   sprite(sprite: number, picture: number, distance: number): void
   /** Bring the view up to date with position, map and wall sets (CALL 0x2C90, area entry). */
   refresh(): Promise<void>
+  /** PAUSE: wait (game speed x 225 ms in the original). */
+  pause(ms: number): Promise<void>
   /** Engine screens that are not implemented yet (combat, shops, camp ...). */
   engine(what: string, info?: Record<string, unknown>): Promise<void>
 }
@@ -83,6 +85,8 @@ export class Engine {
   monstersLoaded = false
   iconSlot = 8
   money = [0, 0, 0, 0, 0, 0, 0]
+  /** game speed 0 (fastest) to 9 (DS:49E2; saved as ECL 0x49FC); 4 in both shipped saves */
+  speed = 4
   areaChanged = false
   quit = false
   /** set when the map or wall sets change, cleared by the front end */
@@ -142,6 +146,7 @@ export class Engine {
     this.A = w(1, 0x400); this.B = w(0x801, 0x400); this.C = w(0x1001, 0x200)
     this.code = d.slice(0x1401, 0x3201)
     this.x = d[0x3201]; this.y = d[0x3202]; this.facing2 = d[0x3203]
+    this.speed = Math.min(this.A[0x49fc - A0], 9)
     this.nodes = party.map((c) => c.slice())
     this.cur = this.savedCur = this.nodes[0]
     this.setBlock(this.B[0x6e12 - B0])
@@ -637,7 +642,7 @@ export class Engine {
         this.cur = this.nodes[await this.io.menu(names, { prompt: this.text(1), vertical: true })]
         break
       }
-      case 0x3a: this.readops(0); break
+      case 0x3a: this.readops(0); await this.io.pause(this.speed * 225); break // PAUSE (FUN_1709_0dbe)
       case 0x3b: {
         this.readops(3)
         // the original writes both results to engine space (addr & 0xFF): they are lost

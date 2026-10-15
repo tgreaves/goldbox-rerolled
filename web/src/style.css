@@ -84,7 +84,7 @@ canvas.pixel { image-rendering: pixelated; background: #000; border: 1px solid v
 /* Exploration screen: the original's arrangement (view | party / text / commands) */
 :root { --ega-green: #55ff55; --ega-yellow: #ffff55; --ega-magenta: #ff55ff; --ega-cyan: #55ffff; }
 .game {
-  flex: 1; height: 100dvh; display: grid; gap: 0.5rem; padding: 0.5rem;
+  flex: none; height: 100dvh; overflow: hidden; display: grid; gap: 0.5rem; padding: 0.5rem;
   padding: max(0.5rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right))
     max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left));
   grid-template-columns: minmax(0, var(--view)) minmax(14rem, 1fr);

@@ -471,7 +471,7 @@ class Game:
         self.readops(1); self.io.out('[clear] ' + self.text(1))
 
     def op_newline(self): self.readops(0)
-    def op_clear_box(self): self.readops(0)
+    def op_pause(self): self.readops(0)  # waits game speed x 225 ms in the original
     def op_clear_top(self): self.readops(0)
 
     def op_print_list(self):

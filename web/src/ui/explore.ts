@@ -59,19 +59,22 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   // ------------------------------------------------------------ text window
   let screen: HTMLElement | null = null
+  /** PRINT_CLEAR starts a new block, created lazily so empty clears leave no trace */
+  let newBlock = true
   function print(text: string, clear: boolean, kind = '') {
-    if (clear || !screen) {
+    if (clear) newBlock = true
+    if (!text) return
+    if (newBlock || !screen) {
       screen = document.createElement('div')
       screen.className = 'screen'
       log.append(screen)
       while (log.childElementCount > 120) log.firstElementChild!.remove()
+      newBlock = false
     }
-    if (text) {
-      const p = document.createElement('p')
-      if (kind) p.className = kind
-      p.textContent = text
-      screen.append(p)
-    }
+    const p = document.createElement('p')
+    if (kind) p.className = kind
+    p.textContent = text
+    screen.append(p)
     log.scrollTop = log.scrollHeight
   }
   const note = (text: string) => print(text, false, 'note')
@@ -109,6 +112,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   // ---------------------------------------------------------------- menus
   let pending: { resolve: (n: number) => void; items: string[] } | null = null
+  /** a click, tap or key skips the current script pause */
+  let skipPause: (() => void) | null = null
   function menu(items: string[], opts: { prompt?: string; vertical?: boolean } = {}): Promise<number> {
     return new Promise((resolve) => {
       if (opts.prompt) print(opts.prompt, false)
@@ -182,6 +187,17 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       }
     },
     refresh: () => sync(),
+    pause(ms) {
+      return new Promise((resolve) => {
+        const timer = window.setTimeout(done, ms)
+        function done() {
+          window.clearTimeout(timer)
+          skipPause = null
+          resolve()
+        }
+        skipPause = done
+      })
+    },
     async engine(what, info) {
       if (what === 'blocked') return note('Blocked.')
       if (what === 'locked door') return note('Locked.')
@@ -309,6 +325,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const onKey = (e: KeyboardEvent) => {
     if (dialog.open || e.ctrlKey || e.metaKey || e.altKey) return
     if (document.activeElement instanceof HTMLInputElement) return
+    if (skipPause && !pending) {
+      e.preventDefault()
+      skipPause()
+      return
+    }
     if (pending) {
       const items = pending.items
       if ((e.key === 'Enter' || e.key === ' ') && items.length === 1) { e.preventDefault(); choose(0); return }
@@ -328,6 +349,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   window.addEventListener('keydown', onKey)
   pad.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => move(b.dataset.c!)))
   canvas.addEventListener('pointerup', (e) => {
+    if (skipPause && !pending) return skipPause()
     if (pending && pending.items.length === 1) return choose(0)
     const r = canvas.getBoundingClientRect()
     const fx = (e.clientX - r.left) / r.width

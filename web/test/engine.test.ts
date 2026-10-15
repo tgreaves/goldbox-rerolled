@@ -27,6 +27,7 @@ function headless(answer: (n: number) => number = () => 0) {
     picture: () => {},
     sprite: () => {},
     refresh: async () => { stops.push(`${engine.x},${engine.y},${engine.facing}`) },
+    pause: async () => { stops.push('pause') },
     engine: async () => {},
   }
   return { io, text, stops, bind: (e: Engine) => (engine = e) }
@@ -43,6 +44,8 @@ describe.skipIf(!have)('ECL engine', () => {
     expect(e.block).toBe(3)
     expect(e.area).toBe(0)
     expect(h.text[0]).toMatch(/^'GREETINGS, COURAGEOUS ONES, I AM ROLF/)
+    // view drawn, then Rolf's sprite approaches over three pauses before he speaks
+    expect(h.stops.slice(0, 4)).toEqual(['15,1,3', 'pause', 'pause', 'pause'])
     expect(h.text.some((t) => t.startsWith("'OUR TOUR IS ENDED"))).toBe(true)
     // the tour walks the waypoint table at 0xB5B4/0xB5D6/0xB5F8 in ECL3 #0
     expect(h.stops).toContain('15,1,3')
