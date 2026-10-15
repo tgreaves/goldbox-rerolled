@@ -61,7 +61,7 @@ O = read by the character sheet (`FUN_4894_004a`, `050d`, `0608`, `0901`, `FUN_1
 | 0x116, 0x118, 0x11A | u8 | second hand damage dice count, sides, bonus | O |
 | 0x115, 0x117, 0x119 | u8, u8, s8 | damage dice count, sides, bonus | O |
 | 0x11B | u8 | current HP | O |
-| 0x11C | u8 | movement (doubled by effect 0x2A, halved by 0x27) | O |
+| 0x11C | u8 | movement; the character sheet doubles it if effect 0x2A is present and halves it for 0x27 (conflicts with the spell table, see [[spec/spells]]) | O |
 
 Pointer fields are stale in files and must be ignored on load.
 
