@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Character creation
 
-Part of [[spec/README]]. Routine `FUN_417f_056c` (party screen "Create character").
+Part of [[spec/README]]. Routine `FUN_417f_056c` (party screen "Create character"); the screen-by-screen flow, the menus and every record byte set are in [[spec/menus]] §3.
 
 ## Steps (O)
 
@@ -22,7 +22,7 @@ Part of [[spec/README]]. Routine `FUN_417f_056c` (party screen "Create character
 
    Racial bonuses against monster types are matched by **monster name** strings in the engine (e.g. "ORC LEADER", "HILL GIANT").
 
-2. **Gender**, **class** (menu filtered by race/stats, **?** rules), **alignment** (allowed alignments per class from `DS:3FE7 + class·10`)
+2. **Gender**, **class** (by race only, no ability prerequisites: `DS:3E17 + race·12`; table in [[spec/menus]] §3.2), **alignment** (`DS:3FE7 + class·10`)
 3. **Age** = `base + NdS` from `DS:3E5B + race·0x1C + class·4` (u16 base, u8 N, u8 S); multi-class uses the maximum (`base + N·S`) of the class column listed in the code
 4. **Ability scores** (rerollable): for each stat roll **3d6 six times, keep the highest**, then:
    - racial adjustment: **never applied** (O, bug): the code tests the race-menu loop variable, which is always 7 after the menu, instead of char[0x2E]. The intended Dwarf CON +1 CHA −1, Elf DEX +1 CON −1, Halfling STR −1 DEX +1, Half-Orc STR +1 CON +1 CHA −2 are dead code; reproduce the original (no adjustment)
