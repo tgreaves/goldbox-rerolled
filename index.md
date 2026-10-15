@@ -38,6 +38,7 @@ Experiment using REA (Ghidra 12.1.4 backend) to understand how SSI's Gold Box en
   - `gfx.py`: image decoder → PNG (EGA palette)
   - `chars.py`: character / monster record decoder
   - `spells.py`: spell table extractor (from unpacked `START.EXE`)
+  - `automap.py`: annotated automap HTML (all areas, doors, events with their text and actions); output contains game text, keep it local
 
 ## Plan
 
