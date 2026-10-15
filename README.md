@@ -8,6 +8,8 @@ The work concentrates on the split between the engine and the data that drives t
 
 - [`spec/`](spec/README.md): the specification. Every statement is marked **O** (observed in the engine code or data), **I** (inferred) or **?** (unknown). Start at `spec/README.md`.
 - `tools/`: Python 3, standard library only.
+- [`docs/requirements.md`](docs/requirements.md): requirements and design for the browser port.
+- [`IMPROVEMENTS.md`](IMPROVEMENTS.md): every deliberate departure from the original.
 
 The spec files use Obsidian-style `[[spec/name]]` links; they map to `spec/name.md`.
 
