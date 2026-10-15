@@ -129,7 +129,7 @@ Count = fixed operands; `+N` = variadic. Validated: every opcode appears in data
 | 1F | — | — | no handler (skip table says 2); never used | O |
 | 20 | NEW_ECL | 1 | load ECL record n and its map, stop | O |
 | 21 | LOAD_AREA | 3 | load GEO record a (255/127 = keep); c = sound/music (**?**) | O/I |
-| 22 | PARTY_HAS_2F | 2 | dest1 = any member's byte +0x2F ∈ {4,10}; dest2 = 0 | O (meaning **?**) |
+| 22 | PARTY_HAS_RANGER | 2 | dest1 = 1 if any member's class is Ranger or Cleric/Ranger; dest2 = 0 | O |
 | 23 | SURPRISE | 4 | d6 surprise rolls → result 0–3 at 0x6DCB | O/I |
 | 24 | COMBAT | 0 | start combat with loaded monsters | I |
 | 25 | ON_GOTO | 2+N | index, N, N targets | O |

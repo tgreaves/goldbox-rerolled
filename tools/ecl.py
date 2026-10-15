@@ -32,7 +32,7 @@ OPS = {
     0x1C: ('CLEAR_MONSTERS', 0, None), 0x1D: ('PARTY_STRENGTH', 1, None),
     0x1E: ('CHECK_PARTY', 6, None),
     0x20: ('NEW_ECL', 1, None),     0x21: ('LOAD_AREA', 3, None),
-    0x22: ('PARTY_HAS_2F', 2, None),       0x23: ('SURPRISE', 4, None),
+    0x22: ('PARTY_HAS_RANGER', 2, None),       0x23: ('SURPRISE', 4, None),
     0x24: ('COMBAT', 0, None),       0x25: ('ON_GOTO', 2, 1),
     0x26: ('ON_GOSUB', 2, 1),       0x27: ('TREASURE', 8, None),
     0x28: ('ROB', 3, None),       0x29: ('ENCOUNTER_MENU', 14, None),

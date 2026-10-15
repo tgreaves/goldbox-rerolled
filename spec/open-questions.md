@@ -22,9 +22,7 @@ Part of [[spec/README]]. Ordered by what a browser reimplementation needs first.
 
 ## Needed for the rules
 
-8. Character record layout (party list nodes are 0x11D bytes, linked via +0x104; `CHRDATn.SAV` are 285 = 0x11D bytes)
-9. Item record (0x3F = 63 bytes, linked via +0x2A), `ITEMS` file, `CHRDATn.ITM`
-10. Monster files MON*CHA / ITM / SPC
+8. ~~Character, item, monster records~~ main fields done in [[spec/records]]; remaining: unlabelled character bytes, item fields 0x32–0x3E, ITEMS bytes 5–8/12–15, effect types
 11. Combat engine, spells, saving throws, experience
 12. Save game format (`SAVGAM*.DAT`, 13137 bytes)
 
