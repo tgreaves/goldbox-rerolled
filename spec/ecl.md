@@ -140,7 +140,7 @@ Count = fixed operands; `+N` = variadic. Validated: every opcode appears in data
 | 2A | GET_TABLE | 3 | `dest = mem[base + index]` | O |
 | 2B | HMENU | 2+N | horizontal menu: dest, N, N strings | O |
 | 2C | PARLAY | 6 | 5-way talk menu, chosen value → dest | O |
-| 2D | CALL | 1 | native routine by address (0x2C90, 0x8000, 0x8001, 0xBA03, 0xC018, 0xC01E) | O (each **?**) |
+| 2D | CALL | 1 | native routine selected by address (table below) | O |
 | 2E | DAMAGE | 5 | dice damage to random members, saving throw | O/I |
 | 2F | AND | 3 | `dest = a & b`; flags vs 0 | O |
 | 30 | OR | 3 | `dest = a | b`; flags vs 0 | O |
@@ -157,3 +157,18 @@ Count = fixed operands; `+N` = variadic. Validated: every opcode appears in data
 | 3B | FIND_IN_CHAR_LIST | 3 | for each member, scan char bytes 0x18–0x69 for a value → index, member count. The range overruns the 21 memorised-spell slots into race/class/age (original behaviour) | O |
 | 3C | ? | 1 | print a list from a table | ? |
 | 3D | ? | 0 | clear area and mark redraw | ? |
+
+## CALL targets (O, `FUN_29c3_2ccf`)
+
+The DOS port maps former C64 machine-code entry points to native routines:
+
+| Address | Effect |
+|---|---|
+| 0x2C90 | refresh square registers (`0xC04F`) and redraw the view if anything changed |
+| 0x8000 | one-on-one duel: all other party members cannot act (char[0x10D] = 0); a copy of the current character named **ROLF** (stats and items copied, AI-controlled, enemy side, morale 0xB2) joins the monsters; sets `DS:84D4`, `B[0x5CC]` = 1 |
+| 0x8001 | solo combat: as 0x8000 without the copy (`B[0x5CC]` = 0) |
+| 0xBA03 | play one of two sounds depending on engine register 0x3DE (8 or 10) |
+| 0xC018 | recompute "wall ahead" (`0xC04E`), map areas only |
+| 0xC01E | move the party one square forward (with wrap-around) and refresh square registers |
+
+After a 0x8000/0x8001 fight the aftermath awards `100 × char[0x73]` experience to the current character (see [[spec/progression]]).
