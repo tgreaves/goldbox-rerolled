@@ -196,7 +196,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         showPicture(portrait === 0xff ? { pic: picture } : { head: portrait, body: picture })
       } else if (f) {
         paint([])
-        world.showSprite(f[Math.min(distance, f.length - 1)], distance)
+        world.showSprite(f, distance)
       }
     },
     refresh: () => sync(),

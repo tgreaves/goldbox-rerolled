@@ -1,6 +1,6 @@
 // Real 3D exploration view (IMPROVEMENTS.md IMP-001), built from a GEO map and its wall sets.
 import * as THREE from 'three'
-import { EGA, spriteFeet, spriteImage, type Picture } from '../data/image'
+import { EGA, spriteBox, spriteImage, type Picture } from '../data/image'
 import type { GeoMap } from '../data/geo'
 import type { WallSets } from '../data/walls'
 
@@ -9,8 +9,8 @@ export const WALL_HEIGHT = 64 / 56
 const EYE = WALL_HEIGHT * 0.5
 const EPS = 0.002
 const FOV = 70
-/** Focal length in pixels of the original 88-pixel-high view, for this camera's field of view. */
-const FOCAL88 = 44 / Math.tan((FOV / 2) * (Math.PI / 180))
+/** World size of one pixel of a sprite's nearest frame: a 40-pixel orc is about 0.64, half a wall. */
+const SPRITE_UNIT = 0.016
 const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]]
 
 export interface View {
@@ -29,7 +29,7 @@ export class World {
   private anim: { from: THREE.Vector3; to: THREE.Vector3; fromYaw: number; toYaw: number; t0: number; ms: number } | null = null
   private yaw = 0
   private view: View = { x: 0, y: 0, facing: 0 }
-  private sprite: { mesh: THREE.Mesh; pic: Picture; distance: number } | null = null
+  private sprite: { group: THREE.Group; distance: number } | null = null
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false })
@@ -143,22 +143,27 @@ export class World {
   }
 
   /**
-   * Show an encounter sprite frame standing on the floor `distance` squares ahead, or remove it
-   * (IMP-020). Each frame keeps its original on-screen pixel size: it is placed at depth z and
-   * scaled by z / focal length. The original draws the frame at a fixed spot in its pre-drawn
-   * view, which does not line up with this camera's floor.
+   * Show an encounter sprite standing in its square `distance` squares ahead, or remove it
+   * (IMP-020). The nearest, most detailed frame is used at every distance, at one size in the
+   * world, and perspective shrinks it; the original instead draws a smaller frame per distance
+   * at a fixed spot in its pre-drawn view.
    */
-  showSprite(pic: Picture | null, distance = 0) {
+  showSprite(frames: Picture[] | null, distance = 0) {
     if (this.sprite) {
-      const { mesh } = this.sprite
-      this.scene.remove(mesh)
-      const m = mesh.material as THREE.MeshBasicMaterial
-      m.map?.dispose()
-      m.dispose()
-      mesh.geometry.dispose()
+      this.scene.remove(this.sprite.group)
+      this.sprite.group.traverse((o) => {
+        if (!(o instanceof THREE.Mesh)) return
+        o.geometry.dispose()
+        const m = o.material as THREE.MeshBasicMaterial
+        m.map?.dispose()
+        m.dispose()
+      })
       this.sprite = null
     }
-    if (!pic) return
+    if (!frames?.length) return
+    const pic = frames[0]
+    const box = spriteBox(pic)
+    const u = SPRITE_UNIT
     const c = document.createElement('canvas')
     c.width = pic.width
     c.height = pic.height
@@ -168,31 +173,27 @@ export class World {
     tex.minFilter = THREE.NearestFilter
     tex.generateMipmaps = false
     tex.colorSpace = THREE.SRGBColorSpace
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5 }))
-    this.sprite = { mesh, pic, distance }
+    const group = new THREE.Group()
+    const card = new THREE.Mesh(new THREE.PlaneGeometry(pic.width * u, pic.height * u),
+      new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5 }))
+    // centred on the square, lowest drawn row (the drop shadow) on the floor
+    card.position.set((pic.width / 2 - (box.left + box.right + 1) / 2) * u, (box.bottom + 1 - pic.height / 2) * u, 0)
+    group.add(card)
+    this.sprite = { group, distance }
     this.placeSprite()
-    this.scene.add(mesh)
+    this.scene.add(group)
   }
 
   /** Position the sprite relative to the current view; scripts can show it before the view is set. */
   private placeSprite() {
     if (!this.sprite) return
-    const { mesh, pic, distance } = this.sprite
-    // the figure stands near the far side of its square: 0.8 from the camera at distance 0
-    const z = distance + 0.8
-    const s = z / FOCAL88
+    const { group, distance } = this.sprite
+    // a little beyond the centre of its square
+    const z = distance + 0.65
     const dir = DIRS[this.view.facing]
-    const right = [-dir[1], dir[0]]
-    // horizontal place as in the original: header x cells from the left of the 88-pixel view
-    const side = (pic.x * 8 + pic.width / 2 - 44) * s
     const eye = this.target(this.view).pos
-    mesh.scale.set(pic.width * s, pic.height * s, 1)
-    mesh.position.set(
-      eye.x + dir[0] * z + right[0] * side,
-      (spriteFeet(pic) + 1 - pic.height / 2) * s,
-      eye.z + dir[1] * z + right[1] * side,
-    )
-    mesh.rotation.y = -this.view.facing * (Math.PI / 2)
+    group.position.set(eye.x + dir[0] * z, 0, eye.z + dir[1] * z)
+    group.rotation.y = -this.view.facing * (Math.PI / 2)
   }
 
   busy(): boolean {

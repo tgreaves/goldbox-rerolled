@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readDax, daxRecords } from '../src/data/dax'
-import { parseRecord, spriteFeet } from '../src/data/image'
+import { parseRecord, spriteBox } from '../src/data/image'
 import { GeoMap } from '../src/data/geo'
 
 const dir = process.env.POOLRAD ?? ''
@@ -67,11 +67,11 @@ print(json.dumps(out))
   })
 
   it('finds where encounter sprites stand', () => {
-    // SPRIT2 #2 (an orc): the figure sits low in each frame, outline included
+    // SPRIT2 #2 (an orc): the figure sits low in each frame
     const dax = readDax(new Uint8Array(readFileSync(join(dir, 'SPRIT2.DAX'))))
     const rec = [...daxRecords(dax)].find(([id]) => id === 2)![1]
     const frames = parseRecord(rec).frames.map((f) => f.picture)
-    expect(frames.map((p) => [p.height, p.y, spriteFeet(p)])).toEqual([[80, 1, 77], [65, 1, 57], [49, 1, 44]])
+    expect(frames.map((p) => [p.height, p.y, spriteBox(p).bottom])).toEqual([[80, 1, 77], [65, 1, 57], [49, 1, 44]])
   })
 
   it('reads every GEO map', () => {

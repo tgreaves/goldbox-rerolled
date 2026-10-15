@@ -96,9 +96,9 @@ export function toImageData(p: Picture, palette = EGA): ImageData {
 }
 
 /**
- * Encounter sprite (`SPRIT`) as drawn on EGA (spec/graphics.md, "Encounter sprites"):
- * colour 0 is transparent, then colour 13 is remapped to black, so it shows as an opaque
- * dark outline (`FUN_1464_1e5c` with the tables at `DS:0C6C` / `DS:0C7C`).
+ * Encounter sprite (`SPRIT`) as drawn on EGA (spec/graphics.md, "Encounter sprites"): colour 0 is
+ * transparent, then colour 13 is remapped to black (`FUN_1464_1e5c`, tables `DS:0C6C` / `DS:0C7C`).
+ * Colour 13 is the artist's opaque black: outlines, boots, drop shadows.
  */
 export function spriteImage(p: Picture): ImageData {
   const img = toImageData(p)
@@ -109,10 +109,13 @@ export function spriteImage(p: Picture): ImageData {
   return img
 }
 
-/** Lowest row holding a non-transparent sprite pixel (where the figure stands). */
-export function spriteFeet(p: Picture): number {
-  for (let r = p.height - 1; r >= 0; r--) {
-    for (let c = 0; c < p.width; c++) if (p.pixels[r * p.width + c] !== 0) return r
+/** Bounding box of a sprite's drawn (non-transparent) pixels. */
+export function spriteBox(p: Picture): { left: number; right: number; top: number; bottom: number } {
+  let left = p.width, right = -1, top = p.height, bottom = -1
+  for (let y = 0; y < p.height; y++) for (let x = 0; x < p.width; x++) {
+    if (p.pixels[y * p.width + x] === 0) continue
+    left = Math.min(left, x); right = Math.max(right, x)
+    top = Math.min(top, y); bottom = Math.max(bottom, y)
   }
-  return p.height - 1
+  return right < 0 ? { left: 0, right: p.width - 1, top: 0, bottom: p.height - 1 } : { left, right, top, bottom }
 }
