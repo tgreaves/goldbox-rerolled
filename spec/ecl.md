@@ -125,7 +125,7 @@ Count = fixed operands; `+N` = variadic. Validated: every opcode appears in data
 | 16–1B | IF_EQ … IF_GE | 0 | conditional skip | O |
 | 1C | CLEAR_MONSTERS | 0 | monster count = 0, clear treasure list and money table | O |
 | 1D | PARTY_STRENGTH | 1 | dest = Σ over party of a weighted sum of 5 stats /10 | O (stats **?**) |
-| 1E | CHECK_PARTY | 6 | min/max/avg (or test) of a character attribute across the party | O/I |
+| 1E | CHECK_PARTY | 6 | op1 selects: 0x6BA7 → min/max/average of find/remove traps (char[0x79]); 0x6C1B → of movement (char[0x11C]); 0 → per-member test via `FUN_10ba_2199` (has effect op2); results stored to op3–op6 | O |
 | 1F | — | — | no handler (skip table says 2); never used | O |
 | 20 | NEW_ECL | 1 | load ECL record n and its map, stop | O |
 | 21 | LOAD_AREA | 3 | load GEO record a (255/127 = keep); c = sound/music (**?**) | O/I |
