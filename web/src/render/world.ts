@@ -29,7 +29,7 @@ export class World {
   private anim: { from: THREE.Vector3; to: THREE.Vector3; fromYaw: number; toYaw: number; t0: number; ms: number } | null = null
   private yaw = 0
   private view: View = { x: 0, y: 0, facing: 0 }
-  private sprite: THREE.Mesh | null = null
+  private sprite: { mesh: THREE.Mesh; pic: Picture; distance: number } | null = null
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false })
@@ -119,6 +119,7 @@ export class World {
   /** Move the camera to a view, animated over `ms` (0 = jump). */
   go(v: View, ms = 180) {
     this.view = { ...v }
+    this.placeSprite()
     const { pos, yaw } = this.target(v)
     let toYaw = yaw
     while (toYaw - this.yaw > Math.PI) toYaw -= 2 * Math.PI
@@ -149,11 +150,12 @@ export class World {
    */
   showSprite(pic: Picture | null, distance = 0) {
     if (this.sprite) {
-      this.scene.remove(this.sprite)
-      const m = this.sprite.material as THREE.MeshBasicMaterial
+      const { mesh } = this.sprite
+      this.scene.remove(mesh)
+      const m = mesh.material as THREE.MeshBasicMaterial
       m.map?.dispose()
       m.dispose()
-      this.sprite.geometry.dispose()
+      mesh.geometry.dispose()
       this.sprite = null
     }
     if (!pic) return
@@ -166,26 +168,31 @@ export class World {
     tex.minFilter = THREE.NearestFilter
     tex.generateMipmaps = false
     tex.colorSpace = THREE.SRGBColorSpace
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5 }))
+    this.sprite = { mesh, pic, distance }
+    this.placeSprite()
+    this.scene.add(mesh)
+  }
+
+  /** Position the sprite relative to the current view; scripts can show it before the view is set. */
+  private placeSprite() {
+    if (!this.sprite) return
+    const { mesh, pic, distance } = this.sprite
     // the figure stands near the far side of its square: 0.8 from the camera at distance 0
     const z = distance + 0.8
     const s = z / FOCAL88
-    const mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(pic.width * s, pic.height * s),
-      new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5 }),
-    )
     const dir = DIRS[this.view.facing]
     const right = [-dir[1], dir[0]]
     // horizontal place as in the original: header x cells from the left of the 88-pixel view
     const side = (pic.x * 8 + pic.width / 2 - 44) * s
     const eye = this.target(this.view).pos
+    mesh.scale.set(pic.width * s, pic.height * s, 1)
     mesh.position.set(
       eye.x + dir[0] * z + right[0] * side,
       (spriteFeet(pic) + 1 - pic.height / 2) * s,
       eye.z + dir[1] * z + right[1] * side,
     )
     mesh.rotation.y = -this.view.facing * (Math.PI / 2)
-    this.sprite = mesh
-    this.scene.add(mesh)
   }
 
   busy(): boolean {
