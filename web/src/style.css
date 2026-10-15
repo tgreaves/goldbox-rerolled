@@ -163,3 +163,4 @@ dialog.panel form { display: flex; justify-content: flex-end; }
   color: var(--ega-green); min-height: 36px; text-transform: uppercase;
 }
 .game .menu .sound { color: var(--muted); }
+.viewer nav .hint { font-size: 0.8rem; margin: 0.4rem 0; }

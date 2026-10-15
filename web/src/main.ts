@@ -16,7 +16,8 @@ function showImport() {
     <section class="import">
       <h1>Pool of Radiance</h1>
       <p>This port needs the game files from your own copy of <em>Pool of Radiance</em> (MS-DOS),
-      for example the <code>POOLRAD</code> folder from the GOG release. They stay on this device:
+      for example the <code>POOLRAD</code> folder from the GOG release (the data files and <code>START.EXE</code>,
+      which holds the sound effects). They stay on this device:
       nothing is uploaded, and after importing once the game works offline.</p>
       <div class="actions">
         <button class="primary" id="folder">Choose the POOLRAD folder</button>

@@ -24,6 +24,7 @@ export function showViewer(app: HTMLElement, files: GameFiles, reimport: () => v
         <select aria-label="Asset family">${shown.map((f) => `<option>${f}</option>`).join('')}</select>
         ${shown.map((f) => `<button data-f="${f}">${f}</button>`).join('')}
         ${files.get('SAVGAMA.DAT') ? '<button id="newgame" class="primary">New game</button><button id="loadsave">Continue save A</button>' : ''}
+        ${files.get('START.EXE') ? '' : '<p class="muted hint">Sound needs START.EXE: re-import the POOLRAD folder to include it.</p>'}
         <button id="reimport" class="muted">Re-import files…</button>
       </nav>
       <main><div class="grid"></div></main>

@@ -7,7 +7,7 @@ const STORE = 'files'
 /** Files the port needs; anything else in the folder is ignored. */
 export function wanted(name: string): boolean {
   const n = name.toUpperCase()
-  return n.endsWith('.DAX') || n === 'ITEMS' || /^CHRDAT.+\.(SAV|ITM|SPC)$/.test(n) || /^SAVGAM.\.DAT$/.test(n)
+  return n.endsWith('.DAX') || n === 'ITEMS' || n === 'START.EXE' || /^CHRDAT.+\.(SAV|ITM|SPC)$/.test(n) || /^SAVGAM.\.DAT$/.test(n)
 }
 
 function openDb(): Promise<IDBDatabase> {
