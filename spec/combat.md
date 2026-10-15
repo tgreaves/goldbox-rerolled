@@ -220,6 +220,14 @@ Effect hook 14; up to 20 attempts: keep the current target (combat record [10..1
 5. Place combatants (`FUN_34c7_19f5`): deployment zones per side from `DS:0306` (12 bytes per direction: 6 rows of [min col, max col]); `FUN_34c7_1577` finds a free spot; a monster that cannot be placed is removed; party members who cannot act are laid down as bodies (cell set to 0x1F, original cell remembered in `DS:66D6`)
 6. Effect hook 8 for everyone, `FUN_3aae_2879`, game mode `DS:49F3` = 5
 
+### Wilderness battlefields (O, `FUN_34c7_11b4`)
+
+1. Fill all 1250 cells with icon 0x17 (open ground)
+2. Terrain type `DS:465A` = overland tile at `DS:3648 + y·44 + x + region·13`, with x = `A[byte 0x186]` (ECL 0x49C3), y = `A[byte 0x188]` (ECL 0x49C4), region 0/1/2 for area kind `DS:49FA` = 2/3/4 (areas 25–27)
+3. Feature passes `FUN_34c7_0bde`, `0d13`, `0e9e` (**?** what each tile type produces), then the random clutter pass
+
+`DS:3648` is the overland map of the three wilderness regions (13 columns each, rows of 44 bytes; values are overland tile ids, **I**).
+
 ### Map areas: squares → cells (`FUN_34c7_0810`)
 
 For every map square at `(X+dx, Y+dy)`, `dx ∈ −6..6`, `dy ∈ −2..2` (X, Y = party position; north is up):
@@ -238,7 +246,7 @@ Finishing pass (`FUN_34c7_0000`): on every floor cell (icon property `DS:2747[ic
 
 ## Still open
 
-- Wilderness terrain generator (`FUN_34c7_11b4`); icon property table `DS:2747`; path-finding (`FUN_56c1_0422`)
+- Wilderness generator details (below); icon property table `DS:2747`; path-finding (`FUN_56c1_0422`)
 - Player combat menu and actions (`FUN_320c_031a`)
 - AI scoring helpers (`FUN_3334_02eb`, `FUN_3334_128d`) and movement step (`FUN_3334_07f2`)
 - Spell casting and spell effects (spell list in character bytes 0x18–0x69, **I**)

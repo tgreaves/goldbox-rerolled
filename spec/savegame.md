@@ -53,7 +53,16 @@ Because the whole ECL VM (code + all three arrays) is saved, a reimplementation 
 | `SAVGAMA.DAT` | 2 | (15, 4) facing W | `CHRDATA1–6` (the six pre-made characters) |
 | `SAVGAMJ.DAT` | 2 | (14, 5) facing S | `CHRDATJ1–6` |
 
+## Loading (O, `FUN_45c5_1602`)
+
+1. List slots A–J for which `SAVGAM<x>.DAT` exists; the player picks one
+2. Read the fields in the same order as above
+3. Restore `DS:49F6 = A[byte 0x1FE] >> 1`, `DS:49F5 = A[byte 0x1FE] & 1`, `DS:49E2 = A[byte 0x1F8]`; `B[0x67C]` (party size) = 0, then load each `CHRDAT<x><n>.SAV/.ITM/.SPC` (`FUN_45c5_0aec`, `FUN_45c5_1446`)
+4. Block digit `DS:5376` = `B[byte 0x624]`
+5. Map areas (`DS:49FA` < 2): reload GEO record `A[byte 0x18A]` and the three wall sets from `A[0x4AFA..0x4AFF]`; wilderness: load the overland icon set
+6. If `A[byte 0x344]` ≠ 0 run `FUN_4804_06b3` (**?**)
+7. Back on the party screen, "Begin" sets `DS:49F8` = 1 so the VM reset keeps the saved ECL buffer and per-area variables instead of reloading the script from the DAX
+
 ## Open
 
-- Load routine (assumed symmetric; not yet traced)
 - Meaning of `DS:49FA`, `DS:49F3` values
