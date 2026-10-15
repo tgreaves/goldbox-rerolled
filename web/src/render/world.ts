@@ -11,6 +11,8 @@ const EPS = 0.002
 const FOV = 70
 /** World size of one pixel of a sprite's nearest frame: a 40-pixel orc is about 0.64, half a wall. */
 const SPRITE_UNIT = 0.016
+/** One approach step takes this long: a steady walk, shorter than a script pause at speed 2+. */
+const SPRITE_GLIDE_MS = 450
 const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]]
 
 export interface View {
@@ -29,7 +31,14 @@ export class World {
   private anim: { from: THREE.Vector3; to: THREE.Vector3; fromYaw: number; toYaw: number; t0: number; ms: number } | null = null
   private yaw = 0
   private view: View = { x: 0, y: 0, facing: 0 }
-  private sprite: { group: THREE.Group; distance: number } | null = null
+  private sprite: {
+    group: THREE.Group
+    frames: Picture[]
+    distance: number
+    /** current depth from the camera, and a glide towards a new one */
+    z: number
+    glide: { from: number; to: number; t0: number } | null
+  } | null = null
   private geo: GeoMap | null = null
 
   constructor(canvas: HTMLCanvasElement) {
@@ -151,6 +160,14 @@ export class World {
    * at a fixed spot in its pre-drawn view.
    */
   showSprite(frames: Picture[] | null, distance = 0) {
+    // the same encounter stepping closer or back: glide there (IMP-022)
+    if (frames && this.sprite?.frames === frames) {
+      const sp = this.sprite
+      sp.distance = distance
+      const to = this.spriteDepth(distance)
+      sp.glide = to === sp.z ? null : { from: sp.z, to, t0: performance.now() }
+      return
+    }
     if (this.sprite) {
       this.scene.remove(this.sprite.group)
       this.sprite.group.traverse((o) => {
@@ -181,25 +198,41 @@ export class World {
     // centred on the square, lowest drawn row (the drop shadow) on the floor
     card.position.set((pic.width / 2 - (box.left + box.right + 1) / 2) * u, (box.bottom + 1 - pic.height / 2) * u, 0)
     group.add(card)
-    this.sprite = { group, distance }
+    this.sprite = { group, frames, distance, z: 0, glide: null }
     this.placeSprite()
     this.scene.add(group)
+  }
+
+  /**
+   * Depth from the camera for a sprite `distance` squares away. Scripts count an open door as
+   * passable, so an encounter can be set beyond a door, which is still a drawn wall. Distances
+   * 0-2 are spread over the room in front of the first wall in view, so that every approach step
+   * shows and the sprite is never hidden behind the wall.
+   */
+  private spriteDepth(distance: number): number {
+    const dir = DIRS[this.view.facing]
+    let open = 0
+    for (let x = this.view.x, y = this.view.y; open < 2 && this.geo?.wall(x, y, this.view.facing) === 0; open++) {
+      x = (x + dir[0]) & 15
+      y = (y + dir[1]) & 15
+    }
+    // the camera is 0.35 behind the centre of its square, so the first wall is open + 0.85 away
+    const step = Math.max(0, Math.min(1, (open + 0.85 - 0.8) / 2))
+    return 0.65 + distance * step
   }
 
   /** Position the sprite relative to the current view; scripts can show it before the view is set. */
   private placeSprite() {
     if (!this.sprite) return
-    const { group, distance } = this.sprite
+    this.sprite.z = this.spriteDepth(this.sprite.distance)
+    this.sprite.glide = null
+    this.poseSprite()
+  }
+
+  private poseSprite() {
+    if (!this.sprite) return
+    const { group, z } = this.sprite
     const dir = DIRS[this.view.facing]
-    // The script's distance counts open doors as passable, but a door is still a drawn wall:
-    // stand in front of the first wall in view, or the sprite would be hidden behind it.
-    let d = 0
-    for (let x = this.view.x, y = this.view.y; d < distance && this.geo?.wall(x, y, this.view.facing) === 0; d++) {
-      x = (x + dir[0]) & 15
-      y = (y + dir[1]) & 15
-    }
-    // a little beyond the centre of its square
-    const z = d + 0.65
     const eye = this.target(this.view).pos
     group.position.set(eye.x + dir[0] * z, 0, eye.z + dir[1] * z)
     group.rotation.y = -this.view.facing * (Math.PI / 2)
@@ -223,6 +256,13 @@ export class World {
       this.camera.position.lerpVectors(a.from, a.to, e)
       this.yaw = a.fromYaw + (a.toYaw - a.fromYaw) * e
       if (k >= 1) this.anim = null
+    }
+    const sp = this.sprite
+    if (sp?.glide) {
+      const k = Math.min((now - sp.glide.t0) / SPRITE_GLIDE_MS, 1)
+      sp.z = sp.glide.from + (sp.glide.to - sp.glide.from) * k
+      if (k >= 1) sp.glide = null
+      this.poseSprite()
     }
     this.camera.rotation.set(0, this.yaw, 0)
     this.renderer.render(this.scene, this.camera)
