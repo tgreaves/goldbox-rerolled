@@ -96,6 +96,25 @@ Delay (`FUN_4B46_03D5`, same as ECL 0x34), round counter `DS:6DE3` +1, `FUN_3aae
 4. `FUN_2e08_0916`: experience message; `FUN_2e08_0ecd`: treasure menu (View, Take, Pool, Share, Detect, Exit)
 5. If the party was destroyed: "The monsters rejoice for the party has been destroyed"
 
+## Player turn (O, `FUN_320c_031a`)
+
+If the combatant cannot act (char[0x10D] = 0) the turn ends. If a spell is queued in combat record [0], it is cast now (`FUN_4e53_0c20`) and the turn ends. Otherwise the menu (`FUN_320c_0666`) repeats until an action ends the turn:
+
+| Key | Action | Routine |
+|---|---|---|
+| M | Move | `FUN_320c_09df` |
+| V | View character (ready/swap items; recomputes attacks) | `FUN_4894_0ab3` |
+| A | Aim: choose target and attack | `FUN_3aae_3558` |
+| U | Use item | `FUN_4894_0ef8` |
+| C | Cast spell | `FUN_3aae_2414` |
+| T | Turn undead | `FUN_3aae_116a` |
+| Q | Quick: set char[0x10F] and let the AI play this turn | `FUN_320c_122b`, `FUN_3334_000f` |
+| D | Delay | `FUN_320c_0e45` |
+| 2 | Toggle "magic on/off" for auto characters (`DS:6E30`) | |
+| Space | Clear quick mode for all non-NPC members | |
+| Ctrl-P (0x10) | Quick mode for everyone, end turn | |
+| − | `FUN_3aae_3b93` (**?**) | |
+
 ## Computer-controlled combatants (O, `FUN_3334_000f`)
 
 Used for monsters, NPCs and party members in quick-combat (char[0x10F] ≠ 0).
