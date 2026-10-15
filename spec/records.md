@@ -29,7 +29,7 @@ O = read by the character sheet (`FUN_4894_004a`, `050d`, `0608`, `0901`, `FUN_1
 | 0x00 | u8 + 15 chars | name (Pascal string) | O |
 | 0x10–0x15 | u8 ×6 | STR, INT, WIS, DEX, CON, CHA | O |
 | 0x16 | u8 | exceptional strength % (shown when STR = 18; 100 shown as "00") | O |
-| 0x18–0x2C | u8 ×21 | memorised spells: id = ready, id + 0x80 = pending until rest, 0 = empty | O |
+| 0x17–0x2B | u8 ×21 | memorised spells: id = ready, id + 0x80 = pending until rest, 0 = empty | O |
 | 0x2C | u8 | scribing hours remaining | O |
 | 0x2E | u8 | race (table below) | O |
 | 0x2F | u8 | class (table below) | O |

@@ -18,7 +18,7 @@ Magic menu (`FUN_3f81_13f1`): **C**ast (`3f81:1781`), **M**emorize (`3f81:090a`)
 ## Memorize (O, `FUN_3f81_090a`)
 
 - Pick a known spell (spell-known flags char[0x32 + id]) of a class/level with a free slot (`FUN_4e53_153c(class, level)` against slots char[0xB2..0xB7], see [[spec/progression]])
-- It goes into the first empty memorised slot char[0x18..0x2C] as **`id + 0x80`** (pending); it becomes usable only after resting
+- It goes into the first empty memorised slot char[0x17..0x2B] as **`id + 0x80`** (pending); it becomes usable only after resting
 - Leaving offers to clear pending choices (`FUN_4e53_1439`)
 
 ## Rest (O, `FUN_4b46_0c9a`)

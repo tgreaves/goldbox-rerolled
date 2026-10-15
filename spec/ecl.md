@@ -154,7 +154,7 @@ Count = fixed operands; `+N` = variadic. Validated: every opcode appears in data
 | 38 | PROGRAM | 1 | built-in mode: 0 = party/training hall screen, 8 = ending sequence, 9 = encamp (see [[spec/architecture]]) | O |
 | 39 | WHO | 1 | prompt, player picks current character | O |
 | 3A | CLEAR_BOX | 0 | clear text box | O |
-| 3B | FIND_IN_CHAR_LIST | 3 | for each member, scan char bytes 0x18–0x69 for a value → index, member count. The range overruns the 21 memorised-spell slots into race/class/age (original behaviour) | O |
+| 3B | FIND_IN_CHAR_LIST | 3 | for each member, scan char bytes 0x18–0x69 for a value → index, member count. The range covers memorised slots 0x18–0x2B (missing the first slot, 0x17) and the spell-known flags, but also scribe timer, race, class, age and max HP; reproduce as-is | O |
 | 3C | PRINT_LIST | 1 | print entries `mem[addr+i]` (as values+1) one per line until a value of 0 or 0xFF; advances the text cursor | O/I |
 | 3D | CLEAR_TOP | 0 | clear the upper text region (rows 1–15) and set `DS:84DE` (next print starts lower) | O/I |
 

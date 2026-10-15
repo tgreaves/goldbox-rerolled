@@ -198,7 +198,7 @@ If combat record [0x11] = 0, cleric level (char[0x96]) > 0 and `FUN_3aae_1351` f
 
 ### Spells (`FUN_3334_0545`)
 
-If combat record [1] is set: collect the non-zero memorised spells in char[0x18..0x2C] (21 slots). Allowed for monsters/NPCs, or for party members when magic is on. Up to d7 passes × 3 random picks with falling priority; first spell accepted by `FUN_3334_02eb` is cast (`FUN_3aae_2414`).
+If combat record [1] is set: collect the non-zero memorised spells in char[0x17..0x2B] (21 slots). Allowed for monsters/NPCs, or for party members when magic is on. Up to d7 passes × 3 random picks with falling priority; first spell accepted by `FUN_3334_02eb` is cast (`FUN_3aae_2414`).
 
 ### Weapon choice (`FUN_3334_13ca`)
 
