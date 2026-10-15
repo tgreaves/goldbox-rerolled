@@ -1,0 +1,52 @@
+:root {
+  --bg: #101820;
+  --panel: #18232e;
+  --line: #2a3a4a;
+  --text: #e6edf3;
+  --muted: #8b9bab;
+  --accent: #f2c94c;
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); }
+#app { min-height: 100%; display: flex; flex-direction: column; }
+button, select, input { font: inherit; color: inherit; }
+button {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+  padding: 0.5rem 0.9rem; cursor: pointer; min-height: 44px;
+}
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 600; }
+.muted { color: var(--muted); }
+
+.import { max-width: 40rem; margin: auto; padding: 1.5rem; display: grid; gap: 1rem; }
+.import h1 { margin: 0; }
+.import .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+
+.viewer { display: grid; grid-template-columns: 14rem 1fr; flex: 1; min-height: 0; }
+.viewer nav {
+  border-right: 1px solid var(--line); padding: 0.75rem; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 0.25rem;
+}
+.viewer nav button { text-align: left; min-height: 36px; padding: 0.3rem 0.6rem; }
+.viewer nav button.active { border-color: var(--accent); color: var(--accent); }
+.viewer nav select { display: none; }
+.viewer main { padding: 1rem; overflow-y: auto; }
+.grid { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
+figure { margin: 0; display: grid; gap: 0.3rem; justify-items: start; }
+figcaption { font-size: 0.8rem; color: var(--muted); }
+canvas.pixel { image-rendering: pixelated; background: #000; border: 1px solid var(--line); max-width: 100%; }
+
+@media (max-width: 700px) {
+  .viewer { grid-template-columns: 1fr; }
+  .viewer nav { border-right: none; border-bottom: 1px solid var(--line); flex-direction: row; }
+  .viewer nav button { display: none; }
+  .viewer nav select { display: block; width: 100%; min-height: 44px; }
+}
+
+.update-bar {
+  position: fixed; left: 50%; bottom: calc(1rem + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  background: var(--panel); border: 1px solid var(--accent); border-radius: 8px;
+  padding: 0.5rem 0.75rem; display: flex; gap: 0.5rem; align-items: center; z-index: 10;
+}

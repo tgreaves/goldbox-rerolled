@@ -11,5 +11,5 @@ Every deliberate departure from the 1988 DOS game goes here, so the port's behav
 | IMP-002 | Saving | Save anywhere, plus quicksave | Saving only from the camp menu and the party screen ([`spec/camp.md`](spec/camp.md)) | Yes (changes difficulty) | planned |
 | IMP-003 | Interface | Mouse and touch for every menu and screen | Keyboard only ([`spec/graphics.md`](spec/graphics.md), menu input loop) | No | planned |
 | IMP-004 | Interface | Responsive layout from phone to desktop | Fixed 320×200 screen | No | planned |
-| IMP-005 | Platform | Runs offline as an installable web app or a single file | DOS executable | No | planned |
+| IMP-005 | Platform | Runs offline as an installable web app or a single file; game files imported once and kept in the browser | DOS executable reading files from its folder | No | in progress |
 | IMP-006 | Saving | Saves exported and imported as original `SAVGAM*.DAT` files | Files in the game folder | No | planned |
