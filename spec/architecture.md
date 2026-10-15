@@ -13,7 +13,7 @@ Part of [[spec/README]].
 |---|---|
 | ECL virtual machine | Area scripts (ECL bytecode) |
 | 3D view renderer, movement, doors | Maps (GEO), wall art sets (WALLDEF, 8X8D tiles) |
-| Combat engine, spell effects, character rules (**inferred**, not yet traced) | Monster stats/items/spells (MON*CHA/ITM/SPC), item tables |
+| Combat engine, spell effects, character rules (see [[spec/combat]], [[spec/effects]], [[spec/progression]]) | Monster stats/items/spells (MON*CHA/ITM/SPC), item tables |
 | Menus, text window, input | All adventure text (packed inside ECL) |
 | Native routines reachable via ECL `CALL` | Pictures, sprites, portraits |
 
