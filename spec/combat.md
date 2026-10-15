@@ -234,7 +234,7 @@ The `+dy·5` skew produces the slanted Gold Box combat view; adjacent squares sh
 
 Each square edge is classified by `FUN_34c7_012b`/`01ad` (both sides of the edge, OR-ed): **0 open, 1 wall, 3 door** (passage value 0 → wall; wall present but passable → door). Off-map edges are walls, except east/west edges on the party's own row. `FUN_34c7_02ba`, `0377`, `040f`, `0615` stamp floor (icon 0x16), wall and door pieces into the block according to the west/north/east edge classes and the neighbouring squares (piece ids are listed in those routines).
 
-Finishing pass (`FUN_34c7_0000`): on every floor cell (icon property `DS:2747[icon·4] == 0x16`) roll d100: 98 → icon 0x1A, 99 → 0x1B, 100 → (if area type ≠ 10 and another d100 = 1) d10 ≤ 6 → 0x1C, 7–10 → 0x1D.
+Finishing pass (`FUN_34c7_0000`): on every floor cell (icon property `DS:2747[icon·4] == 0x16`) roll d100: 98 → icon 0x1A, 99 → 0x1B, 100 → (if the current area ≠ 10 and another d100 = 1) d10 ≤ 6 → 0x1C, 7–10 → 0x1D.
 
 ## Still open
 

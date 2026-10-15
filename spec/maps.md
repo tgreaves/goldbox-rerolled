@@ -26,7 +26,7 @@ Part of [[spec/README]]. Decoder/renderer: `tools/geo.py`.
 
 - Party position `DS:6AAD` (X), `DS:6AAE` (Y), facing `DS:6AAF` ∈ {0,2,4,6} = N,E,S,W
 - Lookups wrap: x or y < 0 → 15, > 15 → 0
-- Exception: in area types 0 and 10 (`DS:84DC`) out-of-bounds lookups return 0 (no wall / blocked)
+- Exception: in areas 0 and 10 (current area id `DS:84DC`) out-of-bounds lookups return 0
 
 ## Movement (O, `FUN_3e76_0d6d`, `FUN_55a0_0350`)
 
@@ -98,4 +98,4 @@ When `DS:6AAC` ≠ 0 a different view (`FUN_55a0_0000`) is used instead (**?**, 
 
 - Background drawing and the alternate view (`FUN_55a0_0174`, `FUN_55a0_0000`)
 - Exact bank layout built by `FUN_5924_003b` (which 8X8D record lands where)
-- Area types (`DS:84DC`): values 0, 10, 0x19–0x1B seen in code
+- `DS:84DC` is the current area id (ECL record number, saved as A word 0x49F2); areas 0, 10 and 25–27 are special-cased in code

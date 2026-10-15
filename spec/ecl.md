@@ -127,7 +127,7 @@ Count = fixed operands; `+N` = variadic. Validated: every opcode appears in data
 | 1D | PARTY_STRENGTH | 1 | dest = Σ over party of a weighted sum of 5 stats /10 | O (stats **?**) |
 | 1E | CHECK_PARTY | 6 | op1 selects: 0x6BA7 → min/max/average of find/remove traps (char[0x79]); 0x6C1B → of movement (char[0x11C]); 0 → per-member test via `FUN_10ba_2199` (has effect op2); results stored to op3–op6 | O |
 | 1F | — | — | no handler (skip table says 2); never used | O |
-| 20 | NEW_ECL | 1 | load ECL record n and its map, stop | O |
+| 20 | NEW_ECL | 1 | set current area `DS:84DC` = n (saved as A word 0x49F2), load ECL record n, stop | O |
 | 21 | LOAD_AREA | 3 | load GEO record a (255/127 = keep); c = sound/music (**?**) | O/I |
 | 22 | PARTY_HAS_RANGER | 2 | dest1 = 1 if any member's class is Ranger or Cleric/Ranger; dest2 = 0 | O |
 | 23 | SURPRISE | 4 | d6 surprise rolls → result 0–3 at 0x6DCB | O/I |

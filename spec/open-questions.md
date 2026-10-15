@@ -11,7 +11,7 @@ Part of [[spec/README]]. Ordered by what a browser reimplementation needs first.
 
 1. ~~8X8D tile format and EGA palette~~ done, see [[spec/graphics]]
 2. ~~WALLDEF view layout~~ done in [[spec/maps]]; remaining: background, alternate view, tile bank loader
-3. Area types (`DS:84DC`) and how they change movement/drawing
+3. ~~Area types~~ `DS:84DC` is the current area id; areas 0, 10, 25–27 special-cased
 4. Text window geometry (`FUN_1709_*`); font done
 
 ## Needed for events
