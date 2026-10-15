@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Pool of Radiance engine specification
 
-Formal description of the DOS *Pool of Radiance* engine (GOG release 1.3) and its data, written so the game can be reimplemented (target: a web browser). Back to [[pool-of-radiance-re/index]].
+Formal description of the DOS *Pool of Radiance* engine (GOG release 1.3) and its data, written so the game can be reimplemented (target: a web browser). Back to the [project README](../README.md).
 
 ## Status legend
 
