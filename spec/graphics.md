@@ -50,6 +50,14 @@ repeat frames: u32 delay, image block
 - Glyph index = ECL text code: 0x00–0x1F = `@A–Z[\]^_`, 0x20–0x3F = space, punctuation, digits
 - Further glyphs: runes (code-wheel protection, **I**), window frame pieces
 
+## Screen layout (O for coordinates passed in code; I for roles)
+
+- 320 × 200, EGA 16 colours; text on a **40 × 25 grid of 8 × 8 cells** using the font above
+- `FUN_1709_0626(text, colour, row, col)` prints one line; `FUN_1709_0768(text, …, top, left, bottom, right)` prints wrapped text in a box; `FUN_1709_0dd3(bottom, right, top, left)` clears a box
+- Exploration: 3D view = 11 × 11 tiles at tile (2, 2), i.e. pixels 16–103; text window = rows 17–22, columns 1–38 (text cursor `DS:5E25` row, `DS:5E24` column, reset to row 17 / column 1); event pictures (88 × 88) occupy the 3D view area
+- Colours used for text: 10 (light green) normal, 13 (light magenta) highlight/NPC, 14 (yellow) wounded, 15 (white) headings
+- Character sheet: name row 1, race/age row 3, alignment row 4, class row 5, stats rows 7–12, money from row 7 column 26, combat stats from row 17
+
 ## Still to decode
 
 - Exact use of `x, y` and `cga_map`
