@@ -55,6 +55,25 @@ Character bytes 0x6D–0x71 hold save targets in the order: death/poison/paralys
 
 Called at fixed points with event codes: 4 (attacker after damage), 5 (target after damage), 10 (attacker before to-hit), 11 (start of attack), 13 (death/drop), 16 (target before to-hit or save). It walks the character's effect list (9-byte records) and applies type-specific code. Effect types and handlers: **?**
 
+## Combat statistics (O, `FUN_10ba_0bb8`)
+
+Recomputed whenever equipment or effects change:
+
+1. Clear the 13 readied-item pointers (char[0xCC + 4·slot]); walk the item list: count items (char[0xC7]); encumbrance char[0x102] = Σ weight × max(1, count) + Σ coins; for readied items (item[0x34]): slot = `ITEMS[type][0]` (0–8 → char[0xCC + 4·slot]; 9 = ring → char[0xF0] then [0xF4]); arrows (type 73) → char[0xF8], quarrels (type 28) → char[0xFC]; hands used += `ITEMS[type][1]`
+2. A readied item with name word n1 = 0xBA (Bag of Holding) reduces encumbrance by 5000, not below the weight of readied items
+3. Copy base values: damage dice char[0x115..0x11A] ← natural attack char[0xA3..0xA8] (count/sides/bonus per hand; 1d2 unarmed by default); AC char[0x111] ← char[0xA9]; movement char[0x11C] ← char[0x72]; 60−THAC0 char[0x110] ← char[0x2D]
+4. AC components: DEX (`FUN_10ba_10e6`), armour, shield, rings etc. (`FUN_10ba_0282` per readied item); weapons apply dice/bonuses (`FUN_10ba_01fb`); unarmed adds STR to-hit (`FUN_10ba_1282`) and damage (`FUN_10ba_1325`)
+5. char[0x111] = Σ components (with the base/armour component the maximum of the two); **rear AC** char[0x112] = armour + magic components − 2 (no DEX, no shield)
+6. char[0x6B] = fighter level, or 1 for non-fighters and monsters (copied to combat record [5])
+
+### Ability adjustments (O)
+
+STR to-hit (`FUN_10ba_1282`, only if char[0xAA] is set, i.e. not monsters), on the combined strength index from `FUN_10ba_11ea` (3–18, then 18/xx bands, then giant strength): ≤3 → −3, 4–5 → −2, 6–7 → −1, 8–16 → 0, 17–19 → +1, 20–22 → +2, 23–25 → +3, 26–27 → +4, 28–30 → +5/+6/+7 (AD&D STR table).
+
+DEX, in "60 − AC" units (higher is better) (`FUN_10ba_10e6`): ≤3 → −4, 4–6 → −3/−2/−1, 7–14 → 0, 15–18 → +1…+4, 19–20 → +4, 21–23 → +5, 24–25 → +6.
+
+DEX reaction, added to initiative (`FUN_10ba_1168`): <3 → −4, 3–5 → −3…−1, 6–15 → 0, 16–18 → +1…+3, 19–20 → +3, 21–23 → +4, 24–25 → +5.
+
 ## Battle flow (O)
 
 Entry: ECL `COMBAT` → `FUN_29c3_179b` → battle `FUN_320c_007a` → aftermath `FUN_2e08_1527`.

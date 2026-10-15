@@ -89,10 +89,13 @@ Pointer fields are stale in files and must be ignored on load.
 | 0x2A | ptr | next item (in memory; linked list) | O |
 | 0x2E | u8 | item type → `ITEMS` entry | O |
 | 0x2F, 0x30, 0x31 | u8 ×3 | name words n1, n2, n3 (1-based into the word table, 0 = none) | O/I |
-| 0x32 | u8 | plus (**I**) | I |
-| 0x34 | u8 | readied flag | I |
-| 0x37 | u16 | weight (coins) | I |
-| 0x39 | u8 | count / charges (**I**) | I |
+| 0x32 | s8 | plus (shown, and makes the item "magic" for Detect Magic) | O |
+| 0x33 | s8 | secondary plus/bonus (also counts as magic) | O/I |
+| 0x34 | u8 | readied flag | O |
+| 0x35 | u8 | hidden name words: bit (3−n) set hides word n until identified | O |
+| 0x36 | u8 | magic flag (cursed/special, counts as magic) | O/I |
+| 0x37 | u16 | weight (coins) | O |
+| 0x39 | u8 | count (arrows etc.); shown as a prefix; weight × count | O |
 | 0x3A | u16 | value (gp) | I |
 | 0x3C–0x3E | u8 ×3 | magical effects (**I**) | I |
 
