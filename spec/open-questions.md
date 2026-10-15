@@ -24,7 +24,7 @@ Part of [[spec/README]]. Ordered by what a browser reimplementation needs first.
 
 8. ~~Character, item, monster records~~ main fields done in [[spec/records]]; remaining: unlabelled character bytes, item fields 0x32–0x3E, ITEMS bytes 5–8/12–15, effect types
 11. Combat engine, spells, saving throws, experience
-12. Save game format (`SAVGAM*.DAT`, 13137 bytes)
+12. ~~Save game format~~ done in [[spec/savegame]]; load routine not traced
 
 ## Smaller loose ends
 
