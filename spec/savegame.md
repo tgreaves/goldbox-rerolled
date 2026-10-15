@@ -40,9 +40,11 @@ Validated: both shipped saves (`SAVGAMA.DAT`, `SAVGAMJ.DAT`) parse to exactly 13
 Before writing, the engine copies a few engine globals into array A so they persist:
 
 - `A[0x4AFA..0x4AFC]` = wall-set slot record ids, `A[0x4AFD..0x4AFF]` = slot numbers (`DS:6AAE + 4i`, `DS:6AB0 + 4i`)
-- `A[0x4A7C]` (byte offset 0x1F8) = `DS:49E2`
-- `A[0x4A7F]` (byte offset 0x1FE) = `DS:49F6 × 2 + DS:49F5`
-- `B[0x6E12]` (byte offset 0x624) = block digit
+- ECL 0x49FC (A byte offset 0x1F8) = `DS:49E2` game speed
+- ECL 0x49FF (A byte offset 0x1FE) = `DS:49F6 × 2 + DS:49F5` (monster pictures, portraits)
+- ECL 0x6E12 (B byte offset 0x624) = block digit
+
+Checked against both shipped saves: speed 4, toggles 3, block 2, wall sets (2, 4, 1) in slots (1, 2, 3), current area 20 (0x49F2) with GEO record 20 (0x49C5).
 
 Because the whole ECL VM (code + all three arrays) is saved, a reimplementation that keeps the same memory model can load original saves directly.
 

@@ -33,17 +33,69 @@ The engine contains no knowledge of specific places. Area identity, exits, encou
 - `CALL` dispatches on fixed addresses, consistent with the DOS port emulating C64 machine-code entry points
 - ECL records start with `88 13` before the code, skipped by the loader; possibly a vestigial C64 load address or marker
 
-## Main adventure loop (observed, `FUN_29c3_32f8`)
+## Main adventure loop (O, `FUN_29c3_32f8`)
 
-1. On area entry: load `ECL<block>` record (`FUN_2fea_0341`), reset the VM and read the 5 vectors (`FUN_2fea_01b6`), run `on_enter`
-2. Loop:
-   - read a command key (`FUN_3e76_0989`)
-   - `E` (Encamp): run `camp_menu`; if confirmed, run `camp_confirmed`
-   - after a move/turn: run `on_move`; if no area change, apply the move (`FUN_3e76_0d6d`, door handling) and run `on_step` at the new square
-   - if a script requested an area change (`DS:442F`), re-enter (`FUN_29c3_31b4`): recompute the square, run `on_enter`, `on_move`, `on_step`
-3. Exit when `DS:49FF` is set
+Vectors are cached in `DS:49E3` (`on_move`), `49E5` (`on_step`), `49E7` (`camp_menu`), `49E9` (`camp_confirmed`), `49EB` (`on_enter`).
 
-See [[spec/ecl]] for the vectors and [[spec/maps]] for movement.
+**Start**
+
+1. Game mode 4 (map); current area `DS:84DC` = ECL 0x49F2. Areas 25–27 with ECL 0x49E6 = 0 are overland travel (mode 3).
+2. Load the area's ECL record unless resuming a save (`DS:49F8`), reset the VM, run `on_enter`, draw the view.
+
+**Each command**
+
+1. Read a command (`FUN_3e76_0989`, below). It returns only for a move, Encamp or Look.
+2. While Look is pending (ECL 0x6DCA > 1) or the command is Encamp:
+   - Encamp: the camp screen ([[spec/camp]])
+   - Look: remember Search (bit 0), set 0x6DCA = 1, run **`on_step`** on the current square, re-enter if the area changed, then restore 0x6DCA to the remembered Search bit
+   - then read the next command
+3. Run **`on_move`**.
+4. If the script changed area (`DS:442F`): re-enter (below). Otherwise:
+   - save X, Y to ECL 0x49F0/0x49F1 and try the move (`FUN_3e76_0d6d`, below); play the step sound if the position changed
+   - run **`on_step`**; re-enter if the area changed
+5. Stop when the quit/party-dead flag `DS:49FF` is set.
+
+So `on_move` and `on_step` run only when the player tries to move forward (or picks a direction outdoors). Turning does not run any script.
+
+### Command menu (O, `FUN_3e76_0989`)
+
+Map areas (`DS:49FA` = 1): "Area Cast View Encamp Search Look", plus the cursor keys.
+
+| Input | Effect | Returns? |
+|---|---|---|
+| **A**rea | toggle the overhead map (`DS:6AAC`) unless ECL 0x49FB ≠ 0 ("Not Here") | no |
+| **C**ast | camp-style cast for the current character if status Okay | no |
+| **V**iew | character sheet | no |
+| **E**ncamp | | yes |
+| **S**earch | toggle bit 0 of ECL 0x6DCA | no |
+| **L**ook | set bit 1 of ECL 0x6DCA, short delay | yes |
+| Up | move forward | yes |
+| Down | turn around (no sound) | no |
+| Left / Right | turn 90° (with sound) | no |
+| other keys | select another party member | no |
+
+Overland (`DS:49FA` 2–4): "Cast View Encamp Search Look"; the cursor keys set the facing to N/E/S/W and return a move in that direction. The overland icon set (`ICON`) is loaded on first entry.
+
+Command keys are read by the menu loop in [[spec/graphics]] (number keys work as a keypad).
+
+### Moving (O, `FUN_3e76_0d6d`)
+
+- If `on_move` set ECL 0x6DC9 ≥ 0xFF, the move is cancelled and 0x6DC9 reset to 0.
+- Map areas: `passage()` from [[spec/maps]]:
+  - 1: step forward (`FUN_3e76_073b`)
+  - 0: bump sound
+  - 2 or 3, locked: "Locked." menu with **Bash**, **Pick** (only if `DS:6DDF` is set and a member has the thief skill, `FUN_3e76_0236(6)`) and **Knock** (only if `DS:6DE0` is set and someone has spell 0x1F, Knock), then Exit. Bash is `FUN_3e76_0294`, Pick `FUN_3e76_04df`, Knock `FUN_3e76_0648`. On a type-3 door, Pick just removes the Pick option (it cannot be picked). A success steps forward.
+- Overland: `FUN_3e76_0818`.
+- Afterwards any picture animation and encounter sprite are cleared.
+
+### Re-entering after an area change (O, `FUN_29c3_31b4`)
+
+Repeated while scripts keep changing area:
+
+1. Read the square's event byte; clear ECL 0x6DD5; remember the current character.
+2. Area kind `DS:49FA` = 1, run **`on_enter`**, game mode 4.
+3. If ECL 0x49E6 = 0: area 25 → kind 2, area 26 → kind 3, area 27 → kind 4, all in mode 3 (overland). On entering area 26 with ECL 0x4AB3 = 0xFE and 0x4AA2 = 0, `FUN_4804_06b3(1)` also runs (**?** a story event).
+4. Run **`on_move`**, then, if the area did not change again, **`on_step`**. Restore the current character and redraw.
 
 ## Built-in screens (O)
 

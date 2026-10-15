@@ -62,7 +62,7 @@ Each step = **5 minutes**:
    - else finish one pending **memorisation** (`FUN_4b46_0925`: clear bit 7 of the first pending slot)
    - countdown = level of the next pending spell × 3 (i.e. **15 minutes per spell level**)
 6. **Hourly block** (`FUN_4b46_0bb2`): every 12 steps (1 hour), a positive char[0x2C] counts down by one. While it is above 0, step 5 does nothing for that character. When it reaches 0, the countdown is restarted from the next pending scribe or memorisation, without learning anything that step. The code that sets char[0x2C] has not been found (**I**: a delay in hours, perhaps after a spell is cast)
-7. **Random encounter** check: if `B[0x5A4]` ≠ 0, a counter (`A[0x49FB]`) increments each step; when it reaches `B[0x5A4]` it resets and if d100 ≤ `B[0x5A6]` the rest ends: "The Party is rudely interrupted!" (returns "interrupted", which runs the area's `camp_confirmed` vector)
+7. **Random encounter** check: if `B[0x5A4]` ≠ 0, a counter (`DS:49FB`, an engine global) increments each step; when it reaches `B[0x5A4]` it resets and if d100 ≤ `B[0x5A6]` the rest ends: "The Party is rudely interrupted!" (returns "interrupted", which runs the area's `camp_confirmed` vector)
 
 Scripts control encounters per area by setting `B[0x5A4]` (steps between checks) and `B[0x5A6]` (percent chance); the VM reset clears both.
 

@@ -19,8 +19,8 @@ The code starts with five 4-byte `GOTO` instructions. The engine reads their tar
 
 | Slot | Address | Name in `ecl.py` | Run by the engine |
 |---|---|---|---|
-| 0 | 0x9900 | `on_move` | after each command, before the move is applied; scripts use it for area exits by facing |
-| 1 | 0x9904 | `on_step` | after the move is applied; scripts dispatch on the square's event byte |
+| 0 | 0x9900 | `on_move` | when the player tries to move, before the move; also after every area entry. Scripts use it for exits by facing, or set 0x6DC9 to cancel the move |
+| 1 | 0x9904 | `on_step` | after the move attempt (even if blocked), on Look, and after area entry; scripts dispatch on the square's event byte |
 | 2 | 0x9908 | `camp_menu` | player presses Encamp |
 | 3 | 0x990C | `camp_confirmed` | after `camp_menu`, if the engine's confirmation succeeds |
 | 4 | 0x9910 | `on_enter` | on entering the area |
@@ -64,17 +64,86 @@ operand     := kind:u8 payload
 - `len` bytes → 6-bit codes, big-endian bit order, 4 codes per 3 bytes
 - Code 0 is skipped; code < 0x20 → ASCII `code+0x40` (`@`, `A`–`Z`, `[`…`_`); otherwise ASCII `code` (space, digits, punctuation)
 
-## Memory map (O, `FUN_2fea_06fb`, `0e0c`, `0c77`)
+## Memory map (O, `FUN_2fea_06fb`, read `FUN_2fea_0e0c`, write `FUN_2fea_0c77`)
 
-| Address range | Kind | Notes |
+Every address in arrays A, B and C holds one **16-bit word** (address *n* is word *n − base*); the code area is bytes.
+
+| Address range | Kind | Storage |
 |---|---|---|
-| 0x4900–0x4CFF | word array A | game state; 0x4A00–0x4A1F per area |
-| 0x6B00–0x6EFF | word array B | some reads are computed (`FUN_2fea_07bc`), writes have side effects (`FUN_2fea_0a74`) (**?** details) |
-| 0x9700–0x98FF | word array C | scratch |
-| 0x9900–0xB6FF | bytes | the ECL code itself; writable |
-| other | engine registers | see below |
+| 0x4900–0x4CFF | word array A | far buffer `DS:49D2`, byte offset `(n − 0x4900)·2`; game state, 0x4A00–0x4A1F per area |
+| 0x6B00–0x6EFF | word array B | far buffer `DS:49D6`, byte offset `(n − 0x6B00)·2`; part of it is a view of the current character (below) |
+| 0x9700–0x98FF | word array C | far buffer `DS:49DA`; scratch |
+| 0x9900–0xB6FF | bytes | the ECL code itself; writable (a write stores the low byte) |
+| anything else | engine registers | see below; unlisted addresses read as an undefined value and ignore writes |
 
 Strings in arrays A/B/C are sequences of words terminated by 0, one character per word.
+
+**Notation used in the other spec files:** `A[0x1CA]`, `B[0x6D8]` and similar with values below 0x800 are **byte offsets** into the buffer, so the ECL address is base + offset/2 (`B[0x6D8]` = ECL 0x6E6C). Values written as 0x49xx/0x4Axx or 0x6Bxx–0x6Exx are ECL addresses.
+
+### Side effects of A writes (O)
+
+- 0x49FD, 0x49FE: also set `DS:84E8` (**I**: forces a redraw)
+
+### B as a view of the current character (O, `FUN_2fea_07bc` read, `FUN_2fea_0a74` write)
+
+The B array keeps the C64 layout of the character record at 0x6B00. Some addresses are redirected to the DOS record of the current character (`DS:5D92`); all other B addresses are plain storage. A write always also stores the word in the B buffer; a read of a mapped address ignores the buffer.
+
+| ECL address | Read returns | Write does |
+|---|---|---|
+| 0x6B00 | buffer | value 0 sets `DS:84D3` (**?**) |
+| 0x6B18 | char[0x14] CON | — |
+| 0x6B20–0x6B70 | buffer (not mapped) | char[0x17 + (n − 0x6B20)] = low byte: memorised spells and spell-known flags |
+| 0x6B9B | char[0x6E] (second saving throw) | — |
+| 0x6BA0 | char[0x73] highest level (signed) | — |
+| 0x6BA5–0x6BAC | thief skills char[0x77..0x7E] | — |
+| 0x6BB8 | char[0x84] NPC morale | char[0x84] = v (minus 0x32 if v > 0xB2) |
+| 0x6BBB, BD, BF, C1, C3 | money words char[0x88], [0x8A], [0x8C], [0x8E], [0x90] (copper … platinum) | same |
+| 0x6BD8 | char[0xA0] alignment (signed) | — |
+| 0x6BF7 | word char[0xB8] (**?**) | same |
+| 0x6BF9 | char[0xBA] (**?**) | same |
+| 0x6C00 | 0x80 if char[0x10D] = 0 (cannot act), else 1 | v ≥ 0x80: char[0x10D] = 0, and v = 0x87 also sets status char[0x10C] = 7 (Stoned); v = 0 sets `DS:84D2` (**?**) |
+| 0x6C0C | 0x80 if char[0x10E] = 0 and char[0x10F] ≠ 0; 0x81 if char[0x10E] = 1; else 0 | 0 → [0x10E]=0,[0x10F]=0; 0x80 → 0,1; 0x81 → 1,1 |
+| 0x6C0D | undefined (the original returns an uninitialised word) | — |
+| 0x6C1B | char[0x11C] movement | — |
+| 0x6DB1, 0x6DB4 | position of the current character in the party (0-based) | — |
+| 0x6DCF | CHA table: CHA 3→0, 4→5, 5→10, 6→15, 7→20, 8–12→25, 13→30, 14→35, 15→40, 16→50, 17→55, 18–25→60 (**I**: reaction/loyalty %) | — |
+| 0x6E12 | current block digit `DS:5376` | switch block (`FUN_1802_094a(3, v)`) |
+| 0x6E22, 0x6E24, 0x6E26 | buffer | v > 0x80: load wall set v & 0x7F into slot 1, 2, 3 (`FUN_55a0_0e08`) |
+| 0x6E3E | party size (same word as the buffer) | — |
+
+### Engine-visible variables (O unless marked)
+
+Variables the engine itself reads or writes, so a port must give them meaning. Everything else in A, B and C is script-private.
+
+| ECL address | Meaning | Spec |
+|---|---|---|
+| 0x49C3, 0x49C4 | overland x, y (wilderness) | [[spec/combat]] |
+| 0x49C5 | current GEO record (restored on load) | [[spec/savegame]] |
+| 0x49E5 | area flag: no item Use / no AI item use | [[spec/town]], [[spec/combat]] |
+| 0x49E6 | ≠ 0: areas 25–27 behave as map areas instead of overland travel | [[spec/architecture]] |
+| 0x49F0, 0x49F1 | party X, Y before the last move | [[spec/architecture]] |
+| 0x49F2 | current area id (written by `NEW_ECL`) | this file |
+| 0x49FB | ≠ 0: the Area (overhead map) command answers "Not Here" | [[spec/architecture]] |
+| 0x49FC | game speed copy (save) | [[spec/savegame]] |
+| 0x49FD, 0x49FE | written values force a redraw (**?** meaning) | above |
+| 0x49FF | monster/portrait toggles copy (save) | [[spec/savegame]] |
+| 0x4A00–0x4A1F | per-area variables, zeroed on area entry | this file |
+| 0x4AA2 | if ≠ 0 on load, run `FUN_4804_06b3` (**?**) | [[spec/savegame]] |
+| 0x4AB3 | 0xFF changes arid wilderness terrain | [[spec/combat]] |
+| 0x4AFA–0x4AFF | wall-set record ids and slots (save) | [[spec/savegame]] |
+| 0x6DA8 | trainable class mask for the training hall | [[spec/progression]] |
+| 0x6DC9 | set to ≥ 0xFF by `on_move` to cancel the move (the engine then resets it to 0) | [[spec/architecture]] |
+| 0x6DCA | bit 0 = Search mode, bit 1 = Look requested | [[spec/architecture]] |
+| 0x6DC6 | encounter morale | [[spec/combat]] |
+| 0x6DD2, 0x6DD3 | rest-encounter interval (steps) and chance % | [[spec/camp]] |
+| 0x6DD5 | cleared on every area entry (**?**) | [[spec/architecture]] |
+| 0x6DE1 | portrait selector | [[spec/graphics]] |
+| 0x6DE2 | temple flag for `COMBAT` | [[spec/town]] |
+| 0x6DE6 | duel flag (`CALL 0x8000`) | [[spec/progression]] |
+| 0x6E12 | block digit | above |
+| 0x6E3E | party size | above |
+| 0x6E6C | shop flag for `COMBAT` | [[spec/town]] |
+| 0x6E70, 0x6E71 | to-hit modifier this battle, chosen by the attacker's char[0x10E] flag (set / clear) | [[spec/combat]] |
 
 ### Engine registers (O)
 
