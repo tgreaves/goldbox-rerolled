@@ -30,6 +30,7 @@ export class World {
   private yaw = 0
   private view: View = { x: 0, y: 0, facing: 0 }
   private sprite: { group: THREE.Group; distance: number } | null = null
+  private geo: GeoMap | null = null
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false })
@@ -69,6 +70,7 @@ export class World {
   }
 
   build(geo: GeoMap, walls: WallSets) {
+    this.geo = geo
     this.group.clear()
     this.textures.forEach((t) => t.dispose())
     this.textures.clear()
@@ -188,9 +190,16 @@ export class World {
   private placeSprite() {
     if (!this.sprite) return
     const { group, distance } = this.sprite
-    // a little beyond the centre of its square
-    const z = distance + 0.65
     const dir = DIRS[this.view.facing]
+    // The script's distance counts open doors as passable, but a door is still a drawn wall:
+    // stand in front of the first wall in view, or the sprite would be hidden behind it.
+    let d = 0
+    for (let x = this.view.x, y = this.view.y; d < distance && this.geo?.wall(x, y, this.view.facing) === 0; d++) {
+      x = (x + dir[0]) & 15
+      y = (y + dir[1]) & 15
+    }
+    // a little beyond the centre of its square
+    const z = d + 0.65
     const eye = this.target(this.view).pos
     group.position.set(eye.x + dir[0] * z, 0, eye.z + dir[1] * z)
     group.rotation.y = -this.view.facing * (Math.PI / 2)
