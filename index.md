@@ -35,6 +35,7 @@ Experiment using REA (Ghidra 12.1.4 backend) to understand how SSI's Gold Box en
   - `dax.py`: DAX container + RLE
   - `ecl.py`: ECL disassembler
   - `geo.py`: map decoder, ASCII/SVG renderer
+  - `gfx.py`: image decoder → PNG (EGA palette)
 
 ## Plan
 

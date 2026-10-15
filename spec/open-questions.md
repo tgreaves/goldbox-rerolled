@@ -9,14 +9,14 @@ Part of [[spec/README]]. Ordered by what a browser reimplementation needs first.
 
 ## Needed to walk around
 
-1. 8X8D tile format and EGA palette
+1. ~~8X8D tile format and EGA palette~~ done, see [[spec/graphics]]
 2. WALLDEF 156-byte view table layout (what to draw at each depth and side)
 3. Area types (`DS:84DC`) and how they change movement/drawing
-4. Text window geometry and font (`FUN_1709_*`)
+4. Text window geometry (`FUN_1709_*`); font done
 
 ## Needed for events
 
-5. PIC / CPIC / SPRIT / HEAD / BODY picture formats (`FUN_1464_0111` reads a 17-byte header: 4 words, a byte, 8 bytes)
+5. ~~Picture formats~~ done; remaining: SPRIT distance mapping, animation timing
 6. Remaining opcodes: 0x34, 0x3C, 0x3D, `CALL` targets, `PROGRAM` modes 0 and 8
 7. Semantics of word array B reads/writes with side effects (`FUN_2fea_07bc`, `0a74`): likely current-character fields
 

@@ -21,6 +21,7 @@ Formal description of the DOS *Pool of Radiance* engine (GOG release 1.3) and it
 | [[spec/containers]] | EXE packing, overlays, DAX archives, RLE | v1.0 (complete) |
 | [[spec/ecl]] | ECL virtual machine: encoding, memory map, opcodes | v0.5 |
 | [[spec/maps]] | GEO maps, passability, wall sets | v0.5 |
+| [[spec/graphics]] | Image blocks, animations, font, palette | v0.5 |
 | [[spec/open-questions]] | What remains, in priority order | living |
 
 ## Engine identity
