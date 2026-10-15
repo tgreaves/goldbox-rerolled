@@ -9,7 +9,7 @@ const IMAGE_FAMILIES = ['TITLE', 'PIC', 'FINAL', 'SPRIT', 'HEAD', 'BODY', 'CHEAD
 
 let timers: number[] = []
 
-export function showViewer(app: HTMLElement, files: GameFiles, reimport: () => void) {
+export function showViewer(app: HTMLElement, files: GameFiles, reimport: () => void, back?: () => void) {
   const families = new Map<string, string[]>()
   for (const n of files.names()) {
     if (!n.endsWith('.DAX')) continue
@@ -23,7 +23,8 @@ export function showViewer(app: HTMLElement, files: GameFiles, reimport: () => v
       <nav>
         <select aria-label="Asset family">${shown.map((f) => `<option>${f}</option>`).join('')}</select>
         ${shown.map((f) => `<button data-f="${f}">${f}</button>`).join('')}
-        ${files.get('SAVGAMA.DAT') ? '<button id="newgame" class="primary">New game</button><button id="loadsave">Continue save A</button>' : ''}
+        ${back ? '<button id="back" class="primary">◀ Party screen</button>' : ''}
+        ${files.get('SAVGAMA.DAT') ? '<button id="loadsave">Continue save A</button>' : ''}
         ${files.get('START.EXE') ? '' : '<p class="muted hint">Sound needs START.EXE: re-import the POOLRAD folder to include it.</p>'}
         <button id="reimport" class="muted">Re-import files…</button>
       </nav>
@@ -58,11 +59,11 @@ export function showViewer(app: HTMLElement, files: GameFiles, reimport: () => v
   app.querySelectorAll<HTMLButtonElement>('nav button[data-f]').forEach((b) => b.addEventListener('click', () => open(b.dataset.f!)))
   select.addEventListener('change', () => open(select.value))
   app.querySelector('#reimport')!.addEventListener('click', reimport)
-  const play = (start: { kind: 'new' } | { kind: 'save'; name: string }) => {
+  const play = (start: { kind: 'save'; name: string }) => {
     timers.forEach(clearInterval)
-    import('./explore').then((m) => m.showExplore(app, files, start, () => showViewer(app, files, reimport)))
+    import('./explore').then((m) => m.showExplore(app, files, start, () => showViewer(app, files, reimport, back)))
   }
-  app.querySelector('#newgame')?.addEventListener('click', () => play({ kind: 'new' }))
+  app.querySelector('#back')?.addEventListener('click', () => { timers.forEach(clearInterval); back?.() })
   app.querySelector('#loadsave')?.addEventListener('click', () => play({ kind: 'save', name: 'SAVGAMA.DAT' }))
   if (shown.length) open(shown[0])
 }

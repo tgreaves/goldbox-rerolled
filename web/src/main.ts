@@ -1,14 +1,29 @@
 import './style.css'
 import { GameFiles, readPicked } from './store/gamefiles'
 import { showViewer } from './ui/viewer'
+import { showTitle } from './ui/title'
+import { showParty } from './ui/party'
 import { setupOffline } from './pwa/register'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
 async function start() {
   const files = await GameFiles.load()
-  if (files.complete()) showViewer(app, files, showImport)
+  if (files.complete()) title(files)
   else showImport()
+}
+
+function title(files: GameFiles) {
+  showTitle(app, files, () => party(files))
+}
+
+function party(files: GameFiles) {
+  showParty(app, files, {
+    title: () => title(files),
+    assets: () => showViewer(app, files, showImport, () => party(files)),
+    play: (members) => import('./ui/explore').then((m) =>
+      m.showExplore(app, files, { kind: 'new', party: members.map((c) => c.sav) }, () => party(files))),
+  })
 }
 
 function showImport() {
@@ -41,7 +56,7 @@ function showImport() {
     }
     status.textContent = `Saving ${picked.size} files for offline use…`
     await GameFiles.save(picked)
-    showViewer(app, files, showImport)
+    title(files)
   }
 
   app.querySelector('#folder')!.addEventListener('click', () => dirInput.click())

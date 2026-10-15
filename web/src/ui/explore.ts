@@ -16,11 +16,9 @@ const CONTINUE_PROMPTS = ['PRESS <RETURN> OR BUTTON TO CONTINUE', 'PRESS <ENTER>
 
 const escape = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`)
 
-export type Start = { kind: 'new' } | { kind: 'save'; name: string }
+export type Start = { kind: 'new'; party: Uint8Array[] } | { kind: 'save'; name: string }
 
 export function showExplore(app: HTMLElement, files: GameFiles, start: Start, back: () => void) {
-  const saveA = files.get('SAVGAMA.DAT')
-  const stems = saveA ? parseSave(saveA).party : []
   const partyRaw = (names: string[]) => names.map((s) => files.get(`${s}.SAV`)).filter((d): d is Uint8Array => !!d)
 
   app.innerHTML = `
@@ -219,7 +217,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   initSound(files.get('START.EXE'))
   const engine = new Engine(files, io)
-  if (start.kind === 'new') engine.newGame(partyRaw(stems))
+  if (start.kind === 'new') engine.newGame(start.party)
   else engine.loadSave(files.get(start.name)!, partyRaw(parseSave(files.get(start.name)!).party))
 
   // ------------------------------------------------------------- view sync
@@ -312,7 +310,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       (soundAvailable()
         ? `<button class="sound" data-cmd="sound" title="Sound device: PC speaker, Tandy/PCjr or off">♪ ${({ pc: 'PC speaker', tandy: 'Tandy', off: 'Off' })[soundDevice()]}</button>`
         : '<button class="sound" data-cmd="nosound" title="Re-import the POOLRAD folder with START.EXE for sound">♪ n/a</button>') +
-      '<button class="assets" data-cmd="assets" title="Back to the asset viewer">Assets</button>'
+      '<button class="assets" data-cmd="assets" title="Leave the game">Quit</button>'
     menuBar.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => command(b.dataset.cmd!)))
   }
 
@@ -422,6 +420,6 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   commandBar()
   sync(0)
-  if (start.kind === 'new') note('A new game with the six pre-made characters, as after "Begin Adventuring" on the party screen.')
+  if (start.kind === 'new') note('A new game: Begin Adventuring from the party screen.')
   act(() => engine.start())
 }

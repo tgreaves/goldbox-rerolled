@@ -164,3 +164,32 @@ dialog.panel form { display: flex; justify-content: flex-end; }
 }
 .game .menu .sound { color: var(--muted); }
 .viewer nav .hint { font-size: 0.8rem; margin: 0.4rem 0; }
+
+/* title */
+.title { flex: 1; min-height: 100dvh; display: grid; place-items: center; align-content: center; gap: 1rem; cursor: pointer; padding: 1rem; }
+.title canvas { width: min(96vw, 160dvh); height: auto; image-rendering: pixelated; border: none; }
+
+/* party screen */
+.partyscreen {
+  min-height: 100dvh; display: grid; gap: 0.75rem; padding: 1rem; max-width: 60rem; margin: 0 auto;
+  grid-template-rows: auto auto auto 1fr; align-content: start;
+}
+.partyscreen header { display: flex; justify-content: space-between; align-items: center; }
+.partyscreen h1 { margin: 0; color: var(--ega-cyan); }
+.partyscreen h2 { margin: 0 0 0.4rem; font-size: 1rem; color: #fff; }
+.partyscreen .members { border: 2px solid var(--ega-cyan); border-radius: 4px; padding: 0.5rem 0.75rem; }
+.partyscreen .members table { width: 100%; border-collapse: collapse; }
+.partyscreen .members td { color: var(--ega-green); padding: 0.35rem 0.4rem; cursor: pointer; }
+.partyscreen .members tr.current td { color: #fff; background: #ffffff14; }
+.partyscreen .members tr.current td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.partyscreen .info { color: var(--ega-green); min-height: 1.5em; }
+.partyscreen .functions { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: 0.4rem; align-content: start; }
+.partyscreen .functions button { text-align: left; }
+.partyscreen .functions button u { color: var(--accent); text-decoration: none; font-weight: 700; }
+.partyscreen .functions button:disabled { opacity: 0.4; cursor: default; }
+ol.pick { list-style: none; padding: 0; display: grid; gap: 0.35rem; }
+ol.pick button { width: 100%; text-align: left; }
+form.yn { display: flex; gap: 0.5rem; justify-content: flex-end; }
+@media (max-width: 600px) {
+  .partyscreen .members td:nth-child(2), .partyscreen .members td:nth-child(3) { display: none; }
+}
