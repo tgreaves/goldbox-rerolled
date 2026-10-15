@@ -94,3 +94,25 @@ export function toImageData(p: Picture, palette = EGA): ImageData {
   }
   return new ImageData(data, p.width, p.height)
 }
+
+/**
+ * Encounter sprite (`SPRIT`) as drawn on EGA (spec/graphics.md, "Encounter sprites"):
+ * colour 0 is transparent, then colour 13 is remapped to black, so it shows as an opaque
+ * dark outline (`FUN_1464_1e5c` with the tables at `DS:0C6C` / `DS:0C7C`).
+ */
+export function spriteImage(p: Picture): ImageData {
+  const img = toImageData(p)
+  for (let i = 0; i < p.pixels.length; i++) {
+    if (p.pixels[i] === 0) img.data[i * 4 + 3] = 0
+    else if (p.pixels[i] === 13) img.data.set(EGA[0], i * 4)
+  }
+  return img
+}
+
+/** Lowest row holding a non-transparent sprite pixel (where the figure stands). */
+export function spriteFeet(p: Picture): number {
+  for (let r = p.height - 1; r >= 0; r--) {
+    for (let c = 0; c < p.width; c++) if (p.pixels[r * p.width + c] !== 0) return r
+  }
+  return p.height - 1
+}

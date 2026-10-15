@@ -94,13 +94,12 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     }
     return pictureCache.get(key)!
   }
-  /** mask: palette index drawn as transparent (sprites are loaded with mask colour 0, spec/graphics.md) */
-  function paint(pics: { pic: Picture; x: number; y: number }[], mask = -1) {
+  /** Pictures and portraits are opaque; encounter sprites stand in the 3D scene instead (World.showSprite). */
+  function paint(pics: { pic: Picture; x: number; y: number }[]) {
     const g = overlay.getContext('2d')!
     g.clearRect(0, 0, 88, 88)
     for (const { pic, x, y } of pics) {
       const img = toImageData(pic)
-      if (mask >= 0) for (let i = 0; i < pic.pixels.length; i++) if (pic.pixels[i] === mask) img.data[i * 4 + 3] = 0
       const tmp = document.createElement('canvas')
       tmp.width = pic.width
       tmp.height = pic.height
@@ -110,7 +109,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     overlay.hidden = pics.length === 0
   }
   function showPicture(p: { pic: number } | { head: number; body: number } | null) {
-    if (!p) return paint([])
+    if (!p) {
+      world.showSprite(null)
+      return paint([])
+    }
     if ('pic' in p) {
       const f = frames('PIC', p.pic)
       if (f) paint([{ pic: f[0], x: 0, y: 0 }])
@@ -189,11 +191,12 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     sprite(sprite, picture, distance) {
       const f = frames('SPRIT', sprite)
       if (distance === 0 && picture !== 255) {
+        world.showSprite(null)
         const portrait = engine.B[0x6de1 - 0x6b00]
         showPicture(portrait === 0xff ? { pic: picture } : { head: portrait, body: picture })
       } else if (f) {
-        const pic = f[Math.min(distance, f.length - 1)]
-        paint([{ pic, x: pic.x * 8, y: pic.y * 8 }], 0)
+        paint([])
+        world.showSprite(f[Math.min(distance, f.length - 1)], distance)
       }
     },
     refresh: () => sync(),

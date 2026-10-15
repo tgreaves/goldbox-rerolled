@@ -54,7 +54,10 @@ Frames are loaded into a table at `DS:6ABE`: byte count, byte current frame (1-b
 
 ### Encounter sprites (O)
 
-`SPRIT` records hold one frame per distance; the frame drawn is **distance + 1**, so frame 1 is the nearest view. The image is placed at its header `x, y` offset by (+2, +2) cells, inside the 3D view.
+`SPRIT` records hold one frame per distance; the frame drawn is **distance + 1** in map areas (`DS:49FA` = 1), so frame 1 is the nearest view, and always frame 2 elsewhere (`FUN_2fea_054e`). The image is placed at its header `x, y` offset by (+2, +2) cells, inside the 3D view (`FUN_5523_0708`).
+
+- **Colours.** After decoding with mask colour 0, the loader (`FUN_5523_00a2`, flags bit 0 set) remaps the frame with `FUN_1464_1e5c`, which replaces each colour `DS:0C6C[i]` by `DS:0C7C[i]`. The tables are constant: identity, except **13 → 0**. The transparency mask was already built from colour 0, so colour-13 pixels become **opaque black**, a dark outline around the figure, while colour-0 pixels stay transparent. Displaying colour 13 as light magenta is wrong. CGA (`DS:4A1E` = 0) skips the remap and maps colours through the 8-byte table at header bytes 9–16 instead (16 nibbles, colour → CGA colour 0–3).
+- **Placement.** Every frame has `y` = 1, and the figure sits at the bottom of its frame. The feet land near rows 85, 65 and 52 of the 88-pixel view for frames 1–3, matching the floor of the pre-drawn view at those distances (for example SPRIT2 #2, an orc).
 
 ### Portraits (O)
 
@@ -82,7 +85,7 @@ Images are loaded with an optional mask colour (`FUN_1464_0111` / `FUN_5523_00a2
 | Images | Mask colour | Loaded by |
 |---|---|---|
 | 3D-view tiles (`8X8D`) | **13** (light magenta); tile id 0 cells are skipped entirely | `FUN_5924_003b` |
-| Encounter sprites (`SPRIT`) | **0** (black) | `FUN_2fea_054e` → `FUN_5523_00a2(…, flags 1, …)` |
+| Encounter sprites (`SPRIT`) | **0** (black); colour 13 then becomes opaque black (above) | `FUN_2fea_054e` → `FUN_5523_00a2(…, flags 1, …)` |
 | Pictures (`PIC`), portraits | none (opaque) | `FUN_5523_00a2(…, flags 0, …)` |
 
 So the light-magenta areas of wall tiles (rooftops, gaps, the sky above walls) show the background, and a sprite's black surround shows the corridor behind it.

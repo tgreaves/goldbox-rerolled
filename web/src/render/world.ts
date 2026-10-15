@@ -1,6 +1,6 @@
 // Real 3D exploration view (IMPROVEMENTS.md IMP-001), built from a GEO map and its wall sets.
 import * as THREE from 'three'
-import { EGA } from '../data/image'
+import { EGA, spriteFeet, spriteImage, type Picture } from '../data/image'
 import type { GeoMap } from '../data/geo'
 import type { WallSets } from '../data/walls'
 
@@ -8,6 +8,10 @@ import type { WallSets } from '../data/walls'
 export const WALL_HEIGHT = 64 / 56
 const EYE = WALL_HEIGHT * 0.5
 const EPS = 0.002
+const FOV = 70
+/** Focal length in pixels of the original 88-pixel-high view, for this camera's field of view. */
+const FOCAL88 = 44 / Math.tan((FOV / 2) * (Math.PI / 180))
+const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]]
 
 export interface View {
   x: number
@@ -19,11 +23,13 @@ export interface View {
 export class World {
   readonly renderer: THREE.WebGLRenderer
   readonly scene = new THREE.Scene()
-  readonly camera = new THREE.PerspectiveCamera(70, 1, 0.05, 40)
+  readonly camera = new THREE.PerspectiveCamera(FOV, 1, 0.05, 40)
   private textures = new Map<number, THREE.Texture>()
   private group = new THREE.Group()
   private anim: { from: THREE.Vector3; to: THREE.Vector3; fromYaw: number; toYaw: number; t0: number; ms: number } | null = null
   private yaw = 0
+  private view: View = { x: 0, y: 0, facing: 0 }
+  private sprite: THREE.Mesh | null = null
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false })
@@ -104,7 +110,7 @@ export class World {
   }
 
   private target(v: View): { pos: THREE.Vector3; yaw: number } {
-    const dir = [[0, -1], [1, 0], [0, 1], [-1, 0]][v.facing]
+    const dir = DIRS[v.facing]
     // stand a little behind the square's centre so its side walls are in view, as in the original
     const pos = new THREE.Vector3(v.x + 0.5 - dir[0] * 0.35, EYE, v.y + 0.5 - dir[1] * 0.35)
     return { pos, yaw: -v.facing * (Math.PI / 2) }
@@ -112,6 +118,7 @@ export class World {
 
   /** Move the camera to a view, animated over `ms` (0 = jump). */
   go(v: View, ms = 180) {
+    this.view = { ...v }
     const { pos, yaw } = this.target(v)
     let toYaw = yaw
     while (toYaw - this.yaw > Math.PI) toYaw -= 2 * Math.PI
@@ -132,6 +139,53 @@ export class World {
       t0: performance.now(),
       ms,
     }
+  }
+
+  /**
+   * Show an encounter sprite frame standing on the floor `distance` squares ahead, or remove it
+   * (IMP-020). Each frame keeps its original on-screen pixel size: it is placed at depth z and
+   * scaled by z / focal length. The original draws the frame at a fixed spot in its pre-drawn
+   * view, which does not line up with this camera's floor.
+   */
+  showSprite(pic: Picture | null, distance = 0) {
+    if (this.sprite) {
+      this.scene.remove(this.sprite)
+      const m = this.sprite.material as THREE.MeshBasicMaterial
+      m.map?.dispose()
+      m.dispose()
+      this.sprite.geometry.dispose()
+      this.sprite = null
+    }
+    if (!pic) return
+    const c = document.createElement('canvas')
+    c.width = pic.width
+    c.height = pic.height
+    c.getContext('2d')!.putImageData(spriteImage(pic), 0, 0)
+    const tex = new THREE.CanvasTexture(c)
+    tex.magFilter = THREE.NearestFilter
+    tex.minFilter = THREE.NearestFilter
+    tex.generateMipmaps = false
+    tex.colorSpace = THREE.SRGBColorSpace
+    // the figure stands near the far side of its square: 0.8 from the camera at distance 0
+    const z = distance + 0.8
+    const s = z / FOCAL88
+    const mesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(pic.width * s, pic.height * s),
+      new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5 }),
+    )
+    const dir = DIRS[this.view.facing]
+    const right = [-dir[1], dir[0]]
+    // horizontal place as in the original: header x cells from the left of the 88-pixel view
+    const side = (pic.x * 8 + pic.width / 2 - 44) * s
+    const eye = this.target(this.view).pos
+    mesh.position.set(
+      eye.x + dir[0] * z + right[0] * side,
+      (spriteFeet(pic) + 1 - pic.height / 2) * s,
+      eye.z + dir[1] * z + right[1] * side,
+    )
+    mesh.rotation.y = -this.view.facing * (Math.PI / 2)
+    this.sprite = mesh
+    this.scene.add(mesh)
   }
 
   busy(): boolean {
