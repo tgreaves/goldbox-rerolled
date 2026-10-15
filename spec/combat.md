@@ -148,9 +148,34 @@ If combat record [1] is set: collect the non-zero memorised spells in char[0x18.
 
 Effect hook 14; up to 20 attempts: keep the current target (combat record [10..13]) if it is still a valid enemy and reachable by path-finding (`FUN_56c1_0422` on the battlefield map `DS:6716`) within weapon range, else pick a random nearby enemy (`DS:6DE4` list); step towards it (`FUN_3334_07f2`) or attack it (`FUN_3aae_1884` → attack sequence). Missile users avoid shooting when an enemy is adjacent.
 
+## Battlefield (O, `FUN_34c7_1e31`)
+
+1. Load combat icon set: `DUNGCOM` when `DS:49FA` = 1 (map area), otherwise `WILDCOM`/`RANDCOM` (`FUN_34c7_1244`)
+2. Allocate the grid: 0x4E9 bytes = 7-byte header + **25 rows × 50 columns** (`cell = grid[7 + row·50 + col]`); header [2],[3] = view origin (first party member's position − 3)
+3. Build terrain: map areas `FUN_34c7_0810`, wilderness `FUN_34c7_11b4` (**?**)
+4. Create a 22-byte combat record per list entry (`FUN_34c7_12e1`); entries after the first `B[0x67C]` (party size) are monsters (record [0x13] = 1); record [9] = facing from `DS:02F2[party facing / 2]`, monsters face the opposite way; monsters with morale byte 0 or > 102 get `B[0x58C]` (encounter morale) + NPC bit
+5. Place combatants (`FUN_34c7_19f5`): deployment zones per side from `DS:0306` (12 bytes per direction: 6 rows of [min col, max col]); `FUN_34c7_1577` finds a free spot; a monster that cannot be placed is removed; party members who cannot act are laid down as bodies (cell set to 0x1F, original cell remembered in `DS:66D6`)
+6. Effect hook 8 for everyone, `FUN_3aae_2879`, game mode `DS:49F3` = 5
+
+### Map areas: squares → cells (`FUN_34c7_0810`)
+
+For every map square at `(X+dx, Y+dy)`, `dx ∈ −6..6`, `dy ∈ −2..2` (X, Y = party position; north is up):
+
+```
+col = dx·6 + dy·5 + 21 + c      // c = 0..6
+row = dy·5 + 10 + r             // r = 0..4
+grid[row][col] = icon + 1       // only if 0 ≤ col < 50 and 0 ≤ row < 25
+```
+
+The `+dy·5` skew produces the slanted Gold Box combat view; adjacent squares share a column.
+
+Each square edge is classified by `FUN_34c7_012b`/`01ad` (both sides of the edge, OR-ed): **0 open, 1 wall, 3 door** (passage value 0 → wall; wall present but passable → door). Off-map edges are walls, except east/west edges on the party's own row. `FUN_34c7_02ba`, `0377`, `040f`, `0615` stamp floor (icon 0x16), wall and door pieces into the block according to the west/north/east edge classes and the neighbouring squares (piece ids are listed in those routines).
+
+Finishing pass (`FUN_34c7_0000`): on every floor cell (icon property `DS:2747[icon·4] == 0x16`) roll d100: 98 → icon 0x1A, 99 → 0x1B, 100 → (if area type ≠ 10 and another d100 = 1) d10 ≤ 6 → 0x1C, 7–10 → 0x1D.
+
 ## Still open
 
-- Battlefield construction and positions (`FUN_34c7_1e31`); path-finding details
+- Wilderness terrain generator (`FUN_34c7_11b4`); icon property table `DS:2747`; path-finding (`FUN_56c1_0422`)
 - Player combat menu and actions (`FUN_320c_031a`)
 - AI scoring helpers (`FUN_3334_02eb`, `FUN_3334_128d`) and movement step (`FUN_3334_07f2`)
 - Spell casting and spell effects (spell list in character bytes 0x18–0x69, **I**)

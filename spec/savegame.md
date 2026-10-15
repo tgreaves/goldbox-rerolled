@@ -32,7 +32,7 @@ Validated: both shipped saves (`SAVGAMA.DAT`, `SAVGAMJ.DAT`) parse to exactly 13
 | 0x1001 | 0x400 | ECL word array C (0x9700–0x98FF) |
 | 0x1401 | 0x1E00 | the loaded ECL code buffer (0x9900–0xB6FF), including any self-modification |
 | 0x3201 | 5 | party X, Y, facing (0/2/4/6), wall ahead, square event (`DS:6AAD`) |
-| 0x3206 | 1 | `DS:49FA` (**?**, 1 in both saves) |
+| 0x3206 | 1 | `DS:49FA` area kind: 1 = map area (dungeon/city combat icons); 2–4 set for area types 0x19–0x1B (wilderness) |
 | 0x3207 | 1 | `DS:49F3` game mode (**?**; 2 in saves; combat sets 5/6) |
 | 0x3208 | 1 | party member count |
 | 0x3209 | 8 × 41 | party member file stems (Pascal strings, e.g. `CHRDATA1`) |
