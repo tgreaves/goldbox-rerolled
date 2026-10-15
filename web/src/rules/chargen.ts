@@ -290,3 +290,74 @@ export function setName(c: Uint8Array, name: string) {
 export function fileStem(name: string) {
   return name.toUpperCase().replace(/[ .*,?/\\:;|]/g, '').slice(0, 8) || 'NONAME'
 }
+
+// ------------------------------------------------------------------ Modify (FUN_417f_209f)
+
+/** FUN_417f_3fb3: lowest max HP Modify allows. */
+export function hpMin(t: Tables, c: Uint8Array): number {
+  let dice = 0, classes = 0
+  for (let k = 0; k < 8; k++) {
+    if (c[0x96 + k] <= 0) continue
+    dice += c[0x96 + k]
+    classes++
+    if (k === 4 || k === 7) dice++
+  }
+  return withCon(t, c, dice, classes)
+}
+
+/** FUN_417f_408c: highest max HP Modify allows (levels × die size). */
+export function hpMax(t: Tables, c: Uint8Array): number {
+  const die = [8, 8, 10, 10, 8, 4, 6, 4]
+  let sum = 0, classes = 0
+  for (let k = 0; k < 8; k++) {
+    if (c[0x96 + k] <= 0) continue
+    classes++
+    sum += (c[0x96 + k] + (k === 4 || k === 7 ? 1 : 0)) * die[k]
+  }
+  return withCon(t, c, sum & 0xff, classes)
+}
+
+function withCon(t: Tables, c: Uint8Array, v: number, classes: number) {
+  const con = conBonus(t, c)
+  if (con < 0 && Math.abs(con) + classes >= v) return 1
+  return Math.trunc((v + con) / classes) & 0xff
+}
+
+/** Racial limits for ability a (0 STR … 5 CHA): [min, max] (STR by gender). */
+export function abilityRange(t: Tables, c: Uint8Array, a: number): [number, number] {
+  const lim = 0x3da3 + c[0x2e] * 16
+  if (a === 0) return [t.b(lim + c[0x9e]), t.b(lim + 2 + c[0x9e])]
+  return [t.b(lim + 4 + a * 2), t.b(lim + 5 + a * 2)]
+}
+
+/** One Modify step on field f (0-5 abilities, 6 HP) by +1 or -1, with the original's rules and quirks. */
+export function modifyStep(t: Tables, c: Uint8Array, f: number, delta: 1 | -1) {
+  if (f === 6) {
+    const v = c[0x32] + delta
+    if (v >= hpMin(t, c) && v <= hpMax(t, c)) c[0x32] = c[0x11b] = v
+    return
+  }
+  const [lo, hi] = abilityRange(t, c, f)
+  const classMin = t.b(0x3f81 + c[0x2f] * 6 + f)
+  if (delta > 0) {
+    if (c[0x10 + f] + 1 > hi) {
+      const cap = t.b(0x3da3 + c[0x2e] * 16 + 4 + c[0x9e])
+      if (f === 0 && c[0x10] === 18 && c[0x98] > 0 && c[0x16] < cap) c[0x16]++
+    } else c[0x10 + f]++
+  } else if (f === 0 && c[0x16] > 0) {
+    c[0x16]--
+  } else {
+    const v = c[0x10 + f] - 1
+    // quirk: dropping below the racial or the class minimum jumps to the racial minimum
+    c[0x10 + f] = v < lo || v < classMin ? lo : v
+  }
+  if (f === 2 && c[0xb2]) {
+    c[0xb2] = 1
+    wisdomBonus(c)
+  }
+  if (f === 4) {
+    const min = hpMin(t, c), max = hpMax(t, c)
+    c[0x32] = c[0x11b] = Math.min(Math.max(c[0x32], min), max)
+  }
+  combatStats(c)
+}

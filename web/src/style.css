@@ -197,3 +197,21 @@ form.yn { display: flex; gap: 0.5rem; justify-content: flex-end; }
 .namebox input { background: #0b1218; border: 1px solid var(--line); border-radius: 4px; padding: 0.4rem 0.5rem; color: var(--ega-green); text-transform: uppercase; min-height: 40px; }
 canvas.portrait { width: 264px; display: block; margin: 0.5rem 0; }
 form.yn span { margin-right: auto; align-self: center; }
+
+.icons { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+.icons figure { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.icons figcaption { flex-basis: 100%; }
+canvas.ic { width: 96px; height: 96px; }
+.iconctl { display: grid; grid-template-columns: auto auto 3rem auto; gap: 0.3rem 0.5rem; align-items: center; margin: 0.8rem 0; max-width: 18rem; }
+.iconctl output { text-align: center; color: var(--ega-green); }
+.iconctl .wide { grid-column: span 3; }
+.parts { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.parts button.on, .sw.on { outline: 2px solid var(--accent); outline-offset: 1px; }
+.palette { display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; margin: 0.4rem 0; }
+.palette span { width: 5.5rem; color: var(--muted); }
+.sw { width: 1.6rem; height: 1.6rem; min-height: 0; padding: 0; border-radius: 3px; }
+table.modify { border-collapse: collapse; margin: 0.6rem 0; }
+table.modify th { text-align: left; padding-right: 1rem; color: var(--muted); }
+table.modify td.v { min-width: 3.5rem; text-align: center; color: var(--ega-green); font-variant-numeric: tabular-nums; }
+table.modify tr.current th { color: #fff; }
+table.modify button { min-height: 36px; width: 2.4rem; padding: 0; }

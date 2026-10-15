@@ -41,3 +41,26 @@ describe.skipIf(!have)('character creation', () => {
     }
   })
 })
+
+describe.skipIf(!have)('modify and icons', () => {
+  it('keeps abilities inside racial limits and HP inside its range', async () => {
+    const { hpMin, hpMax, modifyStep, abilityRange } = await import('../src/rules/chargen')
+    const tb = new Tables(unexepack(new Uint8Array(readFileSync(join(dir, 'START.EXE')))).image)
+    let seed = 3
+    const rng = (n: number) => ((seed = (seed * 1103515245 + 12345) >>> 0) >>> 8) % n
+    const c = begin(tb, rng, 7, 0, 2, 0) // human male fighter
+    rollAbilities(tb, rng, c)
+    for (let i = 0; i < 30; i++) modifyStep(tb, c, 0, 1)
+    expect(c[0x10]).toBe(18)
+    expect(c[0x16]).toBeLessThanOrEqual(100)
+    // quirk: STR below the fighter minimum (9) snaps to the racial minimum (3)
+    c[0x16] = 0
+    c[0x10] = 9
+    modifyStep(tb, c, 0, -1)
+    expect(c[0x10]).toBe(abilityRange(tb, c, 0)[0])
+    for (let i = 0; i < 40; i++) modifyStep(tb, c, 6, 1)
+    expect(c[0x32]).toBe(hpMax(tb, c))
+    for (let i = 0; i < 40; i++) modifyStep(tb, c, 6, -1)
+    expect(c[0x32]).toBe(hpMin(tb, c))
+  })
+})
