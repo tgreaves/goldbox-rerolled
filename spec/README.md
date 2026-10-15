@@ -22,6 +22,7 @@ Formal description of the DOS *Pool of Radiance* engine (GOG release 1.3) and it
 | [[spec/ecl]] | ECL virtual machine: encoding, memory map, opcodes | v0.5 |
 | [[spec/maps]] | GEO maps, passability, wall sets | v0.5 |
 | [[spec/graphics]] | Image blocks, animations, font, palette | v0.5 |
+| [[spec/sound]] | Sound driver: effect bytecode, timer, PC speaker and Tandy output | v0.1 |
 | [[spec/records]] | Characters, monsters, items, item types, effects | v0.4 |
 | [[spec/spells]] | Spell table (56 spells), casting, targeting, saves | v0.4 |
 | [[spec/effects]] | Effect types 1–139: event hooks, handlers, durations, item effects | v0.8 |

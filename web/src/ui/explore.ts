@@ -8,7 +8,7 @@ import { parseRecord, toImageData, type Picture } from '../data/image'
 import { World } from '../render/world'
 import { Engine, A0, type Io } from '../vm/engine'
 import { drawMap } from './areamap'
-import { play, setSound, soundOn, unlockAudio } from '../audio/sfx'
+import { initSound, play, setSound, soundAvailable, soundOn, unlockAudio } from '../audio/sfx'
 
 const FACING = ['North', 'East', 'South', 'West']
 const STAT_KEYS = ['STR', 'INT', 'WIS', 'DEX', 'CON', 'CHA'] as const
@@ -217,6 +217,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     },
   }
 
+  initSound(files.get('START.EXE'))
   const engine = new Engine(files, io)
   if (start.kind === 'new') engine.newGame(partyRaw(stems))
   else engine.loadSave(files.get(start.name)!, partyRaw(parseSave(files.get(start.name)!).party))
@@ -308,7 +309,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     pad.classList.remove('disabled')
     menuBar.innerHTML = ['Area', 'Cast', 'View', 'Encamp', 'Search', 'Look']
       .map((c) => `<button data-cmd="${c[0]}"${c === 'Search' && engine.B[0x6dca - 0x6b00] & 1 ? ' class="on"' : ''}><u>${c[0]}</u>${c.slice(1)}</button>`).join('') +
-      `<button class="sound" data-cmd="sound" title="Sound effects" aria-pressed="${soundOn()}">${soundOn() ? '♪ On' : '♪ Off'}</button>` +
+      (soundAvailable()
+        ? `<button class="sound" data-cmd="sound" title="Sound effects (PC speaker)" aria-pressed="${soundOn()}">${soundOn() ? '♪ On' : '♪ Off'}</button>`
+        : '<button class="sound" data-cmd="nosound" title="Re-import the POOLRAD folder with START.EXE for sound">♪ n/a</button>') +
       '<button class="assets" data-cmd="assets" title="Back to the asset viewer">Assets</button>'
     menuBar.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => command(b.dataset.cmd!)))
   }
@@ -328,6 +331,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       case 'E': act(() => engine.command('e')); break
       case 'L': act(() => engine.command('L')); break
       case 'sound': setSound(!soundOn()); unlockAudio(); commandBar(); break
+      case 'nosound': note('Sound needs START.EXE: go back to Assets and re-import the POOLRAD folder.'); break
       case 'assets': leave(); break
     }
   }

@@ -1,17 +1,33 @@
-// Sound effects. The original plays PC-speaker effects by number through FUN_18ae_00dc
-// (10 footstep, 7 bump, 11 second script effect); their data is not decoded yet, so these
-// are synthesised square-wave stand-ins in the same spirit (IMPROVEMENTS.md IMP-013).
+// Sound effects from the original driver: effect data is read from the player's START.EXE and
+// rendered by an emulation of the driver and the PC speaker (src/audio/driver.ts, spec/sound.md).
+
+import { renderEffect } from './driver'
+import { unexepack } from '../data/exepack'
 
 const KEY = 'poolrad.sound'
 let ctx: AudioContext | null = null
+let image: Uint8Array | null = null
 let enabled = true
+const cache = new Map<string, AudioBuffer>()
 try {
   enabled = localStorage.getItem(KEY) !== 'off'
 } catch { /* storage unavailable: default on */ }
 
-export function soundOn(): boolean {
-  return enabled
+/** Load the driver data from START.EXE; returns false when it is missing or unreadable. */
+export function initSound(startExe: Uint8Array | undefined): boolean {
+  image = null
+  cache.clear()
+  if (!startExe) return false
+  try {
+    image = unexepack(startExe).image
+    return true
+  } catch {
+    return false
+  }
 }
+
+export const soundAvailable = () => image !== null
+export const soundOn = () => enabled
 
 export function setSound(on: boolean) {
   enabled = on
@@ -32,36 +48,24 @@ export function unlockAudio() {
   if (ctx.state === 'suspended') ctx.resume()
 }
 
-function blip(freq: number, start: number, length: number, volume = 0.08) {
-  if (!ctx) return
-  const osc = ctx.createOscillator()
-  const gain = ctx.createGain()
-  osc.type = 'square'
-  osc.frequency.value = freq
-  const t = ctx.currentTime + start
-  gain.gain.setValueAtTime(volume, t)
-  gain.gain.exponentialRampToValueAtTime(0.0001, t + length)
-  osc.connect(gain).connect(ctx.destination)
-  osc.start(t)
-  osc.stop(t + length + 0.01)
-}
-
-/** Play original effect number n (approximation). */
-export function play(n: number) {
-  if (!enabled || !ctx) return
-  switch (n) {
-    case 10: // footstep
-      blip(110, 0, 0.035)
-      blip(82, 0.06, 0.04)
-      break
-    case 7: // bump into a wall
-      blip(55, 0, 0.12, 0.1)
-      break
-    case 11:
-      blip(440, 0, 0.05)
-      blip(330, 0.06, 0.05)
-      break
-    default:
-      blip(220, 0, 0.05)
+/**
+ * Play effect n. By default the game stops an effect after about 0.1 s: PlaySound waits
+ * 10 centiseconds of BIOS time, which is 14-26 driver ticks depending on the clock phase.
+ * full: play to the end (the game does this only in some sections, spec/sound.md).
+ */
+export function play(n: number, full = false) {
+  if (!enabled || !ctx || !image) return
+  const cut = full ? undefined : 14 + Math.floor(Math.random() * 13)
+  const key = `${n}/${cut ?? 'full'}`
+  let buf = cache.get(key)
+  if (!buf) {
+    const samples = renderEffect(image, n, ctx.sampleRate, cut)
+    buf = ctx.createBuffer(1, samples.length, ctx.sampleRate)
+    buf.copyToChannel(samples as Float32Array<ArrayBuffer>, 0)
+    cache.set(key, buf)
   }
+  const src = ctx.createBufferSource()
+  src.buffer = buf
+  src.connect(ctx.destination)
+  src.start()
 }

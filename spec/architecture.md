@@ -118,14 +118,6 @@ Menu "Choose a function": **C**reate character (`FUN_417f_056c`), **D**rop (`1f3
 
 Hidden: **J** then typing `STING` prints "I Understand, master..." and sets `DS:470C`, which makes training free and skips the experience and class checks (developer cheat).
 
-## Sound (O, partial)
+## Sound (O)
 
-Effects are played by number with `FUN_18ae_00dc(n)`; nothing plays when `DS:5372` = 2 (sound off). The numbers are kept in a table at `DS:2620` = 6, 7, 8, 9, 10, 11, 12:
-
-| Effect | Number | Played by |
-|---|---|---|
-| footstep | 10 (`DS:2628`) | a move that changed position (main loop); quarter turns (command menu); ECL `CALL 0xBA03` with register 0x3DE = 8 (Rolf's tour, each step) |
-| bump | 7 (`DS:2622`) | a blocked or failed move (`FUN_3e76_0d6d`) |
-| script effect | 11 (`DS:262A`) | `CALL 0xBA03` with register 0x3DE = 10 |
-
-The PC-speaker routines (`FUN_18ae_17ae`, `1742`, `181a`) and their data are not decoded yet. Turning round (Down) is silent.
+See [[spec/sound]]. Effects are played by number with `FUN_18ae_00dc(n)` from a table at `DS:2610`; the game uses 2–12 (10 footstep, 7 bump, 11 script effect via `CALL 0xBA03`). By default each effect is **cut off after about 0.1 s**; only some code sections let effects play in full.
