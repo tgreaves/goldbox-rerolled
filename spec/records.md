@@ -37,7 +37,8 @@ O = read by the character sheet (`FUN_4894_004a`, `050d`, `0608`, `0901`, `FUN_1
 | 0x33–0x6A | u8 ×56 | spells known: char[0x32 + spell id] = 1 | O (character creation, training) |
 | 0x6C | u8 | size/type flags; large if > 0x80 or `(v & 7) > 1` | O |
 | 0x6D–0x71 | u8 ×5 | saving throws: death/poison, petrification, rod/staff/wand, breath, spell | O (storage), I (order, matches AD&D) |
-| 0x79 | u8 | attribute averaged by `CHECK_PARTY` mode 0x6BA7 (**?**) | O |
+| 0x76 | u8 | undead type (monsters; turn undead table row) | O |
+| 0x77–0x7E | u8 ×8 | thief skills % (PP, OL, F/RT, MS, HS, HN, CW, RL) | O |
 | 0x2D | u8 | 60 − base THAC0 (best class) | O |
 | 0x73 | u8 | highest class level | O |
 | 0x84 | u8 | NPC morale; bit 7 set = NPC | O |
