@@ -6,7 +6,7 @@ import { viteSingleFile } from 'vite-plugin-singlefile'
 // `vite build --mode single` → one self-contained HTML file in dist-single/
 export default defineConfig(({ mode }) => ({
   base: './',
-  build: { outDir: mode === 'single' ? 'dist-single' : 'dist' },
+  build: { outDir: mode === 'single' ? 'dist-single' : 'dist', chunkSizeWarningLimit: 700 },
   resolve: mode === 'single' ? { alias: { 'virtual:pwa-register': '/src/pwa/stub.ts' } } : {},
   plugins:
     mode === 'single'

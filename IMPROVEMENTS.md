@@ -7,9 +7,10 @@ Every deliberate departure from the 1988 DOS game goes here, so the port's behav
 
 | ID | Area | Improvement | Original behaviour | Toggle | Status |
 |---|---|---|---|---|---|
-| IMP-001 | Exploration | Real 3D view rendered from the GEO maps, with smooth movement and turning | 88×88 view assembled from pre-drawn 8×8 tiles ([`spec/maps.md`](spec/maps.md)) | Classic view later, once its spec gap is closed | planned |
+| IMP-001 | Exploration | Real 3D view rendered from the GEO maps, with smooth movement and turning | 88×88 view assembled from pre-drawn 8×8 tiles ([`spec/maps.md`](spec/maps.md)) | Classic view later, once its spec gap is closed | in progress |
 | IMP-002 | Saving | Save anywhere, plus quicksave | Saving only from the camp menu and the party screen ([`spec/camp.md`](spec/camp.md)) | Yes (changes difficulty) | planned |
-| IMP-003 | Interface | Mouse and touch for every menu and screen | Keyboard only ([`spec/graphics.md`](spec/graphics.md), menu input loop) | No | planned |
+| IMP-003 | Interface | Mouse and touch for every menu and screen; in the 3D view, an on-screen movement pad and tap zones (left third turns left, middle moves, right third turns right) | Keyboard only ([`spec/graphics.md`](spec/graphics.md), menu input loop) | No | in progress |
 | IMP-004 | Interface | Responsive layout from phone to desktop | Fixed 320×200 screen | No | planned |
 | IMP-005 | Platform | Runs offline as an installable web app or a single file; game files imported once and kept in the browser | DOS executable reading files from its folder | No | in progress |
 | IMP-006 | Saving | Saves exported and imported as original `SAVGAM*.DAT` files | Files in the game folder | No | planned |
+| IMP-007 | Exploration | 3D scene lit with ambient and directional light, a sky colour, a grey floor and distance fog. Walls use the nearest front-wall piece of each wall type (kind 6) as a texture | Flat background bands drawn by `FUN_55a0_0174` from colours at `DS:6A60–6A63` (source of those colours not yet traced); pre-drawn walls per distance | No | in progress |
