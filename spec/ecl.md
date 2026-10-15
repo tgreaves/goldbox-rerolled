@@ -11,7 +11,7 @@ Part of [[spec/README]]. Disassembler: `tools/ecl.py`. Status markers: **O** obs
 
 - `ECL<block>.DAX` record *area*; first 2 bytes (`88 13` in every record) skipped
 - Remainder copied into a zero-filled 0x1E00-byte buffer mapped at virtual **0x9900–0xB6FF**
-- VM reset (`FUN_2fea_01b6`): PC = 0x9900, GOSUB stack emptied, compare flags cleared, text defaults set; unless restoring a save, words 0x4A00–0x4A1F and 0x6E79–0x6E81 are zeroed (per-area variables)
+- VM reset (`FUN_2fea_01b6`): PC = 0x9900, GOSUB stack emptied, compare flags cleared, text defaults set; unless restoring a save, words 0x4A00–0x4A1F and 0x6E79–0x6E82 are zeroed (per-area variables); it also resets 0x6DE1, 0x6DD2, 0x6DD3, 0x49E5 and sets 0x49E6 = 1 (see `NEW_ECL`)
 
 ## Vectors (O)
 
