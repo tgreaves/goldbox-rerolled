@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+# game files and anything generated from them stay local
+POOLRAD/
+*.DAX
+*.pkg
+*.EXE
+*.OVR
+*.DAT
+*.SAV
+*.ITM
+*.SPC
+out/
+*.html
+*.png
+*.svg
