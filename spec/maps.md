@@ -47,7 +47,6 @@ Part of [[spec/README]]. Decoder/renderer: `tools/geo.py`.
 - Three slots (1–3), filled by ECL `LOAD_WALLSETS a, b, c` from `WALLDEF<block>.DAX`
 - A WALLDEF record holds one or more 0x30C-byte sets, filling consecutive slots
 - Each set = 5 wall types × 0x9C (156) bytes of tile indices for the 3D view
-- Wall type *t* (1–15) → slot `(t-1)/5 + 1`, type `(t-1)%5` (**I**)
 - Tile indices ≥ a threshold (`DS:272C`) are rebased per slot (`DS:2722` table) so each slot's 8×8 tiles (`8X8D` files, loaded by `FUN_5924_003b`) don't collide
 
 ## 3D view renderer (O, `FUN_55a0_05fd`, `FUN_55a0_0211`)
@@ -89,13 +88,28 @@ Let `L = (f+6)%8`, `R = (f+2)%8`, `B = (f+4)%8`; `wall(dir, x, y)` = [[spec/maps
 
 When `DS:6AAC` ≠ 0 a different view (`FUN_55a0_0000`) is used instead (**?**, possibly wilderness/dark).
 
-### Tile bank (O, constants; I, interpretation)
+### Tile bank (O, `FUN_5924_015d`, `FUN_5924_003b`, `FUN_55a0_0e08`)
 
-- Tile ids < 45 (DS:272C) are shared; ids ≥ 45 are offset by `base[slot] - base[1]` with `base` = DS:2722 = [1, 46, 116, 186] → +0, +70, +140 for slots 1–3
-- Each slot's 8X8D record holds 70 tiles (header `count = 0x46`)
+Tile ids select one of five banks by range; each bank is an image record of 8×8 sub-images (pointer at `DS:5E3A + bank·4`), and the tile is sub-image `id − base[bank]` with `base` = DS:2722 = [1, 46, 116, 186, 256]:
+
+| Bank | Ids | Source |
+|---|---|---|
+| 0 | 1–45 | shared tiles, `8X8D1` record 203 (45 tiles) |
+| 1–3 | 46–115, 116–185, 186–255 | wall-set slots 1–3, 70 tiles each (below) |
+| 4 | 256–286 | `8X8D1` record 202 (31 tiles) (**?** use) |
+
+Loading wall-set record *r* into slot *s* (`LOAD_WALLSETS`, `FUN_55a0_0e08`):
+
+1. `WALLDEF<block>` record *r* holds n = size / 0x30C sets; set *k* (1-based) goes into slot s + k − 1 (n + s − 1 > 4 is an error)
+2. Every tile byte ≥ 45 (DS:272C) is increased by `base[s] − base[1]`, computed once from the starting slot. Multi-set records therefore store their later sets' ids already in slot-2/slot-3 numbering (bytes up to 255)
+3. Tiles: with one set, `8X8D<block>` record *r*; with several, record `(r or 10)·10 + k` for set *k* (e.g. WALLDEF3 #0 → 8X8D3 #101–103; WALLDEF4 #21 → #211–212)
+4. Slot bookkeeping: `DS:6AAE + 4s` = r, `DS:6AB0 + 4s` = s; slots filled by later sets get 0xFFFF (saved to ECL 0x4AFA–0x4AFF)
+
+Wall type *t* (1–15) indexes the 0x30C × 3 table directly: `(t − 1)·156`, i.e. slot `(t − 1) div 5 + 1`, entry `(t − 1) mod 5` (O).
+
+The kind-6 piece (7 × 8 tiles, the wall directly ahead) of every wall type is a complete flat wall face, with tile 0 cells transparent; the browser port uses it as the wall texture ([`IMPROVEMENTS.md`](../IMPROVEMENTS.md) IMP-007).
 
 ## Still to decode
 
-- Background drawing and the alternate view (`FUN_55a0_0174`, `FUN_55a0_0000`)
-- Exact bank layout built by `FUN_5924_003b` (which 8X8D record lands where)
+- Background drawing: `FUN_55a0_0174` paints four bands from the image at `DS:4A20` with colours `DS:6A60–6A63`; where those colours are set is not traced. Alternate view `FUN_55a0_0000`
 - `DS:84DC` is the current area id (ECL record number, saved as A word 0x49F2); areas 0, 10 and 25–27 are special-cased in code
