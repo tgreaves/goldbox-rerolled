@@ -160,7 +160,7 @@ export class World {
    * at a fixed spot in its pre-drawn view.
    */
   showSprite(frames: Picture[] | null, distance = 0) {
-    // the same encounter stepping closer or back: glide there (IMP-022)
+    // the same encounter stepping closer or back: glide there (IMP-021)
     if (frames && this.sprite?.frames === frames) {
       const sp = this.sprite
       sp.distance = distance
