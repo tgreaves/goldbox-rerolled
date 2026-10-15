@@ -23,6 +23,7 @@ Formal description of the DOS *Pool of Radiance* engine (GOG release 1.3) and it
 | [[spec/maps]] | GEO maps, passability, wall sets | v0.5 |
 | [[spec/graphics]] | Image blocks, animations, font, palette | v0.5 |
 | [[spec/records]] | Characters, monsters, items, item types, effects | v0.4 |
+| [[spec/combat]] | Dice, attack, to-hit, damage, backstab, ranges, saves | v0.3 |
 | [[spec/open-questions]] | What remains, in priority order | living |
 
 ## Engine identity

@@ -34,6 +34,8 @@ O = read by the character sheet (`FUN_4894_004a`, `050d`, `0608`, `0901`, `FUN_1
 | 0x2F | u8 | class (table below) | O |
 | 0x30 | u16 | age | O |
 | 0x32 | u8 | max HP | O |
+| 0x6C | u8 | size/type flags; large if > 0x80 or `(v & 7) > 1` | O |
+| 0x6D–0x71 | u8 ×5 | saving throws: death/poison, petrification, rod/staff/wand, breath, spell | O (storage), I (order, matches AD&D) |
 | 0x79 | u8 | attribute averaged by `CHECK_PARTY` mode 0x6BA7 (**?**) | O |
 | 0x84 | u8 | NPC morale; bit 7 set = NPC | O |
 | 0x88 | u16 ×7 | money: copper, silver, electrum, gold, platinum, gems, jewelry | O |
@@ -49,7 +51,10 @@ O = read by the character sheet (`FUN_4894_004a`, `050d`, `0608`, `0901`, `FUN_1
 | 0x10C | u8 | status (table below) | O |
 | 0x10E | u8 | flag set by `ADD_NPC` when id = 0x18 | O |
 | 0x110 | u8 | 60 − THAC0 | O |
-| 0x111 | u8 | 60 − AC | O |
+| 0x111 | u8 | 60 − AC (front) | O |
+| 0x112 | u8 | 60 − AC (rear, used from behind) | O |
+| 0x113, 0x114 | u8 | attacks remaining this round, hands 1/2 (**I**: reset per round) | O |
+| 0x116, 0x118, 0x11A | u8 | second hand damage dice count, sides, bonus | O |
 | 0x115, 0x117, 0x119 | u8, u8, s8 | damage dice count, sides, bonus | O |
 | 0x11B | u8 | current HP | O |
 | 0x11C | u8 | movement (doubled by effect 0x2A, halved by 0x27) | O |
@@ -98,7 +103,8 @@ Display name = words[n3−1], words[n2−1], words[n1−1], space-separated, ski
 | 9, 10 | damage dice vs small/medium | 1d6 | 1d10 |
 | 11 | bonus vs small/medium | +1 | 0 |
 | 13 | class-use flags (**?**) | 0x4A | 0x48 |
-| 5–8, 12, 14, 15 | **?** (range, attacks, AC for armour) | | |
+| 12 | range (missile range bands = (range−1)/3) | | |
+| 5–8, 14, 15 | **?** (attacks, AC for armour) | | |
 
 ## Effect record (9 bytes, I)
 
