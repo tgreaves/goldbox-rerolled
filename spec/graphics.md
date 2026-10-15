@@ -29,7 +29,7 @@ Colours are indices into the **default EGA 16-colour palette** (O: renders corre
 | `TITLE` | single | 320×200 | title screens |
 | `PIC1–8` | animated | 88×88 | event pictures |
 | `FINAL5` | mixed | 120×120, 88×88, … | ending |
-| `SPRIT1–8` | animated | 24–88 × 73–88 | encounter sprites, one frame per distance (I) |
+| `SPRIT1–8` | animated | 24–88 × 73–88 | encounter sprites, one frame per distance |
 | `HEAD1–8`, `BODY1–8` | single | 88×40, 88×48 | character-creation portraits |
 | `CHEAD`, `CBODY` | single | 24×8/10, 24×24 | combat icon parts |
 | `CPIC1–8` | single | 24/48 × 24/48 | combat icons for monsters |
@@ -42,6 +42,38 @@ Animated records:
 u8 frames
 repeat frames: u32 delay, image block
 ```
+
+## Animation (O)
+
+Frames are loaded into a table at `DS:6ABE`: byte count, byte current frame (1-based, 0 = no animation running), then for frame *n* a u32 delay at `DS:6AB8 + 8n` and a far image pointer at `DS:6ABC + 8n`.
+
+- **Delta frames.** In `PIC` and `FINAL` records every frame after the first is stored XORed with frame 1 (decoder `5523:00a2`). A player must XOR each later frame with frame 1 before display. `SPRIT` frames are stored whole.
+- **Timing.** The menu input loop (`FUN_53aa_03bd`) drives the animation while it waits for a key. The clock is DOS time in **hundredths of a second** (`FUN_1709_0c3f`: `cs + 100·s + 6000·min + 360000·h`). A frame stays up for **delay × 10** hundredths, so the stored delay is in **tenths of a second**. Observed delays are 0–20 (0–2 s), mostly 0–6.
+- **Cycle.** When the delay has elapsed the current frame advances; after the last frame it wraps to **frame 1**, so the cycle includes the base frame. A frame is drawn at text cell (3, 3), the top-left of the 3D view area.
+- A flag in the far structure at `DS:49D2` (+0x3FE) forces an immediate advance and redraw; it is cleared when the loop returns (**I**: set after a screen redraw).
+
+### Encounter sprites (O)
+
+`SPRIT` records hold one frame per distance; the frame drawn is **distance + 1**, so frame 1 is the nearest view. The image is placed at its header `x, y` offset by (+2, +2) cells, inside the 3D view.
+
+### Portraits (O)
+
+`HEAD` and `BODY` records are drawn by `5523:05d9`, head above body, to make the character-creation portrait. `B[0x5C2]` selects which portrait the script-driven screens show (**I** for its exact encoding).
+
+## Menu input loop (O, `FUN_53aa_03bd`)
+
+All horizontal menus share one loop. It returns the chosen key:
+
+| Input | Result |
+|---|---|
+| an option's hotkey letter | that option |
+| `,` / `.` | move the highlight left / right (wrapping); the highlighted option is `DS:6B2B` |
+| Enter | the highlighted option, when the menu allows it |
+| Space | returns at once (used by "press a key" prompts) |
+| Esc | returns 0 |
+| extended key (0 prefix) | mapped through `DS:285B` when the caller accepts them (cursor movement, **I**) |
+
+An optional timeout (`DS:6B2E` u32, hundredths) returns the default key `DS:6B32` when it expires; a negative value disables it.
 
 ## Font (O)
 
@@ -61,5 +93,4 @@ repeat frames: u32 delay, image block
 ## Still to decode
 
 - Exact use of `x, y` and `cga_map`
-- SPRIT frame-to-distance mapping, PIC animation timing units
 - How WALLDEF tables index 8X8D tiles to build the 3D view

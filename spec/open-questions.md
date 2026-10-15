@@ -16,7 +16,7 @@ Part of [[spec/README]]. Ordered by what a browser reimplementation needs first.
 
 ## Needed for events
 
-5. ~~Picture formats~~ done; remaining: SPRIT distance mapping, animation timing
+5. ~~Picture formats, animation timing, SPRIT distance mapping~~ done ([[spec/graphics]])
 6. ~~Remaining opcodes~~ all 61 named; 0x3C semantics inferred
 7. Semantics of word array B reads/writes with side effects (`FUN_2fea_07bc`, `0a74`): likely current-character fields
 
