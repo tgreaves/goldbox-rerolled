@@ -151,7 +151,7 @@ Count = fixed operands; `+N` = variadic. Validated: every opcode appears in data
 | 35 | SAVE_TABLE | 3 | `mem[base + index] = value` | O |
 | 36 | ADD_NPC | 2 | add NPC id with morale | O |
 | 37 | LOAD_WALLSETS | 3 | load WALLDEF records into slots 1–3 | O |
-| 38 | PROGRAM | 1 | built-in mode: 0 ?, 8 ?, 9 = camp | O/? |
+| 38 | PROGRAM | 1 | built-in mode: 0 = party/training hall screen, 8 = ending sequence, 9 = encamp (see [[spec/architecture]]) | O |
 | 39 | WHO | 1 | prompt, player picks current character | O |
 | 3A | CLEAR_BOX | 0 | clear text box | O |
 | 3B | FIND_IN_CHAR_LIST | 3 | for each member, scan char bytes 0x18–0x69 for a value → index, member count. The range overruns the 21 memorised-spell slots into race/class/age (original behaviour) | O |

@@ -17,7 +17,7 @@ Part of [[spec/README]]. Ordered by what a browser reimplementation needs first.
 ## Needed for events
 
 5. ~~Picture formats~~ done; remaining: SPRIT distance mapping, animation timing
-6. Remaining opcodes: 0x34, 0x3C, 0x3D, `CALL` targets, `PROGRAM` modes 0 and 8
+6. Remaining opcodes: 0x31, 0x3C, 0x3D, `CALL` targets (0x34 DELAY and PROGRAM done)
 7. Semantics of word array B reads/writes with side effects (`FUN_2fea_07bc`, `0a74`): likely current-character fields
 
 ## Needed for the rules

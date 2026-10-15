@@ -44,3 +44,20 @@ The engine contains no knowledge of specific places. Area identity, exits, encou
 3. Exit when `DS:49FF` is set
 
 See [[spec/ecl]] for the vectors and [[spec/maps]] for movement.
+
+## Built-in screens (O)
+
+Entered through ECL `PROGRAM n` (0x38) or the main loop:
+
+| Mode | Screen | Routine |
+|---|---|---|
+| 0 | Party / training hall screen; switches to block 3 (New Phlan) | `FUN_417f_0161` |
+| 8 | Ending sequence: `FINAL` pictures and text, extra pictures for larger parties | `FUN_4804_02a4` |
+| 9 | Encamp (runs the area's camp vectors) | `FUN_29c3_2dd3` |
+| `E` key while exploring | Encamp | main loop |
+
+### Party screen (`FUN_417f_0161`)
+
+Menu "Choose a function": **C**reate character (`FUN_417f_056c`), **D**rop (`1f37`), **M**odify (`209f`), **T**rain (`29ae`, see [[spec/progression]]), **V**iew, **A**dd character from disk (`306d`), **R**emove, **L**oad game (`FUN_45c5_1602`), **S**ave game (`FUN_45c5_1d58`, see [[spec/savegame]]), **B**egin adventuring, **E**xit ("Quit to DOS", saves first if needed). Items are enabled per state (no current character → only Create/Load/Add…; Train only if the area's class mask `B[0x550]` is set).
+
+Hidden: **J** then typing `STING` prints "I Understand, master..." and sets `DS:470C`, which makes training free and skips the experience and class checks (developer cheat).
