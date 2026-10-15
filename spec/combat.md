@@ -110,10 +110,11 @@ Delay (`FUN_4B46_03D5`, same as ECL 0x34), round counter `DS:6DE3` +1, `FUN_3aae
 ### Aftermath (`FUN_2e08_1527`)
 
 1. `FUN_2e08_04c9`: decide survival; Running → Okay, Dying → Unconscious, Unconscious with HP > 0 → Okay; total experience into `DS:84D6` (`FUN_2e08_0000`) and distribute (`FUN_2e08_0355`)
-2. `FUN_2e08_11ac`: remove monsters from the shared list
+2. `FUN_2e08_11ac`: remove monsters from the shared list, counting enemy-side combatants that cannot act into ECL 0x6DC8
 3. `FUN_2e08_12e8`: NPCs (char[0x84] ≥ 0x80) take a share of the money table (shares = char[0x85] & 7)
 4. `FUN_2e08_0916`: experience message; `FUN_2e08_0ecd`: treasure menu (View, Take, Pool, Share, Detect, Exit)
 5. If the party was destroyed: "The monsters rejoice for the party has been destroyed"
+6. Outcome for scripts in ECL 0x6DC7: 0 won, 0x80 party destroyed, 0x81 the party fled (every remaining member was Running). Then the per-battle variables 0x6DE3, 0x6DE6 and 0x6E70–0x6E72 (to-hit and movement bonuses) are reset to 0
 
 ## Player turn (O, `FUN_320c_031a`)
 

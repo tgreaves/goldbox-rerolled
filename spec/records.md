@@ -62,7 +62,7 @@ O = read by the character sheet (`FUN_4894_004a`, `050d`, `0608`, `0901`, `FUN_1
 | 0x102 | u16 | encumbrance | O |
 | 0x104 | ptr | next record (in memory) | O |
 | 0x10C | u8 | status (table below) | O |
-| 0x10E | u8 | flag set by `ADD_NPC` when id = 0x18 | O |
+| 0x10E | u8 | enemy side: 1 for monsters (171 of 172 monster records) and hostile NPCs (`ADD_NPC` id 0x18); 0 for the party. Picks the side's to-hit bonus (ECL 0x6E70 / 0x6E71) and movement bonus (0x6E72) | O |
 | 0x110 | u8 | 60 − THAC0 | O |
 | 0x111 | u8 | 60 − AC (front) | O |
 | 0x112 | u8 | 60 − AC (rear, used from behind) | O |

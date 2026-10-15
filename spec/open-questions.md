@@ -31,6 +31,12 @@ Part of [[spec/README]]. Ordered by what a browser reimplementation needs first.
 - Exact HP recalculation in effect 7; creature classes behind effects 3/6; one save-bonus condition in effect 82; item weapon-class flags
 - Effect 88 is fired at event 14 but has no handler (original behaviour: nothing)
 
+## Interpreter vs the original
+
+- Confirm in DOSBox: walking off the south edge of block 1 area 24's second map (GEO 31) at (4,15) — the exit table has no destination ([[spec/ecl]], Validation)
+- What engine address 0x035F reads in practice (stack garbage) when the overland scripts compare it against their impassable-tile table; a port can treat it as never matching
+- Compare scripted walks between `tools/eclvm.py` and the original
+
 ## Smaller loose ends
 
 - Edge-consistency outliers in GEO records 30, 23, 16, 7, 0

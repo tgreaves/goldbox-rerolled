@@ -39,6 +39,8 @@ Experiment using REA (Ghidra 12.1.4 backend) to understand how SSI's Gold Box en
   - `chars.py`: character / monster record decoder
   - `spells.py`: spell table extractor (from unpacked `START.EXE`)
   - `automap.py`: annotated automap HTML (all areas, doors, events with their text and actions); output contains game text, keep it local
+  - `eclvm.py`: headless ECL interpreter running area scripts from a save game (menus answered from a list, engine screens logged)
+  - `eclsweep.py`: runs every area's scripts from every square and facing; reports failures and the variables touched
 
 ## Plan
 

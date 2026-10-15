@@ -45,19 +45,22 @@ instruction := opcode:u8 operand*
 operand     := kind:u8 payload
 ```
 
-| kind | Payload | Value when read (`FUN_2fea_0136`) |
-|---|---|---|
-| 0x00 | `lo` | immediate byte `lo` |
-| 0x01 | `lo hi` | `mem_read(hi<<8 | lo)` (variable) |
-| 0x02 | `lo hi` | immediate word `hi<<8 | lo` |
-| 0x03 | `lo hi` | `mem_read(hi<<8 | lo)` (as 0x01) |
-| 0x80 | `len` then `len` bytes | inline string, 6-bit packed (below) |
-| 0x81 | `lo hi` | string variable at address |
-| other | `lo` | treated as one-byte payload; read value undefined (only 2 sites in data, both suspected data-in-code) |
+The reader fills an operand table: kind at `DS:7005+i`, first payload byte **LO** at `DS:7085+i`, second byte **HI** at `DS:7045+i`. String operands are decoded into their own buffers, numbered by string operand within the call (`DS:6FC8 + k·0x100`, k = 1, 2, …).
 
-- After the operands, PC += 1 (so the next instruction begins right after the last operand)
-- Address operands (jump targets, destinations) use `hi<<8 | lo` regardless of kind
-- **Variadic opcodes**: read k fixed operands, the last being a count N, then N more operands
+| kind | Payload | Value as a number (`FUN_2fea_0136`) | As a string |
+|---|---|---|---|
+| 0x00 | `lo` | immediate byte `lo` | — |
+| 0x01 | `lo hi` | `mem_read(hi<<8 | lo)` | — |
+| 0x02 | `lo hi` | immediate word `hi<<8 | lo` | — |
+| 0x03 | `lo hi` | `mem_read(hi<<8 | lo)` | — |
+| 0x80 | `len`, then `len` packed bytes | `mem_read(stale_hi<<8 | len)` (nonsense; never used) | inline text |
+| 0x81 | `lo hi` | immediate word `hi<<8 | lo` | string variable at `hi<<8 | lo` |
+| other | `lo` | undefined | — |
+
+- After the operands, PC += 1, so the next instruction begins right after the last operand
+- **HI is only written for kinds 1, 2, 3 and 0x81.** An address operand is always `HI<<8 | LO`, so a kind-0 operand used as an address picks up the HI byte left by an earlier instruction
+- **Variadic opcodes** read k fixed operands (the last is a count N), step PC back by one, then read N more operands into slots 1..N (overwriting the fixed ones, and restarting the string buffer count)
+- Ghidra lists this compiler's far-call parameters in reverse push order; the operand orders in this file come from the push sequences in the assembly
 
 ### Packed text (O, `FUN_2fea_1153`, `FUN_2fea_06d3`)
 
@@ -132,18 +135,28 @@ Variables the engine itself reads or writes, so a port must give them meaning. E
 | 0x4AB3 | 0xFF changes arid wilderness terrain | [[spec/combat]] |
 | 0x4AFA–0x4AFF | wall-set record ids and slots (save) | [[spec/savegame]] |
 | 0x6DA8 | trainable class mask for the training hall | [[spec/progression]] |
+| 0x6DC0, 0x6DC1 | encounter sprite maximum and current distance | below |
+| 0x6DC7 | outcome of the last `COMBAT`: 0 won, 0x80 party defeated, 0x81 party fled (`FUN_2e08_1527`, `FUN_2e08_04c9`) | [[spec/combat]] |
+| 0x6DC8 | after a battle: number of enemy-side combatants (char[0x10E] = 1) left unable to act, counted while `FUN_2e08_11ac` removes them (**I**: enemies defeated) | [[spec/combat]] |
 | 0x6DC9 | set to ≥ 0xFF by `on_move` to cancel the move (the engine then resets it to 0) | [[spec/architecture]] |
 | 0x6DCA | bit 0 = Search mode, bit 1 = Look requested | [[spec/architecture]] |
+| 0x6DCB | SURPRISE result | below |
 | 0x6DC6 | encounter morale | [[spec/combat]] |
 | 0x6DD2, 0x6DD3 | rest-encounter interval (steps) and chance % | [[spec/camp]] |
-| 0x6DD5 | cleared on every area entry (**?**) | [[spec/architecture]] |
+| 0x6DD5 | 1 when the attempted move would leave the 16×16 map (set before `on_move`; cleared on area entry); scripts use it for edge exits | [[spec/architecture]] |
 | 0x6DE1 | portrait selector | [[spec/graphics]] |
 | 0x6DE2 | temple flag for `COMBAT` | [[spec/town]] |
 | 0x6DE6 | duel flag (`CALL 0x8000`) | [[spec/progression]] |
 | 0x6E12 | block digit | above |
 | 0x6E3E | party size | above |
 | 0x6E6C | shop flag for `COMBAT` | [[spec/town]] |
-| 0x6E70, 0x6E71 | to-hit modifier this battle, chosen by the attacker's char[0x10E] flag (set / clear) | [[spec/combat]] |
+| 0x6DE3 | cleared after every battle (**?**) | [[spec/combat]] |
+| 0x6E70 | to-hit bonus for the enemy side (char[0x10E] = 1) in the next battle | [[spec/combat]] |
+| 0x6E71 | to-hit bonus for the party side | [[spec/combat]] |
+| 0x6E72 | combat movement bonus for the party side (`FUN_3aae_0123`) | [[spec/combat]] |
+| 0x6E79–0x6E82 | scratch, zeroed by every `NEW_ECL` | this file |
+
+0x6DE3, 0x6DE6 and 0x6E70–0x6E72 are all reset to 0 at the end of every battle, so scripts set them just before `COMBAT`.
 
 ### Engine registers (O)
 
@@ -155,77 +168,147 @@ Variables the engine itself reads or writes, so a port must give them meaning. E
 | 0xC04E | wall type ahead | — |
 | 0xC04F | current square's event byte (map plane 2) | — |
 | 0xC059, 0xC05F | — | two display parameters (**?**) |
-| 0x00B1, 0x00FB, 0x00FC | engine words | ignored |
-| 0x033D | facing ×2 | — |
+| 0x00B1, 0x00FB, 0x00FC | engine words `DS:6F6E`, `6F6A`, `6F6C` | ignored |
+| 0x033D | facing ×2 (0–7, so overland scripts can use 8 directions) | — |
+| anything else (e.g. 0x035F) | undefined (an uninitialised local) | ignored |
 | 0x03DE, 0x00B8, 0x00B9 | — | engine words (**?**) |
 
 ## Flags and control flow (O)
 
-- `COMPARE a, b` (handler calls `FUN_2fea_18eb(b, a)`) clears then sets six flags, unsigned: EQ `a==b`, NE `a!=b`, LT `a<b`, GT `a>b`, LE `a<=b`, GE `a>=b`. Strings are compared instead when either operand kind ≥ 0x80 (`FUN_2fea_1815`). `AND`/`OR` set the same flags comparing 0 with the result.
+- `COMPARE a, b` clears then sets six flags (`DS:6F78..6F7D`), unsigned: EQ `a==b`, NE `a!=b`, LT `a<b`, GT `a>b`, LE `a<=b`, GE `a>=b`, where a is operand 1. Strings are compared instead when either operand kind ≥ 0x80 (`FUN_2fea_1815`). `AND`/`OR` set the same flags comparing 0 with the result.
 - `IF_xx` (0x16–0x1B): if the flag is clear, skip the next instruction (`FUN_2fea_1ea6`, using its own operand-count table)
-- The skip table disagrees with the handlers for 0x0C (skips 2, reads 3) and 0x36 (skips 1, reads 2), and treats variadic opcodes as 0 operands. A faithful reimplementation must reproduce this for scripts that IF-skip those opcodes.
+- The skip routine has its own operand-count table (the VM PC is `DS:49ED`):
+
+  | Skips | Opcodes |
+  |---|---|
+  | 1 operand | 01 02 0A 0E 11 12 1D 20 2D 32 34 36 38 39 3C |
+  | 2 | 03 08 09 0C 0F 10 1F 22 |
+  | 3 | 04–07 0B 21 28 2A 2F 30 35 37 3B |
+  | 4 | 14 23 |
+  | 5 | 2E |
+  | 6 | 1E 2C |
+  | 8 | 27 |
+  | 14 | 29 |
+  | just the opcode byte | everything else, including the variadic 15, 25, 26, 2B |
+
+  It disagrees with the handlers for 0x0C (skips 2, reads 3) and 0x36 (skips 1, reads 2), and skipping a variadic opcode lands inside its operands. A faithful reimplementation should copy this table, but no shipped script puts any of these opcodes directly after an IF (checked over all reachable code), so the mismatches never trigger.
 - `GOSUB` pushes the return PC on a linked stack; `RETURN` pops it (with an empty stack it falls through)
 
 ## Opcodes
 
-Count = fixed operands; `+N` = variadic. Validated: every opcode appears in data; reachability from vectors covers 97.8% of ECL bytes with no decode errors.
+Operands are numbered from 1. *val n* is the numeric value of operand n, *addr n* its address (`HI<<8 | LO`), *str n* its text. Handlers are in segment 29c3. Every opcode appears in the data; the disassembler reaches 97.8% of ECL bytes with no decode errors, and the interpreter (`tools/eclvm.py`) runs every area on every square without error ([[#Validation]]).
 
-| Op | Name | Count | Semantics | |
+### Control flow
+
+| Op | Name | Operands | Semantics | |
 |---|---|---|---|---|
-| 00 | EXIT | 0 | stop; frees GOSUB stack; resets text cursor | O |
-| 01 | GOTO | 1 | PC = addr | O |
-| 02 | GOSUB | 1 | push return; PC = addr | O |
-| 03 | COMPARE | 2 | set flags | O |
-| 04–07 | ADD, SUBTRACT, DIVIDE, MULTIPLY | 3 | `dest = a+b`, `b-a`, `a/b`, `a*b` | O |
-| 08 | RANDOM | 2 | `dest = random(0..max)` (max 255 means 0..254) | O |
-| 09 | SAVE | 2 | `dest = value` (string if kind ≥ 0x80) | O |
-| 0A | LOAD_CHARACTER | 1 | select party member n&0x7F as current; bit 7 forces redraw | O |
-| 0B | LOAD_MONSTER | 3 | load monster id, count copies, picture; max 63 monsters | O |
-| 0C | SETUP_MONSTER | 3 | sprite, max distance, picture; distance = min(max, clear squares ahead) | O |
-| 0D | APPROACH | 0 | distance -= 1 and redraw sprite | O |
-| 0E | PICTURE | 1 | show picture n; 255 = clear | O |
-| 0F | INPUT_NUMBER | 2 | number input → dest | O |
-| 10 | INPUT_STRING | 2 | string input (≤40) → dest | O |
-| 11 | PRINT | 1 | print string/number in text window | O |
-| 12 | PRINT_CLEAR | 1 | clear text window, then print | O |
-| 13 | RETURN | 0 | pop GOSUB | O |
-| 14 | COMPARE_AND | 4 | EQ = (a==b && c==d) | O |
-| 15 | VMENU | 3+N | vertical menu: dest, prompt, N, N item strings | O |
-| 16–1B | IF_EQ … IF_GE | 0 | conditional skip | O |
-| 1C | CLEAR_MONSTERS | 0 | monster count = 0, clear treasure list and money table | O |
-| 1D | PARTY_STRENGTH | 1 | dest = Σ over party of a weighted sum of 5 stats /10 | O (stats **?**) |
-| 1E | CHECK_PARTY | 6 | op1 selects: 0x6BA7 → min/max/average of find/remove traps (char[0x79]); 0x6C1B → of movement (char[0x11C]); 0 → per-member test via `FUN_10ba_2199` (has effect op2); results stored to op3–op6 | O |
-| 1F | — | — | no handler (skip table says 2); never used | O |
-| 20 | NEW_ECL | 1 | set current area `DS:84DC` = n (saved as A word 0x49F2), load ECL record n, stop | O |
-| 21 | LOAD_AREA | 3 | load GEO record a (255/127 = keep); c = sound/music (**?**) | O/I |
-| 22 | PARTY_HAS_RANGER | 2 | dest1 = 1 if any member's class is Ranger or Cleric/Ranger; dest2 = 0 | O |
-| 23 | SURPRISE | 4 | d6 surprise rolls → result 0–3 at 0x6DCB | O/I |
-| 24 | COMBAT | 0 | shop if `B[0x6D8]`=1, temple if `B[0x5C4]`=1, else battle with the loaded monsters (or treasure only); see [[spec/town]] | O |
-| 25 | ON_GOTO | 2+N | index, N, N targets | O |
-| 26 | ON_GOSUB | 2+N | as ON_GOTO with push | O |
-| 27 | TREASURE | 8 | 7 money amounts; item record (≥0x80 = random d100 tables) | O/I |
-| 28 | ROB | 3 | target (0 = current, else all), money %, items | I |
-| 29 | ENCOUNTER_MENU | 14 | sprite/distance setup, 3 range texts, 5 reaction branches | O/I |
-| 2A | GET_TABLE | 3 | `dest = mem[base + index]` | O |
-| 2B | HMENU | 2+N | horizontal menu: dest, N, N strings | O |
-| 2C | PARLAY | 6 | 5-way talk menu, chosen value → dest | O |
-| 2D | CALL | 1 | native routine selected by address (table below) | O |
-| 2E | DAMAGE | 5 | dice damage to random members, saving throw | O/I |
-| 2F | AND | 3 | `dest = a & b`; flags vs 0 | O |
-| 30 | OR | 3 | `dest = a | b`; flags vs 0 | O |
-| 31 | REDRAW | 0 | if a picture/sprite is showing (`DS:84E3`), redraw the 3D view and clear the flag | O |
-| 32 | FIND_ITEM | 1 | EQ = any party member carries item type t | O |
-| 33 | NEWLINE | 0 | text cursor to next line | O |
-| 34 | DELAY | 1 | pause (`FUN_4B46_03D5(1, n)`, same routine as the combat round delay) | O/I |
-| 35 | SAVE_TABLE | 3 | `mem[base + index] = value` | O |
-| 36 | ADD_NPC | 2 | add NPC id with morale | O |
-| 37 | LOAD_WALLSETS | 3 | load WALLDEF records into slots 1–3 | O |
-| 38 | PROGRAM | 1 | built-in mode: 0 = party/training hall screen, 8 = ending sequence, 9 = encamp (see [[spec/architecture]]) | O |
-| 39 | WHO | 1 | prompt, player picks current character | O |
-| 3A | CLEAR_BOX | 0 | clear text box | O |
-| 3B | FIND_IN_CHAR_LIST | 3 | for each member, scan char bytes 0x18–0x69 for a value → index, member count. The range covers memorised slots 0x18–0x2B (missing the first slot, 0x17) and the spell-known flags, but also scribe timer, race, class, age and max HP; reproduce as-is | O |
-| 3C | PRINT_LIST | 1 | print entries `mem[addr+i]` (as values+1) one per line until a value of 0 or 0xFF; advances the text cursor | O/I |
-| 3D | CLEAR_TOP | 0 | clear the upper text region (rows 1–15) and set `DS:84DE` (next print starts lower) | O/I |
+| 00 | EXIT | — | stop; free the GOSUB stack; text cursor to (1, 17); if `LOAD_CHARACTER` was used, the current character reverts to the one saved by the engine (`DS:4436`) | O |
+| 01 | GOTO | addr 1 | PC = target | O |
+| 02 | GOSUB | addr 1 | push the PC after the instruction; jump | O |
+| 13 | RETURN | — | pop; with an empty stack, fall through | O |
+| 16–1B | IF_EQ … IF_GE | — | if the flag is clear, skip the next instruction (table above) | O |
+| 25 | ON_GOTO | val 1 index, val 2 N, then N addresses | both bytes; if index < N jump to target index (0-based), else fall through | O |
+| 26 | ON_GOSUB | as ON_GOTO | push the PC after the whole instruction, then jump | O |
+| 1F, ≥ 3E | — | — | no handler: PC never advances and the game hangs. Never used | O |
+
+### Data and arithmetic
+
+| Op | Name | Operands | Semantics | |
+|---|---|---|---|---|
+| 03 | COMPARE | val 1, val 2 | flags from **val 1 ? val 2**, unsigned (IF_LT ⇔ op1 < op2). If either kind ≥ 0x80, compare the 1st and 2nd *string* buffers instead (Pascal order: bytewise, shorter prefix is less, case-sensitive). All 25 string compares in the data are string against string | O |
+| 04 | ADD | val 1, val 2, addr 3 | dest = (a + b) & 0xFFFF | O |
+| 05 | SUBTRACT | val 1, val 2, addr 3 | dest = **b − a** | O |
+| 06 | DIVIDE | val 1, val 2, addr 3 | dest = a div b; b = 0 aborts the game (runtime error 200) | O |
+| 07 | MULTIPLY | val 1, val 2, addr 3 | dest = (a · b) & 0xFFFF | O |
+| 08 | RANDOM | val 1 max (byte), addr 2 | m = max + 1 unless max = 255; dest = Random(m), i.e. 0..max (0..254 for 255) | O |
+| 09 | SAVE | val/str 1, addr 2 | number: write; string: store one character per word plus a 0 terminator (at 0x6B00: the current character's name, max 15). Storing an **empty** string also overwrites the next 255 words with stack garbage in the original | O |
+| 14 | COMPARE_AND | val 1–4 | clear all flags; EQ = (a = b and c = d), else NE | O |
+| 2A | GET_TABLE | addr 1 base, val 2 index, addr 3 | dest = mem[base + (index & 0xFF)] | O |
+| 2F | AND | val 1, val 2, addr 3 | r = (a & b) & 0xFF; flags from compare(0, r); dest = r | O |
+| 30 | OR | as AND | with a \| b | O |
+| 35 | SAVE_TABLE | val 1 value, addr 2 base, val 3 index | mem[base + index] = value (full 16-bit index) | O |
+
+### Text and input
+
+| Op | Name | Operands | Semantics | |
+|---|---|---|---|---|
+| 11 | PRINT | val/str 1 | numbers as unsigned decimal; word-wrapped into the text window (columns 1–38, rows 17–22) from the cursor; a full window waits for a key and clears | O |
+| 12 | PRINT_CLEAR | as PRINT | cursor to (1, 17) and clear the window first | O |
+| 33 | NEWLINE | — | column 1, next row | O |
+| 3A | CLEAR_BOX | — | clear the text window | O |
+| 3D | CLEAR_TOP | — | clear columns 1–15, rows 1–15; the next PRINT_LIST starts at (2, 5) | O |
+| 3C | PRINT_LIST | addr 1 | draw raw font glyphs `(mem[a+i] + 1) & 0xFF` along one row in colour 15 until a value of 0 or 0xFF, then move to the next row | O |
+| 0F | INPUT_NUMBER | (op 1 unused), addr 2 | up to 6 digits, re-prompted until valid and ≤ 65536; dest = value & 0xFFFF | O |
+| 10 | INPUT_STRING | (op 1 unused), addr 2 | up to 40 characters 0x20–0x7A, Enter or Esc ends; uppercased; empty becomes " "; stored as a string | O |
+| 15 | VMENU | addr 1, str 2 prompt, N, N items | prompt printed like PRINT_CLEAR, items as a vertical list; dest = 0-based choice (word) | O |
+| 2B | HMENU | addr 1, N, N items | horizontal menu on row 24; each item's first letter is its hotkey; with one item Enter also works (and "PRESS <RETURN> OR BUTTON TO CONTINUE" is shown as "PRESS <ENTER>/<RETURN> TO CONTINUE"); dest = 0-based choice (byte) | O |
+| 2C | PARLAY | val 1–5, addr 6 | menu HAUGHTY / SLY / NICE / MEEK / ABUSIVE; dest = the **value** given for the chosen attitude (val c+1 & 0xFF), not the index | O |
+| 39 | WHO | str 1 prompt | the player picks a party member, who becomes the current character; nothing is stored | O |
+
+### Party and characters
+
+All of these walk the party list `DS:5D96`, which **also holds loaded monsters** after `LOAD_MONSTER` (see [[#Monsters in the party list]]).
+
+| Op | Name | Operands | Semantics | |
+|---|---|---|---|---|
+| 0A | LOAD_CHARACTER | val 1 | current character = list entry (val & 0x7F), 0-based; unchanged past the end. Marks the engine to restore its own selection at EXIT/PROGRAM | O |
+| 1D | PARTY_STRENGTH | addr 1 | Σ over the list of `(HP + 5·max(char[0x111] − 60, 0) + 5·max(char[0x110] − 39, 0) + 8·MU level + 4·Cleric level) div 10`, in a byte that wraps | O |
+| 1E | CHECK_PARTY | op 1 selector, val 2 effect, addr 3–6 min, max, avg, found | selector 0: found = 1 if a member has effect val 2 (min/max/avg = 0). Selector address 0x6BA7: min/max/average of char[0x79] (find/remove traps); 0x6C1B: of movement char[0x11C]; found = 0. Other selectors write nothing | O |
+| 22 | PARTY_HAS_RANGER | addr 1, addr 2 | dest1 = 1 if any member's class is Ranger (4) or Cleric/Ranger (10); **dest2 is always 0**. Scripts feed both into SURPRISE | O |
+| 32 | FIND_ITEM | val 1 type | EQ if any member carries an item of that type (item[0x2E]), else NE; other flags cleared | O |
+| 36 | ADD_NPC | val 1 id, val 2 morale | add NPC id to the party; morale char[0x84] = (val 2 >> 1) \| 0x80; enemy-side flag char[0x10E] = 1 only for id 0x18 | O |
+| 3B | FIND_IN_CHAR_LIST | val 1, addr 2, addr 3 | meant to find a value in char bytes 0x18–0x69. **Broken**: it keeps both destinations as bytes, so the results go to engine addresses (`addr & 0xFF`) and are discarded; it only ever scans the first list entry. The one use (`#31, [0x6E7D], [0x6E7E]`) therefore leaves its variables unchanged | O |
+| 28 | ROB | val 1 target (0 = current, else everyone), val 2 percent p, (op 3 unused) | each money word = trunc(v·(100 − p)/100). Items: for each item in turn, p is first lowered **in place** (weight > 255: −90; weight > 24: −50; floor 0), then d100 ≤ p takes it; later items inherit the lowered p | O |
+| 2E | DAMAGE | val 1 flags, val 2 dice count, val 3 dice sides, val 4 bonus, val 5 save/attack | damage = bonus + count d sides, rerolled per victim (handler 29c3:2775). Flags bit 7 clear: flags = number of attacks, each on a random member, hitting if d20 (1 misses, 20 → 100) + val 5 > char[0x111]. Bit 7 set: save bonus = flags & 0x1F, save type = val 5 & 7, and:<br>– bit 6 clear, val 5 bit 7 clear: one random member, damaged unless the save succeeds<br>– bit 6 clear, val 5 bit 7 set: the current character, save type (val 5 & 7) − 1, no save if that is 0<br>– bit 6 set: every member; with bit 5 set no save is allowed<br>If nobody can act afterwards, the game ends (`DS:49FF`) | O |
+
+### Monsters, encounters and treasure
+
+| Op | Name | Operands | Semantics | |
+|---|---|---|---|---|
+| 0B | LOAD_MONSTER | val 1 record, val 2 count (0 → 1), val 3 icon record | nothing if 63 monsters are loaded. Load `MON<block>CHA` record, its combat icon (`CPIC` record) into the next icon slot (from 8), and **append** count copies (with items and effects) to the party list | O |
+| 1C | CLEAR_MONSTERS | — | monster count 0, icon slot 8, money table and treasure list cleared. Does **not** unlink monsters from the party list | O |
+| 0C | SETUP_MONSTER | val 1 sprite, val 2 max distance, val 3 picture | 0x6DC0 = max; distance 0x6DC1 = min(max, open squares ahead, at most 2; always 2 outdoors); draw the `SPRIT` frame for that distance, or the picture at distance 0 | O |
+| 0D | APPROACH | — | if distance > 0: distance − 1, redraw | O |
+| 0E | PICTURE | val 1 | 255: restore the 3D view. Otherwise show `PIC` record n, or, when portrait selector 0x6DE1 ≠ 0xFF, a head/body portrait (head 0x6DE1, body n) | O |
+| 23 | SURPRISE | val 1–4 (bytes) | a = v4 + 2 − v1, b = v2 + 2 − v3 (signed bytes); two d6 rolls r1, r2. Result 0; r1 ≤ a → 1 (or 3 if also r2 ≤ b); then r2 ≤ b → 2. So **3 never comes out**. Written to 0x6DCB | O |
+| 29 | ENCOUNTER_MENU | 14, below | stores 0–3 in addr 4; never jumps | O |
+| 24 | COMBAT | — | without loaded monsters: shop if 0x6E6C = 1, temple if 0x6DE2 = 1 (flag cleared), else the treasure screen. Otherwise the battle and its aftermath ([[spec/combat]]), which sets the outcome 0x6DC7 | O |
+| 27 | TREASURE | val 1–7 money, val 8 items | money table = the seven values. Items: < 0x80 load `ITEM<block>` record (63-byte items, **prepended** so they end up reversed; a missing record halts the game); 0xFF none; 0x80–0xFE that many random items from the table below | O |
+
+**ENCOUNTER_MENU** operands: 1 sprite, 2 max distance, 3 picture, **4 destination**, 5–9 reaction codes for COMBAT, WAIT, FLEE, ADVANCE, PARLAY, 10–12 texts for distance 0, 1, 2, 13 flee threshold f, 14 pursuit threshold g.
+
+1. Party movement range: slowest and fastest char[0x11C] over the list (×2 with Haste, ÷2 with Slow).
+2. Distance = min(op 2, open squares ahead ≤ 2), drawn as in SETUP_MONSTER.
+3. Loop: print the first non-empty text starting from the current distance (wrapping). Menu COMBAT / WAIT / FLEE / PARLAY at distance 0 or outdoors, otherwise COMBAT / WAIT / FLEE / ADVANCE (PARLAY counts as choice 4). Act on code r = op(5 + choice):
+
+| r | COMBAT | WAIT | FLEE | ADVANCE | PARLAY |
+|---|---|---|---|---|---|
+| 0 | 1 | 1 | slowest < f ? 1 : 2 | 1 | 1 |
+| 1 | 1 | "Both sides wait." | 2 | approach | 3 at distance 0, else approach |
+| 2 | fastest < g ? 0 : 1 | 0 | 0 | 0 | 0 |
+| 3 | 1 | approach | 2 | approach | 3 at distance 0, else approach |
+| 4 | 1 | 3 at distance 0, else approach | 2 | 3 at distance 0, else approach | 3 at distance 0, else approach |
+| ≥ 5 | leave without writing | | | | |
+
+Stored values: **0** the monsters flee ("The monsters flee."), **1** combat, **2** the party escapes, **3** parlay. "Approach" lowers the distance and loops ("Both sides wait." at distance 0). Scripts follow with `ON_GOTO [dest], 4, …`.
+
+**Random treasure** (`FUN_4c2d_1010`), per item: d100 1–60 → d100 r2: 1–47 and 50–59 → type r2 (45 → 0x3B); **48–49 leave the type unset, so the previous item's type repeats**; 60–90 → d10: 1–4 0x24, 5–7 0x23, 8 0x22, 9 0x25, 10 0x26; 91–94 0x49; 95–97 0x5D; 98–100 0x4D. 61–85 → 0x3D; 86–92 → 0x3E; 93–98 → d16: 1–7 0x47, 8–9 0x46, 10 0x54, 11–12 0x4E, 13–14 0x4F, 15 0x5C, 16 0x43; 99–100 → 0x45.
+
+### Monsters in the party list
+
+`LOAD_MONSTER` appends monsters to the same list as the party, so PARTY_STRENGTH, CHECK_PARTY, FIND_ITEM, PARTY_HAS_RANGER, ROB (target ≠ 0) and ENCOUNTER_MENU include any loaded monsters. Monsters carry the enemy-side flag char[0x10E] = 1 (171 of the 172 monster records). They stay in the list until a battle's aftermath removes them (`FUN_2e08_11ac`), so a script that loads monsters and then avoids the fight (parlay, flee) leaves them counted by these opcodes until the next `COMBAT` (**I**: no other place that unlinks them has been found).
+
+### World and engine
+
+| Op | Name | Operands | Semantics | |
+|---|---|---|---|---|
+| 20 | NEW_ECL | val 1 area | 0x49F2 = old area; load `ECL<block>` record n; VM reset (vectors; flags; stack; icon slot 8; 0x6DE1 = 0xFF; 0x6DD2 = 0x6DD3 = 0; 0x49E5 = 0; **0x49E6 = 1**; unless restoring a save, 0x4A00–0x4A1F and 0x6E79–0x6E82 = 0); stop; signal an area change | O |
+| 21 | LOAD_AREA | val 1 GEO record, (op 2 unused), val 3 | if val 1 ∉ {0x7F, 0xFF} and 0x49E6 ≠ 0: 0x49C5 = val 1, load the GEO record, 0x6DC9 = 0. If val 3 ≠ 0xFF and 0x49E6 = 0: load the `BACPAC` backdrop | O |
+| 37 | LOAD_WALLSETS | val 1–3 | 0x7F: clear to set 0 in slot 1. If 0x49E7 and 0x49E8 are both set: load val 1 → slot 1, val 3 → slot 3. Else for each slot: 0xFF empties it, otherwise load that `WALLDEF<block>` record (one record may fill several slots) | O |
+| 2D | CALL | addr 1 | native routine, table below | O |
+| 31 | REDRAW | — | if an encounter sprite is showing, redraw the 3D view | O |
+| 34 | DELAY | val ? | **passes game time** (the rest-loop clock routine `FUN_4b46_03d5`), not a pause. Its operand is read with an uninitialised index, so the amount is undefined; used once in the data (`DELAY #1`) | O |
+| 38 | PROGRAM | val 1 | 0 party/training-hall screen; 8 ending; 9 camp (runs `camp_menu`, the camp screen, then `camp_confirmed` if the camp was interrupted), then acts as EXIT | O |
 
 ## CALL targets (O, `FUN_29c3_2ccf`)
 
@@ -238,6 +321,18 @@ The DOS port maps former C64 machine-code entry points to native routines:
 | 0x8001 | solo combat: as 0x8000 without the copy (`B[0x5CC]` = 0) |
 | 0xBA03 | play one of two sounds depending on engine register 0x3DE (8 or 10) |
 | 0xC018 | recompute "wall ahead" (`0xC04E`), map areas only |
+| 0xC01B | nothing in the DOS port. The overland scripts (areas 25–27) call it and then read engine address 0x035F as the destination tile; that address is unmapped and returns an undefined value, so this C64 tile check is dead code (**I**: overland legality is done natively by `FUN_3e76_0818`) |
 | 0xC01E | move the party one square forward (with wrap-around) and refresh square registers |
 
 After a 0x8000/0x8001 fight the aftermath awards `100 × char[0x73]` experience to the current character (see [[spec/progression]]).
+
+## Validation
+
+`tools/eclvm.py` implements this file, quirks included, on top of a save game; `tools/eclsweep.py` runs it over every area of the shipped scripts:
+
+- all 29 ECL records in the 8 blocks: enter the area, then from every square and facing (1,024 starts per area) attempt a move, running `on_move` and `on_step`, with menus answered at random
+- 29,696 runs: no decode errors and no missing handlers. With every menu answered "first option", 101 runs loop forever; each one checked is a genuine in-game loop (for example, re-opening the same empty cabinet in area 14 of block 3)
+- the variables the scripts touch were checked against the engine-visible table above; the remaining ones are script-private
+- with edge exits modelled (0x6DD5), 2 runs fail: block 1 area 24 on its second map (GEO 31) has open south-edge squares (4,15) and (11,15) whose exit table entry is 255. Walking off there would make the original try to load ECL record 255, and its loader retries forever (**I**: a bug in the original, or squares never reached in play; unconfirmed)
+- the sweep starts every area from the shipped save's variables, so area-specific story state is not explored
+- not yet compared against the running original (DOSBox)

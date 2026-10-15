@@ -44,7 +44,7 @@ Vectors are cached in `DS:49E3` (`on_move`), `49E5` (`on_step`), `49E7` (`camp_m
 
 **Each command**
 
-1. Read a command (`FUN_3e76_0989`, below). It returns only for a move, Encamp or Look.
+1. Read a command (`FUN_3e76_0989`, below). It returns only for a move, Encamp or Look. A forward move first sets ECL 0x6DD5 = 1 if the square ahead is open but outside the 16×16 map (`FUN_3e76_068d`), so `on_move` can handle edge exits.
 2. While Look is pending (ECL 0x6DCA > 1) or the command is Encamp:
    - Encamp: the camp screen ([[spec/camp]])
    - Look: remember Search (bit 0), set 0x6DCA = 1, run **`on_step`** on the current square, re-enter if the area changed, then restore 0x6DCA to the remembered Search bit
