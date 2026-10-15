@@ -25,7 +25,7 @@ Part of [[spec/README]]. Routine `FUN_417f_056c` (party screen "Create character
 2. **Gender**, **class** (menu filtered by race/stats, **?** rules), **alignment** (allowed alignments per class from `DS:3FE7 + class·10`)
 3. **Age** = `base + NdS` from `DS:3E5B + race·0x1C + class·4` (u16 base, u8 N, u8 S); multi-class uses the maximum (`base + N·S`) of the class column listed in the code
 4. **Ability scores** (rerollable): for each stat roll **3d6 six times, keep the highest**, then:
-   - racial adjustment: Dwarf CON +1 CHA −1; Elf DEX +1 CON −1; Halfling STR −1 DEX +1; Half-Orc STR +1 CON +1 CHA −2
+   - racial adjustment: **never applied** (O, bug): the code tests the race-menu loop variable, which is always 7 after the menu, instead of char[0x2E]. The intended Dwarf CON +1 CHA −1, Elf DEX +1 CON −1, Halfling STR −1 DEX +1, Half-Orc STR +1 CON +1 CHA −2 are dead code; reproduce the original (no adjustment)
    - age adjustment against the race's thresholds (mature, middle-aged, old, venerable) at `DS:3F31 + race·10`: STR +1/−1/−2/−1, INT +1 at middle and venerable, WIS −1 if young then +1 at each of middle/old/venerable, DEX −2 old −1 venerable, CON −1 at each of middle/old/venerable
    - clamp to racial min/max (by gender for STR), then raise to class minimum
    - STR 18 with a Fighter level → exceptional strength `d100`, capped by race/gender
@@ -74,4 +74,4 @@ Cleric 3d6, Druid 3d6, Fighter 5d4, Paladin 5d4, Ranger 5d4, Magic-User 2d4, Thi
 
 ## Open
 
-- Class availability by race and the multi-class combinations offered
+- Where thief skills are recomputed with the real DEX (creation computes them before abilities exist, so with DEX 0)
