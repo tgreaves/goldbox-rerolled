@@ -20,6 +20,22 @@ Experiment using REA (Ghidra 12.1.4 backend) to understand how SSI's Gold Box en
 - Rejected: C64 (original, but weak 6502 decompilation, disk loaders), Amiga/Mac (68k decompiles well but non-built-in loaders, little prior art), NES (heavily reworked port)
 - Source for files: GOG *Forgotten Realms: The Archives* bundle (unconfirmed which collection) or original disks
 
+## Outcome wanted (2026-10-15)
+
+- A formal specification complete enough to recreate the game in a web browser: [[spec/README]]
+- Then modern helper features, e.g. a better automap (`tools/geo.py` already renders maps with events and door types as SVG)
+
+## Layout
+
+- `spec/`: the specification (observed vs inferred marked throughout)
+- `tools/`: Python tools, stdlib only. Game files are not in the vault; point the tools at an extracted `POOLRAD/` folder
+  - `xar_extract.py`: unpack the GOG `.pkg`
+  - `unexepack.py`: unpack `START.EXE`
+  - `mergeovr.py`: merge `GAME.OVR` into one EXE for Ghidra
+  - `dax.py`: DAX container + RLE
+  - `ecl.py`: ECL disassembler
+  - `geo.py`: map decoder, ASCII/SVG renderer
+
 ## Plan
 
 1. Inventory the install: which files are code, which are data
