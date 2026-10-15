@@ -53,6 +53,8 @@ export interface Io {
   sprite(sprite: number, picture: number, distance: number): void
   /** Bring the view up to date with position, map and wall sets (CALL 0x2C90, area entry). */
   refresh(): Promise<void>
+  /** A sound effect by the original's number (FUN_18ae_00dc): 10 footstep, 7 bump, 11 script effect. */
+  sound(n: number): void
   /** PAUSE: wait (game speed x 225 ms in the original). */
   pause(ms: number): Promise<void>
   /** Engine screens that are not implemented yet (combat, shops, camp ...). */
@@ -452,6 +454,7 @@ export class Engine {
         this.readops(0)
         if (this.B[SPRITE_DIST - B0]) {
           this.B[SPRITE_DIST - B0]--
+          this.io.sound(10) // not in the original: a footstep as the sprite approaches (IMP-014)
           if (this.spriteNow) this.io.sprite(this.spriteNow.sprite, this.spriteNow.picture, this.B[SPRITE_DIST - B0])
         }
         break
@@ -809,6 +812,11 @@ export class Engine {
     this.readops(1)
     const a = this.addr(1)
     if (a === 0x2c90) await this.io.refresh()
+    else if (a === 0xba03) {
+      const r = this.regs.get(0x3de)
+      if (r === 8) this.io.sound(10)
+      else if (r === 10) this.io.sound(11)
+    }
     else if (a === 0xc01e) {
       const [dx, dy] = STEP[this.facing]
       this.x = (this.x + dx) & 15
@@ -862,6 +870,7 @@ export class Engine {
   async command(c: string) {
     if (c === 'l' || c === 'r' || c === 'b') {
       this.facing2 = (this.facing2 + ({ l: 6, r: 2, b: 4 } as Record<string, number>)[c]) % 8
+      if (c !== 'b') this.io.sound(10) // FUN_3e76_0989: quarter turns step, turning round is silent
       await this.io.refresh()
       return
     }
@@ -902,7 +911,11 @@ export class Engine {
         const [dx, dy] = STEP[this.facing]
         this.x = (this.x + dx) & 15
         this.y = (this.y + dy) & 15
-      } else blocked = p === 0 ? 1 : 2
+        this.io.sound(10) // main loop: footstep when the position changed
+      } else {
+        blocked = p === 0 ? 1 : 2
+        this.io.sound(7) // FUN_3e76_0d6d: bump
+      }
     }
     await this.io.refresh()
     if (blocked) await this.io.engine(blocked === 1 ? 'blocked' : 'locked door')

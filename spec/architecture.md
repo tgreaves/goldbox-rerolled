@@ -117,3 +117,15 @@ Entered through ECL `PROGRAM n` (0x38) or the main loop:
 Menu "Choose a function": **C**reate character (`FUN_417f_056c`), **D**rop (`1f37`), **M**odify (`209f`), **T**rain (`29ae`, see [[spec/progression]]), **V**iew, **A**dd character from disk (`306d`), **R**emove, **L**oad game (`FUN_45c5_1602`), **S**ave game (`FUN_45c5_1d58`, see [[spec/savegame]]), **B**egin adventuring, **E**xit ("Quit to DOS", saves first if needed). Items are enabled per state (no current character → only Create/Load/Add…; Train only if the area's class mask `B[0x550]` is set).
 
 Hidden: **J** then typing `STING` prints "I Understand, master..." and sets `DS:470C`, which makes training free and skips the experience and class checks (developer cheat).
+
+## Sound (O, partial)
+
+Effects are played by number with `FUN_18ae_00dc(n)`; nothing plays when `DS:5372` = 2 (sound off). The numbers are kept in a table at `DS:2620` = 6, 7, 8, 9, 10, 11, 12:
+
+| Effect | Number | Played by |
+|---|---|---|
+| footstep | 10 (`DS:2628`) | a move that changed position (main loop); quarter turns (command menu); ECL `CALL 0xBA03` with register 0x3DE = 8 (Rolf's tour, each step) |
+| bump | 7 (`DS:2622`) | a blocked or failed move (`FUN_3e76_0d6d`) |
+| script effect | 11 (`DS:262A`) | `CALL 0xBA03` with register 0x3DE = 10 |
+
+The PC-speaker routines (`FUN_18ae_17ae`, `1742`, `181a`) and their data are not decoded yet. Turning round (Down) is silent.

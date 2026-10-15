@@ -8,6 +8,7 @@ import { parseRecord, toImageData, type Picture } from '../data/image'
 import { World } from '../render/world'
 import { Engine, A0, type Io } from '../vm/engine'
 import { drawMap } from './areamap'
+import { play, setSound, soundOn, unlockAudio } from '../audio/sfx'
 
 const FACING = ['North', 'East', 'South', 'West']
 const STAT_KEYS = ['STR', 'INT', 'WIS', 'DEX', 'CON', 'CHA'] as const
@@ -93,10 +94,19 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     }
     return pictureCache.get(key)!
   }
-  function paint(pics: { pic: Picture; x: number; y: number }[]) {
+  /** mask: palette index drawn as transparent (sprites are loaded with mask colour 0, spec/graphics.md) */
+  function paint(pics: { pic: Picture; x: number; y: number }[], mask = -1) {
     const g = overlay.getContext('2d')!
     g.clearRect(0, 0, 88, 88)
-    for (const { pic, x, y } of pics) g.putImageData(toImageData(pic), x, y)
+    for (const { pic, x, y } of pics) {
+      const img = toImageData(pic)
+      if (mask >= 0) for (let i = 0; i < pic.pixels.length; i++) if (pic.pixels[i] === mask) img.data[i * 4 + 3] = 0
+      const tmp = document.createElement('canvas')
+      tmp.width = pic.width
+      tmp.height = pic.height
+      tmp.getContext('2d')!.putImageData(img, 0, 0)
+      g.drawImage(tmp, x, y)
+    }
     overlay.hidden = pics.length === 0
   }
   function showPicture(p: { pic: number } | { head: number; body: number } | null) {
@@ -183,10 +193,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         showPicture(portrait === 0xff ? { pic: picture } : { head: portrait, body: picture })
       } else if (f) {
         const pic = f[Math.min(distance, f.length - 1)]
-        paint([{ pic, x: pic.x * 8, y: pic.y * 8 }])
+        paint([{ pic, x: pic.x * 8, y: pic.y * 8 }], 0)
       }
     },
     refresh: () => sync(),
+    sound: play,
     pause(ms) {
       return new Promise((resolve) => {
         const timer = window.setTimeout(done, ms)
@@ -297,6 +308,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     pad.classList.remove('disabled')
     menuBar.innerHTML = ['Area', 'Cast', 'View', 'Encamp', 'Search', 'Look']
       .map((c) => `<button data-cmd="${c[0]}"${c === 'Search' && engine.B[0x6dca - 0x6b00] & 1 ? ' class="on"' : ''}><u>${c[0]}</u>${c.slice(1)}</button>`).join('') +
+      `<button class="sound" data-cmd="sound" title="Sound effects" aria-pressed="${soundOn()}">${soundOn() ? '♪ On' : '♪ Off'}</button>` +
       '<button class="assets" data-cmd="assets" title="Back to the asset viewer">Assets</button>'
     menuBar.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => command(b.dataset.cmd!)))
   }
@@ -315,6 +327,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       case 'C': note('Casting is not implemented yet.'); break
       case 'E': act(() => engine.command('e')); break
       case 'L': act(() => engine.command('L')); break
+      case 'sound': setSound(!soundOn()); unlockAudio(); commandBar(); break
       case 'assets': leave(); break
     }
   }
@@ -323,6 +336,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     ArrowUp: 'f', '8': 'f', ArrowLeft: 'l', '4': 'l', ArrowRight: 'r', '6': 'r', ArrowDown: 'b', '2': 'b',
   }
   const onKey = (e: KeyboardEvent) => {
+    unlockAudio()
     if (dialog.open || e.ctrlKey || e.metaKey || e.altKey) return
     if (document.activeElement instanceof HTMLInputElement) return
     if (skipPause && !pending) {
@@ -348,6 +362,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
   window.addEventListener('keydown', onKey)
   pad.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => move(b.dataset.c!)))
+  app.addEventListener('pointerdown', unlockAudio)
   canvas.addEventListener('pointerup', (e) => {
     if (skipPause && !pending) return skipPause()
     if (pending && pending.items.length === 1) return choose(0)

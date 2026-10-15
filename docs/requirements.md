@@ -14,7 +14,7 @@ The aim is a browser reimplementation of *Pool of Radiance* built on the specifi
 | R6 | Responsive | Works from phone to desktop; layout adapts rather than scaling a fixed 320×200 screen |
 | R7 | Track improvements | Every departure from the original is logged in `IMPROVEMENTS.md`, with a toggle where it changes gameplay |
 
-Assumed unless changed: the full game is in scope (exploration, combat, character creation, ending); the AD&D rules and script behaviour follow the spec exactly, with a "fixed" option for the original's known bugs. Sound is not decided yet.
+Assumed unless changed: the full game is in scope (exploration, combat, character creation, ending); the AD&D rules and script behaviour follow the spec exactly, with a "fixed" option for the original's known bugs. Sound: the original's effects where it plays them, synthesised until the PC-speaker data is decoded, plus a few additions logged in `IMPROVEMENTS.md` (decided 2026-10-15).
 
 ## Constraints
 

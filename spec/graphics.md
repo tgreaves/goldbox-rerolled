@@ -75,6 +75,18 @@ All horizontal menus share one loop. It returns the chosen key:
 
 An optional timeout (`DS:6B2E` u32, hundredths) returns the default key `DS:6B32` when it expires; a negative value disables it.
 
+## Transparency (O)
+
+Images are loaded with an optional mask colour (`FUN_1464_0111` / `FUN_5523_00a2` → `FUN_1464_02a5`), and masked images are drawn as `dst = (dst & mask) | src` (`FUN_1464_08d4`):
+
+| Images | Mask colour | Loaded by |
+|---|---|---|
+| 3D-view tiles (`8X8D`) | **13** (light magenta); tile id 0 cells are skipped entirely | `FUN_5924_003b` |
+| Encounter sprites (`SPRIT`) | **0** (black) | `FUN_2fea_054e` → `FUN_5523_00a2(…, flags 1, …)` |
+| Pictures (`PIC`), portraits | none (opaque) | `FUN_5523_00a2(…, flags 0, …)` |
+
+So the light-magenta areas of wall tiles (rooftops, gaps, the sky above walls) show the background, and a sprite's black surround shows the corridor behind it.
+
 ## Font (O)
 
 `8X8D1.DAX` record 201 has no header: 177 glyphs × 8 bytes, 1 bit per pixel, MSB = leftmost.

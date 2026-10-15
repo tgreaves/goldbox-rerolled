@@ -6,6 +6,8 @@ import { parseRecord, type Picture } from './image'
 const BANK_BASE = [1, 46, 116, 186, 256]
 const REBASE_FROM = 45 // DS:272C
 const SET_SIZE = 0x30c // 5 wall types x 156 bytes
+/** Tiles are loaded with mask colour 13 (FUN_5924_003b → FUN_1464_0111(…, 13, 1, …)) */
+export const TILE_MASK_COLOUR = 13
 const TYPE_SIZE = 0x9c
 
 /** Piece kinds: start, width, height in tiles (DS:0C8C/0C96/0CA0). */
@@ -57,7 +59,7 @@ export class WallSets {
 
   /**
    * Assemble one piece of wall type `type` (1-15) as RGBA-ready indices.
-   * Returns palette indices with -1 for transparent cells (tile 0).
+   * Returns palette indices with -1 for transparent pixels (tile 0, or the mask colour 13).
    */
   piece(type: number, kind: number): { width: number; height: number; pixels: Int16Array } {
     const [start, w, h] = PIECES[kind]
@@ -71,7 +73,8 @@ export class WallSets {
       const cx = (i % w) * 8
       const cy = Math.floor(i / w) * 8
       for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
-        pixels[(cy + y) * w * 8 + cx + x] = t.pixels[y * t.width + x]
+        const v = t.pixels[y * t.width + x]
+        pixels[(cy + y) * w * 8 + cx + x] = v === TILE_MASK_COLOUR ? -1 : v
       }
     }
     return { width: w * 8, height: h * 8, pixels }

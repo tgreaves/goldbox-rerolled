@@ -28,6 +28,7 @@ function headless(answer: (n: number) => number = () => 0) {
     sprite: () => {},
     refresh: async () => { stops.push(`${engine.x},${engine.y},${engine.facing}`) },
     pause: async () => { stops.push('pause') },
+    sound: () => {},
     engine: async () => {},
   }
   return { io, text, stops, bind: (e: Engine) => (engine = e) }

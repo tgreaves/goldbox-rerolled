@@ -162,3 +162,4 @@ dialog.panel form { display: flex; justify-content: flex-end; }
   flex: 1; background: #0b1218; border: 1px solid var(--line); border-radius: 4px; padding: 0.3rem 0.5rem;
   color: var(--ega-green); min-height: 36px; text-transform: uppercase;
 }
+.game .menu .sound { color: var(--muted); }
