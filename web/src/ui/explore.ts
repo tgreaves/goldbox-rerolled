@@ -30,12 +30,18 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         <canvas class="overlay" width="88" height="88" hidden></canvas>
         <div class="where"></div>
       </section>
-      <aside class="party" aria-label="Party">
-        <table>
-          <thead><tr><th>Name</th><th>AC</th><th>HP</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </aside>
+      <div class="side">
+        <aside class="party" aria-label="Party">
+          <table>
+            <thead><tr><th>Name</th><th>AC</th><th>HP</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </aside>
+        <section class="map" aria-label="Area map" title="Area map (click to enlarge)">
+          <canvas class="minimap"></canvas>
+          <p class="nomap" hidden>Not here.</p>
+        </section>
+      </div>
       <section class="text" aria-live="polite" aria-label="Messages"></section>
       <nav class="commands" aria-label="Commands">
         <div class="menu"></div>
@@ -253,6 +259,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       ms = 0
     }
     world.go({ x: engine.x, y: engine.y, facing: engine.facing }, ms)
+    drawMinimap()
     drawRoster()
     showWhere()
     if (ms === 0) return Promise.resolve()
@@ -299,6 +306,20 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       <form method="dialog"><button>Close</button></form>`
     dialog.showModal()
   }
+
+  /**
+   * The area map stays on screen beside the 3D view (IMP-022). Where the original's Area command
+   * answers "Not Here." (ECL 0x49FB set by the area's script) the panel says so too.
+   */
+  const minimap = app.querySelector<HTMLCanvasElement>('.minimap')!
+  const nomap = app.querySelector<HTMLElement>('.nomap')!
+  function drawMinimap() {
+    const allowed = engine.A[0x49fb - A0] === 0 && engine.geo
+    minimap.hidden = !allowed
+    nomap.hidden = !!allowed
+    if (allowed) drawMap(minimap, engine.geo!, 24, { x: engine.x, y: engine.y, facing: engine.facing })
+  }
+  minimap.addEventListener('click', () => command('A'))
 
   function areaMap() {
     if (engine.A[0x49fb - A0] !== 0 || !engine.geo) {

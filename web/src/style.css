@@ -99,7 +99,14 @@ canvas.pixel { image-rendering: pixelated; background: #000; border: 1px solid v
   position: absolute; left: 0.4rem; bottom: 0.3rem; font-size: 0.8rem; color: var(--ega-cyan);
   text-shadow: 0 1px 2px #000; pointer-events: none;
 }
-.game .party { grid-area: party; border: 2px solid var(--ega-cyan); border-radius: 4px; overflow: auto; padding: 0.4rem 0.6rem; }
+.game .side { grid-area: party; display: flex; flex-direction: column; gap: 0.5rem; }
+.game .map {
+  flex: 1; min-height: 6rem; border: 2px solid var(--ega-cyan); border-radius: 4px; padding: 0.3rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.game .map canvas { width: 100%; height: 100%; object-fit: contain; display: block; cursor: zoom-in; }
+.game .map .nomap { color: var(--muted); margin: 0; }
+.game .party { flex: 0 1 auto; border: 2px solid var(--ega-cyan); border-radius: 4px; overflow: auto; padding: 0.4rem 0.6rem; }
 .party table { width: 100%; border-collapse: collapse; }
 .party th { color: #fff; font-weight: 600; text-align: right; padding: 0.2rem 0.3rem; }
 .party th:first-child, .party td:first-child { text-align: left; }
@@ -142,7 +149,9 @@ dialog.panel form { display: flex; justify-content: flex-end; }
     grid-template-rows: min(100vw - 1rem, 52dvh) auto minmax(4rem, 1fr) auto;
     grid-template-areas: "view" "party" "text" "commands";
   }
-  .game .party { max-height: 9.5rem; padding: 0.2rem 0.4rem; }
+  .game .side { flex-direction: row; height: 9.5rem; }
+  .game .party { flex: 1; padding: 0.2rem 0.4rem; }
+  .game .map { flex: none; width: 9.5rem; min-height: 0; padding: 0.15rem; }
   .party td, .party th { padding: 0.15rem 0.3rem; }
   .game .menu { flex: 1; }
   .game .menu button { flex: 1 1 auto; padding: 0.3rem 0.4rem; }
