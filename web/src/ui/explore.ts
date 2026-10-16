@@ -3,7 +3,7 @@
 // command line at the bottom. Area scripts run through the ECL engine (src/vm/engine.ts).
 import type { GameFiles } from '../store/gamefiles'
 import { parseCharacter, MONEY, type Character } from '../data/character'
-import { parseRecord, toImageData, type Picture } from '../data/image'
+import { parseRecord, spriteImage, toImageData, type Picture } from '../data/image'
 import { World } from '../render/world'
 import { Engine, A0, type Io } from '../vm/engine'
 import { drawMap, landmarkAt } from './areamap'
@@ -11,6 +11,7 @@ import type { GeoMap } from '../data/geo'
 import { listSaves, writeSave } from '../store/user'
 import { report, revealedBy, type State } from '../rules/commissions'
 import { ICONS, landmarks, type Landmark } from '../rules/landmarks'
+import { Overland } from '../rules/overland'
 import { initSound, play, setSoundDevice, soundAvailable, soundDevice, unlockAudio } from '../audio/sfx'
 
 const FACING = ['North', 'East', 'South', 'West']
@@ -30,6 +31,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     <div class="game">
       <section class="view" aria-label="3D view">
         <canvas class="view3d"></canvas>
+        <canvas class="wildview" width="120" height="120" hidden></canvas>
         <div class="wild" hidden></div>
         <canvas class="overlay" width="88" height="88" hidden></canvas>
         <div class="where"></div>
@@ -106,11 +108,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     return pictureCache.get(key)!
   }
   /** Pictures and portraits are opaque; encounter sprites stand in the 3D scene instead (World.showSprite). */
-  function paint(pics: { pic: Picture; x: number; y: number }[]) {
+  function paint(pics: { pic: Picture; x: number; y: number; sprite?: boolean }[]) {
     const g = overlay.getContext('2d')!
     g.clearRect(0, 0, 88, 88)
-    for (const { pic, x, y } of pics) {
-      const img = toImageData(pic)
+    for (const { pic, x, y, sprite } of pics) {
+      const img = sprite ? spriteImage(pic) : toImageData(pic)
       const tmp = document.createElement('canvas')
       tmp.width = pic.width
       tmp.height = pic.height
@@ -208,6 +210,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         world.showSprite(null)
         const portrait = engine.B[0x6de1 - 0x6b00]
         showPicture(portrait === 0xff ? { pic: picture } : { head: portrait, body: picture })
+      } else if (f && engine.overland) {
+        // wilderness: always the middle frame, drawn flat at its place in the view (FUN_2fea_054e)
+        const pic = f[Math.min(1, f.length - 1)]
+        paint([{ pic, x: pic.x * 8, y: pic.y * 8, sprite: true }])
       } else if (f) {
         paint([])
         world.showSprite(f, distance)
@@ -266,7 +272,14 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       engine.mapDirty = false
       ms = 0
     }
-    world.go({ x: engine.x, y: engine.y, facing: engine.facing }, ms)
+    const outdoors = engine.overland
+    canvas.hidden = outdoors
+    wildview.hidden = !outdoors || !engine.wild
+    padLabels(outdoors)
+    if (outdoors) {
+      drawWild()
+      ms = 0
+    } else world.go({ x: engine.x, y: engine.y, facing: engine.facing }, ms)
     drawMinimap()
     drawRoster()
     showWhere()
@@ -283,10 +296,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const searching = engine.B[0x6dca - 0x6b00] & 1
     if (engine.overland) {
       const [wx, wy] = engine.wildPosition
-      where.textContent = `Wilderness · ${wx},${wy}`
-      wild.hidden = false
-      wild.innerHTML = `<p><strong>Wilderness</strong>, area ${engine.area}, position ${wx},${wy}</p>
-        <p>Overland travel is not built yet: its map view and movement come next. The area's script still runs, so its prompts (such as the boat back to New Phlan) work. The Debug menu can jump elsewhere.</p>`
+      where.textContent = `Wilderness · ${wx},${wy} · facing ${FACING[engine.facing]}${searching ? ' · Searching' : ''}`
+      wild.hidden = !!engine.wild
+      if (!engine.wild) wild.innerHTML = '<p><strong>Wilderness</strong></p><p>The wilderness map needs START.EXE from the game files: go back to Assets and re-import the POOLRAD folder.</p>'
       return
     }
     wild.hidden = true
@@ -356,6 +368,70 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       marks = { code: engine.code, geo: engine.geo, list }
     }
     return marks.list
+  }
+
+  // ------------------------------------------------------------ wilderness view
+  const wildview = app.querySelector<HTMLCanvasElement>('.wildview')!
+  const tileCache = new Map<number, HTMLCanvasElement | null>()
+  const asCanvas = (img: ImageData) => {
+    const c = document.createElement('canvas')
+    c.width = img.width
+    c.height = img.height
+    c.getContext('2d')!.putImageData(img, 0, 0)
+    return c
+  }
+  /** Tile id 1-255: frame id-1 of SQRPACI #1 (ids 1-128) or #2 (129-255). */
+  function wildTile(id: number): HTMLCanvasElement | null {
+    if (!tileCache.has(id)) {
+      const f = id - 1
+      const raw = files.record('SQRPACI', f > 127 ? 2 : 1)
+      let c: HTMLCanvasElement | null = null
+      try { if (raw) c = asCanvas(toImageData(parseRecord(raw).frames[f & 127].picture)) } catch { /* missing frame */ }
+      tileCache.set(id, c)
+    }
+    return tileCache.get(id)!
+  }
+  /** The party marker: ICON records 0, 128, 1, 129, 2, 130 in turn, colour 0 transparent. */
+  const partyFrames: HTMLCanvasElement[] = []
+  for (const r of [0, 128, 1, 129, 2, 130]) {
+    const raw = files.record('ICON', r)
+    try { if (raw) partyFrames.push(asCanvas(spriteImage(parseRecord(raw).frames[0].picture))) } catch { /* missing */ }
+  }
+  let partyPhase = 0
+  /** The 5x5 view (FUN_54cf_0000, FUN_54fa_0000); the marker advances a frame per redraw. */
+  function drawWild() {
+    const w = engine.wild
+    if (!w) return
+    const g = wildview.getContext('2d')!
+    const [gx, gy] = engine.wildPosition
+    const { x0, y0, col, row } = Overland.window(gx, gy)
+    g.fillStyle = '#000'
+    g.fillRect(0, 0, 120, 120)
+    for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) {
+      const t = wildTile(w.tile(x0 + c, y0 + r, (a) => engine.read(a)))
+      if (t) g.drawImage(t, c * 24, r * 24)
+    }
+    const p = partyFrames[partyPhase % partyFrames.length]
+    partyPhase = (partyPhase + 1) % 6
+    if (!p) return
+    g.save()
+    if (engine.facing2 > 3) { // facing south or west: mirrored
+      g.translate(col * 24 + 24, row * 24)
+      g.scale(-1, 1)
+      g.drawImage(p, 0, 0)
+    } else g.drawImage(p, col * 24, row * 24)
+    g.restore()
+  }
+  const padButtons = [...pad.querySelectorAll<HTMLButtonElement>('button')]
+  function padLabels(outdoors: boolean) {
+    const labels: Record<string, [string, string]> = outdoors
+      ? { l: ['◀', 'West'], f: ['▲', 'North'], r: ['▶', 'East'], b: ['▼', 'South'] }
+      : { l: ['⟲', 'Turn left'], f: ['▲', 'Forward'], r: ['⟳', 'Turn right'], b: ['▼', 'Turn around'] }
+    for (const b of padButtons) {
+      const [t, a] = labels[b.dataset.c!]
+      b.textContent = t
+      b.setAttribute('aria-label', a)
+    }
   }
 
   // ------------------------------------------------------------ debug menu
@@ -467,7 +543,13 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   function move(c: string) {
     if (engine.quit) return
-    if (engine.overland) { note('Overland travel is not implemented yet. Use the Debug menu to jump elsewhere.'); return }
+    if (engine.overland) {
+      // the arrows are compass directions in the wilderness (FUN_3e76_0989)
+      if (!engine.wild) { note('Wilderness travel needs START.EXE: re-import the POOLRAD folder.'); return }
+      const dir = ({ f: 0, r: 1, b: 2, l: 3 } as Record<string, number>)[c]
+      act(() => engine.travel(dir))
+      return
+    }
     act(() => engine.command(c))
   }
 
@@ -490,10 +572,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       }
       case 'nosound': note('Sound needs START.EXE: go back to Assets and re-import the POOLRAD folder.'); break
       case 'commissions': commissions(); break
-      case 'save':
-        if (engine.overland) note('Saving in the wilderness is not supported yet.')
-        else act(() => saveGame())
-        break
+      case 'save': act(() => saveGame()); break
       case 'debug': debugMenu(); break
       case 'assets': leave(); break
     }
@@ -536,6 +615,15 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const r = canvas.getBoundingClientRect()
     const fx = (e.clientX - r.left) / r.width
     move(fx < 1 / 3 ? 'l' : fx > 2 / 3 ? 'r' : 'f')
+  })
+  wildview.addEventListener('pointerup', (e) => {
+    if (skipPause && !pending) return skipPause()
+    if (pending && pending.items.length === 1) return choose(0)
+    // tap towards a side of the party's square to walk that way
+    const r = wildview.getBoundingClientRect()
+    const { col, row } = Overland.window(...engine.wildPosition)
+    const dx = (e.clientX - r.left) / r.width * 5 - (col + 0.5), dy = (e.clientY - r.top) / r.height * 5 - (row + 0.5)
+    move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'r' : 'l') : (dy > 0 ? 'b' : 'f'))
   })
   roster.addEventListener('click', (e) => {
     const row = (e.target as HTMLElement).closest('tr')

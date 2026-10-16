@@ -179,6 +179,11 @@ dialog.panel form.jump input { width: 4.5rem; }
   .game .menu button { flex: 1 1 auto; padding: 0.3rem 0.4rem; }
 }
 
+.game .wildview {
+  position: absolute; inset: 0; margin: auto; height: 100%; width: auto; aspect-ratio: 1;
+  max-width: 100%; image-rendering: pixelated; display: block;
+}
+.game .wildview[hidden], .game .view3d[hidden] { display: none; }
 .game .overlay {
   position: absolute; inset: 0; margin: auto; height: 100%; width: auto; aspect-ratio: 1;
   max-width: 100%; image-rendering: pixelated; pointer-events: none;

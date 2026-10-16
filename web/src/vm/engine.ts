@@ -6,6 +6,7 @@ import type { GameFiles } from '../store/gamefiles'
 import { GeoMap, STEP } from '../data/geo'
 import { WallSets } from '../data/walls'
 import { unpackText } from '../data/text'
+import { Overland } from '../rules/overland'
 import { CHAR_SIZE } from '../data/character'
 
 export const A0 = 0x4900
@@ -190,7 +191,7 @@ export class Engine {
     d.set(this.code.subarray(0, 0x1e00), 0x1401)
     const [wall, event] = this.square()
     d.set([this.x, this.y, this.facing2, wall, event], 0x3201)
-    d[0x3206] = 1 // map area (overland areas are not modelled separately yet)
+    d[0x3206] = this.overland ? this.area - 23 : 1 // DS:49FA area kind: 1 map area, 2-4 wilderness
     d[0x3207] = 2
     d[0x3208] = stems.length
     stems.forEach((st, i) => {
@@ -907,6 +908,7 @@ export class Engine {
     if (area >= 25 && area <= 27) {
       this.A[0x49c3 - A0] = x
       this.A[0x49c4 - A0] = y
+      this.A[0x4a9e - A0] = 0 // not inside a lair: areas 25-27 hold the lair maps too (on_enter tests 255)
     } else {
       this.x = x & 15
       this.y = y & 15
@@ -927,6 +929,44 @@ export class Engine {
   /** Wilderness position as the guide numbers it: the area's own x plus 13 columns per area after 25. */
   get wildPosition(): [number, number] {
     return [this.A[0x49c3 - A0] + 13 * (this.area - 25), this.A[0x49c4 - A0]]
+  }
+
+  private overlandRules: Overland | null | undefined
+  /** Overland map and rules from START.EXE; null when the player's files lack it. */
+  get wild(): Overland | null {
+    if (this.overlandRules === undefined) this.overlandRules = Overland.fromStartExe(this.files.get('START.EXE'))
+    return this.overlandRules
+  }
+
+  /**
+   * One overland move (FUN_3e76_0989 then FUN_3e76_0d6d): the cursor key sets the facing to
+   * N/E/S/W, on_move may cancel it or change area, FUN_3e76_0818 moves the party unless the
+   * square is blocked, then on_step runs. A move takes 12 hours (the clock is not modelled yet).
+   */
+  async travel(dir: number) {
+    this.facing2 = (dir & 3) * 2
+    this.B[EDGE - B0] = 0
+    this.areaChanged = false
+    await this.run(this.vectors[0])
+    if (this.areaChanged) { await this.enter(); return }
+    if (this.B[CANCEL_MOVE - B0] >= 0xff) this.B[CANCEL_MOVE - B0] = 0
+    else if (this.wild) {
+      const w = this.wild
+      const [dx, dy] = w.step(this.facing2)
+      const x = Math.max(0, Math.min(15, this.A[0x49c3 - A0] + dx))
+      const y = Math.max(0, Math.min(35, this.A[0x49c4 - A0] + dy))
+      const t = w.map[y * 44 + w.column(this.area, x)]
+      if (Overland.river(t) && this.A[0x4aa2 - A0] === 0) this.io.print("The river's stench drives you back.", false)
+      else if (!Overland.blocked(t)) {
+        this.A[0x49c3 - A0] = x
+        this.A[0x49c4 - A0] = y
+      }
+    }
+    await this.io.refresh()
+    this.areaChanged = false
+    await this.run(this.vectors[1])
+    if (this.areaChanged) await this.enter()
+    await this.io.refresh()
   }
 
   /** FUN_29c3_31b4: re-enter after an area change. */

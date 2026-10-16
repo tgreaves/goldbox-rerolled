@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { GameFiles, wanted } from '../src/store/gamefiles'
 import { Engine, type Io } from '../src/vm/engine'
 import { parseSave } from '../src/data/save'
+import { Overland } from '../src/rules/overland'
 
 const dir = process.env.POOLRAD ?? ''
 const have = dir !== '' && existsSync(dir)
@@ -103,6 +104,26 @@ describe.skipIf(!have)('debug jump', () => {
     expect(e.overland).toBe(true)
     expect(e.wildPosition).toEqual([20, 29]) // the guide's west boat landing
     expect(h.text.some((t) => t.startsWith('THERE IS A BOAT HERE'))).toBe(true)
+    // overland travel: north into forest, then west along the coast; the sea to the south blocks
+    const at = () => e.wildPosition.join(',')
+    await e.travel(0)
+    expect(at()).toBe('20,28')
+    await e.travel(3)
+    expect(at()).toBe('19,28')
+    await e.travel(2)
+    await e.travel(2)
+    await e.travel(2)
+    expect(Overland.blocked(e.wild!.map[(e.wildPosition[1] + 1) * 44 + e.wildPosition[0]])).toBe(true) // water stops the party
+    // a save made in the wilderness reloads there (area kind 2-4 at 0x3206)
+    const stems = parseSave(dat).party
+    const out = e.toSave(stems)
+    expect(out[0x3206]).toBe(3)
+    const r = h.bind(new Engine(files, h.io, 1))
+    r.loadSave(out, stems.map((s) => files.get(`${s}.SAV`)!))
+    await r.start()
+    expect(r.overland).toBe(true)
+    expect(r.wildPosition).toEqual(e.wildPosition)
+    h.bind(e)
     await e.jump(3, 0, 15, 1, 3)
     expect(e.overland).toBe(false)
     expect([e.block, e.area, e.x, e.y]).toEqual([3, 0, 15, 1])
