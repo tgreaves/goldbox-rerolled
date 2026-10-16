@@ -140,7 +140,7 @@ Negative-plus items show "*" only through the cursed flag. The string is stored 
 
 ### Name words (O)
 
-255 words at DS:10BC (word w at DS:10A7 + 21·w), 21 bytes each (Pascal string). 0–46 weapons, 47–58 armour, 59–160 magic/mundane item nouns, 161–165 `+1`..`+5`, 166 `of`, 200–202 `-1`..`-3`, the rest adjectives and proper names (`Of Tyr`, `Flame Tongue`, `Cursed`, …). Word 0x65 is "Gem", 0xBA "Holding" (Bag of Holding test), 0xD6 "Jewelry".
+255 words at DS:10BC (word w at DS:10A7 + 21·w), 21 bytes each (Pascal string). Name bytes are 1-based (byte w is entry w − 1): weapons 1–47, armour 48–59, magic and mundane nouns 60–161, `+1`..`+5` 162–166, `of` 167, `-1`..`-3` 201–203, the rest adjectives and proper names (`Of Tyr`, `Flame Tongue`, `Cursed`, …). Word 0x65 is "Gem", 0xBA "Holding" (Bag of Holding test), 0xD6 "Jewelry".
 
 ## Item types (`ITEMS`, O)
 
