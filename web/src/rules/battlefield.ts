@@ -152,15 +152,60 @@ function scatterPass(bf: Battlefield, flags: number, roll: Roll) {
   }
 }
 
-/** Finishing pass (FUN_34c7_0000): odd rocks, and rarely a bone or a potted flower, on open ground. */
+/** Finishing pass (FUN_34c7_0000): columns outer, rows inner; odd rocks, rarely a bone or a potted flower, on open ground. */
 export function finishingPass(bf: Battlefield, roll: Roll, area: number) {
-  for (let i = 0; i < bf.cells.length; i++) {
-    const v = bf.cells[i]
-    if (v !== OPEN && v !== 0x36) continue // the cells whose image is the blank ground
+  for (let col = 0; col < COLS; col++) for (let row = 0; row < ROWS; row++) {
+    const v = bf.get(row, col)
+    if (v !== OPEN && v !== 0x36) continue // the cells drawn as blank ground (image slot 0x16)
     const r = roll(100)
-    if (r === 98) bf.cells[i] = 0x1a
-    else if (r === 99) bf.cells[i] = 0x1b
-    else if (r === 100 && area !== 10 && roll(100) === 1) bf.cells[i] = roll(10) <= 6 ? 0x1c : 0x1d
+    if (r === 98) bf.set(row, col, 0x1a)
+    else if (r === 99) bf.set(row, col, 0x1b)
+    else if (r === 100 && area !== 10 && roll(100) === 1) bf.set(row, col, roll(10) <= 6 ? 0x1c : 0x1d)
   }
 }
 
+/**
+ * Map-area battlefield (FUN_34c7_0810): 13 × 5 map squares around the party, each a sheared 6 × 5
+ * block of cells, north up. Edge classes: 0 open, 1 wall, 3 door.
+ */
+export function mapBattlefield(geo: import('../data/geo').GeoMap, X: number, Y: number, roll: Roll, area: number): Battlefield {
+  const bf = new Battlefield(false)
+  const DX = [0, 1, 1, 1, 0, -1, -1, -1], DY = [-1, -1, 0, 1, 1, 1, 0, -1]
+  const edge = (x: number, y: number, d: number): number => {
+    if (x >= 0 && x <= 15 && y >= 0 && y <= 15) {
+      if (geo.passage(x, y, d >> 1) === 0) return 1
+      if (geo.wall(x, y, d >> 1) === 0) return 0
+      return 3
+    }
+    return y === Y && (d === 2 || d === 6) ? 0 : 1
+  }
+  const classify = (x: number, y: number, d: number) => edge(x, y, d) | edge(x + DX[d], y + DY[d], (d + 4) % 8)
+  for (let dy = -2; dy <= 2; dy++) for (let dx = -6; dx <= 6; dx++) {
+    const x = X + dx, y = Y + dy
+    const plot = (c: number, r: number, cell: number) => bf.set(dy * 5 + 10 + r, dx * 6 + dy * 5 + 21 + c, cell)
+    const W = classify(x, y, 6), N = classify(x, y, 0), E = classify(x, y, 2)
+    // floor and west edge (02ba)
+    for (let r = 2; r <= 4; r++) for (let c = 0; c <= 5; c++) plot(c, r, 0x17)
+    if (W === 1) for (let r = 2; r <= 4; r++) { plot(r - 1, r, 0x05); plot(r, r, 0x04); plot(r + 1, r, 0x0e) }
+    if (W === 3) { plot(1, 2, 0x09); plot(5, 4, 0x01) }
+    // north edge (0377)
+    if (N === 1) { plot(3, 0, 0x06); plot(4, 0, 0x06); plot(3, 1, 0x0b); plot(4, 1, 0x0b) }
+    else { plot(3, 0, 0x17); plot(4, 0, 0x17); plot(3, 1, 0x17); plot(4, 1, 0x17) }
+    // north-west corner (040f)
+    const f = classify(x, y - 1, 6) === 0 && classify(x - 1, y, 0) === 0
+    plot(1, 0, N === 0 ? (W === 0 ? 0x17 : W === 3 ? 0x0e : f ? 0x01 : 0x0e) : W === 0 ? (f ? 0x10 : 0x06) : f ? 0x13 : 0x03)
+    plot(2, 0, N === 0 ? 0x17 : N === 3 ? 0x12 : 0x06)
+    plot(1, 1, W === 0 ? (N === 0 ? 0x17 : f ? 0x11 : 0x0b) : W === 3 ? (f ? 0x15 : 0x08) : f ? 0x02 : 0x04)
+    plot(2, 1, W !== 1 ? (N === 0 ? 0x17 : N === 3 ? 0x18 : 0x0b) : N === 0 ? 0x0e : N === 3 ? 0x16 : 0x07)
+    // north-east corner (0615)
+    const g7 = classify(x, y - 1, 2), g8 = classify(x + 1, y, 0)
+    plot(5, 0, N === 0 ? (g7 === 1 ? 0x05 : 0x17) : N === 3 ? 0x10 : 0x06)
+    plot(6, 0, N === 0
+      ? (g7 === 0 ? 0x17 : g7 === 3 ? (E === 0 && g8 !== 0 ? 0x19 : 0x02) : (E === 0 && g8 !== 0 ? 0x0c : 0x04))
+      : E !== 0 ? 0x0a : g8 !== 0 ? 0x06 : g7 === 0 ? 0x12 : 0x14)
+    plot(5, 1, N === 0 ? 0x17 : N === 3 ? 0x11 : 0x0b)
+    plot(6, 1, N === 0 ? (g7 === 0 ? 0x17 : E !== 0 ? 0x05 : g8 === 0 ? 0x09 : 0x0d) : E !== 0 ? 0x0f : g8 === 0 ? 0x18 : 0x0b)
+  }
+  finishingPass(bf, roll, area)
+  return bf
+}
