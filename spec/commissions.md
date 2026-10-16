@@ -35,7 +35,7 @@ The engine has no quest system. Commissions, rewards and the proclamations are k
 | 18 | 0x4AB8 | Cadorna's payment for the textile house treasure |
 | 19 | 0x4AB9 | the gate taken |
 | 20 | 0x4ABA | Tyranthraxus defeated: the quest is over |
-| 21 | 0x4ABB | slums west of City Hall cleared |
+| 21 | 0x4ABB | slums west of City Hall cleared: a **counter**. The slums script (`ECL2` #20, 0xB69C) adds 1 after each won fight, set-piece or random, and sets 254 when it reaches 25 |
 | 22 | 0x4ABC | unused (empty handler) |
 | 23 | 0x4ABD | Temple of Bane: keep what you found |
 | 24 | 0x4ABE | Cadorna declared a traitor |
