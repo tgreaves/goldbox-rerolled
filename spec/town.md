@@ -35,7 +35,7 @@ All temples offer the same nine services at the same prices (the engine has one 
 
 **General store** (record 54): Brass Mirror 10, Silver Mirror 20, Flask of Oil ×1 1, Wooden Holy Symbol of Tyr 1, Iron Holy Symbol of Tempus 2, Silver Holy Symbol of Sune 50, Holy Water Vial ×1 25 gp.
 
-**Jeweller** (record 52, all type 70, count 1): Brass Dragon Figurine 75, Gold Chain 100, Pearl Necklace 400, Gold Lightning Figurine 650, Jewelled Silver Wings 1050, Silver Dragon Statuette 2500, Gold Scarab 4500, Emerald Broach 8000, Platinum Sphere 18500, Fine Opal Pendant 28500, Diamond Necklace 50000 gp.
+**Jeweller** (record 52, all type 70, count 1; displayed most expensive first): Diamond Necklace 50000, Fine Opal Pendant 28500, Platinum Sphere 18500, Emerald Broach 8000, Gold Scarab 4500, Silver Dragon Statuette 2500, Jewelled Silver Wings 1050, Gold Lightning Figurine 650, Pearl Necklace 400, Gold Chain 100, Brass Dragon Figurine 75 gp.
 
 **Arms and armour** (record 53), price gp / weight per unit, in display order (types 1–40, then 41, 42, 43, 44, 47, 46, arrows, 50–58, shield):
 

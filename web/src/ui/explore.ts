@@ -13,8 +13,11 @@ import { report, revealedBy, type State } from '../rules/commissions'
 import { ICONS, landmarks, type Landmark } from '../rules/landmarks'
 import { Overland } from '../rules/overland'
 import { itemsFile } from '../data/items'
+import { effectsFile } from '../data/effects'
 import { capacity, ready, unready } from '../rules/equip'
 import { drop, halve, join, trade, unavailable } from '../rules/inventory'
+import { pay, receive, sellOffer } from '../rules/money'
+import { shop, temple, treasure, type TownUi } from './town'
 import { initSound, play, setSoundDevice, soundAvailable, soundDevice, unlockAudio } from '../audio/sfx'
 
 const FACING = ['North', 'East', 'South', 'West']
@@ -238,6 +241,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     async engine(what, info) {
       if (what === 'blocked') return note('Blocked.')
       if (what === 'locked door') return note('Locked.')
+      if (what === 'shop' || what === 'temple' || what === 'treasure') {
+        townMode = what
+        try { await (what === 'shop' ? shop : what === 'temple' ? temple : treasure)(townUi) } finally { townMode = null }
+        return
+      }
       const details = info ? ' (' + Object.entries(info).map(([k, v]) => `${k}: ${v}`).join(', ') + ')' : ''
       note(`[${what}${details} is not implemented yet${what === 'combat' ? '; the party is treated as winning' : ''}]`)
     },
@@ -262,7 +270,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const stems = members.map((_, n) => `CHRDAT${slot}${n + 1}`)
     const label = `${parseCharacter(members[0]).name}'s party, block ${engine.block} area ${engine.area}`
     await writeSave({ slot, dat: engine.toSave(stems), label, savedAt: Date.now(),
-      chars: members.map((c) => ({ sav: c.slice(), itm: itemsFile(engine.itemsOf(c)), spc: engine.effectsFile.get(c) })), known: [...known] })
+      chars: members.map((c) => ({ sav: c.slice(), itm: itemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })), known: [...known] })
     note(`Game saved in slot ${slot}.`)
   }
 
@@ -316,8 +324,23 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     }).join('')
   }
 
+  // ------------------------------------------------------------ shops, temples, treasure
+  /** set while a shop, temple or treasure screen runs: the roster then picks the current character */
+  let townMode: 'shop' | 'temple' | 'treasure' | null = null
+  const townUi: TownUi = {
+    get engine() { return engine },
+    menu,
+    print: (text, clear) => print(text, !!clear),
+    inputNumber: async () => Math.min(Number((await input('number')).replace(/\D/g, '') || 0), 65535),
+    view: (mode) => new Promise<void>((resolve) => {
+      sheet(parseCharacter(engine.cur), { mode })
+      dialog.addEventListener('close', () => resolve(), { once: true })
+    }),
+    refresh: () => drawRoster(),
+  }
+
   /** Character sheet with the items menu (spec/town.md, "Items menu"); IMP-027 for the panel. */
-  function sheet(c: Character, opts: { selected?: number; message?: string; confirm?: 'drop' | 'trade' } = {}) {
+  function sheet(c: Character, opts: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id'; mode?: 'shop' | 'temple' | 'treasure' } = {}) {
     const node = c.raw
     const t = engine.items
     const items = engine.itemsOf(node)
@@ -329,13 +352,19 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const others = engine.party().filter((n) => n !== node)
     let actions = ''
     if (it && t) {
+      const store = opts.mode === 'shop' || opts.mode === 'temple'
       if (opts.confirm === 'drop') actions = `<p>Your ${escape(t.name(it))} will be gone forever. Drop It?</p>
         <button data-a="drop-yes">Yes</button><button data-a="cancel">No</button>`
+      else if (opts.confirm === 'sell') actions = `<p>I'll give you ${sellOffer(it)} gold pieces for your ${escape(t.name(it))}. Is It a Deal?</p>
+        <button data-a="sell-yes">Yes</button><button data-a="cancel">No</button>`
+      else if (opts.confirm === 'id') actions = `<p>For 200 gold pieces I'll identify your ${escape(t.name(it))}. Is It a Deal?</p>
+        <button data-a="id-yes">Yes</button><button data-a="cancel">No</button>`
       else if (opts.confirm === 'trade') actions = `<p>Trade with Whom?</p>` + others.map((n, k) =>
         `<button data-a="trade-${k}">${escape(parseCharacter(n).name)}</button>`).join('') + '<button data-a="cancel">Exit</button>'
       else actions = `<button data-a="ready"><u>R</u>eady</button><button data-a="use"><u>U</u>se</button>` +
         (others.length ? '<button data-a="trade"><u>T</u>rade</button>' : '') +
-        '<button data-a="drop"><u>D</u>rop</button><button data-a="halve"><u>H</u>alve</button><button data-a="join"><u>J</u>oin</button>'
+        '<button data-a="drop"><u>D</u>rop</button><button data-a="halve"><u>H</u>alve</button><button data-a="join"><u>J</u>oin</button>' +
+        (store ? '<button data-a="sell"><u>S</u>ell</button><button data-a="id"><u>I</u>d</button>' : '')
     }
     dialog.innerHTML = `
       <h2>${escape(c.name)}</h2>
@@ -360,9 +389,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         ${opts.message ? `<p class="message">${escape(opts.message)}</p>` : ''}
         <div class="item-actions">${actions}</div>` : '<p class="muted">Items need the ITEMS file and START.EXE: re-import the POOLRAD folder.</p>'}
       <form method="dialog"><button>Close</button></form>`
-    const again = (o: { selected?: number; message?: string; confirm?: 'drop' | 'trade' }) => {
+    const again = (o: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' }) => {
       drawRoster()
-      sheet(parseCharacter(node), o)
+      sheet(parseCharacter(node), { ...o, mode: opts.mode })
     }
     dialog.querySelectorAll<HTMLTableRowElement>('table.items tbody tr').forEach((r) =>
       r.addEventListener('click', () => again({ selected: Number(r.dataset.i) })))
@@ -387,6 +416,19 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       } else if (a === 'drop-yes') {
         const m = drop(node, items, it, t)
         again({ message: m })
+      } else if (a === 'sell') {
+        const why = unavailable(it) || (node[0x84] >= 0x80 && node[0x10d] ? 'NPCs cannot sell' : '')
+        again(why ? { selected: keep, message: why } : { selected: keep, confirm: 'sell' })
+      } else if (a === 'sell-yes') {
+        const offer = sellOffer(it)
+        items.splice(items.indexOf(it), 1)
+        const m = receive(node, items, engine.money, offer, t)
+        again({ message: m || 'Sold!' })
+      } else if (a === 'id') again({ selected: keep, confirm: 'id' })
+      else if (a === 'id-yes') {
+        if (!pay(node, engine.money, 200, t, items)) again({ selected: keep, message: 'Not Enough Money' })
+        else if (it.hidden === 0) again({ selected: keep, message: `I can't tell anything new about your ${t.name(it)}` })
+        else { it.hidden = 0; again({ selected: keep, message: `It looks like some sort of ${t.name(it)}` }) }
       } else if (a === 'halve') again({ selected: keep, message: halve(node, items, it, t) })
       else if (a === 'join') {
         const n = join(node, items, it, t)
@@ -687,7 +729,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   })
   roster.addEventListener('click', (e) => {
     const row = (e.target as HTMLElement).closest('tr')
-    if (!row || busy || pending) return
+    if (!row || (!townMode && (busy || pending))) return
     const c = engine.nodes[Number(row.dataset.i)]
     if (c === engine.cur) sheet(parseCharacter(c))
     else {

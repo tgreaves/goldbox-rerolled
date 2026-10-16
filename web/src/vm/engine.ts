@@ -8,6 +8,7 @@ import { WallSets } from '../data/walls'
 import { unpackText } from '../data/text'
 import { Overland } from '../rules/overland'
 import { Item, ItemTables, parseItems } from '../data/items'
+import { parseEffects, type Effect } from '../data/effects'
 import { CHAR_SIZE } from '../data/character'
 
 export const A0 = 0x4900
@@ -75,8 +76,8 @@ export class Engine {
   readonly inventory = new Map<Uint8Array, Item[]>()
   /** combat picture (CPIC<block> record) of each loaded monster, from LOAD_MONSTER's third operand */
   readonly combatPicture = new Map<Uint8Array, number>()
-  /** each member's effects file (.SPC), carried unchanged until effects are modelled */
-  readonly effectsFile = new Map<Uint8Array, Uint8Array | undefined>()
+  /** each member's active effects (the .SPC records) */
+  readonly effects = new Map<Uint8Array, Effect[]>()
   cur!: Uint8Array
   savedCur!: Uint8Array
   restoreCur = false
@@ -94,7 +95,10 @@ export class Engine {
   monsters = 0
   monstersLoaded = false
   iconSlot = 8
+  /** the treasure money table (DS:67F4): the pool in shops, temples and the treasure screen */
   money = [0, 0, 0, 0, 0, 0, 0]
+  /** the treasure item list (DS:6810): shop stock or the treasure pile */
+  treasure: Item[] = []
   /** game speed 0 (fastest) to 9 (DS:49E2; saved as ECL 0x49FC); 4 in both shipped saves */
   speed = 4
   areaChanged = false
@@ -555,6 +559,7 @@ export class Engine {
         this.readops(0)
         this.monsters = 0; this.monstersLoaded = false; this.iconSlot = 8
         this.money = [0, 0, 0, 0, 0, 0, 0]
+        this.treasure = []
         break
       }
       case 0x1d: {
@@ -634,7 +639,11 @@ export class Engine {
       case 0x27: {
         this.readops(8)
         this.money = [1, 2, 3, 4, 5, 6, 7].map((i) => this.val(i))
-        await this.io.engine('treasure', { money: this.money.join('/'), items: this.val(8) & 0xff })
+        const n = this.val(8) & 0xff
+        if (n < 0x80) {
+          // ITEM<block> record, each item prepended (so the list ends up reversed)
+          for (const it of parseItems(this.files.record(`ITEM${this.block}`, n))) this.treasure.unshift(it)
+        } else if (n !== 0xff) await this.io.engine('random treasure', { items: n - 0x80 })
         break
       }
       case 0x28: {
@@ -751,7 +760,7 @@ export class Engine {
       m[0xbf] = this.iconSlot
       this.nodes.push(m)
       this.inventory.set(m, parseItems(items))
-      this.effectsFile.set(m, spc)
+      this.effects.set(m, parseEffects(spc))
       this.combatPicture.set(m, this.val(3))
       this.monsters++
     }
@@ -768,7 +777,7 @@ export class Engine {
       } else if (this.B[TEMPLE_FLAG - B0] === 1) {
         this.B[TEMPLE_FLAG - B0] = 0
         await this.io.engine('temple')
-      } else await this.io.engine('treasure')
+      } else if (this.treasure.length || this.money.some((v) => v > 0)) await this.io.engine('treasure')
     } else {
       const names = this.nodes.slice(this.nodes.length - this.monsters)
         .map((m) => String.fromCharCode(...m.subarray(1, 1 + m[0])))
@@ -956,7 +965,13 @@ export class Engine {
     const node = this.nodes[i]
     if (!node) return
     this.inventory.set(node, parseItems(itm))
-    this.effectsFile.set(node, spc)
+    this.effects.set(node, parseEffects(spc))
+  }
+
+  effectsOf(node: Uint8Array): Effect[] {
+    let list = this.effects.get(node)
+    if (!list) this.effects.set(node, (list = []))
+    return list
   }
 
   itemsOf(node: Uint8Array): Item[] {

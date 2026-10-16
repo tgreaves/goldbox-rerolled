@@ -1,0 +1,150 @@
+// Money (spec/town.md, "Money" and "Appraise"): seven u16 words per character (copper, silver,
+// electrum, gold, platinum, gems, jewelry) and the pool, the treasure money table.
+import { Item, ITEM_SIZE, type ItemTables } from '../data/items'
+import { capacity, recalc } from './equip'
+
+export const COINS = ['copper', 'silver', 'electrum', 'gold', 'platinum', 'gems', 'jewelry']
+const UNITS = [1, 10, 100, 200, 1000] // DS:0D24, in copper halves of a gold piece ×200
+
+const get = (c: Uint8Array, i: number) => c[0x88 + 2 * i] | (c[0x89 + 2 * i] << 8)
+const set = (c: Uint8Array, i: number, v: number) => { c[0x88 + 2 * i] = v & 0xff; c[0x89 + 2 * i] = (v >> 8) & 0xff }
+export const moneyOf = (c: Uint8Array) => [0, 1, 2, 3, 4, 5, 6].map((i) => get(c, i))
+const encumbrance = (c: Uint8Array) => c[0x102] | (c[0x103] << 8)
+
+/** Coin value in gp, rounded to nearest (gems and jewelry excluded). */
+export function coinValue(m: number[]): number {
+  return Math.floor((m[0] * UNITS[0] + m[1] * UNITS[1] + m[2] * UNITS[2] + m[3] * UNITS[3] + m[4] * UNITS[4] + 100) / 200)
+}
+
+/**
+ * Pay `price` gp from the character's coins, else from the pool, never both
+ * (FUN_4c2d_0130 / 0185): the coins left become platinum and gold. The original reads the value as
+ * a u16 and loses anything above 65 535 gp; here it is kept (IMP-028). Returns false for "Not enough money.".
+ */
+export function pay(c: Uint8Array, pool: number[], price: number, t: ItemTables, items: Item[]): boolean {
+  const g = coinValue(moneyOf(c))
+  if (price <= g) {
+    const left = g - price
+    for (let i = 0; i < 5; i++) set(c, i, 0)
+    set(c, 4, Math.min(0xffff, Math.floor(left / 5)))
+    set(c, 3, left % 5)
+    recalc(c, items, t)
+    return true
+  }
+  if (price <= coinValue(pool)) {
+    const left = coinValue(pool) - price
+    for (let i = 0; i < 5; i++) pool[i] = 0
+    pool[4] = Math.floor(left / 5)
+    pool[3] = left % 5
+    return true
+  }
+  return false
+}
+
+/** Members that pool money: player characters (char[0x84] = 0) and NPCs that handle money (0xB3). */
+const pools = (c: Uint8Array) => c[0x84] === 0 || c[0x84] === 0xb3
+
+/** Pool (FUN_4c2d_0508): everyone who may pools all seven kinds. */
+export function poolAll(party: { c: Uint8Array; items: Item[] }[], pool: number[], t: ItemTables) {
+  for (const m of party) {
+    if (!pools(m.c)) continue
+    for (let i = 0; i < 7; i++) { pool[i] += get(m.c, i); set(m.c, i, 0) }
+    recalc(m.c, m.items, t)
+  }
+}
+
+/**
+ * Share (FUN_4c2d_063a): equal shares to player characters, jewelry first, as far as they can carry;
+ * the remainder to anyone with room, in list order. Shares counted for money-handling NPCs (0xB3)
+ * are never paid out and vanish (original behaviour). What nobody can carry stays in the pool.
+ */
+export function share(party: { c: Uint8Array; items: Item[] }[], pool: number[], t: ItemTables) {
+  const n = party.filter((m) => pools(m.c)).length
+  if (!n) return
+  const room = (c: Uint8Array) => Math.max(0, capacity(c) - encumbrance(c))
+  const add = (m: { c: Uint8Array; items: Item[] }, i: number, v: number) => {
+    set(m.c, i, Math.min(0xffff, get(m.c, i) + v))
+    recalc(m.c, m.items, t)
+  }
+  const shares = pool.map((v) => Math.floor(v / n))
+  const rem = pool.map((v) => v % n)
+  for (const m of party) {
+    if (m.c[0x84] >= 0x80) continue
+    for (let i = 6; i >= 0; i--) {
+      if (shares[i] <= room(m.c)) {
+        add(m, i, shares[i])
+        if (rem[i] > 0 && room(m.c) >= 1) { add(m, i, 1); rem[i]-- }
+      } else {
+        const fit = room(m.c)
+        add(m, i, fit)
+        rem[i] += shares[i] - fit
+      }
+    }
+  }
+  for (let i = 6; i >= 0; i--) {
+    for (const m of party) {
+      if (rem[i] <= 0) break
+      const fit = Math.min(rem[i], room(m.c))
+      if (fit > 0) { add(m, i, fit); rem[i] -= fit }
+    }
+    pool[i] = rem[i]
+  }
+}
+
+/** Take `amount` of kind `i` from the pool (FUN_4c2d_0ceb); "Overloaded" if it does not fit. */
+export function take(c: Uint8Array, items: Item[], pool: number[], i: number, amount: number, t: ItemTables): string {
+  amount = Math.min(amount, pool[i])
+  if (amount <= 0) return ''
+  if (encumbrance(c) + amount > capacity(c)) return 'Overloaded'
+  pool[i] -= amount
+  set(c, i, get(c, i) + amount)
+  recalc(c, items, t)
+  return ''
+}
+
+/** Add platinum and gold for a sale or appraisal; platinum that does not fit goes to the pool. */
+export function receive(c: Uint8Array, items: Item[], pool: number[], gp: number, t: ItemTables, keepGold = true): string {
+  const pp = Math.floor(gp / 5)
+  const fit = Math.max(0, Math.min(pp, capacity(c) - encumbrance(c)))
+  set(c, 4, get(c, 4) + fit)
+  if (keepGold) set(c, 3, get(c, 3) + (gp % 5))
+  recalc(c, items, t)
+  if (fit < pp) { pool[4] += pp - fit; return 'Overloaded. Money will be put in pool.' }
+  return ''
+}
+
+/** Appraise rolls (FUN_4c2d_19b2). `d100` is 1..100; `rnd(n)` is 0..n−1. */
+export function appraiseGem(d100: number): number {
+  return d100 <= 25 ? 10 : d100 <= 50 ? 50 : d100 <= 70 ? 100 : d100 <= 90 ? 500 : d100 <= 99 ? 1000 : 5000
+}
+export function appraiseJewel(d100: number, rnd: (n: number) => number): number {
+  return d100 <= 10 ? 100 + rnd(900) : d100 <= 20 ? 200 + rnd(1000) : d100 <= 40 ? 300 + rnd(1500)
+    : d100 <= 50 ? 500 + rnd(2500) : d100 <= 70 ? 1000 + rnd(5000) : d100 <= 90 ? 2000 + rnd(6000) : 2000 + rnd(10000)
+}
+
+/** Take one gem (5) or jewel (6) out of the character's money for appraising. */
+export function takeOne(c: Uint8Array, kind: 5 | 6): boolean {
+  if (get(c, kind) === 0) return false
+  set(c, kind, get(c, kind) - 1)
+  return true
+}
+
+/** Keep an appraised gem or jewel as an item (type 70, word "Gem" 0x65 / "Jewelry" 0xD6). */
+export function keepAsItem(items: Item[], kind: 5 | 6, value: number): Item {
+  const r = new Uint8Array(ITEM_SIZE)
+  r[0x2e] = 70
+  r[0x31] = kind === 5 ? 0x65 : 0xd6
+  r[0x37] = 1
+  r[0x3a] = value & 0xff
+  r[0x3b] = (value >> 8) & 0xff
+  const it = new Item(r)
+  items.push(it) // the original loses it when the character had no items at all (bug, not reproduced: IMP-028)
+  return it
+}
+
+/** Sell offer (FUN_4894_1cee): half the value; any stack sells at 1/40 of its value per unit (bug). */
+export function sellOffer(it: Item): number {
+  let offer = Math.floor(it.value / 2)
+  if (it.count > 1) offer = Math.floor(((offer * it.count) % 65536) / 20)
+  return offer
+}
