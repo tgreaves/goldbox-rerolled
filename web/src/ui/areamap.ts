@@ -1,7 +1,8 @@
 // Top-down map drawing, shared by the asset viewer and the Area command.
 import { STEP, type GeoMap } from '../data/geo'
+import { ICONS, type Landmark } from '../rules/landmarks'
 
-export function drawMap(c: HTMLCanvasElement, geo: GeoMap, cell: number, you?: { x: number; y: number; facing: number }) {
+export function drawMap(c: HTMLCanvasElement, geo: GeoMap, cell: number, you?: { x: number; y: number; facing: number }, marks: Landmark[] = []) {
   c.width = c.height = 16 * cell + 1
   const g = c.getContext('2d')!
   g.fillStyle = '#0b1218'
@@ -25,6 +26,11 @@ export function drawMap(c: HTMLCanvasElement, geo: GeoMap, cell: number, you?: {
       g.stroke()
     }
   }
+  // landmarks (IMP-024) under the party marker
+  g.font = `${Math.round(cell * 0.62)}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`
+  g.textAlign = 'center'
+  g.textBaseline = 'middle'
+  for (const m of marks) g.fillText(ICONS[m.kind], m.x * cell + cell / 2 + 0.5, m.y * cell + cell / 2 + 1)
   if (you) {
     const cx = you.x * cell + cell / 2 + 0.5, cy = you.y * cell + cell / 2 + 0.5
     const [dx, dy] = STEP[you.facing]
@@ -37,4 +43,14 @@ export function drawMap(c: HTMLCanvasElement, geo: GeoMap, cell: number, you?: {
     g.closePath()
     g.fill()
   }
+}
+
+/** The landmark under a pointer position on a map canvas drawn by drawMap (CSS-scaled, object-fit contain). */
+export function landmarkAt(c: HTMLCanvasElement, e: MouseEvent, marks: Landmark[]): Landmark | undefined {
+  const r = c.getBoundingClientRect()
+  const k = Math.min(r.width / c.width, r.height / c.height)
+  const ox = (r.width - c.width * k) / 2, oy = (r.height - c.height * k) / 2
+  const cell = (c.width - 1) / 16
+  const x = Math.floor((e.clientX - r.left - ox) / k / cell), y = Math.floor((e.clientY - r.top - oy) / k / cell)
+  return marks.find((m) => m.x === x && m.y === y)
 }

@@ -6,9 +6,11 @@ import { parseCharacter, MONEY, type Character } from '../data/character'
 import { parseRecord, toImageData, type Picture } from '../data/image'
 import { World } from '../render/world'
 import { Engine, A0, type Io } from '../vm/engine'
-import { drawMap } from './areamap'
+import { drawMap, landmarkAt } from './areamap'
+import type { GeoMap } from '../data/geo'
 import { listSaves, writeSave } from '../store/user'
 import { report, revealedBy, type State } from '../rules/commissions'
+import { ICONS, landmarks, type Landmark } from '../rules/landmarks'
 import { initSound, play, setSoundDevice, soundAvailable, soundDevice, unlockAudio } from '../audio/sfx'
 
 const FACING = ['North', 'East', 'South', 'West']
@@ -321,9 +323,29 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const allowed = engine.A[0x49fb - A0] === 0 && engine.geo
     minimap.hidden = !allowed
     nomap.hidden = !!allowed
-    if (allowed) drawMap(minimap, engine.geo!, 24, { x: engine.x, y: engine.y, facing: engine.facing })
+    if (allowed) drawMap(minimap, engine.geo!, 24, { x: engine.x, y: engine.y, facing: engine.facing }, areaMarks())
   }
   minimap.addEventListener('click', () => command('A'))
+  minimap.addEventListener('mousemove', (e) => { minimap.title = landmarkAt(minimap, e, areaMarks())?.detail ?? 'Area map (click to enlarge)' })
+
+  /** Shops, temples and the like, read from the area's script; worked out once per area (IMP-024). */
+  let marks: { code: Uint8Array; geo: GeoMap; list: Landmark[] } | null = null
+  function areaMarks(): Landmark[] {
+    if (!engine.geo) return []
+    if (marks?.code !== engine.code || marks.geo !== engine.geo) {
+      const record = (n: number) => {
+        const raw = files.record(`ECL${engine.block}`, n)
+        if (!raw) return null
+        const c = new Uint8Array(0x1e00)
+        c.set(raw.subarray(2, 2 + 0x1e00))
+        return c
+      }
+      let list: Landmark[] = []
+      try { list = landmarks(engine.code, engine.geo, record) } catch { /* unreadable script: no landmarks */ }
+      marks = { code: engine.code, geo: engine.geo, list }
+    }
+    return marks.list
+  }
 
   // ------------------------------------------------------------ commissions
   /** commissions the clerk has offered, and whether the proclamation wall was read (IMP-023) */
@@ -351,8 +373,13 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       note('Not Here.')
       return
     }
-    dialog.innerHTML = `<h2>Area</h2><canvas class="areamap"></canvas><form method="dialog"><button>Close</button></form>`
-    drawMap(dialog.querySelector<HTMLCanvasElement>('canvas')!, engine.geo, 24, { x: engine.x, y: engine.y, facing: engine.facing })
+    const list = areaMarks()
+    const legend = [...new Map(list.map((m) => [m.label, m])).values()]
+      .map((m) => `<li><span class="icon">${ICONS[m.kind]}</span>${escape(m.label)}</li>`).join('')
+    dialog.innerHTML = `<h2>Area</h2><canvas class="areamap"></canvas>${legend ? `<ul class="legend">${legend}</ul>` : ''}<form method="dialog"><button>Close</button></form>`
+    const c = dialog.querySelector<HTMLCanvasElement>('canvas')!
+    drawMap(c, engine.geo, 24, { x: engine.x, y: engine.y, facing: engine.facing }, list)
+    c.addEventListener('mousemove', (e) => { c.title = landmarkAt(c, e, list)?.detail ?? '' })
     dialog.showModal()
   }
 
