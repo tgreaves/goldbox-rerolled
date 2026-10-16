@@ -156,7 +156,7 @@ export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
   combatStats(c)
 }
 
-function hitDice(t: Tables, rng: Rng, c: Uint8Array): number {
+export function hitDice(t: Tables, rng: Rng, c: Uint8Array): number {
   let sum = 0
   for (let k = 0; k < 8; k++) {
     if (!c[0x96 + k]) continue
@@ -168,7 +168,7 @@ function hitDice(t: Tables, rng: Rng, c: Uint8Array): number {
   return sum & 0xff
 }
 
-function conBonus(t: Tables, c: Uint8Array): number {
+export function conBonus(t: Tables, c: Uint8Array): number {
   let b = 0
   for (let k = 0; k < 8; k++) {
     if (!c[0x96 + k]) continue
@@ -179,7 +179,7 @@ function conBonus(t: Tables, c: Uint8Array): number {
   return (b << 24) >> 24
 }
 
-function wisdomBonus(c: Uint8Array) {
+export function wisdomBonus(c: Uint8Array) {
   const wis = c[0x12]
   if (wis > 12 && c[0xb2]) c[0xb2]++
   if (wis > 13 && c[0xb2]) c[0xb2]++
@@ -189,7 +189,7 @@ function wisdomBonus(c: Uint8Array) {
 }
 
 /** FUN_51cf_0255 */
-function saves(t: Tables, c: Uint8Array) {
+export function saves(t: Tables, c: Uint8Array) {
   for (let i = 0; i < 5; i++) {
     c[0x6d + i] = 20
     for (let k = 0; k < 8; k++) {
@@ -199,7 +199,7 @@ function saves(t: Tables, c: Uint8Array) {
 }
 
 /** FUN_51cf_0329 */
-function thiefSkills(t: Tables, c: Uint8Array) {
+export function thiefSkills(t: Tables, c: Uint8Array) {
   for (let s = 1; s <= 8; s++) {
     const base = t.b(0x3cf3 + c[0x9c] * 8 + s)
     const race = t.s(0x3d3b + c[0x2e] * 8 + s)

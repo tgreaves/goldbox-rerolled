@@ -14,12 +14,15 @@ import { ICONS, landmarks, type Landmark } from '../rules/landmarks'
 import { Overland } from '../rules/overland'
 import { itemsFile } from '../data/items'
 import { effectsFile } from '../data/effects'
-import { capacity, ready, unready } from '../rules/equip'
+import { capacity, ready, recalc, unready } from '../rules/equip'
 import { drop, halve, join, trade, unavailable } from '../rules/inventory'
 import { pay, receive, sellOffer } from '../rules/money'
 import { shop, temple, treasure, type TownUi } from './town'
 import { camp, cast, type CampUi } from './camp'
 import { clockText } from '../rules/camp'
+import { Tables } from '../rules/chargen'
+import { unexepack } from '../data/exepack'
+import { checkTraining, newSpellChoices, train, willBecome } from '../rules/training'
 import { initSound, play, setSoundDevice, soundAvailable, soundDevice, unlockAudio } from '../audio/sfx'
 
 const FACING = ['North', 'East', 'South', 'West']
@@ -243,6 +246,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     async engine(what, info) {
       if (what === 'blocked') return note('Blocked.')
       if (what === 'locked door') return note('Locked.')
+      if (what === 'party screen') {
+        townMode = 'camp'
+        try { await trainingHall() } finally { townMode = null }
+        return
+      }
       if (what === 'camp') {
         townMode = 'camp'
         try { await camp(campUi) } finally { townMode = null }
@@ -364,6 +372,48 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       return { stopped: () => stopped, done: () => { menuBar.innerHTML = '' } }
     },
     pause: (ms) => new Promise((r) => setTimeout(r, ms)),
+  }
+
+  /**
+   * The party screen as a training hall opens it (PROGRAM 0; spec/progression.md). Party management
+   * (create, add, remove, load) stays on the start-up party screen (IMP-032).
+   */
+  let tables: Tables | null | undefined
+  async function trainingHall() {
+    if (tables === undefined) {
+      const exe = files.get('START.EXE')
+      try { tables = exe ? new Tables(unexepack(exe).image) : null } catch { tables = null }
+    }
+    if (!tables) { note('Training needs START.EXE: re-import the POOLRAD folder.'); return }
+    const t = tables
+    const rng = (n: number) => engine.rand(n)
+    for (;;) {
+      print(`${parseCharacter(engine.cur).name} is selected. Choose who trains from the party list.`, true)
+      const o = await menu(['TRAIN', 'VIEW', 'EXIT'], { prompt: 'Choose a function:' })
+      if (o === 1) await campUi.view()
+      else if (o === 2) return
+      else {
+        const c = engine.cur
+        const chk = checkTraining(t, c, engine.read(0x6da8))
+        drawRoster()
+        if (!chk.ok) { print(chk.message, false); continue }
+        print(`${parseCharacter(c).name} will become:`, true)
+        for (const line of willBecome(c, chk.train)) print(line, false)
+        if ((await menu(['YES', 'NO'], { prompt: 'Do you wish to train?' })) !== 0) continue
+        print('Congratulations...', false)
+        if (train(t, rng, c, chk.train)) {
+          const choices = newSpellChoices(t, c)
+          // the original's empty list writes char[0x32] = 1 (max HP 1); skipped here (IMP-028)
+          if (choices.length) {
+            const st = engine.spells
+            const k = await menu(choices.map((id) => (st?.get(id)?.name ?? `#${id}`).toUpperCase()), { prompt: 'Spells to choose from:', vertical: true })
+            c[0x32 + choices[k]] = 1
+          }
+        }
+        if (engine.items) recalc(c, engine.itemsOf(c), engine.items)
+        drawRoster()
+      }
+    }
   }
 
   /** Character sheet with the items menu (spec/town.md, "Items menu"); IMP-027 for the panel. */

@@ -1,0 +1,42 @@
+// Training and derived statistics (spec/progression.md) against the shipped characters; needs POOLRAD.
+import { describe, expect, it } from 'vitest'
+import { readFileSync, readdirSync, existsSync } from 'node:fs'
+import { join } from 'node:path'
+import { Tables } from '../src/rules/chargen'
+import { unexepack } from '../src/data/exepack'
+import { checkTraining, derive, train, xpFor } from '../src/rules/training'
+
+const dir = process.env.POOLRAD ?? ''
+const have = dir !== '' && existsSync(dir)
+
+describe.skipIf(!have)('training', () => {
+  const t = have ? new Tables(unexepack(new Uint8Array(readFileSync(join(dir, 'START.EXE')))).image) : (null as unknown as Tables)
+  const chars = () => readdirSync(dir).filter((n) => /^CHRDAT.+\.SAV$/.test(n)).map((f) => ({ f, c: new Uint8Array(readFileSync(join(dir, f))) }))
+
+  it('derives the stored THAC0, slots, saves and thief skills of every pre-made character', () => {
+    const fields = [0x2d, 0x73, 0xa1, 0xb2, 0xb3, 0xb4, 0xb5, 0xb6, 0xb7, 0x6d, 0x6e, 0x6f, 0x70, 0x71, ...Array.from({ length: 8 }, (_, i) => 0x77 + i)]
+    for (const { f, c } of chars()) {
+      const d = c.slice()
+      derive(t, d)
+      expect(fields.map((o) => d[o]), f).toEqual(fields.map((o) => c[o]))
+    }
+  })
+
+  it('trains a fighter with enough experience and gold in the fighters’ hall', () => {
+    const { c } = chars().find(({ c }) => c[0x98] === 1 && c[0x2f] === 2)!
+    const xp = xpFor(t, 2, 2)
+    c[0xac] = xp & 0xff; c[0xad] = (xp >> 8) & 0xff; c[0xae] = 0; c[0xaf] = 0
+    c[0x8e] = 1000 & 0xff; c[0x8f] = 1000 >> 8 // 1000 gp
+    expect(checkTraining(t, c, 114).message).toBe("We don't train that class here")
+    const chk = checkTraining(t, c, 120)
+    expect(chk.ok).toBe(true)
+    const hp = c[0x32]
+    const value = () => [1, 10, 100, 200, 1000].reduce((a, v, i) => a + v * (c[0x88 + 2 * i] | (c[0x89 + 2 * i] << 8)), 0)
+    const before = value()
+    train(t, (n) => n - 1, c, chk.train)
+    expect(c[0x98]).toBe(2)
+    expect(60 - c[0x2d]).toBe(19) // fighter level 2 THAC0
+    expect(c[0x32]).toBeGreaterThan(hp)
+    expect(before - value()).toBe(1000 * 200) // 1000 gp in copper units
+  })
+})
