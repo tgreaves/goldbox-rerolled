@@ -11,6 +11,7 @@ import { Item, ItemTables, parseItems } from '../data/items'
 import { parseEffects, type Effect } from '../data/effects'
 import { SpellTables } from '../data/spells'
 import { unexepack } from '../data/exepack'
+import { randomTreasure } from '../rules/randitem'
 import { advanceClock, HOUR, MINUTE } from '../rules/camp'
 import { CHAR_SIZE } from '../data/character'
 
@@ -646,7 +647,7 @@ export class Engine {
         if (n < 0x80) {
           // ITEM<block> record, each item prepended (so the list ends up reversed)
           for (const it of parseItems(this.files.record(`ITEM${this.block}`, n))) this.treasure.unshift(it)
-        } else if (n !== 0xff) await this.io.engine('random treasure', { items: n - 0x80 })
+        } else if (n !== 0xff && this.startImage) randomTreasure(n - 0x80, (sides) => this.roll(1, sides), this.startImage, this.treasure)
         break
       }
       case 0x28: {
