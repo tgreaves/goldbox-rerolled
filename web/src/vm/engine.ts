@@ -73,6 +73,8 @@ export class Engine {
   nodes: Uint8Array[] = []
   /** each member's items (the .ITM records), keyed by character record */
   readonly inventory = new Map<Uint8Array, Item[]>()
+  /** combat picture (CPIC<block> record) of each loaded monster, from LOAD_MONSTER's third operand */
+  readonly combatPicture = new Map<Uint8Array, number>()
   /** each member's effects file (.SPC), carried unchanged until effects are modelled */
   readonly effectsFile = new Map<Uint8Array, Uint8Array | undefined>()
   cur!: Uint8Array
@@ -741,11 +743,16 @@ export class Engine {
     const raw = this.files.record(`MON${this.block}CHA`, this.val(1))
     if (!raw) return
     const count = Math.max(this.val(2), 1)
+    const items = this.files.record(`MON${this.block}ITM`, this.val(1))
+    const spc = this.files.record(`MON${this.block}SPC`, this.val(1))
     for (let i = 0; i < count && this.monsters < 63; i++) {
       const m = new Uint8Array(CHAR_SIZE)
       m.set(raw.subarray(0, CHAR_SIZE))
       m[0xbf] = this.iconSlot
       this.nodes.push(m)
+      this.inventory.set(m, parseItems(items))
+      this.effectsFile.set(m, spc)
+      this.combatPicture.set(m, this.val(3))
       this.monsters++
     }
     this.iconSlot++

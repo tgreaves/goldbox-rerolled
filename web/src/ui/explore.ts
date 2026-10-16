@@ -13,6 +13,8 @@ import { report, revealedBy, type State } from '../rules/commissions'
 import { ICONS, landmarks, type Landmark } from '../rules/landmarks'
 import { Overland } from '../rules/overland'
 import { itemsFile } from '../data/items'
+import { capacity, ready, unready } from '../rules/equip'
+import { drop, halve, join, trade, unavailable } from '../rules/inventory'
 import { initSound, play, setSoundDevice, soundAvailable, soundDevice, unlockAudio } from '../audio/sfx'
 
 const FACING = ['North', 'East', 'South', 'West']
@@ -314,8 +316,27 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     }).join('')
   }
 
-  function sheet(c: Character) {
+  /** Character sheet with the items menu (spec/town.md, "Items menu"); IMP-027 for the panel. */
+  function sheet(c: Character, opts: { selected?: number; message?: string; confirm?: 'drop' | 'trade' } = {}) {
+    const node = c.raw
+    const t = engine.items
+    const items = engine.itemsOf(node)
+    const sel = opts.selected ?? -1
+    const it = items[sel]
     const str = c.stats.STR === 18 && c.strPct ? `/${String(c.strPct % 100).padStart(2, '0')}` : ''
+    const rows = t ? items.map((x, i) => `<tr class="${i === sel ? 'sel' : ''}" data-i="${i}"><td>${x.ready ? 'Yes' : 'No'}</td>
+      <td>${escape(t.name(x))}</td><td>${x.weight * Math.max(1, x.count)}</td></tr>`).join('') : ''
+    const others = engine.party().filter((n) => n !== node)
+    let actions = ''
+    if (it && t) {
+      if (opts.confirm === 'drop') actions = `<p>Your ${escape(t.name(it))} will be gone forever. Drop It?</p>
+        <button data-a="drop-yes">Yes</button><button data-a="cancel">No</button>`
+      else if (opts.confirm === 'trade') actions = `<p>Trade with Whom?</p>` + others.map((n, k) =>
+        `<button data-a="trade-${k}">${escape(parseCharacter(n).name)}</button>`).join('') + '<button data-a="cancel">Exit</button>'
+      else actions = `<button data-a="ready"><u>R</u>eady</button><button data-a="use"><u>U</u>se</button>` +
+        (others.length ? '<button data-a="trade"><u>T</u>rade</button>' : '') +
+        '<button data-a="drop"><u>D</u>rop</button><button data-a="halve"><u>H</u>alve</button><button data-a="join"><u>J</u>oin</button>'
+    }
     dialog.innerHTML = `
       <h2>${escape(c.name)}</h2>
       <p>${c.gender} ${c.race} · age ${c.age}<br>${c.alignment}<br>${c.cls}${c.levels.length ? ' · level ' + c.levels.map((l) => l.level).join('/') : ''}</p>
@@ -332,8 +353,47 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         </table>
         <table>${MONEY.map((m, i) => `<tr><th>${m}</th><td>${c.money[i]}</td></tr>`).join('')}</table>
       </div>
+      ${t ? `<h3>Items</h3>
+        ${items.length ? `<table class="items"><thead><tr><th>Ready</th><th>Item</th><th>Weight</th></tr></thead><tbody>${rows}</tbody></table>`
+          : '<p class="muted">No items.</p>'}
+        <p class="muted">Encumbrance ${node[0x102] | (node[0x103] << 8)} of ${capacity(node)} coins.</p>
+        ${opts.message ? `<p class="message">${escape(opts.message)}</p>` : ''}
+        <div class="item-actions">${actions}</div>` : '<p class="muted">Items need the ITEMS file and START.EXE: re-import the POOLRAD folder.</p>'}
       <form method="dialog"><button>Close</button></form>`
-    dialog.showModal()
+    const again = (o: { selected?: number; message?: string; confirm?: 'drop' | 'trade' }) => {
+      drawRoster()
+      sheet(parseCharacter(node), o)
+    }
+    dialog.querySelectorAll<HTMLTableRowElement>('table.items tbody tr').forEach((r) =>
+      r.addEventListener('click', () => again({ selected: Number(r.dataset.i) })))
+    dialog.querySelectorAll<HTMLButtonElement>('.item-actions button').forEach((b) => b.addEventListener('click', () => {
+      if (!it || !t) return
+      const a = b.dataset.a!
+      const keep = items.indexOf(it)
+      if (a === 'ready') {
+        const m = it.ready ? unready(node, items, it, t) : ready(node, items, it, t)
+        again({ selected: keep, message: m })
+      } else if (a === 'use') again({ selected: keep, message: it.ready ? 'Using items comes with spells and combat.' : 'Must be Readied' })
+      else if (a === 'trade') {
+        const why = unavailable(it)
+        again(why ? { selected: keep, message: why } : { selected: keep, confirm: 'trade' })
+      } else if (a.startsWith('trade-')) {
+        const to = others[Number(a.slice(6))]
+        const m = trade({ c: node, items }, { c: to, items: engine.itemsOf(to) }, it, t)
+        again(m ? { selected: keep, message: m } : { message: `Traded to ${parseCharacter(to).name}.` })
+      } else if (a === 'drop') {
+        const why = unavailable(it)
+        again(why ? { selected: keep, message: why } : { selected: keep, confirm: 'drop' })
+      } else if (a === 'drop-yes') {
+        const m = drop(node, items, it, t)
+        again({ message: m })
+      } else if (a === 'halve') again({ selected: keep, message: halve(node, items, it, t) })
+      else if (a === 'join') {
+        const n = join(node, items, it, t)
+        again({ selected: items.indexOf(it), message: n ? '' : 'Nothing to join.' })
+      } else again({ selected: keep })
+    }))
+    if (!dialog.open) dialog.showModal()
   }
 
   /**

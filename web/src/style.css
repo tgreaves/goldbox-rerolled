@@ -151,6 +151,16 @@ dialog.panel ul.commissions li.reward .state, dialog.panel ul.commissions li.sum
 dialog.panel ul.commissions li.open .state { color: var(--ega-green); }
 dialog.panel ul.commissions li.closed { color: var(--muted); }
 dialog.panel p.muted { color: var(--muted); }
+dialog.panel h3 { margin: 0.8rem 0 0.3rem; color: #fff; font-size: 1rem; }
+dialog.panel table.items { border-collapse: collapse; width: 100%; }
+dialog.panel table.items th { text-align: left; color: var(--muted); font-weight: 500; padding: 0.15rem 0.5rem 0.15rem 0; }
+dialog.panel table.items td { padding: 0.25rem 0.5rem 0.25rem 0; color: var(--ega-green); cursor: pointer; }
+dialog.panel table.items td:last-child, dialog.panel table.items th:last-child { text-align: right; }
+dialog.panel table.items tr.sel td { color: #fff; background: #ffffff14; }
+dialog.panel .item-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.4rem 0; align-items: center; }
+dialog.panel .item-actions p { width: 100%; margin: 0; }
+dialog.panel .item-actions u { color: var(--accent); text-decoration: none; font-weight: 700; }
+dialog.panel p.message { color: var(--ega-yellow); margin: 0.3rem 0; }
 dialog.panel ul.debug { list-style: none; margin: 0.6rem 0; padding: 0; display: grid; gap: 0.35rem; }
 dialog.panel ul.debug button { width: 100%; text-align: left; }
 dialog.panel form.jump { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: end; margin: 0.6rem 0; }

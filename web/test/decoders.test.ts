@@ -8,6 +8,7 @@ import { createHash } from 'node:crypto'
 import { readDax, daxRecords } from '../src/data/dax'
 import { parseRecord, spriteBox } from '../src/data/image'
 import { ItemTables, parseItems } from '../src/data/items'
+import { recalc } from '../src/rules/equip'
 import { GeoMap } from '../src/data/geo'
 
 const dir = process.env.POOLRAD ?? ''
@@ -85,6 +86,19 @@ print(json.dumps(out))
     expect(t.name(potions[0])).toBe('Potion')
     expect(t.name(potions[0], true)).toBe('Potion of Speed')
     expect(t.base[38].hands).toBe(2) // two-handed sword
+    expect(names('CHRDATA5.ITM')).toEqual(['11 Darts'])
+  })
+
+  it('recalculates every pre-made character to the stats the original saved', () => {
+    const t = ItemTables.load(new Uint8Array(readFileSync(join(dir, 'ITEMS'))), new Uint8Array(readFileSync(join(dir, 'START.EXE'))))!
+    const fields = [0x100, 0x101, 0x102, 0x103, 0x110, 0x111, 0x112, 0x115, 0x117, 0x119, 0x11c, 0xc7, 0x6b]
+    for (const f of readdirSync(dir).filter((n) => /^CHRDAT.+\.SAV$/.test(n))) {
+      const c = new Uint8Array(readFileSync(join(dir, f)))
+      const itm = join(dir, f.replace('.SAV', '.ITM'))
+      const d = c.slice()
+      recalc(d, parseItems(existsSync(itm) ? new Uint8Array(readFileSync(itm)) : undefined), t)
+      expect(fields.map((o) => d[o]), f).toEqual(fields.map((o) => c[o]))
+    }
   })
 
   it('reads every GEO map', () => {

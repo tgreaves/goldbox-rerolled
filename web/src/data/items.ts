@@ -59,15 +59,28 @@ export class ItemTables {
     try { return new ItemTables(itemsFile, unexepack(startExe).image) } catch { return null }
   }
 
-  /** Display name: components 1, 2, 3 (bytes 0x31, 0x30, 0x2F); hidden ones are left out until identified. */
+  /**
+   * Display name (FUN_10ba_0442): visible words n3, n2, n1 (bytes 0x31, 0x30, 0x2F), with a count
+   * prefix and a plural "s" on the noun for stacks. Hidden words (mask bit 3 − n) are left out until
+   * identified.
+   */
   name(it: Item, identified = false): string {
-    const parts: string[] = []
-    ;[it.raw[0x31], it.raw[0x30], it.raw[0x2f]].forEach((w, n) => {
-      if (!w || (!identified && (it.hidden >> n) & 1)) return
-      parts.push(this.words[w - 1] ?? `#${w}`)
-    })
-    const name = parts.join(' ')
-    return it.count > 1 ? `${it.count} ${name}` : name
+    const r = it.raw
+    const word = [0, r[0x2f], r[0x30], r[0x31]] // word[n], n = 1..3
+    let mask = 0
+    for (let n = 1; n <= 3; n++) if (word[n] && (identified || !((r[0x35] >> (3 - n)) & 1))) mask |= 1 << (n - 1)
+    const count = it.count
+    const pluralHere = (n: number) => (1 << (n - 1)) === mask || (n === 1 && mask > 4 && it.type !== 0x56) ||
+      (n === 2 && !(mask & 1)) || (n === 3 && it.type === 0x56) || ((it.type === 0x49 || it.type === 0x1c) && word[3] !== 0xb1)
+    let s = count > 0 ? `${count} ` : ''
+    let plural = false
+    for (let n = 3; n >= 1; n--) {
+      if (!(mask & (1 << (n - 1)))) continue
+      s += this.words[word[n] - 1] ?? `#${word[n]}`
+      if (count >= 2 && !plural && pluralHere(n)) { s += 's'; plural = true }
+      s += ' '
+    }
+    return s.trim()
   }
 
   baseOf(it: Item): BaseItem | undefined {
