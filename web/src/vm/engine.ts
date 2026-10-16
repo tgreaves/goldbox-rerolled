@@ -9,6 +9,8 @@ import { unpackText } from '../data/text'
 import { Overland } from '../rules/overland'
 import { Item, ItemTables, parseItems } from '../data/items'
 import { parseEffects, type Effect } from '../data/effects'
+import { SpellTables } from '../data/spells'
+import { advanceClock, HOUR, MINUTE } from '../rules/camp'
 import { CHAR_SIZE } from '../data/character'
 
 export const A0 = 0x4900
@@ -896,8 +898,7 @@ export class Engine {
     const n = this.val(1)
     if (n === 9) {
       const pc = this.pc
-      await this.run(this.vectors[2])
-      await this.io.engine('camp')
+      await this.camp(false)
       this.pc = pc
     } else await this.io.engine(n === 0 ? 'party screen' : n === 8 ? 'ending' : `program ${n}`)
     this.stop = true
@@ -953,6 +954,13 @@ export class Engine {
   }
 
   private overlandRules: Overland | null | undefined
+  private spellTableCache: SpellTables | null | undefined
+  /** Spell names and records (START.EXE); null when missing. */
+  get spells(): SpellTables | null {
+    if (this.spellTableCache === undefined) this.spellTableCache = SpellTables.load(this.files.get('START.EXE'))
+    return this.spellTableCache
+  }
+
   private itemTableCache: ItemTables | null | undefined
   /** Base item table and name words (ITEMS, START.EXE); null when either file is missing. */
   get items(): ItemTables | null {
@@ -1008,6 +1016,7 @@ export class Engine {
       else if (!Overland.blocked(t)) {
         this.A[0x49c3 - A0] = x
         this.A[0x49c4 - A0] = y
+        advanceClock(this, 12, HOUR)
       }
     }
     await this.io.refresh()
@@ -1032,6 +1041,46 @@ export class Engine {
     }
   }
 
+  /** Alter → Order: move a party member up (−1) or down (+1). */
+  moveMember(i: number, dir: number) {
+    const n = this.party().length, j = i + dir
+    if (j < 0 || j >= n) return
+    ;[this.nodes[i], this.nodes[j]] = [this.nodes[j], this.nodes[i]]
+  }
+
+  /** Alter → Drop: the member leaves the party for good. */
+  dropMember(c: Uint8Array) {
+    const i = this.nodes.indexOf(c)
+    if (i < 0) return
+    this.nodes.splice(i, 1)
+    this.inventory.delete(c)
+    this.effects.delete(c)
+    if (this.B[PARTY_SIZE - B0]) this.B[PARTY_SIZE - B0]--
+    if (this.cur === c) this.cur = this.savedCur = this.nodes[0]
+  }
+
+  /** set by the camp screen when a rest is interrupted by an encounter */
+  campInterrupted = false
+  /** rest-encounter step counter (DS:49FB): not saved, kept between rests and areas */
+  restSteps = 0
+
+  /**
+   * Encamp (FUN_29c3_2dd3): camp_menu (sets the rest-encounter odds), the camp screen, then
+   * camp_confirmed when a rest was interrupted (scripts start the wandering-monster fight there).
+   */
+  async camp(enterAfter = true) {
+    this.areaChanged = false
+    await this.run(this.vectors[2])
+    this.campInterrupted = false
+    await this.io.engine('camp')
+    if (this.campInterrupted) {
+      this.campInterrupted = false
+      await this.io.refresh()
+      await this.run(this.vectors[3])
+    }
+    if (enterAfter && this.areaChanged) await this.enter()
+  }
+
   /** One exploration command in a map area: f, l, r, b (turn round), s (search), L (look), e (encamp). */
   async command(c: string) {
     if (c === 'l' || c === 'r' || c === 'b') {
@@ -1042,13 +1091,11 @@ export class Engine {
     }
     if (c === 's') { this.B[SEARCH_LOOK - B0] ^= 1; return }
     if (c === 'e') {
-      this.areaChanged = false
-      await this.run(this.vectors[2])
-      await this.io.engine('camp')
-      if (this.areaChanged) await this.enter()
+      await this.camp()
       return
     }
     if (c === 'L') {
+      advanceClock(this, 10, MINUTE) // Look takes 10 minutes (FUN_3e76_0989)
       const keep = this.B[SEARCH_LOOK - B0] & 1
       this.B[SEARCH_LOOK - B0] = 1
       this.areaChanged = false
@@ -1077,6 +1124,7 @@ export class Engine {
         const [dx, dy] = STEP[this.facing]
         this.x = (this.x + dx) & 15
         this.y = (this.y + dy) & 15
+        advanceClock(this, this.B[SEARCH_LOOK - B0] & 1 ? 10 : 1, MINUTE) // FUN_3e76_073b
         this.io.sound(10) // main loop: footstep when the position changed
       } else {
         blocked = p === 0 ? 1 : 2

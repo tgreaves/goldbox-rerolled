@@ -18,6 +18,8 @@ import { capacity, ready, unready } from '../rules/equip'
 import { drop, halve, join, trade, unavailable } from '../rules/inventory'
 import { pay, receive, sellOffer } from '../rules/money'
 import { shop, temple, treasure, type TownUi } from './town'
+import { camp, cast, type CampUi } from './camp'
+import { clockText } from '../rules/camp'
 import { initSound, play, setSoundDevice, soundAvailable, soundDevice, unlockAudio } from '../audio/sfx'
 
 const FACING = ['North', 'East', 'South', 'West']
@@ -241,6 +243,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     async engine(what, info) {
       if (what === 'blocked') return note('Blocked.')
       if (what === 'locked door') return note('Locked.')
+      if (what === 'camp') {
+        townMode = 'camp'
+        try { await camp(campUi) } finally { townMode = null }
+        return
+      }
       if (what === 'shop' || what === 'temple' || what === 'treasure') {
         townMode = what
         try { await (what === 'shop' ? shop : what === 'temple' ? temple : treasure)(townUi) } finally { townMode = null }
@@ -306,13 +313,14 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const searching = engine.B[0x6dca - 0x6b00] & 1
     if (engine.overland) {
       const [wx, wy] = engine.wildPosition
-      where.textContent = `Wilderness · ${wx},${wy} · facing ${FACING[engine.facing]}${searching ? ' · Searching' : ''}`
+      where.textContent = `Wilderness · ${wx},${wy} · facing ${FACING[engine.facing]} · ${clockText(engine)}${searching ? ' · Searching' : ''}`
       wild.hidden = !!engine.wild
       if (!engine.wild) wild.innerHTML = '<p><strong>Wilderness</strong></p><p>The wilderness map needs START.EXE from the game files: go back to Assets and re-import the POOLRAD folder.</p>'
       return
     }
     wild.hidden = true
-    where.textContent = `${FACING[engine.facing]} · ${engine.x},${engine.y}${searching ? ' · Searching' : ''}`
+    const pos = engine.A[0x49fb - A0] !== 0 ? '' : `${engine.x},${engine.y} · ` // hidden where the Area map is refused
+    where.textContent = `${FACING[engine.facing]} · ${pos}${clockText(engine)}${searching ? ' · Searching' : ''}`
   }
 
   function drawRoster() {
@@ -326,7 +334,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   // ------------------------------------------------------------ shops, temples, treasure
   /** set while a shop, temple or treasure screen runs: the roster then picks the current character */
-  let townMode: 'shop' | 'temple' | 'treasure' | null = null
+  let townMode: 'shop' | 'temple' | 'treasure' | 'camp' | null = null
   const townUi: TownUi = {
     get engine() { return engine },
     menu,
@@ -337,6 +345,25 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       dialog.addEventListener('close', () => resolve(), { once: true })
     }),
     refresh: () => drawRoster(),
+  }
+
+  const campUi: CampUi = {
+    get engine() { return engine },
+    menu,
+    print: (text, clear) => print(text, !!clear),
+    view: () => new Promise<void>((resolve) => {
+      sheet(parseCharacter(engine.cur))
+      dialog.addEventListener('close', () => resolve(), { once: true })
+    }),
+    save: () => saveGame(),
+    refresh: () => { drawRoster(); showWhere() },
+    stopper: () => {
+      let stopped = false
+      menuBar.innerHTML = '<button class="primary">Stop resting</button>'
+      menuBar.querySelector('button')!.addEventListener('click', () => { stopped = true })
+      return { stopped: () => stopped, done: () => { menuBar.innerHTML = '' } }
+    },
+    pause: (ms) => new Promise((r) => setTimeout(r, ms)),
   }
 
   /** Character sheet with the items menu (spec/town.md, "Items menu"); IMP-027 for the panel. */
@@ -661,7 +688,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       case 'A': areaMap(); break
       case 'V': sheet(parseCharacter(engine.cur)); break
       case 'S': engine.command('s'); commandBar(); showWhere(); break
-      case 'C': note('Casting is not implemented yet.'); break
+      case 'C': act(async () => { townMode = 'camp'; try { await cast(campUi) } finally { townMode = null } }); break
       case 'E': act(() => engine.command('e')); break
       case 'L': act(() => engine.command('L')); break
       case 'sound': {
