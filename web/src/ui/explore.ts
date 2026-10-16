@@ -24,6 +24,7 @@ import { clockText, isScroll } from '../rules/camp'
 import { castOutside, itemSpells, spendUse, targetKind } from '../rules/magic'
 import { Tables, fileStem } from '../rules/chargen'
 import { creatorTools } from './creator'
+import { playEnding } from './ending'
 import { unexepack } from '../data/exepack'
 import { checkTraining, newSpellChoices, train, willBecome } from '../rules/training'
 import { initSound, play, setSoundDevice, soundAvailable, soundDevice, unlockAudio } from '../audio/sfx'
@@ -258,6 +259,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     },
     async engine(what, info) {
       if (what === 'blocked') return note('Blocked.')
+      if (what === 'party dead') { print('The END!', true); print('The party has been destroyed', false); return gameOver() }
       if (what === 'locked door') return note('Locked.')
       if (what === 'combat') {
         townMode = 'camp'
@@ -273,7 +275,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
             sound: play, input: battleInput, refreshRoster: () => drawRoster(), cancelMenu: () => cancelMenu(),
           })
           if (r.survived) await treasure(townUi)
-          else note('The party has been destroyed. Load a saved game from the party screen.')
+          else await gameOver()
         } catch (err) {
           note(`Combat error: ${(err as Error).message}`)
         } finally {
@@ -283,6 +285,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           for (const k of Object.keys(battleInput)) delete (battleInput as Record<string, unknown>)[k]
           drawRoster()
         }
+        return
+      }
+      if (what === 'ending') {
+        await playEnding(dialog, files, engine.block, engine.party().length, engine.speed)
         return
       }
       if (what === 'party screen') {
@@ -949,6 +955,12 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     requestAnimationFrame(loop)
   }
   requestAnimationFrame(loop)
+
+  /** The party is gone: as the original, back to the start (the party screen there loads a game). */
+  async function gameOver() {
+    await menu(['CONTINUE'], { prompt: 'Press any key to continue' })
+    leave()
+  }
 
   function leave() {
     running = false

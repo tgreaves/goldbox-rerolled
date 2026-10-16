@@ -6,7 +6,8 @@ import { escape, sheetHtml } from './sheet'
 import { unexepack } from '../data/exepack'
 import { Tables, fileStem } from '../rules/chargen'
 import { creatorTools } from './creator'
-import { saveCharacter, listSaves } from '../store/user'
+import { saveCharacter, listSaves, writeSave } from '../store/user'
+import { saveFiles, savesFrom, unzip, zip, type NamedFile } from '../store/savefiles'
 import { parseSave, saveArea, saveBlock } from '../data/save'
 import type { Start } from './explore'
 
@@ -65,10 +66,14 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
       ['L', 'Load saved game', true],
       ['S', 'Save current game', false],
       ['B', 'Begin adventuring', has],
+      ['X', 'Export saved game', true],
+      ['I', 'Import saved game', true],
       ['E', 'Exit', true],
     ]
-    nav2.innerHTML = items.map(([k, label, on]) =>
-      `<button data-k="${k}" ${on ? '' : 'disabled'}><u>${label[0]}</u>${label.slice(1)}</button>`).join('')
+    nav2.innerHTML = items.map(([k, label, on]) => {
+      const at = Math.max(0, label.toUpperCase().indexOf(k))
+      return `<button data-k="${k}" ${on ? '' : 'disabled'}>${label.slice(0, at)}<u>${label[at]}</u>${label.slice(at + 1)}</button>`
+    }).join('')
   }
 
   const { chooseFrom, confirm, pick, create, modify } = creatorTools(dialog, files, rng, tables)
@@ -153,6 +158,55 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
         if (i === null) break
         nav.play(saves[i].start)
         return
+      }
+      case 'X': {
+        // IMP-006: the original's files in one ZIP, for DOSBox or another browser
+        const saves = await listSaves()
+        if (!saves.length) { say('There are no saved games in this browser.'); break }
+        const i = await pick('Export saved game', saves.map((g) => `${g.slot}: ${g.label} — ${new Date(g.savedAt).toLocaleString()}`))
+        if (i === null) break
+        const g = saves[i]
+        const blob = new Blob([zip(saveFiles(g)) as Uint8Array<ArrayBuffer>], { type: 'application/zip' })
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = `poolrad-save-${g.slot}.zip`
+        a.click()
+        setTimeout(() => URL.revokeObjectURL(a.href), 10_000)
+        say(`Slot ${g.slot} exported: unzip it into the game folder to play it in DOSBox.`)
+        break
+      }
+      case 'I': {
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.multiple = true
+        input.accept = '.zip,.dat,.sav,.itm,.spc,.DAT,.SAV,.ITM,.SPC'
+        const chosen = await new Promise<File[]>((resolve) => {
+          input.addEventListener('change', () => resolve([...(input.files ?? [])]), { once: true })
+          input.addEventListener('cancel', () => resolve([]), { once: true })
+          input.click()
+        })
+        if (!chosen.length) break
+        try {
+          const loose: NamedFile[] = []
+          for (const f of chosen) {
+            const data = new Uint8Array(await f.arrayBuffer())
+            if (/\.zip$/i.test(f.name)) loose.push(...await unzip(data))
+            else loose.push({ name: f.name, data })
+          }
+          const { games, missing } = savesFrom(loose)
+          if (!games.length) { say(missing.length ? `Nothing imported; missing ${missing.join(', ')}.` : 'Choose a SAVGAM file (A to J) with its CHRDAT files, or a ZIP of them.'); break }
+          const have = new Set((await listSaves()).map((g) => g.slot))
+          const done: string[] = []
+          for (const g of games) {
+            if (have.has(g.slot) && !(await confirm(`Slot ${g.slot} already holds a saved game. Replace it?`))) continue
+            await writeSave(g)
+            done.push(g.slot)
+          }
+          say(done.length ? `Imported into slot ${done.join(', ')}. Use Load to play.${missing.length ? ` Skipped: missing ${missing.join(', ')}.` : ''}` : 'Nothing imported.')
+        } catch (err) {
+          say(`Import failed: ${(err as Error).message}`)
+        }
+        break
       }
       case 'E':
         nav.title()

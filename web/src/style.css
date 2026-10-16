@@ -265,3 +265,8 @@ table.modify th { text-align: left; padding-right: 1rem; color: var(--muted); }
 table.modify td.v { min-width: 3.5rem; text-align: center; color: var(--ega-green); font-variant-numeric: tabular-nums; }
 table.modify tr.current th { color: #fff; }
 table.modify button { min-height: 36px; width: 2.4rem; padding: 0; }
+
+/* the ending (PROGRAM 8): the 120×120 FINAL pictures scaled up */
+.ending-panel canvas.ending { width: min(360px, 80vw); aspect-ratio: 1; image-rendering: pixelated; display: block; margin: 0 auto; }
+.ending-panel .ending-text { min-height: 7.5em; }
+.ending-panel .ending-text p { margin: 0.1em 0; }

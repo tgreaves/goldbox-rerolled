@@ -332,8 +332,10 @@ export class Battle implements FxHost {
       if (ok && canAct) f.size = (f.c[0x6c] & 7) || 1
       else if (ok && !canAct) {
         f.size = 0
-        this.bodies.push({ f, x: f.x, y: f.y, cell: this.bf.get(f.y, f.x) })
-        this.bf.set(f.y, f.x, 0x1f)
+        if (!this.e.duel) { // in a duel the bystanders sit out and leave no body
+          this.bodies.push({ f, x: f.x, y: f.y, cell: this.bf.get(f.y, f.x) })
+          this.bf.set(f.y, f.x, 0x1f)
+        }
       } else if (f.monster) this.removeFighter(f)
       else f.size = 0
     }
@@ -1450,16 +1452,9 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
   const party = b.fighters.filter((f) => !f.monster)
   e.write(0x6dc7, 0)
   let share = 0
-  if (outcome === 'won') {
-    let noXP = 0
-    for (const f of party) {
-      const c = f.c
-      if (c[0x10c] === 3) { c[0x10c] = 0; c[0x10d] = 1 }
-      else if (c[0x10c] === 5) c[0x10c] = 4
-      else if (c[0x10c] === 4 && c[0x11b] > 0) { c[0x10c] = 0; c[0x10d] = 1 }
-      if (c[0x10d] === 0 || c[0x10c] === 1) noXP++
-    }
-    // experience and loot
+  /** Experience (FUN_2e08_0000) with its loot, and the award (FUN_2e08_0355). */
+  const experience = (noXP: number) => {
+    if (e.duel && e.read(0x6de6)) return ((e.duelist ?? e.cur)[0x73] * 100) & 0xffff // duel: no loot, no division
     let total = 0, taken = 0
     const loot: Item[] = []
     for (const f of b.fighters) {
@@ -1478,7 +1473,9 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
     for (const it of loot) if (it.plus > 0) total += 400 * it.plus
     e.treasure = [...loot, ...b.dropped, ...e.treasure]
     const eligible = party.length - noXP
-    share = eligible > 0 ? Math.floor(total / eligible) : 0
+    return eligible > 0 ? Math.floor(total / eligible) : 0
+  }
+  const award = (share: number) => {
     for (const f of party) {
       const c = f.c
       if (!c[0x10d] || c[0x10c] === 1) continue
@@ -1491,6 +1488,35 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
       const v = xp + add
       c[0xac] = v & 0xff; c[0xad] = (v >> 8) & 0xff; c[0xae] = (v >> 16) & 0xff; c[0xaf] = (v >>> 24) & 0xff
     }
+  }
+  if (e.duel) {
+    // duel branch (FUN_2e08_04c9 with DS:84D4 set): never a defeat; each one standing on the party's
+    // side earns the experience; then the bystanders come back into play and Dying becomes Unconscious
+    let won = false
+    for (const f of b.fighters) {
+      const c = f.c
+      if (c[0x10d] === 1 && c[0x10c] === 0 && c[0x10e] !== 1) { won = true; share = experience(0); award(share) }
+    }
+    for (const f of party) {
+      if (f.c[0x10c] === 0 || f.c[0x10c] === 1) f.c[0x10d] = 1
+      if (f.c[0x10c] === 5) f.c[0x10c] = 4
+    }
+    if (won) {
+      msgs.push('The party has won.')
+      if (e.treasure.length || e.money.some((v) => v > 0)) msgs.push('The party has found Treasure!')
+      msgs.push(`Each character receives ${share} experience points.`)
+    }
+  } else if (outcome === 'won') {
+    let noXP = 0
+    for (const f of party) {
+      const c = f.c
+      if (c[0x10c] === 3) { c[0x10c] = 0; c[0x10d] = 1 }
+      else if (c[0x10c] === 5) c[0x10c] = 4
+      else if (c[0x10c] === 4 && c[0x11b] > 0) { c[0x10c] = 0; c[0x10d] = 1 }
+      if (c[0x10d] === 0 || c[0x10c] === 1) noXP++
+    }
+    share = experience(noXP)
+    award(share)
     msgs.push('The party has won.')
     if (e.treasure.length || e.money.some((v) => v > 0)) msgs.push('The party has found Treasure!')
     msgs.push(`Each character receives ${share} experience points.`)
@@ -1504,6 +1530,10 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
   } else {
     e.write(0x6dc7, 0x80)
     msgs.push('The END!', 'The monsters rejoice for the party has been destroyed')
+    // every party entry leaves the list; party size 0 (spec/combat.md, Results)
+    for (const f of party) { const i = e.nodes.indexOf(f.c); if (i >= 0) e.nodes.splice(i, 1); e.inventory.delete(f.c); e.effects.delete(f.c) }
+    e.write(0x6e3e, 0)
+    e.quit = true
   }
   // cleanup: monsters and side-1 entries leave the list; 0x6DC8 counts those out of play
   let defeated = 0
@@ -1530,7 +1560,10 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
   }
   for (const a of [0x6e70, 0x6e71, 0x6e72, 0x6de3, 0x6de6]) e.write(a, 0)
   e.monstersCleared()
-  return { share, survived: outcome !== 'destroyed', messages: msgs }
+  const survived = e.duel || outcome !== 'destroyed'
+  e.duel = false
+  e.duelist = null
+  return { share, survived, messages: msgs }
 }
 
 /** A signed 16-bit product, as the original multiplies (never large with shipped data). */

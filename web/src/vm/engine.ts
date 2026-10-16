@@ -14,6 +14,7 @@ import { unexepack } from '../data/exepack'
 import { randomTreasure } from '../rules/randitem'
 import { advanceClock, HOUR, MINUTE } from '../rules/camp'
 import { CHAR_SIZE } from '../data/character'
+import { recalc } from '../rules/equip'
 
 export const A0 = 0x4900
 export const B0 = 0x6b00
@@ -97,6 +98,9 @@ export class Engine {
   stack: number[] = []
   vectors = [CODE + 0x14, CODE + 0x14, CODE + 0x14, CODE + 0x14, CODE + 0x14]
   monsters = 0
+  /** DS:84D4: a duel or solo fight set up by CALL 0x8000 / 0x8001; `duelist` is who fights */
+  duel = false
+  duelist: Uint8Array | null = null
   monstersLoaded = false
   iconSlot = 8
   /** the treasure money table (DS:67F4): the pool in shops, temples and the treasure screen */
@@ -696,7 +700,7 @@ export class Engine {
       case 0x33: this.readops(0); this.io.print('', false); break
       case 0x34: this.readops(1); break // passes game time; the clock is not modelled yet
       case 0x35: this.readops(3); this.write((this.addr(2) + this.val(3)) & 0xffff, this.val(1)); break
-      case 0x36: this.readops(2); await this.io.engine('add NPC', { id: this.val(1) }); break
+      case 0x36: this.readops(2); this.addNpc(this.val(1), this.val(2)); await this.io.refresh(); break
       case 0x37: this.loadWallsets(); break
       case 0x38: await this.program(); break
       case 0x39: {
@@ -764,8 +768,7 @@ export class Engine {
     const items = this.files.record(`MON${this.block}ITM`, id)
     const spc = this.files.record(`MON${this.block}SPC`, id)
     for (let i = 0; i < count && this.monsters < 63; i++) {
-      const m = new Uint8Array(CHAR_SIZE)
-      m.set(raw.subarray(0, CHAR_SIZE))
+      const m = this.monsterRecord(raw)
       m[0xbf] = this.iconSlot
       this.nodes.push(m)
       this.inventory.set(m, parseItems(items))
@@ -775,6 +778,55 @@ export class Engine {
     }
     this.iconSlot++
     this.monstersLoaded = true
+  }
+
+  /** A monster record as the loader leaves it (FUN_45c5_0ec4): icon size by race, random icon colours. */
+  private monsterRecord(raw: Uint8Array) {
+    const m = new Uint8Array(CHAR_SIZE)
+    m.set(raw.subarray(0, CHAR_SIZE))
+    const race = m[0x2e]
+    if ([1, 3, 5].includes(race)) m[0xc0] = 1
+    else if ([2, 4, 6, 7].includes(race)) m[0xc0] = 2
+    const colour = () => { const d = this.roll(1, 6); return ((d + 8) << 4) + d }
+    for (const k of [1, 2, 3]) m[0xc0 + k] = colour()
+    m[0xc4] = 0xc4
+    for (const k of [5, 6]) m[0xc0 + k] = colour()
+    return m
+  }
+
+  /**
+   * ADD_NPC (handler 29c3:2B7E, loader FUN_45c5_1262): monster record `id` of this block joins the end
+   * of the party (at most 8), with a random portrait for its class and gender; it becomes the current
+   * character. Morale char[0x84] = (morale >> 1) | 0x80; id 0x18 is on the enemy side.
+   */
+  addNpc(id: number, morale: number) {
+    const party = this.party()
+    if (party.length <= 7) {
+      const raw = this.files.record(`MON${this.block}CHA`, id)
+      if (!raw) { this.io.print('Unable to load monster', false); return }
+      const c = this.monsterRecord(raw)
+      c[0xab] = this.rand(256)
+      const classes = [0, 1, 2, 3, 4, 5, 6].filter((k) => ((c[0x96 + k] << 24) >> 24) > 0)
+      const cls = classes.length ? classes[this.roll(1, classes.length) - 1] : 2
+      const img = this.startImage
+      if (img) {
+        const tb = (o: number) => img[0xc7c0 + o]
+        const g = c[0x9e]
+        const body = cls === 0 ? 0x8d7 : cls === 5 ? 0x8eb : cls === 6 ? 0x8f5 : 0x8e1
+        c[0xbc] = tb(body + g * 5 + this.roll(1, 5))
+        c[0xbb] = tb(0x8c7 + g * 8 + this.roll(1, 8))
+      }
+      const n = party.length
+      this.nodes.splice(n, 0, c)
+      this.B[PARTY_SIZE - B0] = n + 1
+      this.inventory.set(c, parseItems(this.files.record(`MON${this.block}ITM`, id)))
+      this.effects.set(c, parseEffects(this.files.record(`MON${this.block}SPC`, id)))
+      this.cur = c
+    }
+    // the handler then writes to whoever is current (unchanged when the party was full)
+    this.cur[0x84] = (morale >> 1) | 0x80
+    this.cur[0x10e] = id === 0x18 ? 1 : 0
+    if (this.items) recalc(this.cur, this.itemsOf(this.cur), this.items)
   }
 
   private startImageCache: Uint8Array | null | undefined
@@ -787,9 +839,34 @@ export class Engine {
     return this.startImageCache
   }
 
+  /**
+   * CALL 0x8000 (duel) / 0x8001 (solo combat): everyone but the current character sits out
+   * (char[0x10D] = 0). For a duel a copy of the current character named ROLF, with its items,
+   * joins the monsters on computer control (enemy side, morale 0xB2) and ECL 0x6DE6 = 1.
+   */
+  setupDuel(copy: boolean) {
+    const me = this.cur
+    for (const c of this.party()) if (c !== me) c[0x10d] = 0
+    this.duel = true
+    this.duelist = me
+    this.B[0x6de6 - B0] = copy ? 1 : 0
+    if (!copy) return
+    const r = me.slice()
+    const nm = 'ROLF'
+    r.fill(0, 0, 16)
+    r[0] = nm.length
+    for (let i = 0; i < nm.length; i++) r[1 + i] = nm.charCodeAt(i)
+    r[0x10e] = 1; r[0x10f] = 1; r[0x84] = 0xb2
+    this.nodes.push(r)
+    this.inventory.set(r, this.itemsOf(me).map((it) => it.copy()))
+    this.effects.set(r, [])
+    this.monsters++
+    this.monstersLoaded = true
+  }
+
   private async combat() {
     this.readops(0)
-    if (!this.monstersLoaded) {
+    if (!this.monstersLoaded && !this.duel) {
       if (this.B[SHOP_FLAG - B0] === 1) {
         this.B[SHOP_FLAG - B0] = 0
         await this.io.engine('shop')
@@ -810,7 +887,10 @@ export class Engine {
         this.monstersLoaded = false
         for (const a of [0x6de3, 0x6de6, 0x6e70, 0x6e71, 0x6e72]) this.B[a - B0] = 0
       }
+      if (this.duel) for (const c of this.party()) if (c[0x10c] <= 1) c[0x10d] = 1
     }
+    this.duel = false
+    this.duelist = null
     this.B[SEARCH_LOOK - B0] &= 1
   }
 
@@ -904,7 +984,7 @@ export class Engine {
       const [dx, dy] = STEP[this.facing]
       this.x = (this.x + dx) & 15
       this.y = (this.y + dy) & 15
-    } else if (a === 0x8000 || a === 0x8001) await this.io.engine(a === 0x8000 ? 'duel' : 'solo combat')
+    } else if (a === 0x8000 || a === 0x8001) this.setupDuel(a === 0x8000)
     // 0xBA03 sound, 0xC018 wall-ahead refresh and 0xC01B (dead in the DOS port) need nothing here
   }
 
