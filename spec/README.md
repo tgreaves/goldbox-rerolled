@@ -36,6 +36,10 @@ Formal description of the DOS *Pool of Radiance* engine (GOG release 1.3) and it
 | [[spec/combat]] | Dice, attack, to-hit, damage, backstab, ranges, saves | v0.3 |
 | [[spec/open-questions]] | What remains, in priority order | living |
 
+## External references
+
+- Stephen S. Lee, *Pool of Radiance: Exhaustive Game Information*, v1.50 (2021), [GameFAQs](https://gamefaqs.gamespot.com/pc/564785-pool-of-radiance/faqs/73869). Written for PC 1.3 (the GOG version). Player-side facts to cross-check against: area maps and walkthrough (section 6), mechanics (sections 7–10), interface and combat commands (2.6), cheat mode (2.9.3). GameFAQs refuses scripted downloads; only the first page (sections 0–4.1) is in the Wayback Machine. Facts confirmed against it so far: the Area map (walls only, no doors, everything shown, refused in some areas, [[spec/maps]]); diagonal moves cost 1½ squares ([[spec/combat]]).
+
 ## Engine identity
 
 | Item | Value |

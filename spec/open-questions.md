@@ -37,6 +37,11 @@ Part of [[spec/README]]. Ordered by what a browser reimplementation needs first.
 - What engine address 0x035F reads in practice (stack garbage) when the overland scripts compare it against their impassable-tile table; a port can treat it as never matching
 - Compare scripted walks between `tools/eclvm.py` and the original
 
+## Cross-checks against the GameFAQs guide ([[spec/README]], External references)
+
+- Cheat mode: the guide starts it with a `STING` command-line option (Ctrl-C quits, Alt-X wins a combat, J trains free in a training hall). [[spec/architecture]] has only J followed by typing STING in a training hall. Look for a command-line check and an Alt-X handler.
+- Loading: the guide says a game can be loaded only from the main menu or after dropping every character in a training hall, and that loading deletes the files of characters who had been Removed from the party.
+
 ## Smaller loose ends
 
 - Edge-consistency outliers in GEO records 30, 23, 16, 7, 0
