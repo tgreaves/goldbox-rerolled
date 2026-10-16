@@ -109,6 +109,16 @@ Wall type *t* (1–15) indexes the 0x30C × 3 table directly: `(t − 1)·156`, 
 
 The kind-6 piece (7 × 8 tiles, the wall directly ahead) of every wall type is a complete flat wall face, with tile 0 cells transparent; the browser port uses it as the wall texture ([`IMPROVEMENTS.md`](../IMPROVEMENTS.md) IMP-007).
 
+## Overhead map (O, `FUN_55a0_0000`)
+
+The **A**rea command toggles `DS:6AAC`. While it is set, every redraw of the 3D view (`FUN_55a0_05fd`) draws the overhead map in its place, so the map follows the party as it moves until Area is pressed again. It is switched off when an encounter sprite is drawn, on starting a game, and whenever ECL 0x49FB is non-zero ("Not Here").
+
+- **Window.** 11 × 11 squares, one 8 × 8 cell each, filling the 88-pixel view. The window is centred on the party and clamped to the map: its left column is `x − 5` limited to 0–5, and the same for the top row.
+- **Squares.** Each square is drawn as tile `0x104 + mask` from the tile bank, where the mask has bit 0 for a wall on the north side, bit 1 east, bit 2 south and bit 3 west. A wall counts if its wall type (`FUN_55a0_047b`) is non-zero, so doors look the same as walls, and locked doors are not marked.
+- **Party.** Tile `0x100 + facing` at the party's square.
+- **No fog of war.** Every wall inside the window is shown, explored or not. The engine keeps no record of visited squares, and the save file has none.
+- **Edges.** Squares outside 0–15 show no walls, unless `DS:84DC` is neither 0 nor 10. In that case coordinates wrap (**I**: which areas set it).
+
 ## Still to decode
 
 - Background drawing: `FUN_55a0_0174` paints four bands from the image at `DS:4A20` with colours `DS:6A60–6A63`; where those colours are set is not traced. Alternate view `FUN_55a0_0000`

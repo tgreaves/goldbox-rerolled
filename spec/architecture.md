@@ -63,7 +63,7 @@ Map areas (`DS:49FA` = 1): "Area Cast View Encamp Search Look", plus the cursor 
 
 | Input | Effect | Returns? |
 |---|---|---|
-| **A**rea | toggle the overhead map (`DS:6AAC`) unless ECL 0x49FB ≠ 0 ("Not Here") | no |
+| **A**rea | toggle the overhead map (`DS:6AAC`) unless ECL 0x49FB ≠ 0 ("Not Here"); see [[spec/maps]], "Overhead map" | no |
 | **C**ast | camp-style cast for the current character if status Okay | no |
 | **V**iew | character sheet | no |
 | **E**ncamp | | yes |
