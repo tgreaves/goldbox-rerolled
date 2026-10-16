@@ -116,7 +116,7 @@ Entered through ECL `PROGRAM n` (0x38) or the main loop:
 
 Menu "Choose a function": **C**reate character (`FUN_417f_056c`), **D**rop (`1f37`), **M**odify (`209f`), **T**rain (`29ae`, see [[spec/progression]]), **V**iew, **A**dd character from disk (`306d`), **R**emove, **L**oad game (`FUN_45c5_1602`), **S**ave game (`FUN_45c5_1d58`, see [[spec/savegame]]), **B**egin adventuring, **E**xit ("Quit to DOS", saves first if needed). Items are enabled per state (no current character → only Create/Load/Add…; Train only if the area's class mask `B[0x550]` is set).
 
-Hidden: **J** then typing `STING` prints "I Understand, master..." and sets `DS:470C`, which makes training free and skips the experience and class checks (developer cheat).
+Hidden: **J** on the party screen, when the game was started with the command-line parameter `STING`, prints "I Understand, master..." and sets `DS:470C`, which makes training free and skips the status, money, experience and hall checks (developer cheat; nothing is typed after J, see [[spec/progression]]).
 
 Cheat mode (O for the keys below): when the first command-line parameter is `STING` (`START STING`), the shared key reader (load-image 0x89E9) also accepts **Ctrl-C** (quit to DOS at once, 0x8990) and **Ctrl-D** (toggle `DS:49F7`, hit-point debugging). **Ctrl-S** toggles sound in any mode. The GameFAQs guide ([[spec/README]], External references) adds **Alt-X** to win a combat at once, and says the introduction and copy protection are skipped (**?** not yet traced).
 

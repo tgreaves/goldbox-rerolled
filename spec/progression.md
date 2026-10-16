@@ -34,26 +34,70 @@ Training is refused ("Not Enough Experience" path skipped) when the character is
 | Half-Elf | Fighter | 6 (STR < 17), 7 (STR 17), 8 (STR 18) |
 | Halfling | Fighter | 4 (STR < 17), 5 (STR 17), 6 (STR 18) |
 
+Only these fighter limits and the half-elf cleric limit are coded. The middle rows test STR = 17 exactly and the bottom rows STR < 17 (gnome: < 18), on char[0x10] without exceptional strength, so STR 19 and above behaves like 18. A class at its limit is skipped; the character gets "Not Enough Experience" only if no other class qualifies. The guide's (7.7.3) elf and half-elf magic-user limits are above the game's cap of 6 and need no code.
+
+## Training halls (O)
+
+New Phlan's training hall is `ECL3` record 11. Each door stores a class mask in ECL **0x6DA8** (`B[0x550]`), prints "'WE TRAIN ONLY *class* HERE. DO YOU WANT TO TRAIN?'" and runs `PROGRAM 0` (the party screen, whose **T**rain entry is enabled only while 0x6DA8 ≠ 0 or the cheat is on, [[spec/menus]]):
+
+| Hall | 0x6DA8 | Class bit it matches |
+|---|---|---|
+| Clerics | 114 (0x72) | 2 |
+| Magic users | 113 (0x71) | 1 |
+| Fighters | 120 (0x78) | 8 |
+| Thieves | 116 (0x74) | 4 |
+
+Class trainer bits (`DS:05DE`, the same values as the item class-use mask): Cleric 2, Druid 2, Fighter 8, Paladin 10, Ranger 10, Magic-User 1, Thief 4, Monk 6. Bits 0x10–0x40 of the hall masks match no class. A hall therefore trains only its own class: a multi-classed character visits one hall per class and pays at each (G agrees: "class-specific training hall", 7.4).
+
 ## Training (O, `FUN_417f_29ae`)
 
-- Needs status Okay and at least 1000 gp (`FUN_4894_28be` totals money), unless free training (`DS:470C`)
-- Class trainer bits (`DS:05DE`): Cleric 2, Druid 2, Fighter 8, Paladin 10, Ranger 10, Magic-User 1, Thief 4, Monk 6. The hall trains classes in the script-set mask `B[0x550]` ("We don't train that class here")
-- Experience above what is needed is **capped at one point below the following level's threshold**, so one training session gains at most one level per class
-- On "Y": pay 1000 gp (`FUN_417f_42ed`); every eligible class gains a level; if the thief/other spell-related byte pair 0x74/0x75 is non-zero it is reduced (**?**); `FUN_51cf_0000` updates derived stats
-- If the magic-user level rose, the player picks a new spell to learn (`FUN_4894_299c`), marked in the spell-known list at char[0x32 + spell] (**I**)
-- **HP gain**: roll `FUN_417f_4235(classes)`, divide by number of classes (min 1), add CON bonus (`FUN_417f_3f31`) and divide again; max and current HP both rise by that amount. A byte at char[0xB1] accumulates the raw roll (**?**)
+For the current character. "Cheat" means `DS:470C` ≠ 0 (below).
+
+1. Status ≠ Okay and no cheat → "we only train conscious people", leave.
+2. Coins worth < 1000 gp (`FUN_4894_28be`: cp, sp, ep, gp, pp converted to gold and rounded up; gems and jewelry do not count) and no cheat → "Training costs 1000 gp.", leave.
+3. For each class c 0–7 with level L = char[0x96 + c] > 0:
+   1. *all* += trainer bit of c
+   2. at its demi-human limit (table above) → skip c
+   3. T = XP table entry for level L + 1. T = 0 or 0xFFFFFFFF (game cap) → skip c. XP char[0xAC] < T and no cheat → skip c
+   4. *eligible* += trainer bit of c
+   5. N = entry for level L + 2. If N is a real threshold and XP ≥ N: *cap* = max(*cap*, N − 1)
+4. If *cap* > 0: **XP = *cap***. This happens before the hall check and the confirmation, so pressing T with too much experience truncates it even in the wrong hall or when the player then declines.
+5. No cheat: *all* AND 0x6DA8 = 0 → "We don't train that class here"; else *eligible* AND 0x6DA8 = 0 → "Not Enough Experience"; leave.
+6. *train* = *eligible* AND 0x6DA8 (cheat: *eligible*).
+7. Show the character, "*name* will become:", then one line per class in *train*: "    a level *L+1* *class*" for the first, "and a level *L+1* *class*" for the rest (class names `DS:0D38`, 27 bytes each).
+8. "Do you wish to train? " — anything but **Y** leaves (XP stays truncated).
+9. "Congratulations..."; unless cheat, take 1000 gp in coins (`FUN_417f_42ed`, below).
+10. *k* = number of classes the character has. Each class in *train* gains a level; for each such class, if drained levels char[0x74] > 0: char[0x75] (drained HP) −= char[0x75] div char[0x74], then char[0x74] −= 1. So retraining a drained level also clears its drain record (G: "acts as a Restoration spell that requires both experience and money").
+11. `FUN_51cf_0000`: slots, THAC0, attacks, saving throws, thief skills (sections below).
+12. If the magic-user level (char[0x9B]) rose: pick one new spell (`FUN_4894_299c` mode 4 "Spells to choose from", select type 4), repeated until a spell is picked. The list holds every id 1–56 not yet known whose class and level have a slot (char[0xB1 + class·3 + level] > 0); for a cleric/magic-user the cleric spells are already known, so in practice it lists magic-user spells of the levels just reached. The pick sets char[0x32 + id] = 1. **Bug**: if the list is empty the loop ends with id 0 and writes char[0x32] = 1, i.e. **max HP := 1**, before step 13 adds the gain. A port should reproduce this or record the fix in IMPROVEMENTS.md.
+13. Hit points: R = `FUN_417f_4235(char, train)` (rolls for the trained classes only). char[0xB1] += max(1, R div *k*). C = `FUN_417f_3f31(char)` (CON bonus summed over **all** *k* classes). Gain = max(1, (R + C) div *k*), signed division truncating towards 0. Damage taken is kept: max HP += gain, current HP = max HP − (old max − old current). Both are bytes (wrap above 255).
+
+Training takes no game time. One session gains at most one level per class.
+
+### Payment (O, `FUN_417f_42ed(gp, char)`)
+
+Coin values in copper (`DS:0D24`): cp 1, sp 10, ep 100, gp 200, pp 1000. The price is converted to copper (× 200).
+
+1. For cp, sp, ep, gp, pp in that order, while something is owed: n = min(held, owed div value + 1); held −= n; owed −= n × value.
+2. If overpaid, give the change back from pp down to cp: n = change div value; held += n; change −= n × value.
+
+### Free training cheat (O, `FUN_417f_0161` at `417f:04ad`)
+
+Pressing **J** on the party screen compares the first command-line parameter (`ParamStr(1)`) with "STING". If it matches: `DS:470C` = 1 and "I Understand, master...". Nothing is typed after J; [[spec/menus]] and [[spec/architecture]] describe it as typing STING, which is wrong. `DS:470C` is reset to 0 every time the party screen is entered.
+
+With the cheat, training skips the status, money, experience and hall checks and charges nothing; every class not at its game or demi-human cap gains a level at once. XP is still truncated as in step 4. The Train entry is enabled even outside a hall (G: guide 11.1 "J: train for free").
 
 ## Hit points per level (O)
 
-`FUN_417f_4235`: for each class gaining a level, roll `count × d(sides)` from `DS:08B6` / `DS:08BE`; when the class was level 1, the roll is raised to at least `2·sides/3`.
+`FUN_417f_4235`: for each class in the mask, roll `count × d(sides)` from `DS:08B6` / `DS:08BE`; when that class's level is 1, the roll is raised to at least `2·sides/3`. Training raises the levels before rolling, so the minimum applies only at character creation (the guide, 12.6.3, says the function "is also called for later levels"; true, but no level is 1 then).
 
 | Class | Cleric | Druid | Fighter | Paladin | Ranger | Magic-User | Thief | Monk |
 |---|---|---|---|---|---|---|---|---|
 | Hit dice | 1d8 | 1d8 | 1d10 | 1d10 | 2d8 | 1d4 | 1d6 | 2d4 |
 
-`FUN_417f_3f31` CON bonus, per class the character has (`DS:408E[CON]`): CON 3 → −2, 4–6 → −1, 7–14 → 0, 15 → +1, 16–18 → +2; a pure Fighter (class 2) gets +1 more at CON 17 and +2 more at CON 18.
+`FUN_417f_3f31` CON bonus, summed over every class the character has (`DS:408E[CON]`): CON 3 → −2, 4–6 → −1, 7–14 → 0, 15 → +1, 16–20 → +2 (entries above 20 are garbage); a pure Fighter (class 2) gets +1 more at CON 17 and +2 more at CON 18 and above.
 
-Gain = `max(1, Σ rolls / classes)` to the raw counter char[0xB1]; HP gain = `max(1, (Σ rolls + CON bonus) / classes)`.
+Gain = `max(1, Σ rolls / classes)` to the raw counter char[0xB1]; HP gain = `max(1, (Σ rolls + CON bonus) / classes)`. Because the bonus counts all classes but the roll only the trained ones, a multi-class character's CON bonus is not the tabletop value (guide 13.1).
 
 ## Derived statistics (O, `FUN_51cf_0000`, run after creation and training)
 

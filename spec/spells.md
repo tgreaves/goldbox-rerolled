@@ -37,6 +37,23 @@ Range when casting from an item (`DS:6DBF` set) uses caster level 6.
 - `FUN_3aae_1e16`: target selection, checking range (`FUN_3aae_37e4`), area templates and avoiding friendly fire for area spells (the AI rejects an area that would include its own side)
 - `FUN_4e53_08c3`: for each target: touch spells roll to-hit vs AC; saving throw if byte 8 ≠ 0; immediate effect (`FUN_5216_1344`); then add the effect type with its duration (`FUN_5216_1656`)
 
+### Casting outside combat (O, `FUN_4e53_0c20(spell, ?, from_memory)`)
+
+Camp Cast and the explore-mode Cast command ([[spec/camp]]) call the shared routine directly; casting takes no game time (G: guide 8.1).
+
+- Outside combat (`DS:49F3` ≠ 5) a spell whose record **byte 7 (side) = 0** is refused, whatever byte 11 says: "*spell* is a combat-only spell..." then "Lose it? ". **Y** removes it from memory (`FUN_10ba_148b`); either way nothing is cast. Knock (id 31, byte 11 = camp, side 0) is caught by this too; doors use their own Knock path ([[spec/architecture]]).
+- From an item (`DS:6DBF` set) the same test prints "That Item is a combat-only item..." and "Use it? "; **Y** sets the caller's used-up flag (**I**: the charge is spent).
+- Byte 11 (where) is checked only in combat (`FUN_3aae_2414`).
+
+## Memorisation, scribing and learning
+
+Rules are in [[spec/camp]] (Memorize, Scribe, Rest) and [[spec/progression]] (slots per level, Wisdom bonus, the spell picked at each magic-user level). In short:
+
+- A spell is cast from one of the 21 memorised slots char[0x17..0x2B]. Memorising picks a known spell (char[0x32 + id]) of a class and level with a free slot and stores id + 0x80 (pending); resting turns it into id.
+- Rest time: 4 hours (6 if any pending spell is level 3) plus 15 minutes per spell level, for memorised and scribed spells together.
+- Clerics know every cleric spell of each level they have a slot for. Magic-users start with Detect Magic, Read Magic, Shield and Sleep ([[spec/chargen]]), learn one spell per magic-user level gained, and scribe more from scrolls (needs Read Magic to read them).
+- Restoration (id 56, level 7) is never in a spell book and has no slot; it is used from scrolls only.
+
 ## Spell list
 
 | id | name | class | lvl | range | duration | target | side | save | vs | effect | where | time | AI pri | AI off | area |
@@ -98,11 +115,12 @@ Range when casting from an item (`DS:6DBF` set) uses caster level 6.
 | 55 | Slow | Magic-User | 3 | 9+1/lvl | 3+1/lvl | 10 | 0 | - | spell | 0x2A | combat | 3 | 5 | 1 | 0 |
 | 56 | Restoration | Cleric | 7 | 0+0/lvl | 0+0/lvl | 4 | 2 | - | spell | 0x00 | both | 6 | 0 | 0 | 0 |
 
-Ranges are in game squares; durations are in the engine's units (rounds for most combat spells). Two "Detect Magic", "Protection From Evil/Good" and "Dispel Magic" entries exist because cleric and magic-user versions differ.
+Ranges are in game squares. Durations are in **minutes**, the unit of effect records (O: the clock's effect time-out, [[spec/camp]]); 1 combat round = 1 minute, and the values match AD&D (Resist Cold 1 turn = 10 minutes per level, Strength and Slow Poison 1 hour per level; **I** that `FUN_5216_1656` applies them unscaled). Two "Detect Magic", "Protection From Evil/Good" and "Dispel Magic" entries exist because cleric and magic-user versions differ.
 
 ## Open
 
 - ~~Effect handlers~~ see [[spec/effects]]
 - ~~Haste/Slow~~ resolved: Haste (0x27) doubles attacks and movement, Slow (0x2A) halves them (combat code 0x31E9C/0x31EBF); the original character sheet shows them reversed (display bug)
 - Immediate effects (damage spells, cures) in `FUN_5216_1344`
-- Spell memorisation and learning rules, spell slots per level
+- ~~Spell memorisation and learning rules, spell slots per level~~ see [[spec/camp]] and [[spec/progression]]
+- Whether `FUN_5216_1656` scales spell durations

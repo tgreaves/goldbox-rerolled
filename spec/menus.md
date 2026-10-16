@@ -120,7 +120,7 @@ Left column text starts at col 2, right column at col 20 unless stated.
 | S | Save Current Game | current character exists |
 | B | BEGIN Adventuring | current character exists |
 | E | Exit to DOS | always |
-| J | (hidden) | always: then type `STING` → "I Understand, master..." and free training |
+| J | (hidden) | only when started as `START STING`: "I Understand, master..." and free training ([[spec/progression]]); nothing is typed after J |
 
 "Current character exists" = `DS:5D92` ≠ nil (always true when the party is non-empty).
 
