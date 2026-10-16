@@ -345,9 +345,97 @@ When the loop ends with fewer than 2 half-squares left, R[6] = 0.
 
 Melee by moving (`FUN_320c_0d45`): refused with "Not with that weapon" if a non-throwable ranged weapon is readied. Attacking an ally asks "Attack Ally:" (`FUN_3aae_2998`); confirming sets ECL 0x6E33 = 1 and makes allied NPCs hostile (G). A physical attack by an ally on a charmed creature breaks the charm (G). Then target = defender, sweep attempt ([[#Sweep (O, `FUN_3aae_0e82`)]]); if no sweep, engage (`FUN_3aae_17f6`) and attack (`FUN_3aae_1884`).
 
-### Aim (`FUN_3aae_3558`)
+### Aim (O, `FUN_3aae_3558(char, rng, mode, allowEmpty, &done, &buf)`)
 
-Choose a target and attack it (melee at distance 1, missile weapons within range and sight); also usable just to look around (G). A blinked or unseen enemy cannot be aimed at, and a launcher cannot fire with an enemy adjacent (G). Attacks go through `FUN_3aae_1884` with the missile item, so ammunition is consumed as described under Attack sequence. Target list order and keys are still open; the AI's target finder is [[#Target finder (O, `FUN_3aae_37e4(c, range, any, clear)`)]] ([[#Still open]]).
+The combat menu calls it as (char, 0xFF, mode 1, allowEmpty 0); spells call it through `FUN_3aae_1e16` as (caster, spell range, mode 0, allowEmpty).
+
+**Shared primitives**
+- **Scan** `FUN_56c1_0909(x, y, range, dirmode, size, grid)`: every combatant with an icon (`DS:5F2A+4i` > 0, both sides and the aimer) whose footprint is reached by line of sight (`FUN_56c1_0422`, terrain on) at cost ≤ 2·range+1, testing every pair of footprint cells and keeping the lowest cost. Creatures never block sight. Result: [index, cost in half-squares, direction] records at `DS:671B + 3(n−1)`, count `DS:671A`. Direction = first d in 0..7 (0 N, 1 NE, …, 7 NW) whose 90° cone contains the target (callers pass 0xFF, so no cone filter).
+- **Sort** `FUN_56c1_002e`: exchange sort over i < j, swapping when cost[j] < cost[i], or costs equal and dir[j] < dir[i] and dir[j] mod 2 ≤ dir[i] mod 2: nearest first, orthogonal before diagonal. Reproduce the loop exactly.
+- **Distance** in squares = ⌊cost/2⌋; "within r" = cost ≤ 2r+1, so range 1 covers all 8 neighbours. `FUN_10ba_255b(char, target)` measures with terrain ignored (grid[6] = 1).
+- **Nearest enemies** `FUN_10ba_2433(char, r)`: the scan, keeping the opposite side (`FUN_10ba_23b7`), copied nearest first to `DS:6DE4[1..n]`; returns n.
+- **Can target** `FUN_3aae_1085(target, char)`: nil → false; self → true; else fire effect event 1 on the target and, if `DS:681E` is still 0, event 0 on the char with the target set; result is `DS:681E` = 0 (invisibility, blink and the like stop it).
+
+**Range**: rng = 0xFF → `ITEMS[weapon][12] − 1`, or 1 without a weapon; 0 or 0xFF → 1. A bow with range 22 reaches 21 squares, a hand axe (4) reaches 3, melee weapons 1.
+
+**Loop**
+1. Candidates: the scan from the aimer at range 127 with terrain (line of sight required), all sides including the aimer, sorted. The cursor starts on entry 1, the aimer (cost 0).
+2. If the current entry fails Can target, step in the last direction and repeat.
+3. Menu (`FUN_3aae_2aa0`): "Range = ⌊cost/2⌋" (terrain ignored) and the target's details, then **Target Next Prev Manual Center Exit**, prompt "Aim:". Target is offered only if distance ≤ rng and: spells (mode 0) always; weapons (mode 1) never on self; melee weapons yes; missile weapons (`ITEMS[t][12]` > 1, `FUN_10ba_2e03`) only with ammunition (`FUN_10ba_2e8b`: thrown 0x10 uses itself, 0x01 arrows char[0xF8], 0x80 quarrels char[0xFC], flags exactly 0x0A (sling) needs none) and either no enemy adjacent (`2433(char, 1)` = 0) or a thrown STR weapon (`ITEMS[t][14] & 0x14` = 0x14: hand axe, club, hammer, spear).
+4. Keys: N +1, P −1 (wrapping), M Manual, T Target, C centre view; E or 0 exits. After M and T the list is rebuilt. Other keys repeat the last step (I).
+
+**Target** (`FUN_3aae_2c3d`)
+1. Mode 1, target not an enemy, aimer not under computer control: "Attack Ally:" (`FUN_3aae_2998`). Yes sets `DS:6DE2` = 1 and ECL 0x6E33 = 1, and every status-0 NPC (char[0x84] ≥ 0x80) in the party joins side 1 with its target cleared.
+2. buf = {target, x, y}.
+3. Mode 1: a fighter's sweep against 0-hit-dice creatures if it applies (`FUN_3aae_0e82`), ending the turn; otherwise `FUN_3aae_17f6`, the ammunition from `2e8b` (nil when a thrown STR weapon is used at distance 1: a melee blow), then the attack `FUN_3aae_1884(char, target, ammo, 0, &done)`.
+
+**Manual** (`FUN_3aae_2dfa`): a cursor from the aimer moved with the arrow keys (48 N, 49 NE, 4D E, 51 SE, 50 S, 4F SW, 4B W, 47 NW), clamped to 0..49 × 0..24. Each move shows "Range = cost/2" when line of sight (range 0xFF, terrain on) reaches the cell, then "(Use Cursor keys)". A cell can be targeted when line of sight reaches it, ⌊cost/2⌋ ≤ rng, its movement byte ≠ 0xFF, and its occupant (a combatant, or a body record from `DS:66D6` on cell 0x1F) passes Can target; mode 1 also needs a combatant other than self and the missile rules above; an empty cell only with allowEmpty. Enter or T confirms (mode 1 then runs Target); E or 0 exits; C centres.
+
+### Target finder for the AI (O, `FUN_3aae_37e4(char, range, skipCheck, forceNew)`)
+
+1. forceNew = 0 and the current target (combat record +0xA) is an enemy, in play (char[0x10D]) and passes Can target: keep it, with **no range or line-of-sight check**. Otherwise clear it.
+2. Up to 2 passes × 20 tries: n = `2433(char, range)`, pick `roll(1, n)` (uniformly random, not the nearest). Accept if Can target passes, or skipCheck and grid[6] set. A rejected entry is zeroed; a pass ends when all are zero.
+3. Pass 2 sets grid[6] = 1 (terrain ignored), only when forceNew = 0. Clear grid[6]; return whether a target was found.
+
+AI melee uses (char, 0xFF, 1, 0) (`FUN_3334_01c7`); spells use (caster, spell range, 0, 1).
+
+### Spell targets (O, `FUN_3aae_20c3(spell, ai, &ok)`)
+
+`DS:6B84[0]` points here in combat (set at `FUN_2fea_229a`), to `FUN_4e53_0a91` outside combat. Output: target list `DS:6C95 + 4(i−1)`, count `DS:6C94`, area flag `DS:6820`, centre `DS:6DB9`/`6DBA`.
+
+**Picker** `FUN_3aae_1e16(spell, ai, allowEmpty, buf)`:
+- Player: Aim(caster, spell range, mode 0, allowEmpty); the caster's target = the pick.
+- AI, non-hostile spell (spell byte 14 = 0): self, except Cure Light Wounds (id 3, `FUN_3aae_1bf8`): the same-side ally among the 8 neighbours and its own cell (I) with HP below maximum and the lowest HP; itself if below half HP; an adjacent dying ally (body, status not 6/7/8) is preferred unless a living candidate has HP < 8.
+- AI, hostile spell: up to 20 × finder(caster, range, 0, 1); reject the pick if the spell has an area (byte 15 > 0) and a scan of that radius around the target contains anyone not on the enemy side (the caster's own side, including itself), or if the target is helpless (`FUN_10ba_0b73`) and the spell's effect (byte 10) is one of `DS:286B` {51, 52, 53, 31}.
+
+**Modes** by spell byte 6 & 0xF:
+
+| Mode | Targets |
+|---|---|
+| 0 (bytes 0, 240) | the caster |
+| 0xF (Silence, 31) | picker with allowEmpty = 0; the single creature |
+| 8–14 | picker with allowEmpty = 1, then everyone within radius `mode & 7` of the aimed square (scan size 1, line of sight from the centre, so walls block); `DS:6820` = 1 |
+| 4, 6, 7 | N = (mode & 3) + 1 separate picks (1, 3, 4) |
+
+Separate picks use allowEmpty = 0; Exit or a failed pick uses up a slot; a duplicate gives "Already been targeted" and a retry for players (the AI loses the slot); no targets at all → not ok. The Silence fallback for a nil target uses radius `(mode & 0xF) >> 4` = 0 (bug, unreachable since allowEmpty = 0).
+
+Area shapes (any footprint cell within the radius counts):
+
+```
+r0 (8, bolt)  r1 (9)   r2 (10)    r3 (11)
+                ###      ###       ###
+     X          #X#     #####     #####
+                ###     ##X##    #######
+                        #####    ###X###
+                         ###     #######
+                                  #####
+                                   ###
+```
+
+**Range** (`FUN_4e53_0729`): r = byte 2 + byte 3 × level (cleric level char[0x96], magic-user char[0x9B], class 2 → 12, item `DS:6DBF` → 6), truncated to a byte; r = 0 with mode ≠ 0 → 1; r = 0xFF (touch) → 1. Touch spells roll to hit (`FUN_4e53_08c3`, event 11, `FUN_5216_0cb7` against AC char[0x111]).
+
+**Casting** (`FUN_4e53_0c20`)
+1. Loop on the target pick. On failure players get "Abort Spell?"; Yes → "Spell Aborted" and the memorised spell is lost (not when cast from an item). The AI aborts directly.
+2. The caster turns to the first direction whose cone contains the centre.
+3. A projectile animates to that square; sound 262A for Fireball (47), 2624 for Lightning Bolt (51), else 2618 ([[spec/sound]]).
+4. Call the handler `DS:6B84[id]`. Outside combat, spells with byte 7 = 0 give "is a combat-only spell... Lose it?" (byte 7, not 11).
+
+### Spell handlers in combat (O, segment 4e53 handler table)
+
+- **Bless** (`0f4f`/`100f`): drop targets not on the caster's side and, for spell 1 only, any target with an enemy within 1 square. **Curse** (`1040`): enemies only, no adjacency rule.
+- **Haste / Slow** (`2764`): the caster's side (Haste) or the enemy side (Slow), in list order (nearest the centre first), up to the caster's level in targets. A target holding the opposite effect loses it (`FUN_5216_1081`; Haste passes 0x2A, Slow 0x27) and is not affected, but uses a slot.
+- **Sleep** (`151b`): pool = 4d4. Nearest first; cost by hit dice char[0x73]: 0–1 → 1, 2 → 2, 3 → 4, 4 → 6, 5 → 10 (race 0, else 20), ≥ 6 or negative → 20. Skip status 1 (animated) and creatures already under effect 0x35. Affect if pool ≥ cost, pool −= cost; smaller creatures later can still fit. All sides.
+- **Hold Person** (`1658`): save bonus by number of targets: 1 → −2 (cleric spell 23) / −3 (magic-user spell 49); 2 → −1; 3–4 → 0. Immune (save forced) if char[0x9F] > 1 or char[0x6C] > 1 (which includes the large bit 0x80, contrary to the guide). Targets are processed last to first.
+- **Stinking Cloud** (`1b11`): ignores the radius-1 list; the cloud covers the aimed square and its E, SE and S neighbours (`DS:290D` = {8, 2, 3, 4}), the aimed square being the upper left. Cells with movement byte ≠ 0xFF become 0x1E, the old cell saved in 19-byte records at `DS:6DBB`; each occupant of the 4 cells gets `FUN_5216_0ae7` (a 2×2 creature may be hit once per cell, I). The AI's friendly-fire test uses a 3×3 around the target, which does not match (I).
+- **Fireball** (`266b`): level d6 (or `2·d3 + 1` d6 for spell 64), damage type 9, save for half. If ECL 0x49E6 = 0 (outdoors) the area is re-scanned at radius 2, else radius 3. The AI's test always uses 3. No "needs 3 enemies" rule exists in the code.
+- **Lightning Bolt** (`2bb7` → `295b`): damage roll(L, 6) once; each creature hit saves vs spell (type 4) for half (`28bc`).
+  1. Hit the creature on the aimed square.
+  2. remaining = 16 half-squares; the line runs from the target square towards target + sign·(target − caster)·remaining.
+  3. Step until a new creature, a cell 0 (stop), a cell with movement byte > 1, or cost ≥ remaining; hit the creature there.
+  4. remaining −= the line's cumulative cost at each stop (bug: passing several creatures shortens the bolt).
+  5. At a blocking cell the new origin is the wall cell and sign = −sign: the bolt comes straight back through the caster, not at the angle of incidence; the last-hit memory is cleared, so creatures can be hit twice.
+  6. On the first bounce only, if the wall-to-caster cost ≤ 8, 8 more half-squares are spent.
+- **Magic Missile** (`1439`): damage `roll(L >> 1, 4) + (L >> 1)`, type 8, so a level-1 caster does 0 (the guide says (L+1)/2 × (1d4+1); confirm in play).
 
 ### Cast (`FUN_3aae_2414`)
 
@@ -1018,7 +1106,6 @@ Reproduce these in an authentic port (O unless marked).
 
 ## Still open
 
-- Aim command details: target list order and keys
 - Spell targeting and area templates (`FUN_3aae_1e16`, `FUN_3aae_20c3`, `FUN_56c1_0909`) and the per-spell immediate effects (damage, healing, target limits) in segment 4e53
 - Where the treasure money table `DS:67F4` is cleared; `DS:4A00` set after every battle
 - Whether elven chain counts as leather for backstabs; whether charm is undone before the post-battle cleanup
