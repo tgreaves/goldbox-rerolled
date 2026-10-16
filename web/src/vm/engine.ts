@@ -7,6 +7,7 @@ import { GeoMap, STEP } from '../data/geo'
 import { WallSets } from '../data/walls'
 import { unpackText } from '../data/text'
 import { Overland } from '../rules/overland'
+import { Item, ItemTables, parseItems } from '../data/items'
 import { CHAR_SIZE } from '../data/character'
 
 export const A0 = 0x4900
@@ -70,6 +71,10 @@ export class Engine {
   C = new Uint16Array(0x200)
   code = new Uint8Array(0x1e00)
   nodes: Uint8Array[] = []
+  /** each member's items (the .ITM records), keyed by character record */
+  readonly inventory = new Map<Uint8Array, Item[]>()
+  /** each member's effects file (.SPC), carried unchanged until effects are modelled */
+  readonly effectsFile = new Map<Uint8Array, Uint8Array | undefined>()
   cur!: Uint8Array
   savedCur!: Uint8Array
   restoreCur = false
@@ -932,6 +937,27 @@ export class Engine {
   }
 
   private overlandRules: Overland | null | undefined
+  private itemTableCache: ItemTables | null | undefined
+  /** Base item table and name words (ITEMS, START.EXE); null when either file is missing. */
+  get items(): ItemTables | null {
+    if (this.itemTableCache === undefined) this.itemTableCache = ItemTables.load(this.files.get('ITEMS'), this.files.get('START.EXE'))
+    return this.itemTableCache
+  }
+
+  /** Attach a member's item and effect files (CHRDAT*.ITM / .SPC) after newGame or loadSave. */
+  attachFiles(i: number, itm?: Uint8Array, spc?: Uint8Array) {
+    const node = this.nodes[i]
+    if (!node) return
+    this.inventory.set(node, parseItems(itm))
+    this.effectsFile.set(node, spc)
+  }
+
+  itemsOf(node: Uint8Array): Item[] {
+    let list = this.inventory.get(node)
+    if (!list) this.inventory.set(node, (list = []))
+    return list
+  }
+
   /** Overland map and rules from START.EXE; null when the player's files lack it. */
   get wild(): Overland | null {
     if (this.overlandRules === undefined) this.overlandRules = Overland.fromStartExe(this.files.get('START.EXE'))

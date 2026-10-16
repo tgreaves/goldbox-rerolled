@@ -12,6 +12,7 @@ import { listSaves, writeSave } from '../store/user'
 import { report, revealedBy, type State } from '../rules/commissions'
 import { ICONS, landmarks, type Landmark } from '../rules/landmarks'
 import { Overland } from '../rules/overland'
+import { itemsFile } from '../data/items'
 import { initSound, play, setSoundDevice, soundAvailable, soundDevice, unlockAudio } from '../audio/sfx'
 
 const FACING = ['North', 'East', 'South', 'West']
@@ -244,8 +245,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const engine = new Engine(files, io)
   if (start.kind === 'new') engine.newGame(start.party.map((c) => c.sav))
   else engine.loadSave(start.dat, start.party.map((c) => c.sav))
-  /** item and effect files travel with each member; only the records are live in the engine */
-  const extras = start.party.map((c) => ({ itm: c.itm, spc: c.spc }))
+  start.party.forEach((c, i) => engine.attachFiles(i, c.itm, c.spc))
 
   /** Save anywhere (IMPROVEMENTS.md IMP-002): slots A-J, the original file layout. */
   async function saveGame() {
@@ -260,7 +260,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const stems = members.map((_, n) => `CHRDAT${slot}${n + 1}`)
     const label = `${parseCharacter(members[0]).name}'s party, block ${engine.block} area ${engine.area}`
     await writeSave({ slot, dat: engine.toSave(stems), label, savedAt: Date.now(),
-      chars: members.map((c, n) => ({ sav: c.slice(), ...extras[n] })), known: [...known] })
+      chars: members.map((c) => ({ sav: c.slice(), itm: itemsFile(engine.itemsOf(c)), spc: engine.effectsFile.get(c) })), known: [...known] })
     note(`Game saved in slot ${slot}.`)
   }
 

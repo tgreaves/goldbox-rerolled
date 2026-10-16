@@ -1,0 +1,118 @@
+// Items (spec/records.md): 63-byte item records (CHRDAT*.ITM, ITEM<n>.DAX, MON<n>ITM.DAX), the
+// 16-byte base item table in ITEMS, and the name words in START.EXE's data segment.
+import { unexepack } from './exepack'
+
+export const ITEM_SIZE = 63
+const DS = 0xc7c0
+
+const u16 = (d: Uint8Array, o: number) => d[o] | (d[o + 1] << 8)
+const s8 = (v: number) => (v << 24) >> 24
+
+/** Base item slots (ITEMS byte 0), as the guide lists them. */
+export const SLOTS: Record<number, string> = {
+  0: 'main hand', 1: 'off hand', 2: 'body armour', 3: 'gauntlets', 4: 'helm', 5: 'belt or necklace', 6: 'robe',
+  7: 'cloak', 8: 'boots', 9: 'ring', 10: 'miscellaneous', 11: 'magic-user scroll', 12: 'clerical scroll',
+  74: 'holy symbol', 75: 'key', 77: 'bracers', 78: 'wand', 80: 'potion', 82: 'bottle', 91: 'pass',
+}
+
+export interface BaseItem {
+  slot: number
+  hands: number
+  /** damage vs large: dice count, sides, bonus */
+  large: [number, number, number]
+  /** rate of fire ×2 for missile weapons */
+  rate: number
+  /** AC descriptor: ≥ 178 armour/bracers bonus (v − 178), ≥ 128 other AC bonus (v − 128) */
+  ac: number
+  /** 0 slashing, 1 piercing, 128 bashing */
+  kind: number
+  /** damage vs small/medium: dice count, sides, bonus */
+  small: [number, number, number]
+  /** range in squares (exclusive), 0 for melee */
+  range: number
+  /** class bitmask: 1 MU, 2 cleric, 4 thief, 8 fighter, 16 druid, 32 monk, 64 paladin, 128 ranger */
+  classes: number
+  /** 1 arrows, 2 dex to-hit, 4 str to-hit and damage, 8 AI missile, 16 thrown, 128 bolts */
+  flags: number
+}
+
+export class ItemTables {
+  readonly base: BaseItem[] = []
+  readonly words: string[] = []
+
+  constructor(itemsFile: Uint8Array, startImage: Uint8Array) {
+    for (let t = 0; 2 + t * 16 + 16 <= itemsFile.length; t++) {
+      const b = itemsFile.subarray(2 + t * 16, 2 + t * 16 + 16)
+      this.base.push({
+        slot: b[0], hands: b[1], large: [b[2], b[3], s8(b[4])], rate: b[5], ac: b[6], kind: b[7],
+        small: [b[9], b[10], s8(b[11])], range: b[12], classes: b[13], flags: b[14],
+      })
+    }
+    for (let i = 0; i < 255; i++) {
+      const o = DS + 0x10bc + i * 21
+      this.words.push(String.fromCharCode(...startImage.subarray(o + 1, o + 1 + startImage[o])))
+    }
+  }
+
+  static load(itemsFile: Uint8Array | undefined, startExe: Uint8Array | undefined): ItemTables | null {
+    if (!itemsFile || !startExe) return null
+    try { return new ItemTables(itemsFile, unexepack(startExe).image) } catch { return null }
+  }
+
+  /** Display name: components 1, 2, 3 (bytes 0x31, 0x30, 0x2F); hidden ones are left out until identified. */
+  name(it: Item, identified = false): string {
+    const parts: string[] = []
+    ;[it.raw[0x31], it.raw[0x30], it.raw[0x2f]].forEach((w, n) => {
+      if (!w || (!identified && (it.hidden >> n) & 1)) return
+      parts.push(this.words[w - 1] ?? `#${w}`)
+    })
+    const name = parts.join(' ')
+    return it.count > 1 ? `${it.count} ${name}` : name
+  }
+
+  baseOf(it: Item): BaseItem | undefined {
+    return this.base[it.type]
+  }
+}
+
+/** One item, kept as its 63-byte record so it saves back unchanged apart from what the game edits. */
+export class Item {
+  readonly raw: Uint8Array
+  constructor(raw: Uint8Array) { this.raw = raw }
+
+  get type() { return this.raw[0x2e] }
+  get plus() { return s8(this.raw[0x32]) }
+  get saveBonus() { return s8(this.raw[0x33]) }
+  get ready() { return this.raw[0x34] !== 0 }
+  set ready(v: boolean) { this.raw[0x34] = v ? 1 : 0 }
+  /** bit n−1 hides name component n */
+  get hidden() { return this.raw[0x35] }
+  set hidden(v: number) { this.raw[0x35] = v }
+  get cursed() { return this.raw[0x36] !== 0 }
+  get weight() { return u16(this.raw, 0x37) }
+  /** 0 = a single item that does not stack */
+  get count() { return this.raw[0x39] }
+  set count(v: number) { this.raw[0x39] = v }
+  get value() { return u16(this.raw, 0x3a) }
+  get props(): [number, number, number] { return [this.raw[0x3c], this.raw[0x3d], this.raw[0x3e]] }
+  /** weight counted for encumbrance: weight × count for stacks */
+  get totalWeight() { return this.weight * Math.max(1, this.count) }
+  /** magical for Detect Magic: a bonus or the magic/cursed flag */
+  get magic() { return this.plus !== 0 || this.saveBonus !== 0 || this.cursed }
+
+  copy(): Item { return new Item(this.raw.slice()) }
+}
+
+export function parseItems(d: Uint8Array | undefined): Item[] {
+  const out: Item[] = []
+  if (!d) return out
+  for (let o = 0; o + ITEM_SIZE <= d.length; o += ITEM_SIZE) out.push(new Item(d.slice(o, o + ITEM_SIZE)))
+  return out
+}
+
+/** Items back to the .ITM layout (records unchanged, including the stale pointer bytes). */
+export function itemsFile(items: Item[]): Uint8Array {
+  const d = new Uint8Array(items.length * ITEM_SIZE)
+  items.forEach((it, i) => d.set(it.raw, i * ITEM_SIZE))
+  return d
+}

@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readDax, daxRecords } from '../src/data/dax'
 import { parseRecord, spriteBox } from '../src/data/image'
+import { ItemTables, parseItems } from '../src/data/items'
 import { GeoMap } from '../src/data/geo'
 
 const dir = process.env.POOLRAD ?? ''
@@ -72,6 +73,18 @@ print(json.dumps(out))
     const rec = [...daxRecords(dax)].find(([id]) => id === 2)![1]
     const frames = parseRecord(rec).frames.map((f) => f.picture)
     expect(frames.map((p) => [p.height, p.y, spriteBox(p).bottom])).toEqual([[80, 1, 77], [65, 1, 57], [49, 1, 44]])
+  })
+
+  it('names items from the word table, hiding unidentified words', () => {
+    const t = ItemTables.load(new Uint8Array(readFileSync(join(dir, 'ITEMS'))), new Uint8Array(readFileSync(join(dir, 'START.EXE'))))!
+    const names = (f: string) => parseItems(new Uint8Array(readFileSync(join(dir, f)))).map((it) => t.name(it))
+    expect(names('CHRDATA1.ITM')).toEqual(['Flail', 'Banded Mail'])
+    expect(names('CHRDATA3.ITM')).toEqual(['Broad Sword', 'Banded Mail', 'Shield'])
+    const dax = readDax(new Uint8Array(readFileSync(join(dir, 'ITEM1.DAX'))))
+    const potions = parseItems([...daxRecords(dax)].find(([id]) => id === 9)![1]).filter((it) => it.raw[0x31] === 64)
+    expect(t.name(potions[0])).toBe('Potion')
+    expect(t.name(potions[0], true)).toBe('Potion of Speed')
+    expect(t.base[38].hands).toBe(2) // two-handed sword
   })
 
   it('reads every GEO map', () => {
