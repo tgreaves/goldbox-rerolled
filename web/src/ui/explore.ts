@@ -266,6 +266,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         const combatCanvas = app.querySelector<HTMLCanvasElement>('.combatview')!
         canvas.hidden = true
         wildview.hidden = true
+        // the battlefield replaces the encounter picture or sprite (the overlay sits above every view)
+        showPicture(null)
         try {
           const r = await runBattle({
             engine, files, canvas: combatCanvas, menu, print: (t) => print(t, false), view: (c) => new Promise<void>((resolve) => {
