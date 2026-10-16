@@ -19,6 +19,7 @@ import { drop, halve, join, trade, unavailable } from '../rules/inventory'
 import { pay, receive, sellOffer } from '../rules/money'
 import { shop, temple, treasure, type TownUi } from './town'
 import { camp, cast, type CampUi } from './camp'
+import { runBattle } from './combat'
 import { clockText } from '../rules/camp'
 import { Tables } from '../rules/chargen'
 import { unexepack } from '../data/exepack'
@@ -43,6 +44,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       <section class="view" aria-label="3D view">
         <canvas class="view3d"></canvas>
         <canvas class="wildview" width="120" height="120" hidden></canvas>
+        <canvas class="combatview" hidden></canvas>
         <div class="wild" hidden></div>
         <canvas class="overlay" width="88" height="88" hidden></canvas>
         <div class="where"></div>
@@ -179,6 +181,15 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       pad.classList.add('disabled')
     })
   }
+  /** Dismiss a pending menu without choosing (a battle answered it by key or tap). */
+  function cancelMenu() {
+    pending = null
+    log.querySelectorAll('ol.choices').forEach((l) => l.remove())
+    menuBar.innerHTML = ''
+  }
+  /** Battle input: arrow keys and taps on the battlefield go here while a battle waits for them. */
+  const battleInput: { key?: (e: KeyboardEvent) => boolean; tap?: (e: MouseEvent) => void } = {}
+
   function choose(i: number) {
     if (!pending) return
     const p = pending
@@ -246,6 +257,32 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     async engine(what, info) {
       if (what === 'blocked') return note('Blocked.')
       if (what === 'locked door') return note('Locked.')
+      if (what === 'combat') {
+        townMode = 'camp'
+        const combatCanvas = app.querySelector<HTMLCanvasElement>('.combatview')!
+        canvas.hidden = true
+        wildview.hidden = true
+        try {
+          const r = await runBattle({
+            engine, files, canvas: combatCanvas, menu, print: (t) => print(t, false), view: (c) => new Promise<void>((resolve) => {
+              sheet(parseCharacter(c))
+              dialog.addEventListener('close', () => resolve(), { once: true })
+            }),
+            sound: play, input: battleInput, refreshRoster: () => drawRoster(), cancelMenu: () => cancelMenu(),
+          })
+          if (r.survived) await treasure(townUi)
+          else note('The party has been destroyed. Load a saved game from the party screen.')
+        } catch (err) {
+          note(`Combat error: ${(err as Error).message}`)
+        } finally {
+          townMode = null
+          canvas.hidden = engine.overland
+          wildview.hidden = !engine.overland
+          for (const k of Object.keys(battleInput)) delete (battleInput as Record<string, unknown>)[k]
+          drawRoster()
+        }
+        return
+      }
       if (what === 'party screen') {
         townMode = 'camp'
         try { await trainingHall() } finally { townMode = null }
@@ -762,6 +799,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
   const onKey = (e: KeyboardEvent) => {
     unlockAudio()
+    if (battleInput.key && !dialog.open && battleInput.key(e)) { e.preventDefault(); return }
     if (dialog.open || e.ctrlKey || e.metaKey || e.altKey) return
     if (document.activeElement instanceof HTMLInputElement) return
     if (skipPause && !pending) {
@@ -795,6 +833,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const fx = (e.clientX - r.left) / r.width
     move(fx < 1 / 3 ? 'l' : fx > 2 / 3 ? 'r' : 'f')
   })
+  app.querySelector<HTMLCanvasElement>('.combatview')!.addEventListener('pointerup', (e) => { battleInput.tap?.(e) })
   wildview.addEventListener('pointerup', (e) => {
     if (skipPause && !pending) return skipPause()
     if (pending && pending.items.length === 1) return choose(0)

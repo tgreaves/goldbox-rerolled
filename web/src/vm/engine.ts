@@ -10,6 +10,7 @@ import { Overland } from '../rules/overland'
 import { Item, ItemTables, parseItems } from '../data/items'
 import { parseEffects, type Effect } from '../data/effects'
 import { SpellTables } from '../data/spells'
+import { unexepack } from '../data/exepack'
 import { advanceClock, HOUR, MINUTE } from '../rules/camp'
 import { CHAR_SIZE } from '../data/character'
 
@@ -750,12 +751,17 @@ export class Engine {
 
   private async loadMonster() {
     this.readops(3)
+    this.addMonsters(this.val(1), this.val(2), this.val(3))
+  }
+
+  /** LOAD_MONSTER: append copies of MON<block>CHA record `id` with their items and effects. */
+  addMonsters(id: number, n: number, picture: number) {
     if (this.monsters >= 63) return
-    const raw = this.files.record(`MON${this.block}CHA`, this.val(1))
+    const raw = this.files.record(`MON${this.block}CHA`, id)
     if (!raw) return
-    const count = Math.max(this.val(2), 1)
-    const items = this.files.record(`MON${this.block}ITM`, this.val(1))
-    const spc = this.files.record(`MON${this.block}SPC`, this.val(1))
+    const count = Math.max(n, 1)
+    const items = this.files.record(`MON${this.block}ITM`, id)
+    const spc = this.files.record(`MON${this.block}SPC`, id)
     for (let i = 0; i < count && this.monsters < 63; i++) {
       const m = new Uint8Array(CHAR_SIZE)
       m.set(raw.subarray(0, CHAR_SIZE))
@@ -763,11 +769,21 @@ export class Engine {
       this.nodes.push(m)
       this.inventory.set(m, parseItems(items))
       this.effects.set(m, parseEffects(spc))
-      this.combatPicture.set(m, this.val(3))
+      this.combatPicture.set(m, picture)
       this.monsters++
     }
     this.iconSlot++
     this.monstersLoaded = true
+  }
+
+  private startImageCache: Uint8Array | null | undefined
+  /** START.EXE's load image (data segment tables); null when missing. */
+  get startImage(): Uint8Array | null {
+    if (this.startImageCache === undefined) {
+      const exe = this.files.get('START.EXE')
+      try { this.startImageCache = exe ? unexepack(exe).image : null } catch { this.startImageCache = null }
+    }
+    return this.startImageCache
   }
 
   private async combat() {
@@ -784,13 +800,15 @@ export class Engine {
       const names = this.nodes.slice(this.nodes.length - this.monsters)
         .map((m) => String.fromCharCode(...m.subarray(1, 1 + m[0])))
       await this.io.engine('combat', { monsters: [...new Set(names)].join(', '), count: names.length })
-      // placeholder for the battle: the party wins and every monster is defeated
-      this.B[OUTCOME - B0] = 0
-      this.B[DEFEATED - B0] = this.monsters
-      this.nodes.splice(this.nodes.length - this.monsters)
-      this.monsters = 0
-      this.monstersLoaded = false
-      for (const a of [0x6de3, 0x6de6, 0x6e70, 0x6e71, 0x6e72]) this.B[a - B0] = 0
+      if (this.monstersLoaded) {
+        // no battle screen (headless): the party is treated as winning
+        this.B[OUTCOME - B0] = 0
+        this.B[DEFEATED - B0] = this.monsters
+        this.nodes.splice(this.nodes.length - this.monsters)
+        this.monsters = 0
+        this.monstersLoaded = false
+        for (const a of [0x6de3, 0x6de6, 0x6e70, 0x6e71, 0x6e72]) this.B[a - B0] = 0
+      }
     }
     this.B[SEARCH_LOOK - B0] &= 1
   }
@@ -1057,6 +1075,12 @@ export class Engine {
     this.effects.delete(c)
     if (this.B[PARTY_SIZE - B0]) this.B[PARTY_SIZE - B0]--
     if (this.cur === c) this.cur = this.savedCur = this.nodes[0]
+  }
+
+  /** After a battle: no monsters loaded any more (the aftermath removed them from the list). */
+  monstersCleared() {
+    this.monsters = 0
+    this.monstersLoaded = false
   }
 
   /** set by the camp screen when a rest is interrupted by an encounter */
