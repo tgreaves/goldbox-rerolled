@@ -141,6 +141,15 @@ dialog.panel .sheet th { text-align: left; color: var(--muted); font-weight: 500
 dialog.panel .sheet td { color: var(--ega-green); text-align: right; font-variant-numeric: tabular-nums; }
 dialog.panel canvas.areamap { max-width: 100%; display: block; margin: 0.5rem 0; }
 dialog.panel form { display: flex; justify-content: flex-end; }
+dialog.panel ul.commissions { list-style: none; margin: 0.6rem 0; padding: 0; display: grid; gap: 0.45rem; }
+dialog.panel ul.commissions li { display: grid; grid-template-columns: 6.5rem 1fr; gap: 0.6rem; align-items: baseline; }
+dialog.panel ul.commissions .state { font-size: 0.8rem; color: var(--muted); }
+dialog.panel ul.commissions small { display: block; color: var(--muted); }
+dialog.panel ul.commissions li.reward .state, dialog.panel ul.commissions li.summoned .state { color: var(--ega-yellow); font-weight: 600; }
+dialog.panel ul.commissions li.open .state { color: var(--ega-green); }
+dialog.panel ul.commissions li.closed { color: var(--muted); }
+dialog.panel p.muted { color: var(--muted); }
+.game .menu .due { color: var(--ega-yellow); }
 
 /* phones and narrow windows: stack view, party, text, commands */
 @media (max-width: 760px), (max-aspect-ratio: 4/5) {

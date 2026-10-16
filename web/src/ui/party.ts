@@ -373,7 +373,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
       case 'L': {
         // browser saves first, then the saves that came with the game files
         const saves = (await listSaves()).map((g) => ({ title: `${g.slot}: ${g.label}`, note: new Date(g.savedAt).toLocaleString(),
-          start: { kind: 'load' as const, dat: g.dat, party: g.chars, label: `slot ${g.slot}, ${g.label}` } }))
+          start: { kind: 'load' as const, dat: g.dat, party: g.chars, label: `slot ${g.slot}, ${g.label}`, known: g.known } }))
         for (const slot of 'ABCDEFGHIJ') {
           const dat = files.get(`SAVGAM${slot}.DAT`)
           if (!dat) continue
@@ -382,7 +382,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
           if (chars.some((c) => !c.sav)) continue
           const names = chars.map((c) => parseCharacter(c.sav).name)
           saves.push({ title: `${slot} (game files): ${names[0]}'s party`, note: `block ${saveBlock(sv)} area ${saveArea(sv)}`,
-            start: { kind: 'load', dat, party: chars, label: `game-file save ${slot}` } })
+            start: { kind: 'load', dat, party: chars, label: `game-file save ${slot}`, known: undefined } })
         }
         if (!saves.length) { say('There are no saved games.'); break }
         const i = await pick('Load saved game', saves.map((g) => `${g.title} — ${g.note}`))

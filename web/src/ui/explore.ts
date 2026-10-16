@@ -8,6 +8,7 @@ import { World } from '../render/world'
 import { Engine, A0, type Io } from '../vm/engine'
 import { drawMap } from './areamap'
 import { listSaves, writeSave } from '../store/user'
+import { report, revealedBy, type State } from '../rules/commissions'
 import { initSound, play, setSoundDevice, soundAvailable, soundDevice, unlockAudio } from '../audio/sfx'
 
 const FACING = ['North', 'East', 'South', 'West']
@@ -19,7 +20,7 @@ const escape = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};
 type CharFiles = { sav: Uint8Array; itm?: Uint8Array; spc?: Uint8Array }
 export type Start =
   | { kind: 'new'; party: CharFiles[] }
-  | { kind: 'load'; dat: Uint8Array; party: CharFiles[]; label: string }
+  | { kind: 'load'; dat: Uint8Array; party: CharFiles[]; label: string; known?: string[] }
 
 export function showExplore(app: HTMLElement, files: GameFiles, start: Start, back: () => void) {
 
@@ -189,7 +190,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   // ------------------------------------------------------------------ io
   const io: Io = {
-    print: (text, clear) => print(text, clear),
+    print: (text, clear) => {
+      print(text, clear)
+      for (const id of revealedBy(text)) known.add(id)
+    },
     menu,
     inputNumber: async () => Math.min(Number((await input('number')).replace(/\D/g, '') || 0), 65535),
     inputText: () => input('text'),
@@ -246,7 +250,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const stems = members.map((_, n) => `CHRDAT${slot}${n + 1}`)
     const label = `${parseCharacter(members[0]).name}'s party, block ${engine.block} area ${engine.area}`
     await writeSave({ slot, dat: engine.toSave(stems), label, savedAt: Date.now(),
-      chars: members.map((c, n) => ({ sav: c.slice(), ...extras[n] })) })
+      chars: members.map((c, n) => ({ sav: c.slice(), ...extras[n] })), known: [...known] })
     note(`Game saved in slot ${slot}.`)
   }
 
@@ -321,6 +325,27 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
   minimap.addEventListener('click', () => command('A'))
 
+  // ------------------------------------------------------------ commissions
+  /** commissions the clerk has offered, and whether the proclamation wall was read (IMP-023) */
+  const known = new Set<string>(start.kind === 'load' ? start.known ?? [] : [])
+  const commissionReport = () => report((a) => engine.read(a), known)
+  function commissionsDue(): boolean {
+    const r = commissionReport()
+    return r.bounty > 0 || r.lines.some((l) => l.state === 'reward' || l.state === 'summoned')
+  }
+  const STATE_LABEL: Record<State, string> = { reward: 'Reward due', summoned: 'Summoned', open: 'Open', failed: 'Failed', closed: 'Closed' }
+  function commissions() {
+    const r = commissionReport()
+    const rows = r.lines.map((l) => `<li class="${l.state}"><span class="state">${STATE_LABEL[l.state]}</span>
+      <span>${escape(l.title)}${l.detail ? `<small>${escape(l.detail)}</small>` : ''}</span></li>`).join('')
+    dialog.innerHTML = `<h2>Commissions</h2>
+      ${rows ? `<ul class="commissions">${rows}</ul>` : '<p class="muted">No commissions yet. The City Clerk in City Hall awards them.</p>'}
+      ${r.bounty ? `<p>Graveyard bounty: ${r.bounty} undead slain and not yet paid for. See the City Clerk.</p>` : ''}
+      ${r.proclamations ? `<p class="muted">Proclamations to read in the Adventurer's Journal: ${r.proclamations}.</p>` : ''}
+      <form method="dialog"><button>Close</button></form>`
+    dialog.showModal()
+  }
+
   function areaMap() {
     if (engine.A[0x49fb - A0] !== 0 || !engine.geo) {
       note('Not Here.')
@@ -355,6 +380,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       (soundAvailable()
         ? `<button class="sound" data-cmd="sound" title="Sound device: PC speaker, Tandy/PCjr or off">♪ ${({ pc: 'PC speaker', tandy: 'Tandy', off: 'Off' })[soundDevice()]}</button>`
         : '<button class="sound" data-cmd="nosound" title="Re-import the POOLRAD folder with START.EXE for sound">♪ n/a</button>') +
+      `<button data-cmd="commissions" title="Commissions and rewards (not in the original)">Commissions${commissionsDue() ? ' <span class="due">•</span>' : ''}</button>` +
       '<button data-cmd="save" title="Save the game (any time)">Save</button>' +
       '<button class="assets" data-cmd="assets" title="Leave the game">Quit</button>'
     menuBar.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => command(b.dataset.cmd!)))
@@ -383,6 +409,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         break
       }
       case 'nosound': note('Sound needs START.EXE: go back to Assets and re-import the POOLRAD folder.'); break
+      case 'commissions': commissions(); break
       case 'save': act(() => saveGame()); break
       case 'assets': leave(); break
     }

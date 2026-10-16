@@ -83,19 +83,21 @@ export interface SavedGame {
   chars: { sav: Uint8Array; itm?: Uint8Array; spc?: Uint8Array }[]
   label: string
   savedAt: number
+  /** commissions the clerk has offered (port-only: the original does not record them, IMP-023) */
+  known?: string[]
 }
 
 export async function listSaves(): Promise<SavedGame[]> {
   const out: SavedGame[] = []
   for (const slot of 'ABCDEFGHIJ') {
-    const v = await run<{ dat: ArrayBuffer; chars: { sav: ArrayBuffer; itm?: ArrayBuffer; spc?: ArrayBuffer }[]; label: string; savedAt: number } | undefined>(SAVES, 'readonly', (s) => s.get(slot))
-    if (v) out.push({ slot, dat: new Uint8Array(v.dat), label: v.label, savedAt: v.savedAt,
+    const v = await run<{ dat: ArrayBuffer; chars: { sav: ArrayBuffer; itm?: ArrayBuffer; spc?: ArrayBuffer }[]; label: string; savedAt: number; known?: string[] } | undefined>(SAVES, 'readonly', (s) => s.get(slot))
+    if (v) out.push({ slot, dat: new Uint8Array(v.dat), label: v.label, savedAt: v.savedAt, known: v.known,
       chars: v.chars.map((c) => ({ sav: new Uint8Array(c.sav), itm: arr(c.itm), spc: arr(c.spc) })) })
   }
   return out
 }
 
 export async function writeSave(g: SavedGame) {
-  await run(SAVES, 'readwrite', (s) => s.put({ dat: buf(g.dat), label: g.label, savedAt: g.savedAt,
+  await run(SAVES, 'readwrite', (s) => s.put({ dat: buf(g.dat), label: g.label, savedAt: g.savedAt, known: g.known,
     chars: g.chars.map((c) => ({ sav: buf(c.sav), itm: buf(c.itm), spc: buf(c.spc) })) }, g.slot))
 }
