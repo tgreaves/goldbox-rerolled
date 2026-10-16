@@ -39,7 +39,7 @@ Part of [[spec/README]]. Ordered by what a browser reimplementation needs first.
 
 ## Cross-checks against the GameFAQs guide ([[spec/README]], External references)
 
-- Cheat mode: the guide starts it with a `STING` command-line option (Ctrl-C quits, Alt-X wins a combat, J trains free in a training hall). [[spec/architecture]] has only J followed by typing STING in a training hall. Look for a command-line check and an Alt-X handler.
+- Cheat mode: the `STING` command-line option is confirmed for Ctrl-C and Ctrl-D ([[spec/architecture]]). Still to trace: Alt-X (win a combat), and skipping the introduction and copy protection.
 - Loading: the guide says a game can be loaded only from the main menu or after dropping every character in a training hall, and that loading deletes the files of characters who had been Removed from the party.
 
 ## Smaller loose ends

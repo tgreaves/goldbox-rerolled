@@ -118,6 +118,8 @@ Menu "Choose a function": **C**reate character (`FUN_417f_056c`), **D**rop (`1f3
 
 Hidden: **J** then typing `STING` prints "I Understand, master..." and sets `DS:470C`, which makes training free and skips the experience and class checks (developer cheat).
 
+Cheat mode (O for the keys below): when the first command-line parameter is `STING` (`START STING`), the shared key reader (load-image 0x89E9) also accepts **Ctrl-C** (quit to DOS at once, 0x8990) and **Ctrl-D** (toggle `DS:49F7`, hit-point debugging). **Ctrl-S** toggles sound in any mode. The GameFAQs guide ([[spec/README]], External references) adds **Alt-X** to win a combat at once, and says the introduction and copy protection are skipped (**?** not yet traced).
+
 ## Sound (O)
 
 See [[spec/sound]]. Effects are played by number with `FUN_18ae_00dc(n)` from a table at `DS:2610`; the game uses 2–12 (10 footstep, 7 bump, 11 script effect via `CALL 0xBA03`). By default each effect is **cut off after about 0.1 s**; only some code sections let effects play in full.
