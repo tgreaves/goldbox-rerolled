@@ -34,6 +34,11 @@ export async function runBattle(s: BattleScreen) {
   let focus = { row: 12, col: 25 }
   let marks: { row: number; col: number; colour: string }[] = []
   let acting: Fighter | null = null
+  /** The screen keeps one input object and routes keys and taps through it: fill it in place. */
+  const setInput = (v: BattleScreen['input']) => {
+    for (const k of Object.keys(s.input)) delete (s.input as Record<string, unknown>)[k]
+    Object.assign(s.input, v)
+  }
   const icons = new Map<Uint8Array, { icon: Picture | null; action: Picture | null }>()
   const iconOf = (f: Fighter) => {
     let v = icons.get(f.c)
@@ -76,12 +81,12 @@ export async function runBattle(s: BattleScreen) {
       const done = (v: number | 'end' | 'undo', fromMenu = false) => {
         if (settled) return
         settled = true
-        s.input = {}
+        setInput({})
         marks = []
         if (!fromMenu) s.cancelMenu()
         resolve(v)
       }
-      s.input = {
+      setInput({
         key: (ev) => {
           if (ev.key in KEY_DIRS) { done(KEY_DIRS[ev.key]); return true }
           if (ev.key === 'Enter') { done('end'); return true }
@@ -95,7 +100,7 @@ export async function runBattle(s: BattleScreen) {
           const d = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]].findIndex(([x, y]) => x === Math.sign(dx) && y === Math.sign(dy))
           done(d)
         },
-      }
+      })
       void s.menu(['END MOVE', 'UNDO'], { prompt: `Move/Attack, Move Left = ${left}` }).then((i) => done(i === 0 ? 'end' : 'undo', true))
     }),
     aim: (f, entries, prompt, allowCell) => new Promise<AimEntry | null>((resolve) => {
@@ -106,20 +111,20 @@ export async function runBattle(s: BattleScreen) {
       const finish = (v: AimEntry | null, fromMenu = false) => {
         if (settled) return
         settled = true
-        s.input = {}
+        setInput({})
         marks = []
         if (!fromMenu) s.cancelMenu()
         draw()
         resolve(v)
       }
-      s.input = {
+      setInput({
         tap: (ev) => {
           const cell = view!.cellAt(ev, focus)
           const hit = ok.find((x) => x.f && x.f.y === cell.row && x.f.x === cell.col)
           if (hit) finish(hit)
           else if (allowCell) finish({ f: null, x: cell.col, y: cell.row, cost: battle!.cost(f.x, f.y, cell.col, cell.row), ok: true })
         },
-      }
+      })
       const labels = ok.map((x) => `${x.f ? String.fromCharCode(...x.f.c.subarray(1, 1 + x.f.c[0])) : 'there'} (range ${x.cost >> 1})`)
       void s.menu([...labels, 'EXIT'], { prompt: ok.length ? prompt : `${prompt} nobody in range`, vertical: true })
         .then((i) => finish(i < ok.length ? ok[i] : null, true))
@@ -154,6 +159,6 @@ export async function runBattle(s: BattleScreen) {
   } finally {
     resize.disconnect()
     s.canvas.hidden = true
-    s.input = {}
+    setInput({})
   }
 }
