@@ -895,6 +895,40 @@ export class Engine {
     if (this.areaChanged) await this.enter()
   }
 
+  /**
+   * Debug jump (IMP-025, not in the original): switch block and area as a script's NEW_ECL would,
+   * then enter. Map areas take a 16x16 position; overland areas (25-27) a wilderness position,
+   * written to ECL 0x49C3/0x49C4 as the harbour script does before its boats leave.
+   */
+  async jump(block: number, area: number, x: number, y: number, facing = this.facing) {
+    this.setBlock(block)
+    this.A[AREA_ID - A0] = this.area
+    this.area = area
+    if (area >= 25 && area <= 27) {
+      this.A[0x49c3 - A0] = x
+      this.A[0x49c4 - A0] = y
+    } else {
+      this.x = x & 15
+      this.y = y & 15
+    }
+    this.facing2 = (facing & 3) * 2
+    this.loadEcl(area)
+    this.resetVm(false)
+    this.stop = false
+    this.stack = []
+    await this.enter()
+  }
+
+  /** Overland travel (areas 25-27 once on_enter cleared ECL 0x49E6, spec/architecture.md). */
+  get overland(): boolean {
+    return this.A[NO_OVERLAND - A0] === 0 && this.area >= 25 && this.area <= 27
+  }
+
+  /** Wilderness position as the guide numbers it: the area's own x plus 13 columns per area after 25. */
+  get wildPosition(): [number, number] {
+    return [this.A[0x49c3 - A0] + 13 * (this.area - 25), this.A[0x49c4 - A0]]
+  }
+
   /** FUN_29c3_31b4: re-enter after an area change. */
   async enter() {
     for (;;) {

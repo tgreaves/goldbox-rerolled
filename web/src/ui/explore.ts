@@ -30,6 +30,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     <div class="game">
       <section class="view" aria-label="3D view">
         <canvas class="view3d"></canvas>
+        <div class="wild" hidden></div>
         <canvas class="overlay" width="88" height="88" hidden></canvas>
         <div class="where"></div>
       </section>
@@ -60,6 +61,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const canvas = app.querySelector<HTMLCanvasElement>('.view3d')!
   const overlay = app.querySelector<HTMLCanvasElement>('.overlay')!
   const where = app.querySelector<HTMLDivElement>('.where')!
+  const wild = app.querySelector<HTMLDivElement>('.wild')!
   const log = app.querySelector<HTMLElement>('.text')!
   const roster = app.querySelector<HTMLTableSectionElement>('.party tbody')!
   const menuBar = app.querySelector<HTMLDivElement>('.menu')!
@@ -279,6 +281,15 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   function showWhere() {
     const searching = engine.B[0x6dca - 0x6b00] & 1
+    if (engine.overland) {
+      const [wx, wy] = engine.wildPosition
+      where.textContent = `Wilderness · ${wx},${wy}`
+      wild.hidden = false
+      wild.innerHTML = `<p><strong>Wilderness</strong>, area ${engine.area}, position ${wx},${wy}</p>
+        <p>Overland travel is not built yet: its map view and movement come next. The area's script still runs, so its prompts (such as the boat back to New Phlan) work. The Debug menu can jump elsewhere.</p>`
+      return
+    }
+    wild.hidden = true
     where.textContent = `${FACING[engine.facing]} · ${engine.x},${engine.y}${searching ? ' · Searching' : ''}`
   }
 
@@ -320,7 +331,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const minimap = app.querySelector<HTMLCanvasElement>('.minimap')!
   const nomap = app.querySelector<HTMLElement>('.nomap')!
   function drawMinimap() {
-    const allowed = engine.A[0x49fb - A0] === 0 && engine.geo
+    const allowed = engine.A[0x49fb - A0] === 0 && engine.geo && !engine.overland
     minimap.hidden = !allowed
     nomap.hidden = !!allowed
     if (allowed) drawMap(minimap, engine.geo!, 24, { x: engine.x, y: engine.y, facing: engine.facing }, areaMarks())
@@ -345,6 +356,46 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       marks = { code: engine.code, geo: engine.geo, list }
     }
     return marks.list
+  }
+
+  // ------------------------------------------------------------ debug menu
+  /** Debug menu (IMP-025): jumps that skip whatever the scripts would do on the way. */
+  const JUMPS: { label: string; to: [number, number, number, number, number] }[] = [
+    // [block, area, x, y, facing]; wilderness positions as the harbour script writes them (ECL3 #0)
+    { label: 'Wilderness: west boat landing (20,29)', to: [7, 26, 7, 29, 0] },
+    { label: 'Wilderness: north side of the bay (26,27)', to: [7, 26, 13, 27, 0] },
+    { label: 'Wilderness: east boat landing (35,29)', to: [8, 27, 9, 29, 0] },
+    { label: 'New Phlan: end of the pier (15,1)', to: [3, 0, 15, 1, 3] },
+  ]
+  function debugMenu() {
+    const pos = engine.overland ? `wilderness ${engine.wildPosition.join(',')}` : `${engine.x},${engine.y} facing ${FACING[engine.facing]}`
+    dialog.innerHTML = `<h2>Debug</h2>
+      <p class="muted">Not part of the game. Now: block ${engine.block}, area ${engine.area}, ${pos}.</p>
+      <ul class="debug">${JUMPS.map((j, i) => `<li><button data-i="${i}">${escape(j.label)}</button></li>`).join('')}</ul>
+      <form class="jump">
+        <label>Block <input name="block" type="number" min="1" max="8" value="${engine.block}"></label>
+        <label>Area <input name="area" type="number" min="0" max="63" value="${engine.area}"></label>
+        <label>X <input name="x" type="number" min="0" max="43" value="0"></label>
+        <label>Y <input name="y" type="number" min="0" max="35" value="0"></label>
+        <label>Facing <select name="facing">${FACING.map((f, i) => `<option value="${i}">${f}</option>`).join('')}</select></label>
+        <button>Jump</button>
+      </form>
+      <p class="muted">For areas 25–27 (wilderness), X and Y are the area's own position (0–12 across).</p>
+      <form method="dialog"><button>Close</button></form>`
+    const go = (to: [number, number, number, number, number]) => {
+      dialog.close()
+      if (!files.record(`ECL${to[0]}`, to[1])) { note(`There is no area ${to[1]} in block ${to[0]}.`); return }
+      note(`Debug: jumping to block ${to[0]}, area ${to[1]}.`)
+      act(() => engine.jump(...to))
+    }
+    dialog.querySelectorAll<HTMLButtonElement>('ul.debug button').forEach((b) => b.addEventListener('click', () => go(JUMPS[Number(b.dataset.i)].to)))
+    const f = dialog.querySelector<HTMLFormElement>('form.jump')!
+    f.addEventListener('submit', (e) => {
+      e.preventDefault()
+      const v = (n: string) => Number((f.elements.namedItem(n) as HTMLInputElement).value) || 0
+      go([v('block'), v('area'), v('x'), v('y'), v('facing')])
+    })
+    dialog.showModal()
   }
 
   // ------------------------------------------------------------ commissions
@@ -409,12 +460,14 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         : '<button class="sound" data-cmd="nosound" title="Re-import the POOLRAD folder with START.EXE for sound">♪ n/a</button>') +
       `<button data-cmd="commissions" title="Commissions and rewards (not in the original)">Commissions${commissionsDue() ? ' <span class="due">•</span>' : ''}</button>` +
       '<button data-cmd="save" title="Save the game (any time)">Save</button>' +
+      '<button class="assets" data-cmd="debug" title="Debug menu (not part of the game)">Debug</button>' +
       '<button class="assets" data-cmd="assets" title="Leave the game">Quit</button>'
     menuBar.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => command(b.dataset.cmd!)))
   }
 
   function move(c: string) {
     if (engine.quit) return
+    if (engine.overland) { note('Overland travel is not implemented yet. Use the Debug menu to jump elsewhere.'); return }
     act(() => engine.command(c))
   }
 
@@ -437,7 +490,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       }
       case 'nosound': note('Sound needs START.EXE: go back to Assets and re-import the POOLRAD folder.'); break
       case 'commissions': commissions(); break
-      case 'save': act(() => saveGame()); break
+      case 'save':
+        if (engine.overland) note('Saving in the wilderness is not supported yet.')
+        else act(() => saveGame())
+        break
+      case 'debug': debugMenu(); break
       case 'assets': leave(); break
     }
   }

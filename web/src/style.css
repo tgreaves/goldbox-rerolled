@@ -151,6 +151,17 @@ dialog.panel ul.commissions li.reward .state, dialog.panel ul.commissions li.sum
 dialog.panel ul.commissions li.open .state { color: var(--ega-green); }
 dialog.panel ul.commissions li.closed { color: var(--muted); }
 dialog.panel p.muted { color: var(--muted); }
+dialog.panel ul.debug { list-style: none; margin: 0.6rem 0; padding: 0; display: grid; gap: 0.35rem; }
+dialog.panel ul.debug button { width: 100%; text-align: left; }
+dialog.panel form.jump { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: end; margin: 0.6rem 0; }
+dialog.panel form.jump label { display: grid; font-size: 0.8rem; color: var(--muted); }
+dialog.panel form.jump input { width: 4.5rem; }
+.game .wild {
+  position: absolute; inset: 0; display: grid; align-content: center; gap: 0.6rem; padding: 1.2rem;
+  background: #0b1218; color: var(--ega-green); text-align: center;
+}
+.game .wild[hidden] { display: none; }
+.game .wild p { margin: 0; max-width: 32rem; justify-self: center; }
 .game .menu .due { color: var(--ega-yellow); }
 
 /* phones and narrow windows: stack view, party, text, commands */

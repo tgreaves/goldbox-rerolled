@@ -91,6 +91,25 @@ describe.skipIf(!have)('ECL engine', () => {
   }, 120000)
 })
 
+describe.skipIf(!have)('debug jump', () => {
+  it('reaches the wilderness and comes back', async () => {
+    const files = load()
+    const h = headless((n) => n - 1) // STAY at the boat prompt
+    const dat = files.get('SAVGAMA.DAT')!
+    const e = h.bind(new Engine(files, h.io, 1))
+    e.loadSave(dat, parseSave(dat).party.map((s) => files.get(`${s}.SAV`)!))
+    await e.start()
+    await e.jump(7, 26, 7, 29)
+    expect(e.overland).toBe(true)
+    expect(e.wildPosition).toEqual([20, 29]) // the guide's west boat landing
+    expect(h.text.some((t) => t.startsWith('THERE IS A BOAT HERE'))).toBe(true)
+    await e.jump(3, 0, 15, 1, 3)
+    expect(e.overland).toBe(false)
+    expect([e.block, e.area, e.x, e.y]).toEqual([3, 0, 15, 1])
+    expect(e.geo).not.toBeNull()
+  })
+})
+
 describe.skipIf(!have)('save games', () => {
   it('writes back the shipped saves byte for byte', async () => {
     const files = load()
