@@ -134,16 +134,25 @@ export async function runBattle(s: BattleScreen) {
     },
   }
   s.canvas.hidden = false
+  // the window grows with the space the battle screen gets (IMP-033)
+  const resize = new ResizeObserver(() => {
+    const r = s.canvas.getBoundingClientRect()
+    if (view?.fit(r.width, r.height)) draw()
+  })
   try {
     const result = await fight(e, ui, (b) => {
       battle = b
       view = new CombatView(s.canvas, s.files, !!e.overland)
+      const r = s.canvas.getBoundingClientRect()
+      view.fit(r.width, r.height)
+      resize.observe(s.canvas)
       focus = { row: b.fighters[0]?.y ?? 12, col: b.fighters[0]?.x ?? 25 }
       draw()
     })
     for (const m of result.messages) s.print(m)
     return result
   } finally {
+    resize.disconnect()
     s.canvas.hidden = true
     s.input = {}
   }

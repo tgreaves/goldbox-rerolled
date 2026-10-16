@@ -268,6 +268,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         wildview.hidden = true
         // the battlefield replaces the encounter picture or sprite (the overlay sits above every view)
         showPicture(null)
+        app.querySelector('.game')!.classList.add('in-combat')
         try {
           const r = await runBattle({
             engine, files, canvas: combatCanvas, menu, print: (t) => print(t, false), view: (c) => new Promise<void>((resolve) => {
@@ -281,6 +282,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         } catch (err) {
           note(`Combat error: ${(err as Error).message}`)
         } finally {
+          app.querySelector('.game')!.classList.remove('in-combat')
           townMode = null
           canvas.hidden = engine.overland
           wildview.hidden = !engine.overland

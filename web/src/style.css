@@ -174,6 +174,10 @@ dialog.panel form.jump input { width: 4.5rem; }
 .game .wild p { margin: 0; max-width: 32rem; justify-self: center; }
 .game .menu .due { color: var(--ega-yellow); }
 
+/* combat: the battlefield takes the view and the map's place, the roster becomes a side column (IMP-033) */
+.game.in-combat { grid-template-columns: minmax(0, 1fr) minmax(13rem, 19rem); }
+.game.in-combat .map, .game.in-combat .pad, .game.in-combat .where { display: none; }
+
 /* phones and narrow windows: stack view, party, text, commands */
 @media (max-width: 760px), (max-aspect-ratio: 4/5) {
   .game {
@@ -187,6 +191,8 @@ dialog.panel form.jump input { width: 4.5rem; }
   .party td, .party th { padding: 0.15rem 0.3rem; }
   .game .menu { flex: 1; }
   .game .menu button { flex: 1 1 auto; padding: 0.3rem 0.4rem; }
+  .game.in-combat { grid-template-columns: 1fr; grid-template-rows: min(100vw, 56dvh) auto minmax(4rem, 1fr) auto; }
+  .game.in-combat .side { height: auto; max-height: 8rem; }
 }
 
 .game .wildview {

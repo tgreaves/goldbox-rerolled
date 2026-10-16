@@ -36,8 +36,8 @@ export class CombatView {
   private iconCache = new WeakMap<Picture, HTMLCanvasElement>()
   readonly canvas: HTMLCanvasElement
   /** visible window in cells */
-  readonly cols: number
-  readonly rows: number
+  cols: number
+  rows: number
 
   constructor(canvas: HTMLCanvasElement, files: GameFiles, outdoors: boolean, cols = 15, rows = 9) {
     this.canvas = canvas
@@ -58,6 +58,21 @@ export class CombatView {
     let c = this.iconCache.get(p)
     if (!c) this.iconCache.set(p, (c = canvasOf(p, true)))
     return c
+  }
+
+  /**
+   * Size the window to the space on screen: about 56 CSS pixels a cell, at least the original's 7 × 7
+   * cells (FUN_577f_06e9 tests 0–6 on both axes), at most the whole 25 × 50 field. True if it changed.
+   */
+  fit(width: number, height: number): boolean {
+    if (width <= 0 || height <= 0) return false
+    const rows = Math.max(7, Math.min(ROWS, Math.round(height / 56)))
+    const cols = Math.max(7, Math.min(COLS, Math.round((rows * width) / height)))
+    if (rows === this.rows && cols === this.cols) return false
+    this.rows = rows; this.cols = cols
+    this.canvas.width = cols * CELL
+    this.canvas.height = rows * CELL
+    return true
   }
 
   /** Top-left cell of a window centred on (row, col), kept inside the grid. */
