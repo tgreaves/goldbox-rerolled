@@ -41,6 +41,8 @@ export interface FxHost {
   weapon(c: Uint8Array): import('../data/items').Item | null
   /** ITEMS byte 7 of a type: 0 slashing, 1 piercing, 0x80 bashing */
   weaponKind(type: number): number
+  /** effect 0x28 expired: lift that Stinking Cloud (combat only) */
+  clearCloud?(c: Uint8Array, power: number): void
 }
 
 /** The original's globals during one dispatch chain. */
@@ -289,7 +291,7 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
       if (!(eff.power & 0x10)) { eff.power |= 0x10; h.print(`${h.name(c)} ages`); const a = (c[0x30] | (c[0x31] << 8)) + 1; c[0x30] = a & 0xff; c[0x31] = a >> 8 }
       fx.rate *= 2
       break
-    case 40: if (removal) h.print('The air clears a little...'); break
+    case 40: if (removal && h.inCombat()) { h.print('The air clears a little...'); h.clearCloud?.(c, eff.power) } break // zones are freed at the end of combat (FUN_320c_0000)
     case 41: { const a = h.current(); const w = a ? weaponOf(h, a) : null; if (w && w.raw[0x32] === 0) deflect(h, c, 100); break }
     case 42: fx.rate = Math.floor(fx.rate / 2); break
     case 43: if (removal || event === -1) {
@@ -332,6 +334,7 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
       const t = h.targetOf(c)
       if (fx.hits[1] === 2 && t && t[0x10d]) {
         c[0x114] = 2; c[0x116] = 2; c[0x118] = 4; c[0x113] = 0
+        h.setRec(c, 4, 2) // the follow-up attack loop starts at hand 2
         h.print(`${h.name(c)} Rakes...`)
         await h.attack(c, t)
         h.endTurn(c)
@@ -341,7 +344,13 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
     case 74: case 75: { // grab / blood drain
       const v = h.byIndex(eff.power & 0x3f)
       if (event === 15 && v && v[0x10d] && c[0x10d]) {
-        if (type === 74) { c[0x113] = 1; c[0x115] = 3; c[0x117] = 4; await h.attack(c, v) }
+        if (type === 74) {
+          // crush: one 3d4 attack with hand 1 (FUN_3aae_3a86); the hold ends if the victim goes down
+          c[0x113] = 1; c[0x115] = 3; c[0x117] = 4
+          h.setRec(c, 4, 1)
+          await h.attack(c, v)
+          if (!v[0x10d]) { await removeType(h, v, 58); await removeEffect(h, c, eff) }
+        }
         else {
           h.print(`${h.name(c)} Sucks some Blood`)
           const d = h.roll(1, 4)

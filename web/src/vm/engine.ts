@@ -1035,7 +1035,7 @@ export class Engine {
       else if (!Overland.blocked(t)) {
         this.A[0x49c3 - A0] = x
         this.A[0x49c4 - A0] = y
-        advanceClock(this, 12, HOUR)
+        await advanceClock(this, 12, HOUR)
       }
     }
     await this.io.refresh()
@@ -1065,6 +1065,18 @@ export class Engine {
     const n = this.party().length, j = i + dir
     if (j < 0 || j >= n) return
     ;[this.nodes[i], this.nodes[j]] = [this.nodes[j], this.nodes[i]]
+  }
+
+  /** Party screen → Add: a character joins the end of the party (before any monsters). */
+  addMember(sav: Uint8Array, itm?: Uint8Array, spc?: Uint8Array) {
+    const c = sav.slice()
+    const n = this.party().length
+    this.nodes.splice(n, 0, c)
+    this.B[PARTY_SIZE - B0] = n + 1
+    this.inventory.set(c, parseItems(itm))
+    this.effects.set(c, parseEffects(spc))
+    if (!this.cur) this.cur = this.savedCur = c
+    return c
   }
 
   /** Alter → Drop: the member leaves the party for good. */
@@ -1120,7 +1132,7 @@ export class Engine {
       return
     }
     if (c === 'L') {
-      advanceClock(this, 10, MINUTE) // Look takes 10 minutes (FUN_3e76_0989)
+      await advanceClock(this, 10, MINUTE) // Look takes 10 minutes (FUN_3e76_0989)
       const keep = this.B[SEARCH_LOOK - B0] & 1
       this.B[SEARCH_LOOK - B0] = 1
       this.areaChanged = false
@@ -1149,7 +1161,7 @@ export class Engine {
         const [dx, dy] = STEP[this.facing]
         this.x = (this.x + dx) & 15
         this.y = (this.y + dy) & 15
-        advanceClock(this, this.B[SEARCH_LOOK - B0] & 1 ? 10 : 1, MINUTE) // FUN_3e76_073b
+        await advanceClock(this, this.B[SEARCH_LOOK - B0] & 1 ? 10 : 1, MINUTE) // FUN_3e76_073b
         this.io.sound(10) // main loop: footstep when the position changed
       } else {
         blocked = p === 0 ? 1 : 2

@@ -39,7 +39,7 @@ describe.skipIf(!have)('camp', () => {
     const r = startRest(e, 1440)
     const camp = { heal: 0 }
     const messages: string[] = []
-    while (r.minutes > 0) messages.push(...restStep(e, r, camp).messages)
+    while (r.minutes > 0) messages.push(...(await restStep(e, r, camp)).messages)
     expect(memorised(cleric)).toContain(3)
     expect(messages.some((s) => s.endsWith('has memorized Cure Light Wounds'))).toBe(true)
     expect(messages).toContain('The Whole Party Is Healed')

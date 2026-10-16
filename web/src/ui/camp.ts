@@ -192,7 +192,7 @@ export async function rest(ui: CampUi, state: { heal: number }): Promise<boolean
     let n = 0
     while (r.minutes > 0) {
       if (stop.stopped()) break
-      const res = restStep(e, r, state)
+      const res = await restStep(e, r, state)
       for (const msg of res.messages) ui.print(msg, false)
       if (res.messages.length) ui.refresh()
       if (res.interrupted) { interrupted = true; break }

@@ -3,6 +3,8 @@ import type { Engine } from '../vm/engine'
 import type { Item, ItemTables } from '../data/items'
 import type { Spell, SpellTables } from '../data/spells'
 import type { Effect } from '../data/effects'
+import { removeEffect, type FxHost } from './effects'
+import { WorldHost } from './worldfx'
 
 // ------------------------------------------------------------------ clock
 /** Clock words in ECL array A: segment, minute, ten-minutes, hour, day, month, year. */
@@ -22,24 +24,28 @@ function normalise(w: number[], party: Uint8Array[]) {
 }
 
 /** Advance the clock by `count` units (FUN_4b46_03d5), then time out effects by as much. */
-export function advanceClock(e: Engine, count: number, unit: number) {
+export async function advanceClock(e: Engine, count: number, unit: number, host?: FxHost, who?: Uint8Array[]) {
   const w = Array.from({ length: 7 }, (_, i) => e.read(CLOCK + i))
   for (let i = 0; i < count; i++) { w[unit]++; normalise(w, e.party()) }
   w.forEach((v, i) => e.write(CLOCK + i, v))
-  timeOutEffects(e, count * unitMinutes(unit))
+  await timeOutEffects(e, count * unitMinutes(unit), host, who)
 }
 
-/** Effect durations are minutes; they run down in chunks of at most 10 (FUN_4b46_0000). */
-export function timeOutEffects(e: Engine, minutes: number) {
+/**
+ * Effect time-out (FUN_4b46_0000): chunks of up to 10 minutes; an effect whose remaining time a chunk
+ * reaches is removed through FUN_5216_0026, which runs its removal callback. In combat `who` is every
+ * combatant (the monsters are linked into the party list then) and `host` the battle.
+ */
+export async function timeOutEffects(e: Engine, minutes: number, host: FxHost = new WorldHost(e), who: Uint8Array[] = e.party()) {
   while (minutes > 0) {
     const chunk = Math.min(minutes, 10)
     minutes -= chunk
-    for (const c of e.party()) {
-      const fx = e.effectsOf(c)
-      for (let i = fx.length - 1; i >= 0; i--) {
-        if (fx[i].duration === 0) continue
-        if (chunk < fx[i].duration) fx[i].duration -= chunk
-        else fx.splice(i, 1) // removal callbacks come with the effect handlers (combat)
+    for (const c of who) {
+      const list = e.effectsOf(c)
+      for (const eff of [...list].reverse()) {
+        if (eff.duration === 0 || !list.includes(eff)) continue
+        if (chunk < eff.duration) eff.duration -= chunk
+        else await removeEffect(host, c, eff)
       }
     }
   }
@@ -159,11 +165,11 @@ export function startRest(e: Engine, minutes: number): RestState {
  * One 5-minute rest step (FUN_4b46_0c9a). Returns messages and whether the rest was interrupted
  * by an encounter. `heal` is the camp's healing step counter (DS:6DD8), kept across rests.
  */
-export function restStep(e: Engine, r: RestState, camp: { heal: number }): { messages: string[]; interrupted: boolean } {
+export async function restStep(e: Engine, r: RestState, camp: { heal: number }): Promise<{ messages: string[]; interrupted: boolean }> {
   const t = e.items!, st = e.spells!
   const messages: string[] = []
   r.minutes = Math.max(0, r.minutes - 5)
-  advanceClock(e, 5, MINUTE)
+  await advanceClock(e, 5, MINUTE, new WorldHost(e, (t) => messages.push(t)))
   // healing: 1 HP every 24 hours of rest
   if (++camp.heal >= 288) {
     camp.heal = 0

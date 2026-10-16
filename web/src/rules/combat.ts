@@ -6,7 +6,7 @@ import type { Spell } from '../data/spells'
 import type { Effect } from '../data/effects'
 import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, type Battlefield, type CellInfo } from './battlefield'
 import { dexMissile, recalc } from './equip'
-import { fx, fire, addEffect, addRaw, removeType, type FxHost } from './effects'
+import { fx, fire, addEffect, addRaw, removeEffect, removeType, type FxHost } from './effects'
 import { heal as healChar } from './camp'
 import { casterLevel, duration as spellDuration, forget } from './magic'
 
@@ -54,9 +54,53 @@ function footprint(size: number): [number, number][] {
   return size === 2 ? [[0, 0], [0, 1]] : size === 3 ? [[0, 0], [1, 0]] : size === 4 ? [[0, 0], [1, 0], [0, 1], [1, 1]] : [[0, 0]]
 }
 
+/** The line walker (FUN_46c1_01a0 init, FUN_46c1_02cc step): Bresenham, cost 2 straight, 3 diagonal (byte). */
+export class Line {
+  x: number
+  y: number
+  cost = 0
+  private err: number
+  private readonly dx: number
+  private readonly dy: number
+  private readonly sx: number
+  private readonly sy: number
+  private readonly diag: number
+  private readonly straight: number
+  private readonly x1: number
+  private readonly y1: number
+  constructor(x0: number, y0: number, x1: number, y1: number) {
+    this.x = x0; this.y = y0; this.x1 = x1; this.y1 = y1
+    this.dx = Math.abs(x1 - x0); this.dy = Math.abs(y1 - y0)
+    this.sx = Math.sign(x1 - x0); this.sy = Math.sign(y1 - y0)
+    const [a, b] = this.dx > this.dy ? [this.dx, this.dy] : [this.dy, this.dx]
+    this.err = 2 * b - a; this.diag = 2 * (b - a); this.straight = 2 * b
+  }
+  /** one cell along; false at the end */
+  step(): boolean {
+    const xMajor = this.dx > this.dy
+    if (xMajor ? this.x === this.x1 : this.y === this.y1) return false
+    if (this.err >= 0) {
+      if (xMajor) this.y += this.sy; else this.x += this.sx
+      this.err += this.diag
+      this.cost = (this.cost + 3) & 0xff
+    } else {
+      this.err += this.straight
+      this.cost = (this.cost + 2) & 0xff
+    }
+    if (xMajor) this.x += this.sx; else this.y += this.sy
+    return true
+  }
+}
+
+/** A Stinking Cloud (19-byte record at DS:6DBB): its owner, number and the 4 cells it replaced. */
+interface Cloud { owner: Uint8Array; n: number; cells: { x: number; y: number; old: number }[] }
+
 export class Battle implements FxHost {
   readonly fighters: Fighter[] = []
   bodies: { f: Fighter; x: number; y: number; cell: number }[] = []
+  clouds: Cloud[] = []
+  /** the square a spell was aimed at (DS:6DB9/6DBA) */
+  aimed = { x: 0, y: 0 }
   /** items thrown or fired and left on the field (DS:6810 additions) */
   dropped: Item[] = []
   round = 0
@@ -116,6 +160,25 @@ export class Battle implements FxHost {
   weapon(c: Uint8Array) { return c === this.current_?.c && this.firing ? this.firing : this.weaponOf(c) }
   private firing: Item | null = null
   weaponKind(type: number) { return this.e.items?.base[type]?.kind ?? 0 }
+  /** effect 0x28 expiring (spec/effects.md): the owner's cloud lifts; other clouds are redrawn over it */
+  clearCloud(c: Uint8Array, power: number) {
+    const i = this.clouds.findIndex((z) => z.owner === c && z.n === power >> 4)
+    if (i < 0) return
+    const [z] = this.clouds.splice(i, 1)
+    for (const t of z.cells) {
+      const body = this.bodies.find((b) => b.x === t.x && b.y === t.y && b.f.size === 0)
+      if (body) { body.cell = t.old; this.bf.set(t.y, t.x, 0x1f) } else this.bf.set(t.y, t.x, t.old)
+    }
+    for (const o of this.clouds) for (const t of o.cells) this.bf.set(t.y, t.x, 0x1e)
+    this.ui.redraw()
+  }
+  /** Stinking Cloud occupant check (FUN_5216_0ae7) */
+  cloudCheck(t: Fighter) {
+    if (!this.inPlay(t) || !footprint(t.size).some(([dx, dy]) => this.bf.get(t.y + dy, t.x + dx) === 0x1e)) return
+    if (this.e.effectsOf(t.c).some((x) => [0x1e, 0x1f, 0x20, 0x6f, 0x7d].includes(x.type))) return
+    if (this.saveSync(t.c, 0, 0)) { this.print(`${name(t.c)} starts to cough`); addRaw(this, t.c, 0x1e, 1, 0xff, 0) }
+    else { this.print(`${name(t.c)} chokes and gags from nausea`); addRaw(this, t.c, 0x1f, this.e.roll(1, 4) + 1, 0xff, 0); this.endTurnF(t) }
+  }
 
   // ------------------------------------------------------------ basics
   of(c: Uint8Array) { return this.fighters.find((f) => f.c === c) ?? null }
@@ -402,13 +465,14 @@ export class Battle implements FxHost {
   /** Round end (FUN_320c_0880). Returns true when the battle is over. */
   async roundEnd(): Promise<boolean> {
     const { advanceClock, MINUTE } = await import('./camp')
-    advanceClock(this.e, 1, MINUTE)
+    await advanceClock(this.e, 1, MINUTE, this, this.fighters.map((f) => f.c))
     this.round = (this.round + 1) & 0xff
     fx.round = this.round
     this.enemyHp()
     for (const f of this.fighters) {
       this.current_ = f
       await fire(this, f.c, 19)
+      this.cloudCheck(f)
       if (f.c[0x10c] === 5) {
         f.r[0xe]++
         if (f.r[0xe] >= 10) { f.c[0x10c] = 6; this.print(`${name(f.c)} has died`) }
@@ -787,7 +851,15 @@ export class Battle implements FxHost {
       c[0x11b] = 0
       c[0x10d] = 0
       this.print(c[0x10c] === 4 ? `${name(c)} goes down` : c[0x10c] === 5 ? `${name(c)} goes down and is Dying` : `${name(c)} is killed`)
-      for (const e of [...this.e.effectsOf(c)]) if ([7, 11, 30, 31, 32, 51, 52, 53, 54, 58, 59, 74, 75, 95, 98, 137].includes(e.type)) this.e.effectsOf(c).splice(this.e.effectsOf(c).indexOf(e), 1)
+      // FUN_5216_100a removes through FUN_5216_0026, so removal callbacks run (a grab frees its victim,
+      // a charm ends); the callbacks' synchronous part runs here, the record goes at once
+      const list = this.e.effectsOf(c)
+      for (const e of [...list]) {
+        if (![7, 11, 30, 31, 32, 51, 52, 53, 54, 58, 59, 74, 75, 95, 98, 137].includes(e.type)) continue
+        void removeEffect(this, c, e)
+        const j = list.indexOf(e)
+        if (j >= 0) list.splice(j, 1)
+      }
       void fire(this, c, 13)
       this.downF(t)
     } else c[0x11b] = left
@@ -838,6 +910,7 @@ export class Battle implements FxHost {
       this.print(`${name(g.c)} reacts`)
       await this.attackF(g, f, false, null)
     }
+    this.cloudCheck(f)
     if (!this.inPlay(f) || this.helpless(f.c)) f.r[6] = 0
   }
 
@@ -948,13 +1021,14 @@ export class Battle implements FxHost {
       const entries = this.aimEntries(f).map((en) => ({ ...en, ok: (en.cost >> 1) <= range && !!en.f && this.canTarget(f, en.f) }))
       return this.ui.aim(f, entries, `Target for ${s.name}:`, allowEmpty)
     }
-    if (mode === 0xf) { const p = await pickOne(false); return p?.f ? [p.f] : null }
+    if (mode === 0xf) { const p = await pickOne(false); if (p) this.aimed = { x: p.x, y: p.y }; return p?.f ? [p.f] : null }
     if (mode >= 8 && mode <= 14) {
       const p = await pickOne(true)
       if (!p) return null
       let radius = mode & 7
       if (s.id === 47 && this.e.read(0x49e6) === 0) radius = Math.min(radius, 2)
       const centre = { x: p.x, y: p.y }
+      this.aimed = centre
       return this.fighters.filter((o) => this.inPlay(o) && footprint(o.size).some(([dx, dy]) =>
         this.cost(centre.x, centre.y, o.x + dx, o.y + dy) <= 2 * radius + 1 && this.sees(centre.x, centre.y, o.x + dx, o.y + dy)))
     }
@@ -1037,9 +1111,45 @@ export class Battle implements FxHost {
         for (const t of targets) { fx.dmgType = 9; this.damageSync(t.c, dmg, 2, saveOf(t)) }
         break
       }
-      case 51: { // Lightning Bolt: the aimed creature and the line beyond (simplified: those in line within 8 squares)
+      case 51: { // Lightning Bolt (FUN_4e53_2bb7, path FUN_4e53_295b, hit FUN_4e53_28bc)
         const dmg = this.e.roll(L, 6)
-        for (const t of targets) { fx.dmgType = 0x0c; this.damageSync(t.c, dmg, 2, this.saveSync(t.c, 4, 0)) }
+        const at = (x: number, y: number) => ({ occ: this.occupied(x, y, 1), v: this.bf.get(y, x) })
+        const hit = (x: number, y: number) => {
+          const { occ, v } = at(x, y)
+          if (occ) { fx.dmgType = 0x0c; this.damageSync(occ.c, dmg, 2, this.saveSync(occ.c, 4, 0)); fx.dmgType = 0 }
+          return v > 0 && (this.cells[v]?.move ?? 0xff) === 0xff
+        }
+        let { x: ox, y: oy } = this.aimed
+        hit(ox, oy)
+        if (f.x === ox && f.y === oy) break
+        let last = at(ox, oy).occ
+        let sign = 1, first = true, remaining = 16
+        while (remaining > 0) {
+          const line = new Line(ox, oy, ox + sign * (ox - f.x) * remaining, oy + sign * (oy - f.y) * remaining)
+          for (;;) {
+            let here = at(line.x, line.y)
+            for (;;) {
+              const ok = line.step()
+              here = at(line.x, line.y)
+              if (!ok || (here.occ && here.occ !== last) || here.v === 0 || (this.cells[here.v]?.move ?? 0xff) > 1 || line.cost >= remaining) break
+            }
+            last = here.occ
+            if (here.v === 0) remaining = 0
+            const bounce = hit(line.x, line.y)
+            if (bounce) {
+              // the bolt comes straight back through the caster (bug: not at the angle of incidence)
+              ox = line.x; oy = line.y
+              const back = new Line(ox, oy, f.x, f.y)
+              while (back.step());
+              if (first && back.cost <= 8) line.cost = (line.cost + 8) & 0xff
+              sign = -sign; first = false; last = null
+            }
+            // bug kept: the cumulative cost is taken off at every stop
+            remaining = line.cost < remaining ? remaining - line.cost : 0
+            if (bounce || remaining === 0) break
+          }
+        }
+        this.ui.redraw()
         break
       }
       case 48: case 55: { // Haste / Slow
@@ -1052,11 +1162,22 @@ export class Battle implements FxHost {
         }
         break
       }
-      case 34: { // Stinking Cloud: helpless or coughing for those in it
-        for (const t of targets) {
-          if (this.e.effectsOf(t.c).some((x) => [0x1e, 0x1f, 0x20, 0x6f, 0x7d].includes(x.type))) continue
-          if (this.saveSync(t.c, 0, 0)) { this.print(`${name(t.c)} starts to cough`); addRaw(this, t.c, 0x1e, 1, 0xff, 0) }
-          else { this.print(`${name(t.c)} chokes and gags from nausea`); addRaw(this, t.c, 0x1f, this.e.roll(1, 4) + 1, 0xff, 0); this.endTurnF(t) }
+      case 34: { // Stinking Cloud (FUN_4e53_1b11): the aimed square is the upper left of 4 (DS:290D: here, E, SE, S)
+        const n = this.clouds.length ? Math.max(...this.clouds.map((z) => z.n)) + 1 : 1
+        const z: Cloud = { owner: c, n: n & 0x0f, cells: [] }
+        for (const [dx, dy] of [[0, 0], [1, 0], [1, 1], [0, 1]]) {
+          const x = this.aimed.x + dx, y = this.aimed.y + dy
+          const v = this.bf.get(y, x)
+          if (x < 0 || y < 0 || x >= COLS || y >= ROWS || (this.cells[v]?.move ?? 0xff) === 0xff) continue
+          z.cells.push({ x, y, old: v })
+          this.bf.set(y, x, 0x1e)
+        }
+        this.clouds.push(z)
+        addRaw(this, c, 0x28, L, ((z.n << 4) + L) & 0xff, 1)
+        this.ui.redraw()
+        for (const t of z.cells) {
+          const o = this.occupied(t.x, t.y, 1)
+          if (o) this.cloudCheck(o)
         }
         break
       }
@@ -1227,26 +1348,87 @@ export class Battle implements FxHost {
     return false
   }
 
-  /** Weapon choice (FUN_3334_13ca), simplified: ranged when no enemy is adjacent and ammunition is there, else melee. */
-  chooseWeapon(f: Fighter, meleeOnly = false) {
+  /** Weapon score (FUN_3334_128d), in byte arithmetic. `otherHands` = hands in use apart from weapon and shield. */
+  weaponScore(f: Fighter, it: Item, otherHands: number): number {
+    const b = this.e.items!.baseOf(it)!
+    let v = (b.small[0] * b.small[1]) & 0xff
+    if (it.plus > 0) v = (v + 8 * it.plus) & 0xff
+    if (b.small[2] > 0) v = (v + 2 * b.small[2]) & 0xff
+    if (it.type === 0x55 && f.target && s8(f.target.c[0x76]) > 0) v = 8 // holy water against undead
+    if (b.flags & 8) v = (v + 2 * (b.rate - 1)) & 0xff
+    if (b.hands <= 1) v = (v + 3) & 0xff
+    if (otherHands + b.hands > 3) v = 0
+    if (it.props[2] === 0x84 && (it.props[1] & 0x0f) !== f.c[0xa0]) v = 0 // alignment-locked
+    if (it.props[1] === 0x53) v = 0 // Javelin of Lightning
+    if (it.cursed) v = 0
+    return v
+  }
+
+  /**
+   * Weapon choice (FUN_3334_13ca): best ranged (flag 8 or 0x10) and best melee (no flag 8) against
+   * the natural attack; the ranged weapon wins if it scores more than half the melee score, has
+   * ammunition and either can be thrown in melee or no enemy is adjacent. Then hands and the shield.
+   */
+  chooseWeapon(f: Fighter, _meleeOnly = false) {
     const t = this.e.items
     if (!t) return
-    const items = this.e.itemsOf(f.c)
-    const usable = items.filter((it) => t.baseOf(it)?.slot === 0 && (t.baseOf(it)!.classes & f.c[0xb0]) && !it.cursed)
-    if (!usable.length) return
-    const score = (it: Item) => { const b = t.baseOf(it)!; return b.small[0] * b.small[1] + 8 * Math.max(0, it.plus) + 2 * Math.max(0, b.small[2]) + (b.hands === 1 ? 3 : 0) }
-    const adjacent = this.enemiesWithin(f, 1).length > 0
-    const ranged = usable.filter((it) => (t.baseOf(it)!.range > 1) && this.ammo(f.c, it) && (!adjacent || (t.baseOf(it)!.flags & 0x14) === 0x14))
-    const melee = usable.filter((it) => t.baseOf(it)!.range <= 1 || (t.baseOf(it)!.flags & 0x10))
-    const bestOf = (l: Item[]) => l.sort((a, b) => score(b) - score(a))[0]
-    let pick = !meleeOnly && ranged.length && (!melee.length || score(bestOf(ranged)) > score(bestOf(melee)) / 2) ? bestOf(ranged) : bestOf(melee)
-    if (!pick) pick = bestOf(usable)
-    const cur = this.weaponOf(f.c)
-    if (cur === pick || (cur && cur.cursed)) return
-    if (cur) cur.ready = false
-    if (t.baseOf(pick)!.hands === 2) for (const s of items.filter((it) => it.ready && t.baseOf(it)?.slot === 1 && !it.cursed)) s.ready = false
-    pick.ready = true
-    this.recalc(f.c)
+    const c = f.c
+    const items = this.e.itemsOf(c)
+    const base = (it: Item) => t.baseOf(it)
+    const weapon = () => items.find((it) => it.ready && base(it)?.slot === 0) ?? null
+    const shield = () => items.find((it) => it.ready && base(it)?.slot === 1) ?? null
+    const cur = weapon(), curShield = shield()
+    const otherHands = c[0x100] - (cur ? base(cur)!.hands : 0) - (curShield ? base(curShield)!.hands : 0)
+    let ranged: Item | null = null, rangedScore = 1
+    let melee: Item | null = null
+    let meleeScore = (c[0xa3] * c[0xa5]) & 0xff
+    if (s8(c[0xa7]) > 0) meleeScore = (meleeScore + 2 * s8(c[0xa7])) & 0xff
+    let bestShield: Item | null = null, shieldScore = 0
+    for (const it of items) {
+      const b = base(it)
+      if (!b || !(b.classes & c[0xb0])) continue
+      if (b.slot === 0) {
+        const v = this.weaponScore(f, it, otherHands)
+        if ((b.flags & 0x18) && v > rangedScore) { ranged = it; rangedScore = v }
+        if (!(b.flags & 8) && v > meleeScore) { melee = it; meleeScore = v }
+      } else if (b.slot === 1) {
+        const v = it.plus >= 0 ? (it.plus + 1) & 0xff : 0
+        if (v > shieldScore) { bestShield = it; shieldScore = v }
+      }
+    }
+    let pick = melee
+    if (ranged) {
+      const b = base(ranged)!
+      const throwMelee = b.range > 1 && (b.flags & 0x14) === 0x14
+      let ammo: Item | null = null
+      if (b.flags & 0x10) ammo = ranged
+      if (b.flags & 8) {
+        if (b.flags & 1) ammo = items.find((it) => it.ready && it.type === 73) ?? null // arrows (char+0xF8)
+        if (b.flags & 0x80) ammo = items.find((it) => it.ready && it.type === 28) ?? null // quarrels (char+0xFC)
+      }
+      const hasAmmo = !!ammo || b.flags === 0x0a
+      if (rangedScore > meleeScore >> 1 && hasAmmo && (throwMelee || this.enemiesWithin(f, 1).length === 0)) pick = ranged
+    }
+    let changed = false
+    if (cur !== pick && !(cur && cur.cursed)) {
+      if (cur) cur.ready = false
+      if (pick) pick.ready = true
+      changed = true
+    }
+    this.recalc(c)
+    const sh = shield()
+    const swapShield = !(sh === bestShield || (sh && sh.cursed))
+    if (c[0x100] > 2) {
+      if (sh && sh.cursed) { if (pick) pick.ready = false } else if (sh) sh.ready = false
+      changed = true
+    } else if (c[0x100] < 2 && swapShield) {
+      if (sh) sh.ready = false
+      this.recalc(c)
+      if (bestShield) bestShield.ready = true
+      changed = true
+    }
+    this.recalc(c)
+    if (changed) this.ui.redraw()
   }
 
   // ------------------------------------------------------------ outcome

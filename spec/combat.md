@@ -435,6 +435,8 @@ r0 (8, bolt)  r1 (9)   r2 (10)    r3 (11)
   4. remaining −= the line's cumulative cost at each stop (bug: passing several creatures shortens the bolt).
   5. At a blocking cell the new origin is the wall cell and sign = −sign: the bolt comes straight back through the caster, not at the angle of incidence; the last-hit memory is cleared, so creatures can be hit twice.
   6. On the first bounce only, if the wall-to-caster cost ≤ 8, 8 more half-squares are spent.
+  7. The line walker (`FUN_46c1_01a0` init, `FUN_46c1_02cc` step) is Bresenham on the major axis: error 2·minor − major, a diagonal step when the error is ≥ 0 (so a tie goes diagonal first); the 26-byte record carries the cumulative cost as a byte (+2 straight, +3 diagonal). The step stops at the end point without moving.
+  8. Every stop calls `28bc` on the cell reached, which hits whatever creature stands there (so a 2×2 creature can be hit again when the bolt stops on its second cell) and reports a bounce when the cell's movement byte is 0xFF. A cell value 0 (off the field) ends the bolt.
 - **Magic Missile** (`1439`): damage `roll(L >> 1, 4) + (L >> 1)`, type 8, so a level-1 caster does 0 (the guide says (L+1)/2 × (1d4+1); confirm in play).
 
 ### Cast (`FUN_3aae_2414`)
@@ -806,6 +808,9 @@ Score (byte arithmetic): `dice × sides` (small/medium) + 8·plus (if > 0) + 2·
 1. Natural attack scores `A3·A5 (+2·A7 if > 0)`; ranged best starts at 1; only items usable by the class (`ITEMS[t][13] & c[0xB0]`).
 2. Ranged weapon chosen iff its score > melee score / 2, it has ammunition (arrows, quarrels, or itself if thrown) and (it is a throwable melee weapon or no enemy is adjacent). Otherwise the best melee weapon (or the natural attack).
 3. Swap if the current weapon differs and is not cursed; then fix hands (drop a non-cursed shield if hands are short) and ready the best shield (plus + 1) if a hand is free.
+   - Candidates (O): every item usable by the class; a weapon with flag 8 or 0x10 competes for ranged (start score 1), one without flag 8 for melee (start score the natural attack), so a throwable melee weapon is in both. The hands test in the score is c[0x100] (minus the readied weapon's and shield's hands) + hands > 3.
+   - Ammunition (O): the weapon itself with flag 0x10; with flag 8, arrows (char+0xF8) for flag 1 and quarrels (char+0xFC) for flag 0x80; flags exactly 0x0A need none. "Throwable melee" means range > 1 and flags & 0x14 = 0x14.
+   - Hands (O): after readying, if c[0x100] > 2 a cursed shield unreadies the new weapon, otherwise the shield goes; if c[0x100] < 2 and the shield is not already the best (or cursed), the best shield is readied.
 
 ### Melee / missile loop (O, `FUN_3334_0b3c`)
 

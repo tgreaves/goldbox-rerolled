@@ -8,7 +8,7 @@ import { World } from '../render/world'
 import { Engine, A0, type Io } from '../vm/engine'
 import { drawMap, landmarkAt } from './areamap'
 import type { GeoMap } from '../data/geo'
-import { listSaves, writeSave } from '../store/user'
+import { listCharacters, listSaves, saveCharacter, writeSave } from '../store/user'
 import { report, revealedBy, type State } from '../rules/commissions'
 import { ICONS, landmarks, type Landmark } from '../rules/landmarks'
 import { Overland } from '../rules/overland'
@@ -20,8 +20,10 @@ import { pay, receive, sellOffer } from '../rules/money'
 import { shop, temple, treasure, type TownUi } from './town'
 import { camp, cast, type CampUi } from './camp'
 import { runBattle } from './combat'
-import { clockText } from '../rules/camp'
-import { Tables } from '../rules/chargen'
+import { clockText, isScroll } from '../rules/camp'
+import { castOutside, itemSpells, spendUse, targetKind } from '../rules/magic'
+import { Tables, fileStem } from '../rules/chargen'
+import { creatorTools } from './creator'
 import { unexepack } from '../data/exepack'
 import { checkTraining, newSpellChoices, train, willBecome } from '../rules/training'
 import { initSound, play, setSoundDevice, soundAvailable, soundDevice, unlockAudio } from '../audio/sfx'
@@ -412,8 +414,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
 
   /**
-   * The party screen as a training hall opens it (PROGRAM 0; spec/progression.md). Party management
-   * (create, add, remove, load) stays on the start-up party screen (IMP-032).
+   * The party screen a training hall opens (PROGRAM 0; spec/menus.md, spec/progression.md): Create,
+   * Drop, Modify, Train, View, Add, Remove, Save and Begin. Load needs an empty party, which this
+   * screen never leaves, so it is not offered. Created and removed characters go to the roster
+   * (browser storage), as the original writes their files.
    */
   let tables: Tables | null | undefined
   async function trainingHall() {
@@ -421,20 +425,56 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const exe = files.get('START.EXE')
       try { tables = exe ? new Tables(unexepack(exe).image) : null } catch { tables = null }
     }
-    if (!tables) { note('Training needs START.EXE: re-import the POOLRAD folder.'); return }
+    if (!tables) { note('The party screen needs START.EXE: re-import the POOLRAD folder.'); return }
     const t = tables
     const rng = (n: number) => engine.rand(n)
+    const tools = creatorTools(dialog, files, rng, t)
+    const nameOf = (c: Uint8Array) => parseCharacter(c).name
     for (;;) {
-      print(`${parseCharacter(engine.cur).name} is selected. Choose who trains from the party list.`, true)
-      const o = await menu(['TRAIN', 'VIEW', 'EXIT'], { prompt: 'Choose a function:' })
-      if (o === 1) await campUi.view()
-      else if (o === 2) return
-      else {
-        const c = engine.cur
+      const party = engine.party()
+      drawRoster()
+      print(`${nameOf(engine.cur)} is selected (choose from the party list).`, true)
+      const opts = ['CREATE', 'DROP', 'MODIFY', 'TRAIN', 'VIEW', 'ADD', 'REMOVE', 'SAVE', 'BEGIN']
+      const o = opts[await menu(opts, { prompt: 'Choose a function:' })]
+      const c = engine.cur
+      if (o === 'BEGIN') return
+      if (o === 'VIEW') await campUi.view()
+      else if (o === 'SAVE') await saveGame()
+      else if (o === 'CREATE') {
+        const made = await tools.create(t)
+        if (made) {
+          await saveCharacter({ stem: fileStem(nameOf(made)), sav: made })
+          print(`${nameOf(made)} has been created. Use Add to put them in the party.`, false)
+        }
+      } else if (o === 'ADD') {
+        if (party.length >= 8 || party.filter((m) => m[0x84] < 0x80).length >= 6) { print('The party is full.', false); continue }
+        const inParty = new Set(party.map(nameOf))
+        const roster = (await listCharacters()).filter((r) => !inParty.has(nameOf(r.sav)))
+        const pick = await tools.chooseFrom('Add character', roster)
+        if (pick) {
+          const added = engine.addMember(pick.sav, pick.itm, pick.spc)
+          if (engine.items) recalc(added, engine.itemsOf(added), engine.items)
+          print(`${nameOf(added)} joins the party.`, false)
+        }
+      } else if (o === 'REMOVE') {
+        if (party.length <= 1) { print('The party needs at least one character.', false); continue }
+        await saveCharacter({ stem: fileStem(nameOf(c)), sav: c.slice(), itm: itemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })
+        engine.dropMember(c)
+        print(`${nameOf(c)} leaves the party (still available to Add).`, false)
+      } else if (o === 'DROP') {
+        if (party.length <= 1) { print('The party needs at least one character.', false); continue }
+        if (await tools.confirm(`${nameOf(c)} will be gone forever. Drop this character?`)) {
+          engine.dropMember(c)
+          print(`${nameOf(c)} has been dropped.`, false)
+        }
+      } else if (o === 'MODIFY') {
+        if ((c[0xac] | c[0xad] | c[0xae] | c[0xaf]) !== 0) print(`${nameOf(c)} can't be modified.`, false)
+        else if (await tools.modify(c)) { if (engine.items) recalc(c, engine.itemsOf(c), engine.items); print(`${nameOf(c)} has been modified.`, false) }
+      } else if (o === 'TRAIN') {
         const chk = checkTraining(t, c, engine.read(0x6da8))
         drawRoster()
         if (!chk.ok) { print(chk.message, false); continue }
-        print(`${parseCharacter(c).name} will become:`, true)
+        print(`${nameOf(c)} will become:`, true)
         for (const line of willBecome(c, chk.train)) print(line, false)
         if ((await menu(['YES', 'NO'], { prompt: 'Do you wish to train?' })) !== 0) continue
         print('Congratulations...', false)
@@ -448,13 +488,14 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           }
         }
         if (engine.items) recalc(c, engine.itemsOf(c), engine.items)
-        drawRoster()
       }
     }
   }
 
   /** Character sheet with the items menu (spec/town.md, "Items menu"); IMP-027 for the panel. */
-  function sheet(c: Character, opts: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id'; mode?: 'shop' | 'temple' | 'treasure' } = {}) {
+  /** steps of Use on the sheet: which spell, then whom */
+  interface UseStep { scroll: boolean; ids: number[]; spell?: number; combatOnly?: boolean }
+  function sheet(c: Character, opts: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use'; use?: UseStep; mode?: 'shop' | 'temple' | 'treasure' } = {}) {
     const node = c.raw
     const t = engine.items
     const items = engine.itemsOf(node)
@@ -473,6 +514,14 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         <button data-a="sell-yes">Yes</button><button data-a="cancel">No</button>`
       else if (opts.confirm === 'id') actions = `<p>For 200 gold pieces I'll identify your ${escape(t.name(it))}. Is It a Deal?</p>
         <button data-a="id-yes">Yes</button><button data-a="cancel">No</button>`
+      else if (opts.confirm === 'use' && opts.use) {
+        const u = opts.use, st = engine.spells
+        if (u.spell === undefined) actions = '<p>Cast which spell?</p>' + u.ids.map((id, k) =>
+          `<button data-a="use-spell-${k}">${escape(st?.get(id)?.name ?? `#${id}`)}</button>`).join('') + '<button data-a="cancel">Exit</button>'
+        else if (u.combatOnly) actions = '<p>That Item is a combat-only item... Use it?</p><button data-a="use-waste">Yes</button><button data-a="cancel">No</button>'
+        else actions = `<p>Cast ${escape(st?.get(u.spell)?.name ?? '')} on:</p>` + engine.party().map((n, k) =>
+          `<button data-a="use-on-${k}">${escape(parseCharacter(n).name)}</button>`).join('') + '<button data-a="cancel">Exit</button>'
+      }
       else if (opts.confirm === 'trade') actions = `<p>Trade with Whom?</p>` + others.map((n, k) =>
         `<button data-a="trade-${k}">${escape(parseCharacter(n).name)}</button>`).join('') + '<button data-a="cancel">Exit</button>'
       else actions = `<button data-a="ready"><u>R</u>eady</button><button data-a="use"><u>U</u>se</button>` +
@@ -503,7 +552,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         ${opts.message ? `<p class="message">${escape(opts.message)}</p>` : ''}
         <div class="item-actions">${actions}</div>` : '<p class="muted">Items need the ITEMS file and START.EXE: re-import the POOLRAD folder.</p>'}
       <form method="dialog"><button>Close</button></form>`
-    const again = (o: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' }) => {
+    const again = (o: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use'; use?: UseStep }) => {
       drawRoster()
       sheet(parseCharacter(node), { ...o, mode: opts.mode })
     }
@@ -516,7 +565,34 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       if (a === 'ready') {
         const m = it.ready ? unready(node, items, it, t) : ready(node, items, it, t)
         again({ selected: keep, message: m })
-      } else if (a === 'use') again({ selected: keep, message: it.ready ? 'Using items comes with spells and combat.' : 'Must be Readied' })
+      } else if (a === 'use' || a.startsWith('use-')) {
+        // Use outside combat (FUN_4894_1a8a); it does not end anything (spec/town.md, "Items menu")
+        const st = engine.spells
+        if (!it.ready) { again({ selected: keep, message: 'Must be Readied' }); return }
+        if (!st) return
+        const scroll = isScroll(it, t)
+        const u: UseStep = opts.use ?? { scroll, ids: itemSpells(it, scroll) }
+        if (!u.ids.length) { again({ selected: keep, message: 'Nothing happens.' }); return }
+        if (a === 'use') u.spell = u.ids.length === 1 ? u.ids[0] : undefined
+        else if (a.startsWith('use-spell-')) u.spell = u.ids[Number(a.slice(10))]
+        const s = u.spell === undefined ? undefined : st.get(u.spell)
+        if (u.spell !== undefined && !s) return
+        if (s && s.side === 0 && a !== 'use-waste') u.combatOnly = true
+        if (a === 'use-waste' && s) { spendUse(items, it, u.scroll, s.id); again({ message: 'The item is used up.' }); return }
+        if (!s || u.combatOnly) { again({ selected: keep, confirm: 'use', use: u }); return }
+        const kind = targetKind(s)
+        let targets = [node]
+        if (kind === 'party') targets = engine.party()
+        else if (kind === 'one') {
+          if (!a.startsWith('use-on-')) { again({ selected: keep, confirm: 'use', use: u }); return }
+          targets = [engine.party()[Number(a.slice(7))]]
+        }
+        print(`${c.name} uses an item`, false)
+        const out = castOutside(engine, node, s, targets, true)
+        spendUse(items, it, u.scroll, s.id)
+        for (const m of out) print(m, false)
+        again({ selected: Math.min(keep, items.length - 1), message: out.join(' ') })
+      }
       else if (a === 'trade') {
         const why = unavailable(it)
         again(why ? { selected: keep, message: why } : { selected: keep, confirm: 'trade' })

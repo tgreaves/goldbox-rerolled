@@ -244,7 +244,7 @@ Turning, menus, shops, temples, training and casting outside combat take no time
 ### Effect time-out (`FUN_4b46_0000(count, unit)`)
 
 1. Convert to minutes: count × the product of the limits below the unit (unit 1 = minutes). Units 0 and 6 are not handled properly but are never used.
-2. Repeat in chunks of `min(remaining, 10)` minutes. For each party member and each of its effects with duration ≠ 0 (0 = permanent): if chunk < duration, duration −= chunk; otherwise remove the effect (`FUN_5216_0026`, which runs its removal callback, [[spec/effects]]).
+2. Repeat in chunks of `min(remaining, 10)` minutes. For each party member and each of its effects with duration ≠ 0 (0 = permanent): if chunk < duration, duration −= chunk; otherwise remove the effect (`FUN_5216_0026`, which runs its removal callback, [[spec/effects]]). In combat the round end advances the clock by 1 minute while the monsters are linked into the party list, so their effects time out the same way (I).
 
 Effect durations are therefore in **minutes** (1 combat round = 1 minute). An effect expires at the first chunk that reaches its remaining time, up to 9 minutes early on a long advance.
 

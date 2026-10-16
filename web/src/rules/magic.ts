@@ -124,3 +124,25 @@ export function castOutside(e: Engine, caster: Uint8Array, s: Spell, targets: Ui
   for (const c of targets) recalc(c, e.itemsOf(c), t)
   return out
 }
+
+/**
+ * Spells an item can cast with Use (FUN_4894_1a8a): a scroll lists its spells; another item casts
+ * item[0x3D] (ids above 0x38 lose 0x17) when item[0x3E] < 0x80. Empty if the item casts nothing.
+ */
+export function itemSpells(it: import('../data/items').Item, scroll: boolean): number[] {
+  if (scroll) return it.props.filter((p) => p > 0).map((p) => p & 0x7f)
+  const [, id, flags] = it.props
+  if (id > 0 && flags < 0x80) return [id > 0x38 ? id - 0x17 : id]
+  return []
+}
+
+/** After a cast from an item: a scroll loses that spell; a charged stack loses a unit, a single item a charge (gone at 0). */
+export function spendUse(items: import('../data/items').Item[], it: import('../data/items').Item, scroll: boolean, id: number) {
+  if (scroll) {
+    for (let j = 0; j < 3; j++) if ((it.raw[0x3c + j] & 0x7f) === id) { it.raw[0x3c + j] = 0; break }
+    return
+  }
+  if (it.raw[0x3c] === 0) return
+  if (it.count > 1) it.count--
+  else if (--it.raw[0x3c] === 0) items.splice(items.indexOf(it), 1)
+}
