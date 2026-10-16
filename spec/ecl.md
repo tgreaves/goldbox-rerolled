@@ -293,7 +293,7 @@ All of these walk the party list `DS:5D96`, which **also holds loaded monsters**
 
 Stored values: **0** the monsters flee ("The monsters flee."), **1** combat, **2** the party escapes, **3** parlay. "Approach" lowers the distance and loops ("Both sides wait." at distance 0). Scripts follow with `ON_GOTO [dest], 4, …`.
 
-**Random treasure** (`FUN_4c2d_1010`), per item: d100 1–60 → d100 r2: 1–47 and 50–59 → type r2 (45 → 0x3B); **48–49 leave the type unset, so the previous item's type repeats**; 60–90 → d10: 1–4 0x24, 5–7 0x23, 8 0x22, 9 0x25, 10 0x26; 91–94 0x49; 95–97 0x5D; 98–100 0x4D. 61–85 → 0x3D; 86–92 → 0x3E; 93–98 → d16: 1–7 0x47, 8–9 0x46, 10 0x54, 11–12 0x4E, 13–14 0x4F, 15 0x5C, 16 0x43; 99–100 → 0x45.
+**Random treasure**: the `TREASURE` handler (`29c3:19B0`) picks each item's type with d100 rolls, calls `FUN_4c2d_1010(type, item)` to build the 63-byte record, and prepends the record to the treasure list. After the last item it rebuilds every list item's display name. **48–49 on the second d100 leave the type unset, so the previous item's type repeats.** The full algorithm, with the dice, the bytes set for each outcome, the random item array at DS:0972 and its bugs, is in [[spec/records#Random items]] (O).
 
 ### Monsters in the party list
 

@@ -42,6 +42,8 @@ Part of [[spec/README]]. Ordered by what a browser reimplementation needs first.
 - Confirm in DOSBox: stack Sell price (value/2 × count / 20 for every stack), the vanishing share of 0xB3 NPCs in Share, and the lost gem when keeping it with an empty inventory.
 - Scroll test `0x96:0x3E` (slot 11–14 per the guide) and the Remove Curse spell handler used by the temple: not traced here.
 - Combat use of ammunition: the round-start formula (`FUN_3aae_0d23`, `FUN_3aae_0e52`) is only summarised in [[spec/records]].
+- Random items ([[spec/records]] Random items): the type a `TREASURE` gets for its first item when the second d100 is 48–49 is an uninitialised stack byte (`29c3:19B0`, `bp−0x65`). A port must pick a rule (blank item, or repeat the last type). Confirm in DOSBox: random arrow and quarrel stacks weigh 40 per unit (400 per stack of 10) against 4 for shop arrows.
+- [[spec/records]] "Name words" numbers some words one too low: from the table (word w at DS:10A7 + 21·w), "+1".."+5" are 162–166 (0xA2–0xA6), "of" is 167 (0xA7) and "-1".."-3" are 201–203 (0xC9–0xCB). The random-item code confirms this, since it writes 0xA1 + plus.
 
 ## Interpreter vs the original
 

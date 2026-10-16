@@ -261,6 +261,166 @@ Every defined type (names from the shipped item records; G = from the guide only
 
 Data quirks kept as shipped: Bec De Corbin has the thrown flag but range 0 (never ranged); Bill-Guisarme has "fires arrows"; Guisarme-Voulge lacks the STR flag; darts get neither STR nor DEX. Thieves (0x04) cannot ready bows or arrows (mask 0x48).
 
+## Random items
+
+The only source is ECL `TREASURE` (0x27) with item operand 0x80 + n (handler `29c3:19B0`, O). `FUN_4c2d_1010` has no other caller (one far call, through stub `008F:0061`, O). Monster loot is never random: the aftermath copies the monsters' own `MON<block>ITM` items ([[spec/combat]] Aftermath; O: value > 0 always taken; value 0 kept on d10 ≤ 3 unless 8 items, of any value, were already taken in this battle). Reference implementation: `tools/randitem.py` (builds the bytes from a list of dice results). dN = `roll(1, N)` = Random(N) + 1 (`FUN_5216_0de3`).
+
+### Type choice (O, in the TREASURE handler)
+
+```
+for i in 1..n:                       // n = operand − 0x80; 0x80 makes nothing
+    r1 = d100
+    1–60:   r2 = d100
+            1–47, 50–59: t = r2, but 45 → 0x3B Shield (no magic Fine Composite Bow)
+            60–90:  d10: 1–4 0x24 Long, 5–7 0x23 Broad, 8 0x22 Bastard, 9 0x25 Short, 10 0x26 Two-Handed Sword
+            91–94:  t = 0x49 Arrows;  95–97: 0x5D Ring of Protection;  98–100: 0x4D Bracers
+            48, 49: t not assigned (Bug)
+    61–85:  t = 0x3D magic-user scroll;  86–92: 0x3E clerical scroll
+    93–98:  d16: 1–7 0x47 potion, 8–9 0x46 misc, 10 0x54 Giant Strength, 11–12 0x4E wand,
+                 13–14 0x4F Wand of Magic Missiles, 15 0x5C Cloak of Displacement, 16 0x43 Cloak of Elvenkind
+    99–100: t = 0x45 ring
+    FUN_4c2d_1010(t, buf)            // buf: one 63-byte local, rebuilt from zero each time
+    prepend a copy of buf to the treasure list DS:6810 (next = old head)
+for every item now in the list: FUN_10ba_0442(DS:5D92, item, 0, 0, 0, 0)   // name cache item[0x00]
+```
+
+- **Per-call state** (O): t is an uninitialised local byte of the handler (`bp−0x65`). On r2 = 48 or 49 the previous item's type in the same `TREASURE` repeats, with fresh dice for that type (new plus, new spells, …). For the first item of a call t is stale stack (**?**); a value that matches no branch below gives a blank item (type t, every other byte 0, mask 6), which is G's "item with no name". G (9.4) says 48–49 always give that blank item.
+- Items come out newest first, so the screen lists them in reverse generation order (O). The list is not cleared first: they go in front of anything already in it.
+- Every range and die above matches G 9.4.
+
+### Building the record (O, `FUN_4c2d_1010(t, item)`)
+
+```
+item[0..62] = 0;  item[0x35] = 6 (hide n1, n2);  item[0x2E] = t;  m = 0
+if t in 1..0x3B or t in {0x49, 0x4D, 0x5D}:
+    p = d20: 1–14 → 1, 15–19 → 2, 20 → 3                 // FUN_4c2d_0fd2
+    item[0x32] = p;  P = 0xA1 + p                        // words 0xA2–0xA4 "+1" "+2" "+3"
+    t = 0x15: d5, 5 → m = 0x90                           // Bug, see below
+    name words, mask: table below
+    item[0x33] = 0;  item[0x39] = 0;  weight, count: table below
+    item[0x3A] = item[0x32] × k (16-bit)                 // after the bracers adjustment
+elif t in {0x3D, 0x3E}: scroll, below
+else: m from the magic table, below (types without an entry keep m = 0: blank item)
+if m ≠ 0: overwrite from the random item array
+```
+
+Names (word numbers as in [[#Name words (O)]]; displayed 0x31 0x30 0x2F; mask 4 hides 0x2F, mask 6 hides 0x2F and 0x30):
+
+| t | 0x31 | 0x30 | 0x2F | 0x35 | unidentified → identified |
+|---|---|---|---|---|---|
+| 0x32, 0x33 | t | 0x31 Armor | P | 4 | Leather Armor → Leather Armor +1 |
+| 0x34 | t | 0x32 Leather | P | 4 | Studded Leather → Studded Leather +1 |
+| 0x35–0x3A | t | 0x30 Mail | P | 4 | Chain Mail → Chain Mail +1 |
+| 0x49 | 0x3D Arrow | P | 0 | 6 | 10 Arrows → 10 Arrows +1 |
+| 0x4D | 0x4F Bracers | 0xA7 of | AC word | 6 | Bracers → Bracers of AC 6 |
+| 0x5D | 0x42 Ring | 0xE0 Of Protection | P | 6 | Ring → Ring Of Protection +1 |
+| other (weapons, 0x1C, 0x3B) | t | P | 0 | 6 | Long Sword → Long Sword +1 |
+
+Bracers: item[0x32] = 2p + 2 = 4, 6, 8 (AC 6, 4, 2 at 70/25/5 %), word 0xDD "AC 6", 0xDE "AC 4", 0xDC "AC 2". Shipped bracers have 0x30 = 0 ("Bracers AC 6"), so only random ones read "of".
+
+Weight item[0x37] (per unit) and count item[0x39] (0 unless stated):
+
+| weight | t |
+|---|---|
+| 1 | 0x5D |
+| 10 | 8, 0x4D |
+| 15 | 6 |
+| 20 | 21 |
+| 25 | 9 (count 5) |
+| 30 | 7 |
+| 35 | 37 |
+| 40 | 22, 30 |
+| 40 (count 10) | everything not listed: 0x1C quarrels, 0x49 arrows. A stack weighs 400; shop arrows weigh 4 each (Bug, I) |
+| 50 | 2, 20, 29, 31, 32, 33, 39, 42, 44, 46, 59 |
+| 60 | 10, 26, 36 |
+| 75 | 1, 13, 14, 35 |
+| 80 | 11, 16, 25, 27, 41, 47 (a later 47 → 1 test is dead) |
+| 100 | 4, 15, 23, 34, 43, 45, 51 |
+| 125 | 3, 24, 40 |
+| 150 | 5, 12, 17, 19, 50 |
+| 175 | 18 |
+| 200 | 52 |
+| 250 | 38, 53 |
+| 300 | 55 |
+| 350 | 57 |
+| 400 | 54, 56 |
+| 450 | 58 |
+
+Value k per plus: 0x3B 2500; 0x1C, 0x49 150; 0x35, 0x36 3000; 0x37, 0x38 3500; 0x39 4000; 0x3A 5000; 0x4D 3000 (on 2p + 2: 12 000 / 18 000 / 24 000); every other type 2000.
+
+**Scrolls** (t = 0x3D magic-user, 0x3E clerical):
+
+```
+n = d3
+item[0x31] = 0xD1 "Magic User Scroll" / 0xD0 "Clerical Scroll";  item[0x30] = 0xD1 + n ("With n Spell(s)");  item[0x2F] = 0
+item[0x32] = 1;  weight 25;  count 0;  value 0;  mask stays 6
+for i in 1..n:
+    L = d3
+    MU:     L1 d13 + 8 (ids 9–21),  L2 d7 + 28 (29–35),  L3 d11 + 44 (45–55)
+    cleric: L1 d8      (1–8),       L2 d7 + 21 (22–28),  L3 d9 + 35  (36–44)
+    item[0x3B + i] = id;  value += 300 · L
+```
+
+Every level-1–3 spell of the class is possible (uniform within a level, duplicates allowed); never Restoration; the scribing bit is clear. Matches G.
+
+**Magic table** (m = 1 + 8e indexes the array below):
+
+| t | dice | m |
+|---|---|---|
+| 0x47 | d11 | 1–5 0x11 Healing, 6–8 0x01 Extra Healing, 9 0x19 Speed, 10 0x51 Keoghtum's Ointment, **11 none: blank** |
+| 0x46 | d10 | 1–7 0x59 Necklace of Missiles, 8–10 0x89 Bag of Holding |
+| 0x54 | | 0x09 Potion of Giant Strength |
+| 0x4E | d3 + 1 | 2 0x41 Paralyzation, 3 0x71 Fireballs, **4 none: blank**; 0x31 Lightning cannot come up |
+| 0x4F | | 0x39 Wand of Magic Missiles |
+| 0x5C | | 0x61 Cloak of Displacement |
+| 0x43 | | 0x91 Cloak of Elvenkind |
+| 0x45 | d10 | 1 0x29 Feather Falling, 2–6 0x79 Fire Resistance, 7–10 0x81 Invisibility |
+| 0x3F | | 0x49 Gauntlets of Ogre Power (the type choice never asks for 0x3F) |
+| 0x15 | d5 = 5 | 0x90 (Bug: Javelin of Lightning is 0x69) |
+
+A blank item (potion d11 = 11, wand d3 + 1 = 4) has type 0x47 / 0x4E, no name words, plus 0 and value 0, so its name is empty. G calls these "hard-to-predict"; the code makes them fixed and empty.
+
+**Copy from the array** (m ≠ 0). W = u16 array at DS:0970, entry e (0–18) at DS:0972 + 16e:
+
+```
+item[0x2F + j] = low byte W[m + j], j = 0..2
+item[0x32] = 1;  item[0x33] = 1          // m = 0x61: 2 and 2
+item[0x37] = W[m + 3];  item[0x39] = 0;  item[0x3A] = W[m + 4]
+item[0x3C + j] = low byte W[m + 5 + j], j = 0..2
+```
+
+Type, mask 6, cursed 0 and readied 0 stay as set. The save bonus only counts for AC descriptor 0x80 ([[#Item record (63 bytes)]]), so of these items only the Cloak of Displacement gets it (+2 saves, matching G; the shipped cloaks have 0). A random Ring of Protection gets 0x33 = 0 (G agrees).
+
+Random item array (DS:0972, O; words 0x2F 0x30 0x31, then weight, value, 0x3C 0x3D 0x3E):
+
+| m | words | identified name | weight | value | 0x3C | 0x3D | 0x3E | reached by |
+|---|---|---|---|---|---|---|---|---|
+| 0x01 | 187 167 64 | Potion of Extra (shipped: "Potion Extra Healing") | 1 | 800 | 3 | 3 | 0 | 0x47 |
+| 0x09 | 239 167 64 | Potion of Giant Strength | 1 | 1100 | 1 | 82 | 0 | 0x54 |
+| 0x11 | 185 167 64 | Potion of Healing | 1 | 400 | 1 | 85 | 0 | 0x47 |
+| 0x19 | 173 167 64 | Potion of Speed | 1 | 450 | 1 | 80 | 0 | 0x47 |
+| 0x21 | 240 167 65 | Scroll of Restoring Level(s) | 1 | 2100 | 56 | 56 | 0 | nothing |
+| 0x29 | 238 167 66 | Ring of Feather Falling | 1 | 5000 | 0 | 27 | 128 | 0x45 |
+| 0x31 | 157 167 69 | Wand of Lightning | 1 | 6000 | 20 | 51 | 0 | unreachable |
+| 0x39 | 206 167 69 | Wand of Magic Missiles | 1 | 11000 | 30 | 88 | 0 | 0x4F |
+| 0x41 | 225 167 69 | Wand of Paralyzation | 1 | 5000 | 20 | 84 | 0 | 0x4E |
+| 0x49 | 226 167 100 | Gauntlets of Ogre Power | 10 | 15000 | 0 | 38 | 131 | 0x3F only |
+| 0x51 | 0 111 182 | Keoghtum's Ointment | 1 | 10000 | 5 | 81 | 0 | 0x47 |
+| 0x59 | 228 167 119 | Necklace of Missiles | 1 | 16000 | 20 | 87 | 0 | 0x46 |
+| 0x61 | 170 167 88 | Cloak of Displacement | 25 | 17500 | 0 | 89 | 133 | 0x5C |
+| 0x69 | 157 167 21 | Javelin of Lightning | 20 | 3000 | 1 | 83 | 0 | unreachable (typo) |
+| 0x71 | 242 167 69 | Wand of Fireballs | 1 | 5000 | 20 | 47 | 0 | 0x4E |
+| 0x79 | 205 167 66 | Ring of Fire Resistance | 1 | 5000 | 0 | 61 | 129 | 0x45 |
+| 0x81 | 227 167 66 | Ring of Invisibility | 1 | 7500 | 0 | 56 | 139 | 0x45 |
+| 0x89 | 186 167 73 | Bag of Holding | 150 | 25000 | 0 | 0 | 0 | 0x46 |
+| 0x91 | 229 167 88 | Cloak of Elvenkind | 25 | 6000 | 0 | 72 | 134 | 0x43 |
+
+Unidentified (mask 6) only 0x31 shows: "Potion", "Wand", "Ring", "Cloak", "Keoghtum's".
+
+**The javelin bug** (O): m = 0x90 is one word before entry 0x91, so every field shifts by one. The item keeps type 0x15 (Javelin) and gets words 0, 229, 167 ("of" → identified "of Elvenkind"), plus 1, save 1, weight 88, value 25, 0x3C = 0x70 (low byte of 6000), 0x3D = 0, 0x3E = 72 (< 0x80, so no handler). It is fixed, not the "hard-to-predict" item in G.
+
+All random items have plus ≥ 1 except blanks, so Detect Magic marks them. In a battle's treasure each gives 400 × plus experience ([[spec/combat]] Aftermath): 400 for scrolls and array items, 800 for the Cloak of Displacement, 1600–3200 for bracers (plus 4–8).
+
 ## Inventory and readying
 
 ### Capacity (O)
