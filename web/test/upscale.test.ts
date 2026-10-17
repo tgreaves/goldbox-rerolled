@@ -2,7 +2,12 @@
 import { describe, expect, it } from 'vitest'
 
 // ImageData is a browser type; a minimal stand-in is enough for the algorithm
-class FakeImageData { data: Uint8ClampedArray; constructor(public width: number, public height: number) { this.data = new Uint8ClampedArray(width * height * 4) } }
+class FakeImageData {
+  data: Uint8ClampedArray
+  width: number
+  height: number
+  constructor(width: number, height: number) { this.width = width; this.height = height; this.data = new Uint8ClampedArray(width * height * 4) }
+}
 ;(globalThis as unknown as { ImageData: unknown }).ImageData = FakeImageData
 
 describe('scale2x', async () => {
