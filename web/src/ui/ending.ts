@@ -12,8 +12,8 @@ const PARTS: string[][] = [
 ]
 
 /**
- * Frame timing: the original shows a frame for (game speed + 3) × its delay timer ticks; the tick
- * length is taken as 10 ms here (I). A click or key skips the current animation.
+ * Frame timing: the original shows a frame for (game speed + 3) × its delay timer ticks, the timer
+ * being DOS time in hundredths of a second (FUN_1709_0c3f). A click or key skips the current animation.
  */
 const TICK_MS = 10
 

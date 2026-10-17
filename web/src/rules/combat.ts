@@ -27,8 +27,18 @@ export interface Fighter {
 
 export interface AimEntry { f: Fighter | null; x: number; y: number; cost: number; ok: boolean }
 
+/** How long a message holds before the next (combat pacing, spec/combat.md "Pacing"). */
+export interface Hold {
+  ms: number
+  /** flash this combatant meanwhile (the hit display, FUN_10ba_1feb) */
+  flash?: Fighter
+}
+
 export interface CombatUi {
-  print(text: string): void
+  /** show a message; the screen shows the next only after `hold` (messages queue) */
+  print(text: string, hold?: Hold): void
+  /** resolves once every queued message has been shown and held */
+  settle?(): Promise<void>
   redraw(focus?: Fighter): void
   pause(ms?: number): Promise<void>
   menu(items: string[], opts?: { prompt?: string }): Promise<number>
@@ -123,7 +133,10 @@ export class Battle implements FxHost {
   // ------------------------------------------------------------ FxHost
   effectsOf(c: Uint8Array): Effect[] { return this.e.effectsOf(c) }
   itemsOf(c: Uint8Array): Item[] { return this.e.itemsOf(c) }
-  print(t: string) { this.ui.print(t) }
+  /** a combat message: held speed × 225 ms (FUN_10ba_16ec with its pause flag, PAUSE = FUN_1709_0dbe) */
+  print(t: string, hold: Hold = { ms: this.e.speed * 225 }) { this.ui.print(t, hold) }
+  /** wait until the messages so far have been shown */
+  async settle() { await this.ui.settle?.() }
   roll(n: number, s: number) { return this.e.roll(n, s) }
   name(c: Uint8Array) { return name(c) }
   all() { return this.fighters.map((f) => f.c) }
@@ -368,6 +381,7 @@ export class Battle implements FxHost {
       }
       if (await this.roundEnd()) break
     }
+    await this.settle()
     return this.outcome()
   }
 
@@ -461,6 +475,7 @@ export class Battle implements FxHost {
     if (s8(f.r[3]) <= 0) return
     if (f.c[0x10f]) await this.ai(f)
     else await this.player(f)
+    await this.settle()
     this.ui.redraw(f)
   }
 
@@ -482,6 +497,7 @@ export class Battle implements FxHost {
     }
     if (this.fighters.some((f) => !f.monster && this.side(f) === 0 && f.c[0x10c] === 5)) this.print('Your Teammate is Dying')
     this.ui.redraw()
+    await this.settle()
     if (this.count(0) === 0 || this.count(1) === 0) {
       if (this.count(0) > 0 && this.count(1) === 0) return !(await this.ui.confirm('Continue Battle:'))
       return true
@@ -505,6 +521,7 @@ export class Battle implements FxHost {
         ['QUICK', 'q'], ['DONE', 'd'],
       ]
       this.ui.redraw(f)
+      await this.settle()
       const k = opts[await this.ui.menu(opts.map((o) => o[0]), { prompt: `${name(c)}:` })]?.[1]
       if (k === 'm') await this.playerMove(f)
       else if (k === 'v') { await this.ui.view(c); this.recalc(c); await this.attacks(f, false) }
@@ -522,8 +539,17 @@ export class Battle implements FxHost {
     const b = w ? this.e.items?.baseOf(w) : undefined
     const canGuard = !b || b.range <= 1 || !!(b.flags & 0x10)
     const dying = this.fighters.some((o) => !o.monster && this.side(o) === 0 && o.c[0x10c] === 5)
-    const opts = [...(canGuard ? ['GUARD'] : []), 'DELAY', 'QUIT', ...(dying ? ['BANDAGE'] : []), 'EXIT']
+    const opts = [...(canGuard ? ['GUARD'] : []), 'DELAY', 'QUIT', ...(dying ? ['BANDAGE'] : []), 'SPEED', 'EXIT']
     const o = opts[await this.ui.menu(opts, { prompt: 'Done:' })]
+    if (o === 'SPEED') { // FUN_320c_10f6: S(lower) +1, F(aster) −1, 0–9
+      for (;;) {
+        const k = await this.ui.menu(['SLOWER', 'FASTER', 'EXIT'], { prompt: `Game Speed = ${this.e.speed} (0=fastest 9=slowest)` })
+        if (k === 0) this.e.speed = Math.min(9, this.e.speed + 1)
+        else if (k === 1) this.e.speed = Math.max(0, this.e.speed - 1)
+        else break
+      }
+      return
+    }
     if (o === 'GUARD') { this.endTurnF(f); f.r[7] = 1; this.print(`${name(f.c)} is Guarding`) }
     else if (o === 'DELAY') f.r[3] = 1
     else if (o === 'QUIT') this.endTurnF(f)
@@ -775,17 +801,21 @@ export class Battle implements FxHost {
           await fire(this, tc, 5)
           const verb = kind === 2 ? '-Backstabs-' : 'Attacks'
           const n = fx.dmg
-          this.print(`${name(ac)} ${verb} ${name(tc)}${kind === 1 ? ' (from behind)' : ''} Hitting for ${n} point${n === 1 ? '' : 's'} of damage`)
+          // the hit display (FUN_10ba_1feb): the line without a pause, the target flashes (speed + 1) × 4 frames of 70 ms
+          this.print(`${name(ac)} ${verb} ${name(tc)}${kind === 1 ? ' (from behind)' : ''} Hitting for ${n} point${n === 1 ? '' : 's'} of damage`,
+            { ms: (this.e.speed + 1) * 280, flash: t })
           this.ui.sound(n > 0 ? 9 : 7)
+          await this.settle() // the target falls after its hit display
           this.inflict(t, n)
           if (this.inPlay(t)) await fire(this, ac, h + 1)
         }
       }
     }
-    if (!hit) { this.print(`${name(ac)} Attacks ${name(tc)} and Misses`); this.ui.sound(7) }
+    // a miss: one flash cycle (280 ms), then the usual pause
+    if (!hit) { this.print(`${name(ac)} Attacks ${name(tc)} and Misses`, { ms: 280 + this.e.speed * 225, flash: t }); this.ui.sound(7) }
     a.r[5] = 0
     this.recalc(ac)
-    await this.ui.pause(150)
+    await this.settle()
     return made
   }
 
@@ -914,6 +944,10 @@ export class Battle implements FxHost {
     }
     this.cloudCheck(f)
     if (!this.inPlay(f) || this.helpless(f.c)) f.r[6] = 0
+    // each step plays the footstep (sound 10) in transient mode, which holds the game for delay(10 cs)
+    this.ui.redraw(f)
+    await this.settle()
+    await this.ui.pause(100)
   }
 
   /** Fleeing (FUN_3aae_0c6a). */
@@ -1289,9 +1323,7 @@ export class Battle implements FxHost {
       if (this.occupied(nx, ny, f.size, f) || !this.passable(nx, ny, f.size)) continue
       if (this.bf.get(ny, nx) === 0x1e && !this.e.effectsOf(f.c).some((x) => [0x20, 0x1e, 0x6f, 0x7d].includes(x.type))) continue
       if ((d % 2 ? 3 : 2) > f.r[6]) return false
-      await this.stepF(f, d)
-      this.ui.redraw(f)
-      await this.ui.pause(60)
+      await this.stepF(f, d) // paced there, as for the player
       return true
     }
     return false

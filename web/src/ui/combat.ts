@@ -13,6 +13,8 @@ export interface BattleScreen {
   canvas: HTMLCanvasElement
   menu(items: string[], opts?: { prompt?: string; vertical?: boolean }): Promise<number>
   print(text: string): void
+  /** a skippable wait (a click, tap or key ends it early) */
+  pause(ms: number): Promise<void>
   view(c: Uint8Array): Promise<void>
   sound(n: number): void
   /** set while a step or aim waits for a tap or key; the screen routes input here */
@@ -34,6 +36,14 @@ export async function runBattle(s: BattleScreen) {
   let focus = { row: 12, col: 25 }
   let marks: { row: number; col: number; colour: string }[] = []
   let acting: Fighter | null = null
+  let flashMark: { row: number; col: number; colour: string } | null = null
+  /** messages queue: each shows, then holds (and may flash its target) before the next */
+  let queue: Promise<void> = Promise.resolve()
+  const flash = async (f: Fighter, ms: number) => {
+    let on = false
+    const id = setInterval(() => { on = !on; flashMark = on ? { row: f.y, col: f.x, colour: '#ff5555' } : null; draw() }, 70)
+    try { await s.pause(ms) } finally { clearInterval(id); flashMark = null; draw() }
+  }
   /** The screen keeps one input object and routes keys and taps through it: fill it in place. */
   const setInput = (v: BattleScreen['input']) => {
     for (const k of Object.keys(s.input)) delete (s.input as Record<string, unknown>)[k]
@@ -59,16 +69,24 @@ export async function runBattle(s: BattleScreen) {
       return { row: f.y, col: f.x, icon: ic.icon, action: ic.action, side: f.c[0x10e] ? 1 : 0, left: f.r[9] >= 5 && f.r[9] <= 7 } as Figure
     })
     const act = acting ? figures[battle.fighters.filter((f) => battle!.inPlay(f)).indexOf(acting)] : undefined
-    view.draw(battle.bf, battle.cells, figures, focus, [...marks, ...(acting ? [{ row: acting.y, col: acting.x, colour: '#f2c94c' }] : [])], act)
+    view.draw(battle.bf, battle.cells, figures, focus, [...marks, ...(acting ? [{ row: acting.y, col: acting.x, colour: '#f2c94c' }] : []), ...(flashMark ? [flashMark] : [])], act)
   }
   const ui: CombatUi = {
-    print: (t) => s.print(t),
+    print: (t, hold) => {
+      queue = queue.then(async () => {
+        s.print(t)
+        if (!hold?.ms) return
+        if (hold.flash) await flash(hold.flash, hold.ms)
+        else await s.pause(hold.ms)
+      })
+    },
+    settle: () => queue,
     redraw: (f) => {
       if (f) { acting = f; focus = { row: f.y, col: f.x } }
       draw()
       s.refreshRoster()
     },
-    pause: (ms = 120) => new Promise((r) => setTimeout(r, ms)),
+    pause: (ms = 120) => s.pause(ms),
     menu: (items, opts) => s.menu(items, opts),
     step: (f, left) => new Promise((resolve) => {
       marks = []
@@ -154,6 +172,7 @@ export async function runBattle(s: BattleScreen) {
       focus = { row: b.fighters[0]?.y ?? 12, col: b.fighters[0]?.x ?? 25 }
       draw()
     })
+    await queue
     for (const m of result.messages) s.print(m)
     return result
   } finally {

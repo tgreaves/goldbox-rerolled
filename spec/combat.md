@@ -313,6 +313,21 @@ If the combatant cannot act (c[0x10D] = 0) the turn ends. If a spell is queued i
 
 The key reader returns the ASCII code, or the scan code for extended keys, so 0x32 is both '2' and Alt-M, 0x2D both '−' and Alt-X, 0x10 Alt-Q (and Ctrl-P). G documents the Alt forms.
 
+### Pacing (O)
+
+All waits scale with the game speed `DS:49E2` (0 fastest … 9 slowest, 4 in the shipped saves; changed by Done → Speed or camp Alter → Speed). The timer is DOS time in hundredths of a second; `Delay(ms)` is the Turbo Pascal CRT routine (`0A40:029C`).
+
+| Wait | Where | Length |
+|---|---|---|
+| Message pause | `FUN_1709_0dbe` = Delay(speed × 225 ms); after combat messages printed with the pause flag (`FUN_10ba_16ec`, most call sites pass 1) and status-line messages (`FUN_10ba_1693`) | speed × 225 ms |
+| Hit display | `FUN_10ba_1feb`: the attack line is printed without a pause, then the target flashes for (speed + 1) cycles of 4 frames, each Delay(70) | (speed + 1) × 280 ms |
+| Miss display | same routine with no hit: one cycle of 4 frames, then the message pause | 280 ms + speed × 225 ms |
+| Before an attack | `3aae:1937` Delay(100) after the target is set | 100 ms |
+| Step | each step plays the footstep (sound 10) in transient mode, which waits `delay(10)` before cutting it off ([[spec/sound]] §6); with sound off there is no wait, so the redraw sets the pace | ≈ 100 ms |
+| Fall | `FUN_577f_0e11`: sound 5, then the message pause | speed × 225 ms |
+
+At speed 0 only the fixed parts remain (hit flash 280 ms, steps); at speed 9 a message holds about 2 s and a hit about 2.8 s.
+
 ### Done submenu (`FUN_320c_0e45`)
 
 | Key | Shown when | Action |

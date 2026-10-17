@@ -275,7 +275,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
               sheet(parseCharacter(c))
               dialog.addEventListener('close', () => resolve(), { once: true })
             }),
-            sound: play, input: battleInput, refreshRoster: () => drawRoster(), cancelMenu: () => cancelMenu(),
+            sound: play, pause: (ms) => io.pause!(ms), input: battleInput, refreshRoster: () => drawRoster(), cancelMenu: () => cancelMenu(),
           })
           if (r.survived) await treasure(townUi)
           else await gameOver()
