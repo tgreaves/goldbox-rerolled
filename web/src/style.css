@@ -409,3 +409,19 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
   .rcard canvas.rc-portrait, .rcard .rc-spells, .rcard .rc-badges { display: none; }
   .rcard canvas.rc-icon { width: 32px; height: 32px; }
 }
+
+/* side column: the map keeps a useful size beside the roster cards */
+.game .party { flex: 0 1 auto; max-height: 62%; }
+.game .map { flex: 1 1 38%; min-height: 9rem; }
+/* wide screens: roster and map side by side, the map a square as tall as the view */
+@media (min-width: 1200px) and (min-aspect-ratio: 4/3) {
+  .game .side { flex-direction: row; align-items: stretch; }
+  .game .party { flex: 1 1 auto; max-height: none; min-width: 16rem; }
+  .game .map { flex: 0 0 auto; width: min(var(--view), 45vw - 8rem); height: auto; aspect-ratio: 1; min-height: 0; align-self: start; }
+}
+/* phones and narrow windows keep their band: roster beside a small map */
+@media (max-width: 760px), (max-aspect-ratio: 4/5) {
+  .game .party { flex: 1; max-height: none; }
+  .game .map { flex: none; width: 9.5rem; min-height: 0; aspect-ratio: auto; }
+}
+.game.in-combat .party { max-height: none; flex: 1 1 auto; }
