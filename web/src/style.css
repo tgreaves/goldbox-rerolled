@@ -198,6 +198,8 @@ dialog.panel form.jump input { width: 4.5rem; }
 .game .overlay {
   position: absolute; inset: 0; margin: auto; height: 100%; width: auto; aspect-ratio: 1;
   max-width: 100%; image-rendering: pixelated; pointer-events: none;
+  /* a picture replaces the whole view in the original: black around it, not the 3D world */
+  box-shadow: 0 0 0 100vmax #000;
 }
 .game .text .screen { padding-top: 0.4rem; border-top: 1px solid #ffffff14; }
 .game .text .screen:first-child { border-top: none; }

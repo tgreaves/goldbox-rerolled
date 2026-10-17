@@ -573,7 +573,7 @@ export class Battle implements FxHost {
       else if (k === 'v') { await this.ui.view(c); this.recalc(c); await this.attacks(f, false) }
       else if (k === 'a') await this.playerAim(f)
       else if (k === 'u') await this.playerUse(f)
-      else if (k === 'c') await this.playerCast(f)
+      else if (k === 'c') { await this.playerCast(f); if (f.r[0]) return } // "Begins Casting": the turn ends, the spell goes off when picked again
       else if (k === 't') await this.turnUndead(f)
       else if (k === 'q') { c[0x10f] = 1; await this.ai(f); return }
       else if (k === 'd') await this.done(f)
