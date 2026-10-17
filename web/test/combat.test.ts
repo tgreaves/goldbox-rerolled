@@ -57,8 +57,10 @@ describe.skipIf(!have)('combat', () => {
       e.speed = speed
       e.addMonsters(4, 3, 4)
       const holds: { text: string; ms: number; flash: boolean }[] = []
-      let steps = 0
+      let steps = 0, poses = 0, falls = 0
       const ui: CombatUi = {
+        pose: (_f, on) => { if (on) poses++ },
+        fall: () => { falls++ },
         print: (text, hold) => { holds.push({ text, ms: hold?.ms ?? -1, flash: !!hold?.flash }) },
         redraw: () => {}, pause: async (ms) => { if (ms === 100) steps++ },
         menu: async (items) => Math.max(0, items.indexOf('QUICK')), step: async () => 'end',
@@ -69,10 +71,12 @@ describe.skipIf(!have)('combat', () => {
       const hits = holds.filter((h) => / Hitting for /.test(h.text))
       const misses = holds.filter((h) => / and Misses$/.test(h.text))
       expect(hits.length + misses.length).toBeGreaterThan(0)
-      for (const h of hits) expect(h).toMatchObject({ ms: (speed + 1) * 280, flash: true })
-      for (const h of misses) expect(h).toMatchObject({ ms: 280 + speed * 225, flash: true })
+      // weapon results: the line and the message pause, no flash (spec/combat.md, "Combat visuals")
+      for (const h of [...hits, ...misses]) expect(h).toMatchObject({ ms: speed * 225, flash: false })
       expect(holds.find((h) => h.text === 'A battle begins...')?.ms).toBe(speed * 225)
       expect(steps).toBeGreaterThan(0)
+      expect(poses).toBeGreaterThan(0) // attackers show their action frame
+      expect(falls).toBeGreaterThan(0) // the skull for each combatant who falls
     }
   })
 })

@@ -41,6 +41,8 @@ export interface FxHost {
   weapon(c: Uint8Array): import('../data/items').Item | null
   /** ITEMS byte 7 of a type: 0 slashing, 1 piercing, 0x80 bashing */
   weaponKind(type: number): number
+  /** an effect took hold in combat: the sparkle (FUN_5216_1656 → FUN_10ba_1feb) */
+  sparkle?(c: Uint8Array): void
   /** effect 0x28 expired: lift that Stinking Cloud (combat only) */
   clearCloud?(c: Uint8Array, power: number): void
 }
@@ -142,6 +144,7 @@ export async function addEffect(h: FxHost, c: Uint8Array, type: number, duration
   const old = h.effectsOf(c).find((e) => e.type === type)
   if (old && ((old.duration > 0 && duration > old.duration) || duration === 0)) await removeEffect(h, c, old)
   const e = addRaw(h, c, type, duration, power, flag)
+  if (h.inCombat()) h.sparkle?.(c)
   if (runNow) await handle(h, type, e, c, -1, false)
   return true
 }

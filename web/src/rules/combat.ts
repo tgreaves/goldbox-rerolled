@@ -27,6 +27,27 @@ export interface Fighter {
 
 export interface AimEntry { f: Fighter | null; x: number; y: number; cost: number; ok: boolean }
 
+/** A COMSPR frame: record (0–11, +128 for the second image) and whether it is drawn mirrored. */
+export interface SpriteFrame { rec: number; mirror?: boolean }
+/** A flight: its frames, the delay per 8-pixel step, and the sounds before and after (spec/combat.md, "Combat visuals"). */
+export interface Flight { frames: SpriteFrame[]; delay: number; sounds?: [number, number] }
+
+/** The standard 4-frame cycle of a COMSPR slot (FUN_10ba_19de): image, mirrored, second image mirrored, second image. */
+export const cycle = (rec: number): SpriteFrame[] => [{ rec }, { rec, mirror: true }, { rec: rec + 128, mirror: true }, { rec: rec + 128 }]
+
+/** The sprite a thrown or fired item flies as (FUN_3aae_26b0); `dir` 0 = N, clockwise. */
+export function missileFlight(type: number, dir: number): Flight {
+  const sounds: [number, number] = [6, 12]
+  if ([9, 21, 28, 31, 73].includes(type)) {
+    const ARROW: SpriteFrame[] = [{ rec: 0 }, { rec: 1 }, { rec: 2 }, { rec: 129 }, { rec: 128 }, { rec: 129, mirror: true }, { rec: 130 }, { rec: 1, mirror: true }]
+    return { frames: [ARROW[dir & 7]], delay: 10, sounds }
+  }
+  if ([2, 7, 20].includes(type)) return { frames: cycle(3), delay: 50, sounds }
+  if (type === 85 || type === 86) return { frames: cycle(4), delay: 50, sounds }
+  if (type === 47) return { frames: [{ rec: 8 }, { rec: 136 }], delay: 20, sounds }
+  return { frames: [{ rec: 7 }, { rec: 135 }], delay: 20, sounds }
+}
+
 /** How long a message holds before the next (combat pacing, spec/combat.md "Pacing"). */
 export interface Hold {
   ms: number
@@ -39,8 +60,14 @@ export interface CombatUi {
   print(text: string, hold?: Hold): void
   /** resolves once every queued message has been shown and held */
   settle?(): Promise<void>
-  /** queued like a message: the fallen-body picture on these cells, sound 5, then a hold of `ms` */
+  /** queued like a message: the skull on these cells, sound 5, then a hold of `ms` (FUN_577f_0e11) */
   fall?(cells: { row: number; col: number }[], ms: number): void
+  /** queued: show the combatant in its action frame (true) or its normal frame (FUN_577f_0af8) */
+  pose?(f: Fighter, action: boolean): void
+  /** queued: a missile or spell flies from one cell to another (FUN_10ba_1a29), sounds before and after */
+  flight?(from: { x: number; y: number }, to: { x: number; y: number }, how: Flight): void
+  /** queued: sparkle (an effect took hold) or starburst (spell/effect damage) at a combatant (FUN_10ba_1feb) */
+  effect?(f: Fighter, kind: 'sparkle' | 'burst', cycles: number, holdAfter: number): void
   redraw(focus?: Fighter): void
   pause(ms?: number): Promise<void>
   menu(items: string[], opts?: { prompt?: string }): Promise<number>
@@ -254,6 +281,10 @@ export class Battle implements FxHost {
       const v = this.bf.get(y + dy, x + dx)
       return v !== 0 && (this.cells[v]?.move ?? 0xff) !== 0xff
     })
+  }
+  dirToCell(a: Fighter, x: number, y: number) {
+    const dx = Math.sign(x - a.x), dy = Math.sign(y - a.y)
+    return Math.max(0, DX.findIndex((v, i) => v === dx && DY[i] === dy))
   }
   dirTo(a: Fighter, b: Fighter) {
     const dx = Math.sign(b.x - a.x), dy = Math.sign(b.y - a.y)
@@ -756,9 +787,16 @@ export class Battle implements FxHost {
   /** Attack loop (FUN_3aae_1406); returns the attacks made with hand 1. */
   async attackLoop(a: Fighter, t: Fighter, fromBehind: boolean, missile: Item | null): Promise<number> {
     this.firing = missile
+    // FUN_3aae_1884: the attacker faces the target in its action frame, Delay(100), the missile flies
+    this.ui.redraw()
+    this.ui.pose?.(a, true)
     await this.settle()
-    await this.ui.pause(100) // Delay(100) once the target is set (3aae:1937)
-    try { return await this.attackRolls(a, t, fromBehind) } finally { this.firing = null }
+    await this.ui.pause(100)
+    if (missile && (a.x !== t.x || a.y !== t.y)) this.ui.flight?.({ x: a.x, y: a.y }, { x: t.x, y: t.y }, missileFlight(missile.type, a.r[9]))
+    try { return await this.attackRolls(a, t, fromBehind) } finally {
+      this.firing = null
+      this.ui.pose?.(a, false)
+    }
   }
 
   private async attackRolls(a: Fighter, t: Fighter, fromBehind: boolean): Promise<number> {
@@ -767,7 +805,7 @@ export class Battle implements FxHost {
     a.r[8] = 1
     const ac = a.c, tc = t.c
     if (this.helpless(tc)) {
-      this.ui.sound(9)
+      this.ui.sound(7)
       this.print(`${name(ac)} slays helpless ${name(tc)} with one cruel blow`)
       this.inflict(t, tc[0x11b] + 5)
       await removeType(this, ac, 25)
@@ -806,18 +844,17 @@ export class Battle implements FxHost {
           await fire(this, tc, 5)
           const verb = kind === 2 ? '-Backstabs-' : 'Attacks'
           const n = fx.dmg
-          // the hit display (FUN_10ba_1feb): the line without a pause, the target flashes (speed + 1) × 4 frames of 70 ms
-          this.print(`${name(ac)} ${verb} ${name(tc)}${kind === 1 ? ' (from behind)' : ''} Hitting for ${n} point${n === 1 ? '' : 's'} of damage`,
-            { ms: (this.e.speed + 1) * 280, flash: t })
-          this.ui.sound(n > 0 ? 9 : 7)
+          // a hit: the line, sound 7 and the message pause; weapons have no flash (FUN_3aae_1406)
+          this.print(`${name(ac)} ${verb} ${name(tc)}${kind === 1 ? ' (from behind)' : ''} Hitting for ${n} point${n === 1 ? '' : 's'} of damage`)
+          this.ui.sound(7)
           await this.settle() // the target falls after its hit display
           this.inflict(t, n)
           if (this.inPlay(t)) await fire(this, ac, h + 1)
         }
       }
     }
-    // a miss: one flash cycle (280 ms), then the usual pause
-    if (!hit) { this.print(`${name(ac)} Attacks ${name(tc)} and Misses`, { ms: 280 + this.e.speed * 225, flash: t }); this.ui.sound(7) }
+    // all missed: the line, sound 9 and the pause
+    if (!hit) { this.print(`${name(ac)} Attacks ${name(tc)} and Misses`); this.ui.sound(9) }
     a.r[5] = 0
     this.recalc(ac)
     await this.settle()
@@ -867,8 +904,18 @@ export class Battle implements FxHost {
     let d = fx.dmg
     if (saved) d = mode === 1 ? 0 : mode === 2 ? d >> 1 : d
     const f = this.of(c)
+    if (f && d > 0) {
+      // FUN_5216_1344 → FUN_10ba_1feb: the line, the starburst once with sound 3, then the pause
+      this.print(`${name(c)} takes ${d} point${d === 1 ? '' : 's'} of damage`, { ms: 0 })
+      this.ui.effect?.(f, 'burst', 1, this.e.speed * 225)
+    }
     if (f) this.inflict(f, d)
     else c[0x11b] = Math.max(0, c[0x11b] - d)
+  }
+  /** an effect took hold on c (FUN_5216_1656 → FUN_10ba_1feb): the sparkle, (speed + 1) cycles, sound 4 */
+  sparkle(c: Uint8Array) {
+    const f = this.of(c)
+    if (f && this.inPlay(f)) this.ui.effect?.(f, 'sparkle', this.e.speed + 1, this.e.speed === 0 ? this.e.speed * 225 : 0)
   }
 
   /** inflict (FUN_10ba_2228) and its consequences (FUN_3aae_02f9). */
@@ -949,8 +996,7 @@ export class Battle implements FxHost {
     if (!this.inPlay(f)) return
     f.r[6] -= cost
     f.x = nx; f.y = ny
-    f.r[9] = d
-    f.r[0xf] = 0; f.r[0x12] = 0
+    f.r[0xf] = 0; f.r[0x12] = 0 // walking does not change the facing R[9] (FUN_3aae_0712)
     // guards
     for (const g of this.enemiesWithin(f, 1)) {
       if (!g.r[7] || this.helpless(g.c) || !this.inPlay(f)) continue
@@ -1013,7 +1059,7 @@ export class Battle implements FxHost {
       const v = TABLE[Math.min(t.c[0x76], 10) - 1][col]
       if (r < Math.abs(v)) break
       any = true
-      if (v >= 1) { this.print(`${name(t.c)} is turned`); t.r[0x10] = 1 }
+      if (v >= 1) { this.print(`${name(t.c)} is turned`); this.sparkle(t.c); t.r[0x10] = 1 }
       else { this.print(`${name(t.c)} Is destroyed`); t.c[0x10c] = 8; t.c[0x10d] = 0; this.downF(t) }
       if (minimum > 0) minimum--
       count--
@@ -1037,7 +1083,14 @@ export class Battle implements FxHost {
     }
     if (!fromItem) forget(c, s.id)
     this.print(`${name(c)} casts ${s.name}`)
-    this.ui.sound(s.id === 47 ? 11 : s.id === 51 ? 8 : 2)
+    // FUN_4e53_0c20: the caster turns to the aim point in its action frame, the spell bolt flies there
+    const aim = this.aimed
+    if (aim && (aim.x !== f.x || aim.y !== f.y)) {
+      f.r[9] = this.dirToCell(f, aim.x, aim.y)
+      this.ui.pose?.(f, true)
+      this.ui.flight?.({ x: f.x, y: f.y }, aim, { frames: cycle(5), delay: 30, sounds: [s.id === 47 ? 11 : s.id === 51 ? 8 : 2, 0] })
+      this.ui.pose?.(f, false)
+    } else this.ui.sound(s.id === 47 ? 11 : s.id === 51 ? 8 : 2)
     fx.spell = s.id
     fx.area = (s.target & 0xf) >= 8 && (s.target & 0xf) <= 14
     try { await this.applySpell(f, s, L, targets) } finally { fx.spell = 0; fx.area = false }
@@ -1047,6 +1100,7 @@ export class Battle implements FxHost {
   /** Targets (FUN_3aae_20c3): self, one or several picks, or an area around the aimed square. */
   async spellTargets(f: Fighter, s: Spell, range: number): Promise<Fighter[] | null> {
     const mode = s.target & 0xf
+    this.aimed = { x: f.x, y: f.y }
     if (mode === 0 || s.target === 240) return [f]
     const ai = !!f.c[0x10f]
     const pickOne = async (allowEmpty: boolean): Promise<AimEntry | null> => {
@@ -1090,6 +1144,7 @@ export class Battle implements FxHost {
       const p = await pickOne(false)
       if (!p?.f) continue
       if (out.includes(p.f)) { if (!ai) { this.print('Already been targeted'); i-- } continue }
+      if (!out.length) this.aimed = { x: p.x, y: p.y }
       out.push(p.f)
     }
     return out.length ? out : null
@@ -1175,6 +1230,7 @@ export class Battle implements FxHost {
         hit(ox, oy)
         if (f.x === ox && f.y === oy) break
         let last = at(ox, oy).occ
+        let segFrom = { x: ox, y: oy }
         let sign = 1, first = true, remaining = 16
         while (remaining > 0) {
           const line = new Line(ox, oy, ox + sign * (ox - f.x) * remaining, oy + sign * (oy - f.y) * remaining)
@@ -1186,6 +1242,9 @@ export class Battle implements FxHost {
               if (!ok || (here.occ && here.occ !== last) || here.v === 0 || (this.cells[here.v]?.move ?? 0xff) > 1 || line.cost >= remaining) break
             }
             last = here.occ
+            // each segment of the bolt flies as lightning, 4 frames at 50 ms (FUN_4e53_295b)
+            if (line.x !== segFrom.x || line.y !== segFrom.y) this.ui.flight?.(segFrom, { x: line.x, y: line.y }, { frames: cycle(6), delay: 50 })
+            segFrom = { x: line.x, y: line.y }
             if (here.v === 0) remaining = 0
             const bounce = hit(line.x, line.y)
             if (bounce) {

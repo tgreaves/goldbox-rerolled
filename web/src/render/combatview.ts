@@ -20,9 +20,14 @@ export interface Figure {
   side: 0 | 1
   /** lying down: not drawn standing (bodies are a cell, 0x1F) */
   down?: boolean
-  /** facing left (mirrored) */
+  /** facing S, SW, W or NW: drawn mirrored (FUN_58af_04fc) */
   left?: boolean
+  /** shown in its action frame (attacking or casting) */
+  pose?: boolean
 }
+
+/** A COMSPR sprite drawn over the battlefield at a position in grid pixels (spec/combat.md, "Combat visuals"). */
+export interface Sprite { x: number; y: number; rec: number; mirror?: boolean }
 
 /** the picture on a canvas, enlarged when smoothing is on (IMP-047); drawn at its logical size */
 function canvasOf(p: Picture, sprite: boolean): HTMLCanvasElement {
@@ -32,6 +37,8 @@ function canvasOf(p: Picture, sprite: boolean): HTMLCanvasElement {
 export class CombatView {
   private tiles: (HTMLCanvasElement | null)[] = []
   private iconCache = new WeakMap<Picture, HTMLCanvasElement>()
+  /** COMSPR records 0–11, 25 and their +128 images (missiles, sparkle, starburst, skull, cursor) */
+  private sprites = new Map<number, HTMLCanvasElement>()
   readonly canvas: HTMLCanvasElement
   /** visible window in cells */
   cols: number
@@ -49,6 +56,10 @@ export class CombatView {
     }
     set(outdoors ? 'WILDCOM' : 'DUNGCOM', 0)
     set('RANDCOM', 0x22)
+    for (const r of [...Array(12).keys(), 25]) for (const rec of [r, r + 128]) {
+      const raw = files.record('COMSPR', rec)
+      try { if (raw) this.sprites.set(rec, canvasOf(parseRecord(raw).frames[0].picture, true)) } catch { /* missing image */ }
+    }
   }
 
   private icon(p: Picture): HTMLCanvasElement {
@@ -79,7 +90,7 @@ export class CombatView {
   }
 
   draw(bf: Battlefield, cells: CellInfo[], figures: Figure[], focus: { row: number; col: number },
-    marks: { row: number; col: number; colour: string }[] = [], acting?: Figure, falling: { row: number; col: number }[] = []) {
+    marks: { row: number; col: number; colour: string }[] = [], cursor: { row: number; col: number }[] = [], sprites: Sprite[] = []) {
     const W = this.cols * CELL, H = this.rows * CELL
     const g = sizeCanvas(this.canvas, W, H)
     const [r0, c0] = this.origin(focus.row, focus.col)
@@ -90,18 +101,26 @@ export class CombatView {
       const t = v ? this.tiles[cells[v]?.image ?? -1] : null
       if (t) blitCanvas(g, t, c * CELL, r * CELL)
     }
-    // a combatant falling: the fallen-body picture (cell 0x1F, RandCom frame 5) over its cells for now
-    const body = this.tiles[cells[0x1f]?.image ?? -1]
-    if (body) for (const p of falling) blitCanvas(g, body, (p.col - c0) * CELL, (p.row - r0) * CELL)
+    // the grey cursor tile (COMSPR 25) under the combatant whose turn it is and under an aimed target
+    const tile = this.sprites.get(25)
+    if (tile) for (const p of cursor) blitCanvas(g, tile, (p.col - c0) * CELL, (p.row - r0) * CELL)
     for (const f of figures) {
       if (f.down) continue
-      const pic = f === acting && f.action ? f.action : f.icon
+      const pic = f.pose && f.action ? f.action : f.icon
       if (!pic) continue
       const x = (f.col - c0) * CELL, y = (f.row - r0) * CELL
       if (x < -2 * CELL || y < -2 * CELL || x > W || y > H) continue
       const img = this.icon(pic)
       g.save()
       if (f.left) { g.translate(x + img.width / F, y); g.scale(-1, 1); blitCanvas(g, img, 0, 0) } else blitCanvas(g, img, x, y)
+      g.restore()
+    }
+    for (const sp of sprites) {
+      const img = this.sprites.get(sp.rec)
+      if (!img) continue
+      const x = sp.x - c0 * CELL, y = sp.y - r0 * CELL
+      g.save()
+      if (sp.mirror) { g.translate(x + img.width / F, y); g.scale(-1, 1); blitCanvas(g, img, 0, 0) } else blitCanvas(g, img, x, y)
       g.restore()
     }
     for (const m of marks) {

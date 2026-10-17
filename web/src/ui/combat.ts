@@ -4,8 +4,8 @@ import type { Engine } from '../vm/engine'
 import type { GameFiles } from '../store/gamefiles'
 import { parseRecord, type Picture } from '../data/image'
 import { buildIcon } from '../render/icon'
-import { CombatView, type Figure } from '../render/combatview'
-import { fight, footprint, type AimEntry, type Battle, type CombatUi, type Fighter } from '../rules/combat'
+import { CombatView, type Figure, type Sprite } from '../render/combatview'
+import { Line, cycle, fight, footprint, type AimEntry, type Battle, type CombatUi, type Fighter, type Flight, type SpriteFrame } from '../rules/combat'
 
 export interface BattleScreen {
   engine: Engine
@@ -56,14 +56,39 @@ export async function runBattle(s: BattleScreen) {
   let focus = { row: 12, col: 25 }
   let marks: { row: number; col: number; colour: string }[] = []
   let acting: Fighter | null = null
-  let flashMark: { row: number; col: number; colour: string } | null = null
-  let falling: { row: number; col: number }[] = []
-  /** messages queue: each shows, then holds (and may flash its target) before the next */
+  /** combatants shown in their action frame, and COMSPR sprites over the battlefield (spec/combat.md, "Combat visuals") */
+  const poses = new Set<Fighter>()
+  let sprites: Sprite[] = []
+  /** messages and animations queue: each shows, then holds before the next */
   let queue: Promise<void> = Promise.resolve()
-  const flash = async (f: Fighter, ms: number) => {
-    let on = false
-    const id = setInterval(() => { on = !on; flashMark = on ? { row: f.y, col: f.x, colour: '#ff5555' } : null; draw() }, 70)
-    try { await s.pause(ms) } finally { clearInterval(id); flashMark = null; draw() }
+  const later = (job: () => Promise<void>) => { queue = queue.then(job) }
+  /** FUN_10ba_1a29: the frames fly from cell to cell in 8-pixel steps along a Bresenham line */
+  const fly = async (from: { x: number; y: number }, to: { x: number; y: number }, how: Flight) => {
+    const line = new Line(from.x * 3, from.y * 3, to.x * 3, to.y * 3)
+    const steps: [number, number][] = []
+    while (line.step()) steps.push([line.x, line.y])
+    if (!steps.length) return
+    const keep = focus
+    focus = { row: Math.round((from.y + to.y) / 2), col: Math.round((from.x + to.x) / 2) }
+    try {
+      let i = 0
+      for (const [px, py] of steps) {
+        const fr = how.frames[i++ % how.frames.length]
+        sprites = [{ x: px * 8, y: py * 8, rec: fr.rec, mirror: fr.mirror }]
+        draw()
+        await new Promise((r) => setTimeout(r, Math.max(8, how.delay)))
+      }
+    } finally { sprites = []; focus = keep; draw() }
+  }
+  /** FUN_10ba_1feb's frames at a combatant's top-left cell, 70 ms each, `cycles` times */
+  const flicker = async (cells: { row: number; col: number }[], frames: SpriteFrame[], cycles: number) => {
+    try {
+      for (let k = 0; k < cycles; k++) for (const fr of frames) {
+        sprites = cells.map((c) => ({ x: c.col * 24, y: c.row * 24, rec: fr.rec, mirror: fr.mirror }))
+        draw()
+        await s.pause(70)
+      }
+    } finally { sprites = []; draw() }
   }
   /** The screen keeps one input object and routes keys and taps through it: fill it in place. */
   const setInput = (v: BattleScreen['input']) => {
@@ -140,30 +165,40 @@ export async function runBattle(s: BattleScreen) {
     if (!battle || !view) return
     const figures: Figure[] = battle.fighters.filter((f) => battle!.inPlay(f)).map((f) => {
       const ic = iconOf(f)
-      return { row: f.y, col: f.x, icon: ic.icon, action: ic.action, side: f.c[0x10e] ? 1 : 0, left: f.r[9] >= 5 && f.r[9] <= 7 } as Figure
+      return { row: f.y, col: f.x, icon: ic.icon, action: ic.action, side: f.c[0x10e] ? 1 : 0, left: f.r[9] >= 4, pose: poses.has(f) } as Figure
     })
-    const act = acting ? figures[battle.fighters.filter((f) => battle!.inPlay(f)).indexOf(acting)] : undefined
     const planMarks = plan ? [...plan.cells.map((p) => ({ row: p.y, col: p.x, colour: '#4c8bd6' })), { row: plan.to.y, col: plan.to.x, colour: '#55ff55' }] : []
-    view.draw(battle.bf, battle.cells, figures, focus, [...marks, ...planMarks, ...(acting ? [{ row: acting.y, col: acting.x, colour: '#f2c94c' }] : []), ...(flashMark ? [flashMark] : [])], act, falling)
+    // the grey cursor tile (COMSPR 25) lies under the combatant whose turn it is
+    const cursor = acting && battle.inPlay(acting) ? [{ row: acting.y, col: acting.x }] : []
+    view.draw(battle.bf, battle.cells, figures, focus, [...marks, ...planMarks], cursor, sprites)
   }
   const ui: CombatUi = {
     print: (t, hold) => {
-      queue = queue.then(async () => {
+      later(async () => {
         s.print(t)
-        if (!hold?.ms) return
-        if (hold.flash) await flash(hold.flash, hold.ms)
-        else await s.pause(hold.ms)
+        if (hold?.ms) await s.pause(hold.ms)
       })
     },
     settle: () => queue,
-    fall: (cells, ms) => {
-      queue = queue.then(async () => {
-        falling = cells
-        draw()
-        s.sound(5)
-        try { await s.pause(ms) } finally { falling = []; draw() }
-      })
-    },
+    // FUN_577f_0e11: the skull (COMSPR 11) on every cell the combatant covered, sound 5, the pause
+    fall: (cells, ms) => later(async () => {
+      sprites = cells.map((c) => ({ x: c.col * 24, y: c.row * 24, rec: 11 }))
+      draw()
+      s.sound(5)
+      try { await s.pause(ms) } finally { sprites = []; draw() }
+    }),
+    pose: (f, on) => later(async () => { if (on) poses.add(f); else poses.delete(f); draw() }),
+    flight: (from, to, how) => later(async () => {
+      if (how.sounds?.[0]) s.sound(how.sounds[0])
+      await fly(from, to, how)
+      if (how.sounds?.[1]) s.sound(how.sounds[1])
+    }),
+    // FUN_10ba_1feb: sparkle (COMSPR 9, sound 4) or starburst (COMSPR 10, sound 3) at the top-left cell
+    effect: (f, kind, cycles, holdAfter) => later(async () => {
+      s.sound(kind === 'sparkle' ? 4 : 3)
+      await flicker([{ row: f.y, col: f.x }], cycle(kind === 'sparkle' ? 9 : 10), cycles)
+      if (holdAfter > 0) await s.pause(holdAfter)
+    }),
     redraw: (f) => {
       if (f) { acting = f; focus = { row: f.y, col: f.x } }
       draw()

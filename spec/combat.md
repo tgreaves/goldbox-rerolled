@@ -322,11 +322,11 @@ All waits scale with the game speed `DS:49E2` (0 fastest … 9 slowest, 4 in the
 | Wait | Where | Length |
 |---|---|---|
 | Message pause | `FUN_1709_0dbe` = Delay(speed × 225 ms); after combat messages printed with the pause flag (`FUN_10ba_16ec`, most call sites pass 1) and status-line messages (`FUN_10ba_1693`) | speed × 225 ms |
-| Hit display | `FUN_10ba_1feb`: the attack line is printed without a pause, then the target flashes for (speed + 1) cycles of 4 frames, each Delay(70) | (speed + 1) × 280 ms |
-| Miss display | same routine with no hit: one cycle of 4 frames, then the message pause | 280 ms + speed × 225 ms |
+| Weapon hit or miss line | the line, sound 7 (hit) or 9 (all missed), then the message pause; no flash (see [[#Combat visuals]]) | speed × 225 ms |
+| Sparkle / starburst | `FUN_10ba_1feb`: an effect took hold (speed + 1 cycles of 4 frames × 70 ms, sound 4) or spell/effect damage (one cycle, sound 3, then the pause) | (speed + 1) × 280 ms / 280 ms + speed × 225 ms |
 | Before an attack | `3aae:1937` Delay(100) after the target is set | 100 ms |
 | Step | each step plays the footstep (sound 10) in transient mode, which waits `delay(10)` before cutting it off ([[spec/sound]] §6); with sound off there is no wait, so the redraw sets the pace | ≈ 100 ms |
-| Fall | `FUN_577f_0e11`: sound 5, then the message pause | speed × 225 ms |
+| Fall | `FUN_577f_0e11`: the skull on the combatant's cells, sound 5, then the message pause | speed × 225 ms |
 
 At speed 0 only the fixed parts remain (hit flash 280 ms, steps); at speed 9 a message holds about 2 s and a hit about 2.8 s.
 
@@ -660,7 +660,7 @@ else HP = HP'
 HP is unsigned; negative HP exists only as R[0xE]. Then, in `FUN_3aae_02f9`:
 
 1. If dmg > 0: R[1] = 0 (no more casting this round). If a spell is queued (R[0] > 0): "lost a spell", R[0] = 0, and `FUN_10ba_148b(spell)` removes one copy of that spell from the memorised list of the **current character**, which during an attack is the attacker, not the caster (**Bug**, O: the interrupted caster keeps the spell memorised; an attacker who has the same spell memorised loses it).
-2. If the target is out of play: "goes down", "and is Dying" or "is killed"; effects that end at 0 HP are removed (`FUN_5216_100a`: 7, 11, 30–32, 51–54, 58, 59, 74, 75, 95, 98, 137); effect event 13; fall graphic (`FUN_577f_0e11`: the fallen-body picture, RandCom frame 5, over every footprint cell, sound 5 and the message pause; a party entry, R[0x13] = 0, then lies there as a body, its cell set to 0x1F unless it is a cloud 0x1E and the old cell kept in `DS:66D6 + 7n`; a monster leaves nothing, the redraw removes the picture), initiative, movement, queued spell and guard cleared (`FUN_577f_0e11`).
+2. If the target is out of play: "goes down", "and is Dying" or "is killed"; effects that end at 0 HP are removed (`FUN_5216_100a`: 7, 11, 30–32, 51–54, 58, 59, 74, 75, 95, 98, 137); effect event 13; fall graphic (`FUN_577f_0e11`: the skull, COMSPR 11, over every footprint cell (see [[#Combat visuals]]), sound 5 and the message pause; a party entry, R[0x13] = 0, then lies there as a body, its cell set to 0x1F unless it is a cloud 0x1E and the old cell kept in `DS:66D6 + 7n`; a monster leaves nothing, the redraw removes the picture), initiative, movement, queued spell and guard cleared (`FUN_577f_0e11`).
 
 Non-weapon damage (spells, traps, effects) goes through `FUN_5216_1344`, which fires event 6 (damage type in `DS:6819`), halves or zeroes on a save, and applies the same thresholds ([[spec/effects]]).
 
@@ -1132,3 +1132,83 @@ Reproduce these in an authentic port (O unless marked).
 - Where the treasure money table `DS:67F4` is cleared; `DS:4A00` set after every battle
 - Whether elven chain counts as leather for backstabs; whether charm is undone before the post-battle cleanup
 - Overland tile meanings (which ids are roads, towns, water), to label the terrain flag table
+
+## Combat visuals
+
+Marks: **O** observed in code, **I** inferred, **?** unknown. "speed" is the game speed `DS:49E2` (0–9). Sound numbers as in [[spec/sound]] §7.
+
+### Building blocks
+
+**Icon table** (O): `DS:5E5A + 8·slot + 4·sub`, 26 slots of 24×24 icons; sub 0 normal, sub 1 "action". `FUN_58af_01c8(name, record, slot)` loads `record` into sub 0 and `record + 0x80` into sub 1 (colour 0 transparent, I). At game init (`FUN_36c1_002d`) COMSPR 0–11 go into slots 13–24 and COMSPR 25 into slot 25:
+
+| slot | COMSPR | use |
+|---|---|---|
+| 13 | 0 / 128 | arrow N / S |
+| 14 | 1 / 129 | arrow NE / SE |
+| 15 | 2 / 130 | arrow E / W |
+| 16 | 3 / 131 | spinning axe, club, hammer |
+| 17 | 4 / 132 | flask |
+| 18 | 5 / 133 | spell bolt (every spell and gaze) |
+| 19 | 6 / 134 | lightning |
+| 20 | 7 / 135 | boulder (default missile) |
+| 21 | 8 / 136 | sling stone |
+| 22 | 9 / 137 | sparkle: an effect took hold |
+| 23 | 10 / 138 | starburst: spell or effect damage; acid spit |
+| 24 | 11 / 139 | skull: a combatant falls |
+| 25 | 25 / 153 | cursor tile (sub 0 only) |
+
+Monster `CPIC` icons take slots 8 and up; more than 5 monster types would overwrite slot 13 onwards (**?**, no check found).
+
+**Drawing a combatant** `FUN_577f_0af8(c, dir, action, noDraw)` (O): scroll to c if needed (margin 3); erase its cells when the facing half changes or action/noDraw is set; R[9] = dir; draw icon c[0xBF] with sub = action. `FUN_58af_04fc` mirrors the icon when dir ≥ 4 (S, SW, W, NW), so only two facings show. Status never changes the icon (asleep, held, charmed look the same). Walking never changes R[9] (`FUN_3aae_0712`).
+
+**Animation buffer** `DS:6E36`, 4 frames (O): `FUN_10ba_1892(slot, sub, k, mirror)` copies an icon into frame k, mirrored if asked; `FUN_10ba_19de(slot)` builds the standard cycle **sub 0, sub 0 mirrored, sub 1 mirrored, sub 1**.
+
+**Projectile flight** `FUN_10ba_1a29(x1, y1, x2, y2, frames, delay)` (O unless marked): a Bresenham line in thirds of a cell (8-pixel steps) from 3·(x1, y1) to 3·(x2, y2) (line walker `FUN_56c1_01a0`/`02cc`), about 3·max(|Δx|, |Δy|) steps (I); no flight when both ends are the same cell. Before it the view stays when both ends are visible, else centres on the midpoint when |Δx| and |Δy| ≤ 6; a projectile leaving the 7×7 window scrolls it 3 cells. Each step draws frame f at the step, presents, Delay(delay), restores the background, f = (f + 1) mod frames. With delay 0 a step is drawn only on cell-aligned positions and the final frame stays (the aim cursor). The final frame is drawn at the target.
+
+**Effect display** `FUN_10ba_1feb(target, good, msg)` (O): outside combat only msg and the pause. In combat: SetResident(0); frames = `19de(22)` sparkle if good, `19de(23)` starburst if not; scroll to the target; sound 4 (good) or 3; msg printed **without** a pause; frames 0–3 at the target's top-left cell, 70 ms each, for speed + 1 cycles (good) or 1 cycle (not good); SetResident(10); the message pause only when there was one cycle (always for damage; for good only at speed 0).
+
+### Weapon attacks (O, `FUN_3aae_1884`)
+
+1. A target that turns (R[0xF] < 3 and not from behind) is redrawn facing the attacker.
+2. The attacker faces the target and shows its **action frame**; Delay(100).
+3. Missile flight, if any (below).
+4. The attack loop `FUN_3aae_1406`: no flash. A hit plays sound 7 (transient), an all-miss line sound 9, a helpless slay sound 7; each result line ends with the message pause.
+5. The attacker returns to frame 0.
+
+### Falls: the skull (O, `FUN_577f_0e11`)
+
+Any combatant of either side that goes out of play (weapon damage `3aae_02f9`, spell/effect damage `5216_1344`, status changes `3723_0058`, turned undead "is destroyed" `3aae_116a`): scroll to it, erase its cells, draw the **skull** (slot 24, COMSPR 11) on every footprint cell; a party entry (R[0x13] = 0) then gets a body record and cell 0x1F (unless it is cloud 0x1E); sound 5 and the message pause; the skull is erased and the view redrawn, so party members show the 0x1F body (RandCom 5) and monsters leave nothing. `3723_0058` pauses once more afterwards. Outside combat only sound 5 and the pause.
+
+### Sparkle and starburst (O)
+
+- **Sparkle**, (speed + 1) × 280 ms, sound 4, on each target (never the caster): from `FUN_5216_1656` after adding an effect whose message is not empty ("falls asleep", "is held", "is charmed", "is blinking", "is Speedy", ...; "is unaffected" gets none), and direct calls: Cure Blindness, Dispel Magic, Remove Curse, healing potions/ointment ("is Healed"), turn undead "is turned", monster paralysis. Cure Light Wounds has none.
+- **Starburst**, 280 ms, sound 3, then the pause, on each target that takes damage > 0 after its save (`FUN_5216_1344`, "takes N points of damage"): every damaging spell, breath, spit and poison. The skull follows if the target is now out of play.
+
+### Missiles and spell flights (O)
+
+**Weapon missiles** `FUN_3aae_26b0(attacker, target, item)`, once per attack action:
+
+| item type | frames | frames, delay |
+|---|---|---|
+| 9 Dart, 21 Javelin, 28 Quarrel, 31 Spear, 73 Arrow | by direction: N 0, NE 1, E 2, SE 129, S 128, SW 129 mirrored, W 130, NW 1 mirrored | 1, 10 ms |
+| 2 Hand Axe, 7 Club, 20 Hammer | `19de(16)` | 4, 50 ms |
+| 85 Holy Water, 86 Oil | `19de(17)` | 4, 50 ms |
+| 47 Sling | 8, 136 | 2, 20 ms |
+| anything else | 7, 135 | 2, 20 ms |
+
+Sound 6, the flight, sound 12.
+
+**Spell flight** (`FUN_4e53_0c20`, combat only): frames `19de(18)`; the caster turns to the aim point and shows its action frame; sound 11 (Fireball), 8 (Lightning Bolt) or 2; flight caster → aim point, 4 frames, 30 ms; caster back to frame 0; then the handler. Self-targeted spells have no flight. Extras:
+- **Hold Person** (`4e53_1658`): sound 2 and a bolt to each target but the last-listed one before its save (I, likely a bug).
+- **Lightning Bolt** (`4e53_295b`/`28bc`), breath bolt (`4e53_30d9`), Javelin of Lightning: frames `19de(19)`, each segment (bounces included) flown at 50 ms; each creature hit gets the starburst.
+- **Fireball** (`4e53_266b`): no burst graphic; the view centres on the aim point, each target gets its starburst.
+- **Stinking Cloud**: "Creates a noxious cloud" without a pause, a redraw showing the cloud cells (RandCom 4), then the pause.
+- **Gazes** (`3723_1cad`, `1e77`): the spell bolt, 4 frames, 45 ms ("reflects it!" adds a return flight). **Acid spit** (`3723_2c1c`): COMSPR 10 alone at 30 ms, then the starburst.
+
+### Cursor tile (O)
+
+COMSPR 25, an opaque grey bevelled square, is drawn under the combatant whose turn it is (every turn start, AI or player; removed at turn end), under a caster who "Begins Casting", and under the current target in Aim; Next/Prev slides it to the new target (a flight with delay 0).
+
+### Absent (O)
+
+No Fireball or area burst graphic, no Magic Missile sprite, no sparkle on the caster, no icon change for Sleep/Hold/Charm, no blinking of the active combatant; "Continue Battle:" is text only; `1feb` effects draw at a big monster's top-left cell only, the skull on every cell.
