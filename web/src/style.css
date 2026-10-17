@@ -285,3 +285,23 @@ table.modify button { min-height: 36px; width: 2.4rem; padding: 0; }
 .font-original .game .text p.note { font-style: normal; }
 .font-original .game .where { font-size: 16px; }
 dialog.panel ul.commissions small.progress { color: var(--ega-green); }
+
+/* one-screen character creation (IMP-040) */
+dialog.panel.wide { max-width: min(76rem, 97vw); width: 100%; }
+.newchar { display: grid; grid-template-columns: minmax(16rem, 1.3fr) minmax(13rem, 0.8fr) minmax(16rem, 1fr); gap: 1.2rem; align-items: start; }
+.newchar section { min-width: 0; }
+.nc-row { margin: 0 0 0.7rem; }
+.nc-label { display: block; color: var(--muted); font-size: 0.85rem; margin-bottom: 0.25rem; }
+.nc-opts { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.nc-opts button { min-height: 36px; padding: 0.25rem 0.6rem; }
+.nc-opts button.on { border-color: var(--accent); color: var(--accent); background: #f2c94c14; }
+.nc-opts button:disabled { opacity: 0.35; cursor: not-allowed; }
+.nc-hint { font-size: 0.85rem; }
+.nc-derived { color: var(--ega-green); }
+.nc-name { display: grid; gap: 0.25rem; color: var(--muted); margin-bottom: 0.6rem; }
+.nc-name input { background: #0b1218; border: 1px solid var(--line); border-radius: 4px; padding: 0.35rem 0.5rem; color: var(--ega-green); text-transform: uppercase; min-height: 36px; }
+.nc-portrait { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+.nc-portrait canvas.portrait { width: 176px; margin: 0; }
+.nc-icon { margin-top: 0.6rem; }
+.nc-icon canvas.ic { width: 72px; height: 72px; margin-right: 0.4rem; }
+@media (max-width: 900px) { .newchar { grid-template-columns: 1fr; } }

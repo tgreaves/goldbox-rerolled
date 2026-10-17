@@ -1,12 +1,13 @@
 // Character creation, combat-icon editor and Modify (spec/menus.md, spec/chargen.md), shared by the
 // start-up party screen and the party screen a training hall opens.
 import type { GameFiles } from '../store/gamefiles'
-import { parseCharacter, RACES, CLASSES, ALIGNMENTS } from '../data/character'
+import { parseCharacter } from '../data/character'
 import type { StoredCharacter } from '../store/user'
-import { escape, onClose, sheetHtml } from './sheet'
-import { parseRecord, toImageData, EGA, type Picture } from '../data/image'
-import { RACE_MENU, Tables, abilityRange, alignmentsFor, begin, bodyRecord, classesFor, combatStats, headRecord, hpMax, hpMin, modifyStep, rollAbilities, setName } from '../rules/chargen'
+import { escape, onClose } from './sheet'
+import { toImageData, EGA, type Picture } from '../data/image'
+import { Tables, abilityRange, combatStats, hpMax, hpMin, modifyStep } from '../rules/chargen'
 import { buildIcon } from '../render/icon'
+import { createCharacter } from './newchar'
 
 export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (n: number) => number, tables: Tables | null) {
   function chooseFrom(title: string, list: StoredCharacter[]): Promise<StoredCharacter | null> {
@@ -51,76 +52,9 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
     })
   }
 
-  function picture(family: string, id: number) {
-    const raw = files.record(family, id)
-    return raw ? parseRecord(raw).frames[0].picture : null
-  }
-
-  /** Character creation (FUN_417f_056c; spec/chargen.md). */
-  async function create(t: Tables): Promise<Uint8Array | null> {
-    const r = await pick('Pick Race', RACE_MENU.map((i) => RACES[i]))
-    if (r === null) return null
-    const race = RACE_MENU[r]
-    const g = await pick('Pick Gender', ['Male', 'Female'])
-    if (g === null) return null
-    const classes = classesFor(t, race)
-    const ci = await pick('Pick Class', classes.map((i) => CLASSES[i]))
-    if (ci === null) return null
-    const cls = classes[ci]
-    const aligns = alignmentsFor(t, cls)
-    const ai = await pick('Pick Alignment', aligns.map((i) => ALIGNMENTS[i]))
-    if (ai === null) return null
-    const c = begin(t, rng, race, g, cls, aligns[ai])
-    // roll until kept
-    for (;;) {
-      rollAbilities(t, rng, c)
-      dialog.innerHTML = sheetHtml(parseCharacter(c)) +
-        `<form method="dialog" class="yn"><span>Keep this character?</span><button value="y" class="primary"><u>Y</u>es</button><button value="n"><u>N</u>o, roll again</button></form>`
-      const keep = await new Promise<boolean>((resolve) => {
-        onClose(dialog, () => resolve(dialog.returnValue === 'y'))
-        dialog.showModal()
-      })
-      if (keep) break
-    }
-    // name: up to 15 characters, upper case, asked again while empty
-    let name = ''
-    while (!name) {
-      name = await new Promise<string>((resolve) => {
-        dialog.innerHTML = `<form method="dialog" class="namebox"><label>Character name: <input maxlength="15" autocomplete="off"></label><button class="primary">OK</button></form>`
-        const input = dialog.querySelector('input')!
-        onClose(dialog, () => resolve(input.value.toUpperCase().replace(/[^ -z]/g, '').trim()))
-        dialog.showModal()
-        input.focus()
-      })
-    }
-    setName(c, name)
-    // portrait: Head / Body cycle forward (HEAD3, BODY3 records from DS:286F / DS:287D), Keep
-    await new Promise<void>((resolve) => {
-      dialog.innerHTML = `<h2>${escape(name)}</h2><canvas class="pixel portrait" width="88" height="88"></canvas>
-        <form method="dialog" class="yn"><button value="h"><u>H</u>ead</button><button value="b"><u>B</u>ody</button><button value="k" class="primary"><u>K</u>eep</button></form>`
-      const canvas = dialog.querySelector('canvas')!
-      const draw = () => {
-        const g2 = canvas.getContext('2d')!
-        g2.fillStyle = '#000'
-        g2.fillRect(0, 0, 88, 88)
-        const head = picture('HEAD3', headRecord(t, c[0xbb])), body = picture('BODY3', bodyRecord(t, c[0xbc]))
-        if (head) g2.putImageData(toImageData(head), 0, 0)
-        if (body) g2.putImageData(toImageData(body), 0, 40)
-      }
-      dialog.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', (e) => {
-        if (b.value === 'k') return
-        e.preventDefault()
-        if (b.value === 'h') c[0xbb] = (c[0xbb] % 14) + 1
-        else c[0xbc] = (c[0xbc] % 12) + 1
-        draw()
-      }))
-      onClose(dialog, () => resolve())
-      draw()
-      dialog.showModal()
-    })
-    // combat icon; "Is this icon ok?" is the Keep button
-    await iconEditor(c)
-    return c
+  /** Character creation (FUN_417f_056c; spec/chargen.md) on one screen (IMP-040). */
+  function create(t: Tables): Promise<Uint8Array | null> {
+    return createCharacter(dialog, files, rng, t)
   }
 
   function paintIcon(canvas: HTMLCanvasElement, p: Picture | null) {
