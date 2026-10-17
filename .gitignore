@@ -14,3 +14,10 @@ out/
 *.html
 *.png
 *.svg
+
+# the web app's own sources are not generated output
+!web/index.html
+!web/public/
+!web/public/*.svg
+web/dist/
+web/dist-single/

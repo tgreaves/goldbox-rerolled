@@ -16,8 +16,8 @@ export default defineConfig(({ mode }) => ({
             registerType: 'prompt',
             includeAssets: ['favicon.svg'],
             manifest: {
-              name: 'Pool of Radiance',
-              short_name: 'Pool of Radiance',
+              name: 'GoldBox Rerolled: Pool of Radiance',
+              short_name: 'GoldBox Rerolled',
               description: 'Browser port of the 1988 SSI game. Bring your own game files.',
               theme_color: '#101820',
               background_color: '#101820',

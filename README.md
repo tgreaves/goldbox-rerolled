@@ -1,6 +1,6 @@
-# Pool of Radiance reverse engineering
+# GoldBox Rerolled
 
-A specification of SSI's *Pool of Radiance* (1988, MS-DOS release), detailed enough to recreate the game, for example in a web browser, plus Python tools that read the original data files.
+A reimplementation of SSI's Gold Box engine for the web browser, starting with *Pool of Radiance* (1988, MS-DOS release), and the reverse-engineering work behind it: a specification of the game detailed enough to recreate it, plus Python tools that read the original data files. The aim is to extend the engine to the other Gold Box games (*Curse of the Azure Bonds*, *Secret of the Silver Blades*, *Pools of Darkness* and beyond).
 
 The work concentrates on the split between the engine and the data that drives the adventure: maps, scripts, text, monsters, items and graphics.
 
@@ -52,3 +52,7 @@ Output from `automap.py`, `gfx.py` and the interpreter contains game text and ar
 ## Status
 
 Open items are listed in [`spec/open-questions.md`](spec/open-questions.md). Nothing has been compared against the running original (DOSBox) yet.
+
+## Credits and legal
+
+*Pool of Radiance* and the Gold Box games were made by Strategic Simulations, Inc. under licence from TSR; the engine was led by Chuck Kroegel and the game designed with George MacDonald. *Advanced Dungeons & Dragons* and *Forgotten Realms* belong to Wizards of the Coast. This is an independent fan project, not affiliated with or endorsed by any of them. It contains no game data: to play, you need your own copy of the game.
