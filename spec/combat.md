@@ -232,7 +232,7 @@ if won: share = experience(); award(share)
 | destroyed | no non-NPC party-side member Okay, Animated or Running | every party entry removed; party size 0 | 0x80 |
 | duel | `DS:84D4` set | see below | 0 (also when lost) |
 
-NPCs alone do not keep the party alive. A battle where every monster ran away counts as won with no loot ("The party has found Treasure!" if scripts added treasure).
+NPCs alone do not keep the party alive. The exception is ECL 0x6DE6 = 1, which scripts set for fights that must not end the game: then nobody standing, running or destroyed leaves the party "not defeated", the win branch's status changes apply (Dying → Unconscious, Unconscious with HP → Okay) and no experience is given. Example: the inn brawl (`ECL3` #0, 0xA696) loads four groups of 11, 11, 11 and 13 brawlers (types from tables at 0xB622/0xB628 chosen by party strength), sets no loot (0x6DE3 = 1), 0x6DE6 = 1 and morale 50, then walks list entries 41–53 with `LOAD_CHARACTER` setting 0x6C0C = 0x80 and 0x6BB8 = 178: most of the last group fight on the party's side under computer control, as NPCs. A battle where every monster ran away counts as won with no loot ("The party has found Treasure!" if scripts added treasure).
 
 Duel branch: every in-play, Okay, non-enemy entry gets the duel experience; then entries that are Okay or Animated are put back in play (the bystanders who sat out) and Dying → Unconscious. Running is not reset, Unconscious with HP > 0 is not revived, and a lost duel never ends the game.
 

@@ -55,7 +55,8 @@ export interface CombatUi {
   pick(prompt: string, items: string[]): Promise<number>
 }
 
-export type Outcome = 'won' | 'fled' | 'destroyed'
+/** 'spared': nobody won or fled but ECL 0x6DE6 = 1 kept the party from being destroyed (brawls) */
+export type Outcome = 'won' | 'fled' | 'destroyed' | 'spared'
 
 const name = (c: Uint8Array) => String.fromCharCode(...c.subarray(1, 1 + c[0]))
 const u16 = (c: Uint8Array, o: number) => c[o] | (c[o + 1] << 8)
@@ -1485,6 +1486,8 @@ export class Battle implements FxHost {
     const party = this.fighters.filter((f) => !f.monster)
     if (party.some((f) => [0, 1].includes(f.c[0x10c]))) return 'won'
     if (party.some((f) => f.c[0x10c] === 3 && f.c[0x84] < 0x80)) return 'fled'
+    // FUN_2e08_04c9: with ECL 0x6DE6 = 1 any non-NPC on the party's side keeps the party from defeat
+    if (this.e.read(0x6de6) === 1 && party.some((f) => f.c[0x10e] === 0 && f.c[0x84] < 0x80)) return 'spared'
     return 'destroyed'
   }
 }
@@ -1552,6 +1555,13 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
       msgs.push('The party has won.')
       if (e.treasure.length || e.money.some((v) => v > 0)) msgs.push('The party has found Treasure!')
       msgs.push(`Each character receives ${share} experience points.`)
+    }
+  } else if (outcome === 'spared') {
+    // not defeated, nobody standing: the same status changes as a win, but no experience or loot
+    for (const f of party) {
+      const c = f.c
+      if (c[0x10c] === 5) c[0x10c] = 4
+      else if (c[0x10c] === 4 && c[0x11b] > 0) { c[0x10c] = 0; c[0x10d] = 1 }
     }
   } else if (outcome === 'won') {
     let noXP = 0

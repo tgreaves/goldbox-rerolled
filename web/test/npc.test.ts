@@ -70,6 +70,21 @@ describe.skipIf(!have)('NPCs and duels', () => {
     }
   })
 
+  it('never destroys the party in a brawl (ECL 0x6DE6 = 1)', async () => {
+    for (const seed of [5, 6, 7]) {
+      const e = await game(seed)
+      const n = e.party().length
+      for (const c of e.party()) { c[0x11b] = 1; c[0x10c] = 0 }
+      e.addMonsters(13, 8, 4)
+      e.addMonsters(4, 8, 4)
+      e.write(0x6de6, 1)
+      const r = await fight(e, ui)
+      expect(r.survived).toBe(true)
+      expect(e.party().length).toBe(n)
+      expect(e.party().some((c) => c[0x10c] === 5)).toBe(false) // Dying became Unconscious
+    }
+  })
+
   it('ends with the party gone when it is destroyed', async () => {
     const e = await game(4)
     for (const c of e.party()) { c[0x11b] = 1; c[0x10c] = 0 }
