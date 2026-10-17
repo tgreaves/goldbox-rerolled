@@ -64,6 +64,9 @@ export class ItemTables {
    * prefix and a plural "s" on the noun for stacks. Hidden words (mask bit 3 − n) are left out until
    * identified.
    */
+  /** set while someone in the party has Detect Magic (effect 5): magic items get "* " (FUN_10ba_0442) */
+  detect = false
+
   name(it: Item, identified = false): string {
     const r = it.raw
     const word = [0, r[0x2f], r[0x30], r[0x31]] // word[n], n = 1..3
@@ -80,7 +83,8 @@ export class ItemTables {
       if (count >= 2 && !plural && pluralHere(n)) { s += 's'; plural = true }
       s += ' '
     }
-    return s.trim()
+    const mark = this.detect && (s8(r[0x32]) > 0 || s8(r[0x33]) > 0 || r[0x36] !== 0) ? '* ' : ''
+    return mark + s.trim()
   }
 
   baseOf(it: Item): BaseItem | undefined {

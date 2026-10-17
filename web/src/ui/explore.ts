@@ -17,8 +17,8 @@ import { itemsFile, type Item } from '../data/items'
 import { buildIcon } from '../render/icon'
 import { effectsFile } from '../data/effects'
 import { canTakeItem, capacity, ready, recalc, unready } from '../rules/equip'
-import { drop, halve, join, trade, unavailable } from '../rules/inventory'
-import { coinValue, moneyOf, pay, receive, sellOffer } from '../rules/money'
+import { drop, halve, join, scribing, trade, unavailable } from '../rules/inventory'
+import { COIN_PROMPT, coinValue, dropMoney, moneyOf, pay, receive, sellOffer, tradeMoney } from '../rules/money'
 import { shop, temple, treasure, type TownUi } from './town'
 import { camp, cast, effectNames, type CampUi } from './camp'
 import { runBattle } from './combat'
@@ -295,7 +295,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         try {
           const r = await runBattle({
             engine, files, canvas: combatCanvas, menu, print: (t) => print(t, false), view: (c) => new Promise<void>((resolve) => {
-              sheet(parseCharacter(c))
+              sheet(parseCharacter(c), { combat: true })
               onClose(dialog, () => resolve())
             }),
             sound: play, pause: (ms) => io.pause!(ms), input: battleInput,
@@ -749,9 +749,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
 
   /** Character sheet with the items menu (spec/town.md, "Items menu"); IMP-027 for the panel. */
+  /** steps of a money Trade or Drop (FUN_4894_2156 / 24a7): recipient, coin type, amount */
+  interface MoneyStep { op: 'trade' | 'drop'; to?: number; type?: number }
   /** steps of Use on the sheet: which spell, then whom */
   interface UseStep { scroll: boolean; ids: number[]; spell?: number; combatOnly?: boolean }
-  function sheet(c: Character, opts: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use'; use?: UseStep; mode?: 'shop' | 'temple' | 'treasure' } = {}) {
+  function sheet(c: Character, opts: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use' | 'scribe'; use?: UseStep; after?: 'drop' | 'trade' | 'sell'; money?: MoneyStep; combat?: boolean; mode?: 'shop' | 'temple' | 'treasure' } = {}) {
     const node = c.raw
     const t = engine.items
     const items = engine.itemsOf(node)
@@ -814,6 +816,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         else actions = `<p>Cast ${escape(st?.get(u.spell)?.name ?? '')} on:</p>` + engine.party().map((n, k) =>
           `<button data-a="use-on-${k}">${escape(parseCharacter(n).name)}</button>`).join('') + '<button data-a="cancel">Exit</button>'
       }
+      else if (opts.confirm === 'scribe') actions = `<p>${escape(c.name)} was going to scribe from that scroll</p><p>is it Okay to lose it?</p>
+        <button data-a="scribe-yes">Yes</button><button data-a="cancel">No</button>`
       else if (opts.confirm === 'trade') actions = `<p>Trade with Whom?</p>` + others.map((n, k) =>
         `<button data-a="trade-${k}">${escape(parseCharacter(n).name)}</button>`).join('') + '<button data-a="cancel">Exit</button>'
       else actions = `<button data-a="ready">${it.ready ? 'Un' : ''}<u>R</u>eady</button><button data-a="use"><u>U</u>se</button>` +
@@ -852,12 +856,29 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       ${t ? `${preview}
         ${opts.message ? `<p class="message">${escape(opts.message)}</p>` : ''}
         <div class="item-actions">${actions || (items.length ? '<span class="muted">Pick an item to ready, use, trade or drop it.</span>' : '')}</div>` : ''}
+      ${moneyPanel()}
       <form method="dialog"><button>Close</button></form>`
     { const p = buildIcon(files, node, false), g = sizeCanvas(dialog.querySelector<HTMLCanvasElement>('canvas.sheet-icon')!, 24, 24)
       g.fillStyle = '#000'; g.fillRect(0, 0, 24, 24); if (p) blit(g, toImageData(p), 0, 0) }
-    const again = (o: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use'; use?: UseStep }) => {
+    function moneyPanel(): string {
+      // the view menu's Trade and Drop of coins (FUN_4894_0ab3): Trade not in combat, nor for an NPC in play
+      const coins = c.money.map((v, i) => ({ v, i })).filter((x) => x.v > 0)
+      if (!coins.length || !t) return ''
+      const npcInPlay = node[0x84] >= 0x80 && node[0x10d] !== 0 && node[0x10c] !== 1
+      const canTrade = !opts.combat && !npcInPlay
+      const m = opts.money
+      if (!m) return `<div class="money-actions">${canTrade ? '<button data-m="trade">Trade money</button>' : ''}<button data-m="drop">Drop money</button></div>`
+      const party = engine.party()
+      if (m.op === 'trade' && m.to === undefined) return `<div class="money-actions"><p>Trade to?</p>${party.map((n, k) =>
+        `<button data-m="to-${k}">${escape(parseCharacter(n).name)}</button>`).join('')}<button data-m="exit">Exit</button></div>`
+      if (m.type === undefined) return `<div class="money-actions"><p>Select type of coin</p>${coins.map((x) =>
+        `<button data-m="type-${x.i}">${MONEY[x.i]} ${x.v}</button>`).join('')}<button data-m="exit">Exit</button></div>`
+      return `<div class="money-actions"><form class="money-amount"><label>How much ${escape(COIN_PROMPT[m.type])}will you ${m.op}? <input type="number" min="0" max="${c.money[m.type]}" value="${c.money[m.type]}"></label>
+        <button>OK</button><button type="button" data-m="exit">Exit</button></form></div>`
+    }
+    const again = (o: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use' | 'scribe'; use?: UseStep; after?: 'drop' | 'trade' | 'sell'; money?: MoneyStep; combat?: boolean }) => {
       drawRoster()
-      sheet(parseCharacter(node), { ...o, mode: opts.mode })
+      sheet(parseCharacter(node), { ...o, mode: opts.mode, combat: opts.combat })
     }
     dialog.querySelectorAll<HTMLButtonElement>('.gear [data-i]').forEach((r) =>
       r.addEventListener('click', () => again({ selected: Number(r.dataset.i) === sel ? -1 : Number(r.dataset.i) })))
@@ -896,8 +917,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         for (const m of out) print(m, false)
         again({ selected: Math.min(keep, items.length - 1), message: out.join(' ') })
       }
+      else if (a === 'scribe-yes') again({ selected: keep, confirm: opts.after, after: opts.after })
       else if (a === 'trade') {
         const why = unavailable(it)
+        if (!why && scribing(it, t) && !opts.after) return again({ selected: keep, confirm: 'scribe', after: 'trade' })
         again(why ? { selected: keep, message: why } : { selected: keep, confirm: 'trade' })
       } else if (a.startsWith('trade-')) {
         const to = others[Number(a.slice(6))]
@@ -905,12 +928,14 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         again(m ? { selected: keep, message: m } : { message: `Traded to ${parseCharacter(to).name}.` })
       } else if (a === 'drop') {
         const why = unavailable(it)
+        if (!why && scribing(it, t) && !opts.after) return again({ selected: keep, confirm: 'scribe', after: 'drop' })
         again(why ? { selected: keep, message: why } : { selected: keep, confirm: 'drop' })
       } else if (a === 'drop-yes') {
         const m = drop(node, items, it, t)
         again({ message: m })
       } else if (a === 'sell') {
         const why = unavailable(it) || (node[0x84] >= 0x80 && node[0x10d] ? 'NPCs cannot sell' : '')
+        if (!why && scribing(it, t) && !opts.after) return again({ selected: keep, confirm: 'scribe', after: 'sell' })
         again(why ? { selected: keep, message: why } : { selected: keep, confirm: 'sell' })
       } else if (a === 'sell-yes') {
         const offer = sellOffer(it)
@@ -928,6 +953,30 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         again({ selected: items.indexOf(it), message: n ? '' : 'Nothing to join.' })
       } else again({ selected: keep })
     }))
+    dialog.querySelectorAll<HTMLButtonElement>('.money-actions [data-m]').forEach((b) => b.addEventListener('click', () => {
+      const d = b.dataset.m!, m = opts.money
+      if (d === 'exit') return again({})
+      if (d === 'trade' || d === 'drop') return again({ money: { op: d } })
+      if (d.startsWith('to-') && m) return again({ money: { ...m, to: Number(d.slice(3)) } })
+      if (d.startsWith('type-') && m) return again({ money: { ...m, type: Number(d.slice(5)) } })
+    }))
+    dialog.querySelector<HTMLFormElement>('form.money-amount')?.addEventListener('submit', (ev) => {
+      ev.preventDefault()
+      const m = opts.money
+      if (!m || m.type === undefined || !t) return
+      const n = Math.max(0, Math.floor(Number(dialog.querySelector<HTMLInputElement>('form.money-amount input')!.value) || 0))
+      let message = ''
+      if (m.op === 'trade') {
+        const to = engine.party()[m.to ?? 0]
+        message = tradeMoney(node, items, to, engine.itemsOf(to), m.type, n, t)
+      } else {
+        const pool = opts.mode === 'shop' || opts.mode === 'temple' || opts.mode === 'treasure' ? engine.money : null
+        dropMoney(node, items, m.type, n, pool, t)
+      }
+      // back to the coin list while there is money left (the original loops)
+      const left = moneyOf(node).some((v) => v > 0)
+      again(left ? { money: { op: m.op, to: m.to }, message } : { message })
+    })
     if (!dialog.open) dialog.showModal()
   }
 

@@ -1154,6 +1154,8 @@ export class Engine {
   /** Base item table and name words (ITEMS, START.EXE); null when either file is missing. */
   get items(): ItemTables | null {
     if (this.itemTableCache === undefined) this.itemTableCache = ItemTables.load(this.files.get('ITEMS'), this.files.get('START.EXE'))
+    // item names carry "* " while anyone has Detect Magic (effect 5), as FUN_10ba_0442 checks on every name
+    if (this.itemTableCache) this.itemTableCache.detect = this.party().some((c) => this.effectsOf(c).some((e) => e.type === 5))
     return this.itemTableCache
   }
 

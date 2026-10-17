@@ -4,6 +4,9 @@ import type { Engine } from '../vm/engine'
 import { parseCharacter } from '../data/character'
 import type { Item } from '../data/items'
 import { canTakeItem, recalc } from '../rules/equip'
+import { castOutside } from '../rules/magic'
+
+const memorisedReady = (c: Uint8Array) => Array.from({ length: 21 }, (_, k) => c[0x17 + k]).filter((v) => v > 0 && v < 0x80)
 import { appraiseGem, appraiseJewel, COINS, coinValue, keepAsItem, moneyOf, pay, poolAll, receive, share, take, takeOne } from '../rules/money'
 
 export interface TownUi {
@@ -231,8 +234,17 @@ export async function treasure(ui: TownUi) {
       const parts = [money ? moneyLine(e.money) : '', items && t ? e.treasure.map((it) => t.name(it)).join(', ') : ''].filter(Boolean)
       ui.print(`Treasure: ${parts.join('; ')}.`, true)
     }
-    const opts = money ? ['VIEW', 'TAKE', 'POOL', 'SHARE', 'EXIT'] : items ? ['VIEW', 'TAKE', 'POOL', 'EXIT'] : ['VIEW', 'POOL', 'EXIT']
+    // FUN_2e08_0ecd: " Detect" when there are items and the current character has Detect Magic ready (5 or 11)
+    const detect = items ? memorisedReady(e.cur).find((id) => id === 5 || id === 11) : undefined
+    const opts = [...(money ? ['VIEW', 'TAKE', 'POOL', 'SHARE'] : items ? ['VIEW', 'TAKE', 'POOL'] : ['VIEW', 'POOL']), ...(detect ? ['DETECT'] : []), 'EXIT']
     const o = opts[await ui.menu(opts)]
+    if (o === 'DETECT' && detect && e.spells) {
+      // cast without the "casts" line; the memorised copy is used up (4e53:0EA7)
+      const out = castOutside(e, e.cur, e.spells.get(detect)!, [e.cur])
+      for (const m of out.slice(1)) ui.print(m, false)
+      ui.refresh()
+      continue
+    }
     if (o === 'VIEW') await ui.view('treasure')
     else if (o === 'TAKE') {
       const kinds = [...(money ? ['MONEY'] : []), ...(items ? ['ITEMS'] : [])]

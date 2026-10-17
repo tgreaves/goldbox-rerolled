@@ -10,7 +10,7 @@ export function unavailable(it: Item): string {
 /** A scroll holding a spell flagged for scribing (bit 7 of a spell byte): ask before losing it. */
 export function scribing(it: Item, t: ItemTables): boolean {
   const slot = t.baseOf(it)?.slot ?? 0
-  return (slot === 11 || slot === 12) && it.props.some((p) => p & 0x80)
+  return slot >= 11 && slot <= 13 && it.props.some((p) => p & 0x80) // FUN_4e53_323d: ITEMS slot 11–13
 }
 
 /** Trade (FUN_4894_1734): move the item to the end of the recipient's list. */

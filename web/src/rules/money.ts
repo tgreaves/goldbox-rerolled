@@ -148,3 +148,34 @@ export function sellOffer(it: Item): number {
   if (it.count > 1) offer = Math.floor(((offer * it.count) % 65536) / 20)
   return offer
 }
+
+/** The coin names in the money prompts ("How much <name>will you trade? "), as the original spells them (FUN_4c2d_0b93). */
+export const COIN_PROMPT = ['Copper ', 'silver ', 'electrum ', 'Gold ', 'Platinum ', 'Gems ', 'Jewelry ']
+
+/**
+ * Trade money (FUN_4894_2156 → FUN_4c2d_044c): `n` coins of `type` (clamped to what the giver has) to
+ * `to`, unless the recipient cannot carry them ("Overloaded"). The original updates the giver's
+ * encumbrance twice and leaves the recipient's stale until the next recalculation; both are recalculated here.
+ */
+export function tradeMoney(from: Uint8Array, fromItems: Item[], to: Uint8Array, toItems: Item[], type: number, n: number, t: ItemTables): string {
+  n = Math.min(n, get(from, type))
+  if (n <= 0) return ''
+  if (from !== to && encumbrance(to) + n > capacity(to)) return 'Overloaded'
+  set(from, type, get(from, type) - n)
+  set(to, type, get(to, type) + n)
+  recalc(from, fromItems, t)
+  if (to !== from) recalc(to, toItems, t)
+  return ''
+}
+
+/**
+ * Drop money (FUN_4894_24a7 → FUN_4c2d_0a01): the coins leave the character; only in a shop, temple
+ * or on the treasure screen do they go to the pool, anywhere else they are gone.
+ */
+export function dropMoney(c: Uint8Array, items: Item[], type: number, n: number, pool: number[] | null, t: ItemTables) {
+  n = Math.min(n, get(c, type))
+  if (n <= 0) return
+  set(c, type, get(c, type) - n)
+  if (pool) pool[type] += n
+  recalc(c, items, t)
+}

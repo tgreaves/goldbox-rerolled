@@ -309,7 +309,7 @@ If the combatant cannot act (c[0x10D] = 0) the turn ends. If a spell is queued i
 | Q Quick | always | autocombat for this character: c[0x10F] = 1 (and drop the target if it is an ally); the AI plays this turn | `FUN_320c_122b`, `FUN_3334_000f` |
 | D Done | always | submenu below | `FUN_320c_0e45` |
 | Space | hidden | clear c[0x10F] for every party member who is not an NPC (c[0x84] < 0x80) | |
-| 2 or Alt-M (code 0x32) | hidden | toggle "Magic On/Off" `DS:6E30`: whether auto-controlled party members may cast | |
+| Alt-M (code 0x32) | hidden | toggle "Magic On/Off" `DS:6E30` (status line "Magic On" / "Magic Off", the turn goes on): whether party members on Quick may cast. Off at every battle start (`FUN_34c7_1e31`). In this menu extended keys are on, so '2' becomes keypad Down and does nothing; during a computer-run turn (`FUN_3334_0fc1`, raw ReadKey) '2' or Alt-M toggle (O). AI spell casting (`FUN_3334_0545`) needs R[1], a ready spell, an NPC/monster or Magic On, and enemies still in play; the area's no-magic flag 0x49E5 is not tested there | |
 | Alt-Q (code 0x10) | hidden | autocombat for every combatant in the list; this one's initiative is set to 20 so it is picked again at once and played by the AI | |
 | − or Alt-X (code 0x2D) | hidden | cheat, only with the `STING` command-line option: "The Gods intervene!", every enemy-side combatant becomes Dead and leaves the field (`FUN_3aae_3b93`); otherwise "That doesn't work" | |
 

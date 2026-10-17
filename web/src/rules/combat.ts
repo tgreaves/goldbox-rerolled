@@ -1441,8 +1441,11 @@ export class Battle implements FxHost {
   /** Spell choice for the AI (FUN_3334_0545 with FUN_3334_02eb). */
   async aiCast(f: Fighter): Promise<boolean> {
     const c = f.c, st = this.e.spells
-    if (!st || !f.r[1] || this.e.read(0x49e5) !== 0) return false
+    // FUN_3334_0545: R[1], a ready spell, an NPC or monster or "Magic On" (DS:6E30), and enemies still in
+    // play; the area's no-magic flag 0x49E5 is not tested here (only the player's Cast and AI item use check it)
+    if (!st || !f.r[1]) return false
     if (c[0x84] <= 0x7f && !this.magicOn) return false
+    if (!this.enemies(f).length) return false
     const mem = Array.from({ length: 21 }, (_, k) => c[0x17 + k]).filter((v) => v > 0 && v < 0x80)
     if (!mem.length) return false
     const passes = this.e.roll(1, 7)

@@ -306,6 +306,19 @@ export async function runBattle(s: BattleScreen) {
     },
   }
   s.canvas.hidden = false
+  // the hidden "Magic On/Off" key (DS:6E30): Alt-M, or '2' during a computer-run turn; whether
+  // party members on Quick may cast spells. Off at every battle start (FUN_34c7_1e31).
+  const onMagicKey = (ev: KeyboardEvent) => {
+    if (!battle) return
+    const altM = ev.altKey && ev.key.toLowerCase() === 'm'
+    const two = ev.key === '2' && !s.input.key && !s.input.tap
+    if (!altM && !two) return
+    ev.preventDefault()
+    ev.stopPropagation()
+    battle.magicOn = !battle.magicOn
+    s.print(battle.magicOn ? 'Magic On' : 'Magic Off')
+  }
+  window.addEventListener('keydown', onMagicKey, true)
   const onHover = (ev: PointerEvent) => {
     if (!view || ev.pointerType === 'touch') return
     const cell = view.cellAt(ev, focus)
@@ -340,6 +353,7 @@ export async function runBattle(s: BattleScreen) {
     return result
   } finally {
     resize.disconnect()
+    window.removeEventListener('keydown', onMagicKey, true)
     s.canvas.removeEventListener('pointermove', onHover)
     s.canvas.removeEventListener('pointerleave', onLeave)
     s.canvas.removeEventListener('pointerup', onIdleTap)

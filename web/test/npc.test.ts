@@ -70,6 +70,23 @@ describe.skipIf(!have)('NPCs and duels', () => {
     }
   })
 
+  it('trades and drops money as the view menu does', async () => {
+    const { tradeMoney, dropMoney, moneyOf } = await import('../src/rules/money')
+    const e = await game(8)
+    const [a, b] = e.party()
+    const t = e.items!
+    a[0x88 + 6] = 100; a[0x89 + 6] = 0 // 100 gold
+    const before = moneyOf(b)[3]
+    expect(tradeMoney(a, e.itemsOf(a), b, e.itemsOf(b), 3, 500, t)).toBe('') // clamped to the 100 held
+    expect(moneyOf(a)[3]).toBe(0)
+    expect(moneyOf(b)[3]).toBe(before + 100)
+    const pool = [0, 0, 0, 0, 0, 0, 0]
+    dropMoney(b, e.itemsOf(b), 3, 40, pool, t)
+    expect(pool[3]).toBe(40)
+    dropMoney(b, e.itemsOf(b), 3, 10, null, t) // outside a shop or treasure screen the coins are gone
+    expect(moneyOf(b)[3]).toBe(before + 50)
+  })
+
   it('never destroys the party in a brawl (ECL 0x6DE6 = 1)', async () => {
     for (const seed of [5, 6, 7]) {
       const e = await game(seed)
