@@ -5,10 +5,12 @@ import { showTitle } from './ui/title'
 import { showParty } from './ui/party'
 import { setupOffline } from './pwa/register'
 import { installGameFont } from './ui/gamefont'
+import { applyTextSize } from './ui/settings'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
 async function start() {
+  applyTextSize()
   const files = await GameFiles.load()
   if (files.complete()) { await installGameFont(files); title(files) }
   else showImport()

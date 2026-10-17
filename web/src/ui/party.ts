@@ -8,6 +8,8 @@ import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
 import { parseRecord, toImageData } from '../data/image'
 import { buildIcon } from '../render/icon'
 import { creatorTools } from './creator'
+import { openSettings } from './settings'
+import { initSound } from '../audio/sfx'
 import { saveCharacter, listSaves, writeSave } from '../store/user'
 import { saveFiles, savesFrom, unzip, zip, type NamedFile } from '../store/savefiles'
 import { parseSave, saveArea, saveBlock } from '../data/save'
@@ -33,7 +35,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
 
   app.innerHTML = `
     <div class="partyscreen">
-      <header><h1>Pool of Radiance</h1><button class="muted" data-a="assets">Assets</button></header>
+      <header><h1>Pool of Radiance</h1><span><button class="muted" data-a="settings">⚙ Settings</button> <button class="muted" data-a="assets">Assets</button></span></header>
       <section class="members" aria-label="Party"><h2>Party</h2><div class="cards"></div></section>
       <section class="info" aria-live="polite"></section>
       <nav class="functions" aria-label="Choose a function"></nav>
@@ -249,6 +251,11 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
     const i = Number(row.dataset.i)
     if (i === current) act('V')
     else { current = i; draw() }
+  })
+  app.querySelector('[data-a="settings"]')!.addEventListener('click', () => {
+    if (dialog.open) return
+    initSound(files.get('START.EXE'))
+    void openSettings(dialog)
   })
   app.querySelector('[data-a="assets"]')!.addEventListener('click', () => { window.removeEventListener('keydown', onKey); nav.assets() })
   const onKey = (e: KeyboardEvent) => {

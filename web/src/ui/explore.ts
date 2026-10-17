@@ -27,10 +27,10 @@ import { Tables, fileStem } from '../rules/chargen'
 import { creatorTools } from './creator'
 import { playEnding } from './ending'
 import { onClose } from './sheet'
-import { fontChoice, gameFontAvailable, setFontChoice } from './gamefont'
+import { openSettings } from './settings'
 import { unexepack } from '../data/exepack'
 import { checkTraining, newSpellChoices, train, willBecome } from '../rules/training'
-import { initSound, play, setSoundDevice, soundAvailable, soundDevice, unlockAudio } from '../audio/sfx'
+import { initSound, play, setSoundDevice, soundDevice, unlockAudio } from '../audio/sfx'
 
 const FACING = ['North', 'East', 'South', 'West']
 const STAT_KEYS = ['STR', 'INT', 'WIS', 'DEX', 'CON', 'CHA'] as const
@@ -1045,10 +1045,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     pad.classList.remove('disabled')
     menuBar.innerHTML = ['Area', 'Cast', 'View', 'Encamp', 'Search', 'Look']
       .map((c) => `<button data-cmd="${c[0]}"${c === 'Search' && engine.B[0x6dca - 0x6b00] & 1 ? ' class="on"' : ''}><u>${c[0]}</u>${c.slice(1)}</button>`).join('') +
-      (soundAvailable()
-        ? `<button class="sound" data-cmd="sound" title="Sound device: PC speaker, Tandy/PCjr or off">♪ ${({ pc: 'PC speaker', tandy: 'Tandy', off: 'Off' })[soundDevice()]}</button>`
-        : '<button class="sound" data-cmd="nosound" title="Re-import the POOLRAD folder with START.EXE for sound">♪ n/a</button>') +
-      (gameFontAvailable() ? `<button class="sound" data-cmd="font" title="Text in the game's own font, or a modern one">Aa ${fontChoice() === 'original' ? 'Original' : 'Modern'}</button>` : '') +
+      '<button class="sound" data-cmd="settings" title="Speed, sound, font and text size">⚙ Settings</button>' +
       `<button data-cmd="commissions" title="Commissions and rewards (not in the original)">Commissions${commissionsDue() ? ' <span class="due">•</span>' : ''}</button>` +
       '<button data-cmd="save" title="Save the game (any time)">Save</button>' +
       '<button class="assets" data-cmd="debug" title="Debug menu (not part of the game)">Debug</button>' +
@@ -1085,7 +1082,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         if (next !== 'off') play(10)
         break
       }
-      case 'font': setFontChoice(fontChoice() === 'original' ? 'modern' : 'original'); commandBar(); break
+      case 'settings':
+        void openSettings(dialog, { speed: { get: () => engine.speed, set: (v) => { engine.speed = v } }, changed: () => commandBar() })
+        break
       case 'nosound': note('Sound needs START.EXE: go back to Assets and re-import the POOLRAD folder.'); break
       case 'commissions': commissions(); break
       case 'save': act(() => saveGame()); break

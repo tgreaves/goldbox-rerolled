@@ -383,3 +383,11 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 .hpbar { display: block; height: 0.45rem; border-radius: 3px; background: #ffffff18; overflow: hidden; margin-top: 0.15rem; }
 .hpbar span { display: block; height: 100%; background: var(--ega-green); }
 .hpbar.low span { background: var(--ega-yellow); }
+
+/* Settings panel (IMP-046) and the larger text size */
+.set-row { display: grid; grid-template-columns: 7.5rem 1fr; gap: 0.6rem; align-items: center; margin: 0.6rem 0; }
+.set-label { color: var(--muted); }
+.set-row output { min-width: 2rem; text-align: center; color: var(--ega-green); align-self: center; }
+.set-row .nc-opts .muted { flex-basis: 100%; font-size: 0.85rem; }
+.text-large .game, .text-large .partyscreen, .text-large dialog.panel, .text-large .title { font-size: 1.2rem; }
+.text-large.font-original .game, .text-large.font-original .partyscreen, .text-large.font-original dialog.panel, .text-large.font-original .title { font-size: 24px; }
