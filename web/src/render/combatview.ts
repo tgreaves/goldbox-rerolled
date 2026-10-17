@@ -2,7 +2,7 @@
 // from the game's tile sets (DUNGCOM or WILDCOM, then RANDCOM from image slot 0x22) with the
 // combatants' icons on top. One cell is one 24 x 24 tile.
 import type { GameFiles } from '../store/gamefiles'
-import { parseRecord, toImageData, spriteImage, type Picture } from '../data/image'
+import { COMBAT_EGA, parseRecord, toImageData, spriteImage, type Picture } from '../data/image'
 import { F, blitCanvas, pixels, sizeCanvas } from './upscale'
 import { COLS, ROWS, type Battlefield, type CellInfo } from '../rules/battlefield'
 
@@ -31,7 +31,7 @@ export interface Sprite { x: number; y: number; rec: number; mirror?: boolean }
 
 /** the picture on a canvas, enlarged when smoothing is on (IMP-047); drawn at its logical size */
 function canvasOf(p: Picture, sprite: boolean): HTMLCanvasElement {
-  return pixels(sprite ? spriteImage(p) : toImageData(p))
+  return pixels(sprite ? spriteImage(p, COMBAT_EGA) : toImageData(p, COMBAT_EGA))
 }
 
 export class CombatView {
@@ -94,7 +94,7 @@ export class CombatView {
     const W = this.cols * CELL, H = this.rows * CELL
     const g = sizeCanvas(this.canvas, W, H)
     const [r0, c0] = this.origin(focus.row, focus.col)
-    g.fillStyle = '#000'
+    g.fillStyle = `rgb(${COMBAT_EGA[0].join(',')})` // colour 0, dark grey under the swap
     g.fillRect(0, 0, W, H)
     for (let r = 0; r < this.rows; r++) for (let c = 0; c < this.cols; c++) {
       const v = bf.get(r0 + r, c0 + c)

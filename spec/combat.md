@@ -1205,6 +1205,10 @@ Sound 6, the flight, sound 12.
 - **Stinking Cloud**: "Creates a noxious cloud" without a pause, a redraw showing the cloud cells (RandCom 4), then the pause.
 - **Gazes** (`3723_1cad`, `1e77`): the spell bolt, 4 frames, 45 ms ("reflects it!" adds a return flight). **Acid spit** (`3723_2c1c`): COMSPR 10 alone at 30 ms, then the starburst.
 
+### Palette (O)
+
+Drawing the combat screen frame (`FUN_10ba_2b88`, at battle start and after casting or using an item) calls `FUN_577f_00e3`: on EGA (`DS:4A1E` = 1) palette register 0 := colour 8 and register 8 := colour 0 (`FUN_1464_2a0d(reg, colour)`, INT 10h AX=1000h; colours ≥ 8 are sent as colour + 8, the intensity bit). Black shows as dark grey and dark grey as black: dungeon floors are dark grey, the mortar between stones black. The cleanup `FUN_320c_0000` → `FUN_577f_0105` restores both registers. The combat-icon editor (`FUN_417f_382d`) and the View screen (`FUN_4894_0ab3`) swap and restore the same way.
+
 ### Cursor tile (O)
 
 COMSPR 25, an opaque grey bevelled square, is drawn under the combatant whose turn it is (every turn start, AI or player; removed at turn end), under a caster who "Begins Casting", and under the current target in Aim; Next/Prev slides it to the new target (a flight with delay 0).

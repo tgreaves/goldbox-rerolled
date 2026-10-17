@@ -6,6 +6,13 @@ export const EGA: ReadonlyArray<readonly [number, number, number]> = [
   [85, 255, 255], [255, 85, 85], [255, 85, 255], [255, 255, 85], [255, 255, 255],
 ]
 
+/**
+ * The combat screen's colours: drawing it (FUN_10ba_2b88 → FUN_577f_00e3) swaps EGA palette
+ * registers 0 and 8, so black shows dark grey and dark grey black, until the battle's cleanup
+ * (FUN_320c_0000 → FUN_577f_0105) puts them back.
+ */
+export const COMBAT_EGA: ReadonlyArray<readonly [number, number, number]> = EGA.map((c, i) => (i === 0 ? EGA[8] : i === 8 ? EGA[0] : c))
+
 export interface Picture {
   width: number
   height: number
@@ -100,11 +107,11 @@ export function toImageData(p: Picture, palette = EGA): ImageData {
  * transparent, then colour 13 is remapped to black (`FUN_1464_1e5c`, tables `DS:0C6C` / `DS:0C7C`).
  * Colour 13 is the artist's opaque black: outlines, boots, drop shadows.
  */
-export function spriteImage(p: Picture): ImageData {
-  const img = toImageData(p)
+export function spriteImage(p: Picture, palette = EGA): ImageData {
+  const img = toImageData(p, palette)
   for (let i = 0; i < p.pixels.length; i++) {
     if (p.pixels[i] === 0) img.data[i * 4 + 3] = 0
-    else if (p.pixels[i] === 13) img.data.set(EGA[0], i * 4)
+    else if (p.pixels[i] === 13) img.data.set(palette[0], i * 4)
   }
   return img
 }
