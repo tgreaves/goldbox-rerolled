@@ -180,7 +180,7 @@ The game always pushes a word constant from DS:2610+ (2612=FFh, 2614=0, 2616=1, 
 | n | DS const | call sites (linear) [containing Ghidra fn] | mode at call |
 |---|---|---|---|
 | FFh | 2612 | 1899D [FUN_1899_0000], 18A0F (Ctrl-S) | — |
-| 2 | 2618 | 4F34A [FUN_4e53_0c20, default branch], 4FC16 [FUN_4e53_169d] | full |
+| 2 | 2618 | 4F34A [FUN_4e53_0c20, default branch], 4FC16 [FUN_4e53_1658, Hold Person] | full |
 | 3 | 261A | 12C18 [FUN_10ba_1feb] | full |
 | 4 | 261C | 12C0D [FUN_10ba_1feb] | full |
 | 5 | 261E | 5861A, 587FE [FUN_577f_0e11] | full |
