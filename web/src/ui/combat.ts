@@ -58,6 +58,8 @@ export async function runBattle(s: BattleScreen) {
   let acting: Fighter | null = null
   /** combatants shown in their action frame, and COMSPR sprites over the battlefield (spec/combat.md, "Combat visuals") */
   const poses = new Set<Fighter>()
+  /** combatants already out of play whose skull is still queued, and where they stood */
+  const falling = new Map<Fighter, { x: number; y: number }>()
   let sprites: Sprite[] = []
   /** messages and animations queue: each shows, then holds before the next */
   let queue: Promise<void> = Promise.resolve()
@@ -163,9 +165,10 @@ export async function runBattle(s: BattleScreen) {
   const draw = () => {
     strip()
     if (!battle || !view) return
-    const figures: Figure[] = battle.fighters.filter((f) => battle!.inPlay(f)).map((f) => {
+    const figures: Figure[] = battle.fighters.filter((f) => battle!.inPlay(f) || falling.has(f)).map((f) => {
       const ic = iconOf(f)
-      return { row: f.y, col: f.x, icon: ic.icon, action: ic.action, side: f.c[0x10e] ? 1 : 0, left: f.r[9] >= 4, pose: poses.has(f) } as Figure
+      const at = falling.get(f) ?? { x: f.x, y: f.y }
+      return { row: at.y, col: at.x, icon: ic.icon, action: ic.action, side: f.c[0x10e] ? 1 : 0, left: f.r[9] >= 4, pose: poses.has(f) } as Figure
     })
     const planMarks = plan ? [...plan.cells.map((p) => ({ row: p.y, col: p.x, colour: '#4c8bd6' })), { row: plan.to.y, col: plan.to.x, colour: '#55ff55' }] : []
     // the grey cursor tile (COMSPR 25) lies under the combatant whose turn it is
@@ -181,12 +184,18 @@ export async function runBattle(s: BattleScreen) {
     },
     settle: () => queue,
     // FUN_577f_0e11: the skull (COMSPR 11) on every cell the combatant covered, sound 5, the pause
-    fall: (cells, ms) => later(async () => {
-      sprites = cells.map((c) => ({ x: c.col * 24, y: c.row * 24, rec: 11 }))
-      draw()
-      s.sound(5)
-      try { await s.pause(ms) } finally { sprites = []; draw() }
-    }),
+    fall: (cells, ms, who) => {
+      // FUN_577f_0e11 replaces the figure by the skull at once: until its turn in the queue comes,
+      // the fallen combatant is still drawn where it stood
+      if (who) falling.set(who, { x: who.x, y: who.y })
+      later(async () => {
+        if (who) falling.delete(who)
+        sprites = cells.map((c) => ({ x: c.col * 24, y: c.row * 24, rec: 11 }))
+        draw()
+        s.sound(5)
+        try { await s.pause(ms) } finally { sprites = []; draw() }
+      })
+    },
     pose: (f, on) => later(async () => { if (on) poses.add(f); else poses.delete(f); draw() }),
     flight: (from, to, how) => later(async () => {
       if (how.sounds?.[0]) s.sound(how.sounds[0])

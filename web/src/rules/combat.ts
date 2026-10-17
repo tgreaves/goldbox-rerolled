@@ -62,7 +62,7 @@ export interface CombatUi {
   /** resolves once every queued message has been shown and held */
   settle?(): Promise<void>
   /** queued like a message: the skull on these cells, sound 5, then a hold of `ms` (FUN_577f_0e11) */
-  fall?(cells: { row: number; col: number }[], ms: number): void
+  fall?(cells: { row: number; col: number }[], ms: number, who?: Fighter): void
   /** queued: show the combatant in its action frame (true) or its normal frame (FUN_577f_0af8) */
   pose?(f: Fighter, action: boolean): void
   /** queued: a missile or spell flies from one cell to another (FUN_10ba_1a29), sounds before and after */
@@ -981,7 +981,7 @@ export class Battle implements FxHost {
         const v = this.bf.get(t.y, t.x)
         if (v !== 0 && v !== 0x1e) this.bf.set(t.y, t.x, 0x1f)
       }
-      this.ui.fall?.(cells, this.e.speed * 225)
+      this.ui.fall?.(cells, this.e.speed * 225, t)
     }
     t.size = 0
     this.ui.redraw()
