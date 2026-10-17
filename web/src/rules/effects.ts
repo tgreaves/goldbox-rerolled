@@ -29,7 +29,8 @@ export interface FxHost {
   /** damage (FUN_5216_1344) */
   damage(c: Uint8Array, dmg: number, mode: number, saved: boolean): void
   save(c: Uint8Array, type: number, bonus: number): boolean
-  heal(c: Uint8Array, amount: number, force: boolean): void
+  /** FUN_5216_175d: false when the status or mummy rot blocks it */
+  heal(c: Uint8Array, amount: number, force: boolean): boolean
   revive(c: Uint8Array, hp: number): boolean
   recalc(c: Uint8Array): void
   /** enemies of c in sight within range */
@@ -164,6 +165,11 @@ export function damageText(name: string, d: number, type: number): string {
   const kind = k === 1 ? 'from Fire' : k === 2 ? 'from Cold' : k === 4 ? 'from Electricity' : k === 0x10 ? 'from Acid' : ''
   const magic = (type & 8) === type ? 'from Magic' : ''
   return `${name} takes ${d === 1 ? '1 point' : `${d} points`} of damage ${kind}${magic}`.trimEnd()
+}
+
+/** FUN_10ba_234a: "is fully healed" at full HP, else "is partially healed", with the pause. */
+export function healedLine(h: FxHost, c: Uint8Array) {
+  h.print(`${h.name(c)} is ${c[0x11b] === c[0x32] ? 'fully' : 'partially'} healed`)
 }
 
 /** FUN_3723_0000(t): negate damage (event 6) or block the effect being added (event 9). */
@@ -330,7 +336,7 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
       if (c[0x10e] === side) { if (event === 12) fx.save += 1; else fx.roll += 1 } else if (event === 12) fx.save -= 1; else fx.roll -= 1
       break
     }
-    case 50: if (removal && rearm(h, c, 50, 14400, eff.power)) h.heal(c, 1, true); break
+    case 50: if (removal && rearm(h, c, 50, 14400, eff.power) && h.heal(c, 1, true)) healedLine(h, c); break
     case 56: addRaw(h, c, 25, 1, 0x0c, 0); break
     case 57: if (removal && !fx.noRearm) {
       h.print(`${h.name(c)} Rots...`)
@@ -341,7 +347,7 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
     case 58: h.setRec(c, 6, 0); if (fx.rateIsMove) fx.rate = 0; break
     case 59: if (removal) addRaw(h, c, 98, 0, 0xff, 0); break
     case 61: if (event === 6 && fx.dmgType & 1) { fx.dmg = Math.max(fx.dice, fx.dmg - 2 * fx.dice); if (!(fx.dmgType & 8)) fx.dmg = 0 } else if (event === 12) fx.save += 4; break
-    case 62: if (removal && rearm(h, c, 62, 60, eff.power)) h.heal(c, 1, false); break
+    case 62: if (removal && rearm(h, c, 62, 60, eff.power) && h.heal(c, 1, false)) healedLine(h, c); break
     case 64: await poisonOnHit(h, 0); break
     case 65: await poisonOnHit(h, 4); break
     case 66: await poisonOnHit(h, 2); break

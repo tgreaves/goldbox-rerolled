@@ -154,9 +154,7 @@ export async function sharedSpell(h: FxHost, e: Engine, caster: Uint8Array, s: S
       if (!t) break
       if (await removeOne(h, t, 0x37)) { fx.noRearm = true; await removeFirst(h, t, 0x16); fx.noRearm = false; break }
       if (await cureDisease(h, t)) break
-      const before = t[0x11b]
-      h.heal(t, h.roll(1, 4) + 8, false)
-      if (t[0x11b] !== before) good(h, t, 'is Healed')
+      if (h.heal(t, h.roll(1, 4) + 8, false)) good(h, t, 'is Healed')
       break
     }
     case 59: { // Potion of Giant Strength (2ee5): STR 21

@@ -53,10 +53,11 @@ export class WorldHost implements FxHost {
     return c[0x6d + type] <= fx.save
   }
   heal(c: Uint8Array, amount: number, force: boolean) {
-    if (![0, 1, 4, 5].includes(c[0x10c])) return
-    if (!force && this.e.effectsOf(c).some((f) => f.type === 0x32)) return
+    if (![0, 1, 4, 5].includes(c[0x10c])) return false
+    if (!force && this.e.effectsOf(c).some((f) => f.type === 0x32)) return false
     c[0x11b] = Math.min(c[0x32], c[0x11b] + amount)
     if (c[0x11b] > 0 && (c[0x10c] === 4 || c[0x10c] === 5)) { c[0x10c] = 0; c[0x10d] = 1 }
+    return true
   }
   revive(c: Uint8Array, hp: number) {
     c[0x10c] = 0; c[0x10d] = 1; c[0x11b] = Math.min(hp, c[0x32])

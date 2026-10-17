@@ -34,6 +34,7 @@ Range when casting from an item (`DS:6DBF` set) uses caster level 6.
 
 ## Casting (O)
 
+- `FUN_4e53_331a` announces a cast: in combat "<name> Casts a Spell" with the pause, then "Spell: <name of spell>" on the status line; outside combat the caster's name and the verb on one row, the spell's name below, then the pause
 - `FUN_3aae_2414(spell)`: refuses camp-only spells in combat; with cast time 0 casts immediately (`FUN_4e53_0c20`), otherwise stores the spell in the combat record [0] and lowers initiative by `time/3` (minimum 1); the spell goes off on the caster's later turn
 - `FUN_3aae_1e16`: target selection, checking range (`FUN_3aae_37e4`), area templates and avoiding friendly fire for area spells (the AI rejects an area that would include its own side)
 - `FUN_4e53_08c3`: for each target: touch spells roll to-hit vs AC; saving throw if byte 8 ≠ 0; immediate effect (`FUN_5216_1344`); then add the effect type with its duration (`FUN_5216_1656`)
@@ -150,7 +151,7 @@ L = caster level; "1st" = only the first target is used.
 |---|---|---|---|---|---|---|
 | 1 | Bless | 100f → 0f4f | effect 0x01 | — | drops targets not on the caster's side; in combat also anyone with an enemy adjacent | |
 | 2 | Curse | 1040 → 0f4f | effect 0x02 | — | enemies only | |
-| 3 | Cure Light Wounds | 106b | heal 1d8 (no force); "fully" / "partially healed" | — | 1st | no revive in combat |
+| 3 | Cure Light Wounds | 106b | heal 1d8 (no force); if it took, "is fully healed" / "is partially healed" (`FUN_10ba_234a`, also after regeneration 62 and mummy rot 50 heal), in and out of combat | — | 1st | no revive in combat |
 | 4 | Cause Light Wounds | 10a7 | 1d8, type 8 | — | touch | |
 | 5, 11, 18, 22, 29 | Detect Magic, Read Magic, Find Traps, Detect Invisibility | 10e9 | effect only | | | |
 | 6, 7, 16, 17, 52, 53, 54 | protections | 1123 | effect only | | | |

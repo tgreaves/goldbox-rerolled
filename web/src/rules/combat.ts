@@ -6,7 +6,7 @@ import type { Spell } from '../data/spells'
 import type { Effect } from '../data/effects'
 import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, type Battlefield, type CellInfo } from './battlefield'
 import { dexMissile, recalc } from './equip'
-import { fx, fire, damageText, addEffect, addRaw, removeEffect, removeType, type FxHost } from './effects'
+import { fx, fire, damageText, healedLine, addEffect, addRaw, removeEffect, removeType, type FxHost } from './effects'
 import { heal as healChar } from './camp'
 import { line, sharedSpell } from './spellfx'
 import { SPELL_MSG, casterLevel, duration as spellDuration, forget } from './magic'
@@ -192,7 +192,7 @@ export class Battle implements FxHost {
   }
   damage(c: Uint8Array, dmg: number, mode: number, saved: boolean) { this.damageSync(c, dmg, mode, saved) }
   save(c: Uint8Array, type: number, bonus: number) { return this.saveSync(c, type, bonus) }
-  heal(c: Uint8Array, amount: number, force: boolean) { healChar(c, this.e.effectsOf(c), amount, force, true) }
+  heal(c: Uint8Array, amount: number, force: boolean) { return healChar(c, this.e.effectsOf(c), amount, force, true) }
   revive(c: Uint8Array, hp: number) {
     const f = this.of(c)
     if (!f || this.occupied(f.x, f.y, f.size || 1, f)) return false
@@ -1100,7 +1100,9 @@ export class Battle implements FxHost {
       return
     }
     if (!fromItem) forget(c, s.id)
-    this.print(`${name(c)} casts ${s.name}`)
+    // FUN_4e53_331a in combat: "Casts a Spell" with the pause, then "Spell: name" on the status line
+    this.print(`${name(c)} Casts a Spell`)
+    this.print(`Spell: ${s.name}`, { ms: 0 })
     // FUN_4e53_0c20: the caster turns to the aim point in its action frame, the spell bolt flies there
     const aim = this.aimed
     if (aim && (aim.x !== f.x || aim.y !== f.y)) {
@@ -1193,7 +1195,11 @@ export class Battle implements FxHost {
         for (const t of mine) await add(t)
         break
       }
-      case 3: case 62: { const t = targets[0]; if (t) { healChar(t.c, this.e.effectsOf(t.c), s.id === 3 ? this.e.roll(1, 8) : this.e.roll(2, 4) + 2, false, true); this.print(`${name(t.c)} is healed`) } break }
+      case 3: case 62: { // 4e53_106b: no sparkle; FUN_10ba_234a's line when the healing took
+        const t = targets[0]
+        if (t && healChar(t.c, this.e.effectsOf(t.c), s.id === 3 ? this.e.roll(1, 8) : this.e.roll(2, 4) + 2, false, true)) healedLine(this, t.c)
+        break
+      }
       case 4: case 20: { // Cause Light Wounds, Shocking Grasp
         const t = targets[0]
         if (!t) break
