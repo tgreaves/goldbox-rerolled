@@ -283,7 +283,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     },
     async engine(what, info) {
       if (what === 'blocked') return note('Blocked.')
-      if (what === 'party dead') { print('The END!', true); print('The party has been destroyed', false); return gameOver() }
+      if (what === 'party dead') { print('The entire party is killed!', true); return gameOver() } // FUN_29c3_2775
       if (what === 'combat') {
         townMode = 'camp'
         const combatCanvas = app.querySelector<HTMLCanvasElement>('.combatview')!

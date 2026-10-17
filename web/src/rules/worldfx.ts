@@ -29,7 +29,7 @@ export class WorldHost implements FxHost {
     if ([6, 7, 8].includes(c[0x10c])) return
     this.print(msg)
     c[0x10c] = status
-    if (status !== 0 && status !== 1) { c[0x10d] = 0; c[0x11b] = 0 }
+    if (status !== 0 && status !== 1) { c[0x10d] = 0; c[0x11b] = 0; this.e.io.sound(5) } // FUN_577f_0e11 outside combat
   }
   /** FUN_5216_1344 outside combat: no dying count, 0 HP is unconscious, past −9 is dead */
   damage(c: Uint8Array, dmg: number, mode: number, saved: boolean) {

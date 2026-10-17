@@ -8,7 +8,7 @@ import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, type Battlefiel
 import { dexMissile, recalc } from './equip'
 import { fx, fire, addEffect, addRaw, removeEffect, removeType, type FxHost } from './effects'
 import { heal as healChar } from './camp'
-import { casterLevel, duration as spellDuration, forget } from './magic'
+import { SPELL_MSG, casterLevel, duration as spellDuration, forget } from './magic'
 
 const DX = [0, 1, 1, 1, 0, -1, -1, -1], DY = [-1, -1, 0, 1, 1, 1, 0, -1]
 
@@ -191,7 +191,7 @@ export class Battle implements FxHost {
     if (!f || this.occupied(f.x, f.y, f.size || 1, f)) return false
     c[0x10c] = 0; c[0x10d] = 1; c[0x11b] = Math.min(hp, c[0x32])
     f.size = (c[0x6c] & 7) || 1
-    this.print(`${name(c)} gets back up`)
+    this.print(`${name(c)} ${c[0x10e] ? 'stands up and grins' : 'gets back up'}`) // FUN_5216_1869
     return true
   }
   recalc(c: Uint8Array) { if (this.e.items) recalc(c, this.e.itemsOf(c), this.e.items) }
@@ -906,11 +906,17 @@ export class Battle implements FxHost {
     const f = this.of(c)
     if (f && d > 0) {
       // FUN_5216_1344 → FUN_10ba_1feb: the line, the starburst once with sound 3, then the pause
-      this.print(`${name(c)} takes ${d} point${d === 1 ? '' : 's'} of damage`, { ms: 0 })
+      const kind = fx.dmgType & 1 ? 'Fire' : fx.dmgType & 2 ? 'Cold' : fx.dmgType & 4 ? 'Electricity' : fx.dmgType & 0x10 ? 'Acid' : fx.dmgType & 8 ? 'Magic' : ''
+      this.print(`${name(c)} takes ${d} point${d === 1 ? '' : 's'} of damage${kind ? ` from ${kind}` : ''}`, { ms: 0 })
       this.ui.effect?.(f, 'burst', 1, this.e.speed * 225)
     }
     if (f) this.inflict(f, d)
     else c[0x11b] = Math.max(0, c[0x11b] - d)
+  }
+  /** an effect's line without a pause, then the sparkle (FUN_10ba_1feb with "good") */
+  announce(c: Uint8Array, msg: string) {
+    this.print(`${name(c)} ${msg}`, { ms: 0 })
+    this.sparkle(c)
   }
   /** an effect took hold on c (FUN_5216_1656 → FUN_10ba_1feb): the sparkle, (speed + 1) cycles, sound 4 */
   sparkle(c: Uint8Array) {
@@ -1007,6 +1013,7 @@ export class Battle implements FxHost {
     this.cloudCheck(f)
     if (!this.inPlay(f) || this.helpless(f.c)) f.r[6] = 0
     // each step plays the footstep (sound 10) in transient mode, which holds the game for delay(10 cs)
+    this.ui.sound(10)
     this.ui.redraw(f)
     await this.settle()
     await this.ui.pause(100)
@@ -1059,7 +1066,7 @@ export class Battle implements FxHost {
       const v = TABLE[Math.min(t.c[0x76], 10) - 1][col]
       if (r < Math.abs(v)) break
       any = true
-      if (v >= 1) { this.print(`${name(t.c)} is turned`); this.sparkle(t.c); t.r[0x10] = 1 }
+      if (v >= 1) { this.announce(t.c, 'is turned'); t.r[0x10] = 1 }
       else { this.print(`${name(t.c)} Is destroyed`); t.c[0x10c] = 8; t.c[0x10d] = 0; this.downF(t) }
       if (minimum > 0) minimum--
       count--
@@ -1155,7 +1162,7 @@ export class Battle implements FxHost {
     const c = f.c
     const dur = spellDuration(this.e, s, L)
     const add = async (t: Fighter, saved = false, type = s.effect, d = dur, pw = L, flag = 0) => {
-      if (type) await addEffect(this, t.c, type, d, pw, flag, s.save, saved)
+      if (type) await addEffect(this, t.c, type, d, pw, flag, s.save, saved, false, SPELL_MSG[s.id] ?? '')
     }
     const saveOf = (t: Fighter, bonus = 0) => (s.save ? this.saveSync(t.c, s.saveType, bonus) : false)
     const touch = async (t: Fighter) => s.range[0] !== 0xff || await this.toHit(c, t.c, t.c[0x111])
@@ -1191,7 +1198,7 @@ export class Battle implements FxHost {
           const k = costOf(t.c)
           if (k > pool) continue
           pool -= k
-          if (await addEffect(this, t.c, 0x35, dur, L, 0)) this.print(`${name(t.c)} falls asleep`)
+          await addEffect(this, t.c, 0x35, dur, L, 0, 0, false, false, 'falls asleep')
         }
         break
       }
@@ -1200,7 +1207,7 @@ export class Battle implements FxHost {
         const bonus = n === 1 ? (s.id === 23 ? -2 : -3) : n === 2 ? -1 : 0
         for (const t of [...targets].reverse()) {
           const saved = t.c[0x9f] > 1 || t.c[0x6c] > 1 || this.saveSync(t.c, s.saveType, bonus)
-          if (await addEffect(this, t.c, 0x34, dur, L, 0, 1, saved)) this.print(`${name(t.c)} is held`)
+          await addEffect(this, t.c, 0x34, dur, L, 0, 1, saved, false, 'is held')
         }
         break
       }
@@ -1208,7 +1215,7 @@ export class Battle implements FxHost {
         const t = targets[0]
         if (!t) break
         if (t.c[0x9f] > 1 || t.c[0x6c] > 1) { this.print(`${name(t.c)} is unaffected`); break }
-        await addEffect(this, t.c, 0x0b, dur, (L + this.side(f) * 128) & 0xff, 1, 1, saveOf(t), true)
+        await addEffect(this, t.c, 0x0b, dur, (L + this.side(f) * 128) & 0xff, 1, 1, saveOf(t), true, 'is charmed')
         break
       }
       case 47: case 64: { // Fireball, Necklace of Missiles
@@ -1610,11 +1617,12 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
       if (f.c[0x10c] === 0 || f.c[0x10c] === 1) f.c[0x10d] = 1
       if (f.c[0x10c] === 5) f.c[0x10c] = 4
     }
+    // FUN_2e08_0916 for a duel
     if (won) {
-      msgs.push('The party has won.')
+      msgs.push('You have won the duel.')
       if (e.treasure.length || e.money.some((v) => v > 0)) msgs.push('The party has found Treasure!')
-      msgs.push(`Each character receives ${share} experience points.`)
-    }
+      msgs.push(`The duelist receives ${share} experience points.`)
+    } else msgs.push('You have lost the duel.')
   } else if (outcome === 'spared') {
     // not defeated, nobody standing: the same status changes as a win, but no experience or loot
     for (const f of party) {

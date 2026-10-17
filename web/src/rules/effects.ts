@@ -43,6 +43,8 @@ export interface FxHost {
   weaponKind(type: number): number
   /** an effect took hold in combat: the sparkle (FUN_5216_1656 → FUN_10ba_1feb) */
   sparkle?(c: Uint8Array): void
+  /** the line for an effect that took hold, then the sparkle in combat (FUN_10ba_1feb with "good") */
+  announce?(c: Uint8Array, msg: string): void
   /** effect 0x28 expired: lift that Stinking Cloud (combat only) */
   clearCloud?(c: Uint8Array, power: number): void
 }
@@ -132,7 +134,7 @@ export function addRaw(h: FxHost, c: Uint8Array, type: number, duration: number,
  * ("is Unaffected"); replaces one of the same type when the new duration is longer or 0.
  */
 export async function addEffect(h: FxHost, c: Uint8Array, type: number, duration: number, power: number, flag: number,
-  saveKind = 0, saved = false, runNow = false): Promise<boolean> {
+  saveKind = 0, saved = false, runNow = false, msg = ''): Promise<boolean> {
   fx.adding = type
   await fire(h, c, 9)
   if (fx.adding === 0 || (saved && saveKind === 1)) {
@@ -144,7 +146,8 @@ export async function addEffect(h: FxHost, c: Uint8Array, type: number, duration
   const old = h.effectsOf(c).find((e) => e.type === type)
   if (old && ((old.duration > 0 && duration > old.duration) || duration === 0)) await removeEffect(h, c, old)
   const e = addRaw(h, c, type, duration, power, flag)
-  if (h.inCombat()) h.sparkle?.(c)
+  // FUN_5216_1656: a non-empty message is shown with the sparkle (sound 4) in combat; none, nothing
+  if (msg) { if (h.announce) h.announce(c, msg); else h.print(`${h.name(c)} ${msg}`) }
   if (runNow) await handle(h, type, e, c, -1, false)
   return true
 }
@@ -190,7 +193,7 @@ async function paralyse(h: FxHost, duration: number) {
   const t = h.targetOf(h.current()!)
   if (!t || !t[0x10d]) return
   if (!h.save(t, 0, 0)) {
-    h.print(`${h.name(t)} is Paralyzed`)
+    if (h.announce) h.announce(t, 'is Paralyzed'); else h.print(`${h.name(t)} is Paralyzed`)
     await addEffect(h, t, 52, duration, 0x0c, 0)
   }
 }

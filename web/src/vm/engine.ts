@@ -1023,7 +1023,17 @@ export class Engine {
       if (r === 20) r = 100
       return c[0x111] < r + save
     }
-    const hurt = (c: Uint8Array, d: number) => { c[0x11b] = Math.max(c[0x11b] - d, 0) }
+    // FUN_2fea_20cc: "is hit FOR n points of Damage." or "dies.", the status set as FUN_10ba_2228 does
+    const said: string[] = []
+    const hurt = (c: Uint8Array, d: number) => {
+      const name = String.fromCharCode(...c.subarray(1, 1 + c[0]))
+      const left = c[0x11b] - d, over = left < 0 ? -left : 0
+      if (over > 9 || (left <= 0 && c[0x10c] === 1)) c[0x10c] = 6
+      else if (over > 0) c[0x10c] = 5
+      else if (left === 0) c[0x10c] = 4
+      if (c[0x10c] !== 0 && c[0x10c] !== 1) { c[0x11b] = 0; c[0x10d] = 0 } else c[0x11b] = left
+      said.push(c[0x10c] === 6 ? `${name} dies.` : `${name} is hit FOR ${d} points of Damage.`)
+    }
     if (!(flags & 0x80)) {
       for (let i = 0; i < flags; i++) {
         const c = party[this.rand(party.length)]
@@ -1039,6 +1049,11 @@ export class Engine {
       } else {
         for (const c of party) if (flags & 0x20 || !saved(c, kind, b)) hurt(c, dmg())
       }
+    }
+    if (said.length) {
+      for (const t of said) this.io.print(t, false)
+      if (said.some((t) => t.endsWith('dies.')) || party.some((c) => c[0x10c] >= 4)) this.io.sound(5)
+      await this.io.menu(['PRESS ENTER'], {})
     }
     if (party.every((c) => c[0x11b] === 0)) {
       await this.io.engine('party dead')

@@ -56,7 +56,9 @@ export function unlockAudio() {
  * 10 centiseconds of BIOS time, which is 14-26 driver ticks depending on the clock phase.
  * full: play to the end (the game does this only in some sections, spec/sound.md).
  */
-export function play(n: number, full = false) {
+/** effects the original plays with SetResident(0), i.e. to the end (spec/sound.md §6–7) */
+const FULL = new Set([2, 3, 4, 5, 6, 8, 11, 12])
+export function play(n: number, full = FULL.has(n)) {
   if (device === 'off' || !ctx || !image) return
   const cut = full ? undefined : 14 + Math.floor(Math.random() * 13)
   const key = `${device}/${n}/${cut ?? 'full'}`

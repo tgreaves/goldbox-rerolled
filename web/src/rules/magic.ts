@@ -5,6 +5,21 @@ import type { Effect } from '../data/effects'
 import { recalc } from './equip'
 import { heal } from './camp'
 
+/**
+ * The line each spell prints on a creature its effect took hold on (FUN_5216_1656's message, passed by the
+ * 4e53 handlers; spec/combat.md "Combat visuals": in combat it comes with the sparkle and sound 4).
+ */
+export const SPELL_MSG: Record<number, string> = {
+  1: 'is Blessed', 2: 'is Cursed', 5: 'is affected', 11: 'is affected', 18: 'is affected', 22: 'is affected', 29: 'is affected',
+  26: 'is affected', 41: 'is affected', 46: 'is affected',
+  6: 'is protected', 7: 'is protected', 16: 'is protected', 17: 'is protected', 52: 'is protected', 53: 'is protected', 54: 'is protected',
+  8: 'is cold-resistant', 24: 'is fire resistant', 12: 'is stronger', 35: 'is stronger', 59: 'is stronger', 13: 'has been reduced',
+  14: 'is friendly', 19: 'is shielded', 21: 'falls asleep', 23: 'is held', 49: 'is held', 25: 'is silenced', 10: 'is charmed', 27: 'is charmed',
+  30: 'is invisible', 50: 'is invisible', 63: 'is invisible', 32: 'is duplicated', 33: 'is weakened', 36: 'is animated', 38: 'is blind',
+  40: 'is diseased', 42: 'is praying', 44: 'has been cursed!', 45: 'is blinking', 48: 'is Hasted', 55: 'is Slowed', 56: 'is restored',
+  57: 'is Speedy', 67: 'is Reading',
+}
+
 /** Caster level (FUN_10ba_26c2): cleric level, magic-user level, 12 for item-only spells; 6 from an item. */
 export function casterLevel(c: Uint8Array, s: Spell, fromItem = false): number {
   if (fromItem && s.cls <= 1) return 6
@@ -119,7 +134,10 @@ export function castOutside(e: Engine, caster: Uint8Array, s: Spell, targets: Ui
       break
     }
     default:
-      if (s.effect) for (const c of targets) addEffect(e.effectsOf(c), s.effect, dur, L)
+      if (s.effect) for (const c of targets) {
+        addEffect(e.effectsOf(c), s.effect, dur, L)
+        if (SPELL_MSG[s.id]) out.push(`${name(c)} ${SPELL_MSG[s.id]}.`)
+      }
   }
   for (const c of targets) recalc(c, e.itemsOf(c), t)
   return out
