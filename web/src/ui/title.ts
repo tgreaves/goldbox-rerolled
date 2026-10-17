@@ -62,11 +62,19 @@ export function showTitle(app: HTMLElement, files: GameFiles, next: () => void) 
     const g = sizeCanvas(canvas, 320, 200)
     g.fillStyle = '#000'
     g.fillRect(0, 0, 320, 200)
-    // the two framed boxes (FUN_13f1_02e8), drawn as plain lines (IMP-050)
-    g.strokeStyle = `rgb(${EGA[4].join(',')})`
-    g.lineWidth = 2
-    g.strokeRect(5, 5, 310, 26)
-    g.strokeRect(5, 37, 310, 158)
+    // the two boxes, frame style 0 (FUN_13f1_02e8 → 13f1_0000): 8X8D1 #202 tiles 20 corner,
+    // 21 vertical rope, 22 horizontal rope, one cell outside the box; they share the corner at row 4
+    const fr = files.record('8X8D1', 202)
+    const tiles = fr ? parseRecord(fr).frames.map((f) => toImageData(f.picture)) : []
+    const frame = (x1: number, y1: number, x2: number, y2: number) => {
+      const [corner, vert, horiz] = [tiles[20], tiles[21], tiles[22]]
+      if (!corner || !vert || !horiz) return
+      for (let x = x1; x <= x2; x++) { blit(g, horiz, x * 8, (y1 - 1) * 8); blit(g, horiz, x * 8, (y2 + 1) * 8) }
+      for (let y = y1; y <= y2; y++) { blit(g, vert, (x1 - 1) * 8, y * 8); blit(g, vert, (x2 + 1) * 8, y * 8) }
+      for (const [x, y] of [[x1 - 1, y1 - 1], [x2 + 1, y1 - 1], [x1 - 1, y2 + 1], [x2 + 1, y2 + 1]]) blit(g, corner, x * 8, y * 8)
+    }
+    frame(1, 1, 38, 3)
+    frame(1, 5, 38, 23)
     const r = files.record('8X8D1', 201)
     if (!r) return
     const font = parseFont(r).glyphs, map = charMap()
