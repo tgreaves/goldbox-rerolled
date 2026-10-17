@@ -1,6 +1,7 @@
 // Title screen: the TITLE pictures, any key or tap to continue (spec/architecture.md, startup).
 import type { GameFiles } from '../store/gamefiles'
 import { parseRecord, toImageData } from '../data/image'
+import { blit, sizeCanvas } from '../render/upscale'
 import { daxRecords } from '../data/dax'
 
 export function showTitle(app: HTMLElement, files: GameFiles, next: () => void) {
@@ -14,9 +15,7 @@ export function showTitle(app: HTMLElement, files: GameFiles, next: () => void) 
   let i = 0
   const draw = () => {
     const p = pics[i]
-    canvas.width = p.width
-    canvas.height = p.height
-    canvas.getContext('2d')!.putImageData(toImageData(p), 0, 0)
+    blit(sizeCanvas(canvas, p.width, p.height), toImageData(p), 0, 0)
   }
   const advance = () => {
     if (++i < pics.length) draw()

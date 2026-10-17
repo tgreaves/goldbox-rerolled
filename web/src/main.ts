@@ -6,11 +6,13 @@ import { showParty } from './ui/party'
 import { setupOffline } from './pwa/register'
 import { installGameFont } from './ui/gamefont'
 import { applyTextSize } from './ui/settings'
+import { applyGfxClass } from './render/upscale'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
 async function start() {
   applyTextSize()
+  applyGfxClass()
   const files = await GameFiles.load()
   if (files.complete()) { await installGameFont(files); title(files) }
   else showImport()

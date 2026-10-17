@@ -3,6 +3,7 @@
 // combatants' icons on top. One cell is one 24 x 24 tile.
 import type { GameFiles } from '../store/gamefiles'
 import { parseRecord, toImageData, spriteImage, type Picture } from '../data/image'
+import { F, blitCanvas, pixels, sizeCanvas } from './upscale'
 import { COLS, ROWS, type Battlefield, type CellInfo } from '../rules/battlefield'
 
 export const CELL = 24
@@ -23,12 +24,9 @@ export interface Figure {
   left?: boolean
 }
 
+/** the picture on a canvas, enlarged when smoothing is on (IMP-047); drawn at its logical size */
 function canvasOf(p: Picture, sprite: boolean): HTMLCanvasElement {
-  const c = document.createElement('canvas')
-  c.width = p.width
-  c.height = p.height
-  c.getContext('2d')!.putImageData(sprite ? spriteImage(p) : toImageData(p), 0, 0)
-  return c
+  return pixels(sprite ? spriteImage(p) : toImageData(p))
 }
 
 export class CombatView {
@@ -43,8 +41,7 @@ export class CombatView {
     this.canvas = canvas
     this.cols = cols
     this.rows = rows
-    canvas.width = cols * CELL
-    canvas.height = rows * CELL
+    sizeCanvas(canvas, cols * CELL, rows * CELL)
     const set = (name: string, from: number) => {
       const raw = files.record(name, 1)
       if (!raw) return
@@ -70,8 +67,7 @@ export class CombatView {
     const cols = Math.max(7, Math.min(COLS, Math.round((rows * width) / height)))
     if (rows === this.rows && cols === this.cols) return false
     this.rows = rows; this.cols = cols
-    this.canvas.width = cols * CELL
-    this.canvas.height = rows * CELL
+    sizeCanvas(this.canvas, cols * CELL, rows * CELL)
     return true
   }
 
@@ -84,27 +80,28 @@ export class CombatView {
 
   draw(bf: Battlefield, cells: CellInfo[], figures: Figure[], focus: { row: number; col: number },
     marks: { row: number; col: number; colour: string }[] = [], acting?: Figure, falling: { row: number; col: number }[] = []) {
-    const g = this.canvas.getContext('2d')!
+    const W = this.cols * CELL, H = this.rows * CELL
+    const g = sizeCanvas(this.canvas, W, H)
     const [r0, c0] = this.origin(focus.row, focus.col)
     g.fillStyle = '#000'
-    g.fillRect(0, 0, this.canvas.width, this.canvas.height)
+    g.fillRect(0, 0, W, H)
     for (let r = 0; r < this.rows; r++) for (let c = 0; c < this.cols; c++) {
       const v = bf.get(r0 + r, c0 + c)
       const t = v ? this.tiles[cells[v]?.image ?? -1] : null
-      if (t) g.drawImage(t, c * CELL, r * CELL)
+      if (t) blitCanvas(g, t, c * CELL, r * CELL)
     }
     // a combatant falling: the fallen-body picture (cell 0x1F, RandCom frame 5) over its cells for now
     const body = this.tiles[cells[0x1f]?.image ?? -1]
-    if (body) for (const p of falling) g.drawImage(body, (p.col - c0) * CELL, (p.row - r0) * CELL)
+    if (body) for (const p of falling) blitCanvas(g, body, (p.col - c0) * CELL, (p.row - r0) * CELL)
     for (const f of figures) {
       if (f.down) continue
       const pic = f === acting && f.action ? f.action : f.icon
       if (!pic) continue
       const x = (f.col - c0) * CELL, y = (f.row - r0) * CELL
-      if (x < -2 * CELL || y < -2 * CELL || x > this.canvas.width || y > this.canvas.height) continue
+      if (x < -2 * CELL || y < -2 * CELL || x > W || y > H) continue
       const img = this.icon(pic)
       g.save()
-      if (f.left) { g.translate(x + img.width, y); g.scale(-1, 1); g.drawImage(img, 0, 0) } else g.drawImage(img, x, y)
+      if (f.left) { g.translate(x + img.width / F, y); g.scale(-1, 1); blitCanvas(g, img, 0, 0) } else blitCanvas(g, img, x, y)
       g.restore()
     }
     for (const m of marks) {
@@ -118,8 +115,9 @@ export class CombatView {
   cellAt(e: MouseEvent, focus: { row: number; col: number }): { row: number; col: number } {
     const r = this.canvas.getBoundingClientRect()
     const [r0, c0] = this.origin(focus.row, focus.col)
-    const k = Math.min(r.width / this.canvas.width, r.height / this.canvas.height)
-    const ox = (r.width - this.canvas.width * k) / 2, oy = (r.height - this.canvas.height * k) / 2
+    const W = this.cols * CELL, H = this.rows * CELL
+    const k = Math.min(r.width / W, r.height / H)
+    const ox = (r.width - W * k) / 2, oy = (r.height - H * k) / 2
     return { row: r0 + Math.floor((e.clientY - r.top - oy) / k / CELL), col: c0 + Math.floor((e.clientX - r.left - ox) / k / CELL) }
   }
 }

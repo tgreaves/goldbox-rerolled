@@ -5,6 +5,7 @@ import { parseCharacter } from '../data/character'
 import type { StoredCharacter } from '../store/user'
 import { escape, onClose } from './sheet'
 import { toImageData, EGA, type Picture } from '../data/image'
+import { blit, sizeCanvas } from '../render/upscale'
 import { Tables, abilityRange, combatStats, hpMax, hpMin, modifyStep } from '../rules/chargen'
 import { buildIcon } from '../render/icon'
 import { createCharacter } from './newchar'
@@ -58,10 +59,11 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
   }
 
   function paintIcon(canvas: HTMLCanvasElement, p: Picture | null) {
-    const g2 = canvas.getContext('2d')!
+    const w = Number(canvas.getAttribute('width')), h = Number(canvas.getAttribute('height'))
+    const g2 = sizeCanvas(canvas, w, h)
     g2.fillStyle = '#000'
-    g2.fillRect(0, 0, canvas.width, canvas.height)
-    if (p) g2.putImageData(toImageData(p), 0, 0)
+    g2.fillRect(0, 0, w, h)
+    if (p) blit(g2, toImageData(p), 0, 0)
   }
 
   /** Combat icon editor (FUN_417f_382d), as one panel; returns false if cancelled. */

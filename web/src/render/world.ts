@@ -1,6 +1,7 @@
 // Real 3D exploration view (IMPROVEMENTS.md IMP-001), built from a GEO map and its wall sets.
 import * as THREE from 'three'
 import { EGA, spriteBox, spriteImage, type Picture } from '../data/image'
+import { F, pixels } from './upscale'
 import type { GeoMap } from '../data/geo'
 import type { WallSets } from '../data/walls'
 
@@ -68,10 +69,9 @@ export class World {
       const [r, g, b] = EGA[v]
       img.data.set([r, g, b, 255], i * 4)
     }
-    c.getContext('2d')!.putImageData(img, 0, 0)
-    t = new THREE.CanvasTexture(c)
-    t.magFilter = THREE.NearestFilter
-    t.minFilter = THREE.NearestFilter
+    t = new THREE.CanvasTexture(pixels(img)) // enlarged when smoothing is on (IMP-047)
+    t.magFilter = F > 1 ? THREE.LinearFilter : THREE.NearestFilter
+    t.minFilter = F > 1 ? THREE.LinearFilter : THREE.NearestFilter
     t.generateMipmaps = false
     t.colorSpace = THREE.SRGBColorSpace
     this.textures.set(type, t)
@@ -183,13 +183,9 @@ export class World {
     const pic = frames[0]
     const box = spriteBox(pic)
     const u = SPRITE_UNIT
-    const c = document.createElement('canvas')
-    c.width = pic.width
-    c.height = pic.height
-    c.getContext('2d')!.putImageData(spriteImage(pic), 0, 0)
-    const tex = new THREE.CanvasTexture(c)
-    tex.magFilter = THREE.NearestFilter
-    tex.minFilter = THREE.NearestFilter
+    const tex = new THREE.CanvasTexture(pixels(spriteImage(pic)))
+    tex.magFilter = F > 1 ? THREE.LinearFilter : THREE.NearestFilter
+    tex.minFilter = F > 1 ? THREE.LinearFilter : THREE.NearestFilter
     tex.generateMipmaps = false
     tex.colorSpace = THREE.SRGBColorSpace
     const group = new THREE.Group()

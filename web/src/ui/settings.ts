@@ -3,6 +3,7 @@
 import { play, setSoundDevice, soundAvailable, soundDevice, unlockAudio, type Device } from '../audio/sfx'
 import { fontChoice, gameFontAvailable, setFontChoice } from './gamefont'
 import { onClose } from './sheet'
+import { gfxMode, savedGfx, setGfx, type Gfx } from '../render/upscale'
 
 const SIZE_KEY = 'poolrad.textsize'
 export type TextSize = 'normal' | 'large'
@@ -39,6 +40,8 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
         : '<div class="set-row"><span class="set-label">Sound</span><span class="muted">needs START.EXE among the game files</span></div>'}
       ${gameFontAvailable() ? seg('Font', [['original', 'Original 8×8'], ['modern', 'Modern']], fontChoice()) : ''}
       ${seg<TextSize>('Text size', [['normal', 'Normal'], ['large', 'Large']], textSize())}
+      ${seg<Gfx>('Graphics', [['pixel', 'Pixel (original)'], ['smooth', 'Smooth (upscaled)']], savedGfx())}
+      ${savedGfx() !== gfxMode() ? '<p class="message">The graphics change takes effect when the page reloads. <button type="button" data-reload="1">Reload now</button> (save first if you are in a game)</p>' : ''}
       <form method="dialog"><button class="primary">Done</button></form>`
   }
   return new Promise((resolve) => {
@@ -51,6 +54,8 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
       else if (d.sound) { setSoundDevice(d.sound as Device); unlockAudio(); if (d.sound !== 'off') play(10) }
       else if (d.font) setFontChoice(d.font as 'original' | 'modern')
       else if (d.textsize) setTextSize(d.textsize as TextSize)
+      else if (d.graphics) setGfx(d.graphics as Gfx)
+      else if (d.reload) { location.reload(); return }
       host.changed?.()
       render()
     }

@@ -3,6 +3,7 @@
 // past the first (records 4–6), then Tyranthraxus speaking (record 7) and his fall (record 8).
 import type { GameFiles } from '../store/gamefiles'
 import { parseRecord, toImageData, type Picture } from '../data/image'
+import { blit, sizeCanvas } from '../render/upscale'
 
 const PARTS: string[][] = [
   ['Mortally wounded, the dragon roars!', 'The spirit of Tyranthraxus flares up', "from the dragon's body."],
@@ -26,7 +27,7 @@ export async function playEnding(dialog: HTMLDialogElement, files: GameFiles, bl
     <div class="ending-text"></div><p><button class="skip">Continue</button></p>`
   dialog.classList.add('ending-panel')
   const canvas = dialog.querySelector<HTMLCanvasElement>('canvas')!
-  const g = canvas.getContext('2d')!
+  const g = sizeCanvas(canvas, 120, 120)
   const text = dialog.querySelector<HTMLDivElement>('.ending-text')!
   let skip: (() => void) | null = null
   const skipNow = () => { const s = skip; skip = null; s?.() }
@@ -39,10 +40,7 @@ export async function playEnding(dialog: HTMLDialogElement, files: GameFiles, bl
 
   const draw = (p: Picture | undefined, x: number, y: number) => {
     if (!p) return
-    const tmp = document.createElement('canvas')
-    tmp.width = p.width; tmp.height = p.height
-    tmp.getContext('2d')!.putImageData(toImageData(p), 0, 0)
-    g.drawImage(tmp, x, y)
+    blit(g, toImageData(p), x, y)
   }
   const say = (lines: string[]) => { text.innerHTML = ''; for (const l of lines) { const p = document.createElement('p'); p.textContent = l; text.append(p) } }
   const wait = (ms: number) => new Promise<boolean>((resolve) => {

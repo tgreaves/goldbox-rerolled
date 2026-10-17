@@ -6,6 +6,7 @@ import { escape, sheetHtml } from './sheet'
 import { unexepack } from '../data/exepack'
 import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
 import { parseRecord, toImageData } from '../data/image'
+import { blit, sizeCanvas } from '../render/upscale'
 import { buildIcon } from '../render/icon'
 import { creatorTools } from './creator'
 import { openSettings } from './settings'
@@ -69,16 +70,16 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
     tbody.querySelectorAll<HTMLElement>('.pcard').forEach((card) => {
       const raw = byStem(party[Number(card.dataset.i)]).sav
       const pic = (family: string, id: number) => { const r = files.record(family, id); try { return r ? parseRecord(r).frames[0].picture : null } catch { return null } }
-      const port = card.querySelector<HTMLCanvasElement>('.pc-portrait')!.getContext('2d')!
+      const port = sizeCanvas(card.querySelector<HTMLCanvasElement>('.pc-portrait')!, 88, 88)
       port.fillStyle = '#000'; port.fillRect(0, 0, 88, 88)
       if (tables) {
         const h = pic('HEAD3', headRecord(tables, raw[0xbb])), b = pic('BODY3', bodyRecord(tables, raw[0xbc]))
-        if (h) port.putImageData(toImageData(h), 0, 0)
-        if (b) port.putImageData(toImageData(b), 0, 40)
+        if (h) blit(port, toImageData(h), 0, 0)
+        if (b) blit(port, toImageData(b), 0, 40)
       }
-      const ic = card.querySelector<HTMLCanvasElement>('.pc-icon')!.getContext('2d')!, p = buildIcon(files, raw, false)
+      const ic = sizeCanvas(card.querySelector<HTMLCanvasElement>('.pc-icon')!, 24, 24), p = buildIcon(files, raw, false)
       ic.fillStyle = '#000'; ic.fillRect(0, 0, 24, 24)
-      if (p) ic.putImageData(toImageData(p), 0, 0)
+      if (p) blit(ic, toImageData(p), 0, 0)
     })
     const has = party.length > 0
     const items: [string, string, boolean][] = [

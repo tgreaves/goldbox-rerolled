@@ -5,6 +5,7 @@ import type { GameFiles } from '../store/gamefiles'
 import { parseCharacter, MONEY, type Character } from '../data/character'
 import { parseRecord, spriteImage, toImageData, type Picture } from '../data/image'
 import { World } from '../render/world'
+import { blit, blitCanvas, pixels, sizeCanvas } from '../render/upscale'
 import { Engine, A0, type Io } from '../vm/engine'
 import { drawMap, landmarkAt } from './areamap'
 import type { GeoMap } from '../data/geo'
@@ -129,15 +130,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
   /** Pictures and portraits are opaque; encounter sprites stand in the 3D scene instead (World.showSprite). */
   function paint(pics: { pic: Picture; x: number; y: number; sprite?: boolean }[]) {
-    const g = overlay.getContext('2d')!
+    const g = sizeCanvas(overlay, 88, 88)
     g.clearRect(0, 0, 88, 88)
     for (const { pic, x, y, sprite } of pics) {
-      const img = sprite ? spriteImage(pic) : toImageData(pic)
-      const tmp = document.createElement('canvas')
-      tmp.width = pic.width
-      tmp.height = pic.height
-      tmp.getContext('2d')!.putImageData(img, 0, 0)
-      g.drawImage(tmp, x, y)
+      blit(g, sprite ? spriteImage(pic) : toImageData(pic), x, y)
     }
     overlay.hidden = pics.length === 0
   }
@@ -419,17 +415,17 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const key = Array.from(raw.subarray(0xbd, 0xc7)).join(',')
       let img = rosterIcons.get(key)
       if (img === undefined) { const p = buildIcon(files, raw, false); img = p ? toImageData(p) : null; rosterIcons.set(key, img) }
-      const g = card.querySelector<HTMLCanvasElement>('canvas.rc-icon')!.getContext('2d')!
+      const g = sizeCanvas(card.querySelector<HTMLCanvasElement>('canvas.rc-icon')!, 24, 24)
       g.fillStyle = '#000'; g.fillRect(0, 0, 24, 24)
-      if (img) g.putImageData(img, 0, 0)
-      const pg = card.querySelector<HTMLCanvasElement>('canvas.rc-portrait')!.getContext('2d')!
+      if (img) blit(g, img, 0, 0)
+      const pg = sizeCanvas(card.querySelector<HTMLCanvasElement>('canvas.rc-portrait')!, 88, 88)
       pg.fillStyle = '#000'; pg.fillRect(0, 0, 88, 88)
       if (t) {
         const pk = `${raw[0xbb]},${raw[0xbc]}`
         let pp = rosterPortraits.get(pk)
         if (pp === undefined) { const h = pic('HEAD3', headRecord(t, raw[0xbb])), b = pic('BODY3', bodyRecord(t, raw[0xbc])); pp = [h ? toImageData(h) : null, b ? toImageData(b) : null]; rosterPortraits.set(pk, pp) }
-        if (pp[0]) pg.putImageData(pp[0], 0, 0)
-        if (pp[1]) pg.putImageData(pp[1], 0, 40)
+        if (pp[0]) blit(pg, pp[0], 0, 0)
+        if (pp[1]) blit(pg, pp[1], 0, 40)
       }
     })
   }
@@ -827,8 +823,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         ${opts.message ? `<p class="message">${escape(opts.message)}</p>` : ''}
         <div class="item-actions">${actions || (items.length ? '<span class="muted">Pick an item to ready, use, trade or drop it.</span>' : '')}</div>` : ''}
       <form method="dialog"><button>Close</button></form>`
-    { const ic = dialog.querySelector<HTMLCanvasElement>('canvas.sheet-icon')!, p = buildIcon(files, node, false), g = ic.getContext('2d')!
-      g.fillStyle = '#000'; g.fillRect(0, 0, 24, 24); if (p) g.putImageData(toImageData(p), 0, 0) }
+    { const p = buildIcon(files, node, false), g = sizeCanvas(dialog.querySelector<HTMLCanvasElement>('canvas.sheet-icon')!, 24, 24)
+      g.fillStyle = '#000'; g.fillRect(0, 0, 24, 24); if (p) blit(g, toImageData(p), 0, 0) }
     const again = (o: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use'; use?: UseStep }) => {
       drawRoster()
       sheet(parseCharacter(node), { ...o, mode: opts.mode })
@@ -942,13 +938,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   // ------------------------------------------------------------ wilderness view
   const wildview = app.querySelector<HTMLCanvasElement>('.wildview')!
   const tileCache = new Map<number, HTMLCanvasElement | null>()
-  const asCanvas = (img: ImageData) => {
-    const c = document.createElement('canvas')
-    c.width = img.width
-    c.height = img.height
-    c.getContext('2d')!.putImageData(img, 0, 0)
-    return c
-  }
+  const asCanvas = (img: ImageData) => pixels(img)
   /** Tile id 1-255: frame id-1 of SQRPACI #1 (ids 1-128) or #2 (129-255). */
   function wildTile(id: number): HTMLCanvasElement | null {
     if (!tileCache.has(id)) {
@@ -971,14 +961,14 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   function drawWild() {
     const w = engine.wild
     if (!w) return
-    const g = wildview.getContext('2d')!
+    const g = sizeCanvas(wildview, 120, 120)
     const [gx, gy] = engine.wildPosition
     const { x0, y0, col, row } = Overland.window(gx, gy)
     g.fillStyle = '#000'
     g.fillRect(0, 0, 120, 120)
     for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) {
       const t = wildTile(w.tile(x0 + c, y0 + r, (a) => engine.read(a)))
-      if (t) g.drawImage(t, c * 24, r * 24)
+      if (t) blitCanvas(g, t, c * 24, r * 24)
     }
     const p = partyFrames[partyPhase % partyFrames.length]
     partyPhase = (partyPhase + 1) % 6
@@ -987,8 +977,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     if (engine.facing2 > 3) { // facing south or west: mirrored
       g.translate(col * 24 + 24, row * 24)
       g.scale(-1, 1)
-      g.drawImage(p, 0, 0)
-    } else g.drawImage(p, col * 24, row * 24)
+      blitCanvas(g, p, 0, 0)
+    } else blitCanvas(g, p, col * 24, row * 24)
     g.restore()
   }
   const padButtons = [...pad.querySelectorAll<HTMLButtonElement>('button')]

@@ -425,3 +425,16 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
   .game .map { flex: none; width: 9.5rem; min-height: 0; aspect-ratio: auto; }
 }
 .game.in-combat .party { max-height: none; flex: 1 1 auto; }
+
+/* smoothed graphics (IMP-047): pictures are already enlarged 4× with Scale2x, so the last stretch is smoothed */
+.gfx-smooth canvas.pixel, .gfx-smooth .game .combatview, .gfx-smooth .game .wildview, .gfx-smooth .game .overlay,
+.gfx-smooth .title canvas, .gfx-smooth .ending-panel canvas.ending { image-rendering: auto; }
+
+/* combat: a wider side column so the roster cards have room (IMP-033) */
+.game.in-combat { grid-template-columns: minmax(0, 1fr) minmax(22rem, 30rem); }
+.game.in-combat .rcard canvas.rc-portrait { width: 44px; height: 44px; }
+.game.in-combat .rcard canvas.rc-icon { width: 32px; height: 32px; }
+.text-large .game.in-combat { grid-template-columns: minmax(0, 1fr) minmax(26rem, 34rem); }
+@media (max-width: 760px), (max-aspect-ratio: 4/5) {
+  .game.in-combat, .text-large .game.in-combat { grid-template-columns: 1fr; }
+}

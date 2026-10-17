@@ -6,6 +6,7 @@
 import type { GameFiles } from '../store/gamefiles'
 import { ALIGNMENTS, CLASSES, RACES, parseCharacter } from '../data/character'
 import { EGA, parseRecord, toImageData, type Picture } from '../data/image'
+import { blit, sizeCanvas } from '../render/upscale'
 import { buildIcon } from '../render/icon'
 import {
   RACE_MENU, Tables, abilityRange, alignmentsFor, begin, bodyRecord, classesFor, combatStats, headRecord, hpMax, hpMin,
@@ -49,10 +50,11 @@ export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, rng
 
   const paint = (canvas: HTMLCanvasElement | null, pics: { p: Picture | null; x: number; y: number }[]) => {
     if (!canvas) return
-    const g = canvas.getContext('2d')!
+    const w = Number(canvas.getAttribute('width')), h = Number(canvas.getAttribute('height'))
+    const g = sizeCanvas(canvas, w, h)
     g.fillStyle = '#000'
-    g.fillRect(0, 0, canvas.width, canvas.height)
-    for (const { p, x, y } of pics) if (p) g.putImageData(toImageData(p), x, y)
+    g.fillRect(0, 0, w, h)
+    for (const { p, x, y } of pics) if (p) blit(g, toImageData(p), x, y)
   }
 
   function render() {
