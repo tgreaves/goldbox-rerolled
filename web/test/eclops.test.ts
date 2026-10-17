@@ -77,3 +77,18 @@ describe.skipIf(!have)('ECL opcodes', () => {
     expect(tops).toEqual([true, false])
   })
 })
+
+describe.skipIf(!have)('3D backdrop', () => {
+  it('takes the sky from 0x49FD/0x49FE and the floor from register 0xC059', async () => {
+    const { e, run } = setup()
+    await run([0x00])
+    e.write(0x49fd, 11)
+    e.write(0xc059, 0x41)
+    const bd = e.backdrop
+    expect(bd.sky).toBe(11) // light cyan
+    expect(bd.floor).toBe(6) // brown
+    e.write(0xc059, 0x0b)
+    e.write(0xc05f, 8)
+    expect(e.backdrop).toMatchObject({ floor: 8, line: 0, band: 8 })
+  })
+})

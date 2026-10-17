@@ -41,6 +41,7 @@ export class World {
     glide: { from: number; to: number; t0: number } | null
   } | null = null
   private geo: GeoMap | null = null
+  private floorMaterial = new THREE.MeshLambertMaterial({ color: new THREE.Color(...EGA[6].map((v) => v / 255)) })
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false })
@@ -111,10 +112,7 @@ export class World {
         this.group.add(m)
       }
     }
-    const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(16, 16),
-      new THREE.MeshLambertMaterial({ color: new THREE.Color(...EGA[8].map((v) => v / 255)) }),
-    )
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), this.floorMaterial)
     floor.rotation.x = -Math.PI / 2
     floor.position.set(8, 0, 8)
     this.group.add(floor)
@@ -128,6 +126,14 @@ export class World {
   }
 
   /** Move the camera to a view, animated over `ms` (0 = jump). */
+  /** The original's background colours (EGA indices): sky behind the walls, the floor. */
+  colours(sky: number, floor: number) {
+    const c = (i: number) => new THREE.Color().setRGB(...(EGA[i].map((v) => v / 255) as [number, number, number]), THREE.SRGBColorSpace)
+    this.scene.background = c(sky)
+    if (this.scene.fog) this.scene.fog.color = c(sky)
+    this.floorMaterial.color = c(floor)
+  }
+
   go(v: View, ms = 180) {
     this.view = { ...v }
     this.placeSprite()

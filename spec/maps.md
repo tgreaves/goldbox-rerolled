@@ -84,7 +84,15 @@ Let `L = (f+6)%8`, `R = (f+2)%8`, `B = (f+4)%8`; `wall(dir, x, y)` = [[spec/maps
 1. **Depth 2** (square 2 ahead): walk 4 squares left and 4 right from it. For each square with a front wall (`wall(f)`), draw kind 0 at column `5 ± 2k`; maintain an edge-piece rule (kind 9 at ±1) where a run of front walls ends. For the 3 nearest squares on each side, draw side walls `wall(L)` as kind 1 and `wall(R)` as kind 2, column offsets `-2k-1` / `+2k+1`
 2. **Depth 1**: from 2 squares to the left to 2 to the right (3 each side, step 3 columns): front walls kind 3 (col 4 ± 3k), side walls kinds 4/5
 3. **Depth 0** (current square): 2 each side, step 7 columns: front walls kind 6, side walls kinds 7/8
-4. Blit (`FUN_55a0_05f3`). Background (floor/sky, `FUN_55a0_0174`) is drawn first (**?** details)
+4. Blit (`FUN_55a0_05f3`). Background (floor/sky, `FUN_55a0_0174`) is drawn first, below
+
+**Background colours** (O, `FUN_54cf_0163` → `FUN_55a0_0155`/`0174`). Four bands fill the 88-pixel view before the walls: sky rows 0–42, a 1-pixel horizon line, a 2-pixel band, floor rows 46–87. Map areas only (`DS:49FA` = 1 or ECL 0x49E6 ≠ 0).
+
+- Sky: `DS:0C26[v]` (0, 15, 12, 11, 13, 10, 9, 14, repeated for 8–15), v = ECL 0x49FD, or 0x49FE when the **party's** square has event byte bit 7 set (`FUN_55a0_057a`). Scripts set 8 (black) indoors and at night, 11 (light cyan) by day, 9, 10, 13 elsewhere.
+- Horizon line (`FUN_54cf_00c7`) and band (`00fb`) from engine register 0xC05F (`DS:6F69`): line 0 for 8 or 0x41, else 15; band 8 for 8, else 7.
+- Floor (`FUN_54cf_012f`) from register 0xC059 (`DS:6F68`): 0x0B → 8, 6 → 1, anything else (0x41, 9, 0xDB) → 6, brown.
+- Both registers are recomputed only after a write (`DS:84E5`); the VM reset (`FUN_2fea_01b6`) sets 0xC059 = 0x41 and 0xC05F = 9, the game start 0xDB and 0xE8. Only ECL8 writes them (0xC05F = 65 or 8, 0xC059 from a table).
+- The light-magenta parts of wall tiles show these bands ([[spec/graphics]]).
 
 When `DS:6AAC` ≠ 0 a different view (`FUN_55a0_0000`) is used instead (**?**, possibly wilderness/dark).
 

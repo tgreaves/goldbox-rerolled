@@ -426,7 +426,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     if (outdoors) {
       drawWild()
       ms = 0
-    } else world.go({ x: engine.x, y: engine.y, facing: engine.facing }, ms)
+    } else {
+      const bd = engine.backdrop
+      world.colours(bd.sky, bd.floor)
+      world.go({ x: engine.x, y: engine.y, facing: engine.facing }, ms)
+    }
     drawMinimap()
     drawRoster()
     showWhere()

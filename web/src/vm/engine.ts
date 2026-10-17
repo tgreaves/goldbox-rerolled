@@ -262,10 +262,28 @@ export class Engine {
     this.B[REST_INTERVAL - B0] = this.B[REST_CHANCE - B0] = 0
     this.A[NO_ITEM_USE - A0] = 0
     this.A[NO_OVERLAND - A0] = 1
+    this.regs.set(0xc059, 0x41) // floor and horizon keys back to their defaults (DS:6F68, 6F69)
+    this.regs.set(0xc05f, 9)
     if (!keep) {
       for (let a = 0x4a00; a < 0x4a20; a++) this.A[a - A0] = 0
       for (let a = 0x6e79; a <= 0x6e82; a++) this.B[a - B0] = 0
     }
+  }
+
+  /**
+   * The 3D view's background colours, EGA indices (FUN_54cf_0163 → FUN_55a0_0174): the sky from
+   * DS:0C26 by ECL 0x49FD, or 0x49FE when the party's square has event bit 7; the horizon line and
+   * band from register 0xC05F, the floor from 0xC059 (FUN_54cf_00c7, 00fb, 012f).
+   */
+  get backdrop(): { sky: number; line: number; band: number; floor: number } {
+    const SKY = [0, 15, 12, 11, 13, 10, 9, 14] // DS:0C26, twice over
+    const outdoor = this.geo ? this.geo.event(this.x & 15, this.y & 15) > 0x7f : false
+    const sky = SKY[this.read(outdoor ? 0x49fe : 0x49fd) & 7]
+    const h = (this.regs.get(0xc05f) ?? 0xe8) & 0xff, f = (this.regs.get(0xc059) ?? 0xdb) & 0xff
+    const line = h === 8 || h === 0x41 ? 0 : 15
+    const band = h === 8 ? 8 : 7
+    const floor = f === 0x0b ? 8 : f === 6 ? 1 : 6
+    return { sky, line, band, floor }
   }
 
   private clearFlags() {
