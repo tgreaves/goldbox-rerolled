@@ -14,6 +14,7 @@ Only bugs that destroy the player's money, items or characters are fixed. Every 
 | IMP-028 | A gem or jewel kept after appraisal is always added | Lost when the character carries no items ([`spec/town.md`](spec/town.md), "Appraise") |
 | IMP-028 | A magic-user level with no new spell to choose leaves max HP alone | Sets max HP to 1 ([`spec/progression.md`](spec/progression.md)) |
 | IMP-031 | Alter → Drop refuses to drop the last character | Offers to quit to DOS ([`spec/camp.md`](spec/camp.md), "Alter") |
+| IMP-049 | After ROB takes items, the victims' AC, THAC0 and damage are recomputed | A stolen readied item keeps counting until something else recomputes them (`FUN_2fea_1df0`, [`spec/ecl.md`](spec/ecl.md), ROB) |
 
 A switch back to the original behaviour is planned for IMP-028.
 

@@ -438,3 +438,6 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 @media (max-width: 760px), (max-aspect-ratio: 4/5) {
   .game.in-combat, .text-large .game.in-combat { grid-template-columns: 1fr; }
 }
+
+/* PRINT_LIST glyphs inline in the text (rune passwords) */
+.game .text canvas.glyphs { height: 1.2em; width: auto; image-rendering: pixelated; vertical-align: -0.2em; margin-left: 0.3em; }

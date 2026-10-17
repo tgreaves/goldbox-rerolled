@@ -6,6 +6,7 @@ import { parseCharacter, MONEY, type Character } from '../data/character'
 import { parseRecord, spriteImage, toImageData, type Picture } from '../data/image'
 import { World } from '../render/world'
 import { blit, blitCanvas, pixels, sizeCanvas } from '../render/upscale'
+import { parseFont } from '../data/font'
 import { Engine, A0, type Io } from '../vm/engine'
 import { drawMap, landmarkAt } from './areamap'
 import type { GeoMap } from '../data/geo'
@@ -176,6 +177,43 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     }
   }
 
+  // ----------------------------------------- CLEAR_TOP and PRINT_LIST glyphs
+  // The rune passwords and the elven scroll: the game's own font glyphs, drawn raw in colour 15.
+  let topBlank = false
+  let glyphFont: Uint8Array[] | null | undefined
+  function drawGlyphs(g: CanvasRenderingContext2D, codes: number[], x: number, y: number) {
+    if (glyphFont === undefined) { const r = files.record('8X8D1', 201); glyphFont = r ? parseFont(r).glyphs : null }
+    if (!glyphFont) return
+    g.fillStyle = '#ffffff'
+    codes.forEach((code, i) => {
+      const bits = glyphFont![code]
+      if (bits) for (let r = 0; r < 8; r++) for (let b = 0; b < 8; b++) if (bits[r] & (0x80 >> b)) g.fillRect(x + i * 8 + b, y + r, 1, 1)
+    })
+  }
+  /** FUN_29c3_2b14 blanks the 15 × 15 cells at the top left, the view and its frame */
+  function clearTop(on: boolean) {
+    if (!on) { if (topBlank) { topBlank = false; paint([]) } return }
+    stopAnimation()
+    world.showSprite(null)
+    const g = sizeCanvas(overlay, 120, 120)
+    g.fillStyle = '#000000'
+    g.fillRect(0, 0, 120, 120)
+    overlay.hidden = false
+    topBlank = true
+  }
+  function glyphs(codes: number[], at: { col: number; row: number } | null) {
+    if (at && topBlank) { drawGlyphs(sizeCanvas(overlay, 120, 120), codes, at.col * 8, at.row * 8); return }
+    const c = document.createElement('canvas')
+    c.className = 'glyphs'
+    const g = sizeCanvas(c, codes.length * 8, 8)
+    g.fillStyle = '#000000'
+    g.fillRect(0, 0, codes.length * 8, 8)
+    drawGlyphs(g, codes, 0, 0)
+    const last = screen?.lastElementChild
+    if (last && !newBlock) last.append(c)
+    else { print('\u00a0', false); screen?.lastElementChild?.replaceChildren(c) }
+  }
+
   // ---------------------------------------------------------------- menus
   let pending: { resolve: (n: number) => void; items: string[] } | null = null
   /** a click, tap or key skips the current script pause */
@@ -253,7 +291,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     menu,
     inputNumber: async () => Math.min(Number((await input('number')).replace(/\D/g, '') || 0), 65535),
     inputText: () => input('text'),
-    picture: showPicture,
+    picture: (p) => { topBlank = false; showPicture(p) },
+    clearTop,
+    glyphs,
     sprite(sprite, picture, distance) {
       const f = frames('SPRIT', sprite)
       if (distance === 0 && picture !== 255) {

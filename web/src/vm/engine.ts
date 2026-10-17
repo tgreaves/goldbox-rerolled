@@ -63,6 +63,10 @@ export interface Io {
   refresh(): Promise<void>
   /** A sound effect by the original's number (FUN_18ae_00dc): 10 footstep, 7 bump, 11 script effect. */
   sound(n: number): void
+  /** CLEAR_TOP (FUN_29c3_2b14): blank the view (true) until the script exits (false). */
+  clearTop?(on: boolean): void
+  /** PRINT_LIST (FUN_29c3_2e7d): raw font glyphs, in the cleared view at a text cell, or inline in the text. */
+  glyphs?(codes: number[], at: { col: number; row: number } | null): void
   /** PAUSE: wait (game speed x 225 ms in the original). */
   pause(ms: number): Promise<void>
   /** Engine screens that are not implemented yet (combat, shops, camp ...). */
@@ -536,8 +540,8 @@ export class Engine {
         this.storeString(this.addr(2), s)
         break
       }
-      case 0x11: this.readops(1); this.io.print(this.text(1), false); break
-      case 0x12: this.readops(1); this.io.print(this.text(1), true); break
+      case 0x11: this.readops(1); this.io.print(this.text(1), false); this.cursor = { col: 1, row: 17, open: true }; break
+      case 0x12: this.readops(1); this.io.print(this.text(1), true); this.cursor = { col: 1, row: 17, open: true }; break
       case 0x13: this.readops(0); if (this.stack.length) this.pc = this.stack.pop()!; break
       case 0x14: {
         this.readops(4)
@@ -585,7 +589,8 @@ export class Engine {
         const sel = this.kind[1] === 1 ? this.addr(1) : this.val(1)
         const dest = [3, 4, 5, 6].map((i) => this.addr(i))
         let vals: number[]
-        if (sel === 0) vals = [0, 0, 0, 0] // effects are not modelled yet
+        // selector 0: does anyone have effect e (FUN_10ba_2199)? Used with 0x13 Find Traps
+        if (sel === 0) { const e = this.val(2) & 0xff; vals = [0, 0, 0, +this.nodes.some((c) => this.effectsOf(c).some((x) => x.type === e))] }
         else if (sel === 0x6ba7 || sel === 0x6c1b) {
           const off = sel === 0x6ba7 ? 0x79 : 0x11c
           const xs = this.nodes.map((c) => c[off])
@@ -656,13 +661,24 @@ export class Engine {
       }
       case 0x28: {
         this.readops(3)
-        const p = this.val(2)
-        for (const c of this.val(1) === 0 ? [this.cur] : this.nodes) {
+        // ROB (FUN_29c3_1db1): the third operand is never read
+        const p0 = this.val(2) & 0xff
+        for (const c of (this.val(1) & 0xff) === 0 ? [this.cur] : this.nodes) {
           for (let j = 0; j < 7; j++) {
             const o = 0x88 + 2 * j
-            const v = Math.floor(((c[o] | (c[o + 1] << 8)) * (100 - p)) / 100)
+            const v = Math.floor(((c[o] | (c[o + 1] << 8)) * (100 - p0)) / 100)
             c[o] = v & 0xff; c[o + 1] = v >> 8
           }
+          // items (FUN_2fea_1df0): heavy ones are harder to take, and the lower chance carries on down the list
+          const items = this.itemsOf(c)
+          let p = p0
+          for (const it of [...items]) {
+            const w = it.raw[0x37] | (it.raw[0x38] << 8)
+            if (w > 255) p = p > 90 ? p - 90 : 0
+            else if (w > 24) p = p > 50 ? p - 50 : 0
+            if (this.roll(1, 100) <= p) items.splice(items.indexOf(it), 1)
+          }
+          if (this.items) recalc(c, items, this.items) // IMP-049: the original leaves the stats of a stolen readied item
         }
         break
       }
@@ -689,16 +705,25 @@ export class Engine {
         this.write(this.addr(3), r)
         break
       }
-      case 0x31: this.readops(0); break
-      case 0x32: {
+      case 0x31: // REDRAW (FUN_29c3_2aa2): the view again, if the encounter drawer drew over it
+        this.readops(0)
+        if (this.spriteNow) { this.spriteNow = null; this.io.picture(null) }
+        break
+      case 0x32: { // FIND_ITEM: EQ if anyone carries an item of the type
         this.readops(1)
-        // items are not loaded yet; FIND_ITEM reports "not found"
+        const t = this.val(1) & 0xff
+        const found = this.nodes.some((c) => this.itemsOf(c).some((it) => it.type === t))
         this.clearFlags()
-        this.flags.NE = 1
+        if (found) this.flags.EQ = 1
+        else this.flags.NE = 1
         break
       }
-      case 0x33: this.readops(0); this.io.print('', false); break
-      case 0x34: this.readops(1); break // passes game time; the clock is not modelled yet
+      case 0x33: // NEWLINE: ends the line; on an empty one, a blank line
+        this.readops(0)
+        if (!this.cursor.open) this.io.print('\u00a0', false)
+        this.cursor = { col: 1, row: this.cursor.row + 1, open: false }
+        break
+      case 0x34: this.readops(1); break // DELAY: the one use (ECL7) waits 0 minutes
       case 0x35: this.readops(3); this.write((this.addr(2) + this.val(3)) & 0xffff, this.val(1)); break
       case 0x36: this.readops(2); this.addNpc(this.val(1), this.val(2)); await this.io.refresh(); break
       case 0x37: this.loadWallsets(); break
@@ -716,15 +741,33 @@ export class Engine {
         // the original writes both results to engine space (addr & 0xFF): they are lost
         break
       }
-      case 0x3c: this.readops(1); break
-      case 0x3d: this.readops(0); break
+      case 0x3c: { // PRINT_LIST (FUN_29c3_2e7d): font glyphs byte + 1, up to 0 or 0xFF
+        this.readops(1)
+        const codes: number[] = []
+        for (let a = this.addr(1); codes.length < 80; a++) {
+          const b = this.read(a) & 0xff
+          if (b === 0 || b === 0xff) break
+          codes.push(b + 1)
+        }
+        if (this.topCleared && this.cursor.row > 13) this.cursor = { col: 2, row: 5, open: false }
+        this.io.glyphs?.(codes, this.topCleared ? { col: this.cursor.col, row: this.cursor.row } : null)
+        this.cursor = { col: this.cursor.col + codes.length, row: this.cursor.row + 1, open: false }
+        break
+      }
+      case 0x3d: this.readops(0); this.topCleared = true; this.io.clearTop?.(true); break // CLEAR_TOP (FUN_29c3_2b14)
       default: throw new Hang(`no handler for opcode ${op.toString(16)} at ${this.pc.toString(16)}`)
     }
   }
 
   private spriteNow: { sprite: number; picture: number } | null = null
+  /** CLEAR_TOP's DS:84DE: PRINT_LIST then draws in the view */
+  private topCleared = false
+  /** the text cursor, as far as PRINT_LIST and NEWLINE need it */
+  private cursor = { col: 1, row: 17, open: false }
 
   private exit() {
+    if (this.topCleared) { this.topCleared = false; this.io.clearTop?.(false) } // DS:84DE
+    this.cursor = { col: 1, row: 17, open: false }
     if (this.restoreCur) {
       this.cur = this.savedCur
       this.restoreCur = false
