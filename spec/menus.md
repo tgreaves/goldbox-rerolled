@@ -44,7 +44,7 @@ Main program `1000:00F6` (O):
 | 3 | If command-line argument 1 is `STING` (string at `1000:0000`) skip steps 4–6 (developer bypass) | `0x10102`, O |
 | 4 | Title: TITLE.DAX record **1** full screen at (0,0); wait **5 s** or a key; flush keys. If `DS:49D1` = 0 stop here (no record 2, no credits) | `FUN_290c_0627`, O |
 | 5 | Title record **2**; up to **5 s** or a key. In EGA mode random "lightning": a counter grows by Random(4) per loop pass and when it exceeds 50 000 the palette register 1 is set 9 → 11 → 15 → 11 → 9 → 1 with 150/100/50/100/150 ms delays, repeated Random(3)+2 times (2–4 flashes) (O). The rate depends on CPU speed (I: pick ~one burst every 1–3 s). Flush keys | `290c:06AD–07FC`, O |
-| 6 | Credits screen (below), wait **10 s** or a key. The boxes are `FUN_13f1_02e8(title, title colour, frame style, x1, y1, x2, y2)`: clear, then frame glyphs `0x114 + 3·style + k` around the box (`FUN_13f1_0000`, drawn with `FUN_1428_002a`), the title centred on the top row | `FUN_290c_0206`, O |
+| 6 | Credits screen (below), wait **10 s** or a key. The boxes are `FUN_13f1_02e8(title, title colour, frame style, x1, y1, x2, y2)`: clear, then frame glyphs `0x114 + 3·style + k` around the box (`FUN_13f1_0000`, drawn with `FUN_1428_002a`), the title centred on the top row. The glyph table maps indices 0x100–0x11E to `8X8D1` #202 (31 colour tiles); style 0 is tiles 20 (yellow corner square), 21 (vertical red rope), 22 (horizontal red rope) | `FUN_290c_0206`, O |
 | 7 | Code-wheel check (below) | `FUN_298d_00fd` (= `290c:090D`), O |
 | 8 | Party screen `FUN_417f_0161`; returns on Begin/Load | O |
 | 9 | `FUN_55a0_0155(6,7,0,0x0B)` (**?**), main adventure loop `FUN_29c3_32f8`, then exit to DOS | O |

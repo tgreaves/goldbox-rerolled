@@ -5,6 +5,7 @@ import { showTitle } from './ui/title'
 import { showParty } from './ui/party'
 import { setupOffline } from './pwa/register'
 import { installGameFont } from './ui/gamefont'
+import { installFrames } from './ui/frames'
 import { applyTextSize } from './ui/settings'
 import { applyGfxClass } from './render/upscale'
 
@@ -14,7 +15,7 @@ async function start() {
   applyTextSize()
   applyGfxClass()
   const files = await GameFiles.load()
-  if (files.complete()) { await installGameFont(files); title(files) }
+  if (files.complete()) { await installGameFont(files); installFrames(files); title(files) }
   else showImport()
 }
 
@@ -61,6 +62,7 @@ function showImport() {
     status.textContent = `Saving ${picked.size} files for offline use…`
     await GameFiles.save(picked)
     await installGameFont(files)
+    installFrames(files)
     title(files)
   }
 

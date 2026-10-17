@@ -1,7 +1,8 @@
-// One Settings panel (IMP-046): game speed (in a game), sound device, font and text size. Speed is
+// One Settings panel (IMP-046): game speed (in a game), sound device, font, window borders and text size. Speed is
 // the game's own (saved with the game); the rest are per-browser conveniences in localStorage.
 import { play, setSoundDevice, soundAvailable, soundDevice, unlockAudio, type Device } from '../audio/sfx'
 import { fontChoice, gameFontAvailable, setFontChoice } from './gamefont'
+import { frameChoice, framesAvailable, setFrameChoice, type FrameChoice } from './frames'
 import { onClose } from './sheet'
 import { gfxMode, savedGfx, setGfx, type Gfx } from '../render/upscale'
 
@@ -39,6 +40,7 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
       ${soundAvailable() ? seg<Device>('Sound', [['pc', 'PC speaker'], ['tandy', 'Tandy / PCjr'], ['off', 'Off']], soundDevice())
         : '<div class="set-row"><span class="set-label">Sound</span><span class="muted">needs START.EXE among the game files</span></div>'}
       ${gameFontAvailable() ? seg('Font', [['original', 'Original 8×8'], ['modern', 'Modern']], fontChoice()) : ''}
+      ${framesAvailable() ? seg<FrameChoice>('Borders', [['original', 'Original rope'], ['modern', 'Plain']], frameChoice()) : ''}
       ${seg<TextSize>('Text size', [['normal', 'Normal'], ['large', 'Large']], textSize())}
       ${seg<Gfx>('Graphics', [['pixel', 'Pixel (original)'], ['sharp', 'Sharp (even pixels, soft fit)']], savedGfx())}
       ${savedGfx() !== gfxMode() ? '<p class="message">The graphics change takes effect when the page reloads. <button type="button" data-reload="1">Reload now</button> (save first if you are in a game)</p>' : ''}
@@ -53,6 +55,7 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
       if (d.speed && host.speed) host.speed.set(Math.max(0, Math.min(9, host.speed.get() + Number(d.speed))))
       else if (d.sound) { setSoundDevice(d.sound as Device); unlockAudio(); if (d.sound !== 'off') play(10) }
       else if (d.font) setFontChoice(d.font as 'original' | 'modern')
+      else if (d.borders) setFrameChoice(d.borders as FrameChoice)
       else if (d.textsize) setTextSize(d.textsize as TextSize)
       else if (d.graphics) setGfx(d.graphics as Gfx)
       else if (d.reload) { location.reload(); return }

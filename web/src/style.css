@@ -442,3 +442,13 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 
 /* PRINT_LIST glyphs inline in the text (rune passwords) */
 .game .text canvas.glyphs { height: 1.2em; width: auto; image-rendering: pixelated; vertical-align: -0.2em; margin-left: 0.3em; }
+
+/* The original's rope frames (IMP-051): 8X8D1 #202 tiles drawn 4× into --rope, shown at 2× */
+.frames-original .game .view, .frames-original .game .party, .frames-original .game .map,
+.frames-original .game .text, .frames-original dialog.panel {
+  border: 16px solid transparent; border-image: var(--rope) 32 round; border-radius: 0;
+}
+@media (max-width: 760px) {
+  .frames-original .game .view, .frames-original .game .party, .frames-original .game .map,
+  .frames-original .game .text, .frames-original dialog.panel { border-width: 12px; }
+}
