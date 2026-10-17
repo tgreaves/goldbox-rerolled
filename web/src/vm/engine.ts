@@ -932,6 +932,7 @@ export class Engine {
     for (let i = 0; i < nm.length; i++) r[1 + i] = nm.charCodeAt(i)
     r[0x10e] = 1; r[0x10f] = 1; r[0x84] = 0xb2
     this.nodes.push(r)
+    this.combatPicture.set(r, 11) // FUN_2fea_1a6f: ROLF's combat icon is CPIC<block> #11 / #139
     this.inventory.set(r, this.itemsOf(me).map((it) => it.copy()))
     this.effects.set(r, [])
     this.monsters++

@@ -301,8 +301,13 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
             sound: play, pause: (ms) => io.pause!(ms), input: battleInput,
             info: app.querySelector<HTMLElement>('.combat-info')!, strip: app.querySelector<HTMLElement>('.turnstrip')!, refreshRoster: () => drawRoster(), cancelMenu: () => cancelMenu(),
           })
-          if (r.survived) await treasure(townUi)
-          else await gameOver()
+          // after a battle (game mode 6) the view shows PIC<block> #1, the treasure chest (FUN_10ba_27d9)
+          if (r.survived) {
+            canvas.hidden = engine.overland
+            wildview.hidden = !engine.overland
+            showPicture({ pic: 1 })
+            try { await treasure(townUi) } finally { showPicture(null) }
+          } else await gameOver()
         } catch (err) {
           note(`Combat error: ${(err as Error).message}`)
         } finally {
