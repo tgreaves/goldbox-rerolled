@@ -5,7 +5,7 @@ import type { GameFiles } from '../store/gamefiles'
 import { parseRecord, type Picture } from '../data/image'
 import { buildIcon } from '../render/icon'
 import { CombatView, type Figure } from '../render/combatview'
-import { fight, type AimEntry, type Battle, type CombatUi, type Fighter } from '../rules/combat'
+import { fight, footprint, type AimEntry, type Battle, type CombatUi, type Fighter } from '../rules/combat'
 
 export interface BattleScreen {
   engine: Engine
@@ -22,6 +22,26 @@ export interface BattleScreen {
   refreshRoster(): void
   /** dismiss a menu that a key or tap answered instead */
   cancelMenu(): void
+  /** a box over the battlefield for the combatant pointed at (IMP-044) */
+  info?: HTMLElement
+  /** the turn-order strip (IMP-044) */
+  strip?: HTMLElement
+}
+
+const DIRS = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]]
+const s8 = (v: number) => (v << 24) >> 24
+const nameOf = (c: Uint8Array) => String.fromCharCode(...c.subarray(1, 1 + c[0]))
+
+/** How a combatant looks (IMP-044): the party's HP exactly, monsters only roughly. */
+function condition(b: Battle, f: Fighter): string {
+  const c = f.c, hp = c[0x11b], max = Math.max(1, c[0x32])
+  const status = ['', 'animated', '', 'running', 'unconscious', 'dying', 'dead', 'stoned', 'gone'][c[0x10c]] ?? ''
+  const fx = b.effectsOf(c).map((e) => e.type)
+  const extra = [fx.some((t) => [31, 51, 52, 53].includes(t)) ? 'helpless' : '', fx.includes(0x1e) ? 'coughing' : '', fx.includes(0x0b) ? 'charmed' : '']
+  if (!f.monster) return [`HP ${hp}/${max}`, status, ...extra].filter(Boolean).join(', ')
+  const r = hp / max
+  const health = status || (r >= 1 ? 'unhurt' : r > 0.66 ? 'lightly wounded' : r > 0.33 ? 'wounded' : 'badly wounded')
+  return [health, ...extra].filter(Boolean).join(', ')
 }
 
 const KEY_DIRS: Record<string, number> = {
@@ -63,14 +83,68 @@ export async function runBattle(s: BattleScreen) {
     }
     return v
   }
+  /** a planned walk (IMP-044): the cells to the tapped destination and the directions still to take */
+  let plan: { cells: { x: number; y: number }[]; dirs: number[]; to: { x: number; y: number } } | null = null
+  let walking: { dirs: number[]; at: { x: number; y: number } } | null = null
+  /** cheapest route for f within its movement (half-squares: 2 straight, 3 diagonal), free cells only */
+  const route = (f: Fighter, tx: number, ty: number): { cells: { x: number; y: number }[]; dirs: number[] } | null => {
+    if (!battle) return null
+    const b = battle, budget = f.r[6]
+    const key = (x: number, y: number) => y * 64 + x
+    const best = new Map<number, number>([[key(f.x, f.y), 0]])
+    const prev = new Map<number, [number, number]>() // key → [from key, dir]
+    const open: [number, number, number][] = [[0, f.x, f.y]]
+    while (open.length) {
+      open.sort((a, b2) => a[0] - b2[0])
+      const [cost, x, y] = open.shift()!
+      if (x === tx && y === ty) break
+      if (cost > (best.get(key(x, y)) ?? Infinity)) continue
+      for (let d = 0; d < 8; d++) {
+        const nx = x + DIRS[d][0], ny = y + DIRS[d][1], nc = cost + (d % 2 ? 3 : 2)
+        if (nc > budget || !b.passable(nx, ny, f.size || 1) || b.occupied(nx, ny, f.size || 1, f)) continue
+        if (nc < (best.get(key(nx, ny)) ?? Infinity)) { best.set(key(nx, ny), nc); prev.set(key(nx, ny), [key(x, y), d]); open.push([nc, nx, ny]) }
+      }
+    }
+    if (!best.has(key(tx, ty)) || (tx === f.x && ty === f.y)) return null
+    const dirs: number[] = [], cells: { x: number; y: number }[] = []
+    for (let k = key(tx, ty); prev.has(k);) { const [from, d] = prev.get(k)!; dirs.unshift(d); cells.unshift({ x: k % 64, y: Math.floor(k / 64) }); k = from }
+    return { cells, dirs }
+  }
+  const figureAt = (row: number, col: number) => battle?.fighters.find((o) => battle!.inPlay(o) &&
+    footprint(o.size).some(([dx, dy]) => o.x + dx === col && o.y + dy === row)) ?? null
+  const showInfo = (f: Fighter | null, ev?: MouseEvent) => {
+    const box = s.info
+    if (!box) return
+    if (!f || !battle) { box.hidden = true; return }
+    box.textContent = `${nameOf(f.c)}: ${condition(battle, f)}`
+    box.className = `combat-info ${battle.side(f) ? 'enemy' : 'ally'}`
+    box.hidden = false
+    if (ev) {
+      const r = s.canvas.getBoundingClientRect()
+      box.style.left = `${Math.min(r.width - 160, Math.max(4, ev.clientX - r.left + 12))}px`
+      box.style.top = `${Math.max(4, ev.clientY - r.top - 34)}px`
+    }
+  }
+  const strip = () => {
+    const el = s.strip
+    if (!el || !battle) return
+    const b = battle
+    const left = b.fighters.filter((f) => b.inPlay(f) && s8(f.r[3]) > 0 && f !== acting).sort((a, c) => s8(c.r[3]) - s8(a.r[3]))
+    const order = [...(acting && b.inPlay(acting) ? [acting] : []), ...left]
+    el.innerHTML = `<span class="ts-label">Round ${b.round + 1}</span>` + order.map((f, i) =>
+      `<span class="ts ${b.side(f) ? 'enemy' : 'ally'}${i === 0 && f === acting ? ' now' : ''}">${nameOf(f.c)}</span>`).join('')
+    el.hidden = false
+  }
   const draw = () => {
+    strip()
     if (!battle || !view) return
     const figures: Figure[] = battle.fighters.filter((f) => battle!.inPlay(f)).map((f) => {
       const ic = iconOf(f)
       return { row: f.y, col: f.x, icon: ic.icon, action: ic.action, side: f.c[0x10e] ? 1 : 0, left: f.r[9] >= 5 && f.r[9] <= 7 } as Figure
     })
     const act = acting ? figures[battle.fighters.filter((f) => battle!.inPlay(f)).indexOf(acting)] : undefined
-    view.draw(battle.bf, battle.cells, figures, focus, [...marks, ...(acting ? [{ row: acting.y, col: acting.x, colour: '#f2c94c' }] : []), ...(flashMark ? [flashMark] : [])], act, falling)
+    const planMarks = plan ? [...plan.cells.map((p) => ({ row: p.y, col: p.x, colour: '#4c8bd6' })), { row: plan.to.y, col: plan.to.x, colour: '#55ff55' }] : []
+    view.draw(battle.bf, battle.cells, figures, focus, [...marks, ...planMarks, ...(acting ? [{ row: acting.y, col: acting.x, colour: '#f2c94c' }] : []), ...(flashMark ? [flashMark] : [])], act, falling)
   }
   const ui: CombatUi = {
     print: (t, hold) => {
@@ -98,6 +172,15 @@ export async function runBattle(s: BattleScreen) {
     pause: (ms = 120) => s.pause(ms),
     menu: (items, opts) => s.menu(items, opts),
     step: (f, left) => new Promise((resolve) => {
+      // carrying on along a planned walk, unless something stopped the combatant on the way
+      if (walking && walking.dirs.length && walking.at.x === f.x && walking.at.y === f.y && f.r[6] > 1) {
+        const d = walking.dirs.shift()!
+        walking.at = { x: f.x + DIRS[d][0], y: f.y + DIRS[d][1] }
+        resolve(d)
+        return
+      }
+      walking = null
+      plan = null
       marks = []
       for (let d = 0; d < 8; d++) {
         const [dx, dy] = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]][d]
@@ -117,15 +200,36 @@ export async function runBattle(s: BattleScreen) {
         key: (ev) => {
           if (ev.key in KEY_DIRS) { done(KEY_DIRS[ev.key]); return true }
           if (ev.key === 'Enter') { done('end'); return true }
-          if (ev.key === 'Escape') { done('undo'); return true }
+          if (ev.key === 'Escape') { if (plan) { plan = null; draw(); return true } done('undo'); return true }
           return false
         },
         tap: (ev) => {
+          ev.preventDefault()
           const cell = view!.cellAt(ev, focus)
           const dx = cell.col - f.x, dy = cell.row - f.y
-          if (Math.max(Math.abs(dx), Math.abs(dy)) !== 1) return
-          const d = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]].findIndex(([x, y]) => x === Math.sign(dx) && y === Math.sign(dy))
-          done(d)
+          if (Math.max(Math.abs(dx), Math.abs(dy)) === 1) {
+            const d = DIRS.findIndex(([x, y]) => x === Math.sign(dx) && y === Math.sign(dy))
+            plan = null
+            done(d)
+            return
+          }
+          // a second tap on the planned square walks there; a first tap plans (IMP-044)
+          if (plan && plan.to.x === cell.col && plan.to.y === cell.row) {
+            const dirs = plan.dirs.slice()
+            plan = null
+            const d = dirs.shift()!
+            walking = { dirs, at: { x: f.x + DIRS[d][0], y: f.y + DIRS[d][1] } }
+            done(d)
+            return
+          }
+          const who = figureAt(cell.row, cell.col)
+          if (who) { showInfo(who, ev); return }
+          const r = route(f, cell.col, cell.row)
+          if (!r) { plan = null; s.print(`Can't get there (Move Left = ${left})`); draw(); return }
+          plan = { ...r, to: { x: cell.col, y: cell.row } }
+          const cost = r.dirs.reduce((a, d) => a + (d % 2 ? 3 : 2), 0)
+          s.print(`Path: ${r.dirs.length} step${r.dirs.length > 1 ? 's' : ''}, ${cost >> 1} of ${left} movement. Tap the green square again to go.`)
+          draw()
         },
       })
       void s.menu(['END MOVE', 'UNDO'], { prompt: `Move/Attack, Move Left = ${left}` }).then((i) => done(i === 0 ? 'end' : 'undo', true))
@@ -146,6 +250,7 @@ export async function runBattle(s: BattleScreen) {
       }
       setInput({
         tap: (ev) => {
+          ev.preventDefault()
           const cell = view!.cellAt(ev, focus)
           const hit = ok.find((x) => x.f && x.f.y === cell.row && x.f.x === cell.col)
           if (hit) finish(hit)
@@ -166,6 +271,20 @@ export async function runBattle(s: BattleScreen) {
     },
   }
   s.canvas.hidden = false
+  const onHover = (ev: PointerEvent) => {
+    if (!view || ev.pointerType === 'touch') return
+    const cell = view.cellAt(ev, focus)
+    showInfo(figureAt(cell.row, cell.col), ev)
+  }
+  const onLeave = () => showInfo(null)
+  const onIdleTap = (ev: PointerEvent) => {
+    if (ev.defaultPrevented || s.input.tap || !view) return
+    const cell = view.cellAt(ev, focus)
+    showInfo(figureAt(cell.row, cell.col), ev)
+  }
+  s.canvas.addEventListener('pointermove', onHover)
+  s.canvas.addEventListener('pointerleave', onLeave)
+  s.canvas.addEventListener('pointerup', onIdleTap)
   // the window grows with the space the battle screen gets (IMP-033)
   const resize = new ResizeObserver(() => {
     const r = s.canvas.getBoundingClientRect()
@@ -186,6 +305,11 @@ export async function runBattle(s: BattleScreen) {
     return result
   } finally {
     resize.disconnect()
+    s.canvas.removeEventListener('pointermove', onHover)
+    s.canvas.removeEventListener('pointerleave', onLeave)
+    s.canvas.removeEventListener('pointerup', onIdleTap)
+    showInfo(null)
+    if (s.strip) s.strip.hidden = true
     s.canvas.hidden = true
     setInput({})
   }

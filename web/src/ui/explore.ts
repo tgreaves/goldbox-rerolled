@@ -54,6 +54,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         <canvas class="view3d"></canvas>
         <canvas class="wildview" width="120" height="120" hidden></canvas>
         <canvas class="combatview" hidden></canvas>
+        <div class="combat-info" hidden></div>
+        <div class="turnstrip" hidden></div>
         <div class="wild" hidden></div>
         <canvas class="overlay" width="88" height="88" hidden></canvas>
         <div class="where"></div>
@@ -282,7 +284,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
               sheet(parseCharacter(c))
               onClose(dialog, () => resolve())
             }),
-            sound: play, pause: (ms) => io.pause!(ms), input: battleInput, refreshRoster: () => drawRoster(), cancelMenu: () => cancelMenu(),
+            sound: play, pause: (ms) => io.pause!(ms), input: battleInput,
+            info: app.querySelector<HTMLElement>('.combat-info')!, strip: app.querySelector<HTMLElement>('.turnstrip')!, refreshRoster: () => drawRoster(), cancelMenu: () => cancelMenu(),
           })
           if (r.survived) await treasure(townUi)
           else await gameOver()

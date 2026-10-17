@@ -354,3 +354,20 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 .spell.pending { color: var(--ega-yellow); border-color: #ffff5566; min-height: 36px; }
 .spell.empty { color: var(--muted); border-style: dashed; }
 .mem-book button { min-height: 36px; padding: 0.2rem 0.6rem; font-size: 0.9rem; }
+
+/* combat helpers (IMP-044) */
+.game .combat-info {
+  position: absolute; z-index: 3; pointer-events: none; padding: 0.2rem 0.5rem; border-radius: 4px;
+  background: #0b1218e6; border: 1px solid var(--line); color: var(--ega-green); font-size: 0.85rem; white-space: nowrap;
+}
+.game .combat-info.enemy { color: #ff8080; }
+.game .combat-info[hidden], .game .turnstrip[hidden] { display: none; }
+.game .turnstrip {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; display: flex; gap: 0.25rem; align-items: center;
+  overflow-x: auto; padding: 0.25rem 0.4rem; background: #000a; font-size: 0.8rem; scrollbar-width: none;
+}
+.game .turnstrip .ts-label { color: var(--muted); margin-right: 0.3rem; white-space: nowrap; }
+.game .turnstrip .ts { padding: 0.05rem 0.4rem; border-radius: 3px; white-space: nowrap; border: 1px solid transparent; }
+.game .turnstrip .ts.ally { color: var(--ega-green); }
+.game .turnstrip .ts.enemy { color: #ff8080; }
+.game .turnstrip .ts.now { border-color: var(--accent); color: #fff; }
