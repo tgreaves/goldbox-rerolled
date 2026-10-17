@@ -111,11 +111,11 @@ function handlers(code: Uint8Array): number[] {
   return best
 }
 
-export type Kind = 'shop' | 'temple' | 'inn' | 'tavern' | 'hall' | 'training' | 'harbour' | 'gate'
+export type Kind = 'shop' | 'store' | 'jeweller' | 'armoury' | 'silver' | 'temple' | 'inn' | 'tavern' | 'hall' | 'training' | 'harbour' | 'gate'
 export interface Landmark { x: number; y: number; kind: Kind; label: string; detail: string }
 
 export const ICONS: Record<Kind, string> = {
-  shop: '🛒', temple: '⛪', inn: '🛏', tavern: '🍺', hall: '🏛', training: '⚔', harbour: '⚓', gate: '🚪',
+  shop: '🏪', store: '🛒', jeweller: '💎', armoury: '🛡', silver: '🥈', temple: '⛪', inn: '🛏', tavern: '🍺', hall: '🏛', training: '⚔', harbour: '⚓', gate: '🚪',
 }
 
 /** First sentence of the square's text, as the game prints it. */
@@ -130,8 +130,12 @@ function classify(w: ReturnType<typeof walk>, door: ((n: number) => Kind | null)
     return { kind: 'temple', label: god ? `Temple of ${god[0]}${god.slice(1).toLowerCase()}` : 'Temple' }
   }
   if (w.saves.some(([a, v]) => a === 0x6e6c && v === 1)) {
-    const label = has(/JEWELRY/) ? 'Jeweller' : has(/ARMS AND ARMOR/) ? 'Arms and armour' : has(/SILVER/) ? 'Silversmith' : 'Shop'
-    return { kind: 'shop', label }
+    // the four New Phlan shops (spec/town.md), told apart by the shopkeeper's line
+    if (has(/JEWELRY/)) return { kind: 'jeweller', label: 'Jeweller' }
+    if (has(/ARMS AND ARMOR/)) return { kind: 'armoury', label: 'Arms and armour' }
+    if (has(/SILVER/)) return { kind: 'silver', label: 'Silversmith' }
+    if (has(/OFFERS YOU ITEMS FOR SALE/)) return { kind: 'store', label: 'General store' }
+    return { kind: 'shop', label: 'Shop' }
   }
   if (w.programs.includes(0)) return { kind: 'training', label: 'Training hall' }
   if (w.programs.includes(9) && has(/REST/)) return { kind: 'inn', label: 'Inn' }

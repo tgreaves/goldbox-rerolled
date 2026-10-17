@@ -25,9 +25,11 @@ describe.skipIf(!have)('landmarks', () => {
   it('finds the services of New Phlan', () => {
     const marks = area(3, 0, 0)
     const labels = [...new Set(marks.map((l) => l.label))].sort()
-    expect(labels).toEqual(['Arms and armour', 'Boats', 'City Hall', 'Gateway', 'Harbour master', 'Inn', 'Jeweller', 'Shop',
+    expect(labels).toEqual(['Arms and armour', 'Boats', 'City Hall', 'Gateway', 'General store', 'Harbour master', 'Inn', 'Jeweller',
       'Silversmith', 'Tavern', 'Temple of Sune', 'Temple of Tempus', 'Temple of Tyr', 'Training halls'])
     expect(marks.find((l) => l.x === 4 && l.y === 4)?.label).toBe('City Hall')
+    // each shop has its own kind, so its own icon
+    expect(new Set(marks.filter((l) => /store|Jeweller|armour|Silver/.test(l.label)).map((l) => l.kind))).toEqual(new Set(['store', 'jeweller', 'armoury', 'silver']))
     expect(marks.find((l) => l.x === 11 && l.y === 3)?.detail).toBe('THE PRIESTS OF TYR WELCOME YOU TO THE TEMPLE.')
   })
 
