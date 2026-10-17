@@ -16,7 +16,8 @@ import { Overland } from '../rules/overland'
 import { itemsFile, type Item } from '../data/items'
 import { buildIcon } from '../render/icon'
 import { effectsFile } from '../data/effects'
-import { canTakeItem, capacity, ready, recalc, unready } from '../rules/equip'
+import { canTakeItem, capacity, ready, readyItem, recalc, unready, unreadyItem } from '../rules/equip'
+import { WorldHost } from '../rules/worldfx'
 import { drop, halve, join, scribing, trade, unavailable } from '../rules/inventory'
 import { COIN_PROMPT, coinValue, dropMoney, moneyOf, pay, receive, sellOffer, tradeMoney } from '../rules/money'
 import { shop, temple, treasure, type TownUi } from './town'
@@ -887,8 +888,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const a = b.dataset.a!
       const keep = items.indexOf(it)
       if (a === 'ready') {
-        const m = it.ready ? unready(node, items, it, t) : ready(node, items, it, t)
-        again({ selected: keep, message: m })
+        // item handlers (Gauntlets of Ogre Power, alignment-locked weapons, rings and cloaks) run here
+        const said: string[] = []
+        const host = new WorldHost(engine, (m) => said.push(m))
+        void (it.ready ? unreadyItem(host, node, items, it, t) : readyItem(host, node, items, it, t))
+          .then((m) => again({ selected: keep, message: [m, ...said].filter(Boolean).join(' ') }))
       } else if (a === 'use' || a.startsWith('use-')) {
         // Use outside combat (FUN_4894_1a8a); it does not end anything (spec/town.md, "Items menu")
         const st = engine.spells

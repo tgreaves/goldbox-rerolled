@@ -109,7 +109,7 @@ Same layout in character `.ITM` files, `ITEM<block>.DAX` (placed treasure and sh
 | 0x3A | u16 | value in gp: the Buy price; Sell offers half | O |
 | 0x3C | u8 | property 1: charges / doses. Scrolls: 0x3C–0x3E hold up to three spell ids, bit 7 = flagged for scribing (the item cannot then be traded, dropped or sold without confirming "is it Okay to lose it?") | O |
 | 0x3D | u8 | property 2: spell cast by Use (ids > 0x38 have 0x17 subtracted: 80–90 → item-only spells 57–67); or the effect / parameter for an item handler | O |
-| 0x3E | u8 | property 3: ≥ 0x80 = item effect handler type (129–139, [[spec/effects]]) called on ready/unready; then the item cannot be Used | O |
+| 0x3E | u8 | property 3: ≥ 0x80 = item effect handler type (128–139, [[spec/effects]]) called on ready/unready; then the item cannot be Used | O |
 
 Weights and values of shop items match the GameFAQs guide (9.2) and AD&D (flail 150 / 3 gp, banded mail 350 / 90 gp, two-handed sword 250 / 30 gp). A stack weighs item[0x37] × count (10 shop arrows of weight 4 weigh 40); the guide's per-arrow 0.4 does not match the shipped records (O, `FUN_10ba_0bb8` and `FUN_4894_275b`).
 

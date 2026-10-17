@@ -1,6 +1,7 @@
 // Readying items and the derived statistics (spec/records.md, "Inventory and readying").
 // All AC and THAC0 values are stored as 60 − value in the character record.
 import type { Item, ItemTables } from '../data/items'
+import { itemHandler, type FxHost } from './effects'
 
 const ARROW = 73
 const QUARREL = 28
@@ -184,3 +185,21 @@ export function canTakeItem(c: Uint8Array, items: Item[], it: Item): string {
   return ''
 }
 
+
+/** Ready with the item's handler (FUN_4894_14d0): an item with item[0x3E] ≥ 0x80 acts once readied. */
+export async function readyItem(h: FxHost, c: Uint8Array, items: Item[], it: Item, t: ItemTables): Promise<string> {
+  const m = ready(c, items, it, t)
+  if (m) return m
+  if (it.raw[0x3e] >= 0x80) await itemHandler(h, c, it, 0)
+  recalc(c, items, t)
+  return ''
+}
+
+/** Unready with the item's handler (arg 1, after unreadying); cursed items stay. */
+export async function unreadyItem(h: FxHost, c: Uint8Array, items: Item[], it: Item, t: ItemTables): Promise<string> {
+  const m = unready(c, items, it, t)
+  if (m) return m
+  if (it.raw[0x3e] >= 0x80) await itemHandler(h, c, it, 1)
+  recalc(c, items, t)
+  return ''
+}

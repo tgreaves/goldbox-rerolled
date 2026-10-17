@@ -1,6 +1,7 @@
 // Effects ("affects", spec/effects.md): per-event dispatch of effect handlers (FUN_5216_02fa) and the
 // handlers themselves. Globals of the original (DS:6816..6826) live in the Fx context.
 import type { Effect } from '../data/effects'
+import { Item, ITEM_SIZE } from '../data/items'
 
 /** What a handler can reach: the engine-wide globals and the battle helpers. */
 export interface FxHost {
@@ -152,6 +153,17 @@ export async function addEffect(h: FxHost, c: Uint8Array, type: number, duration
   return true
 }
 
+/**
+ * The damage line of FUN_5216_1344: the kind matches the type exactly (bit 3 ignored), and a
+ * type of 0 or 8 adds "from Magic".
+ */
+export function damageText(name: string, d: number, type: number): string {
+  const k = type & 0xf7
+  const kind = k === 1 ? 'from Fire' : k === 2 ? 'from Cold' : k === 4 ? 'from Electricity' : k === 0x10 ? 'from Acid' : ''
+  const magic = (type & 8) === type ? 'from Magic' : ''
+  return `${name} takes ${d === 1 ? '1 point' : `${d} points`} of damage ${kind}${magic}`.trimEnd()
+}
+
 /** FUN_3723_0000(t): negate damage (event 6) or block the effect being added (event 9). */
 function negate(t: number) {
   if (t === 0 || fx.adding === t) { fx.dmg = 0; fx.adding = 0 }
@@ -251,7 +263,8 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
       if (event === 17) fx.morale = 100
       break
     }
-    case 12: case 38: if (removal) { /* the strongest remaining STR effect wins; power holds the STR to restore */ c[0x10] = eff.power & 0x7f } break
+    case 12: case 38: if (removal) restoreStr(h, c, eff); break
+    case 23: spiritualHammer(h, c, removal); break
     case 14: if (removal) c[0x15] = eff.power; break
     case 15: if (removal && rearm(h, c, 15, 10, 0xff) && c[0x11b] > 1) { fx.dmgType = 0; h.damage(c, 1, 0, false) } break
     case 17: // Shield
@@ -482,3 +495,124 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
 }
 
 const conSave = (con: number) => con >= 18 ? 5 : con >= 14 ? 4 : con >= 11 ? 3 : con >= 7 ? 2 : con >= 4 ? 1 : 0
+
+// ---------------------------------------------------------------- Strength effects (12 Enlarge, 38 Strength)
+/** STR in an effect's power (FUN_5216_10e4 / 110d): 18/p is p + 1, other STR is STR + 100; bit 7 marks a dormant record. */
+export const strEnc = (str: number, pct: number) => (str === 18 ? pct + 1 : str + 100) & 0x7f
+export function strDec(v: number): [number, number] {
+  v &= 0x7f
+  return v <= 101 ? [18, v - 1] : [v - 100, 0]
+}
+const strKey = ([s, p]: [number, number]) => s * 101 + (s === 18 ? p : 0)
+
+/**
+ * FUN_5216_115c: try to set STR to str/pct. Weaker than now: nothing changes, and the power to store is
+ * the new STR, dormant (bit 7). Otherwise the active STR record (power < 0x80) turns dormant holding the
+ * current STR, the character gets the new STR, and the power to store is the STR to restore later.
+ */
+export function setStr(h: FxHost, c: Uint8Array, str: number, pct: number): { ok: boolean; pw: number } {
+  const cs = c[0x10], cp = c[0x16]
+  if (str < cs || (str === 18 && cs === 18 && pct < cp)) return { ok: false, pw: strEnc(str, pct) | 0x80 }
+  const prev = h.effectsOf(c).find((e) => (e.type === 12 || e.type === 38) && e.power < 0x80)
+  let pw = strEnc(cs, cp)
+  if (prev) { pw = prev.power & 0x7f; prev.power = strEnc(cs, cp) | 0x80 }
+  c[0x10] = str
+  c[0x16] = str === 18 ? pct : 0
+  h.recalc(c)
+  return { ok: true, pw }
+}
+
+/** FUN_3723_04ba, removal of 12/38: an active record restores the STR it holds; the strongest other record then takes over. */
+function restoreStr(h: FxHost, c: Uint8Array, eff: Effect) {
+  if (eff.power >= 0x80) return
+  let [s, p] = strDec(eff.power)
+  c[0x10] = s; c[0x16] = p
+  const others = h.effectsOf(c).filter((x) => x !== eff && (x.type === 12 || x.type === 38))
+  if (others.length) {
+    const best = others.reduce((a, b) => (strKey(strDec(b.power)) > strKey(strDec(a.power)) ? b : a))
+    const [bs, bp] = strDec(best.power)
+    best.power = strEnc(s, p)
+    s = bs; p = bp
+    c[0x10] = s; c[0x16] = p
+  }
+  h.recalc(c)
+}
+
+/** Remove the first (oldest) record of a type through FUN_5216_0026; true if there was one. */
+export async function removeFirst(h: FxHost, c: Uint8Array, type: number): Promise<boolean> {
+  const e = h.effectsOf(c).find((x) => x.type === type)
+  if (!e) return false
+  await removeEffect(h, c, e)
+  return true
+}
+/** FUN_5216_1081: remove the first record of a type and say "<name> is Cured". */
+export async function removeOne(h: FxHost, c: Uint8Array, type: number): Promise<boolean> {
+  if (!(await removeFirst(h, c, type))) return false
+  h.print(`${h.name(c)} is Cured`)
+  return true
+}
+
+// ---------------------------------------------------------------- Spiritual Hammer (effect 23)
+/**
+ * Handler 23 (FUN_3723_07e0): while the effect lasts the character has a Spiritual Hammer +1 (type 20,
+ * words 0x14 "Hammer" and 0xF3 "Spiritual", item handler 137); a thrown one comes back at round end
+ * (event 19). When the effect goes, so does the hammer.
+ */
+function spiritualHammer(h: FxHost, c: Uint8Array, removal: boolean) {
+  const items = h.itemsOf(c)
+  const hammer = items.find((i) => i.type === 20 && i.raw[0x31] === 0xf3)
+  if (removal) { if (hammer) items.splice(items.indexOf(hammer), 1) }
+  else if (!hammer && items.length < 16) {
+    const r = new Uint8Array(ITEM_SIZE)
+    r[0x2e] = 20; r[0x30] = 0x14; r[0x31] = 0xf3; r[0x32] = 1; r[0x3d] = 0x17; r[0x3e] = 0x89
+    items.push(new Item(r))
+    h.print(`${h.name(c)} Gains an item`)
+  }
+  h.recalc(c)
+}
+
+// ---------------------------------------------------------------- item handlers 128–139
+/**
+ * The handler of an item with item[0x3E] ≥ 0x80, run by Ready (arg 0, after readying) and Unready
+ * (arg 1, after unreadying) only (FUN_4894_14d0 → FUN_5216_0000; spec/effects.md, "Item handlers").
+ */
+export async function itemHandler(h: FxHost, c: Uint8Array, it: Item, arg: 0 | 1) {
+  const p = it.raw[0x3d]
+  switch (it.raw[0x3e]) {
+    case 131: { // Gauntlets of Ogre Power (FUN_3723_2f57): STR 18/00 as effect 38
+      if (arg === 0) {
+        const { ok, pw } = setStr(h, c, 18, 100)
+        if (ok) h.print(`${h.name(c)} is stronger`)
+        addRaw(h, c, 38, 0, pw, 1)
+      } else {
+        const is1800 = c[0x10] === 18 && c[0x16] === 100
+        // bug kept: with 18/00 the original takes the first 38 record of any kind
+        const e = h.effectsOf(c).find((x) => x.type === 38 && (is1800 || strKey(strDec(x.power)) === strKey([18, 100])))
+        if (e) await removeEffect(h, c, e)
+      }
+      break
+    }
+    case 132: // alignment-locked weapon (FUN_3723_30a5): the wrong alignment cannot hold it and is hurt
+      if (arg === 0 && (p & 0x0f) !== c[0xa0]) {
+        it.ready = false
+        fx.dmgType = 8
+        h.damage(c, p >> 4, 0, false)
+      }
+      break
+    case 135: // Boulder (FUN_3723_3134)
+      if (arg === 0 && c[0x10] < 19) { it.ready = false; h.print('Must have Giant Strength') }
+      break
+    case 137: // Spiritual Hammer (FUN_3723_317a): putting it away ends the effect, and with it the hammer
+      if (arg === 1) await removeFirst(h, c, 23)
+      break
+    default: // 128–130, 133, 134, 136, 138, 139 (FUN_3723_2eda): the item grants effect item[0x3D] while readied
+      if (arg === 0) {
+        const e = addRaw(h, c, p, 0, 0x0c, 0)
+        await handle(h, p, e, c, -1, false)
+      } else {
+        const list = h.effectsOf(c)
+        const e = list.find((x) => x.type === p)
+        if (e) list.splice(list.indexOf(e), 1)
+      }
+  }
+}

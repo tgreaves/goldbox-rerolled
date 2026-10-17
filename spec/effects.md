@@ -67,7 +67,7 @@ For item handlers (128–139), the dispatcher is called with an **item pointer i
 - `FUN_10ba_2637(char)` (0x131D7): **ends the turn** by clearing combat-record bytes 0, 3, 6 and 7.
 - `FUN_5216_0e52(char, type, dur, power, flag)` adds an effect raw, with no de-duplication. Ghidra shows the arguments reversed: (flag, power, dur, type, char).
 - `FUN_5216_1656(..., saved, saveNegates, msg)` fires event 9. If the effect is blocked, or saved and saveNegates=1, it prints "is Unaffected". Otherwise, if one already exists with old.dur > 0 and new.dur > old.dur, or new.dur = 0, it removes the old one; then it adds.
-- `FUN_5216_1344(char, dmg, mode, saved)` sets 6818=dmg and fires event 6. If saved: mode 1 → 0 damage, mode 2 → half.
+- `FUN_5216_1344(char, dmg, mode, saved)` sets 6818=dmg and fires event 6. If saved: mode 1 → 0 damage, mode 2 → half. Damage > 0 prints "takes N points of damage " ("takes 1 point of damage " for 1), in and out of combat. The kind matches 6819 & 0xF7 exactly: 1 "from Fire", 2 "from Cold", 4 "from Electricity", 0x10 "from Acid"; then "from Magic" if 6819 is 0 or 8. So combined types such as 0x0C (Shocking Grasp) name only the element, and 3 names nothing. Then the starburst (`10ba_1feb`), HP loss (`10ba_2228`), a lost spell for a caster in combat ("lost a spell"), and the down/dying/killed lines.
 - `FUN_5216_175d(flag, amt, char)` heals. With flag=0, a char holding type 50 cannot be healed.
 - `FUN_5216_1869(hp, char)` revives in place ("stands up and grins" / "gets back up"): status 0, HP=hp. It fails if the square is occupied.
 - `FUN_5216_0de3(sides, count)` rolls count×d(sides). `FUN_5216_0e2e` does the same and also stores count in 681C.
@@ -197,9 +197,9 @@ Ev = hook events; R = removal/expiry callback (eff[4]=1); D = invoked directly b
 | 125 / 0x7D | undead immunities | 9, 12 | blocks 11, 53, 52, 55; save type 0 → 100 | O | 3723_2e08 |
 | 126 / 0x7E | vampire aversion | 0 | if the target has a readied item with name word 0x76 (Mirror), or 0x98 (Holy Symbol) with +0x31 = 0xFC: 681E=1 (cannot attack it) | O | 3723_2e37 |
 | 127 / 0x7F | gaze-reflectable marker | – | empty; read by 83 | O | 319b |
-| 128-130, 133, 134, 136, 138, 139 | item: grant effect | item | ready: adds type item[0x3D] (pw 0x0C, dur 0, flag 0) and runs it. Unready: removes it | O | 3723_2eda |
-| 131 / 0x83 | Gauntlets of Ogre Power | item | ready: "is stronger"; adds 38 encoding STR 18/00 (flag 1). Unready: removes the 38 record that decodes to 18/00 | O (disasm) | 0x3A187 |
-| 132 / 0x84 | alignment-locked item | item | ready: if item[0x3D]&0x0F ≠ alignment: unreadies it, deals item[0x3D]>>4 Magic dmg (6819=8) | O | 3723_30a5 |
+| 128-130, 133, 134, 136, 138, 139 | item: grant effect | item | ready: adds type item[0x3D] raw (pw 0x0C, dur 0, flag 0) and runs its handler at once with no effect record. Unready: removes the first record of that type, with no end callback (flag 0). 128 Ring of Feather Falling (27), 129 Ring of Fire Resistance (61), 133 Cloak of Displacement (89), 134 Cloak of Elvenkind (72), 136 Two-Handed Sword +1, +3 vs undead (3), 139 Ring of Invisibility (56); 56 and 72 add invisibility 25 (dur 1) at once | O | 3723_2eda |
+| 131 / 0x83 | Gauntlets of Ogre Power | item | ready: `5216_115c(18, 100)`; if that raised STR, "is stronger". Always adds 38 (dur 0, flag 1) holding the encoded old STR, or the dormant 18/00 if STR was already higher. Unready: removes the 38 record that decodes to 18/00, then handler 38 restores STR. Bug: when STR is 18/00 at the time, it removes the first 38 record of any value | O (disasm) | 0x3A187 |
+| 132 / 0x84 | alignment-locked item | item | ready: if item[0x3D]&0x0F ≠ alignment (char[0xA0]): unreadies it (no unready handler), deals item[0x3D]>>4 damage through `5216_1344` with 6819=8, so "takes N points of damage from Magic". Long Sword +3 0x52 (lawful evil, 5), Long Sword +2 0xF0 (lawful good, 15) | O | 3723_30a5 |
 | 135 / 0x87 | giant-strength item | item | ready with STR < 19: unreadies it (+0x34=0), "Must have Giant Strength" | O (disasm) | 0x3A364 |
 | 137 / 0x89 | Spiritual Hammer item | item | unready: removes effect 23 | O | 3723_317a |
 

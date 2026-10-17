@@ -2,7 +2,7 @@
 // exploring, camping or travelling (FUN_4b46_0000 → FUN_5216_0026), and when items are used from the
 // character sheet. Combat-only parts (records, distance, attacks) answer as "not in combat".
 import type { Engine } from '../vm/engine'
-import { fire, fx, type FxHost } from './effects'
+import { damageText, fire, fx, type FxHost } from './effects'
 import { recalc } from './equip'
 
 export class WorldHost implements FxHost {
@@ -37,6 +37,8 @@ export class WorldHost implements FxHost {
     void fire(this, c, 6)
     let d = fx.dmg
     if (saved) d = mode === 1 ? 0 : mode === 2 ? d >> 1 : d
+    if (d <= 0) return
+    this.print(damageText(this.name(c), d, fx.dmgType)) // FUN_5216_1344 prints outside combat too
     const left = c[0x11b] - d
     if (left > 0) { c[0x11b] = left; return }
     this.setStatus(c, left < -9 ? 6 : 4, left < -9 ? `${this.name(c)} is killed` : `${this.name(c)} goes down`)

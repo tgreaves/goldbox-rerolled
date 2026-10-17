@@ -6,7 +6,7 @@ import type { Spell } from '../data/spells'
 import type { Effect } from '../data/effects'
 import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, type Battlefield, type CellInfo } from './battlefield'
 import { dexMissile, recalc } from './equip'
-import { fx, fire, addEffect, addRaw, removeEffect, removeType, type FxHost } from './effects'
+import { fx, fire, damageText, addEffect, addRaw, removeEffect, removeType, type FxHost } from './effects'
 import { heal as healChar } from './camp'
 import { SPELL_MSG, casterLevel, duration as spellDuration, forget } from './magic'
 
@@ -906,8 +906,7 @@ export class Battle implements FxHost {
     const f = this.of(c)
     if (f && d > 0) {
       // FUN_5216_1344 → FUN_10ba_1feb: the line, the starburst once with sound 3, then the pause
-      const kind = fx.dmgType & 1 ? 'Fire' : fx.dmgType & 2 ? 'Cold' : fx.dmgType & 4 ? 'Electricity' : fx.dmgType & 0x10 ? 'Acid' : fx.dmgType & 8 ? 'Magic' : ''
-      this.print(`${name(c)} takes ${d} point${d === 1 ? '' : 's'} of damage${kind ? ` from ${kind}` : ''}`, { ms: 0 })
+      this.print(damageText(name(c), d, fx.dmgType), { ms: 0 })
       this.ui.effect?.(f, 'burst', 1, this.e.speed * 225)
     }
     if (f) this.inflict(f, d)
@@ -1309,6 +1308,7 @@ export class Battle implements FxHost {
         await add(t, saveOf(t), s.effect, dur, L, s.id === 40 ? 1 : 0)
         break
       }
+      case 28: await addEffect(this, c, 0x17, dur, L, 1, 0, false, true); break // Spiritual Hammer (4e53_19c3): handler 23 makes the hammer
       case 60: { const t = targets[0]; if (t) { fx.dmgType = 0x0c; this.damageSync(t.c, 20 + this.e.roll(1, 6), 2, this.saveSync(t.c, 4, 0)) } break }
       case 61: for (const t of targets) await addEffect(this, t.c, 0x34, this.e.roll(5, 4), L, 0, 1, this.saveSync(t.c, 0, 0)); break
       default:
