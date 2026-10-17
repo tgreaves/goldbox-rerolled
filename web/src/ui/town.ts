@@ -240,7 +240,7 @@ export async function treasure(ui: TownUi) {
     const o = opts[await ui.menu(opts)]
     if (o === 'DETECT' && detect && e.spells) {
       // cast without the "casts" line; the memorised copy is used up (4e53:0EA7)
-      const out = castOutside(e, e.cur, e.spells.get(detect)!, [e.cur])
+      const out = await castOutside(e, e.cur, e.spells.get(detect)!, [e.cur])
       for (const m of out.slice(1)) ui.print(m, false)
       ui.refresh()
       continue

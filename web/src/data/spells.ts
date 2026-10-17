@@ -7,7 +7,7 @@ const DS = 0xc7c0
 export interface Spell {
   id: number
   name: string
-  /** 0 cleric, 1 magic-user */
+  /** 0 cleric, 1 magic-user, 2 item only */
   cls: number
   level: number
   /** range = r0 + r1 × caster level; r0 = 0xFF touch */
@@ -35,11 +35,12 @@ export class SpellTables {
   readonly spells: Spell[] = [] // index = id − 1
 
   constructor(image: Uint8Array) {
-    for (let id = 1; id <= 56; id++) {
+    // 57–67 are the item-only spells (class 2): records follow on, with no names (the names table holds 56)
+    for (let id = 1; id <= 67; id++) {
       const n = DS + 0x2912 + (id - 1) * 41
       const r = image.subarray(DS + 0x31fa + id * 16, DS + 0x31fa + id * 16 + 16)
       this.spells.push({
-        id, name: String.fromCharCode(...image.subarray(n + 1, n + 1 + image[n])),
+        id, name: id <= 56 ? String.fromCharCode(...image.subarray(n + 1, n + 1 + image[n])) : '',
         cls: r[0], level: r[1], range: [r[2], r[3]], duration: [r[4], r[5]], target: r[6], side: r[7],
         save: r[8], saveType: r[9], effect: r[10], where: r[11], castTime: r[12], aiPriority: r[13], aiHostile: r[14], area: r[15],
       })

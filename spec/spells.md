@@ -11,6 +11,7 @@ Part of [[spec/README]]. Extractor: `tools/spells.py` (reads the unpacked `START
 
 - **Names**: DS:2912, 56 entries × 41 bytes (Pascal string). Spell id = index + 1
 - **Records**: DS:31FA + id × 16 (engine code addresses fields as `DS:31FC + id*16` + n, i.e. from byte 2)
+- Ids 57–67 are the item-only spells (class 2, level 6): their records follow id 56 in the same table, and they have no names (the names table ends at 56, where the records begin). Items reach them as item[0x3D] − 0x17
 
 | Byte | Field | Evidence |
 |---|---|---|
@@ -19,7 +20,7 @@ Part of [[spec/README]]. Extractor: `tools/spells.py` (reads the unpacked `START
 | 2, 3 | range = b2 + b3 × caster level; b2 = 0xFF → touch (needs to-hit roll) | O (`FUN_4e53_0729`, `FUN_4e53_08c3`) |
 | 4, 5 | duration = b4 + b5 × caster level (units per spell, **I**) | I (values match AD&D) |
 | 6 | target mode: 0 self, 4 one creature, 6/7 several, 8–11 area shapes, 31 silence, 240 special | O/I |
-| 7 | side: 0 enemy, 1 self, 2 ally, 4 party | I |
+| 7 | side: 0 enemy, 1 self, 2 ally, 4 party. Outside combat it picks the targets: 1 the caster, 2 one picked ("Cast Spell on whom"), 4 the whole party; 0 is combat-only | O (`FUN_4e53_0a91`) |
 | 8 | saving throw effect: 0 none, 1 negates, 2 half, 3 special | O (`FUN_5216_1344`) |
 | 9 | save category (index into char bytes 0x6D–0x71) | O (`FUN_5216_0d63`) |
 | 10 | effect type applied to targets (0 = immediate only) | O (`FUN_5216_1656`) |
@@ -175,13 +176,13 @@ L = caster level; "1st" = only the first target is used.
 | 34 | Stinking Cloud | 1b11 | see below | vs poison | 4 squares | |
 | 35 | Strength | 1f41 | bonus MU 1d4, cleric or thief 1d6, fighter 1d8 (later checks override; other classes uninitialised); over 18: fighters 18/(% + 10 × excess, cap 100), others 18; effect 0x26 | — | 1st | |
 | 36 | Animate Dead | 206f | ignores targeting: while L > 0, every dead (6) creature with [0x9F] = 0 on a free cell: power = L + old side × 16, joins the caster's side, AI on, undead type 2, [0x6B] = 0, move 6, spells cleared, [0x84] = 0xB2 (NPC) / 0xB3, type 4, L −1, revived at full HP; on success effect 0x20 (permanent, flag 1), status Animated | — | up to L | **bug**: L is spent and the target converted even if the revive fails |
-| 37 | Cure Blindness | 2217 | removes 0x21 | | 1st | |
+| 37 | Cure Blindness | 2217 | removes the first 0x21 (`5216_1081`, "is Cured"), then "can see" with the sparkle | | 1st | |
 | 38 | Cause Blindness | 225d | effect 0x21 | negates | touch | |
-| 39 | Cure Disease | 232f → 228a | removes 0x22; 0x2B (then also 0x2C and 0x1F helpless); 0x32 (and 0x39) | | 1st | |
+| 39 | Cure Disease | 232f → 228a | with 681F set: removes 0x22; 0x2B (then also the first 0x2C and 0x1F helpless); 0x32 (and the first 0x39). Each of 0x22, 0x2B, 0x32 says "is Cured". 0x2C and 0x1F stay unless 0x2B was there | | 1st | |
 | 40 | Cause Disease | 234c | effect 0x22, 1d6×10 min, flag 1 | negates | touch | |
-| 41 / 46 | Dispel Magic | 2385 | each effect with power < 0xFF: lvl = power & 0x0F; chance 50 + 5(L − lvl) if L > lvl, 50 − 2(lvl − L) if L < lvl, else 50; d100 ≤ chance removes it | | **bug**: loops count times on the **first** target only | |
+| 41 / 46 | Dispel Magic | 2385 | each effect with power < 0xFF: lvl = power & 0x0F; chance 50 + 5(L − lvl) if L > lvl, 50 − 2(lvl − L) if L < lvl, else 50; d100 ≤ chance removes it (end callbacks run); a pass that removed anything shows "is affected" with the sparkle | | **bug**: loops count times on the **first** target only | |
 | 42 | Prayer | 24d6 | effect 0x31, power = L + side × 16 | | self | |
-| 43 | Remove Curse | 2540 | removes 0x24 if present, else clears the cursed flag of the **first** cursed item | | 1st | |
+| 43 | Remove Curse | 2540 | removes 0x24 if present ("is Cured", then "is un-cursed"), else clears the cursed flag of the **first** cursed item ("'s item is un-cursed") | | 1st | |
 | 44 / 45 | Bestow Curse / Blink | 2604 / 263d | effect 0x24 (touch, negates) / 0x25 | | | |
 | 47 / 64 | Fireball / Necklace of Missiles | 266b | n = L (id 64: 1d3×2 + 1) d6, type 9, one roll; outdoors (ECL 0x49E6 = 0) radius 2 | half | area | |
 | 48 / 55 | Haste / Slow | 2892 / 2c09 → 2764 | effect 0x27 / 0x2A on up to L targets of the caster's / the enemy side; a target with the opposite effect only loses it; then event 18 | — | | the L cap applies to both |
@@ -193,7 +194,7 @@ L = caster level; "1st" = only the first target is used.
 | 60 | Javelin of Lightning | 2f4d | first square 20 + 1d6, then a 3-square path at a flat 20 | half (vs spell) | | **bug**: later squares take 20 |
 | 61 | Wand of Paralyzation | 2f99 | effect 0x34 for 5d4 | negates (vs paralysis) | | no humanoid or size check |
 | 62 | Potion of Healing | 2fd0 | heal 2d4 + 2 | | | |
-| 63 | Dust of Disappearance | 302a | effect 0x47 | | | |
+| 63 | Dust of Disappearance | 302a | effect 0x47; 2d10×10 in combat, (1d10+10)×10 outside | | | |
 | 65 | Wand of Magic Missiles | 3058 | 2d4 + 2, type 8 | — | | not blocked by Shield (id ≠ 15) |
 | 66 | (no-op item) | 3092 | nothing | | | |
 | 67 | Manual of Bodily Health | 30a2 | effect 0x04, 1440 min, power FF, flag 1 | | | |

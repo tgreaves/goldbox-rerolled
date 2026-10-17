@@ -8,6 +8,7 @@ import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, type Battlefiel
 import { dexMissile, recalc } from './equip'
 import { fx, fire, damageText, addEffect, addRaw, removeEffect, removeType, type FxHost } from './effects'
 import { heal as healChar } from './camp'
+import { line, sharedSpell } from './spellfx'
 import { SPELL_MSG, casterLevel, duration as spellDuration, forget } from './magic'
 
 const DX = [0, 1, 1, 1, 0, -1, -1, -1], DY = [-1, -1, 0, 1, 1, 1, 0, -1]
@@ -914,7 +915,7 @@ export class Battle implements FxHost {
   }
   /** an effect's line without a pause, then the sparkle (FUN_10ba_1feb with "good") */
   announce(c: Uint8Array, msg: string) {
-    this.print(`${name(c)} ${msg}`, { ms: 0 })
+    this.print(line(name(c), msg), { ms: 0 })
     this.sparkle(c)
   }
   /** an effect took hold on c (FUN_5216_1656 → FUN_10ba_1feb): the sparkle, (speed + 1) cycles, sound 4 */
@@ -1159,13 +1160,23 @@ export class Battle implements FxHost {
   /** Spell effects in combat (spec/spells.md, "Per spell"). */
   async applySpell(f: Fighter, s: Spell, L: number, targets: Fighter[]) {
     const c = f.c
-    const dur = spellDuration(this.e, s, L)
+    const dur = spellDuration(this.e, s, L, true)
     const add = async (t: Fighter, saved = false, type = s.effect, d = dur, pw = L, flag = 0) => {
       if (type) await addEffect(this, t.c, type, d, pw, flag, s.save, saved, false, SPELL_MSG[s.id] ?? '')
     }
     const saveOf = (t: Fighter, bonus = 0) => (s.save ? this.saveSync(t.c, s.saveType, bonus) : false)
     const touch = async (t: Fighter) => s.range[0] !== 0xff || await this.toHit(c, t.c, t.c[0x111])
+    if (await sharedSpell(this, this.e, c, s, L, dur, targets.map((t) => t.c))) { for (const t of targets) this.recalc(t.c); return }
     switch (s.id) {
+      case 27: { // Snake Charm (190f): ignores targeting; snakes (type 0x0E) while the caster's HP lasts
+        let pool = c[0x11b]
+        for (const t of this.fighters) {
+          if (t.c[0x9f] !== 0x0e || t.c[0x11b] > pool) continue
+          pool -= t.c[0x11b]
+          await addEffect(this, t.c, 0x33, 0, L, 0, 0, false, false, 'is charmed')
+        }
+        break
+      }
       case 1: case 2: { // Bless / Curse
         const mine = targets.filter((t) => (s.id === 1 ? this.side(t) === this.side(f) && (this.enemiesWithin(t, 1).length === 0) : this.side(t) !== this.side(f)))
         for (const t of mine) await add(t)
@@ -1298,8 +1309,6 @@ export class Battle implements FxHost {
         }
         break
       }
-      case 37: if (targets[0]) await removeType(this, targets[0].c, 0x21); break
-      case 39: if (targets[0]) for (const ty of [0x22, 0x2b, 0x2c, 0x1f, 0x32, 0x39]) await removeType(this, targets[0].c, ty, true); break
       case 32: if (targets[0]) addRaw(this, targets[0].c, 0x1c, dur, this.e.roll(1, 4), 0); break
       case 33: case 38: case 40: case 44: { // touch / save effects
         const t = targets[0]
@@ -1308,7 +1317,6 @@ export class Battle implements FxHost {
         await add(t, saveOf(t), s.effect, dur, L, s.id === 40 ? 1 : 0)
         break
       }
-      case 28: await addEffect(this, c, 0x17, dur, L, 1, 0, false, true); break // Spiritual Hammer (4e53_19c3): handler 23 makes the hammer
       case 60: { const t = targets[0]; if (t) { fx.dmgType = 0x0c; this.damageSync(t.c, 20 + this.e.roll(1, 6), 2, this.saveSync(t.c, 4, 0)) } break }
       case 61: for (const t of targets) await addEffect(this, t.c, 0x34, this.e.roll(5, 4), L, 0, 1, this.saveSync(t.c, 0, 0)); break
       default:

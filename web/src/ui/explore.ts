@@ -916,10 +916,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           targets = [engine.party()[Number(a.slice(7))]]
         }
         print(`${c.name} uses an item`, false)
-        const out = castOutside(engine, node, s, targets, true)
-        spendUse(items, it, u.scroll, s.id)
-        for (const m of out) print(m, false)
-        again({ selected: Math.min(keep, items.length - 1), message: out.join(' ') })
+        void castOutside(engine, node, s, targets, true).then((out) => {
+          spendUse(items, it, u.scroll, s.id)
+          for (const m of out) print(m, false)
+          again({ selected: Math.min(keep, items.length - 1), message: out.join(' ') })
+        })
       }
       else if (a === 'scribe-yes') again({ selected: keep, confirm: opts.after, after: opts.after })
       else if (a === 'trade') {

@@ -97,7 +97,7 @@ export async function cast(ui: CampUi) {
       if (k >= party.length) continue
       targets = [party[k]]
     }
-    for (const m of castOutside(e, c, s, targets)) ui.print(m, false)
+    for (const m of await castOutside(e, c, s, targets)) ui.print(m, false)
     ui.refresh()
   }
 }
@@ -244,7 +244,7 @@ async function fix(ui: CampUi, state: { heal: number }): Promise<boolean> {
     for (const h of healers()) {
       while (memorised(h).includes(cure.id) && wounded().length) {
         const w = wounded()[0]
-        castOutside(e, h, cure, [w])
+        await castOutside(e, h, cure, [w])
         ui.print(`${nameOf(h)} heals ${nameOf(w)} (${w[0x11b]}/${w[0x32]})`, false)
       }
     }

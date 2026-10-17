@@ -67,16 +67,11 @@ Part of [[spec/README]]. Ordered by what a browser reimplementation needs first.
 
 ## Port gaps from the 2026-10-17 audit
 
-Four audits compared the original with the port: data files loaded, engine routines reachable from the main loops (773 functions, 500 covered by spec or port), sound call sites, and the engine's own strings. Fixed straight away: the combat visuals ([[spec/combat]] "Combat visuals"), hit/miss sounds, long sounds played in full, combat footsteps, the damage and spell-result lines, script DAMAGE messages and status, duel texts, the after-battle chest picture, ROLF's icon. Still open, most visible first:
+Four audits compared the original with the port: data files loaded, engine routines reachable from the main loops (773 functions, 500 covered by spec or port), sound call sites, and the engine's own strings. Fixed straight away: the combat visuals ([[spec/combat]] "Combat visuals"), hit/miss sounds, long sounds played in full, combat footsteps, the damage and spell-result lines, script DAMAGE messages and status, duel texts, the after-battle chest picture, ROLF's icon. Since then: money Trade and Drop, treasure Detect, the scribing warning, Magic On/Off, item handlers on readying with the Spiritual Hammer, and every spell handler (shared by combat and camp). Still open, most visible first:
 
 **Rules and behaviour**
 - ROB (`FUN_2fea_1df0`, `1cc3`): thieves also steal items; the port takes money only (O)
 - CHECK_PARTY selector 0 (`FUN_29c3_1435`, `13d7`, effect test via `FUN_10ba_2199`): the port answers 0 (O)
-- Item effect handlers 128–139 on readying: effect-granting items, Gauntlets of Ogre Power ("is stronger"), alignment-locked weapons, "Must have Giant Strength"; effect 23 Spiritual Hammer and its item (O)
-- Spells handled only by the generic branch in combat: 12, 13, 14, 26, 27, 35, 36, 41/46, 42, 43, 56, 57, 58, 59, 67; outside combat 13, 41/46, 56, 57, 58, 59, 67 (O)
-- Money Trade and Drop on the character sheet ("Select type of coin", "will you trade?", "will you drop?", `FUN_4894_2156`, `24a7`) (O)
-- Treasure "Detect" (Detect Magic on the loot) (O); the scroll-scribing warning (`FUN_4894_0d70`) (O)
-- Hidden combat key "Magic On/Off" (`DS:6E30`) (O)
 - ECL opcodes 0x3C PRINT_LIST, 0x3D CLEAR_TOP, 0x31 REDRAW, 0x34 DELAY are no-ops in the port (O)
 
 **Pictures and effects**
