@@ -12,7 +12,7 @@ import { creatorTools } from './creator'
 import { openSettings } from './settings'
 import { initSound } from '../audio/sfx'
 import { saveCharacter, listSaves, writeSave } from '../store/user'
-import { saveFiles, savesFrom, unzip, zip, type NamedFile } from '../store/savefiles'
+import { rosterFrom, saveFiles, savesFrom, unzip, zip, type NamedFile } from '../store/savefiles'
 import { parseSave, saveArea, saveBlock } from '../data/save'
 import type { Start } from './explore'
 
@@ -206,7 +206,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
         const input = document.createElement('input')
         input.type = 'file'
         input.multiple = true
-        input.accept = '.zip,.dat,.sav,.itm,.spc,.DAT,.SAV,.ITM,.SPC'
+        input.accept = '.zip,.dat,.sav,.itm,.spc,.cha,.txt,.DAT,.SAV,.ITM,.SPC,.CHA,.TXT'
         const chosen = await new Promise<File[]>((resolve) => {
           input.addEventListener('change', () => resolve([...(input.files ?? [])]), { once: true })
           input.addEventListener('cancel', () => resolve([]), { once: true })
@@ -221,7 +221,13 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
             else loose.push({ name: f.name, data })
           }
           const { games, missing } = savesFrom(loose)
-          if (!games.length) { say(missing.length ? `Nothing imported; missing ${missing.join(', ')}.` : 'Choose a SAVGAM file (A to J) with its CHRDAT files, or a ZIP of them.'); break }
+          // roster characters as the original keeps them: <name>.CHA/.ITM/.SPC and charlist.txt
+          const found = rosterFrom(loose)
+          if (!games.length && !found.chars.length) {
+            const lost = [...missing, ...found.missing]
+            say(lost.length ? `Nothing imported; missing ${lost.join(', ')}.` : 'Choose a SAVGAM file (A to J) with its CHRDAT files, characters (.CHA with .ITM, .SPC and charlist.txt), or a ZIP of them.')
+            break
+          }
           const have = new Set((await listSaves()).map((g) => g.slot))
           const done: string[] = []
           for (const g of games) {
@@ -229,7 +235,18 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
             await writeSave(g)
             done.push(g.slot)
           }
-          say(done.length ? `Imported into slot ${done.join(', ')}. Use Load to play.${missing.length ? ` Skipped: missing ${missing.join(', ')}.` : ''}` : 'Nothing imported.')
+          const known = new Set(roster.map((r) => r.stem))
+          const added: string[] = []
+          for (const c of found.chars) {
+            const nm = String.fromCharCode(...c.sav.subarray(1, 1 + c.sav[0]))
+            if (known.has(c.stem) && !(await confirm(`${nm} is already in the roster. Replace?`))) continue
+            await saveCharacter(c)
+            added.push(nm)
+          }
+          if (added.length) roster = await listCharacters()
+          const parts = [done.length ? `Imported into slot ${done.join(', ')}; use Load to play.` : '', added.length ? `Added to the roster: ${added.join(', ')}.` : '']
+          const lost = [...missing, ...found.missing]
+          say(parts.some(Boolean) ? `${parts.filter(Boolean).join(' ')}${lost.length ? ` Skipped: missing ${lost.join(', ')}.` : ''}` : 'Nothing imported.')
         } catch (err) {
           say(`Import failed: ${(err as Error).message}`)
         }

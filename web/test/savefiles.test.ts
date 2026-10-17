@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { crc32, saveFiles, savesFrom, unzip, zip } from '../src/store/savefiles'
+import { charStem, crc32, rosterFrom, saveFiles, savesFrom, unzip, zip } from '../src/store/savefiles'
 import { parseSave } from '../src/data/save'
 
 describe('zip', () => {
@@ -34,5 +34,22 @@ describe.skipIf(!have)('save files', () => {
     expect(games[0].slot).toBe('A')
     expect([...games[0].dat]).toEqual([...dat])
     expect([...games[0].chars[0].sav]).toEqual([...g.chars[0].sav])
+  })
+})
+
+describe('roster files', () => {
+  it('reads <stem>.CHA/.ITM/.SPC as charlist.txt names them', () => {
+    const rec = (name: string) => { const r = new Uint8Array(0x11d); r[0] = name.length; r.set([...name].map((ch) => ch.charCodeAt(0)), 1); return r }
+    expect(charStem('SIR BOB.THE, BOLD')).toBe('SIRBOBTH')
+    const files = [
+      { name: 'charlist.txt', data: new TextEncoder().encode('SIR BOB\r\nELMO\r\n') },
+      { name: 'SIRBOB.CHA', data: rec('SIR BOB') }, { name: 'SIRBOB.ITM', data: new Uint8Array(63) },
+      { name: 'OTHER.CHA', data: rec('OTHER') },
+    ]
+    const { chars, missing } = rosterFrom(files)
+    expect(chars.map((c) => c.stem)).toEqual(['SIRBOB'])
+    expect(chars[0].itm?.length).toBe(63)
+    expect(missing).toEqual(['ELMO.CHA'])
+    expect(rosterFrom(files.slice(1)).chars.map((c) => c.stem).sort()).toEqual(['OTHER', 'SIRBOB'])
   })
 })

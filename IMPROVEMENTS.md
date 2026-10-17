@@ -102,7 +102,7 @@ Related: IMP-034 brought the Lightning Bolt path and bounce, Stinking Cloud squa
 | ID | Change | Original |
 |---|---|---|
 | IMP-002 | Save anywhere: Save in the command bar writes slot A–J in the original layout. *In progress* (quicksave to come; changes difficulty, so a setting is planned) | Saving only from camp and the party screen ([`spec/camp.md`](spec/camp.md)) |
-| IMP-006 | Saves export and import as the original files: Export writes `SAVGAM<x>.DAT` and each member's `CHRDAT<x><n>.SAV/.ITM/.SPC` in one ZIP; Import takes them loose or zipped (a DOSBox folder works) and asks before replacing a slot | Files in the game folder |
+| IMP-006 | Saves export and import as the original files: Export writes `SAVGAM<x>.DAT` and each member's `CHRDAT<x><n>.SAV/.ITM/.SPC` in one ZIP; Import takes them loose or zipped (a DOSBox folder works) and asks before replacing a slot; it also takes roster characters, `<name>.CHA/.ITM/.SPC` with `charlist.txt`, into the roster | Files in the game folder |
 | IMP-005 | Runs offline as an installable web app or a single file; the game files are imported once and kept in the browser. *In progress* | A DOS program reading its folder |
 
 ## Development

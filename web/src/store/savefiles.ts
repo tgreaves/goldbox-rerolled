@@ -2,7 +2,7 @@
 // party member (spec/savegame.md), exported as one ZIP and imported from loose files or a ZIP, so a
 // game moves between this port and DOSBox.
 import { parseSave } from '../data/save'
-import type { SavedGame } from './user'
+import type { SavedGame, StoredCharacter } from './user'
 
 export interface NamedFile { name: string; data: Uint8Array }
 
@@ -38,6 +38,30 @@ export function savesFrom(files: NamedFile[]): { games: SavedGame[]; missing: st
       label: `${leader}'s party (imported)`, savedAt: Date.now() })
   }
   return { games, missing }
+}
+
+/** The original's file stem for a character (DS:0D1A): the name without ` .*,?/\:;|`, first 8 characters. */
+export function charStem(name: string): string {
+  return name.replace(/[ .*,?/\\:;|]/g, '').slice(0, 8).toUpperCase()
+}
+
+/**
+ * Roster characters from a DOS install's save folder (spec/menus.md, "Character files"): each
+ * <stem>.CHA with its .ITM and .SPC; with charlist.txt, only the names it lists.
+ */
+export function rosterFrom(files: NamedFile[]): { chars: StoredCharacter[]; missing: string[] } {
+  const byName = new Map(files.map((f) => [f.name.split('/').pop()!.toUpperCase(), f.data]))
+  const list = byName.get('CHARLIST.TXT')
+  const wanted = list ? new TextDecoder().decode(list).split(/\r?\n/).map((s) => s.trim()).filter(Boolean).map(charStem) : null
+  const stems = wanted ?? [...byName.keys()].filter((n) => n.endsWith('.CHA')).map((n) => n.slice(0, -4))
+  const chars: StoredCharacter[] = []
+  const missing: string[] = []
+  for (const stem of new Set(stems)) {
+    const sav = byName.get(`${stem}.CHA`)
+    if (!sav || sav.length < 0x11d) { missing.push(`${stem}.CHA`); continue }
+    chars.push({ stem, sav: sav.slice(0, 0x11d), itm: byName.get(`${stem}.ITM`), spc: byName.get(`${stem}.SPC`) })
+  }
+  return { chars, missing }
 }
 
 // ------------------------------------------------------------------ ZIP (stored, or deflate on read)
