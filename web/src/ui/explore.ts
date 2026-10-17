@@ -21,7 +21,7 @@ import { coinValue, moneyOf, pay, receive, sellOffer } from '../rules/money'
 import { shop, temple, treasure, type TownUi } from './town'
 import { camp, cast, type CampUi } from './camp'
 import { runBattle } from './combat'
-import { clockText, isScroll } from '../rules/camp'
+import { clockText, freeSlots, isScroll, knows, memorise, memorised, preparation } from '../rules/camp'
 import { castOutside, itemSpells, spendUse, targetKind } from '../rules/magic'
 import { Tables, fileStem } from '../rules/chargen'
 import { creatorTools } from './creator'
@@ -503,6 +503,68 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     })
   }
 
+  /**
+   * Memorize on one panel (IMP-043): the character's slots per class and level, filled with ready
+   * spells and pending ones (id + 0x80), the spell book beside them; a tap memorises (FUN_3f81_090a's
+   * rule: a free slot of that class and level) or clears a pending one, and the rest needed is shown.
+   */
+  function memorizePanel(): Promise<void> {
+    const st = engine.spells!, t = engine.items!
+    let message = ''
+    const sortSlots = (c: Uint8Array) => memorised(c).sort((a, b) => (a & 0x7f) - (b & 0x7f)).forEach((v, i) => { c[0x17 + i] = v })
+    return new Promise((resolve) => {
+      const render = () => {
+        const c = engine.cur, name = parseCharacter(c).name
+        const casters = engine.party().filter((m) => m[0x10c] === 0 && [1, 2, 3].some((l) => m[0xb1 + l] || m[0xb4 + l]))
+        const groups: string[] = []
+        for (const cls of [0, 1]) {
+          if (![1, 2, 3].some((l) => c[0xb1 + cls * 3 + l])) continue
+          const levels = [1, 2, 3].filter((l) => c[0xb1 + cls * 3 + l]).map((l) => {
+            const total = c[0xb1 + cls * 3 + l]
+            const inSlots = memorised(c).map((v, k) => ({ v, k })).filter(({ v }) => v && st.get(v & 0x7f)?.cls === cls && st.get(v & 0x7f)?.level === l)
+            const chips = inSlots.map(({ v, k }) => v >= 0x80
+              ? `<button class="spell pending" data-clear="${k}" title="Pending: tap to clear">${escape(st.get(v & 0x7f)!.name)} ✕</button>`
+              : `<span class="spell ready">${escape(st.get(v)!.name)}</span>`).join('')
+            const empty = Array.from({ length: Math.max(0, total - inSlots.length) }, () => '<span class="spell empty">empty</span>').join('')
+            const book = st.spells.filter((s) => s.id <= 55 && s.cls === cls && s.level === l && knows(c, s.id))
+            const free = freeSlots(c, cls, l, st)
+            return `<div class="mem-level"><h4>Level ${l} <span class="muted">${total - free} of ${total} slots</span></h4>
+              <div class="mem-slots">${chips}${empty}</div>
+              <div class="mem-book">${book.map((s) => `<button data-mem="${s.id}" ${free > 0 ? '' : 'disabled'}>+ ${escape(s.name)}</button>`).join('') || '<span class="muted">No spells of this level in the book.</span>'}</div></div>`
+          }).join('')
+          groups.push(`<section class="mem-class"><h3>${cls ? 'Magic-User' : 'Cleric'} spells</h3>${levels}</section>`)
+        }
+        const mins = preparation(c, engine.itemsOf(c), t, st)
+        const pendingN = memorised(c).filter((v) => v >= 0x80).length
+        dialog.innerHTML = `<h2>Memorize</h2>
+          <div class="shop-buyer">${casters.map((m) => `<button data-who="${engine.party().indexOf(m)}" class="${m === c ? 'on' : ''}">${escape(parseCharacter(m).name)}</button>`).join('')}</div>
+          ${groups.length ? `<div class="mem">${groups.join('')}</div>` : `<p class="muted">${escape(name)} cannot memorize any spells.</p>`}
+          <p>${pendingN ? `${pendingN} spell${pendingN > 1 ? 's' : ''} to learn: rest ${Math.floor(mins / 60)} h ${mins % 60} min to memorize ${pendingN > 1 ? 'them' : 'it'} (Rest in the camp menu).` : 'Nothing pending.'}</p>
+          ${message ? `<p class="message">${escape(message)}</p>` : ''}
+          <form method="dialog" class="yn">${pendingN ? '<button type="button" data-clearall="1">Clear pending</button>' : ''}<button class="primary">Done</button></form>`
+      }
+      const onClick = (e: MouseEvent) => {
+        const b = (e.target as HTMLElement).closest('button')
+        if (!b || b.disabled) return
+        const d = b.dataset
+        if (b.closest('form') && !d.clearall) return
+        e.preventDefault()
+        message = ''
+        const c = engine.cur
+        if (d.who) { engine.cur = engine.party()[Number(d.who)]; drawRoster() }
+        else if (d.mem) { const s = st.get(Number(d.mem))!; if (!memorise(c, s, st)) message = 'No free slot of that level.' }
+        else if (d.clear) { c[0x17 + Number(d.clear)] = 0; sortSlots(c) }
+        else if (d.clearall) for (let k = 0; k < 21; k++) if (c[0x17 + k] >= 0x80) c[0x17 + k] = 0
+        render()
+      }
+      dialog.classList.add('wide')
+      dialog.addEventListener('click', onClick)
+      onClose(dialog, () => { dialog.removeEventListener('click', onClick); resolve() })
+      render()
+      dialog.showModal()
+    })
+  }
+
   const campUi: CampUi = {
     get engine() { return engine },
     menu,
@@ -512,6 +574,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       onClose(dialog, () => resolve())
     }),
     save: () => saveGame(),
+    memorizePanel: () => memorizePanel(),
     refresh: () => { drawRoster(); showWhere() },
     stopper: () => {
       let stopped = false

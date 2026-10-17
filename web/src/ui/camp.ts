@@ -15,6 +15,8 @@ export interface CampUi {
   /** show a Stop button while a rest runs; `stopped()` turns true once it is pressed */
   stopper(): { stopped(): boolean; done(): void }
   pause(ms: number): Promise<void>
+  /** Memorize as one panel (IMP-043); without it the original's lists */
+  memorizePanel?(): Promise<void>
 }
 
 const nameOf = (c: Uint8Array) => parseCharacter(c).name
@@ -103,6 +105,7 @@ export async function cast(ui: CampUi) {
 async function memorize(ui: CampUi) {
   const e = ui.engine, st = e.spells!
   if (!activity(ui, 'memorize spells')) return
+  if (ui.memorizePanel) return ui.memorizePanel()
   const c = e.cur
   const pending = () => memorised(c).filter((v) => v >= 0x80).map((v) => st.get(v)!.name)
   if (pending().length) {

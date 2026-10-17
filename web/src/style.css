@@ -342,3 +342,15 @@ table.shop tr.unusable td { color: var(--muted); }
 table.shop small.cant { display: block; color: var(--ega-yellow); font-size: 0.75rem; }
 table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 @media (max-width: 640px) { table.shop td.cmp, table.shop th:nth-child(4) { display: none; } }
+
+/* Memorize panel (IMP-043) */
+.mem { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; }
+.mem-class h3 { margin: 0.3rem 0; }
+.mem-level { margin: 0 0 0.8rem; }
+.mem-level h4 { margin: 0.3rem 0; color: #fff; font-weight: 600; }
+.mem-slots, .mem-book { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.25rem 0; }
+.spell { padding: 0.25rem 0.55rem; border-radius: 6px; border: 1px solid var(--line); font-size: 0.9rem; }
+.spell.ready { color: var(--ega-green); }
+.spell.pending { color: var(--ega-yellow); border-color: #ffff5566; min-height: 36px; }
+.spell.empty { color: var(--muted); border-style: dashed; }
+.mem-book button { min-height: 36px; padding: 0.2rem 0.6rem; font-size: 0.9rem; }
