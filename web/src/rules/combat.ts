@@ -425,7 +425,7 @@ export class Battle implements FxHost {
         await this.turn(f)
         if (this.count(0) === 0 || this.ended) break
       }
-      if (await this.roundEnd()) break
+      if (this.ended || await this.roundEnd()) break
     }
     await this.settle()
     return this.outcome()
@@ -556,7 +556,7 @@ export class Battle implements FxHost {
     const c = f.c
     if (!c[0x10d]) { this.endTurnF(f); return }
     if (f.r[0]) { await this.castSpell(f, this.e.spells!.get(f.r[0])!, false); this.endTurnF(f); return }
-    while (s8(f.r[3]) > 0 && this.inPlay(f) && !c[0x10f]) {
+    while (s8(f.r[3]) > 0 && this.inPlay(f) && !c[0x10f] && !this.ended) {
       const st = this.e.spells
       const canCast = !!st && f.r[1] === 1 && this.e.read(0x49e5) === 0 && Array.from({ length: 21 }, (_, k) => c[0x17 + k]).some((v) => v > 0 && v < 0x80)
       const opts: [string, string][] = [
@@ -1583,6 +1583,15 @@ export class Battle implements FxHost {
   }
 
   // ------------------------------------------------------------ outcome
+  /** Debug (IMP-025): every enemy still standing falls at once; the aftermath runs as for a won battle. */
+  debugWin() {
+    for (const f of this.fighters) {
+      if (this.side(f) !== 1 || f.c[0x10c] === 3) continue
+      f.c[0x10c] = 6; f.c[0x10d] = 0; f.c[0x11b] = 0; f.size = 0
+    }
+    this.ended = true
+  }
+
   outcome(): Outcome {
     const party = this.fighters.filter((f) => !f.monster)
     if (party.some((f) => [0, 1].includes(f.c[0x10c]))) return 'won'

@@ -111,4 +111,4 @@ Related: IMP-034 brought the Lightning Bolt path and bounce, Stinking Cloud squa
 
 | ID | Change | Original |
 |---|---|---|
-| IMP-025 | A Debug menu: jump to the wilderness landings, New Phlan's pier, or any block, area and position, as a script's `NEW_ECL` would (anything scripts do on the way is skipped; a jump to the wilderness clears the inside-a-lair flag). Not part of the game | Developer cheats only (`START STING`, [`spec/architecture.md`](spec/architecture.md)) |
+| IMP-025 | A Debug menu: jump to the wilderness landings, New Phlan's pier, or any block, area and position, as a script's `NEW_ECL` would (anything scripts do on the way is skipped; a jump to the wilderness clears the inside-a-lair flag). During a battle it offers only **Win this battle**: every enemy falls at once and the aftermath runs as for a won fight (experience, treasure, the scripts see a win). Not part of the game | Developer cheats only (`START STING`, [`spec/architecture.md`](spec/architecture.md)) |

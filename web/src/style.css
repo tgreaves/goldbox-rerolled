@@ -169,6 +169,8 @@ dialog.panel form.jump input { width: 4.5rem; }
 /* combat: the battlefield takes the view and the map's place, the roster becomes a side column (IMP-033) */
 .game.in-combat { grid-template-columns: minmax(0, 1fr) minmax(13rem, 19rem); }
 .game.in-combat .map, .game.in-combat .pad, .game.in-combat .where { display: none; }
+.game .debug-combat { display: none; }
+.game.in-combat .debug-combat { display: inline-block; }
 
 /* phones and narrow windows: stack view, party, text, commands */
 @media (max-width: 760px), (max-aspect-ratio: 4/5) {

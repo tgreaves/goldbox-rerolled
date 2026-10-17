@@ -26,6 +26,8 @@ export interface BattleScreen {
   info?: HTMLElement
   /** the turn-order strip (IMP-044) */
   strip?: HTMLElement
+  /** debug (IMP-025): receives the function that wins the battle at once */
+  onSkip?(win: (() => void) | null): void
 }
 
 const DIRS = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]]
@@ -317,6 +319,17 @@ export async function runBattle(s: BattleScreen) {
       return i < items.length ? i : -1
     },
   }
+  // debug (IMP-025): "Win this battle" answers whatever the battle is waiting for, then it ends
+  let skipNow: () => void = () => {}
+  const skipped = new Promise<void>((r) => { skipNow = r })
+  const raced = <T,>(p: Promise<T>, v: T): Promise<T> => Promise.race([p, skipped.then(() => { s.cancelMenu(); setInput({}); return v })])
+  const [menu0, step0, aim0, confirm0, pick0] = [ui.menu.bind(ui), ui.step.bind(ui), ui.aim.bind(ui), ui.confirm.bind(ui), ui.pick.bind(ui)]
+  ui.menu = (items, opts) => raced(menu0(items, opts), items.length - 1)
+  ui.step = (f, left) => raced(step0(f, left), 'end' as const)
+  ui.aim = (f, entries, prompt, allowCell) => raced(aim0(f, entries, prompt, allowCell), null)
+  ui.confirm = (prompt) => raced(confirm0(prompt), false)
+  ui.pick = (prompt, items) => raced(pick0(prompt, items), -1)
+  s.onSkip?.(() => { if (battle) { battle.debugWin(); skipNow() } })
   s.canvas.hidden = false
   // the hidden "Magic On/Off" key (DS:6E30): Alt-M, or '2' during a computer-run turn; whether
   // party members on Quick may cast spells. Off at every battle start (FUN_34c7_1e31).
@@ -366,6 +379,7 @@ export async function runBattle(s: BattleScreen) {
     if (result.messages.length && !e.quit) await s.menu(['CONTINUE'], { prompt: 'Press Enter to continue' })
     return result
   } finally {
+    s.onSkip?.(null)
     resize.disconnect()
     window.removeEventListener('keydown', onMagicKey, true)
     s.canvas.removeEventListener('pointermove', onHover)
