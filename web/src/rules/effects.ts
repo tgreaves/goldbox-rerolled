@@ -46,6 +46,8 @@ export interface FxHost {
   sparkle?(c: Uint8Array): void
   /** the line for an effect that took hold, then the sparkle in combat (FUN_10ba_1feb with "good") */
   announce?(c: Uint8Array, msg: string): void
+  /** a gaze (the spell bolt, 45 ms) or acid spit (COMSPR 10, 30 ms) flies from one to the other (combat only) */
+  fly?(from: Uint8Array, to: Uint8Array, kind: 'gaze' | 'spit'): void
   /** effect 0x28 expired: lift that Stinking Cloud (combat only) */
   clearCloud?(c: Uint8Array, power: number): void
 }
@@ -411,8 +413,9 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
       const t = h.targetOf(c)
       if (!t || !t[0x10d]) break
       h.print(`${h.name(c)} gazes...`)
+      h.fly?.(c, t, 'gaze')
       let victim = t
-      if (has(h, c, 127) && h.itemsOf(t).some((it) => it.ready && it.raw[0x31] === 0x76)) { h.print(`${h.name(t)} reflects it!`); victim = c }
+      if (has(h, c, 127) && h.itemsOf(t).some((it) => it.ready && it.raw[0x31] === 0x76)) { h.print(`${h.name(t)} reflects it!`); h.fly?.(t, c, 'gaze'); victim = c }
       if (!h.save(victim, 1, 0)) h.setStatus(victim, 7, `${h.name(victim)} is Stoned`)
       break
     }
@@ -420,6 +423,7 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
       const t = h.targetOf(c)
       if (!t || !t[0x10d]) break
       h.print(`${h.name(c)} Gazes...`)
+      h.fly?.(c, t, 'gaze')
       fx.spell = 10
       if (!h.save(t, 4, -2)) await addEffect(h, t, 11, 0, (c[0x10e] << 7) | 0x0c, 1, 1, false, true)
       fx.spell = 0
@@ -479,6 +483,7 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
       if (t && t[0x10d] && h.roll(1, 100) <= 25 && h.distance(c, t) < 4) {
         h.endTurn(c)
         h.print(`${h.name(c)} Spits Acid`)
+        h.fly?.(c, t, 'spit')
         fx.dmgType = 0x10
         h.damage(t, h.roll(8, 4), 2, h.save(t, 3, 0))
         await removeEffect(h, c, eff)

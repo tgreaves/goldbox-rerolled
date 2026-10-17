@@ -199,6 +199,9 @@ export async function runBattle(s: BattleScreen) {
       await flicker([{ row: f.y, col: f.x }], cycle(kind === 'sparkle' ? 9 : 10), cycles)
       if (holdAfter > 0) await s.pause(holdAfter)
     }),
+    show: () => later(async () => draw()),
+    hold: (ms) => later(async () => { await s.pause(ms) }),
+    look: (at) => later(async () => { focus = { row: at.y, col: at.x }; draw() }),
     redraw: (f) => {
       if (f) { acting = f; focus = { row: f.y, col: f.x } }
       draw()

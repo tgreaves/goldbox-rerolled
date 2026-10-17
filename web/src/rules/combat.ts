@@ -70,6 +70,12 @@ export interface CombatUi {
   /** queued: sparkle (an effect took hold) or starburst (spell/effect damage) at a combatant (FUN_10ba_1feb) */
   effect?(f: Fighter, kind: 'sparkle' | 'burst', cycles: number, holdAfter: number): void
   redraw(focus?: Fighter): void
+  /** queued: redraw the battlefield as it is now (the Stinking Cloud cells) */
+  show?(): void
+  /** queued: hold before what follows */
+  hold?(ms: number): void
+  /** queued: centre the view on a cell (Fireball, FUN_4e53_266b) */
+  look?(at: { x: number; y: number }): void
   pause(ms?: number): Promise<void>
   menu(items: string[], opts?: { prompt?: string }): Promise<number>
   /** a step direction 0–7, 'end' (done moving) or 'undo' (Escape) */
@@ -226,6 +232,11 @@ export class Battle implements FxHost {
 
   // ------------------------------------------------------------ basics
   of(c: Uint8Array) { return this.fighters.find((f) => f.c === c) ?? null }
+  fly(from: Uint8Array, to: Uint8Array, kind: 'gaze' | 'spit') {
+    const a = this.of(from), b = this.of(to)
+    if (!a || !b) return
+    this.ui.flight?.({ x: a.x, y: a.y }, { x: b.x, y: b.y }, kind === 'gaze' ? { frames: cycle(5), delay: 45 } : { frames: [{ rec: 10 }], delay: 30 })
+  }
   inPlay(f: Fighter) { return f.c[0x10d] !== 0 && f.size > 0 }
   side(f: Fighter) { return f.c[0x10e] }
   enemies(f: Fighter) { return this.fighters.filter((o) => o !== f && this.inPlay(o) && this.side(o) !== this.side(f)) }
@@ -1216,6 +1227,8 @@ export class Battle implements FxHost {
         const n = targets.length
         const bonus = n === 1 ? (s.id === 23 ? -2 : -3) : n === 2 ? -1 : 0
         for (const t of [...targets].reverse()) {
+          // 4e53_1658: sound 2 and a bolt to each target before its save, except the last-listed one (I: a bug)
+          if (t !== targets[targets.length - 1]) this.ui.flight?.({ x: f.x, y: f.y }, { x: t.x, y: t.y }, { frames: cycle(5), delay: 30, sounds: [2, 0] })
           const saved = t.c[0x9f] > 1 || t.c[0x6c] > 1 || this.saveSync(t.c, s.saveType, bonus)
           await addEffect(this, t.c, 0x34, dur, L, 0, 1, saved, false, 'is held')
         }
@@ -1232,6 +1245,7 @@ export class Battle implements FxHost {
         const n = s.id === 47 ? L : this.e.roll(1, 3) * 2 + 1
         const dmg = this.e.roll(n, 6)
         fx.dice = n
+        if (s.id === 47) this.ui.look?.(this.aimed) // the view centres on the aim point; no burst graphic of its own
         for (const t of targets) { fx.dmgType = 9; this.damageSync(t.c, dmg, 2, saveOf(t)) }
         break
       }
@@ -1302,6 +1316,10 @@ export class Battle implements FxHost {
         }
         this.clouds.push(z)
         addRaw(this, c, 0x28, L, ((z.n << 4) + L) & 0xff, 1)
+        // the line without a pause, the redraw showing the cloud, then the pause
+        this.print(`${name(c)} Creates a noxious cloud`, { ms: 0 })
+        this.ui.show?.()
+        this.ui.hold?.(this.e.speed * 225)
         this.ui.redraw()
         for (const t of z.cells) {
           const o = this.occupied(t.x, t.y, 1)
