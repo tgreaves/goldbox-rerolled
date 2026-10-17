@@ -159,6 +159,16 @@ async function scribe(ui: CampUi) {
   }
 }
 
+/** Effect names as the Display window gives them (FUN_3f81_0fbc); also used by the roster cards. */
+export function effectNames(e: Engine, c: Uint8Array): string[] {
+  const st = e.spells
+  if (!st) return []
+  return [...new Set(e.effectsOf(c).map((f) => {
+    if (SPELL_NAMED.has(f.type)) return st.spells.find((s) => s.effect === f.type)?.name ?? ''
+    return EFFECT_NAMES[f.type] ?? ''
+  }).filter(Boolean))]
+}
+
 /** Display (FUN_3f81_0fbc): the current character's effects. */
 function display(ui: CampUi) {
   const e = ui.engine, st = e.spells!

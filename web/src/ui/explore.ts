@@ -19,17 +19,17 @@ import { canTakeItem, capacity, ready, recalc, unready } from '../rules/equip'
 import { drop, halve, join, trade, unavailable } from '../rules/inventory'
 import { coinValue, moneyOf, pay, receive, sellOffer } from '../rules/money'
 import { shop, temple, treasure, type TownUi } from './town'
-import { camp, cast, type CampUi } from './camp'
+import { camp, cast, effectNames, type CampUi } from './camp'
 import { runBattle } from './combat'
 import { clockText, freeSlots, isScroll, knows, memorise, memorised, preparation } from '../rules/camp'
 import { castOutside, itemSpells, spendUse, targetKind } from '../rules/magic'
-import { Tables, fileStem } from '../rules/chargen'
+import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
 import { creatorTools } from './creator'
 import { playEnding } from './ending'
 import { onClose } from './sheet'
 import { openSettings } from './settings'
 import { unexepack } from '../data/exepack'
-import { checkTraining, newSpellChoices, train, willBecome } from '../rules/training'
+import { checkTraining, levelLimit, newSpellChoices, train, willBecome, xpFor } from '../rules/training'
 import { initSound, play, setSoundDevice, soundDevice, unlockAudio } from '../audio/sfx'
 
 const FACING = ['North', 'East', 'South', 'West']
@@ -387,27 +387,63 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   function drawRoster() {
     const cur = engine.nodes.indexOf(engine.cur)
-    // roster cards (IMP-045): combat icon, name, AC, HP bar; the current character highlighted
+    // roster cards (IMP-045): portrait, combat icon, name, AC, HP bar, readied weapon, spells ready,
+    // effects as the camp Display names them, and whether a training hall would train them now
     const list = party()
+    const t = getTables(), st = engine.spells, it = engine.items
     roster.innerHTML = list.map((c, i) => {
+      const raw = c.raw
       const up = c.status === 'Okay' || c.status === 'Animated'
       const pct = up ? Math.round((100 * c.hp) / Math.max(1, c.hpMax)) : 0
       const cls = ['rcard', i === cur ? 'current' : '', c.npc ? 'npc' : '', c.hp < c.hpMax ? 'hurt' : '', up ? '' : 'down'].join(' ')
+      const weapon = it ? engine.itemsOf(raw).find((x) => x.ready && it.baseOf(x)?.slot === 0) : undefined
+      const counts = new Map<string, number>()
+      if (st) for (const v of memorised(raw)) if (v > 0 && v < 0x80) { const n = st.get(v)?.name; if (n) counts.set(n, (counts.get(n) ?? 0) + 1) }
+      const spells = [...counts].map(([n, k]) => (k > 1 ? `${n} ×${k}` : n)).join(', ')
+      const effects = effectNames(engine, raw)
+      const train = t ? canTrain(t, raw) : false
       return `<button class="${cls}" data-i="${i}" title="${i === cur ? 'View' : 'Select'} ${escape(c.name)}">
-        <canvas class="pixel rc-icon" width="24" height="24"></canvas>
-        <span class="rc-body"><span class="rc-name">${escape(c.name)}</span>
-          <span class="hpbar${pct < 50 ? ' low' : ''}"><span style="width:${pct}%"></span></span></span>
-        <span class="rc-stats"><span>AC ${c.ac}</span><span>${up ? `HP ${c.hp}/${c.hpMax}` : c.status}</span></span></button>`
+        <canvas class="pixel rc-portrait" width="88" height="88"></canvas>
+        <span class="rc-body">
+          <span class="rc-top"><span class="rc-name">${escape(c.name)}</span><span class="rc-ac">AC ${c.ac}</span></span>
+          <span class="hpbar${pct < 50 ? ' low' : ''}"><span style="width:${pct}%"></span></span>
+          <span class="rc-line"><span class="rc-hp">${up ? `HP ${c.hp}/${c.hpMax}` : c.status}</span>${weapon && it ? ` · ${escape(it.name(weapon))}` : ''}</span>
+          ${spells ? `<span class="rc-line rc-spells" title="${escape(spells)}">✦ ${escape(spells)}</span>` : ''}
+          ${effects.length || train ? `<span class="rc-badges">${effects.map((n) => `<span class="badge">${escape(n)}</span>`).join('')}${train ? '<span class="badge train">Ready to train</span>' : ''}</span>` : ''}
+        </span>
+        <canvas class="pixel rc-icon" width="24" height="24"></canvas></button>`
     }).join('')
-    roster.querySelectorAll<HTMLCanvasElement>('canvas.rc-icon').forEach((cv, i) => {
+    const pic = (family: string, id: number) => { const r = files.record(family, id); try { return r ? parseRecord(r).frames[0].picture : null } catch { return null } }
+    roster.querySelectorAll<HTMLElement>('.rcard').forEach((card, i) => {
       const raw = list[i].raw
       const key = Array.from(raw.subarray(0xbd, 0xc7)).join(',')
       let img = rosterIcons.get(key)
       if (img === undefined) { const p = buildIcon(files, raw, false); img = p ? toImageData(p) : null; rosterIcons.set(key, img) }
-      const g = cv.getContext('2d')!
+      const g = card.querySelector<HTMLCanvasElement>('canvas.rc-icon')!.getContext('2d')!
       g.fillStyle = '#000'; g.fillRect(0, 0, 24, 24)
       if (img) g.putImageData(img, 0, 0)
+      const pg = card.querySelector<HTMLCanvasElement>('canvas.rc-portrait')!.getContext('2d')!
+      pg.fillStyle = '#000'; pg.fillRect(0, 0, 88, 88)
+      if (t) {
+        const pk = `${raw[0xbb]},${raw[0xbc]}`
+        let pp = rosterPortraits.get(pk)
+        if (pp === undefined) { const h = pic('HEAD3', headRecord(t, raw[0xbb])), b = pic('BODY3', bodyRecord(t, raw[0xbc])); pp = [h ? toImageData(h) : null, b ? toImageData(b) : null]; rosterPortraits.set(pk, pp) }
+        if (pp[0]) pg.putImageData(pp[0], 0, 0)
+        if (pp[1]) pg.putImageData(pp[1], 0, 40)
+      }
     })
+  }
+  const rosterPortraits = new Map<string, [ImageData | null, ImageData | null]>()
+  /** a training hall would train this character now: enough experience for a class below its limit */
+  function canTrain(t: Tables, c: Uint8Array) {
+    const xp = (c[0xac] | (c[0xad] << 8) | (c[0xae] << 16) | (c[0xaf] << 24)) >>> 0
+    for (let k = 0; k < 8; k++) {
+      const L = c[0x96 + k]
+      if (L <= 0 || L >= levelLimit(c, k)) continue
+      const need = xpFor(t, k, L + 1)
+      if (need !== 0 && need !== 0xffffffff && xp >= need) return true
+    }
+    return false
   }
   const rosterIcons = new Map<string, ImageData | null>()
 
@@ -607,6 +643,13 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
    * (browser storage), as the original writes their files.
    */
   let tables: Tables | null | undefined
+  function getTables(): Tables | null {
+    if (tables === undefined) {
+      const exe = files.get('START.EXE')
+      try { tables = exe ? new Tables(unexepack(exe).image) : null } catch { tables = null }
+    }
+    return tables
+  }
   async function trainingHall() {
     if (tables === undefined) {
       const exe = files.get('START.EXE')
