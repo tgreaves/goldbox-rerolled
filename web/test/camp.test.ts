@@ -47,3 +47,31 @@ describe.skipIf(!have)('camp', () => {
     expect(clockText(e)).toBe(clock0) // a full day later, same time of day
   })
 })
+
+describe.skipIf(!have)('camp Fix (IMP-048)', () => {
+  it('heals the party with its clerics, resting between casts', async () => {
+    const { camp } = await import('../src/ui/camp')
+    const m = new Map<string, Uint8Array>()
+    for (const n of readdirSync(dir)) if (wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(join(dir, n))))
+    const files = new GameFiles(m)
+    const io = { print: () => {}, menu: async () => 0, refresh: async () => {}, pause: async () => {}, sound: () => {},
+      picture: () => {}, sprite: () => {}, engine: async () => {}, inputNumber: async () => 0, inputText: async () => '' } as unknown as Io
+    const dat = files.get('SAVGAMA.DAT')!
+    const stems = parseSave(dat).party
+    const e = new Engine(files, io, 2)
+    e.loadSave(dat, stems.map((s) => files.get(`${s}.SAV`)!))
+    stems.forEach((s, i) => e.attachFiles(i, files.get(`${s}.ITM`), files.get(`${s}.SPC`)))
+    e.write(0x6dd2, 0) // no wandering monsters while resting
+    for (const c of e.party()) c[0x11b] = Math.max(1, c[0x32] - 4)
+    const lines: string[] = []
+    let calls = 0
+    const ui = {
+      engine: e, print: (t: string) => { lines.push(t) }, refresh: () => {}, pause: async () => {},
+      menu: async (items: string[]) => (calls++ === 0 ? items.indexOf('FIX') : items.indexOf('EXIT')),
+      view: async () => {}, save: async () => {}, stopper: () => ({ stopped: () => false, done: () => {} }),
+    }
+    await camp(ui as never)
+    expect(e.party().every((c) => c[0x11b] === c[0x32])).toBe(true)
+    expect(lines).toContain('The party is fully healed.')
+  })
+})

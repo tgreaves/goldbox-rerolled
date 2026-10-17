@@ -85,6 +85,11 @@ Command keys are read by the menu loop in [[spec/graphics]] (number keys work as
   - 1: step forward (`FUN_3e76_073b`)
   - 0: bump sound
   - 2 or 3, locked: "Locked." menu with **Bash**, **Pick** (only if `DS:6DDF` is set and a member has the thief skill, `FUN_3e76_0236(6)`) and **Knock** (only if `DS:6DE0` is set and someone has spell 0x1F, Knock), then Exit. Bash is `FUN_3e76_0294`, Pick `FUN_3e76_04df`, Knock `FUN_3e76_0648`. On a type-3 door, Pick just removes the Pick option (it cannot be picked). A success steps forward.
+    - The three offers are flags `DS:6DDE` (Bash), `6DDF` (Pick), `6DE0` (Knock), all set again by every step (`FUN_3e76_073b`). With nothing left to offer the menu is skipped. Prompt "Locked. ", items "Bash Pick Knock Exit"; a failure plays the bump sound (7).
+    - **Bash** (`FUN_3e76_0294`): every list entry in order, whatever its status, until one succeeds. Door 2 by STR: 3–7 d6 = 1; 8–15 d6 ≤ 2; 16–17 d6 ≤ 3; 18/01–50 d6 ≤ 3; 18/51–99 d6 ≤ 4; 18/00 d6 ≤ 5; STR 19 or more has no case and never succeeds (**Bug**, O). Door 3: 18/91–99 d6 = 1; 18/00 d6 ≤ 2; 19–20 d6 ≤ 3; 21–22 d6 ≤ 4; 23 d6 ≤ 5; 24 d8 ≤ 7; 25 always; anyone weaker clears `6DDE`, so Bash is not offered again at that door.
+    - **Pick** (`FUN_3e76_04df`, door 2 only): every list entry with status Okay rolls d100 ≤ open locks char[0x78]; afterwards `6DDF` = 0 (one try per door).
+    - **Knock** (`FUN_3e76_0648`): the first list entry with Knock (spell 0x1F) memorised and ready loses it, and the party passes. Door 2 offers it only when such a caster exists, door 3 whenever a magic-user is in the party (who may then have nothing to cast).
+    - Bash and Pick unlock the door on both sides (`FUN_3e76_0109`: passage = 1 in the loaded GEO copy, so it is locked again when the area is reloaded); Knock leaves it locked.
 - Overland: `FUN_3e76_0818`.
 - Afterwards any picture animation and encounter sprite are cleared.
 

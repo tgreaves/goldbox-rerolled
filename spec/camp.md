@@ -28,7 +28,7 @@ Camp screen:
 
 ## Camp menu (O, `DS:0508`)
 
-Prompt "Camp: ", horizontal menu **"Save View Magic Rest Alter Exit"** (`FUN_53aa_03bd`, colours 13/10/15). Every option is always offered. There is no **Fix** command (the guide, 2.6, lists it as a later-game feature) and no Level option. Home/End change the current character (`FUN_4894_27df`) and redraw the roster, as on the party screen.
+Prompt "Camp: ", horizontal menu **"Save View Magic Rest Alter Exit"** (`FUN_53aa_03bd`, colours 13/10/15). Every option is always offered. There is no **Fix** command (the guide, 2.6, lists it as a later-game feature; the port adds one, IMP-048) and no Level option. Home/End change the current character (`FUN_4894_27df`) and redraw the roster, as on the party screen.
 
 | Key | Action |
 |---|---|

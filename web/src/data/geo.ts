@@ -27,6 +27,12 @@ export class GeoMap {
     return (this.planes[3][this.idx(x, y)] >> (2 * d)) & 3
   }
 
+  /** Set side d's passage (FUN_3e76_0109: an unlocked door becomes 1); the record is the area's own copy. */
+  setPassage(x: number, y: number, d: number, v: number) {
+    const i = this.idx(x, y)
+    this.planes[3][i] = (this.planes[3][i] & ~(3 << (2 * d))) | ((v & 3) << (2 * d))
+  }
+
   event(x: number, y: number): number {
     return this.planes[2][this.idx(x, y)]
   }

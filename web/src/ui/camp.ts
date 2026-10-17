@@ -38,12 +38,13 @@ export async function camp(ui: CampUi) {
   for (const c of e.party()) clearPending(c, e.itemsOf(c), e.items)
   ui.print('The party makes camp...', true)
   for (;;) {
-    const o = await ui.menu(['SAVE', 'VIEW', 'MAGIC', 'REST', 'ALTER', 'EXIT'], { prompt: 'Camp:' })
+    const o = await ui.menu(['SAVE', 'VIEW', 'MAGIC', 'REST', 'ALTER', 'FIX', 'EXIT'], { prompt: 'Camp:' })
     if (o === 0) await ui.save()
     else if (o === 1) await ui.view()
     else if (o === 2) { if (await magic(ui, state)) break }
     else if (o === 3) { if (await rest(ui, state)) break }
     else if (o === 4) await alter(ui)
+    else if (o === 5) { if (await fix(ui, state)) break }
     else break
   }
   for (const c of e.party()) clearPending(c, e.itemsOf(c), e.items)
@@ -217,6 +218,58 @@ export async function rest(ui: CampUi, state: { heal: number }): Promise<boolean
   ui.refresh()
   if (interrupted) e.campInterrupted = true
   return interrupted
+}
+
+/**
+ * Fix (IMP-048), the camp command of the later Gold Box games (Curse of the Azure Bonds on): the
+ * clerics cast their Cure Light Wounds on the most wounded, memorise it again in the slots that
+ * frees, and the party rests just long enough to learn it, until everyone is healed or nobody can
+ * heal any more. Every step uses the original rules (casting, memorising, resting with its encounter
+ * checks and natural healing). Returns true when a rest was interrupted.
+ */
+async function fix(ui: CampUi, state: { heal: number }): Promise<boolean> {
+  const e = ui.engine, st = e.spells!, t = e.items!
+  const cure = st.get(3)
+  if (!cure) return false
+  if (e.read(0x49e5) !== 0) { ui.print('cannot cast spells in this area', false); return false }
+  const party = () => e.party()
+  const healers = () => party().filter((c) => c[0x10c] === 0 && c[0x96] > 0 && knows(c, cure.id) && c[0xb2] > 0)
+  const wounded = () => party().filter((c) => [0, 1, 4, 5].includes(c[0x10c]) && c[0x11b] < c[0x32])
+    .sort((a, b) => (b[0x32] - b[0x11b]) - (a[0x32] - a[0x11b]))
+  if (!wounded().length) { ui.print('The party is already healthy.', true); return false }
+  if (!healers().length) { ui.print('No one in the party can cast Cure Light Wounds.', true); return false }
+  ui.print('The party fixes its wounds...', true)
+  for (let round = 0; round < 200 && wounded().length; round++) {
+    // cast every ready Cure Light Wounds on whoever is worst hurt
+    for (const h of healers()) {
+      while (memorised(h).includes(cure.id) && wounded().length) {
+        const w = wounded()[0]
+        castOutside(e, h, cure, [w])
+        ui.print(`${nameOf(h)} heals ${nameOf(w)} (${w[0x11b]}/${w[0x32]})`, false)
+      }
+    }
+    ui.refresh()
+    if (!wounded().length) break
+    // memorise it again in every free level-1 cleric slot
+    let pending = false
+    for (const h of healers()) while (freeSlots(h, 0, 1, st) > 0 && memorise(h, cure, st)) pending = true
+    if (!pending) break // no slot will ever hold a cure: nothing more to do
+    // rest exactly as long as the slowest healer needs to learn them
+    let minutes = 0
+    for (const c of party()) minutes = Math.max(minutes, preparation(c, e.itemsOf(c), t, st))
+    if (minutes <= 0) break
+    const r = startRest(e, minutes)
+    while (r.minutes > 0) {
+      const res = await restStep(e, r, state)
+      for (const msg of res.messages) ui.print(msg, false)
+      if (res.interrupted) { ui.refresh(); e.campInterrupted = true; return true }
+    }
+    await ui.pause(25)
+  }
+  ui.refresh()
+  const left = wounded()
+  ui.print(left.length ? `Fix stops: ${left.map(nameOf).join(', ')} still hurt.` : 'The party is fully healed.', false)
+  return false
 }
 
 /** Alter (FUN_3f81_1c59): Order, Drop, Speed. */

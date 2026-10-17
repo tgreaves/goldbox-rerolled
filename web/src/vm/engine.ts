@@ -794,6 +794,80 @@ export class Engine {
     return m
   }
 
+  /** DS:6DDE–6DE0: whether Bash, Pick and Knock are still offered at a locked door; all set again by every step */
+  doorTries = { bash: true, pick: true, knock: true }
+
+  /**
+   * The locked-door menu (FUN_3e76_0d6d; spec/architecture.md, "Moving"). Passage 2 is an ordinary
+   * locked door, 3 one that cannot be picked and needs great strength. Returns true when the party
+   * gets through: Bash and Pick unlock the door on both sides (FUN_3e76_0109), Knock only lets the
+   * party through this once. Every party entry tries in list order until one succeeds.
+   */
+  private async lockedDoor(kind: number): Promise<boolean> {
+    const list = this.nodes
+    const s8 = (v: number) => (v << 24) >> 24
+    const hasClass = (k: number) => list.some((c) => s8(c[0x96 + k]) > 0)
+    const knockCaster = () => list.find((c) => Array.from({ length: 21 }, (_, k) => c[0x17 + k]).includes(0x1f))
+    const opts: [string, string][] = []
+    if (this.doorTries.bash) opts.push(['BASH', 'b'])
+    if (this.doorTries.pick && hasClass(6)) opts.push(['PICK', 'p'])
+    if (this.doorTries.knock && (kind === 2 ? !!knockCaster() : hasClass(5))) opts.push(['KNOCK', 'k'])
+    if (!opts.length) return false // FUN_3e76_0000: nothing left to try
+    opts.push(['EXIT', 'e'])
+    const k = opts[await this.io.menu(opts.map((o) => o[0]), { prompt: 'Locked.' })]?.[1]
+    let ok = false
+    if (k === 'b') ok = this.bashDoor(kind)
+    else if (k === 'p') {
+      // FUN_3e76_04df: each member rolls d100 against Open Locks (char[0x78]) while conscious; one try per door
+      if (kind === 2) ok = list.some((c) => c[0x10c] === 0 && this.roll(1, 100) <= c[0x78])
+      this.doorTries.pick = false
+    } else if (k === 'k') {
+      // FUN_3e76_0648: a member with Knock memorised casts it; the door is passed, not unlocked
+      const c = knockCaster()
+      if (c) { const at = Array.from({ length: 21 }, (_, j) => c[0x17 + j]).indexOf(0x1f); c[0x17 + at] = 0; ok = true }
+    }
+    if (ok && k !== 'k' && this.geo) {
+      const [dx, dy] = STEP[this.facing]
+      this.geo.setPassage(this.x, this.y, this.facing, 1)
+      const nx = this.x + dx, ny = this.y + dy
+      if (nx >= 0 && nx <= 15 && ny >= 0 && ny <= 15) this.geo.setPassage(nx, ny, (this.facing + 2) % 4, 1)
+    }
+    return ok
+  }
+
+  /**
+   * Bash (FUN_3e76_0294): every party entry in turn, by STR (char[0x10], percentile char[0x16]).
+   * Ordinary door: STR 3–7 d6 = 1, 8–15 d6 ≤ 2, 16–17 d6 ≤ 3, 18/01–50 d6 ≤ 3, 18/51–99 d6 ≤ 4,
+   * 18/00 d6 ≤ 5; STR 19 and above never succeed (bug, kept). Door 3: 18/91–99 d6 = 1, 18/00 d6 ≤ 2,
+   * 19–20 d6 ≤ 3, 21–22 d6 ≤ 4, 23 d6 ≤ 5, 24 d8 ≤ 7, 25 always; anyone weaker takes Bash off the menu.
+   */
+  private bashDoor(kind: number): boolean {
+    for (const c of this.nodes) {
+      const str = c[0x10], pct = c[0x16]
+      const d6 = () => this.roll(1, 6)
+      let ok = false
+      if (kind === 3) {
+        if (str === 18 && pct >= 91 && pct <= 99) ok = d6() === 1
+        else if (str === 18 && pct === 100) ok = d6() <= 2
+        else if (str === 19 || str === 20) ok = d6() <= 3
+        else if (str === 21 || str === 22) ok = d6() <= 4
+        else if (str === 23) ok = d6() <= 5
+        else if (str === 24) ok = this.roll(1, 8) <= 7
+        else if (str === 25) ok = true
+        else this.doorTries.bash = false
+      } else {
+        if (str >= 3 && str <= 7) ok = d6() === 1
+        else if (str >= 8 && str <= 15) ok = d6() <= 2
+        else if (str === 16 || str === 17) ok = d6() <= 3
+        else if (str === 18 && pct <= 50) ok = d6() <= 3
+        else if (str === 18 && pct <= 99) ok = d6() <= 4
+        else if (str === 18 && pct === 100) ok = d6() <= 5
+      }
+      if (ok) return true
+    }
+    return false
+  }
+
   /**
    * ADD_NPC (handler 29c3:2B7E, loader FUN_45c5_1262): monster record `id` of this block joins the end
    * of the party (at most 8), with a random portrait for its class and gender; it becomes the current
@@ -1237,7 +1311,10 @@ export class Engine {
     if (this.B[CANCEL_MOVE - B0] >= 0xff) this.B[CANCEL_MOVE - B0] = 0
     else if (this.geo) {
       const p = this.geo.passage(this.x, this.y, this.facing)
-      if (p === 1) {
+      // a locked door offers Bash, Pick and Knock first (FUN_3e76_0d6d); success walks on as a normal step
+      const through = p === 1 || ((p === 2 || p === 3) && await this.lockedDoor(p))
+      if (through) {
+        this.doorTries = { bash: true, pick: true, knock: true }
         const [dx, dy] = STEP[this.facing]
         this.x = (this.x + dx) & 15
         this.y = (this.y + dy) & 15
@@ -1245,11 +1322,11 @@ export class Engine {
         this.io.sound(10) // main loop: footstep when the position changed
       } else {
         blocked = p === 0 ? 1 : 2
-        this.io.sound(7) // FUN_3e76_0d6d: bump
+        this.io.sound(7) // FUN_3e76_0d6d: bump, or the door held
       }
     }
     await this.io.refresh()
-    if (blocked) await this.io.engine(blocked === 1 ? 'blocked' : 'locked door')
+    if (blocked === 1) await this.io.engine('blocked')
     this.areaChanged = false
     await this.run(this.vectors[1])
     if (this.areaChanged) await this.enter()
