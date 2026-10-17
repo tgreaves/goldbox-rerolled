@@ -4,7 +4,9 @@ import { parseCharacter } from '../data/character'
 import { deleteCharacter, getParty, listCharacters, seedRoster, setParty } from '../store/user'
 import { escape, sheetHtml } from './sheet'
 import { unexepack } from '../data/exepack'
-import { Tables, fileStem } from '../rules/chargen'
+import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
+import { parseRecord, toImageData } from '../data/image'
+import { buildIcon } from '../render/icon'
 import { creatorTools } from './creator'
 import { saveCharacter, listSaves, writeSave } from '../store/user'
 import { saveFiles, savesFrom, unzip, zip, type NamedFile } from '../store/savefiles'
@@ -32,12 +34,12 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
   app.innerHTML = `
     <div class="partyscreen">
       <header><h1>Pool of Radiance</h1><button class="muted" data-a="assets">Assets</button></header>
-      <section class="members" aria-label="Party"><h2>Party</h2><table><tbody></tbody></table></section>
+      <section class="members" aria-label="Party"><h2>Party</h2><div class="cards"></div></section>
       <section class="info" aria-live="polite"></section>
       <nav class="functions" aria-label="Choose a function"></nav>
       <dialog class="panel"></dialog>
     </div>`
-  const tbody = app.querySelector<HTMLTableSectionElement>('.members tbody')!
+  const tbody = app.querySelector<HTMLElement>('.members .cards')!
   const info = app.querySelector<HTMLElement>('.info')!
   const nav2 = app.querySelector<HTMLElement>('.functions')!
   const dialog = app.querySelector<HTMLDialogElement>('dialog')!
@@ -47,13 +49,35 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
 
   function draw() {
     current = Math.min(current, Math.max(0, party.length - 1))
+    // party cards (IMP-045): portrait, combat icon, class and levels, HP bar, AC and status
     tbody.innerHTML = party.length
       ? party.map((s, i) => {
           const c = parseCharacter(byStem(s).sav)
-          return `<tr data-i="${i}" class="${i === current ? 'current' : ''}"><td>${escape(c.name)}</td>
-            <td>${c.race}</td><td>${c.cls}</td><td>AC ${c.ac}</td><td>HP ${c.hp}</td></tr>`
+          const pct = Math.round((100 * c.hp) / Math.max(1, c.hpMax))
+          return `<button class="pcard${i === current ? ' current' : ''}" data-i="${i}" title="${i === current ? 'View' : 'Select'} ${escape(c.name)}">
+            <canvas class="pixel pc-portrait" width="88" height="88"></canvas>
+            <span class="pc-body"><strong>${escape(c.name)}</strong>
+              <span>${c.race} ${c.cls}</span>
+              <span class="muted">level ${c.levels.map((l) => l.level).join('/')} · AC ${c.ac} · ${c.status}</span>
+              <span class="hpbar${pct < 50 ? ' low' : ''}"><span style="width:${pct}%"></span></span>
+              <span class="muted">HP ${c.hp} / ${c.hpMax}</span></span>
+            <canvas class="pixel pc-icon" width="24" height="24"></canvas></button>`
         }).join('')
-      : '<tr><td class="muted">No characters in the party. Create or Add one.</td></tr>'
+      : '<p class="muted">No characters in the party. Create or Add one.</p>'
+    tbody.querySelectorAll<HTMLElement>('.pcard').forEach((card) => {
+      const raw = byStem(party[Number(card.dataset.i)]).sav
+      const pic = (family: string, id: number) => { const r = files.record(family, id); try { return r ? parseRecord(r).frames[0].picture : null } catch { return null } }
+      const port = card.querySelector<HTMLCanvasElement>('.pc-portrait')!.getContext('2d')!
+      port.fillStyle = '#000'; port.fillRect(0, 0, 88, 88)
+      if (tables) {
+        const h = pic('HEAD3', headRecord(tables, raw[0xbb])), b = pic('BODY3', bodyRecord(tables, raw[0xbc]))
+        if (h) port.putImageData(toImageData(h), 0, 0)
+        if (b) port.putImageData(toImageData(b), 0, 40)
+      }
+      const ic = card.querySelector<HTMLCanvasElement>('.pc-icon')!.getContext('2d')!, p = buildIcon(files, raw, false)
+      ic.fillStyle = '#000'; ic.fillRect(0, 0, 24, 24)
+      if (p) ic.putImageData(toImageData(p), 0, 0)
+    })
     const has = party.length > 0
     const items: [string, string, boolean][] = [
       ['C', 'Create character', tables !== null],
@@ -220,7 +244,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
     if (b?.dataset.k) act(b.dataset.k)
   })
   tbody.addEventListener('click', (e) => {
-    const row = (e.target as HTMLElement).closest('tr')
+    const row = (e.target as HTMLElement).closest<HTMLElement>('[data-i]')
     if (row?.dataset.i === undefined) return
     const i = Number(row.dataset.i)
     if (i === current) act('V')

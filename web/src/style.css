@@ -371,3 +371,15 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 .game .turnstrip .ts.ally { color: var(--ega-green); }
 .game .turnstrip .ts.enemy { color: #ff8080; }
 .game .turnstrip .ts.now { border-color: var(--accent); color: #fff; }
+
+/* party cards (IMP-045) */
+.partyscreen .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 0.5rem; }
+.pcard { display: grid; grid-template-columns: auto 1fr auto; gap: 0.7rem; align-items: center; text-align: left; padding: 0.5rem; min-height: 0; }
+.pcard.current { border-color: var(--accent); background: #f2c94c10; }
+.pcard canvas.pc-portrait { width: 66px; height: 66px; }
+.pcard canvas.pc-icon { width: 48px; height: 48px; align-self: start; }
+.pc-body { display: grid; gap: 0.1rem; min-width: 0; color: var(--ega-green); }
+.pc-body strong { color: #fff; }
+.hpbar { display: block; height: 0.45rem; border-radius: 3px; background: #ffffff18; overflow: hidden; margin-top: 0.15rem; }
+.hpbar span { display: block; height: 100%; background: var(--ega-green); }
+.hpbar.low span { background: var(--ega-yellow); }
