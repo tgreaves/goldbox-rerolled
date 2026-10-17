@@ -1205,6 +1205,10 @@ Sound 6, the flight, sound 12.
 - **Stinking Cloud**: "Creates a noxious cloud" without a pause, a redraw showing the cloud cells (RandCom 4), then the pause.
 - **Gazes** (`3723_1cad`, `1e77`): the spell bolt, 4 frames, 45 ms ("reflects it!" adds a return flight). **Acid spit** (`3723_2c1c`): COMSPR 10 alone at 30 ms, then the starburst.
 
+### Side panel (O, `FUN_10ba_09e3`)
+
+Columns 23–38, from row 1: the combatant's name; "Hitpoints" (colour 10) with the HP at column 33 in light green (10) at full HP, yellow (14) below it (`FUN_10ba_0973`); "AC" (10) with the AC at column 26; the readied weapon's name, wrapped (`FUN_10ba_0fe2`); then, for one out of the fight (char[0x10D] = 0), its status word from `DS:1047` ("Okay", "Animated", "tempgone", "Running", "Unconscious", "Dying", "Dead", "Stoned", "Gone") in white, else "(Helpless)" in white if it has effect 0x33, 0x34, 0x35 or 0x1F (`DS:286C`).
+
 ### Palette (O)
 
 Drawing the combat screen frame (`FUN_10ba_2b88`, at battle start and after casting or using an item) calls `FUN_577f_00e3`: on EGA (`DS:4A1E` = 1) palette register 0 := colour 8 and register 8 := colour 0 (`FUN_1464_2a0d(reg, colour)`, INT 10h AX=1000h; colours ≥ 8 are sent as colour + 8, the intensity bit). Black shows as dark grey and dark grey as black: dungeon floors are dark grey, the mortar between stones black. The cleanup `FUN_320c_0000` → `FUN_577f_0105` restores both registers. The combat-icon editor (`FUN_417f_382d`) and the View screen (`FUN_4894_0ab3`) swap and restore the same way.

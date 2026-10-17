@@ -473,13 +473,15 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       if (st) for (const v of memorised(raw)) if (v > 0 && v < 0x80) { const n = st.get(v)?.name; if (n) counts.set(n, (counts.get(n) ?? 0) + 1) }
       const spells = [...counts].map(([n, k]) => (k > 1 ? `${n} ×${k}` : n)).join(', ')
       const effects = effectNames(engine, raw)
+      // the combat panel's "(Helpless)" (FUN_10ba_09e3): effects 0x33-0x35 and 0x1F
+      const helpless = up && engine.effectsOf(raw).some((e) => [0x1f, 0x33, 0x34, 0x35].includes(e.type))
       const train = t ? canTrain(t, raw) : false
       return `<button class="${cls}" data-i="${i}" title="${i === cur ? 'View' : 'Select'} ${escape(c.name)}">
         <canvas class="pixel rc-portrait" width="88" height="88"></canvas>
         <span class="rc-body">
           <span class="rc-top"><span class="rc-name">${escape(c.name)}</span><span class="rc-ac">AC ${c.ac}</span></span>
           <span class="hpbar${pct < 50 ? ' low' : ''}"><span style="width:${pct}%"></span></span>
-          <span class="rc-line"><span class="rc-hp">${up ? `HP ${c.hp}/${c.hpMax}` : c.status}</span>${weapon && it ? ` · ${escape(it.name(weapon))}` : ''}</span>
+          <span class="rc-line"><span class="rc-hp">${up ? `HP ${c.hp}/${c.hpMax}` : c.status}</span>${helpless ? ' (Helpless)' : ''}${weapon && it ? ` · ${escape(it.name(weapon))}` : ''}</span>
           ${spells ? `<span class="rc-line rc-spells" title="${escape(spells)}">✦ ${escape(spells)}</span>` : ''}
           ${effects.length || train ? `<span class="rc-badges">${effects.map((n) => `<span class="badge">${escape(n)}</span>`).join('')}${train ? '<span class="badge train">Ready to train</span>' : ''}</span>` : ''}
         </span>

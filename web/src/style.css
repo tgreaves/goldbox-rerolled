@@ -401,6 +401,7 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 .rcard.current { border-color: var(--accent); background: #f2c94c14; }
 .rcard.current .rc-name { color: #fff; }
 .rcard.npc .rc-name { color: var(--ega-magenta); }
+.rcard .rc-hp { color: var(--ega-green); } /* FUN_10ba_0973: light green at full HP, yellow when hurt */
 .rcard.hurt .rc-hp { color: var(--ega-yellow); }
 .rcard.down { opacity: 0.7; }
 .rcard.down .rc-hp { color: #ff8080; }

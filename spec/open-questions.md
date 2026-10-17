@@ -67,12 +67,11 @@ Part of [[spec/README]]. Ordered by what a browser reimplementation needs first.
 
 ## Port gaps from the 2026-10-17 audit
 
-Four audits compared the original with the port: data files loaded, engine routines reachable from the main loops (773 functions, 500 covered by spec or port), sound call sites, and the engine's own strings. Fixed straight away: the combat visuals ([[spec/combat]] "Combat visuals"), hit/miss sounds, long sounds played in full, combat footsteps, the damage and spell-result lines, script DAMAGE messages and status, duel texts, the after-battle chest picture, ROLF's icon. Since then: money Trade and Drop, treasure Detect, the scribing warning, Magic On/Off, item handlers on readying with the Spiritual Hammer, every spell handler (shared by combat and camp), ROB taking items, CHECK_PARTY's effect test, FIND_ITEM, NEWLINE, REDRAW, CLEAR_TOP and the PRINT_LIST rune glyphs, the river cleansing, the combat extras (Hold Person bolts, Fireball centring, the noxious cloud line, gaze and spit flights; the aim cursor slide is replaced by IMP-033), the combat palette swap, the 3D sky and floor colours, the cast and healing lines, the title sequence with its lightning and the credits. Still open, most visible first:
+Four audits compared the original with the port: data files loaded, engine routines reachable from the main loops (773 functions, 500 covered by spec or port), sound call sites, and the engine's own strings. Fixed straight away: the combat visuals ([[spec/combat]] "Combat visuals"), hit/miss sounds, long sounds played in full, combat footsteps, the damage and spell-result lines, script DAMAGE messages and status, duel texts, the after-battle chest picture, ROLF's icon. Since then: money Trade and Drop, treasure Detect, the scribing warning, Magic On/Off, item handlers on readying with the Spiritual Hammer, every spell handler (shared by combat and camp), ROB taking items, CHECK_PARTY's effect test, FIND_ITEM, NEWLINE, REDRAW, CLEAR_TOP and the PRINT_LIST rune glyphs, the river cleansing, the combat extras (Hold Person bolts, Fireball centring, the noxious cloud line, gaze and spit flights; the aim cursor slide is replaced by IMP-033), the combat palette swap, the 3D sky and floor colours, the cast and healing lines, the title sequence with its lightning and the credits, the combat panel's colours and "(Helpless)" on the cards. Still open, most visible first:
 
 **Rules and behaviour**: none left from the audit.
 
-**Pictures and effects**
-- Combat side panel wording and colours (`FUN_10ba_09e3`): "Hitpoints" green/yellow, "(Helpless)" (O; partly replaced on purpose)
+**Pictures and effects**: none left from the audit.
 
 **Files**
 - Roster import of `<name>.CHA/.ITM/.SPC` and `charlist.txt` from a DOS install (O)
