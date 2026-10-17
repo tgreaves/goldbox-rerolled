@@ -115,36 +115,60 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const note = (text: string) => print(text, false, 'note')
 
   // ------------------------------------------------------- pictures, sprites
-  const pictureCache = new Map<string, Picture[] | null>()
-  function frames(family: string, id: number): Picture[] | null {
+  const pictureCache = new Map<string, { picture: Picture; delay: number }[] | null>()
+  function animFrames(family: string, id: number): { picture: Picture; delay: number }[] | null {
     const key = `${family}${engine.block}#${id}`
     if (!pictureCache.has(key)) {
       const raw = files.record(`${family}${engine.block}`, id)
-      let pics: Picture[] | null = null
+      let pics: { picture: Picture; delay: number }[] | null = null
       try {
-        if (raw) pics = parseRecord(raw, family === 'PIC').frames.map((f) => f.picture)
+        if (raw) pics = parseRecord(raw, family === 'PIC').frames.map((f) => ({ picture: f.picture, delay: f.delay }))
       } catch { /* not an image */ }
       pictureCache.set(key, pics)
     }
     return pictureCache.get(key)!
   }
+  const frames = (family: string, id: number): Picture[] | null => animFrames(family, id)?.map((f) => f.picture) ?? null
+  const imageOf = new WeakMap<Picture, ImageData>()
+  const imageData = (p: Picture, sprite = false) => {
+    if (sprite) return spriteImage(p)
+    let d = imageOf.get(p)
+    if (!d) imageOf.set(p, (d = toImageData(p)))
+    return d
+  }
+  /** the running picture animation (spec/graphics.md, "Animation"): a frame stays up delay × 0.1 s, then the next, wrapping to the first */
+  let animTimer: number | null = null
+  const stopAnimation = () => { if (animTimer !== null) { window.clearTimeout(animTimer); animTimer = null } }
   /** Pictures and portraits are opaque; encounter sprites stand in the 3D scene instead (World.showSprite). */
   function paint(pics: { pic: Picture; x: number; y: number; sprite?: boolean }[]) {
     const g = sizeCanvas(overlay, 88, 88)
     g.clearRect(0, 0, 88, 88)
     for (const { pic, x, y, sprite } of pics) {
-      blit(g, sprite ? spriteImage(pic) : toImageData(pic), x, y)
+      blit(g, imageData(pic, sprite), x, y)
     }
     overlay.hidden = pics.length === 0
   }
   function showPicture(p: { pic: number } | { head: number; body: number } | null) {
+    stopAnimation()
     if (!p) {
       world.showSprite(null)
       return paint([])
     }
     if ('pic' in p) {
-      const f = frames('PIC', p.pic)
-      if (f) paint([{ pic: f[0], x: 0, y: 0 }])
+      const f = animFrames('PIC', p.pic)
+      if (!f?.length) return
+      let i = 0
+      paint([{ pic: f[0].picture, x: 0, y: 0 }])
+      if (f.length > 1) {
+        const next = () => {
+          animTimer = window.setTimeout(() => {
+            i = (i + 1) % f.length
+            paint([{ pic: f[i].picture, x: 0, y: 0 }])
+            next()
+          }, Math.max(50, f[i].delay * 100))
+        }
+        next()
+      }
     } else {
       const head = frames('HEAD', p.head)?.[0], body = frames('BODY', p.body)?.[0]
       paint([...(head ? [{ pic: head, x: 0, y: 0 }] : []), ...(body ? [{ pic: body, x: 0, y: 40 }] : [])])
@@ -302,8 +326,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         return
       }
       if (what === 'camp') {
+        // the camp screen shows PIC<block> #29, the campfire, animated (FUN_10ba_27d9 in game mode 2)
         townMode = 'camp'
-        try { await camp(campUi) } finally { townMode = null }
+        showPicture({ pic: 29 })
+        try { await camp(campUi) } finally { townMode = null; showPicture(null) }
         return
       }
       if (what === 'shop' || what === 'temple' || what === 'treasure') {
@@ -1225,6 +1251,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
 
   function leave() {
+    stopAnimation()
     running = false
     observer.disconnect()
     window.removeEventListener('keydown', onKey)

@@ -20,7 +20,7 @@ Reached by `E` in a map area or in the wilderness command menu ([[spec/architect
 
 Camp screen:
 
-1. Save the game mode `DS:49F3` and set it to **2** (camp). Clear the healing step counter `DS:6DD8` and the rest-time vector `DS:6DC2` (7 words).
+1. Save the game mode `DS:49F3` and set it to **2** (camp). Clear the healing step counter `DS:6DD8` and the rest-time vector `DS:6DC2` (7 words). Redraw the view (`FUN_10ba_27d9`): in game mode 2 it shows **`PIC<block>` record 29**, the campfire (two frames, animated by the menu loop); in mode 6 (combat results) it shows record 1.
 2. Print "The party makes camp..." and pause.
 3. **Clear every member's pending spells** (`FUN_3f81_0214`): memorised slots ≥ 0x80 → 0, char[0x2C] = 0, bit 7 cleared on every scroll spell byte. The same is done again when leaving, so pending memorisations and scribes live only inside one camp session.
 4. Menu loop (below) until **E**xit / Esc, or until a rest was interrupted.
