@@ -3,7 +3,7 @@
 import type { GameFiles } from '../store/gamefiles'
 import { parseCharacter, RACES, CLASSES, ALIGNMENTS } from '../data/character'
 import type { StoredCharacter } from '../store/user'
-import { escape, sheetHtml } from './sheet'
+import { escape, onClose, sheetHtml } from './sheet'
 import { parseRecord, toImageData, EGA, type Picture } from '../data/image'
 import { RACE_MENU, Tables, abilityRange, alignmentsFor, begin, bodyRecord, classesFor, combatStats, headRecord, hpMax, hpMin, modifyStep, rollAbilities, setName } from '../rules/chargen'
 import { buildIcon } from '../render/icon'
@@ -15,11 +15,12 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
         const p = parseCharacter(c.sav)
         return `<li><button data-i="${i}">${escape(p.name)} <span class="muted">${p.race} ${p.cls}, level ${p.levels.map((l) => l.level).join('/')}</span></button></li>`
       }).join('')}</ol><form method="dialog"><button>Cancel</button></form>`
+      const stop = onClose(dialog, () => resolve(null))
       dialog.querySelectorAll<HTMLButtonElement>('ol button').forEach((b) => b.addEventListener('click', () => {
+        stop()
         dialog.close()
         resolve(list[Number(b.dataset.i)])
       }))
-      dialog.addEventListener('close', () => resolve(null), { once: true })
       dialog.showModal()
     })
   }
@@ -27,7 +28,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
   function confirm(text: string): Promise<boolean> {
     return new Promise((resolve) => {
       dialog.innerHTML = `<p>${escape(text)}</p><form method="dialog" class="yn"><button value="y" class="primary"><u>Y</u>es</button><button value="n"><u>N</u>o</button></form>`
-      dialog.addEventListener('close', () => resolve(dialog.returnValue === 'y'), { once: true })
+      onClose(dialog, () => resolve(dialog.returnValue === 'y'))
       dialog.showModal()
     })
   }
@@ -38,12 +39,13 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
       let done = false
       dialog.innerHTML = `<h2>${title}</h2><ol class="pick">${items.map((t, i) =>
         `<li><button data-i="${i}">${escape(t)}</button></li>`).join('')}</ol><form method="dialog"><button>Exit</button></form>`
+      const stop = onClose(dialog, () => { if (!done) resolve(null) })
       dialog.querySelectorAll<HTMLButtonElement>('ol button').forEach((b) => b.addEventListener('click', () => {
         done = true
+        stop()
         dialog.close()
         resolve(Number(b.dataset.i))
       }))
-      dialog.addEventListener('close', () => { if (!done) resolve(null) }, { once: true })
       dialog.showModal()
       dialog.querySelector<HTMLButtonElement>('ol button')?.focus()
     })
@@ -75,7 +77,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
       dialog.innerHTML = sheetHtml(parseCharacter(c)) +
         `<form method="dialog" class="yn"><span>Keep this character?</span><button value="y" class="primary"><u>Y</u>es</button><button value="n"><u>N</u>o, roll again</button></form>`
       const keep = await new Promise<boolean>((resolve) => {
-        dialog.addEventListener('close', () => resolve(dialog.returnValue === 'y'), { once: true })
+        onClose(dialog, () => resolve(dialog.returnValue === 'y'))
         dialog.showModal()
       })
       if (keep) break
@@ -86,7 +88,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
       name = await new Promise<string>((resolve) => {
         dialog.innerHTML = `<form method="dialog" class="namebox"><label>Character name: <input maxlength="15" autocomplete="off"></label><button class="primary">OK</button></form>`
         const input = dialog.querySelector('input')!
-        dialog.addEventListener('close', () => resolve(input.value.toUpperCase().replace(/[^ -z]/g, '').trim()), { once: true })
+        onClose(dialog, () => resolve(input.value.toUpperCase().replace(/[^ -z]/g, '').trim()))
         dialog.showModal()
         input.focus()
       })
@@ -112,7 +114,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
         else c[0xbc] = (c[0xbc] % 12) + 1
         draw()
       }))
-      dialog.addEventListener('close', () => resolve(), { once: true })
+      onClose(dialog, () => resolve())
       draw()
       dialog.showModal()
     })
@@ -179,14 +181,14 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
         draw()
       }
       dialog.addEventListener('click', onClick)
-      dialog.addEventListener('close', () => {
+      onClose(dialog, () => {
         dialog.removeEventListener('click', onClick)
         if (done) return
         done = true
         const keep = dialog.returnValue === 'k'
         if (!keep) c.set(kept, 0xbd)
         resolve(keep)
-      }, { once: true })
+      })
       draw()
       dialog.showModal()
     })
@@ -234,7 +236,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
         draw()
       }
       window.addEventListener('keydown', onArrow, true)
-      dialog.addEventListener('close', async () => {
+      onClose(dialog, async () => {
         window.removeEventListener('keydown', onArrow, true)
         const kept = dialog.returnValue === 'k'
         if (kept) {
@@ -243,7 +245,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
           combatStats(c)
         } else c.set(before)
         resolve(kept)
-      }, { once: true })
+      })
       draw()
       dialog.showModal()
     })

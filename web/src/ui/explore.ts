@@ -25,6 +25,7 @@ import { castOutside, itemSpells, spendUse, targetKind } from '../rules/magic'
 import { Tables, fileStem } from '../rules/chargen'
 import { creatorTools } from './creator'
 import { playEnding } from './ending'
+import { onClose } from './sheet'
 import { fontChoice, gameFontAvailable, setFontChoice } from './gamefont'
 import { unexepack } from '../data/exepack'
 import { checkTraining, newSpellChoices, train, willBecome } from '../rules/training'
@@ -274,7 +275,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           const r = await runBattle({
             engine, files, canvas: combatCanvas, menu, print: (t) => print(t, false), view: (c) => new Promise<void>((resolve) => {
               sheet(parseCharacter(c))
-              dialog.addEventListener('close', () => resolve(), { once: true })
+              onClose(dialog, () => resolve())
             }),
             sound: play, pause: (ms) => io.pause!(ms), input: battleInput, refreshRoster: () => drawRoster(), cancelMenu: () => cancelMenu(),
           })
@@ -400,7 +401,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     inputNumber: async () => Math.min(Number((await input('number')).replace(/\D/g, '') || 0), 65535),
     view: (mode) => new Promise<void>((resolve) => {
       sheet(parseCharacter(engine.cur), { mode })
-      dialog.addEventListener('close', () => resolve(), { once: true })
+      onClose(dialog, () => resolve())
     }),
     refresh: () => drawRoster(),
   }
@@ -411,7 +412,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     print: (text, clear) => print(text, !!clear),
     view: () => new Promise<void>((resolve) => {
       sheet(parseCharacter(engine.cur))
-      dialog.addEventListener('close', () => resolve(), { once: true })
+      onClose(dialog, () => resolve())
     }),
     save: () => saveGame(),
     refresh: () => { drawRoster(); showWhere() },

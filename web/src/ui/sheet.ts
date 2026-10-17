@@ -23,3 +23,18 @@ export function sheetHtml(c: Character): string {
       <table>${MONEY.map((m, i) => `<tr><th>${m}</th><td>${c.money[i]}</td></tr>`).join('')}</table>
     </div>`
 }
+
+/**
+ * Run `fn` on the dialog's next real close. `dialog.close()` delivers its close event later, as a
+ * task; when the next step has already reopened the dialog that late event must not end the new
+ * step, so an event arriving while the dialog is open is ignored and the listener waits on.
+ */
+export function onClose(dialog: HTMLDialogElement, fn: () => void): () => void {
+  const h = () => {
+    if (dialog.open) return
+    dialog.removeEventListener('close', h)
+    fn()
+  }
+  dialog.addEventListener('close', h)
+  return () => dialog.removeEventListener('close', h)
+}
