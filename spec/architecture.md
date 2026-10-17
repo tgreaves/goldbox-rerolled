@@ -99,7 +99,7 @@ Repeated while scripts keep changing area:
 
 1. Read the square's event byte; clear ECL 0x6DD5; remember the current character.
 2. Area kind `DS:49FA` = 1, run **`on_enter`**, game mode 4.
-3. If ECL 0x49E6 = 0: area 25 → kind 2, area 26 → kind 3, area 27 → kind 4, all in mode 3 (overland). On entering area 26 with ECL 0x4AB3 = 0xFE and 0x4AA2 = 0, `FUN_4804_06b3(1)` also runs (**?** a story event).
+3. If ECL 0x49E6 = 0: area 25 → kind 2, area 26 → kind 3, area 27 → kind 4, all in mode 3 (overland). On entering area 26 with ECL 0x4AB3 = 0xFE and 0x4AA2 = 0, `FUN_4804_06b3(1)` also runs: the river cleansing ([[spec/overland]]).
 4. Run **`on_move`**, then, if the area did not change again, **`on_step`**. Restore the current character and redraw.
 
 ## Starting a new game (I)

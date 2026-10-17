@@ -294,6 +294,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     picture: (p) => { topBlank = false; showPicture(p) },
     clearTop,
     glyphs,
+    river: cleanseRiver,
     sprite(sprite, picture, distance) {
       const f = frames('SPRIT', sprite)
       if (distance === 0 && picture !== 255) {
@@ -1064,15 +1065,50 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const tileCache = new Map<number, HTMLCanvasElement | null>()
   const asCanvas = (img: ImageData) => pixels(img)
   /** Tile id 1-255: frame id-1 of SQRPACI #1 (ids 1-128) or #2 (129-255). */
+  function tilePicture(id: number): Picture | null {
+    const f = id - 1
+    const raw = files.record('SQRPACI', f > 127 ? 2 : 1)
+    try { return raw ? parseRecord(raw).frames[f & 127].picture : null } catch { return null }
+  }
+  /** the cleansed river tiles, recoloured as far as the cleansing has gone (FUN_1464_1e5c) */
+  const riverPics = new Map<number, Picture>()
+  function recolour(id: number, all: boolean) {
+    const map = Overland.CLEANSED.get(id)
+    let p = riverPics.get(id)
+    if (!p) { const base = tilePicture(id); if (!base || !map) return; p = { ...base, pixels: base.pixels.slice() }; riverPics.set(id, p) }
+    // a partial pass takes one matching pixel in four (Random(4) = 0)
+    for (let i = 0; i < p.pixels.length; i++) {
+      const to = map!.get(p.pixels[i])
+      if (to !== undefined && (all || Math.random() < 0.25)) p.pixels[i] = to
+    }
+    tileCache.delete(id)
+  }
   function wildTile(id: number): HTMLCanvasElement | null {
+    if (!riverPics.has(id) && engine.read(0x4aa2) !== 0 && Overland.CLEANSED.has(id)) recolour(id, true) // reapplied on load
     if (!tileCache.has(id)) {
-      const f = id - 1
-      const raw = files.record('SQRPACI', f > 127 ? 2 : 1)
+      const p = riverPics.get(id) ?? tilePicture(id)
       let c: HTMLCanvasElement | null = null
-      try { if (raw) c = asCanvas(toImageData(parseRecord(raw).frames[f & 127].picture)) } catch { /* missing frame */ }
+      try { if (p) c = asCanvas(toImageData(p)) } catch { /* missing frame */ }
       tileCache.set(id, c)
     }
     return tileCache.get(id)!
+  }
+  /** FUN_4804_06b3(1): nine partial passes while the view moves down the river, then a full one */
+  async function cleanseRiver() {
+    const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+    if (!engine.wild) return
+    canvas.hidden = true
+    wildview.hidden = false
+    drawWild([17, 15])
+    for (const at of Overland.CLEANSING_VIEW) {
+      for (const id of Overland.CLEANSED.keys()) recolour(id, false)
+      drawWild(at)
+      await sleep(150)
+    }
+    for (const id of Overland.CLEANSED.keys()) recolour(id, true)
+    drawWild([23, 25])
+    await sleep(engine.speed * 225)
+    await sleep(engine.speed * 225)
   }
   /** The party marker: ICON records 0, 128, 1, 129, 2, 130 in turn, colour 0 transparent. */
   const partyFrames: HTMLCanvasElement[] = []
@@ -1082,11 +1118,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
   let partyPhase = 0
   /** The 5x5 view (FUN_54cf_0000, FUN_54fa_0000); the marker advances a frame per redraw. */
-  function drawWild() {
+  function drawWild(at?: [number, number]) {
     const w = engine.wild
     if (!w) return
     const g = sizeCanvas(wildview, 120, 120)
-    const [gx, gy] = engine.wildPosition
+    const [gx, gy] = at ?? engine.wildPosition
     const { x0, y0, col, row } = Overland.window(gx, gy)
     g.fillStyle = '#000'
     g.fillRect(0, 0, 120, 120)

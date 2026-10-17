@@ -132,7 +132,7 @@ Variables the engine itself reads or writes, so a port must give them meaning. E
 | 0x49FD, 0x49FE | written values force a redraw (**?** meaning) | above |
 | 0x49FF | monster/portrait toggles copy (save) | [[spec/savegame]] |
 | 0x4A00–0x4A1F | per-area variables, zeroed on area entry | this file |
-| 0x4AA2 | if ≠ 0 on load, run `FUN_4804_06b3` (**?**) | [[spec/savegame]] |
+| 0x4AA2 | river cleansed (255): river tiles passable and recoloured; on load, `FUN_4804_06b3(0)` | [[spec/overland]] |
 | 0x4AB3 | 0xFF changes arid wilderness terrain | [[spec/combat]] |
 | 0x4AFA–0x4AFF | wall-set record ids and slots (save) | [[spec/savegame]] |
 | 0x6DA8 | trainable class mask for the training hall | [[spec/progression]] |

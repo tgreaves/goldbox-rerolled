@@ -72,7 +72,23 @@ export class Overland {
     return (t >= 0x66 && t <= 0x6c) || t === 0x72
   }
 
-  /** Step for a facing ×2 (0-7). */
+  /**
+   * The river cleansing's recolouring (FUN_4804_06b3): tile id → colour map. The river itself
+   * (frames DS:0900) turns black to blue and grey to green (DS:091D → 092D); its banks (DS:090B)
+   * grey to green (→ 093D). Frame bytes above 0x7F are frames of SQRPACI #2.
+   */
+  static readonly CLEANSED: ReadonlyMap<number, ReadonlyMap<number, number>> = (() => {
+    const id = (f: number) => (f > 0x7f ? 129 + (f & 0x7f) : f + 1)
+    const river = new Map([[0, 1], [7, 2]]), banks = new Map([[7, 2]])
+    const m = new Map<number, ReadonlyMap<number, number>>()
+    for (const f of [0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x71, 0xe0, 0xe1, 0xe2]) m.set(id(f), river)
+    for (const f of [0x56, 0x57, 0x58, 0x59, 0x6c, 0x6d, 0x6e, 0x6f, 0x70, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0xdf, 0xf3, 0xf5]) m.set(id(f), banks)
+    return m
+  })()
+  /** The view positions the cleansing shows, one per pass (DS:094D, DS:095F), then the last one. */
+  static readonly CLEANSING_VIEW: readonly [number, number][] = [[17, 15], [17, 15], [17, 15], [19, 20], [19, 20], [19, 20], [23, 25], [23, 25], [23, 25]]
+
+    /** Step for a facing ×2 (0-7). */
   step(facing2: number): [number, number] {
     return [this.dx[facing2 & 7], this.dy[facing2 & 7]]
   }

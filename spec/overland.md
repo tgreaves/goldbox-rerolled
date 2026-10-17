@@ -46,6 +46,16 @@ Each square shows its map tile, except the nine plot-dependent squares, which sh
 
 The party marker (`FUN_58af_04fc`) is drawn in its cell, cycling through the six frames: slot 9 + phase / 2, frame phase mod 2, with phase `DS:6DDC` advanced by 1 (mod 6) on every redraw. When the facing ×2 (`DS:6AAF`) is above 3 (south or west) the image is mirrored left to right (`FUN_1464_15c7`).
 
+## River cleansing (O, `FUN_4804_06b3`)
+
+After the pyramid's sorcerer is beaten (ECL 0x4AB3 = 0xFE), entering area 26 with 0x4AA2 = 0 runs `FUN_4804_06b3(1)` between `on_enter` and `on_move` ([[spec/architecture]]). The script then prints "AS YOU LEAVE THE SORCERER'S PYRAMID..." and sets 0x4AA2 = 255 (ECL7 0x9AE0 → 0xAE8F, 0xAF35), which also opens the river to travel.
+
+- `FUN_1464_1e5c(image, partial, frame, to, from)` recolours one frame of a tile image in place by a 16-entry colour map. With `partial` ≠ 0 each matching pixel changes only if `Random(4)` = 0.
+- River frames (`DS:0900`, 11 bytes; above 0x7F = frame & 0x7F of the second image): 0x65–0x6B, 0x71, 0xE0–0xE2, so tile ids 0x66–0x6C, 0x72, 0xE1–0xE3. Map `DS:091D` → `DS:092D`: colour 0 → 1, 7 → 2 (black pollution to blue water, grey dead land to green).
+- Bank frames (`DS:090B`, 18 bytes): 0x56–0x59, 0x6C–0x70, 0x72–0x77, 0xDF, 0xF3, 0xF5 (tile ids 0x57–0x5A, 0x6D–0x71, 0x73–0x78, 0xE0, 0xF4, 0xF6). Map → `DS:093D`: 7 → 2.
+- Sequence with argument 1: the view drawn at (17, 15) (`FUN_54fa_0000(x, y)` then the screen flip `FUN_1464_1b52`); nine times: a partial pass over every listed frame, then the view at the next position of `DS:094D`/`DS:095F`: (17, 15) ×3, (19, 20) ×3, (23, 25) ×3. Then a full pass, the view at (23, 25) and two message pauses. No delay of its own between passes (the recolouring is slow on the original hardware; the port waits 150 ms).
+- With argument 0 (loading a save with 0x4AA2 ≠ 0) only the full pass runs, so the river stays clean.
+
 ## Moving (O, `FUN_3e76_0818`)
 
 The command menu offers Cast, View, Encamp, Search, Look; the cursor keys set the facing to N/E/S/W and return a move. The main loop then runs `on_move` (which can cancel the move with ECL 0x6DC9 = 255 or change area), resolves the move, and runs `on_step`, as in map areas.

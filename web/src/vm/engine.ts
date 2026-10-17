@@ -67,6 +67,8 @@ export interface Io {
   clearTop?(on: boolean): void
   /** PRINT_LIST (FUN_29c3_2e7d): raw font glyphs, in the cleared view at a text cell, or inline in the text. */
   glyphs?(codes: number[], at: { col: number; row: number } | null): void
+  /** The river cleansing (FUN_4804_06b3(1)): the polluted river tiles recolour as the view moves down it. */
+  river?(): Promise<void>
   /** PAUSE: wait (game speed x 225 ms in the original). */
   pause(ms: number): Promise<void>
   /** Engine screens that are not implemented yet (combat, shops, camp ...). */
@@ -1267,6 +1269,8 @@ export class Engine {
       this.B[EDGE - B0] = 0
       await this.run(this.vectors[4])
       if (this.quit) return
+      // FUN_29c3_31b4 step 3: the Stojanow clears once the pyramid's sorcerer is beaten (FUN_4804_06b3(1))
+      if (this.overland && this.area === 26 && this.read(0x4ab3) === 0xfe && this.read(0x4aa2) === 0) await this.io.river?.()
       this.areaChanged = false
       await this.run(this.vectors[0])
       if (!this.areaChanged && !this.quit) await this.run(this.vectors[1])
