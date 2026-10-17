@@ -445,12 +445,29 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 /* PRINT_LIST glyphs inline in the text (rune passwords) */
 .game .text canvas.glyphs { height: 1.2em; width: auto; image-rendering: pixelated; vertical-align: -0.2em; margin-left: 0.3em; }
 
-/* The original's rope frames (IMP-051): 8X8D1 #202 tiles drawn 4× into --rope, shown at 2× */
+/* The original's rope frames (IMP-051): 8X8D1 #202 tiles drawn 4× into --rope, shown at 2×. The panels
+   touch, and each leaves out the edge its neighbour already draws, so every dividing line is drawn once
+   and the yellow squares fall where frames meet, as on the original screen. */
 .frames-original .game .view, .frames-original .game .party, .frames-original .game .map,
 .frames-original .game .text, .frames-original dialog.panel {
   border: 16px solid transparent; border-image: var(--rope) 32 round; border-radius: 0;
 }
-@media (max-width: 760px) {
+.frames-original .game { row-gap: 0; column-gap: 0; }
+.frames-original .game .commands { margin-top: 0.5rem; }
+.frames-original .game .side { gap: 0; }
+/* view | party over map / text */
+.frames-original .game .party { border-left-width: 0; }
+.frames-original .game .map { border-left-width: 0; border-top-width: 0; }
+.frames-original .game .text { border-top-width: 0; }
+/* wide screens: view | party | map, the map as tall as the row */
+@media (min-width: 1200px) and (min-aspect-ratio: 4/3) {
+  .frames-original .game .map { border-top-width: 16px; height: auto; aspect-ratio: auto; align-self: stretch; }
+}
+/* phones and narrow windows: view / party | map / text */
+@media (max-width: 760px), (max-aspect-ratio: 4/5) {
   .frames-original .game .view, .frames-original .game .party, .frames-original .game .map,
   .frames-original .game .text, .frames-original dialog.panel { border-width: 12px; }
+  .frames-original .game .party { border-top-width: 0; }
+  .frames-original .game .map { border-top-width: 0; border-left-width: 0; }
+  .frames-original .game .text { border-top-width: 0; }
 }
