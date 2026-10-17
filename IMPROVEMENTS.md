@@ -33,6 +33,7 @@ Related: IMP-034 brought the Lightning Bolt path and bounce, Stinking Cloud squa
 | IMP-047 | Sharp scaling: every picture is enlarged 4× by whole pixels, so each original pixel stays an even square, and only the last stretch to the screen is smoothed; applies after a reload. (Scale2x was tried and dropped: it smears the EGA art into blobs.) **Setting**: Pixel (default) | The 320 × 200 EGA pixels |
 | IMP-050 | The title screens show "Press any key or tap to continue" below the picture | No prompt ([`spec/menus.md`](spec/menus.md), "Start-up sequence") |
 | IMP-051 | The panels (view, party, map, text, dialogs) are framed with the original's rope border: the yellow corner square and red rope tiles of `8X8D1` #202 (20–22), built in the browser from the player's file and stretched around panels of any size. **Setting**: Borders, Original rope (default) or Plain | The same tiles around the fixed 40 × 25-cell screen layout, with a yellow square where frames meet (`FUN_13f1_0000`, frame style 0) |
+| IMP-052 | The after-battle summary (outcome, treasure, experience) is its own block in the text window, with a Continue button, while the battlefield stays in view | A framed window over the whole screen, "press <enter>/<return> to continue" (`FUN_2e08_0916`, [`spec/combat.md`](spec/combat.md), "Aftermath") |
 | IMP-046 | One Settings panel (command bar and party screen): game speed, sound device, font, text size (normal or large), graphics | Speed in camp Alter or combat Done; sound device in the installer's `POOL.CFG`; one font and size |
 
 ## Controls

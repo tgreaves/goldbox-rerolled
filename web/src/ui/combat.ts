@@ -12,7 +12,7 @@ export interface BattleScreen {
   files: GameFiles
   canvas: HTMLCanvasElement
   menu(items: string[], opts?: { prompt?: string; vertical?: boolean }): Promise<number>
-  print(text: string): void
+  print(text: string, clear?: boolean): void
   /** a skippable wait (a click, tap or key ends it early) */
   pause(ms: number): Promise<void>
   view(c: Uint8Array): Promise<void>
@@ -361,7 +361,9 @@ export async function runBattle(s: BattleScreen) {
       draw()
     })
     await queue
-    for (const m of result.messages) s.print(m)
+    // FUN_2e08_0916: the summary in its own framed screen, then "press <enter>/<return> to continue"
+    result.messages.forEach((m, i) => s.print(m, i === 0))
+    if (result.messages.length && !e.quit) await s.menu(['CONTINUE'], { prompt: 'Press Enter to continue' })
     return result
   } finally {
     resize.disconnect()

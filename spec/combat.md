@@ -264,7 +264,7 @@ Every list entry in play (c[0x10D] ≠ 0) and not Animated receives, so in pract
 | 9, 15 (three classes) | share / 3 |
 | 1, 3, 4, 7 | share |
 
-No level-cap check here (training enforces caps, [[spec/progression]]). The summary (`FUN_2e08_0916`) shows the share before the bonus or division: "The party has won." / "The party has fled." (shown as 0) / "The party has found Treasure!", or "You have won/lost the duel.", then "Each character receives N experience points." ("The duelist receives …").
+No level-cap check here (training enforces caps, [[spec/progression]]). The summary (`FUN_2e08_0916`) shows the share before the bonus or division: "The party has won." / "The party has fled." (shown as 0) / "The party has found Treasure!", or "You have won/lost the duel.", then "Each character receives N experience points." ("The duelist receives …"). Layout: a rope-framed window over the whole screen (`FUN_13f1_02e8`, cells 1–38 × 1–22, style 0), the outcome at row 1, the treasure line at row 3, "Each character receives N" at row 5 and "experience points." at row 7 (colour 10), then the bottom-line prompt "press <enter>/<return> to continue" (O).
 
 #### Cleanup (O, `FUN_2e08_11ac`)
 

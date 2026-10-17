@@ -1685,7 +1685,7 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
       if (f.c[0x10c] === 3) { f.c[0x10c] = 0; f.c[0x10d] = 1 }
       else { const i = e.nodes.indexOf(f.c); if (i >= 0) e.nodes.splice(i, 1); e.inventory.delete(f.c) }
     }
-    msgs.push('The party has fled.')
+    msgs.push('The party has fled.', 'Each character receives 0 experience points.')
   } else {
     e.write(0x6dc7, 0x80)
     msgs.push('The END!', 'The monsters rejoice for the party has been destroyed')

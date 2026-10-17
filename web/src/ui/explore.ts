@@ -336,7 +336,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         app.querySelector('.game')!.classList.add('in-combat')
         try {
           const r = await runBattle({
-            engine, files, canvas: combatCanvas, menu, print: (t) => print(t, false), view: (c) => new Promise<void>((resolve) => {
+            engine, files, canvas: combatCanvas, menu, print: (t, clear) => print(t, !!clear), view: (c) => new Promise<void>((resolve) => {
               sheet(parseCharacter(c), { combat: true })
               onClose(dialog, () => resolve())
             }),
