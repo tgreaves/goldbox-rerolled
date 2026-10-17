@@ -11,6 +11,8 @@ export interface TownUi {
   menu(items: string[], opts?: { prompt?: string; vertical?: boolean }): Promise<number>
   print(text: string, clear?: boolean): void
   inputNumber(): Promise<number>
+  /** the shop's Buy as one panel (IMP-042); without it Buy is the original's list */
+  buy?(): Promise<void>
   /** open the current character's sheet (items menu with Sell/Id in shops) and wait for it to close */
   view(mode: 'shop' | 'temple' | 'treasure'): Promise<void>
   refresh(): void
@@ -98,7 +100,8 @@ export async function shop(ui: TownUi) {
     const { name, c } = cur(e)
     ui.print(`${name} has ${coinValue(moneyOf(c))} gp in coins.`, true)
     const o = opts[await ui.menu(opts)]
-    if (o === 'BUY') {
+    if (o === 'BUY' && ui.buy) await ui.buy()
+    else if (o === 'BUY') {
       for (;;) {
         const stock = e.treasure
         const i = await ui.menu([...stock.map((it) => `${t.name(it)} — ${it.value} gp`), 'EXIT'], { prompt: `${cur(e).name} buys:`, vertical: true })

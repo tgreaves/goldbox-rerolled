@@ -328,3 +328,17 @@ dialog.panel.wide { max-width: min(76rem, 97vw); width: 100%; }
 .enc meter { flex: 1; height: 0.8rem; }
 .item-info { display: grid; gap: 0.15rem; margin: 0.8rem 0 0.3rem; padding: 0.5rem 0.7rem; border-left: 3px solid var(--accent); background: #ffffff08; }
 @media (max-width: 760px) { .sheet2 { grid-template-columns: 1fr; } }
+
+/* shop Buy panel (IMP-042) */
+.shop-buyer, .shop-filter { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; margin: 0.4rem 0; }
+.shop-buyer button.on, .shop-filter button.on { border-color: var(--accent); color: var(--accent); }
+.shop-filter label { margin-left: 0.6rem; color: var(--muted); display: flex; gap: 0.3rem; align-items: center; }
+table.shop { width: 100%; border-collapse: collapse; margin: 0.4rem 0; }
+table.shop th { text-align: left; color: var(--muted); font-weight: 500; padding: 0.2rem 0.4rem; }
+table.shop td { padding: 0.25rem 0.4rem; border-top: 1px solid #ffffff10; color: var(--ega-green); vertical-align: middle; }
+table.shop .num { text-align: right; font-variant-numeric: tabular-nums; }
+table.shop td.cmp { color: var(--text); font-size: 0.9rem; }
+table.shop tr.unusable td { color: var(--muted); }
+table.shop small.cant { display: block; color: var(--ega-yellow); font-size: 0.75rem; }
+table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
+@media (max-width: 640px) { table.shop td.cmp, table.shop th:nth-child(4) { display: none; } }

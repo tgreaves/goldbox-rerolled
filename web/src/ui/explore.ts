@@ -15,9 +15,9 @@ import { Overland } from '../rules/overland'
 import { itemsFile, type Item } from '../data/items'
 import { buildIcon } from '../render/icon'
 import { effectsFile } from '../data/effects'
-import { capacity, ready, recalc, unready } from '../rules/equip'
+import { canTakeItem, capacity, ready, recalc, unready } from '../rules/equip'
 import { drop, halve, join, trade, unavailable } from '../rules/inventory'
-import { pay, receive, sellOffer } from '../rules/money'
+import { coinValue, moneyOf, pay, receive, sellOffer } from '../rules/money'
 import { shop, temple, treasure, type TownUi } from './town'
 import { camp, cast, type CampUi } from './camp'
 import { runBattle } from './combat'
@@ -409,6 +409,98 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       onClose(dialog, () => resolve())
     }),
     refresh: () => drawRoster(),
+    buy: () => shopPanel(),
+  }
+
+  /**
+   * The shop's Buy on one panel (IMP-042): pick the buyer, filter the stock, see the price, weight,
+   * whether the buyer's class can use it and what readying it in place of the current item would
+   * change; buying follows the original (FUN_4c2d_09ae: room, weight, then payment from the buyer's coins).
+   */
+  function shopPanel(): Promise<void> {
+    const t = engine.items!
+    let filter: 'all' | 'weapons' | 'armour' | 'other' = 'all'
+    let onlyUsable = false
+    let message = ''
+    const kind = (it: Item) => {
+      const b = t.baseOf(it)
+      if (!b) return 'other'
+      if (b.slot === 0 || it.type === 73 || it.type === 28) return 'weapons'
+      if (b.slot >= 1 && b.slot <= 9) return 'armour'
+      return 'other'
+    }
+    const compare = (c: Uint8Array, items: Item[], it: Item) => {
+      const b = t.baseOf(it)
+      if (!b || (b.slot > 9 && it.type !== 73 && it.type !== 28)) return ''
+      const cc = c.slice(), copies = items.map((x) => x.copy()), mine = it.copy()
+      copies.push(mine)
+      // take off what the new item would replace (same slot; a weapon also frees a shield's hand if it needs two)
+      for (const x of copies) {
+        const xb = t.baseOf(x)
+        if (x === mine || !x.ready || !xb || x.cursed) continue
+        if (xb.slot === b.slot && b.slot !== 9 && b.slot !== 10) x.ready = false
+        if (b.hands === 2 && xb.slot === 1) x.ready = false
+      }
+      recalc(cc, copies, t)
+      const why = ready(cc, copies, mine, t)
+      if (why) return `can't ready: ${why}`
+      const before = parseCharacter(c), after = parseCharacter(cc)
+      const d = ([['AC', before.ac, after.ac], ['THAC0', before.thac0, after.thac0], ['Dmg', before.damage, after.damage], ['Move', before.movement, after.movement]] as [string, number | string, number | string][])
+        .filter(([, x, y]) => x !== y).map(([k, x, y]) => `${k} ${x}→${y}`)
+      return d.length ? d.join(', ') : 'no change'
+    }
+    return new Promise((resolve) => {
+      const render = () => {
+        const buyer = engine.cur, items = engine.itemsOf(buyer), name = parseCharacter(buyer).name
+        const gold = coinValue(moneyOf(buyer)), pooled = coinValue(engine.money)
+        const stock = engine.treasure.map((it, i) => ({ it, i })).filter(({ it }) =>
+          (filter === 'all' || kind(it) === filter) && (!onlyUsable || ((t.baseOf(it)?.classes ?? 0) & buyer[0xb0]) !== 0))
+        const rows = stock.map(({ it, i }) => {
+          const usable = ((t.baseOf(it)?.classes ?? 0) & buyer[0xb0]) !== 0
+          const why = canTakeItem(buyer, items, it) || (it.value > gold && it.value > pooled ? 'Not enough money' : '')
+          return `<tr class="${usable ? '' : 'unusable'}"><td>${escape(t.name(it))}${usable ? '' : '<small class="cant">not for this class</small>'}</td>
+            <td class="num">${it.value}</td><td class="num">${it.weight * Math.max(1, it.count)}</td><td class="cmp">${usable ? escape(compare(buyer, items, it)) : ''}</td>
+            <td><button data-buy="${i}" ${why ? `disabled title="${escape(why)}"` : ''}>Buy</button></td></tr>`
+        }).join('')
+        dialog.innerHTML = `<h2>Buy</h2>
+          <div class="shop-buyer">${engine.party().map((c) => `<button data-who="${engine.party().indexOf(c)}" class="${c === buyer ? 'on' : ''}">${escape(parseCharacter(c).name)}</button>`).join('')}</div>
+          <p>${escape(name)} has <strong>${gold}</strong> gp in coins${pooled ? ` · ${pooled} gp in the pool` : ''} · carrying ${buyer[0x102] | (buyer[0x103] << 8)} of ${capacity(buyer)}</p>
+          <div class="shop-filter">${(['all', 'weapons', 'armour', 'other'] as const).map((f) => `<button data-f="${f}" class="${f === filter ? 'on' : ''}">${f[0].toUpperCase() + f.slice(1)}</button>`).join('')}
+            <label><input type="checkbox" ${onlyUsable ? 'checked' : ''} data-usable> Only what ${escape(name)} can use</label></div>
+          <table class="shop"><thead><tr><th>Item</th><th class="num">Price</th><th class="num">Weight</th><th>If readied instead</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="5" class="muted">Nothing here.</td></tr>'}</tbody></table>
+          ${message ? `<p class="message">${escape(message)}</p>` : ''}
+          <form method="dialog"><button class="primary">Done</button></form>`
+        dialog.querySelector<HTMLInputElement>('[data-usable]')!.addEventListener('change', (e) => { onlyUsable = (e.target as HTMLInputElement).checked; render() })
+      }
+      const onClick = (e: MouseEvent) => {
+        const b = (e.target as HTMLElement).closest('button')
+        if (!b || b.closest('form') || b.disabled) return
+        e.preventDefault()
+        const d = b.dataset
+        if (d.who) { engine.cur = engine.party()[Number(d.who)]; message = ''; drawRoster() }
+        else if (d.f) filter = d.f as typeof filter
+        else if (d.buy) {
+          const it = engine.treasure[Number(d.buy)], buyer = engine.cur, items = engine.itemsOf(buyer)
+          const why = canTakeItem(buyer, items, it)
+          if (why) message = why === 'Overloaded' ? 'OverLoaded' : why
+          else if (!pay(buyer, engine.money, it.value, t, items)) message = 'Not enough money.'
+          else {
+            const copy = it.copy()
+            items.push(copy)
+            recalc(buyer, items, t)
+            message = `${parseCharacter(buyer).name} buys ${t.name(copy)}.`
+            print(message, false)
+            drawRoster()
+          }
+        }
+        render()
+      }
+      dialog.classList.add('wide')
+      dialog.addEventListener('click', onClick)
+      onClose(dialog, () => { dialog.removeEventListener('click', onClick); resolve() })
+      render()
+      dialog.showModal()
+    })
   }
 
   const campUi: CampUi = {
