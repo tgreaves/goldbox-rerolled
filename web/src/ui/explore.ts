@@ -12,7 +12,8 @@ import { listCharacters, listSaves, saveCharacter, writeSave } from '../store/us
 import { report, revealedBy, type State } from '../rules/commissions'
 import { ICONS, landmarks, type Landmark } from '../rules/landmarks'
 import { Overland } from '../rules/overland'
-import { itemsFile } from '../data/items'
+import { itemsFile, type Item } from '../data/items'
+import { buildIcon } from '../render/icon'
 import { effectsFile } from '../data/effects'
 import { capacity, ready, recalc, unready } from '../rules/equip'
 import { drop, halve, join, trade, unavailable } from '../rules/inventory'
@@ -33,6 +34,9 @@ import { initSound, play, setSoundDevice, soundAvailable, soundDevice, unlockAud
 
 const FACING = ['North', 'East', 'South', 'West']
 const STAT_KEYS = ['STR', 'INT', 'WIS', 'DEX', 'CON', 'CHA'] as const
+/** readied slots 0–8 (char 0xCC + 4·slot, spec/records.md) */
+const SLOT_NAMES = ['Weapon', 'Shield', 'Armour', 'Gauntlets', 'Helm', 'Belt/Necklace', 'Robe', 'Cloak', 'Boots']
+const SLOT_LABEL = (n: number) => n <= 8 ? SLOT_NAMES[n] : n === 9 ? 'Ring' : n === 11 || n === 12 || n === 13 ? 'Scroll' : 'Other'
 const CONTINUE_PROMPTS = ['PRESS <RETURN> OR BUTTON TO CONTINUE', 'PRESS <ENTER>/<RETURN> TO CONTINUE']
 
 const escape = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`)
@@ -87,6 +91,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const menuBar = app.querySelector<HTMLDivElement>('.menu')!
   const pad = app.querySelector<HTMLDivElement>('.pad')!
   const dialog = app.querySelector<HTMLDialogElement>('dialog.panel')!
+  dialog.addEventListener('close', () => dialog.classList.remove('wide'))
   const world = new World(canvas)
 
   // ------------------------------------------------------------ text window
@@ -514,8 +519,44 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const sel = opts.selected ?? -1
     const it = items[sel]
     const str = c.stats.STR === 18 && c.strPct ? `/${String(c.strPct % 100).padStart(2, '0')}` : ''
-    const rows = t ? items.map((x, i) => `<tr class="${i === sel ? 'sel' : ''}" data-i="${i}"><td>${x.ready ? 'Yes' : 'No'}</td>
-      <td>${escape(t.name(x))}</td><td>${x.weight * Math.max(1, x.count)}</td></tr>`).join('') : ''
+    // equipment panel (IMP-041): readied items by slot, the rest carried
+    const usable = (x: Item) => !!t && ((t.baseOf(x)?.classes ?? 0) & node[0xb0]) !== 0
+    const wt = (x: Item) => x.weight * Math.max(1, x.count)
+    const itemCell = (x: Item | undefined, label: string) => x
+      ? `<button class="slot${items.indexOf(x) === sel ? ' sel' : ''}${x.cursed && x.hidden === 0 ? ' cursed' : ''}" data-i="${items.indexOf(x)}"><span class="slot-name">${label}</span>${escape(t!.name(x))}</button>`
+      : `<div class="slot empty"><span class="slot-name">${label}</span>—</div>`
+    let equipped = '', carried = ''
+    if (t) {
+      const readied = items.filter((x) => x.ready)
+      const bySlot = (n: number) => readied.filter((x) => t.baseOf(x)?.slot === n)
+      const placed = new Set<Item>()
+      const cells: string[] = []
+      SLOT_NAMES.forEach((label, n) => { const x = bySlot(n)[0]; if (x) placed.add(x); cells.push(itemCell(x, label)) })
+      const rings = bySlot(9)
+      for (let k = 0; k < 2; k++) { if (rings[k]) placed.add(rings[k]); cells.push(itemCell(rings[k], 'Ring')) }
+      for (const x of readied) if (!placed.has(x)) cells.push(itemCell(x, x.type === 73 || x.type === 28 ? 'Ammunition' : 'Also readied'))
+      equipped = cells.join('')
+      carried = items.filter((x) => !x.ready).map((x) => {
+        const i = items.indexOf(x)
+        return `<li><button class="carried${i === sel ? ' sel' : ''}" data-i="${i}"><span>${escape(t.name(x))}</span>
+          ${usable(x) ? '' : '<span class="cant">not for this class</span>'}<span class="w">${wt(x)}</span></button></li>`
+      }).join('')
+    }
+    // what readying or unreadying the selected item would change, worked out on copies
+    let preview = ''
+    if (it && t && !opts.confirm) {
+      const cc = node.slice(), copies = items.map((x) => x.copy())
+      const target = copies[sel]
+      const why = it.ready ? unready(cc, copies, target, t) : ready(cc, copies, target, t)
+      const before = parseCharacter(node), after = parseCharacter(cc)
+      const diffs = ([['AC', before.ac, after.ac], ['THAC0', before.thac0, after.thac0], ['Damage', before.damage, after.damage], ['Movement', before.movement, after.movement]] as [string, number | string, number | string][])
+        .filter(([, x, y]) => x !== y).map(([k, x, y]) => `${k} ${x} → ${y}`)
+      const b = t.baseOf(it)
+      const info = [b ? `${SLOT_LABEL(b.slot)}` : '', b && b.hands ? `${b.hands} hand${b.hands > 1 ? 's' : ''}` : '', `weight ${wt(it)}`, usable(it) ? '' : 'not usable by this class']
+        .filter(Boolean).join(' · ')
+      preview = `<div class="item-info"><strong>${escape(t.name(it))}</strong><span class="muted">${escape(info)}</span>
+        <span>${why ? `Can't ${it.ready ? 'unready' : 'ready'}: ${escape(why)}` : `${it.ready ? 'Unready' : 'Ready'}: ${diffs.length ? escape(diffs.join(', ')) : 'no change to AC, THAC0, damage or movement'}`}</span></div>`
+    }
     const others = engine.party().filter((n) => n !== node)
     let actions = ''
     if (it && t) {
@@ -536,40 +577,51 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       }
       else if (opts.confirm === 'trade') actions = `<p>Trade with Whom?</p>` + others.map((n, k) =>
         `<button data-a="trade-${k}">${escape(parseCharacter(n).name)}</button>`).join('') + '<button data-a="cancel">Exit</button>'
-      else actions = `<button data-a="ready"><u>R</u>eady</button><button data-a="use"><u>U</u>se</button>` +
+      else actions = `<button data-a="ready">${it.ready ? 'Un' : ''}<u>R</u>eady</button><button data-a="use"><u>U</u>se</button>` +
         (others.length ? '<button data-a="trade"><u>T</u>rade</button>' : '') +
         '<button data-a="drop"><u>D</u>rop</button><button data-a="halve"><u>H</u>alve</button><button data-a="join"><u>J</u>oin</button>' +
         (store ? '<button data-a="sell"><u>S</u>ell</button><button data-a="id"><u>I</u>d</button>' : '')
     }
+    const enc = node[0x102] | (node[0x103] << 8), cap = capacity(node)
+    dialog.classList.add('wide')
     dialog.innerHTML = `
-      <h2>${escape(c.name)}</h2>
-      <p>${c.gender} ${c.race} · age ${c.age}<br>${c.alignment}<br>${c.cls}${c.levels.length ? ' · level ' + c.levels.map((l) => l.level).join('/') : ''}</p>
-      <div class="sheet">
-        <table>${STAT_KEYS.map((k) => `<tr><th>${k}</th><td>${c.stats[k]}${k === 'STR' ? str : ''}</td></tr>`).join('')}</table>
-        <table>
-          <tr><th>HP</th><td>${c.hp} / ${c.hpMax}</td></tr>
-          <tr><th>AC</th><td>${c.ac}</td></tr>
-          <tr><th>THAC0</th><td>${c.thac0}</td></tr>
-          <tr><th>Damage</th><td>${c.damage}</td></tr>
-          <tr><th>Movement</th><td>${c.movement}</td></tr>
-          <tr><th>Status</th><td>${c.status}</td></tr>
-          <tr><th>Experience</th><td>${c.exp}</td></tr>
-        </table>
-        <table>${MONEY.map((m, i) => `<tr><th>${m}</th><td>${c.money[i]}</td></tr>`).join('')}</table>
+      <div class="sheet-head"><canvas class="pixel ic sheet-icon" width="24" height="24"></canvas><div>
+        <h2>${escape(c.name)}</h2>
+        <p>${c.gender} ${c.race} · age ${c.age} · ${c.alignment}<br>${c.cls}${c.levels.length ? ' · level ' + c.levels.map((l) => l.level).join('/') : ''} · ${c.status}</p>
+      </div></div>
+      <div class="sheet2">
+        <section>
+          <div class="sheet">
+            <table>${STAT_KEYS.map((k) => `<tr><th>${k}</th><td>${c.stats[k]}${k === 'STR' ? str : ''}</td></tr>`).join('')}</table>
+            <table>
+              <tr><th>HP</th><td>${c.hp} / ${c.hpMax}</td></tr>
+              <tr><th>AC</th><td>${c.ac}</td></tr>
+              <tr><th>THAC0</th><td>${c.thac0}</td></tr>
+              <tr><th>Damage</th><td>${c.damage}</td></tr>
+              <tr><th>Movement</th><td>${c.movement}</td></tr>
+              <tr><th>Experience</th><td>${c.exp}</td></tr>
+            </table>
+            <table>${MONEY.map((m, i) => `<tr><th>${m}</th><td>${c.money[i]}</td></tr>`).join('')}</table>
+          </div>
+        </section>
+        ${t ? `<section class="gear">
+          <h3>Equipped</h3><div class="slots">${equipped}</div>
+          <h3>Carried</h3>${carried ? `<ul class="carried-list">${carried}</ul>` : '<p class="muted">Nothing else.</p>'}
+          <div class="enc"><span>Encumbrance ${enc} of ${cap} coins</span><meter min="0" max="${cap}" high="${Math.round(cap * 0.75)}" value="${enc}"></meter></div>
+        </section>` : '<section><p class="muted">Items need the ITEMS file and START.EXE: re-import the POOLRAD folder.</p></section>'}
       </div>
-      ${t ? `<h3>Items</h3>
-        ${items.length ? `<table class="items"><thead><tr><th>Ready</th><th>Item</th><th>Weight</th></tr></thead><tbody>${rows}</tbody></table>`
-          : '<p class="muted">No items.</p>'}
-        <p class="muted">Encumbrance ${node[0x102] | (node[0x103] << 8)} of ${capacity(node)} coins.</p>
+      ${t ? `${preview}
         ${opts.message ? `<p class="message">${escape(opts.message)}</p>` : ''}
-        <div class="item-actions">${actions}</div>` : '<p class="muted">Items need the ITEMS file and START.EXE: re-import the POOLRAD folder.</p>'}
+        <div class="item-actions">${actions || (items.length ? '<span class="muted">Pick an item to ready, use, trade or drop it.</span>' : '')}</div>` : ''}
       <form method="dialog"><button>Close</button></form>`
+    { const ic = dialog.querySelector<HTMLCanvasElement>('canvas.sheet-icon')!, p = buildIcon(files, node, false), g = ic.getContext('2d')!
+      g.fillStyle = '#000'; g.fillRect(0, 0, 24, 24); if (p) g.putImageData(toImageData(p), 0, 0) }
     const again = (o: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use'; use?: UseStep }) => {
       drawRoster()
       sheet(parseCharacter(node), { ...o, mode: opts.mode })
     }
-    dialog.querySelectorAll<HTMLTableRowElement>('table.items tbody tr').forEach((r) =>
-      r.addEventListener('click', () => again({ selected: Number(r.dataset.i) })))
+    dialog.querySelectorAll<HTMLButtonElement>('.gear [data-i]').forEach((r) =>
+      r.addEventListener('click', () => again({ selected: Number(r.dataset.i) === sel ? -1 : Number(r.dataset.i) })))
     dialog.querySelectorAll<HTMLButtonElement>('.item-actions button').forEach((b) => b.addEventListener('click', () => {
       if (!it || !t) return
       const a = b.dataset.a!

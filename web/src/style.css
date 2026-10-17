@@ -305,3 +305,26 @@ dialog.panel.wide { max-width: min(76rem, 97vw); width: 100%; }
 .nc-icon { margin-top: 0.6rem; }
 .nc-icon canvas.ic { width: 72px; height: 72px; margin-right: 0.4rem; }
 @media (max-width: 900px) { .newchar { grid-template-columns: 1fr; } }
+
+/* character sheet with the equipment panel (IMP-041) */
+.sheet-head { display: flex; gap: 0.9rem; align-items: center; }
+.sheet-head canvas.sheet-icon { width: 72px; height: 72px; flex: none; }
+.sheet-head h2 { margin: 0; }
+.sheet-head p { margin: 0.2rem 0 0; color: var(--muted); }
+.sheet2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 1.2rem; align-items: start; }
+.sheet2 .sheet { margin-top: 0.4rem; }
+.gear h3 { margin: 0.4rem 0 0.3rem; }
+.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); gap: 0.3rem; }
+.slot { display: grid; text-align: left; padding: 0.3rem 0.5rem; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ega-green); }
+.slot .slot-name { font-size: 0.75rem; color: var(--muted); }
+.slot.empty { color: var(--muted); opacity: 0.6; }
+.slot.sel, .carried.sel { border-color: var(--accent); background: #f2c94c14; }
+.slot.cursed { color: var(--ega-magenta); }
+.carried-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.25rem; }
+.carried { width: 100%; display: flex; gap: 0.6rem; align-items: baseline; text-align: left; min-height: 40px; padding: 0.3rem 0.5rem; }
+.carried .w { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+.carried .cant { font-size: 0.75rem; color: var(--ega-yellow); }
+.enc { display: flex; gap: 0.6rem; align-items: center; margin-top: 0.6rem; color: var(--muted); }
+.enc meter { flex: 1; height: 0.8rem; }
+.item-info { display: grid; gap: 0.15rem; margin: 0.8rem 0 0.3rem; padding: 0.5rem 0.7rem; border-left: 3px solid var(--accent); background: #ffffff08; }
+@media (max-width: 760px) { .sheet2 { grid-template-columns: 1fr; } }
