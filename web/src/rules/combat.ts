@@ -753,6 +753,8 @@ export class Battle implements FxHost {
   /** Attack loop (FUN_3aae_1406); returns the attacks made with hand 1. */
   async attackLoop(a: Fighter, t: Fighter, fromBehind: boolean, missile: Item | null): Promise<number> {
     this.firing = missile
+    await this.settle()
+    await this.ui.pause(100) // Delay(100) once the target is set (3aae:1937)
     try { return await this.attackRolls(a, t, fromBehind) } finally { this.firing = null }
   }
 
