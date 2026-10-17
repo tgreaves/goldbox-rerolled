@@ -96,6 +96,7 @@ So the light-magenta areas of wall tiles (rooftops, gaps, the sky above walls) s
 
 - Glyph index = ECL text code: 0x00–0x1F = `@A–Z[\]^_`, 0x20–0x3F = space, punctuation, digits
 - Further glyphs: runes (code-wheel protection, **I**), window frame pieces
+- Glyph 0x00 is a framed box rather than `@` (the `@` shape is glyph 0x40); 0x25 is a solid block, not `%`; 0x24 is not a plain `$`. The letters are capitals only, so all text shows in capitals (O, from the glyph dump)
 
 ## Screen layout (O for coordinates passed in code; I for roles)
 

@@ -4,12 +4,13 @@ import { showViewer } from './ui/viewer'
 import { showTitle } from './ui/title'
 import { showParty } from './ui/party'
 import { setupOffline } from './pwa/register'
+import { installGameFont } from './ui/gamefont'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
 async function start() {
   const files = await GameFiles.load()
-  if (files.complete()) title(files)
+  if (files.complete()) { await installGameFont(files); title(files) }
   else showImport()
 }
 
@@ -55,6 +56,7 @@ function showImport() {
     }
     status.textContent = `Saving ${picked.size} files for offline use…`
     await GameFiles.save(picked)
+    await installGameFont(files)
     title(files)
   }
 

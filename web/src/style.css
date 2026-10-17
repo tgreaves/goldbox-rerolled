@@ -276,3 +276,11 @@ table.modify button { min-height: 36px; width: 2.4rem; padding: 0; }
 .ending-panel canvas.ending { width: min(360px, 80vw); aspect-ratio: 1; image-rendering: pixelated; display: block; margin: 0 auto; }
 .ending-panel .ending-text { min-height: 7.5em; }
 .ending-panel .ending-text p { margin: 0.1em 0; }
+
+/* the game's own 8 × 8 font (IMP-038): sizes in whole multiples of 8 px keep it sharp */
+.font-original .game, .font-original .partyscreen, .font-original dialog.panel, .font-original .title {
+  font-family: 'Pool of Radiance', ui-monospace, monospace; font-size: 16px; line-height: 1.5;
+  -webkit-font-smoothing: none; font-smooth: never; letter-spacing: 0;
+}
+.font-original .game .text p.note { font-style: normal; }
+.font-original .game .where { font-size: 16px; }

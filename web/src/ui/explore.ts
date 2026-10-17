@@ -25,6 +25,7 @@ import { castOutside, itemSpells, spendUse, targetKind } from '../rules/magic'
 import { Tables, fileStem } from '../rules/chargen'
 import { creatorTools } from './creator'
 import { playEnding } from './ending'
+import { fontChoice, gameFontAvailable, setFontChoice } from './gamefont'
 import { unexepack } from '../data/exepack'
 import { checkTraining, newSpellChoices, train, willBecome } from '../rules/training'
 import { initSound, play, setSoundDevice, soundAvailable, soundDevice, unlockAudio } from '../audio/sfx'
@@ -836,6 +837,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       (soundAvailable()
         ? `<button class="sound" data-cmd="sound" title="Sound device: PC speaker, Tandy/PCjr or off">♪ ${({ pc: 'PC speaker', tandy: 'Tandy', off: 'Off' })[soundDevice()]}</button>`
         : '<button class="sound" data-cmd="nosound" title="Re-import the POOLRAD folder with START.EXE for sound">♪ n/a</button>') +
+      (gameFontAvailable() ? `<button class="sound" data-cmd="font" title="Text in the game's own font, or a modern one">Aa ${fontChoice() === 'original' ? 'Original' : 'Modern'}</button>` : '') +
       `<button data-cmd="commissions" title="Commissions and rewards (not in the original)">Commissions${commissionsDue() ? ' <span class="due">•</span>' : ''}</button>` +
       '<button data-cmd="save" title="Save the game (any time)">Save</button>' +
       '<button class="assets" data-cmd="debug" title="Debug menu (not part of the game)">Debug</button>' +
@@ -872,6 +874,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         if (next !== 'off') play(10)
         break
       }
+      case 'font': setFontChoice(fontChoice() === 'original' ? 'modern' : 'original'); commandBar(); break
       case 'nosound': note('Sound needs START.EXE: go back to Assets and re-import the POOLRAD folder.'); break
       case 'commissions': commissions(); break
       case 'save': act(() => saveGame()); break
