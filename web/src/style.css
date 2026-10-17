@@ -107,14 +107,6 @@ canvas.pixel { image-rendering: pixelated; background: #000; border: 1px solid v
 .game .map canvas { width: 100%; height: 100%; object-fit: contain; display: block; cursor: zoom-in; }
 .game .map .nomap { color: var(--muted); margin: 0; }
 .game .party { flex: 0 1 auto; border: 2px solid var(--ega-cyan); border-radius: 4px; overflow: auto; padding: 0.4rem 0.6rem; }
-.party table { width: 100%; border-collapse: collapse; }
-.party th { color: #fff; font-weight: 600; text-align: right; padding: 0.2rem 0.3rem; }
-.party th:first-child, .party td:first-child { text-align: left; }
-.party td { color: var(--ega-green); text-align: right; padding: 0.3rem; font-variant-numeric: tabular-nums; cursor: pointer; }
-.party tr.hurt td { color: var(--ega-yellow); }
-.party tr.npc td:first-child { color: var(--ega-magenta); }
-.party tr.current td { color: #fff; background: #ffffff14; }
-.party tr.current td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .game .text {
   grid-area: text; border: 2px solid var(--ega-cyan); border-radius: 4px; overflow-y: auto;
   padding: 0.4rem 0.7rem; color: var(--ega-green); line-height: 1.4;
@@ -188,7 +180,6 @@ dialog.panel form.jump input { width: 4.5rem; }
   .game .side { flex-direction: row; height: 9.5rem; }
   .game .party { flex: 1; padding: 0.2rem 0.4rem; }
   .game .map { flex: none; width: 9.5rem; min-height: 0; padding: 0.15rem; }
-  .party td, .party th { padding: 0.15rem 0.3rem; }
   .game .menu { flex: 1; }
   .game .menu button { flex: 1 1 auto; padding: 0.3rem 0.4rem; }
   .game.in-combat { grid-template-columns: 1fr; grid-template-rows: min(100vw, 56dvh) auto minmax(4rem, 1fr) auto; }
@@ -391,3 +382,22 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 .set-row .nc-opts .muted { flex-basis: 100%; font-size: 0.85rem; }
 .text-large .game, .text-large .partyscreen, .text-large dialog.panel, .text-large .title { font-size: 1.2rem; }
 .text-large.font-original .game, .text-large.font-original .partyscreen, .text-large.font-original dialog.panel, .text-large.font-original .title { font-size: 24px; }
+
+/* in-game roster as cards (IMP-045) */
+.game .party { padding: 0.35rem; }
+.roster-cards { display: grid; gap: 0.3rem; }
+.rcard { display: grid; grid-template-columns: auto 1fr auto; gap: 0.5rem; align-items: center; text-align: left; padding: 0.25rem 0.45rem; min-height: 0; color: var(--ega-green); }
+.rcard canvas.rc-icon { width: 40px; height: 40px; }
+.rcard .rc-body { display: grid; gap: 0.2rem; min-width: 0; }
+.rcard .rc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rcard .rc-stats { display: grid; justify-items: end; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.rcard.current { border-color: var(--accent); background: #f2c94c14; }
+.rcard.current .rc-name { color: #fff; }
+.rcard.npc .rc-name { color: var(--ega-magenta); }
+.rcard.hurt .rc-stats span:last-child { color: var(--ega-yellow); }
+.rcard.down { opacity: 0.7; }
+.rcard.down .rc-stats span:last-child { color: #ff8080; }
+@media (max-width: 760px), (max-aspect-ratio: 4/5) {
+  .roster-cards { grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); }
+  .rcard canvas.rc-icon { width: 32px; height: 32px; }
+}

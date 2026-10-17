@@ -61,12 +61,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         <div class="where"></div>
       </section>
       <div class="side">
-        <aside class="party" aria-label="Party">
-          <table>
-            <thead><tr><th>Name</th><th>AC</th><th>HP</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </aside>
+        <aside class="party" aria-label="Party"><div class="roster-cards"></div></aside>
         <section class="map" aria-label="Area map" title="Area map (click to enlarge)">
           <canvas class="minimap"></canvas>
           <p class="nomap" hidden>Not here.</p>
@@ -89,7 +84,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const where = app.querySelector<HTMLDivElement>('.where')!
   const wild = app.querySelector<HTMLDivElement>('.wild')!
   const log = app.querySelector<HTMLElement>('.text')!
-  const roster = app.querySelector<HTMLTableSectionElement>('.party tbody')!
+  const roster = app.querySelector<HTMLElement>('.party .roster-cards')!
   const menuBar = app.querySelector<HTMLDivElement>('.menu')!
   const pad = app.querySelector<HTMLDivElement>('.pad')!
   const dialog = app.querySelector<HTMLDialogElement>('dialog.panel')!
@@ -392,12 +387,29 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   function drawRoster() {
     const cur = engine.nodes.indexOf(engine.cur)
-    roster.innerHTML = party().map((c, i) => {
-      const cls = [i === cur ? 'current' : '', c.npc ? 'npc' : '', c.hp < c.hpMax ? 'hurt' : ''].join(' ')
-      const hp = c.status === 'Okay' || c.status === 'Animated' ? String(c.hp) : c.status
-      return `<tr class="${cls}" data-i="${i}"><td>${escape(c.name)}</td><td>${c.ac}</td><td>${hp}</td></tr>`
+    // roster cards (IMP-045): combat icon, name, AC, HP bar; the current character highlighted
+    const list = party()
+    roster.innerHTML = list.map((c, i) => {
+      const up = c.status === 'Okay' || c.status === 'Animated'
+      const pct = up ? Math.round((100 * c.hp) / Math.max(1, c.hpMax)) : 0
+      const cls = ['rcard', i === cur ? 'current' : '', c.npc ? 'npc' : '', c.hp < c.hpMax ? 'hurt' : '', up ? '' : 'down'].join(' ')
+      return `<button class="${cls}" data-i="${i}" title="${i === cur ? 'View' : 'Select'} ${escape(c.name)}">
+        <canvas class="pixel rc-icon" width="24" height="24"></canvas>
+        <span class="rc-body"><span class="rc-name">${escape(c.name)}</span>
+          <span class="hpbar${pct < 50 ? ' low' : ''}"><span style="width:${pct}%"></span></span></span>
+        <span class="rc-stats"><span>AC ${c.ac}</span><span>${up ? `HP ${c.hp}/${c.hpMax}` : c.status}</span></span></button>`
     }).join('')
+    roster.querySelectorAll<HTMLCanvasElement>('canvas.rc-icon').forEach((cv, i) => {
+      const raw = list[i].raw
+      const key = Array.from(raw.subarray(0xbd, 0xc7)).join(',')
+      let img = rosterIcons.get(key)
+      if (img === undefined) { const p = buildIcon(files, raw, false); img = p ? toImageData(p) : null; rosterIcons.set(key, img) }
+      const g = cv.getContext('2d')!
+      g.fillStyle = '#000'; g.fillRect(0, 0, 24, 24)
+      if (img) g.putImageData(img, 0, 0)
+    })
   }
+  const rosterIcons = new Map<string, ImageData | null>()
 
   // ------------------------------------------------------------ shops, temples, treasure
   /** set while a shop, temple or treasure screen runs: the roster then picks the current character */
@@ -1143,7 +1155,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'r' : 'l') : (dy > 0 ? 'b' : 'f'))
   })
   roster.addEventListener('click', (e) => {
-    const row = (e.target as HTMLElement).closest('tr')
+    const row = (e.target as HTMLElement).closest<HTMLElement>('[data-i]')
     if (!row || (!townMode && (busy || pending))) return
     const c = engine.nodes[Number(row.dataset.i)]
     if (c === engine.cur) sheet(parseCharacter(c))
