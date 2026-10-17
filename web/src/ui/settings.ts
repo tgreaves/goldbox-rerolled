@@ -40,7 +40,7 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
         : '<div class="set-row"><span class="set-label">Sound</span><span class="muted">needs START.EXE among the game files</span></div>'}
       ${gameFontAvailable() ? seg('Font', [['original', 'Original 8×8'], ['modern', 'Modern']], fontChoice()) : ''}
       ${seg<TextSize>('Text size', [['normal', 'Normal'], ['large', 'Large']], textSize())}
-      ${seg<Gfx>('Graphics', [['pixel', 'Pixel (original)'], ['smooth', 'Smooth (upscaled)']], savedGfx())}
+      ${seg<Gfx>('Graphics', [['pixel', 'Pixel (original)'], ['sharp', 'Sharp (even pixels, soft fit)']], savedGfx())}
       ${savedGfx() !== gfxMode() ? '<p class="message">The graphics change takes effect when the page reloads. <button type="button" data-reload="1">Reload now</button> (save first if you are in a game)</p>' : ''}
       <form method="dialog"><button class="primary">Done</button></form>`
   }

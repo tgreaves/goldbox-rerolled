@@ -1,4 +1,4 @@
-// Scale2x (EPX) for the smoothed graphics option (IMP-047).
+// Whole-pixel enlargement for the Sharp graphics option (IMP-047).
 import { describe, expect, it } from 'vitest'
 
 // ImageData is a browser type; a minimal stand-in is enough for the algorithm
@@ -10,8 +10,8 @@ class FakeImageData {
 }
 ;(globalThis as unknown as { ImageData: unknown }).ImageData = FakeImageData
 
-describe('scale2x', async () => {
-  const { scale2x } = await import('../src/render/upscale')
+describe('nearest', async () => {
+  const { nearest } = await import('../src/render/upscale')
   const img = (rows: string[]) => {
     const d = new FakeImageData(rows[0].length, rows.length)
     rows.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === '#') d.data.set([255, 255, 255, 255], (y * d.width + x) * 4) }))
@@ -19,11 +19,7 @@ describe('scale2x', async () => {
   }
   const rows = (d: ImageData) => Array.from({ length: d.height }, (_, y) => Array.from({ length: d.width }, (_, x) => (d.data[(y * d.width + x) * 4] ? '#' : '.')).join(''))
 
-  it('doubles flat areas unchanged', () => {
-    expect(rows(scale2x(img(['##', '##'])))).toEqual(['####', '####', '####', '####'])
-  })
-  it('fills the corner of a diagonal step', () => {
-    // a staircase: Scale2x rounds the inside corner of the step
-    expect(rows(scale2x(img(['#..', '##.', '...'])))).toEqual(['##....', '###...', '####..', '####..', '......', '......'])
+  it('turns every pixel into a k × k square and invents nothing', () => {
+    expect(rows(nearest(img(['#.', '.#']), 2))).toEqual(['##..', '##..', '..##', '..##'])
   })
 })
