@@ -39,6 +39,8 @@ export interface CombatUi {
   print(text: string, hold?: Hold): void
   /** resolves once every queued message has been shown and held */
   settle?(): Promise<void>
+  /** queued like a message: the fallen-body picture on these cells, sound 5, then a hold of `ms` */
+  fall?(cells: { row: number; col: number }[], ms: number): void
   redraw(focus?: Fighter): void
   pause(ms?: number): Promise<void>
   menu(items: string[], opts?: { prompt?: string }): Promise<number>
@@ -899,11 +901,22 @@ export class Battle implements FxHost {
     } else c[0x11b] = left
   }
 
+  /**
+   * The fall (FUN_577f_0e11): the fallen-body picture (RandCom frame 5) over every cell the combatant
+   * covered, sound 5 and the message pause. Only a party entry (R[0x13] = 0) leaves a body: its cell
+   * becomes 0x1F (kept 0x1E under a Stinking Cloud) and the old cell is remembered. A monster's body
+   * goes again when the window is redrawn from the cells.
+   */
   downF(t: Fighter) {
     this.endTurnF(t)
     if (t.size > 0) {
-      this.bodies.push({ f: t, x: t.x, y: t.y, cell: this.bf.get(t.y, t.x) })
-      if (this.bf.get(t.y, t.x) !== 0) this.bf.set(t.y, t.x, 0x1f)
+      const cells = footprint(t.size).map(([dx, dy]) => ({ row: t.y + dy, col: t.x + dx }))
+      if (!t.r[0x13]) {
+        this.bodies.push({ f: t, x: t.x, y: t.y, cell: this.bf.get(t.y, t.x) })
+        const v = this.bf.get(t.y, t.x)
+        if (v !== 0 && v !== 0x1e) this.bf.set(t.y, t.x, 0x1f)
+      }
+      this.ui.fall?.(cells, this.e.speed * 225)
     }
     t.size = 0
     this.ui.redraw()

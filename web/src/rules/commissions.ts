@@ -17,21 +17,34 @@ export interface Commission {
   summons?: { addr: number; who: string }
   /** other signs it is under way, e.g. a variable an offer sets */
   started?: (read: Read) => boolean
+  /** how far along it is, from a counter the scripts keep (IMP-039); only some commissions have one */
+  progress?: (read: Read) => string | undefined
 }
+
+const DOCUMENTS = ['discourses', 'descriptions', 'maps', 'histories', 'records', 'papers of small value']
 
 type Read = (addr: number) => number
 
 export const COMMISSIONS: Commission[] = [
-  { id: 'slums', title: 'Clear the slums west of City Hall', offers: ['THE SLUMS IMMEDIATELY TO OUR WEST'], entries: [21] },
+  { id: 'slums', title: 'Clear the slums west of City Hall', offers: ['THE SLUMS IMMEDIATELY TO OUR WEST'], entries: [21],
+    // ECL2 #20 adds 1 to the entry after every won fight in the slums, set-piece or random, and sets 254 at 25
+    progress: (r) => { const n = r(TABLE + 21); return n < 25 ? `${n} of 25 fights won in the slums` : undefined } },
   { id: 'sokal', title: 'Clear Sokal Keep on Thorn Island', offers: ['SOKAL KEEP ON THORN ISLAND'], entries: [1] },
-  { id: 'documents', title: 'Bring in books, maps and records of old Phlan', offers: ['THE COUNCIL IS OFFERING A REWARD FOR BOOKS'], entries: [4, 5, 6, 7, 8, 9] },
+  { id: 'documents', title: 'Bring in books, maps and records of old Phlan', offers: ['THE COUNCIL IS OFFERING A REWARD FOR BOOKS'], entries: [4, 5, 6, 7, 8, 9],
+    progress: (r) => {
+      const done = DOCUMENTS.filter((_, i) => r(TABLE + 4 + i) >= DUE)
+      return done.length ? `Handed in: ${done.join(', ')}` : undefined
+    } },
   { id: 'podal', title: 'Find out what weapon is being auctioned in Podal Plaza', offers: ['A WEAPON OF GREAT POWER IS TO BE AUCTIONED'], entries: [10],
     started: (r) => r(0x4ab0) === 1 },
   { id: 'textile', title: "Cadorna's family treasure in the textile house", offers: ['JUNIOR COUNCILMAN CADORNA HAS A SPECIAL COMMISSION'], entries: [18],
     summons: { addr: 0x4a97, who: 'Junior Councilman Cadorna (east door of the clerk)' } },
   { id: 'braccio', title: 'Report to Bishop Braccio at the Temple of Tyr', offers: ['YOU ARE SUMMONED BY THE BISHOP'], entries: [23],
     summons: { addr: 0x4a9b, who: "Bishop Braccio at Tyr's temple" } },
-  { id: 'kovel', title: 'Clean out the thieves in Kovel Mansion', offers: ['A LARGE GROUP OF THIEVES OPERATES'], entries: [12] },
+  { id: 'kovel', title: 'Clean out the thieves in Kovel Mansion', offers: ['A LARGE GROUP OF THIEVES OPERATES'], entries: [12],
+    // ECL3 #14 counts thieves beaten in 0x4A45 (one per ambush, more in the weapons-pile fight); 21 clears it
+    started: (r) => r(0x4a45) > 0,
+    progress: (r) => { const n = r(0x4a45); return n > 0 && n < 21 ? `${n} of 21 thieves beaten` : undefined } },
   { id: 'nomads', title: 'Stop the nomads joining the enemy', offers: ['FIND THE NOMADS'], entries: [17] },
   { id: 'kobolds', title: 'Stop the kobold tribe joining the enemy', offers: ['A LARGE TRIBE OF KOBOLDS'], entries: [16] },
   { id: 'river', title: "End the river's pollution", offers: ["FIND THE SOURCE OF THE RIVER'S POLLUTION"], entries: [13] },
@@ -39,7 +52,9 @@ export const COMMISSIONS: Commission[] = [
   { id: 'bivant', title: 'Rescue the heir of House Bivant', offers: ['THE HEIR TO THE HOUSE OF BIVANT'], entries: [3],
     started: (r) => r(0x4a8c) === CLOSED },
   { id: 'graveyard', title: 'End the Valhingen Graveyard menace', offers: ['I HAVE BEEN AUTHORIZED TO GIVE YOU AN ENCHANTED WEAPON'], entries: [11],
-    started: (r) => r(0x4a96) === CLOSED },
+    started: (r) => r(0x4a96) === CLOSED,
+    // the 7 undead kill counters the clerk's bounty reads (0x4A39 + i); the commission ends with the graveyard's master
+    progress: (r) => { let n = 0; for (let i = 0; i < 7; i++) n += r(0x4a39 + i); return n ? `${n} undead destroyed so far` : undefined } },
   { id: 'zhentil', title: "Deliver Cadorna's message to Zhentil Keep", offers: ['LORD CADORNA HAS A DELICATE DIPLOMATIC MISSION', 'WE NEED YOU TO DELIVER A MESSAGE TO THE ZHENTIL KEEP'], entries: [14],
     summons: { addr: 0x4a98, who: 'Lord Cadorna (south door of the clerk)' } },
   { id: 'gate', title: 'Take the gate and hold it', offers: ['LORD URSLINGEN WISHES URGENTLY'], entries: [19],
@@ -60,7 +75,7 @@ const PROCLAMATIONS = ['LXIV, LXXVIII, CIX and LIX', 'CI', 'CXXVI and CX', 'CXXX
 export const PROCLAMATION_WALL = 'PROCLAMATIONS ARE POSTED ON THE WALLS'
 
 export type State = 'reward' | 'summoned' | 'open' | 'failed' | 'closed'
-export interface Line { title: string; state: State; detail?: string }
+export interface Line { title: string; state: State; detail?: string; progress?: string }
 
 /** Ids of anything a printed text reveals: a commission offer, or the proclamation wall. */
 export function revealedBy(text: string): string[] {
@@ -83,7 +98,7 @@ export function report(read: Read, known: ReadonlySet<string>): { lines: Line[];
     else if (c.id === 'bivant' && entry(3) === 128) lines.push({ title: c.title, state: 'failed', detail: 'The rescue was bungled' })
     else if (c.summons && s === DUE) lines.push({ title: c.title, state: 'summoned', detail: `Go and see ${c.summons.who}` })
     else if (c.id === 'documents' ? read(0x4ac2) === CLOSED : vals.every((v) => v === CLOSED)) lines.push({ title: c.title, state: 'closed' })
-    else lines.push({ title: c.title, state: 'open' })
+    else lines.push({ title: c.title, state: 'open', progress: c.progress?.(read) })
   }
   for (const d of DEEDS) {
     const v = entry(d.entry)

@@ -284,3 +284,4 @@ table.modify button { min-height: 36px; width: 2.4rem; padding: 0; }
 }
 .font-original .game .text p.note { font-style: normal; }
 .font-original .game .where { font-size: 16px; }
+dialog.panel ul.commissions small.progress { color: var(--ega-green); }

@@ -37,6 +37,7 @@ export async function runBattle(s: BattleScreen) {
   let marks: { row: number; col: number; colour: string }[] = []
   let acting: Fighter | null = null
   let flashMark: { row: number; col: number; colour: string } | null = null
+  let falling: { row: number; col: number }[] = []
   /** messages queue: each shows, then holds (and may flash its target) before the next */
   let queue: Promise<void> = Promise.resolve()
   const flash = async (f: Fighter, ms: number) => {
@@ -69,7 +70,7 @@ export async function runBattle(s: BattleScreen) {
       return { row: f.y, col: f.x, icon: ic.icon, action: ic.action, side: f.c[0x10e] ? 1 : 0, left: f.r[9] >= 5 && f.r[9] <= 7 } as Figure
     })
     const act = acting ? figures[battle.fighters.filter((f) => battle!.inPlay(f)).indexOf(acting)] : undefined
-    view.draw(battle.bf, battle.cells, figures, focus, [...marks, ...(acting ? [{ row: acting.y, col: acting.x, colour: '#f2c94c' }] : []), ...(flashMark ? [flashMark] : [])], act)
+    view.draw(battle.bf, battle.cells, figures, focus, [...marks, ...(acting ? [{ row: acting.y, col: acting.x, colour: '#f2c94c' }] : []), ...(flashMark ? [flashMark] : [])], act, falling)
   }
   const ui: CombatUi = {
     print: (t, hold) => {
@@ -81,6 +82,14 @@ export async function runBattle(s: BattleScreen) {
       })
     },
     settle: () => queue,
+    fall: (cells, ms) => {
+      queue = queue.then(async () => {
+        falling = cells
+        draw()
+        s.sound(5)
+        try { await s.pause(ms) } finally { falling = []; draw() }
+      })
+    },
     redraw: (f) => {
       if (f) { acting = f; focus = { row: f.y, col: f.x } }
       draw()

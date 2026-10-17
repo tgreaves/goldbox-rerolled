@@ -83,7 +83,7 @@ export class CombatView {
   }
 
   draw(bf: Battlefield, cells: CellInfo[], figures: Figure[], focus: { row: number; col: number },
-    marks: { row: number; col: number; colour: string }[] = [], acting?: Figure) {
+    marks: { row: number; col: number; colour: string }[] = [], acting?: Figure, falling: { row: number; col: number }[] = []) {
     const g = this.canvas.getContext('2d')!
     const [r0, c0] = this.origin(focus.row, focus.col)
     g.fillStyle = '#000'
@@ -93,6 +93,9 @@ export class CombatView {
       const t = v ? this.tiles[cells[v]?.image ?? -1] : null
       if (t) g.drawImage(t, c * CELL, r * CELL)
     }
+    // a combatant falling: the fallen-body picture (cell 0x1F, RandCom frame 5) over its cells for now
+    const body = this.tiles[cells[0x1f]?.image ?? -1]
+    if (body) for (const p of falling) g.drawImage(body, (p.col - c0) * CELL, (p.row - r0) * CELL)
     for (const f of figures) {
       if (f.down) continue
       const pic = f === acting && f.action ? f.action : f.icon

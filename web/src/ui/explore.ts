@@ -789,7 +789,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   function commissions() {
     const r = commissionReport()
     const rows = r.lines.map((l) => `<li class="${l.state}"><span class="state">${STATE_LABEL[l.state]}</span>
-      <span>${escape(l.title)}${l.detail ? `<small>${escape(l.detail)}</small>` : ''}</span></li>`).join('')
+      <span>${escape(l.title)}${l.detail ? `<small>${escape(l.detail)}</small>` : ''}${l.progress ? `<small class="progress">${escape(l.progress)}</small>` : ''}</span></li>`).join('')
     dialog.innerHTML = `<h2>Commissions</h2>
       ${rows ? `<ul class="commissions">${rows}</ul>` : '<p class="muted">No commissions yet. The City Clerk in City Hall awards them.</p>'}
       ${r.bounty ? `<p>Graveyard bounty: ${r.bounty} undead slain and not yet paid for. See the City Clerk.</p>` : ''}

@@ -41,6 +41,13 @@ The engine has no quest system. Commissions, rewards and the proclamations are k
 | 24 | 0x4ABE | Cadorna declared a traitor |
 | 25 | 0x4ABF | the traitor Cadorna dead |
 
+Progress counters the scripts keep (O):
+- Slums: entry 21 itself, 0–25 won fights.
+- Kovel Mansion (`ECL3` #14): 0x4A45 counts thieves beaten, +1 per ambush fight (0x9C9D) and the numbers of each kind in the weapons-pile fight (0xAB6D); at 21 or more the next visit sets entry 12 to 254 (0xB343). From 12 the ambushes get harder, from 18 a tougher thief appears.
+- Graveyard: the 7 undead kill counters 0x4A39 + i (also read for the bounty); the commission itself ends with the fight at 0xB13C (`ECL4`), which sets entry 11 to 254.
+- Documents: entries 4–9 are set separately as each kind is handed in.
+The other commissions end with a single event (a conversation, a set-piece fight) and keep no count.
+
 Summons use their own variables, with 254 = summoned (go and see them) and 255 = briefing given: 0x4A97 Cadorna's textile-house treasure, 0x4A98 Cadorna's message to Zhentil Keep, 0x4A99 Lord Urslingen, 0x4A9A the council meeting, 0x4A9B Bishop Braccio. 0x4AC2 = 255 closes the library (documents) offer.
 
 ## The clerk's visit (`ECL3` #8, 0x9BB8)

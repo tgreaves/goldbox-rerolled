@@ -658,7 +658,7 @@ else HP = HP'
 HP is unsigned; negative HP exists only as R[0xE]. Then, in `FUN_3aae_02f9`:
 
 1. If dmg > 0: R[1] = 0 (no more casting this round). If a spell is queued (R[0] > 0): "lost a spell", R[0] = 0, and `FUN_10ba_148b(spell)` removes one copy of that spell from the memorised list of the **current character**, which during an attack is the attacker, not the caster (**Bug**, O: the interrupted caster keeps the spell memorised; an attacker who has the same spell memorised loses it).
-2. If the target is out of play: "goes down", "and is Dying" or "is killed"; effects that end at 0 HP are removed (`FUN_5216_100a`: 7, 11, 30–32, 51–54, 58, 59, 74, 75, 95, 98, 137); effect event 13; fall graphic, initiative, movement, queued spell and guard cleared (`FUN_577f_0e11`).
+2. If the target is out of play: "goes down", "and is Dying" or "is killed"; effects that end at 0 HP are removed (`FUN_5216_100a`: 7, 11, 30–32, 51–54, 58, 59, 74, 75, 95, 98, 137); effect event 13; fall graphic (`FUN_577f_0e11`: the fallen-body picture, RandCom frame 5, over every footprint cell, sound 5 and the message pause; a party entry, R[0x13] = 0, then lies there as a body, its cell set to 0x1F unless it is a cloud 0x1E and the old cell kept in `DS:66D6 + 7n`; a monster leaves nothing, the redraw removes the picture), initiative, movement, queued spell and guard cleared (`FUN_577f_0e11`).
 
 Non-weapon damage (spells, traps, effects) goes through `FUN_5216_1344`, which fires event 6 (damage type in `DS:6819`), halves or zeroes on a save, and applies the same thresholds ([[spec/effects]]).
 

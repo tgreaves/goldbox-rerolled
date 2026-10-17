@@ -27,6 +27,7 @@ describe('commissions', () => {
       ['closed', 'Clean out the thieves in Kovel Mansion'],
     ])
     expect(r.bounty).toBe(3)
+    expect(r.lines.find((l) => l.title.startsWith('Clear the slums'))?.progress).toBe('2 of 25 fights won in the slums')
     expect(r.proclamations).toBe('CXXVI and CX')
   })
 })
