@@ -55,6 +55,8 @@ export type Start =
   | { kind: 'new'; party: CharFiles[] }
   | { kind: 'load'; dat: Uint8Array; party: CharFiles[]; label: string; known?: string[] }
 
+const CLASS_NAMES = ['Cleric', 'Druid', 'Fighter', 'Paladin', 'Ranger', 'Magic-User', 'Thief', 'Monk']
+
 /** The 1988 numbers in plain words (IMP-058), as tooltips on the sheet and the cards. */
 const TIPS: Record<string, string> = {
   STR: 'Strength: to-hit and damage bonuses at 17 and above, and how much can be carried. Fighters can have 18/01 to 18/00.',
@@ -531,6 +533,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       // the combat panel's "(Helpless)" (FUN_10ba_09e3): effects 0x33-0x35 and 0x1F
       const helpless = up && engine.effectsOf(raw).some((e) => [0x1f, 0x33, 0x34, 0x35].includes(e.type))
       const train = t ? canTrain(t, raw) : false
+      const xpp = t ? xpProgress(t, raw) : null
+      const xpBar = t ? `<span class="xpbar${train ? ' ready' : ''}" title="${escape(xpp ? xpp.text : 'Every class is at its highest level')}"><span style="width:${xpp ? xpp.pct : 100}%"></span></span>` : ''
       // on Quick (c[0x10F]): the computer plays them in battle until Space / Take control
       const quick = raw[0x10f] !== 0 && raw[0x84] < 0x80
       return `<button class="${cls}" data-i="${i}" title="${i === cur ? 'View' : 'Select'} ${escape(c.name)}">
@@ -538,6 +542,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         <span class="rc-body">
           <span class="rc-top"><span class="rc-name">${escape(c.name)}</span><span class="rc-ac" title="${escape(TIPS.AC)}">AC ${c.ac}</span></span>
           <span class="hpbar${pct < 50 ? ' low' : ''}"><span style="width:${pct}%"></span></span>
+          ${xpBar}
           <span class="rc-line"><span class="rc-hp">${up ? `HP ${c.hp}/${c.hpMax}` : c.status}</span>${helpless ? ' (Helpless)' : ''}${weapon && it ? ` · ${escape(it.name(weapon))}` : ''}</span>
           ${spells ? `<span class="rc-line rc-spells" title="${escape(spells)}">✦ ${escape(spells)}</span>` : ''}
           ${effects.length || train || quick ? `<span class="rc-badges">${quick ? '<span class="badge quick" title="The computer plays them in battle. Open their sheet and choose Play by hand, or press Space / Take control in a battle">Quick</span>' : ''}${effects.map((n) => `<span class="badge">${escape(n)}</span>`).join('')}${train ? '<span class="badge train">Ready to train</span>' : ''}</span>` : ''}
@@ -566,6 +571,26 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
   const rosterPortraits = new Map<string, [ImageData | null, ImageData | null]>()
   /** a training hall would train this character now: enough experience for a class below its limit */
+  /**
+   * Progress to the next level (IMP-063): the one experience total against each class's table
+   * (DS:409B), for the class that levels soonest; null when every class is at its cap.
+   */
+  function xpProgress(t: Tables, c: Uint8Array): { pct: number; text: string } | null {
+    const xp = (c[0xac] | (c[0xad] << 8) | (c[0xae] << 16) | (c[0xaf] << 24)) >>> 0
+    let best: { pct: number; text: string; left: number } | null = null
+    for (let k = 0; k < 8; k++) {
+      const L = c[0x96 + k]
+      if (L <= 0 || L >= levelLimit(c, k)) continue
+      const next = xpFor(t, k, L + 1)
+      if (next === 0 || next === 0xffffffff) continue
+      const from = L > 1 ? xpFor(t, k, L) : 0
+      const pct = Math.max(0, Math.min(100, Math.round((100 * (xp - from)) / Math.max(1, next - from))))
+      const left = next - xp
+      const text = left <= 0 ? `${xp.toLocaleString()} XP: ready to train as a level ${L + 1} ${CLASS_NAMES[k]}` : `${xp.toLocaleString()} XP: ${left.toLocaleString()} to level ${L + 1} ${CLASS_NAMES[k]} (${next.toLocaleString()})`
+      if (!best || left < best.left) best = { pct, text, left }
+    }
+    return best ? { pct: best.pct, text: best.text } : null
+  }
   function canTrain(t: Tables, c: Uint8Array) {
     const xp = (c[0xac] | (c[0xad] << 8) | (c[0xae] << 16) | (c[0xaf] << 24)) >>> 0
     for (let k = 0; k < 8; k++) {
@@ -1099,6 +1124,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         (store ? '<button data-a="sell"><u>S</u>ell</button><button data-a="id"><u>I</u>d</button>' : '')
     }
     const enc = node[0x102] | (node[0x103] << 8), cap = capacity(node)
+    const tb = getTables(), xpNext = tb ? xpProgress(tb, node) : null
+    const sheetXp = tb ? (xpNext ? xpNext.text.replace(/^[\d,.\s]+XP: /, '') : 'highest level reached') : ''
     // c[0x10F]: Quick (computer control), kept in the record between battles; NPCs are always computer-run
     const quick = node[0x10f] !== 0 && node[0x84] < 0x80
     dialog.classList.add('wide')
@@ -1118,7 +1145,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
               <tr><th title="${escape(TIPS.THAC0)}">THAC0</th><td>${c.thac0}</td></tr>
               <tr><th title="${escape(TIPS.Damage)}">Damage</th><td>${c.damage}</td></tr>
               <tr><th title="${escape(TIPS.Movement)}">Movement</th><td>${c.movement}</td></tr>
-              <tr><th title="${escape(TIPS.Experience)}">Experience</th><td>${c.exp}</td></tr>
+              <tr><th title="${escape(TIPS.Experience)}">Experience</th><td>${c.exp}${sheetXp ? `<small class="muted"> · ${escape(sheetXp)}</small>` : ''}</td></tr>
             </table>
             <table>${MONEY.map((m, i) => `<tr><th>${m}</th><td>${c.money[i]}</td></tr>`).join('')}</table>
           </div>

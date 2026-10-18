@@ -593,3 +593,8 @@ dialog.panel .rules-body h3 { color: var(--ega-cyan); margin: 0.8rem 0 0.2rem; f
 .spell-actions h3 { flex-basis: 100%; margin: 0; }
 .spell-actions p { flex-basis: 100%; margin: 0; }
 .spell-actions button small { color: var(--muted); }
+
+/* experience to the next level (IMP-063) */
+.xpbar { display: block; height: 0.25rem; background: #ffffff18; overflow: hidden; margin-top: 0.12rem; }
+.xpbar span { display: block; height: 100%; background: var(--ega-cyan); }
+.xpbar.ready span { background: var(--accent); }
