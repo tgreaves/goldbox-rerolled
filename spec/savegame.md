@@ -20,6 +20,10 @@ A save slot is a letter `A`–`J` (`DS:537A` + letter). One slot = one `SAVGAM<x
 
 `n` = 1-based position in the party.
 
+Loading (`FUN_45c5_0aec`) reads `.ITM` and `.SPC` as fixed-size records until end of file and relinks them in memory, clearing each record's stored next pointer (item +0x2A, effect +5), so those pointer bytes are never read back (O). Unused bytes of the stem table (after each Pascal string, and slots beyond the party count) are whatever was in memory.
+
+**The port** writes all four kinds of file in this layout: a loaded save written back is byte-for-byte the same except those never-read bytes, which it writes as 0 (tested against both shipped saves). Its own additions (the journal and commission discoveries) go in a separate `SAVGAM<x>.GBR` (JSON) beside them in an exported ZIP; the original never opens it, and a save without it loads as usual.
+
 ## `SAVGAM<x>.DAT` layout (O)
 
 Validated: both shipped saves (`SAVGAMA.DAT`, `SAVGAMJ.DAT`) parse to exactly 13 137 bytes.

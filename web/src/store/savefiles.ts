@@ -6,7 +6,28 @@ import type { SavedGame, StoredCharacter } from './user'
 
 export interface NamedFile { name: string; data: Uint8Array }
 
-/** The files of one saved game, named as the original writes them. */
+/**
+ * The port's own additions to a save (the journal and commission discoveries, IMP-055 and IMP-023),
+ * kept beside the original files in SAVGAM<x>.GBR, which the original game never reads, so the
+ * original files stay byte-for-byte the original format.
+ */
+export const SIDECAR_FORMAT = 'goldbox-rerolled-save'
+
+export function sidecar(g: SavedGame): NamedFile | null {
+  if (!g.known?.length) return null
+  const json = JSON.stringify({ format: SIDECAR_FORMAT, version: 1, known: g.known })
+  return { name: `SAVGAM${g.slot}.GBR`, data: new TextEncoder().encode(json) }
+}
+
+function readSidecar(d: Uint8Array | undefined): string[] | undefined {
+  if (!d) return undefined
+  try {
+    const v = JSON.parse(new TextDecoder().decode(d)) as { format?: string; known?: unknown }
+    return v.format === SIDECAR_FORMAT && Array.isArray(v.known) ? v.known.filter((x): x is string => typeof x === 'string') : undefined
+  } catch { return undefined }
+}
+
+/** The files of one saved game, named as the original writes them, plus the port's sidecar. */
 export function saveFiles(g: SavedGame): NamedFile[] {
   const stems = parseSave(g.dat).party
   const out: NamedFile[] = [{ name: `SAVGAM${g.slot}.DAT`, data: g.dat }]
@@ -16,6 +37,8 @@ export function saveFiles(g: SavedGame): NamedFile[] {
     out.push({ name: `${stem}.ITM`, data: c.itm ?? new Uint8Array(0) })
     out.push({ name: `${stem}.SPC`, data: c.spc ?? new Uint8Array(0) })
   })
+  const extra = sidecar(g)
+  if (extra) out.push(extra)
   return out
 }
 
@@ -35,7 +58,7 @@ export function savesFrom(files: NamedFile[]): { games: SavedGame[]; missing: st
     const first = chars[0]?.sav
     const leader = first ? String.fromCharCode(...first.subarray(1, 1 + first[0])) : 'empty'
     games.push({ slot: m[1], dat, chars: chars.map((c) => ({ sav: c.sav!, itm: c.itm, spc: c.spc })),
-      label: `${leader}'s party (imported)`, savedAt: Date.now() })
+      label: `${leader}'s party (imported)`, savedAt: Date.now(), known: readSidecar(byName.get(`SAVGAM${m[1]}.GBR`)) })
   }
   return { games, missing }
 }
