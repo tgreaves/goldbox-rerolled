@@ -475,6 +475,17 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 }
 
 /* debug character editor (IMP-025) */
-dialog.panel form.charedit fieldset { border: 1px solid #ffffff30; margin: 0.4rem 0; display: flex; flex-wrap: wrap; gap: 0.4rem 0.8rem; }
-dialog.panel form.charedit label, dialog.panel form.additem label { display: inline-flex; gap: 0.3rem; align-items: center; }
-dialog.panel form.charedit input[type=number], dialog.panel form.additem input[type=number] { width: 5.5rem; }
+dialog.panel form.charedit {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr)); gap: 0.5rem; margin: 0.5rem 0;
+}
+dialog.panel form.charedit fieldset {
+  border: 1px solid #ffffff30; margin: 0; min-width: 0; display: grid; gap: 0.3rem;
+  grid-template-columns: max-content minmax(0, 1fr);
+}
+dialog.panel form.charedit label { display: contents; }
+dialog.panel form.charedit input, dialog.panel form.charedit select { width: 100%; min-width: 0; box-sizing: border-box; }
+dialog.panel form.charedit > p { grid-column: 1 / -1; margin: 0; display: flex; justify-content: flex-end; }
+dialog.panel form.additem { display: flex; flex-wrap: wrap; gap: 0.4rem 0.6rem; align-items: center; justify-content: flex-start; margin: 0.5rem 0; }
+dialog.panel form.additem label { display: inline-flex; gap: 0.3rem; align-items: center; }
+dialog.panel form.additem select { max-width: 100%; }
+dialog.panel form.additem input[type=number] { width: 4rem; }
