@@ -198,7 +198,9 @@ export class Engine {
 
   /** Party members (the list without loaded monsters). */
   party(): Uint8Array[] {
-    return this.nodes.slice(0, this.B[PARTY_SIZE - B0] || this.nodes.length)
+    // the party size (ECL 0x6E3E), but never the monsters loaded after the party
+    const n = this.nodes.length - this.monsters
+    return this.nodes.slice(0, Math.min(this.B[PARTY_SIZE - B0] || n, n))
   }
 
   /**

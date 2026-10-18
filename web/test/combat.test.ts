@@ -179,6 +179,33 @@ describe.skipIf(!have)('combat', () => {
     if (r.messages.includes('The party has fled.')) expect(e.read(0x6dc7)).toBe(0x81)
   })
 
+  it('never counts loaded monsters as party members, and recounts the party after a battle', async () => {
+    const m = new Map<string, Uint8Array>()
+    for (const n of readdirSync(dir)) if (wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(join(dir, n))))
+    const files = new GameFiles(m)
+    const io = { print: () => {}, menu: async () => 0, refresh: async () => {}, pause: async () => {}, sound: () => {},
+      picture: () => {}, sprite: () => {}, engine: async () => {}, inputNumber: async () => 0, inputText: async () => '' } as unknown as Io
+    const dat = files.get('SAVGAMA.DAT')!
+    const stems = parseSave(dat).party
+    const e = new Engine(files, io, 2)
+    e.loadSave(dat, stems.map((s) => files.get(`${s}.SAV`)!))
+    stems.forEach((s, i) => e.attachFiles(i, files.get(`${s}.ITM`), files.get(`${s}.SPC`)))
+    await e.start()
+    // a party size left too high (the old fled bug): the guards loaded after the party stay monsters
+    e.nodes.splice(1)
+    e.write(0x6e3e, 6)
+    e.addMonsters(13, 1, 4)
+    expect(e.party()).toHaveLength(1)
+    let battle: import('../src/rules/combat').Battle | null = null
+    const ui: CombatUi = {
+      print: () => {}, redraw: () => {}, pause: async () => {}, menu: async (items) => items.length - 1, step: async () => 'end',
+      aim: async () => null, confirm: async () => false, view: async () => {}, sound: () => {}, pick: async () => -1,
+    }
+    await fight(e, ui, (b) => { battle = b; expect(b.fighters.filter((f) => !f.monster)).toHaveLength(1); b.debugWin() })
+    expect(battle).not.toBeNull()
+    expect(e.read(0x6e3e)).toBe(e.nodes.length) // recounted
+  })
+
   it('paces messages, hits and misses by the game speed', async () => {
     const m = new Map<string, Uint8Array>()
     for (const n of readdirSync(dir)) if (wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(join(dir, n))))

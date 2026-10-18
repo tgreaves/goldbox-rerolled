@@ -1832,6 +1832,9 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
     e.effects.delete(f.c)
   }
   e.write(0x6dc8, defeated)
+  // only the party is left in the list now: the party size follows it (members lost when the party
+  // fled, or gone over to the other side, are no longer counted; FUN_417f_3291 lowers it per member)
+  if (!e.quit) e.write(0x6e3e, e.nodes.length)
   // NPC shares: an Okay NPC's cut of the money disappears
   const npcs = e.party().filter((c) => c[0x84] >= 0x80 && c[0x10c] === 0)
   const npcShares = npcs.reduce((a, c) => a + (c[0x85] & 7), 0)
