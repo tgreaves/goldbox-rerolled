@@ -45,7 +45,7 @@ const COMBAT: [string, string][] = [
 ]
 
 const KEYS: [string, string][] = [
-  ['Exploring', 'Arrow keys or 8/4/6/2: move and turn · A area map · C or V the current character's sheet (cast spells there) · E encamp · S search · L look · Esc ☰ menu'],
+  ['Exploring', 'Arrow keys or 8/4/6/2: move and turn · A area map · C or V the current character\'s sheet (cast spells there) · E encamp · S search · L look · Esc ☰ menu'],
   ['Menus', 'The highlighted letter, or 1–9, picks a choice; Enter or Space continues a "press Enter" prompt'],
   ['Combat', 'Arrows or the numeric keypad: step · Esc: undo steps · Space: take back characters on Quick · Alt-M: Magic On/Off'],
   ['Panels', 'Esc or ✕ closes'],
