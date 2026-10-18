@@ -549,7 +549,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           <span class="rc-top"><span class="rc-name">${escape(c.name)}</span><span class="rc-ac" title="${escape(TIPS.AC)}">AC ${c.ac}</span></span>
           <span class="hpbar${pct < 50 ? ' low' : ''}"><span style="width:${pct}%"></span></span>
           ${xpBar}
-          <span class="rc-line"><span class="rc-hp">${up ? `HP ${c.hp}/${c.hpMax}` : c.status}</span>${helpless ? ' (Helpless)' : ''}${weapon && it ? ` · ${escape(it.name(weapon))}` : ''}</span>
+          <span class="rc-line"><span class="rc-hp">${up ? `HP ${c.hp}/${c.hpMax}` : c.status}</span>${helpless ? ' (Helpless)' : ''}</span>
+          ${weapon && it ? `<span class="rc-line rc-weapon" title="${escape(it.name(weapon))}">${escape(it.name(weapon))}</span>` : ''}
           ${spells ? `<span class="rc-line rc-spells" title="${escape(spells)}">✦ ${escape(spells)}</span>` : ''}
           ${effects.length || train || quick ? `<span class="rc-badges">${quick ? '<span class="badge quick" title="The computer plays them in battle. Open their sheet and choose Play by hand, or press Space / Take control in a battle">Quick</span>' : ''}${effects.map((n) => `<span class="badge">${escape(n)}</span>`).join('')}${train ? '<span class="badge train">Ready to train</span>' : ''}</span>` : ''}
         </span>
