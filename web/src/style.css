@@ -613,6 +613,13 @@ dialog.panel .rules-body h3 { color: var(--ega-cyan); margin: 0.8rem 0 0.2rem; f
   .party-top .roster-cards { display: flex; flex-wrap: nowrap; gap: 0.4rem; }
   .party-top .roster-cards .rcard { flex: 1 1 0; min-width: 11rem; }
   .party-top .rcard .rc-spells { display: none; }
+  /* smaller text in the row: three quarters of the game font (16 → 12 px, Large 24 → 18 px) */
+  .party-top .rcard { font-size: 0.75em; gap: 0.4rem; padding: 0.25rem 0.35rem; }
+  .party-top .rcard .rc-line { font-size: 0.92em; }
+  .party-top .rcard .badge { font-size: 0.85em; padding: 0 0.25rem; }
+  .party-top .rcard canvas.rc-portrait { width: 40px; height: 40px; }
+  .party-top .rcard canvas.rc-icon { width: 28px; height: 28px; }
+  .party-top .roster-cards .rcard { min-width: 9.5rem; }
   /* battles: the battlefield across the whole width under the cards */
   .party-top .game.in-combat {
     grid-template-columns: minmax(0, 1fr);
