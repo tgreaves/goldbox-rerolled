@@ -517,3 +517,6 @@ table.shop td.give button { min-height: 32px; padding: 0.15rem 0.5rem; }
 table.shop td.give button.unusable { opacity: 0.6; border-style: dashed; }
 table.shop td.give button.slower { color: var(--ega-yellow); }
 table.shop input[type=number] { width: 6rem; }
+
+.quick-note { color: var(--ega-magenta); margin: 0.3rem 0 0; }
+.quick-note button { margin-left: 0.4rem; }

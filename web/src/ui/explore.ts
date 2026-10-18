@@ -503,7 +503,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           <span class="hpbar${pct < 50 ? ' low' : ''}"><span style="width:${pct}%"></span></span>
           <span class="rc-line"><span class="rc-hp">${up ? `HP ${c.hp}/${c.hpMax}` : c.status}</span>${helpless ? ' (Helpless)' : ''}${weapon && it ? ` · ${escape(it.name(weapon))}` : ''}</span>
           ${spells ? `<span class="rc-line rc-spells" title="${escape(spells)}">✦ ${escape(spells)}</span>` : ''}
-          ${effects.length || train || quick ? `<span class="rc-badges">${quick ? '<span class="badge quick" title="The computer plays them in battle. Space or Take control in a battle to play them yourself">Quick</span>' : ''}${effects.map((n) => `<span class="badge">${escape(n)}</span>`).join('')}${train ? '<span class="badge train">Ready to train</span>' : ''}</span>` : ''}
+          ${effects.length || train || quick ? `<span class="rc-badges">${quick ? '<span class="badge quick" title="The computer plays them in battle. Open their sheet and choose Play by hand, or press Space / Take control in a battle">Quick</span>' : ''}${effects.map((n) => `<span class="badge">${escape(n)}</span>`).join('')}${train ? '<span class="badge train">Ready to train</span>' : ''}</span>` : ''}
         </span>
         <canvas class="pixel rc-icon" width="24" height="24"></canvas></button>`
     }).join('')
@@ -1062,11 +1062,14 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         (store ? '<button data-a="sell"><u>S</u>ell</button><button data-a="id"><u>I</u>d</button>' : '')
     }
     const enc = node[0x102] | (node[0x103] << 8), cap = capacity(node)
+    // c[0x10F]: Quick (computer control), kept in the record between battles; NPCs are always computer-run
+    const quick = node[0x10f] !== 0 && node[0x84] < 0x80
     dialog.classList.add('wide')
     dialog.innerHTML = `
       <div class="sheet-head"><canvas class="pixel ic sheet-icon" width="24" height="24"></canvas><div>
         <h2>${escape(c.name)}</h2>
         <p>${c.gender} ${c.race} · age ${c.age} · ${c.alignment}<br>${c.cls}${c.levels.length ? ' · level ' + c.levels.map((l) => l.level).join('/') : ''} · ${c.status}</p>
+        ${quick ? `<p class="quick-note">On Quick: the computer plays ${escape(c.name)} in battle. ${opts.combat ? 'Space or Take control to play them yourself.' : '<button data-quick="off">Play by hand</button>'}</p>` : ''}
       </div></div>
       <div class="sheet2">
         <section>
@@ -1116,6 +1119,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       drawRoster()
       sheet(parseCharacter(node), { ...o, mode: opts.mode, combat: opts.combat })
     }
+    dialog.querySelector<HTMLButtonElement>('button[data-quick]')?.addEventListener('click', () => {
+      node[0x10f] = 0 // as the battle's Space does for this character (FUN_3334_0fc1), outside a battle (IMP-054)
+      again({ message: `${c.name} will be played by hand in battle.` })
+    })
     dialog.querySelectorAll<HTMLButtonElement>('.gear [data-i]').forEach((r) =>
       r.addEventListener('click', () => again({ selected: Number(r.dataset.i) === sel ? -1 : Number(r.dataset.i) })))
     dialog.querySelectorAll<HTMLButtonElement>('.item-actions button').forEach((b) => b.addEventListener('click', () => {
