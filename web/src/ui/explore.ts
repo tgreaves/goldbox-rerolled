@@ -28,7 +28,7 @@ import { drop, halve, join, scribing, trade, unavailable } from '../rules/invent
 import { COIN_PROMPT, COINS, coinValue, dropMoney, moneyOf, pay, poolAll, receive, sellOffer, share, take, tradeMoney } from '../rules/money'
 import { shop, temple, treasure, type TownUi } from './town'
 import { proposeSplit } from '../rules/treasure'
-import { camp, cast, effectNames, type CampUi } from './camp'
+import { camp, effectNames, type CampUi } from './camp'
 import { runBattle, type BattleControls } from './combat'
 import { clockText, freeSlots, isScroll, knows, memorise, memorised, preparation } from '../rules/camp'
 import { castOutside, itemSpells, spendUse, targetKind } from '../rules/magic'
@@ -1026,7 +1026,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   interface MoneyStep { op: 'trade' | 'drop'; to?: number; type?: number }
   /** steps of Use on the sheet: which spell, then whom */
   interface UseStep { scroll: boolean; ids: number[]; spell?: number; combatOnly?: boolean }
-  function sheet(c: Character, opts: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use' | 'scribe'; use?: UseStep; after?: 'drop' | 'trade' | 'sell'; money?: MoneyStep; combat?: boolean; mode?: 'shop' | 'temple' | 'treasure' } = {}) {
+  function sheet(c: Character, opts: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use' | 'scribe'; use?: UseStep; after?: 'drop' | 'trade' | 'sell'; money?: MoneyStep; combat?: boolean; mode?: 'shop' | 'temple' | 'treasure'; castOn?: number } = {}) {
     const node = c.raw
     const t = engine.items
     const items = engine.itemsOf(node)
@@ -1133,10 +1133,34 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       ${t ? `${preview}
         ${opts.message ? `<p class="message">${escape(opts.message)}</p>` : ''}
         <div class="item-actions">${actions || (items.length ? '<span class="muted">Pick an item to ready, use, trade or drop it.</span>' : '')}</div>` : ''}
+      ${spellsPanel()}
       ${moneyPanel()}
       <form method="dialog"><button>Close</button></form>`
     { const p = buildIcon(files, node, false), g = sizeCanvas(dialog.querySelector<HTMLCanvasElement>('canvas.sheet-icon')!, 24, 24)
       g.fillStyle = '#000'; g.fillRect(0, 0, 24, 24); if (p) blit(g, toImageData(p), 0, 0) }
+    /**
+     * Cast from the sheet (IMP-062), outside battles: the main menu's and camp's Cast (FUN_3f81_04a1)
+     * for this character, with its rules: no casting where the area forbids it (ECL 0x49E5), only
+     * when Okay, combat-only spells refused, targets by the spell's side byte.
+     */
+    function spellsPanel(): string {
+      const st = engine.spells
+      if (!st || opts.combat) return ''
+      const ready = [...new Set(memorised(node).filter((v) => v > 0 && v < 0x80))].map((id) => st.get(id)!).filter(Boolean)
+      if (!ready.length) return ''
+      if (opts.castOn !== undefined) {
+        const s = st.get(opts.castOn)!
+        return `<div class="spell-actions"><p>Cast ${escape(s.name)} on:</p>${engine.party().map((n, k) =>
+          `<button data-sp="on-${k}">${escape(parseCharacter(n).name)}</button>`).join('')}<button data-sp="cancel">Cancel</button></div>`
+      }
+      const why = engine.read(0x49e5) !== 0 ? 'cannot cast spells in this area' : node[0x10c] !== 0 ? `${c.name} is in no condition to cast any spells` : ''
+      const count = (id: number) => memorised(node).filter((v) => v === id).length
+      return `<div class="spell-actions"><h3>Spells</h3>${why ? `<p class="muted">${escape(why)}</p>` : ''}${ready.map((s) => {
+        const combatOnly = s.side === 0
+        const n = count(s.id)
+        return `<button data-sp="cast-${s.id}" ${why || combatOnly ? 'disabled' : ''} title="${escape(combatOnly ? 'Only in combat. ' + spellText(s) : spellText(s))}">${escape(s.name)}${n > 1 ? ` ×${n}` : ''}${combatOnly ? ' <small>(combat)</small>' : ''}</button>`
+      }).join('')}</div>`
+    }
     function moneyPanel(): string {
       // the view menu's Trade and Drop of coins (FUN_4894_0ab3): Trade not in combat, nor for an NPC in play
       const coins = c.money.map((v, i) => ({ v, i })).filter((x) => x.v > 0)
@@ -1153,7 +1177,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       return `<div class="money-actions"><form class="money-amount"><label>How much ${escape(COIN_PROMPT[m.type])}will you ${m.op}? <input type="number" min="0" max="${c.money[m.type]}" value="${c.money[m.type]}"></label>
         <button>OK</button><button type="button" data-m="exit">Exit</button></form></div>`
     }
-    const again = (o: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use' | 'scribe'; use?: UseStep; after?: 'drop' | 'trade' | 'sell'; money?: MoneyStep; combat?: boolean }) => {
+    const again = (o: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use' | 'scribe'; use?: UseStep; after?: 'drop' | 'trade' | 'sell'; money?: MoneyStep; combat?: boolean; castOn?: number }) => {
       drawRoster()
       sheet(parseCharacter(node), { ...o, mode: opts.mode, combat: opts.combat })
     }
@@ -1161,6 +1185,25 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       node[0x10f] = 0 // as the battle's Space does for this character (FUN_3334_0fc1), outside a battle (IMP-054)
       again({ message: `${c.name} will be played by hand in battle.` })
     })
+    dialog.querySelectorAll<HTMLButtonElement>('.spell-actions button').forEach((b) => b.addEventListener('click', () => {
+      const a = b.dataset.sp!, st = engine.spells
+      if (!st) return
+      if (a === 'cancel') return again({})
+      const go = (s: NonNullable<ReturnType<typeof st.get>>, targets: Uint8Array[]) => {
+        void castOutside(engine, node, s, targets).then((out) => {
+          for (const m of out) print(m, false)
+          again({ message: out.join(' ') })
+        })
+      }
+      if (a.startsWith('cast-')) {
+        const s = st.get(Number(a.slice(5)))!
+        const kind = targetKind(s)
+        if (kind === 'one') return again({ castOn: s.id })
+        go(s, kind === 'party' ? engine.party() : [node])
+      } else if (a.startsWith('on-') && opts.castOn !== undefined) {
+        go(st.get(opts.castOn)!, [engine.party()[Number(a.slice(3))]])
+      }
+    }))
     // drag a carried item onto a party member's name: the Trade action without the menu (IMP-059)
     dialog.querySelectorAll<HTMLElement>('[data-drag]').forEach((el) => el.addEventListener('dragstart', (ev) => {
       ev.dataTransfer?.setData('text/plain', el.dataset.drag!)
@@ -1602,7 +1645,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     pad.classList.remove('disabled')
     // View and Area are left out (IMP-061): a party card opens the sheet, the map is on screen; the
     // keys V and A still work, and Area shows where the map is hidden (phones held sideways)
-    menuBar.innerHTML = ['Area', 'Cast', 'Encamp', 'Search', 'Look']
+    menuBar.innerHTML = ['Area', 'Encamp', 'Search', 'Look']
       .map((c) => `<button data-cmd="${c[0]}" class="${c === 'Area' ? 'area-only' : ''}${c === 'Search' && engine.B[0x6dca - 0x6b00] & 1 ? ' on' : ''}"><u>${c[0]}</u>${c.slice(1)}</button>`).join('') +
       // everything that is not a game command sits behind ☰ (IMP-057)
       `<button class="menu-btn" data-cmd="menu" title="Journal, commissions, save, settings, rules, quit (Esc)">☰ Menu${commissionsDue() ? ' <span class="due">•</span>' : ''}</button>`
@@ -1627,7 +1670,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       case 'A': areaMap(); break
       case 'V': sheet(parseCharacter(engine.cur)); break
       case 'S': engine.command('s'); commandBar(); showWhere(); break
-      case 'C': act(async () => { townMode = 'camp'; try { await cast(campUi) } finally { townMode = null } }); break
+      case 'C': sheet(parseCharacter(engine.cur)); break // Cast is on the sheet (IMP-062)
       case 'E': act(() => engine.command('e')); break
       case 'L': act(() => engine.command('L')); break
       case 'sound': {

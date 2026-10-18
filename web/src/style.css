@@ -587,3 +587,9 @@ dialog.panel .rules-body h3 { color: var(--ega-cyan); margin: 0.8rem 0 0.2rem; f
 /* Area on the command bar only where the map is hidden (IMP-061) */
 .game .menu button.area-only { display: none; }
 @media (orientation: landscape) and (max-height: 520px) { .game .menu button.area-only { display: inline-block; } }
+
+/* Cast from the sheet (IMP-062) */
+.spell-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; margin: 0.5rem 0; }
+.spell-actions h3 { flex-basis: 100%; margin: 0; }
+.spell-actions p { flex-basis: 100%; margin: 0; }
+.spell-actions button small { color: var(--muted); }
