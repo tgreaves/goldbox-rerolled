@@ -412,7 +412,13 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       }
       if (what === 'party screen') {
         townMode = 'camp'
-        try { await trainingHall() } finally { townMode = null }
+        try { await trainingHall() } finally {
+          townMode = null
+          // PROGRAM 0 then exits the script and the screen is redrawn for the map (FUN_10ba_27d9):
+          // the hall's picture goes and the 3D view is back
+          showPicture(null)
+          await sync(0)
+        }
         return
       }
       if (what === 'camp') {
@@ -1800,13 +1806,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const row = (e.target as HTMLElement).closest<HTMLElement>('[data-i]')
     if (!row || (!townMode && (busy || pending))) return
     const c = engine.nodes[Number(row.dataset.i)]
-    const inBattle = app.querySelector('.game')!.classList.contains('in-combat')
-    if (c === engine.cur || !inBattle) {
-      // outside battles one tap selects and opens the sheet (IMP-061); in a battle a tap selects
-      engine.cur = engine.savedCur = c
-      drawRoster()
-      if (!dialog.open) sheet(parseCharacter(c))
-    } else {
+    // a tap selects; a tap on the selected character opens the sheet (IMP-045)
+    if (c === engine.cur) { if (!dialog.open) sheet(parseCharacter(c)) }
+    else {
       engine.cur = engine.savedCur = c
       drawRoster()
     }
