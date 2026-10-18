@@ -572,6 +572,7 @@ dialog.panel .rules-body h3 { color: var(--ega-cyan); margin: 0.8rem 0 0.2rem; f
   }
   .game .side { flex-direction: row; max-height: 34dvh; }
   .game .map { display: none; } /* the Area command still shows it */
+  .game .menu button.area-only { display: inline-block; }
   .game .party { flex: 1; max-height: none; }
   .roster-cards { grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); }
   .rcard canvas.rc-portrait, .rcard .rc-spells, .rcard .rc-badges { display: none; }
@@ -582,3 +583,7 @@ dialog.panel .rules-body h3 { color: var(--ega-cyan); margin: 0.8rem 0 0.2rem; f
   button, select, input[type=number], input[type=text] { min-height: 44px; }
   table.shop td.give button { min-height: 44px; }
 }
+
+/* Area on the command bar only where the map is hidden (IMP-061) */
+.game .menu button.area-only { display: none; }
+@media (orientation: landscape) and (max-height: 520px) { .game .menu button.area-only { display: inline-block; } }

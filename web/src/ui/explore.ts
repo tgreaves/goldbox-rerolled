@@ -1583,8 +1583,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   function commandBar() {
     pad.classList.remove('disabled')
-    menuBar.innerHTML = ['Area', 'Cast', 'View', 'Encamp', 'Search', 'Look']
-      .map((c) => `<button data-cmd="${c[0]}"${c === 'Search' && engine.B[0x6dca - 0x6b00] & 1 ? ' class="on"' : ''}><u>${c[0]}</u>${c.slice(1)}</button>`).join('') +
+    // View and Area are left out (IMP-061): a party card opens the sheet, the map is on screen; the
+    // keys V and A still work, and Area shows where the map is hidden (phones held sideways)
+    menuBar.innerHTML = ['Area', 'Cast', 'Encamp', 'Search', 'Look']
+      .map((c) => `<button data-cmd="${c[0]}" class="${c === 'Area' ? 'area-only' : ''}${c === 'Search' && engine.B[0x6dca - 0x6b00] & 1 ? ' on' : ''}"><u>${c[0]}</u>${c.slice(1)}</button>`).join('') +
       // everything that is not a game command sits behind ☰ (IMP-057)
       `<button class="menu-btn" data-cmd="menu" title="Journal, commissions, save, settings, rules, quit (Esc)">☰ Menu${commissionsDue() ? ' <span class="due">•</span>' : ''}</button>`
     menuBar.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => command(b.dataset.cmd!)))
@@ -1711,8 +1713,13 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const row = (e.target as HTMLElement).closest<HTMLElement>('[data-i]')
     if (!row || (!townMode && (busy || pending))) return
     const c = engine.nodes[Number(row.dataset.i)]
-    if (c === engine.cur) sheet(parseCharacter(c))
-    else {
+    const inBattle = app.querySelector('.game')!.classList.contains('in-combat')
+    if (c === engine.cur || !inBattle) {
+      // outside battles one tap selects and opens the sheet (IMP-061); in a battle a tap selects
+      engine.cur = engine.savedCur = c
+      drawRoster()
+      if (!dialog.open) sheet(parseCharacter(c))
+    } else {
       engine.cur = engine.savedCur = c
       drawRoster()
     }
