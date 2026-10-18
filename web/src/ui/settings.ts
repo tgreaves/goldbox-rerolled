@@ -8,6 +8,20 @@ import { gfxMode, savedGfx, setGfx, type Gfx } from '../render/upscale'
 
 const SIZE_KEY = 'poolrad.textsize'
 const MOTION_KEY = 'poolrad.motion'
+const PARTY_KEY = 'poolrad.partylayout'
+export type PartyLayout = 'top' | 'side'
+
+/** Where the party cards go (IMP-064): a row across the top, or the original's column beside the view. */
+export function partyLayout(): PartyLayout {
+  try { return localStorage.getItem(PARTY_KEY) === 'side' ? 'side' : 'top' } catch { return 'top' }
+}
+export function applyPartyLayout() {
+  document.documentElement.classList.toggle('party-top', partyLayout() === 'top')
+}
+function setPartyLayout(p: PartyLayout) {
+  try { localStorage.setItem(PARTY_KEY, p) } catch { /* this page only */ }
+  applyPartyLayout()
+}
 export type Motion = 'full' | 'reduced'
 
 /** Reduced motion (IMP-057): the title's lightning and the river's flashes are left out. Follows the system setting unless chosen here. */
@@ -56,6 +70,7 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
         : '<div class="set-row"><span class="set-label">Sound</span><span class="muted">needs START.EXE among the game files</span></div>'}
       ${gameFontAvailable() ? seg('Font', [['original', 'Original 8×8'], ['modern', 'Modern']], fontChoice()) : ''}
       ${framesAvailable() ? seg<FrameChoice>('Borders', [['original', 'Original rope'], ['modern', 'Plain']], frameChoice()) : ''}
+      ${seg<PartyLayout>('Party', [['top', 'Row across the top'], ['side', 'Column beside the view']], partyLayout())}
       ${seg<Motion>('Motion', [['full', 'Full'], ['reduced', 'Reduced (no flashing)']], motionChoice())}
       ${seg<TextSize>('Text size', [['normal', 'Normal'], ['large', 'Large']], textSize())}
       ${seg<Gfx>('Graphics', [['pixel', 'Pixel (original)'], ['sharp', 'Sharp (even pixels, soft fit)']], savedGfx())}
@@ -74,6 +89,7 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
       else if (d.borders) setFrameChoice(d.borders as FrameChoice)
       else if (d.textsize) setTextSize(d.textsize as TextSize)
       else if (d.motion) setMotion(d.motion as Motion)
+      else if (d.party) setPartyLayout(d.party as PartyLayout)
       else if (d.graphics) setGfx(d.graphics as Gfx)
       else if (d.reload) { location.reload(); return }
       host.changed?.()
