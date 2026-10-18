@@ -177,6 +177,76 @@ export async function runBattle(s: BattleScreen) {
     const cursor = acting && battle.inPlay(acting) ? [{ row: acting.y, col: acting.x }] : []
     view.draw(battle.bf, battle.cells, figures, focus, [...marks, ...planMarks], cursor, sprites)
   }
+  type StepResult = number | 'end' | 'undo' | { choice: number }
+  /**
+   * A step by key, tap or planned walk (IMP-044). With `menu` the commands stay up at the same time
+   * (IMP-053): a choice resolves as { choice }, Enter is left to the menu.
+   */
+  const awaitStep = (f: Fighter, left: number, menu: { items: string[]; prompt: string } | null) => new Promise<StepResult>((resolve) => {
+      // carrying on along a planned walk, unless something stopped the combatant on the way
+      if (walking && walking.dirs.length && walking.at.x === f.x && walking.at.y === f.y && f.r[6] > 1) {
+        const d = walking.dirs.shift()!
+        walking.at = { x: f.x + DIRS[d][0], y: f.y + DIRS[d][1] }
+        resolve(d)
+        return
+      }
+      walking = null
+      plan = null
+      marks = []
+      for (let d = 0; d < 8; d++) {
+        const [dx, dy] = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]][d]
+        marks.push({ row: f.y + dy, col: f.x + dx, colour: '#4c8bd6' })
+      }
+      draw()
+      let settled = false
+      const done = (v: StepResult, fromMenu = false) => {
+        if (settled) return
+        settled = true
+        setInput({})
+        marks = []
+        if (!fromMenu) s.cancelMenu()
+        resolve(v)
+      }
+      setInput({
+        key: (ev) => {
+          if (ev.key in KEY_DIRS) { done(KEY_DIRS[ev.key]); return true }
+          if (ev.key === 'Enter' && !menu) { done('end'); return true }
+          if (ev.key === 'Escape') { if (plan) { plan = null; draw(); return true } done('undo'); return true }
+          return false
+        },
+        tap: (ev) => {
+          ev.preventDefault()
+          const cell = view!.cellAt(ev, focus)
+          const dx = cell.col - f.x, dy = cell.row - f.y
+          if (Math.max(Math.abs(dx), Math.abs(dy)) === 1) {
+            const d = DIRS.findIndex(([x, y]) => x === Math.sign(dx) && y === Math.sign(dy))
+            plan = null
+            done(d)
+            return
+          }
+          // a second tap on the planned square walks there; a first tap plans (IMP-044)
+          if (plan && plan.to.x === cell.col && plan.to.y === cell.row) {
+            const dirs = plan.dirs.slice()
+            plan = null
+            const d = dirs.shift()!
+            walking = { dirs, at: { x: f.x + DIRS[d][0], y: f.y + DIRS[d][1] } }
+            done(d)
+            return
+          }
+          const who = figureAt(cell.row, cell.col)
+          if (who) { showInfo(who, ev); return }
+          const r = route(f, cell.col, cell.row)
+          if (!r) { plan = null; s.print(`Can't get there (Move Left = ${left})`); draw(); return }
+          plan = { ...r, to: { x: cell.col, y: cell.row } }
+          const cost = r.dirs.reduce((a, d) => a + (d % 2 ? 3 : 2), 0)
+          s.print(`Path: ${r.dirs.length} step${r.dirs.length > 1 ? 's' : ''}, ${cost >> 1} of ${left} movement. Tap the green square again to go.`)
+          draw()
+        },
+      })
+      if (menu) void s.menu(menu.items, { prompt: menu.prompt }).then((i) => done({ choice: i }, true))
+      else void s.menu(['END MOVE', 'UNDO'], { prompt: `Move/Attack, Move Left = ${left}` }).then((i) => done(i === 0 ? 'end' : 'undo', true))
+    })
+
   const ui: CombatUi = {
     print: (t, hold) => {
       later(async () => {
@@ -220,69 +290,8 @@ export async function runBattle(s: BattleScreen) {
     },
     pause: (ms = 120) => s.pause(ms),
     menu: (items, opts) => s.menu(items, opts),
-    step: (f, left) => new Promise((resolve) => {
-      // carrying on along a planned walk, unless something stopped the combatant on the way
-      if (walking && walking.dirs.length && walking.at.x === f.x && walking.at.y === f.y && f.r[6] > 1) {
-        const d = walking.dirs.shift()!
-        walking.at = { x: f.x + DIRS[d][0], y: f.y + DIRS[d][1] }
-        resolve(d)
-        return
-      }
-      walking = null
-      plan = null
-      marks = []
-      for (let d = 0; d < 8; d++) {
-        const [dx, dy] = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]][d]
-        marks.push({ row: f.y + dy, col: f.x + dx, colour: '#4c8bd6' })
-      }
-      draw()
-      let settled = false
-      const done = (v: number | 'end' | 'undo', fromMenu = false) => {
-        if (settled) return
-        settled = true
-        setInput({})
-        marks = []
-        if (!fromMenu) s.cancelMenu()
-        resolve(v)
-      }
-      setInput({
-        key: (ev) => {
-          if (ev.key in KEY_DIRS) { done(KEY_DIRS[ev.key]); return true }
-          if (ev.key === 'Enter') { done('end'); return true }
-          if (ev.key === 'Escape') { if (plan) { plan = null; draw(); return true } done('undo'); return true }
-          return false
-        },
-        tap: (ev) => {
-          ev.preventDefault()
-          const cell = view!.cellAt(ev, focus)
-          const dx = cell.col - f.x, dy = cell.row - f.y
-          if (Math.max(Math.abs(dx), Math.abs(dy)) === 1) {
-            const d = DIRS.findIndex(([x, y]) => x === Math.sign(dx) && y === Math.sign(dy))
-            plan = null
-            done(d)
-            return
-          }
-          // a second tap on the planned square walks there; a first tap plans (IMP-044)
-          if (plan && plan.to.x === cell.col && plan.to.y === cell.row) {
-            const dirs = plan.dirs.slice()
-            plan = null
-            const d = dirs.shift()!
-            walking = { dirs, at: { x: f.x + DIRS[d][0], y: f.y + DIRS[d][1] } }
-            done(d)
-            return
-          }
-          const who = figureAt(cell.row, cell.col)
-          if (who) { showInfo(who, ev); return }
-          const r = route(f, cell.col, cell.row)
-          if (!r) { plan = null; s.print(`Can't get there (Move Left = ${left})`); draw(); return }
-          plan = { ...r, to: { x: cell.col, y: cell.row } }
-          const cost = r.dirs.reduce((a, d) => a + (d % 2 ? 3 : 2), 0)
-          s.print(`Path: ${r.dirs.length} step${r.dirs.length > 1 ? 's' : ''}, ${cost >> 1} of ${left} movement. Tap the green square again to go.`)
-          draw()
-        },
-      })
-      void s.menu(['END MOVE', 'UNDO'], { prompt: `Move/Attack, Move Left = ${left}` }).then((i) => done(i === 0 ? 'end' : 'undo', true))
-    }),
+    step: (f, left) => awaitStep(f, left, null) as Promise<number | 'end' | 'undo'>,
+    command: (f, items, prompt, left) => awaitStep(f, left, { items, prompt }),
     aim: (f, entries, prompt, allowCell) => new Promise<AimEntry | null>((resolve) => {
       const ok = entries.filter((x) => x.ok)
       marks = ok.map((x) => ({ row: x.y, col: x.x, colour: '#e05050' }))
@@ -329,6 +338,8 @@ export async function runBattle(s: BattleScreen) {
   ui.aim = (f, entries, prompt, allowCell) => raced(aim0(f, entries, prompt, allowCell), null)
   ui.confirm = (prompt) => raced(confirm0(prompt), false)
   ui.pick = (prompt, items) => raced(pick0(prompt, items), -1)
+  const command0 = ui.command!.bind(ui)
+  ui.command = (f, items, prompt, left) => raced(command0(f, items, prompt, left), { choice: items.length - 1 })
   s.onSkip?.(() => { if (battle) { battle.debugWin(); skipNow() } })
   s.canvas.hidden = false
   // the hidden "Magic On/Off" key (DS:6E30): Alt-M, or '2' during a computer-run turn; whether

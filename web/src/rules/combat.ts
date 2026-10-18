@@ -80,6 +80,11 @@ export interface CombatUi {
   menu(items: string[], opts?: { prompt?: string }): Promise<number>
   /** a step direction 0–7, 'end' (done moving) or 'undo' (Escape) */
   step(f: Fighter, left: number): Promise<number | 'end' | 'undo'>
+  /**
+   * The command menu with movement live at the same time (IMP-053): a step direction, 'undo'
+   * (Escape), 'end', or the menu choice. Without it the player chooses MOVE first, as in the original.
+   */
+  command?(f: Fighter, items: string[], prompt: string, left: number): Promise<number | 'end' | 'undo' | { choice: number }>
   /** pick a target among entries (nearest first); −1 = exit */
   aim(f: Fighter, entries: AimEntry[], prompt: string, allowCell: boolean): Promise<AimEntry | null>
   confirm(prompt: string): Promise<boolean>
@@ -556,6 +561,8 @@ export class Battle implements FxHost {
     const c = f.c
     if (!c[0x10d]) { this.endTurnF(f); return }
     if (f.r[0]) { await this.castSpell(f, this.e.spells!.get(f.r[0])!, false); this.endTurnF(f); return }
+    /** where the steps since the last other action began (Escape undoes them) */
+    let moved = { x: f.x, y: f.y, m: f.r[6], face: f.r[9] }
     while (s8(f.r[3]) > 0 && this.inPlay(f) && !c[0x10f] && !this.ended) {
       const st = this.e.spells
       const canCast = !!st && f.r[1] === 1 && this.e.read(0x49e5) === 0 && Array.from({ length: 21 }, (_, k) => c[0x17 + k]).some((v) => v > 0 && v < 0x80)
@@ -568,7 +575,17 @@ export class Battle implements FxHost {
       ]
       this.ui.redraw(f)
       await this.settle()
-      const k = opts[await this.ui.menu(opts.map((o) => o[0]), { prompt: `${name(c)}:` })]?.[1]
+      let k: string | undefined
+      if (this.ui.command && f.r[6] > 1) {
+        // IMP-053: no MOVE to choose; a step is taken straight from the command prompt
+        const cmds = opts.filter((o) => o[1] !== 'm')
+        const r = await this.ui.command(f, cmds.map((o) => o[0]), `${name(c)}: Move Left = ${f.r[6] >> 1}`, f.r[6] >> 1)
+        if (r === 'end') continue
+        if (r === 'undo') { f.x = moved.x; f.y = moved.y; f.r[6] = moved.m; f.r[9] = moved.face; this.ui.redraw(f); continue }
+        if (typeof r === 'number') { if (await this.moveStep(f, r)) moved = { x: f.x, y: f.y, m: f.r[6], face: f.r[9] }; continue }
+        k = cmds[r.choice]?.[1]
+      } else k = opts[await this.ui.menu(opts.map((o) => o[0]), { prompt: `${name(c)}:` })]?.[1]
+      moved = { x: f.x, y: f.y, m: f.r[6], face: f.r[9] }
       if (k === 'm') await this.playerMove(f)
       else if (k === 'v') { await this.ui.view(c); this.recalc(c); await this.attacks(f, false) }
       else if (k === 'a') await this.playerAim(f)
@@ -612,18 +629,28 @@ export class Battle implements FxHost {
       const d = await this.ui.step(f, f.r[6] >> 1)
       if (d === 'end') break
       if (d === 'undo') { f.x = start.x; f.y = start.y; f.r[6] = start.m; f.r[9] = start.face; this.ui.redraw(f); continue }
-      const nx = f.x + DX[d], ny = f.y + DY[d]
-      const o = this.occupied(nx, ny, f.size, f)
-      if (o) { await this.meleeByMoving(f, o); return }
-      if (this.bf.get(ny, nx) === 0) {
-        if (await this.ui.confirm('Flee:')) { await this.flee(f); return }
-        continue
-      }
-      if (!this.passable(nx, ny, f.size)) { this.print('Blocked'); continue }
-      await this.stepF(f, d)
-      this.ui.redraw(f)
+      if (await this.moveStep(f, d)) return
     }
     if (f.r[6] < 2) f.r[6] = 0
+  }
+
+  /**
+   * One step of Move (FUN_3aae_08b2 and the move loop): into an occupant attacks it, off the field
+   * asks "Flee:", a blocked square says so. True when the move is over (an attack or a flight).
+   */
+  async moveStep(f: Fighter, d: number): Promise<boolean> {
+    const nx = f.x + DX[d], ny = f.y + DY[d]
+    const o = this.occupied(nx, ny, f.size, f)
+    if (o) { await this.meleeByMoving(f, o); return true }
+    if (this.bf.get(ny, nx) === 0) {
+      if (await this.ui.confirm('Flee:')) { await this.flee(f); return true }
+      return false
+    }
+    if (!this.passable(nx, ny, f.size)) { this.print('Blocked'); return false }
+    await this.stepF(f, d)
+    this.ui.redraw(f)
+    if (f.r[6] < 2) f.r[6] = 0
+    return false
   }
 
   async meleeByMoving(f: Fighter, o: Fighter) {

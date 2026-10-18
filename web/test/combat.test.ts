@@ -69,6 +69,39 @@ describe.skipIf(!have)('combat', () => {
     expect(e.nodes.length).toBe(stems.length)
   })
 
+  it('takes steps straight from the command prompt (IMP-053)', async () => {
+    const m = new Map<string, Uint8Array>()
+    for (const n of readdirSync(dir)) if (wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(join(dir, n))))
+    const files = new GameFiles(m)
+    const io = { print: () => {}, menu: async () => 0, refresh: async () => {}, pause: async () => {}, sound: () => {},
+      picture: () => {}, sprite: () => {}, engine: async () => {}, inputNumber: async () => 0, inputText: async () => '' } as unknown as Io
+    const dat = files.get('SAVGAMA.DAT')!
+    const stems = parseSave(dat).party
+    const e = new Engine(files, io, 2)
+    e.loadSave(dat, stems.map((s) => files.get(`${s}.SAV`)!))
+    stems.forEach((s, i) => e.attachFiles(i, files.get(`${s}.ITM`), files.get(`${s}.SPC`)))
+    await e.start()
+    e.addMonsters(13, 1, 4)
+    const seen: { items: string[]; left: number; at: string }[] = []
+    let battle: import('../src/rules/combat').Battle | null = null
+    const ui: CombatUi = {
+      print: () => {}, redraw: () => {}, pause: async () => {},
+      menu: async (items) => Math.max(0, items.indexOf('QUICK')), step: async () => 'end',
+      command: async (f, items, _p, left) => {
+        seen.push({ items, left, at: `${f.x},${f.y}` })
+        if (seen.length === 1) { for (let d = 0; d < 8; d++) if (battle!.passable(f.x + [0, 1, 1, 1, 0, -1, -1, -1][d], f.y + [-1, -1, 0, 1, 1, 1, 0, -1][d], f.size) && !battle!.occupied(f.x + [0, 1, 1, 1, 0, -1, -1, -1][d], f.y + [-1, -1, 0, 1, 1, 1, 0, -1][d], f.size, f)) return d }
+        if (seen.length === 2) battle!.debugWin()
+        return { choice: items.length - 1 }
+      },
+      aim: async () => null, confirm: async () => false, view: async () => {}, sound: () => {}, pick: async () => -1,
+    }
+    await fight(e, ui, (b) => { battle = b })
+    expect(seen.length).toBeGreaterThanOrEqual(2)
+    expect(seen[0].items).not.toContain('MOVE')
+    expect(seen[1].at).not.toBe(seen[0].at) // the step was taken
+    expect(seen[1].left).toBeLessThan(seen[0].left)
+  })
+
   it('paces messages, hits and misses by the game speed', async () => {
     const m = new Map<string, Uint8Array>()
     for (const n of readdirSync(dir)) if (wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(join(dir, n))))
