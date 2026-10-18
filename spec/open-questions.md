@@ -73,6 +73,8 @@ Four audits compared the original with the port: data files loaded, engine routi
 
 ## Smaller loose ends
 
+- After the final battle (ECL5 #7, 0xA80E): the script sets ECL 0x4AE0 = 1 and runs `PROGRAM 8` (the ending), which only exits. The rest ("KNOWING THAT TYRANTHRAXUS HAS FINALLY BEEN DEFEATED…", the walk back to New Phlan) is in the area's `on_enter` (0x9A37). What re-runs `on_enter` after the ending in the original is not found yet; the port's debug finale re-enters the area itself. In real play the port leaves the party in the tower until the area is entered again (e.g. by the stairs)
+
 - Edge-consistency outliers in GEO records 30, 23, 16, 7, 0
 - ECL operand kinds other than 0/1/2/3/0x80/0x81 at ECL2/15 0x9B5B and ECL8/16 0x9B00
 - Meaning of the `88 13` prefix on ECL records

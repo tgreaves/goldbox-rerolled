@@ -1445,6 +1445,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       ${winBattle ? `<p><button class="primary" data-win="1">Win this battle</button> <span class="muted">every enemy falls; experience and treasure as for a won fight</span></p>
       <form method="dialog"><button>Close</button></form>` : `
       <p><button type="button" data-edit="1">Edit characters…</button> <span class="muted">abilities, HP, experience, levels, money, items</span></p>
+      <p><button type="button" data-finale="ending">Play the ending</button> <button type="button" data-finale="fight">Fight Tyranthraxus</button>
+        <span class="muted">the end of the game as its script runs it (ECL5 #7): after the final battle is won, or that battle (the guards and the NPCs' vote are skipped)</span></p>
       <ul class="debug">${JUMPS.map((j, i) => `<li><button data-i="${i}">${escape(j.label)}</button></li>`).join('')}</ul>
       <form class="jump">
         <label>Block <input name="block" type="number" min="1" max="8" value="${engine.block}"></label>
@@ -1467,6 +1469,21 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       note('Debug: battle skipped as won.')
       winBattle?.()
     })
+    // the finale (ECL5 #7, Valjevo Castle's inner tower): 0xA7DC sets up and starts the battle with
+    // Tyranthraxus (monster 66); 0xA80E follows a win: the victory flags, PROGRAM 8 (the ending), the
+    // walk back to New Phlan
+    dialog.querySelectorAll<HTMLButtonElement>('button[data-finale]').forEach((b) => b.addEventListener('click', () => {
+      dialog.close()
+      const fight = b.dataset.finale === 'fight'
+      note(fight ? 'Debug: the battle with Tyranthraxus.' : 'Debug: the ending, as after Tyranthraxus falls.')
+      act(async () => {
+        await engine.jump(5, 7, 1, 4, 1)
+        await engine.run(fight ? 0xa7dc : 0xa80e)
+        // after PROGRAM 8 the script goes on from the tower's on_enter (0x9A37: 0x4AE0 = 1 → 0xA82D,
+        // "KNOWING THAT TYRANTHRAXUS…", the walk back to New Phlan): re-enter to carry on
+        if (!engine.quit) await engine.enter()
+      })
+    }))
     dialog.querySelector<HTMLButtonElement>('button[data-edit]')?.addEventListener('click', () => {
       dialog.close()
       void editCharacters(dialog, engine, getTables(), () => drawRoster())
