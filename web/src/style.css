@@ -642,3 +642,7 @@ dialog.panel .rules-body h3 { color: var(--ega-cyan); margin: 0.8rem 0 0.2rem; f
 
 .rcard .rc-ac2 { display: none; }
 .rcard .rc-ac { white-space: nowrap; flex: none; }
+
+/* reordering the party by dragging a card (IMP-065) */
+.rcard.dragging { opacity: 0.4; }
+.rcard.drop-here { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }

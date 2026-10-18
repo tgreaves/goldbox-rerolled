@@ -557,6 +557,25 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         <canvas class="pixel rc-icon" width="24" height="24"></canvas></button>`
     }).join('')
     const pic = (family: string, id: number) => { const r = files.record(family, id); try { return r ? parseRecord(r).frames[0].picture : null } catch { return null } }
+    // outside battles a card can be dragged onto another's place: Alter → Order, step by step (IMP-065)
+    const inBattle = app.querySelector('.game')!.classList.contains('in-combat')
+    roster.querySelectorAll<HTMLElement>('.rcard').forEach((card, i) => {
+      card.draggable = !inBattle
+      if (inBattle) return
+      card.addEventListener('dragstart', (ev) => { ev.dataTransfer?.setData('text/x-party', String(i)); card.classList.add('dragging') })
+      card.addEventListener('dragend', () => card.classList.remove('dragging'))
+      card.addEventListener('dragover', (ev) => { if (ev.dataTransfer?.types.includes('text/x-party')) { ev.preventDefault(); card.classList.add('drop-here') } })
+      card.addEventListener('dragleave', () => card.classList.remove('drop-here'))
+      card.addEventListener('drop', (ev) => {
+        ev.preventDefault()
+        card.classList.remove('drop-here')
+        let from = Number(ev.dataTransfer?.getData('text/x-party'))
+        if (Number.isNaN(from) || from === i || busy || pending) return
+        while (from < i) { engine.moveMember(from, 1); from++ }
+        while (from > i) { engine.moveMember(from, -1); from-- }
+        drawRoster()
+      })
+    })
     roster.querySelectorAll<HTMLElement>('.rcard').forEach((card, i) => {
       const raw = list[i].raw
       const key = Array.from(raw.subarray(0xbd, 0xc7)).join(',')
