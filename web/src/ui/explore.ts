@@ -7,6 +7,7 @@ import { parseRecord, spriteImage, toImageData, type Picture } from '../data/ima
 import { World } from '../render/world'
 import { blit, blitCanvas, pixels, sizeCanvas } from '../render/upscale'
 import { parseFont } from '../data/font'
+import { editCharacters } from './debugedit'
 import { Engine, A0, type Io } from '../vm/engine'
 import { drawMap, landmarkAt } from './areamap'
 import type { GeoMap } from '../data/geo'
@@ -1178,6 +1179,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       <p class="muted">Not part of the game. Now: block ${engine.block}, area ${engine.area}, ${pos}.</p>
       ${winBattle ? `<p><button class="primary" data-win="1">Win this battle</button> <span class="muted">every enemy falls; experience and treasure as for a won fight</span></p>
       <form method="dialog"><button>Close</button></form>` : `
+      <p><button type="button" data-edit="1">Edit characters…</button> <span class="muted">abilities, HP, experience, levels, money, items</span></p>
       <ul class="debug">${JUMPS.map((j, i) => `<li><button data-i="${i}">${escape(j.label)}</button></li>`).join('')}</ul>
       <form class="jump">
         <label>Block <input name="block" type="number" min="1" max="8" value="${engine.block}"></label>
@@ -1199,6 +1201,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       dialog.close()
       note('Debug: battle skipped as won.')
       winBattle?.()
+    })
+    dialog.querySelector<HTMLButtonElement>('button[data-edit]')?.addEventListener('click', () => {
+      dialog.close()
+      void editCharacters(dialog, engine, getTables(), () => drawRoster())
     })
     dialog.querySelectorAll<HTMLButtonElement>('ul.debug button').forEach((b) => b.addEventListener('click', () => go(JUMPS[Number(b.dataset.i)].to)))
     const f = dialog.querySelector<HTMLFormElement>('form.jump')

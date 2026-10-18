@@ -473,3 +473,8 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
   .frames-original .game .map { border-top-width: 0; border-left-width: 0; }
   .frames-original .game .text { border-top-width: 0; }
 }
+
+/* debug character editor (IMP-025) */
+dialog.panel form.charedit fieldset { border: 1px solid #ffffff30; margin: 0.4rem 0; display: flex; flex-wrap: wrap; gap: 0.4rem 0.8rem; }
+dialog.panel form.charedit label, dialog.panel form.additem label { display: inline-flex; gap: 0.3rem; align-items: center; }
+dialog.panel form.charedit input[type=number], dialog.panel form.additem input[type=number] { width: 5.5rem; }
