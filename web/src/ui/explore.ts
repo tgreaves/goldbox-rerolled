@@ -75,6 +75,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       <section class="text" aria-live="polite" aria-label="Messages"></section>
       <nav class="commands" aria-label="Commands">
         <div class="menu"></div>
+        <button class="take-control" title="Take back the characters on Quick (Space)">Take control</button>
         <button class="assets debug-combat" title="Debug menu (not part of the game)">Debug</button>
         <div class="pad" aria-label="Movement">
           <button data-c="l" aria-label="Turn left">⟲</button>
@@ -94,6 +95,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const menuBar = app.querySelector<HTMLDivElement>('.menu')!
   const pad = app.querySelector<HTMLDivElement>('.pad')!
   app.querySelector<HTMLButtonElement>('.debug-combat')!.addEventListener('click', () => debugMenu())
+  app.querySelector<HTMLButtonElement>('.take-control')!.addEventListener('click', () => takeControl?.())
   const dialog = app.querySelector<HTMLDialogElement>('dialog.panel')!
   dialog.addEventListener('close', () => dialog.classList.remove('wide'))
   const world = new World(canvas)
@@ -354,7 +356,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
               onClose(dialog, () => resolve())
             }),
             sound: play, pause: (ms) => io.pause!(ms), input: battleInput,
-            info: app.querySelector<HTMLElement>('.combat-info')!, strip: app.querySelector<HTMLElement>('.turnstrip')!, refreshRoster: () => drawRoster(), cancelMenu: () => cancelMenu(), onSkip: (w) => { winBattle = w },
+            info: app.querySelector<HTMLElement>('.combat-info')!, strip: app.querySelector<HTMLElement>('.turnstrip')!, refreshRoster: () => drawRoster(), cancelMenu: () => cancelMenu(), onSkip: (w) => { winBattle = w }, onTakeControl: (t) => { takeControl = t },
           })
           // after a battle (game mode 6) the view shows PIC<block> #1, the treasure chest (FUN_10ba_27d9)
           if (r.survived) {
@@ -1181,6 +1183,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     { label: 'Wilderness: east boat landing (35,29)', to: [8, 27, 9, 29, 0] },
     { label: 'New Phlan: end of the pier (15,1)', to: [3, 0, 15, 1, 3] },
   ]
+  /** set while a battle runs: take the party's Quick members back (Space, or the button) */
+  let takeControl: (() => void) | null = null
   /** set while a battle runs: debug "Win this battle" */
   let winBattle: (() => void) | null = null
   function debugMenu() {

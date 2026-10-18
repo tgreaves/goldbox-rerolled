@@ -1636,6 +1636,23 @@ export class Battle implements FxHost {
   }
 
   // ------------------------------------------------------------ outcome
+  /**
+   * Space during a computer-run turn (FUN_3334_0fc1): every party member who is not an NPC and not
+   * Animated comes back under the player's control. Returns their names. The original polls the key
+   * as a computer-run turn starts (a party member's turn then goes on by hand with initiative 20);
+   * here it takes effect at once, so their next turn is played by hand.
+   */
+  takeControl(): string[] {
+    const back: string[] = []
+    for (const f of this.fighters) {
+      const c = f.c
+      if (f.monster || c[0x84] >= 0x80 || c[0x10c] === 1 || !c[0x10f]) continue
+      c[0x10f] = 0
+      back.push(name(c))
+    }
+    return back
+  }
+
   /** Debug (IMP-025): every enemy still standing falls at once; the aftermath runs as for a won battle. */
   debugWin() {
     for (const f of this.fighters) {

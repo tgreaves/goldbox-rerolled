@@ -105,6 +105,42 @@ describe.skipIf(!have)('combat', () => {
     expect(seen[1].left).toBeLessThan(seen[0].left)
   })
 
+  it('Quick hands a character to the computer and Space takes them back', async () => {
+    const m = new Map<string, Uint8Array>()
+    for (const n of readdirSync(dir)) if (wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(join(dir, n))))
+    const files = new GameFiles(m)
+    const io = { print: () => {}, menu: async () => 0, refresh: async () => {}, pause: async () => {}, sound: () => {},
+      picture: () => {}, sprite: () => {}, engine: async () => {}, inputNumber: async () => 0, inputText: async () => '' } as unknown as Io
+    const dat = files.get('SAVGAMA.DAT')!
+    const stems = parseSave(dat).party
+    const e = new Engine(files, io, 3)
+    e.loadSave(dat, stems.map((s) => files.get(`${s}.SAV`)!))
+    stems.forEach((s, i) => e.attachFiles(i, files.get(`${s}.ITM`), files.get(`${s}.SPC`)))
+    await e.start()
+    e.addMonsters(13, 1, 4)
+    let battle: import('../src/rules/combat').Battle | null = null
+    const asked: string[] = []
+    let quick = 0
+    const ui: CombatUi = {
+      print: () => {}, redraw: () => {}, pause: async () => {},
+      // everyone goes on Quick; after a few computer turns, Space; then manual turns come back
+      menu: async (items, opts) => {
+        asked.push(opts?.prompt ?? '')
+        if (quick < 6 && items.includes('QUICK')) { quick++; return items.indexOf('QUICK') }
+        battle?.debugWin()
+        return items.length - 1
+      },
+      step: async () => 'end', aim: async () => null, confirm: async () => false, view: async () => {}, sound: () => {}, pick: async () => -1,
+    }
+    const done = fight(e, ui, (b) => { battle = b })
+    // once the whole party is on Quick, take them back
+    for (let i = 0; i < 200 && quick < 6; i++) await new Promise((r) => setTimeout(r, 0))
+    const back = battle!.takeControl()
+    await done
+    expect(back.length).toBeGreaterThan(0)
+    expect(e.party().every((c) => c[0x10f] === 0 || c[0x84] >= 0x80)).toBe(true)
+  })
+
   it('paces messages, hits and misses by the game speed', async () => {
     const m = new Map<string, Uint8Array>()
     for (const n of readdirSync(dir)) if (wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(join(dir, n))))

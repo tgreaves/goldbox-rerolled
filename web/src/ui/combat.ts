@@ -26,6 +26,8 @@ export interface BattleScreen {
   info?: HTMLElement
   /** the turn-order strip (IMP-044) */
   strip?: HTMLElement
+  /** receives the function that takes the party's Quick members back (null when the battle ends) */
+  onTakeControl?(take: (() => void) | null): void
   /** debug (IMP-025): receives the function that wins the battle at once */
   onSkip?(win: (() => void) | null): void
 }
@@ -344,8 +346,21 @@ export async function runBattle(s: BattleScreen) {
   s.canvas.hidden = false
   // the hidden "Magic On/Off" key (DS:6E30): Alt-M, or '2' during a computer-run turn; whether
   // party members on Quick may cast spells. Off at every battle start (FUN_34c7_1e31).
+  /** Space (FUN_3334_0fc1) or the Take control button: the party's Quick members come back to you */
+  const takeControl = () => {
+    if (!battle) return
+    const back = battle.takeControl()
+    s.print(back.length ? `${back.join(', ')}: under your control again` : 'Nobody is on Quick')
+  }
+  s.onTakeControl?.(takeControl)
   const onMagicKey = (ev: KeyboardEvent) => {
     if (!battle) return
+    if (ev.key === ' ' && !s.input.key && !s.input.tap && !(ev.target instanceof HTMLButtonElement || ev.target instanceof HTMLInputElement)) {
+      ev.preventDefault()
+      ev.stopPropagation()
+      takeControl()
+      return
+    }
     const altM = ev.altKey && ev.key.toLowerCase() === 'm'
     const two = ev.key === '2' && !s.input.key && !s.input.tap
     if (!altM && !two) return
@@ -391,6 +406,7 @@ export async function runBattle(s: BattleScreen) {
     return result
   } finally {
     s.onSkip?.(null)
+    s.onTakeControl?.(null)
     resize.disconnect()
     window.removeEventListener('keydown', onMagicKey, true)
     s.canvas.removeEventListener('pointermove', onHover)
