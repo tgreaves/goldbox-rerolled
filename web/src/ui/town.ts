@@ -16,6 +16,8 @@ export interface TownUi {
   inputNumber(): Promise<number>
   /** the shop's Buy as one panel (IMP-042); without it Buy is the original's list */
   buy?(): Promise<void>
+  /** the treasure after a battle as one panel (IMP-056); without it the original's menus */
+  treasurePanel?(): Promise<void>
   /** open the current character's sheet (items menu with Sell/Id in shops) and wait for it to close */
   view(mode: 'shop' | 'temple' | 'treasure'): Promise<void>
   refresh(): void
@@ -228,6 +230,12 @@ function raiseDead(e: Engine, c: Uint8Array) {
 /** Treasure screen (FUN_2e08_0ecd), after a fight or a scripted TREASURE without monsters. */
 export async function treasure(ui: TownUi) {
   const e = ui.engine, t = e.items
+  if (ui.treasurePanel && t && (e.money.some((v) => v > 0) || e.treasure.length)) {
+    await ui.treasurePanel()
+    e.treasure = []
+    ui.print('', true)
+    return
+  }
   for (;;) {
     const money = e.money.some((v) => v > 0), items = e.treasure.length > 0
     if (money || items) {

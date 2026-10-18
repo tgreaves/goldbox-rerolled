@@ -16,14 +16,15 @@ import { report, revealedBy, type State } from '../rules/commissions'
 import { JOURNAL, journalReveals, revealNote, roman } from '../rules/journal'
 import { ICONS, landmarks, type Landmark } from '../rules/landmarks'
 import { Overland } from '../rules/overland'
-import { itemsFile, type Item } from '../data/items'
+import { itemsFile, type Item, type ItemTables } from '../data/items'
 import { buildIcon } from '../render/icon'
 import { effectsFile } from '../data/effects'
 import { canTakeItem, capacity, ready, readyItem, recalc, unready, unreadyItem } from '../rules/equip'
 import { WorldHost } from '../rules/worldfx'
 import { drop, halve, join, scribing, trade, unavailable } from '../rules/inventory'
-import { COIN_PROMPT, coinValue, dropMoney, moneyOf, pay, receive, sellOffer, tradeMoney } from '../rules/money'
+import { COIN_PROMPT, COINS, coinValue, dropMoney, moneyOf, pay, poolAll, receive, sellOffer, share, take, tradeMoney } from '../rules/money'
 import { shop, temple, treasure, type TownUi } from './town'
+import { proposeSplit } from '../rules/treasure'
 import { camp, cast, effectNames, type CampUi } from './camp'
 import { runBattle, type BattleControls } from './combat'
 import { clockText, freeSlots, isScroll, knows, memorise, memorised, preparation } from '../rules/camp'
@@ -554,6 +555,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     }),
     refresh: () => drawRoster(),
     buy: () => shopPanel(),
+    treasurePanel: () => treasurePanel(),
   }
 
   /**
@@ -561,6 +563,192 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
    * whether the buyer's class can use it and what readying it in place of the current item would
    * change; buying follows the original (FUN_4c2d_09ae: room, weight, then payment from the buyer's coins).
    */
+  /** What readying `it` instead of the same-slot item would change (IMP-042, IMP-056), or why it can't be readied. */
+  function readyChange(t: ItemTables, c: Uint8Array, items: Item[], it: Item): string {
+    return readyCompare(t, c, items, it).text
+  }
+  /** How much better readying `it` would make them: AC and THAC0 points plus average damage (0 if not better). */
+  function readyGain(t: ItemTables, c: Uint8Array, items: Item[], it: Item): number {
+    return readyCompare(t, c, items, it).gain
+  }
+  function readyCompare(t: ItemTables, c: Uint8Array, items: Item[], it: Item): { text: string; gain: number } {
+      const b = t.baseOf(it)
+      if (!b || (b.slot > 9 && it.type !== 73 && it.type !== 28)) return { text: '', gain: 0 }
+      const cc = c.slice(), copies = items.map((x) => x.copy()), mine = it.copy()
+      copies.push(mine)
+      // take off what the new item would replace (same slot; a weapon also frees a shield's hand if it needs two)
+      for (const x of copies) {
+        const xb = t.baseOf(x)
+        if (x === mine || !x.ready || !xb || x.cursed) continue
+        if (xb.slot === b.slot && b.slot !== 9 && b.slot !== 10) x.ready = false
+        if (b.hands === 2 && xb.slot === 1) x.ready = false
+      }
+      recalc(cc, copies, t)
+      const why = ready(cc, copies, mine, t)
+      if (why) return { text: `can't ready: ${why}`, gain: 0 }
+      const before = parseCharacter(c), after = parseCharacter(cc)
+      const d = ([['AC', before.ac, after.ac], ['THAC0', before.thac0, after.thac0], ['Dmg', before.damage, after.damage], ['Move', before.movement, after.movement]] as [string, number | string, number | string][])
+        .filter(([, x, y]) => x !== y).map(([k, x, y]) => `${k} ${x}→${y}`)
+      const avg = (v: number | string) => { const m = /(\d+)d(\d+)([+-]\d+)?/.exec(String(v)); return m ? Number(m[1]) * (Number(m[2]) + 1) / 2 + Number(m[3] ?? 0) : Number(v) || 0 }
+      const gain = (Number(before.ac) - Number(after.ac)) + (Number(before.thac0) - Number(after.thac0)) + (avg(after.damage) - avg(before.damage))
+      return { text: d.length ? d.join(', ') : 'no change', gain: Math.max(0, gain) }
+    }
+
+  /**
+   * Treasure after a battle on one panel (IMP-056), the original's rules underneath: coins taken with
+   * FUN_4c2d_0ceb's limits, Pool and Share as FUN_4c2d_063a, items to anyone who can carry them
+   * (16 items, capacity), Detect Magic as the menu's " Detect", the leftover warning.
+   */
+  function treasurePanel(): Promise<void> {
+    const t = engine.items!
+    let message = ''
+    let split: Map<number, number> | null = null // item index → party index (−1 leave), while the split is shown
+    let leaving = false
+    const members = () => engine.party()
+    const load = (c: Uint8Array) => c[0x102] | (c[0x103] << 8)
+    const usable = (c: Uint8Array, it: Item) => ((t.baseOf(it)?.classes ?? 0) & c[0xb0]) !== 0
+    const nameOf = (c: Uint8Array) => parseCharacter(c).name
+    /** movement after taking this extra (an item, or n coins) */
+    const moveAfter = (c: Uint8Array, items: Item[], it: Item | null, coins = 0) => {
+      const cc = c.slice(), list = items.map((x) => x.copy())
+      if (it) list.push(it.copy())
+      if (coins) { const g = Math.min(0xffff, (cc[0x8e] | (cc[0x8f] << 8)) + coins); cc[0x8e] = g & 0xff; cc[0x8f] = g >> 8 } // weighed as gold: every coin counts 1
+      recalc(cc, list, t)
+      return cc[0x11c]
+    }
+    const detectCaster = () => members().find((c) => c[0x10c] === 0 && Array.from({ length: 21 }, (_, k) => c[0x17 + k]).some((v) => v === 5 || v === 11))
+    const leftovers = () => [...engine.money.some((v) => v > 0) ? [moneyLine(engine.money)] : [], ...engine.treasure.map((it) => t.name(it))]
+    const moneyLine = (m: number[]) => COINS.map((n, i) => (m[i] ? `${m[i]} ${n}` : '')).filter(Boolean).join(', ')
+    /** "Take all" (not in the original), rules/treasure.ts */
+    const propose = () => proposeSplit(members().map((c) => ({ c, items: engine.itemsOf(c) })), engine.treasure, t, (c, items, it) => readyGain(t, c, items, it))
+    return new Promise((resolve) => {
+      const render = () => {
+        const party = members()
+        const taker = engine.cur
+        // the party with their load and movement
+        const cards = party.map((c, k) => {
+          const pct = Math.min(100, Math.round((100 * load(c)) / Math.max(1, capacity(c))))
+          return `<button data-who="${k}" class="tr-member${c === taker ? ' on' : ''}" title="Coins go to the one selected">
+            <span>${escape(nameOf(c))}</span><span class="loadbar${pct > 90 ? ' full' : ''}"><span style="width:${pct}%"></span></span>
+            <small>${load(c)}/${capacity(c)} · move ${c[0x11c]} · ${engine.itemsOf(c).length}/16 items</small></button>`
+        }).join('')
+        const coins = COINS.map((n, i) => ({ n, i, v: engine.money[i] })).filter((x) => x.v > 0)
+        const coinRows = coins.map(({ n, i, v }) => {
+          const slower = moveAfter(taker, engine.itemsOf(taker), null, v) < taker[0x11c]
+          return `<tr><td>${escape(n)}</td><td class="num">${v}</td>
+            <td><input type="number" min="1" max="${v}" value="${v}" data-amount="${i}"></td>
+            <td><button data-coin="${i}">Take</button>${slower ? '<small class="cant"> slows them</small>' : ''}</td></tr>`
+        }).join('')
+        const rows = engine.treasure.map((it, i) => {
+          const give = party.map((c, k) => {
+            const why = c[0x10c] !== 0 ? 'cannot take things now' : canTakeItem(c, engine.itemsOf(c), it)
+            const can = usable(c, it)
+            const slower = !why && moveAfter(c, engine.itemsOf(c), it) < c[0x11c]
+            const tip = why || `${nameOf(c)}${can ? '' : ' (cannot use it)'}${slower ? ', moves slower with it' : ''}`
+            return `<button data-give="${i}:${k}" class="${can ? '' : 'unusable'}${slower ? ' slower' : ''}" ${why ? `disabled title="${escape(why === 'Overloaded' ? 'OverLoaded' : why)}"` : `title="${escape(tip)}"`}>${escape(nameOf(c).split(' ')[0])}${slower ? ' ↓' : ''}</button>`
+          }).join('')
+          const better = party.filter((c) => c[0x10c] === 0 && usable(c, it)).map((c) => {
+            const r = readyCompare(t, c, engine.itemsOf(c), it)
+            return r.gain > 0 ? `better for ${nameOf(c)}: ${r.text}` : ''
+          }).filter(Boolean)
+          const who = party.filter((c) => usable(c, it)).map(nameOf)
+          return `<tr><td>${escape(t.name(it))}<small class="muted">${who.length ? `usable by ${escape(who.join(', '))}` : 'no one in the party can use it'}</small>
+            ${better.length ? `<small class="cmp">${escape(better.join(' · '))}</small>` : ''}</td>
+            <td class="num">${it.weight * Math.max(1, it.count)}</td><td class="give">${give}</td></tr>`
+        }).join('')
+        const caster = engine.treasure.length ? detectCaster() : undefined
+        let body = ''
+        if (leaving) {
+          body = `<p>These will be left behind:</p><ul>${leftovers().map((x) => `<li>${escape(x)}</li>`).join('')}</ul>
+            <p><button data-leave="yes" class="primary">Leave them</button> <button data-leave="no">Go back</button></p>`
+        } else if (split) {
+          const opts = (i: number) => [-1, ...party.map((_, k) => k)].map((k) => `<option value="${k}"${split!.get(i) === k ? ' selected' : ''}>${k < 0 ? 'leave it' : escape(nameOf(party[k]))}</option>`).join('')
+          body = `<p class="muted">A suggested split (not in the original): each item to someone who can use it and gains most, else to whoever has most room; coins shared evenly as Share does. Change anything, then confirm.</p>
+            <table class="shop"><tbody>${engine.treasure.map((it, i) => `<tr><td>${escape(t.name(it))}</td><td><select data-split="${i}">${opts(i)}</select></td></tr>`).join('')}
+            ${coins.length ? `<tr><td>${escape(moneyLine(engine.money))}</td><td>shared evenly</td></tr>` : ''}</tbody></table>
+            <p><button data-split-ok="1" class="primary">Confirm</button> <button data-split-cancel="1">Cancel</button></p>`
+        } else {
+          body = `<div class="tr-party">${cards}</div>
+            ${coins.length ? `<h3>Coins</h3><p class="muted">Each coin counts 1 towards the load. Take gives the selected character the amount; Share splits all coins evenly; Pool gathers the party's coins here.</p>
+              <table class="shop"><tbody>${coinRows}</tbody></table>` : ''}
+            <p class="tr-actions">${coins.length ? '<button data-share="1">Share evenly</button>' : ''}<button data-pool="1">Pool the party's coins</button>
+              ${caster ? `<button data-detect="1">Detect Magic (${escape(nameOf(caster))}): magic items get a *</button>` : ''}
+              ${engine.treasure.length || coins.length ? '<button data-propose="1">Take all…</button>' : ''}</p>
+            ${engine.treasure.length ? `<h3>Items</h3><table class="shop treasure"><thead><tr><th>Item</th><th class="num">Weight</th><th>Give to</th></tr></thead><tbody>${rows}</tbody></table>` : ''}
+            ${!coins.length && !engine.treasure.length ? '<p class="muted">Nothing left.</p>' : ''}`
+        }
+        dialog.innerHTML = `<h2>Treasure</h2>${body}
+          ${message ? `<p class="message">${escape(message)}</p>` : ''}
+          ${leaving || split ? '' : '<p><button data-done="1" class="primary">Done</button></p>'}`
+      }
+      const finish = () => { dialog.close() }
+      const onClick = async (e: MouseEvent) => {
+        const b = (e.target as HTMLElement).closest('button')
+        if (!b || b.disabled) return
+        e.preventDefault()
+        const d = b.dataset
+        message = ''
+        if (d.who) { engine.cur = members()[Number(d.who)]; drawRoster() }
+        else if (d.coin) {
+          const i = Number(d.coin)
+          const n = Number(dialog.querySelector<HTMLInputElement>(`[data-amount="${i}"]`)?.value) || 0
+          const c = engine.cur
+          const before = engine.money[i]
+          message = take(c, engine.itemsOf(c), engine.money, i, n, t) || `${nameOf(c)} takes ${before - engine.money[i]} ${COINS[i]}.`
+          if (message === 'Overloaded') message = 'OverLoaded'
+          drawRoster()
+        } else if (d.share) { share(members().map((c) => ({ c, items: engine.itemsOf(c) })), engine.money, t); message = engine.money.some((v) => v > 0) ? `Shared; what nobody could carry is still here.` : 'Shared.'; drawRoster() }
+        else if (d.pool) { poolAll(members().map((c) => ({ c, items: engine.itemsOf(c) })), engine.money, t); message = 'The party\'s coins are pooled here.'; drawRoster() }
+        else if (d.detect) {
+          const c = detectCaster()
+          const id = c ? Array.from({ length: 21 }, (_, k) => c[0x17 + k]).find((v) => v === 5 || v === 11) : undefined
+          if (c && id && engine.spells) {
+            engine.cur = c
+            const out = await castOutside(engine, c, engine.spells.get(id)!, [c])
+            for (const m of out.slice(1)) print(m, false)
+            message = 'Magic items now show a *.'
+            drawRoster()
+          }
+        } else if (d.give) {
+          const [i, k] = d.give.split(':').map(Number)
+          const it = engine.treasure[i], c = members()[k], items = engine.itemsOf(c)
+          const why = canTakeItem(c, items, it)
+          if (why) message = why === 'Overloaded' ? 'OverLoaded' : why
+          else { engine.treasure.splice(i, 1); items.push(it); recalc(c, items, t); message = `${nameOf(c)} takes ${t.name(it)}.`; drawRoster() }
+        } else if (d.propose) split = propose()
+        else if (d.splitCancel) split = null
+        else if (d.splitOk && split) {
+          const plan = [...split.entries()].filter(([, k]) => k >= 0).sort((a, b) => b[0] - a[0]) // high indices first, so splicing keeps the rest in place
+          const missed: string[] = []
+          for (const [i, k] of plan) {
+            const it = engine.treasure[i], c = members()[k], items = engine.itemsOf(c)
+            if (canTakeItem(c, items, it)) { missed.push(t.name(it)); continue }
+            engine.treasure.splice(i, 1); items.push(it); recalc(c, items, t)
+          }
+          share(members().map((c) => ({ c, items: engine.itemsOf(c) })), engine.money, t)
+          split = null
+          message = missed.length ? `No room for: ${missed.join(', ')}.` : 'Done.'
+          drawRoster()
+        } else if (d.done) {
+          if (leftovers().length) leaving = true
+          else return finish()
+        } else if (d.leave === 'yes') return finish()
+        else if (d.leave === 'no') leaving = false
+        render()
+      }
+      const onChange = (e: Event) => {
+        const el = e.target as HTMLSelectElement
+        if (el.dataset.split && split) split.set(Number(el.dataset.split), Number(el.value))
+      }
+      dialog.classList.add('wide')
+      dialog.addEventListener('click', onClick)
+      dialog.addEventListener('change', onChange)
+      onClose(dialog, () => { dialog.removeEventListener('click', onClick); dialog.removeEventListener('change', onChange); resolve() })
+      render()
+      dialog.showModal()
+    })
+  }
+
   function shopPanel(): Promise<void> {
     const t = engine.items!
     let filter: 'all' | 'weapons' | 'armour' | 'other' = 'all'
@@ -573,26 +761,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       if (b.slot >= 1 && b.slot <= 9) return 'armour'
       return 'other'
     }
-    const compare = (c: Uint8Array, items: Item[], it: Item) => {
-      const b = t.baseOf(it)
-      if (!b || (b.slot > 9 && it.type !== 73 && it.type !== 28)) return ''
-      const cc = c.slice(), copies = items.map((x) => x.copy()), mine = it.copy()
-      copies.push(mine)
-      // take off what the new item would replace (same slot; a weapon also frees a shield's hand if it needs two)
-      for (const x of copies) {
-        const xb = t.baseOf(x)
-        if (x === mine || !x.ready || !xb || x.cursed) continue
-        if (xb.slot === b.slot && b.slot !== 9 && b.slot !== 10) x.ready = false
-        if (b.hands === 2 && xb.slot === 1) x.ready = false
-      }
-      recalc(cc, copies, t)
-      const why = ready(cc, copies, mine, t)
-      if (why) return `can't ready: ${why}`
-      const before = parseCharacter(c), after = parseCharacter(cc)
-      const d = ([['AC', before.ac, after.ac], ['THAC0', before.thac0, after.thac0], ['Dmg', before.damage, after.damage], ['Move', before.movement, after.movement]] as [string, number | string, number | string][])
-        .filter(([, x, y]) => x !== y).map(([k, x, y]) => `${k} ${x}→${y}`)
-      return d.length ? d.join(', ') : 'no change'
-    }
+    const compare = (c: Uint8Array, items: Item[], it: Item) => readyChange(t, c, items, it)
     return new Promise((resolve) => {
       const render = () => {
         const buyer = engine.cur, items = engine.itemsOf(buyer), name = parseCharacter(buyer).name

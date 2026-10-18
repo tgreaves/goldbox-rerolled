@@ -500,3 +500,20 @@ dialog.panel .journal h3 { margin: 0 0 0.3rem; color: var(--ega-yellow); font-si
 dialog.panel .journal p { margin: 0 0 0.45rem; line-height: 1.45; }
 dialog.panel img.journal-map { display: block; max-width: 100%; height: auto; margin: 0.4rem 0; background: #fff; image-rendering: auto; }
 dialog.panel p.small { font-size: 0.8rem; }
+
+/* treasure after a battle (IMP-056) */
+.tr-party { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.35rem; margin: 0.4rem 0; }
+.tr-member { display: grid; gap: 0.2rem; text-align: left; padding: 0.35rem 0.5rem; }
+.tr-member.on { border-color: var(--accent); }
+.tr-member small { color: var(--muted); font-size: 0.72rem; }
+.loadbar { display: block; height: 0.4rem; border-radius: 3px; background: #ffffff18; overflow: hidden; }
+.loadbar span { display: block; height: 100%; background: var(--ega-green); }
+.loadbar.full span { background: var(--ega-yellow); }
+.tr-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+table.shop.treasure td small { display: block; font-size: 0.75rem; }
+table.shop.treasure td small.cmp { color: var(--ega-cyan); }
+table.shop td.give { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+table.shop td.give button { min-height: 32px; padding: 0.15rem 0.5rem; }
+table.shop td.give button.unusable { opacity: 0.6; border-style: dashed; }
+table.shop td.give button.slower { color: var(--ega-yellow); }
+table.shop input[type=number] { width: 6rem; }
