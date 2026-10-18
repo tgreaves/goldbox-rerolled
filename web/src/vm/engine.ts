@@ -59,6 +59,12 @@ export interface Io {
   picture(p: { pic: number } | { head: number; body: number } | null): void
   /** Encounter sprite at a distance (0 nearest), or the picture once it is at distance 0. */
   sprite(sprite: number, picture: number, distance: number): void
+  /**
+   * The view is drawn again over whatever the scripts put in it: a picture, its animation, an
+   * encounter sprite. The original does this on CALL 0x2C90 (the 3D view), at the end of every move
+   * (FUN_3e76_0d6d), on turning and on entering an area.
+   */
+  clearView?(): void
   /** Bring the view up to date with position, map and wall sets (CALL 0x2C90, area entry). */
   refresh(): Promise<void>
   /** A sound effect by the original's number (FUN_18ae_00dc): 10 footstep, 7 bump, 11 script effect. */
@@ -780,6 +786,15 @@ export class Engine {
   }
 
   private spriteNow: { sprite: number; picture: number } | null = null
+  /** the view drawn again: pictures and encounter sprites go (see Io.clearView) */
+  private clearPictures() {
+    this.spriteNow = null
+    this.drawnView = this.viewKey()
+    this.io.clearView?.()
+  }
+  /** where the view was last drawn from, for CALL 0x2C90's "if anything changed" */
+  private drawnView = ''
+  private viewKey() { return `${this.block}:${this.area}:${this.x}:${this.y}:${this.facing2}:${this.overland ? this.wildPosition.join(',') : ''}` }
   /** CLEAR_TOP's DS:84DE: PRINT_LIST then draws in the view */
   private topCleared = false
   /** the text cursor, as far as PRINT_LIST and NEWLINE need it */
@@ -1127,7 +1142,10 @@ export class Engine {
   private async call() {
     this.readops(1)
     const a = this.addr(1)
-    if (a === 0x2c90) await this.io.refresh()
+    if (a === 0x2c90) { // the square registers, and the 3D view drawn again (over any picture) if anything changed
+      if (this.viewKey() !== this.drawnView) this.clearPictures()
+      await this.io.refresh()
+    }
     else if (a === 0xba03) {
       const r = this.regs.get(0x3de)
       if (r === 8) this.io.sound(10)
@@ -1273,6 +1291,7 @@ export class Engine {
         await advanceClock(this, 12, HOUR)
       }
     }
+    this.clearPictures() // FUN_3e76_0d6d: after the move, the picture and the encounter sprite go
     await this.io.refresh()
     this.areaChanged = false
     await this.run(this.vectors[1])
@@ -1283,6 +1302,7 @@ export class Engine {
   /** FUN_29c3_31b4: re-enter after an area change. */
   async enter() {
     for (;;) {
+      this.clearPictures() // a new area: its view, not the last area's pictures
       this.areaChanged = false
       this.B[EDGE - B0] = 0
       await this.run(this.vectors[4])
@@ -1364,6 +1384,7 @@ export class Engine {
     if (c === 'l' || c === 'r' || c === 'b') {
       this.facing2 = (this.facing2 + ({ l: 6, r: 2, b: 4 } as Record<string, number>)[c]) % 8
       if (c !== 'b') this.io.sound(10) // FUN_3e76_0989: quarter turns step, turning round is silent
+      this.clearPictures() // the view is drawn for the new facing
       await this.io.refresh()
       return
     }
@@ -1412,6 +1433,7 @@ export class Engine {
         this.io.sound(7) // FUN_3e76_0d6d: bump, or the door held
       }
     }
+    this.clearPictures() // FUN_3e76_0d6d: after the move, the picture and the encounter sprite go
     await this.io.refresh()
     if (blocked === 1) await this.io.engine('blocked')
     this.areaChanged = false

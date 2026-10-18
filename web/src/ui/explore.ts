@@ -336,6 +336,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     inputNumber: async () => Math.min(Number((await input('number')).replace(/\D/g, '') || 0), 65535),
     inputText: () => input('text'),
     picture: (p) => { topBlank = false; showPicture(p) },
+    clearView: () => { topBlank = false; showPicture(null) },
     clearTop,
     glyphs,
     river: cleanseRiver,

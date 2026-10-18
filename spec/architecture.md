@@ -93,6 +93,8 @@ Command keys are read by the menu loop in [[spec/graphics]] (number keys work as
 - Overland: `FUN_3e76_0818`.
 - Afterwards any picture animation and encounter sprite are cleared.
 
+**When pictures go** (O): a picture (`PICTURE`), its animation and an encounter sprite stay in the view until the view is drawn again: at the end of every move (above, overland too), on turning, on entering an area, by `PICTURE 255`, and by `CALL 0x2C90` when the position, facing or area changed (it redraws only then). So a script that shows a picture and exits leaves it up until the party moves or turns; one that sends the party back a square with `CALL 0x2C90` (the City Hall guard, ECL3 #8 0xB444) clears it at once.
+
 ### Re-entering after an area change (O, `FUN_29c3_31b4`)
 
 Repeated while scripts keep changing area:
