@@ -6,7 +6,7 @@ import { ALIGNMENTS, CLASSES, MONEY, STATUS } from '../data/character'
 import { Item } from '../data/items'
 import { buildItem } from '../rules/randitem'
 import { recalc } from '../rules/equip'
-import { derive } from '../rules/training'
+import { derive, levelHp, maxLevel, xpFor } from '../rules/training'
 import type { Tables } from '../rules/chargen'
 import { onClose } from './sheet'
 
@@ -59,7 +59,7 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
           ${num('Experience', 'xp', u32(c, 0xac), 0, 99999999)}
         </fieldset>
         <fieldset><legend>Levels</legend>
-          ${CLASSES.slice(0, 8).map((n, k) => num(n, `l${k}`, c[0x96 + k], 0, 20)).join('')}
+          ${CLASSES.slice(0, 8).map((n, k) => num(`${n} (max ${tables ? maxLevel(tables, k) : 1})`, `l${k}`, c[0x96 + k], 0, tables ? maxLevel(tables, k) : 1)).join('')}
         </fieldset>
         <fieldset><legend>Money</legend>
           ${MONEY.map((n, k) => num(n, `m${k}`, u16(c, 0x88 + 2 * k), 0, 65535)).join('')}
@@ -148,9 +148,23 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
       c[0x32] = clamp(v('maxhp'), 1, 255)
       c[0x11b] = clamp(v('hp'), 0, c[0x32])
       set32(c, 0xac, clamp(v('xp'), 0, 99999999))
-      for (let k = 0; k < 8; k++) c[0x96 + k] = clamp(v(`l${k}`), 0, 20)
+      // levels up to the game's caps; each level gained rolls its hit points as training does, and
+      // experience comes up to that level's minimum (lowering a level leaves max HP alone)
+      let gained = 0
+      const hpBefore = c[0x32]
+      for (let k = 0; k < 8; k++) {
+        const to = clamp(v(`l${k}`), 0, tables ? maxLevel(tables, k) : 1)
+        if (tables && c[0x96 + k] > 0) while (c[0x96 + k] < to) {
+          c[0x96 + k]++
+          levelHp(tables, (n) => e.rand(n), c, [k])
+          gained++
+          const min = xpFor(tables, k, c[0x96 + k])
+          if (min !== 0xffffffff && u32(c, 0xac) < min) set32(c, 0xac, min)
+        }
+        c[0x96 + k] = to
+      }
       for (let k = 0; k < 7; k++) set16(c, 0x88 + 2 * k, clamp(v(`m${k}`), 0, 65535))
-      finish(c, `${nameOf(c)} updated.`)
+      finish(c, gained ? `${nameOf(c)} updated: ${gained} level${gained > 1 ? 's' : ''} gained, max HP ${hpBefore} → ${c[0x32]}.` : `${nameOf(c)} updated.`)
     }
     dialog.addEventListener('click', onClick)
     dialog.addEventListener('submit', onSubmit)

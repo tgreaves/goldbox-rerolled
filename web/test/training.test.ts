@@ -40,3 +40,14 @@ describe.skipIf(!have)('training', () => {
     expect(before - value()).toBe(1000 * 200) // 1000 gp in copper units
   })
 })
+
+describe.skipIf(!have)('level caps', () => {
+  it('reads the game caps from the experience table', async () => {
+    const { readFileSync: rf } = await import('node:fs')
+    const { unexepack } = await import('../src/data/exepack')
+    const { Tables } = await import('../src/rules/chargen')
+    const { maxLevel } = await import('../src/rules/training')
+    const t = new Tables(unexepack(new Uint8Array(rf(join(dir, 'START.EXE')))).image)
+    expect([0, 1, 2, 3, 4, 5, 6, 7].map((k) => maxLevel(t, k))).toEqual([6, 1, 8, 1, 1, 6, 9, 1])
+  })
+})

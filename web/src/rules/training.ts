@@ -110,20 +110,38 @@ export function train(t: Tables, rng: Rng, c: Uint8Array, classes: number[], che
     }
   }
   derive(t, c)
-  // hit points: rolls for the trained classes only, CON bonus over all classes
+  levelHp(t, rng, c, classes, k)
+  return c[0x9b] > oldMU
+}
+
+/**
+ * The hit points of one level gained (FUN_417f_29ae step 6): rolls for the classes that went up,
+ * the CON bonus, both divided over the character's k classes; the wound is kept.
+ */
+export function levelHp(t: Tables, rng: Rng, c: Uint8Array, classes: number[], k = [0, 1, 2, 3, 4, 5, 6, 7].filter((i) => c[0x96 + i] > 0).length) {
   let R = 0
   for (const cls of classes) {
     let sum = 0
     for (let i = 0; i < t.b(0x8b6 + cls); i++) sum += rng(t.b(0x8be + cls)) + 1
     R += sum
   }
-  c[0xb1] = (c[0xb1] + Math.max(1, Math.trunc(R / k))) & 0xff
+  c[0xb1] = (c[0xb1] + Math.max(1, Math.trunc(R / Math.max(1, k)))) & 0xff
   const C = conBonus(t, c)
-  const gain = Math.max(1, Math.trunc((R + C) / k))
+  const gain = Math.max(1, Math.trunc((R + C) / Math.max(1, k)))
   const damage = c[0x32] - c[0x11b]
   c[0x32] = (c[0x32] + gain) & 0xff
   c[0x11b] = (c[0x32] - damage) & 0xff
-  return c[0x9b] > oldMU
+}
+
+/** The highest level the game's tables allow in base class k (the experience table's cap; 1 where it has none). */
+export function maxLevel(t: Tables, k: number): number {
+  let max = 1
+  for (let L = 2; L <= 13; L++) {
+    const xp = xpFor(t, k, L)
+    if (xp === 0 || xp === 0xffffffff) break
+    max = L
+  }
+  return max
 }
 
 /** FUN_51cf_0000: THAC0, highest level, attacks, spell slots, cleric spells known, saves, thief skills. */
