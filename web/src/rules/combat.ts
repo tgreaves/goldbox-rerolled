@@ -563,15 +563,24 @@ export class Battle implements FxHost {
     if (f.r[0]) { await this.castSpell(f, this.e.spells!.get(f.r[0])!, false); this.endTurnF(f); return }
     /** where the steps since the last other action began (Escape undoes them) */
     let moved = { x: f.x, y: f.y, m: f.r[6], face: f.r[9] }
+    const undo = () => { f.x = moved.x; f.y = moved.y; f.r[6] = moved.m; f.r[9] = moved.face; this.ui.redraw(f) }
     while (s8(f.r[3]) > 0 && this.inPlay(f) && !c[0x10f] && !this.ended) {
       const st = this.e.spells
       const canCast = !!st && f.r[1] === 1 && this.e.read(0x49e5) === 0 && Array.from({ length: 21 }, (_, k) => c[0x17 + k]).some((v) => v > 0 && v < 0x80)
+      const flat = !!this.ui.command
+      const doneRow = (): [string, string][] => {
+        const { canGuard, dying } = this.doneChoices(f)
+        const stepped = f.x !== moved.x || f.y !== moved.y
+        return [...(canGuard ? [['GUARD', 'g'] as [string, string]] : []), ['DELAY', 'l'], ...(dying ? [['BANDAGE', 'b'] as [string, string]] : []),
+          ...(stepped ? [['UNDO', 'z'] as [string, string]] : []), ['QUICK', 'q'], ['END TURN', 'e'], ['SPEED', 's']]
+      }
       const opts: [string, string][] = [
-        ...(f.r[6] > 1 ? [['MOVE', 'm'] as [string, string]] : []), ['VIEW', 'v'], ['AIM', 'a'],
+        ...(f.r[6] > 1 && !flat ? [['MOVE', 'm'] as [string, string]] : []), ['VIEW', 'v'], ['AIM', 'a'],
         ...(this.e.itemsOf(c).length ? [['USE', 'u'] as [string, string]] : []),
         ...(canCast ? [['CAST', 'c'] as [string, string]] : []),
         ...(c[0x96] > 0 && !f.r[0x11] ? [['TURN', 't'] as [string, string]] : []),
-        ['QUICK', 'q'], ['DONE', 'd'],
+        // IMP-054: with the live command prompt the Done choices sit in the same row
+        ...(flat ? doneRow() : [['QUICK', 'q'], ['DONE', 'd']] as [string, string][]),
       ]
       this.ui.redraw(f)
       await this.settle()
@@ -581,10 +590,11 @@ export class Battle implements FxHost {
         const cmds = opts.filter((o) => o[1] !== 'm')
         const r = await this.ui.command(f, cmds.map((o) => o[0]), `${name(c)}: Move Left = ${f.r[6] >> 1}`, f.r[6] >> 1)
         if (r === 'end') continue
-        if (r === 'undo') { f.x = moved.x; f.y = moved.y; f.r[6] = moved.m; f.r[9] = moved.face; this.ui.redraw(f); continue }
+        if (r === 'undo') { undo(); continue }
         if (typeof r === 'number') { if (await this.moveStep(f, r)) moved = { x: f.x, y: f.y, m: f.r[6], face: f.r[9] }; continue }
         k = cmds[r.choice]?.[1]
       } else k = opts[await this.ui.menu(opts.map((o) => o[0]), { prompt: `${name(c)}:` })]?.[1]
+      if (k === 'z') { undo(); continue }
       moved = { x: f.x, y: f.y, m: f.r[6], face: f.r[9] }
       if (k === 'm') await this.playerMove(f)
       else if (k === 'v') { await this.ui.view(c); this.recalc(c); await this.attacks(f, false) }
@@ -593,17 +603,32 @@ export class Battle implements FxHost {
       else if (k === 'c') { await this.playerCast(f); if (f.r[0]) return } // "Begins Casting": the turn ends, the spell goes off when picked again
       else if (k === 't') await this.turnUndead(f)
       else if (k === 'q') { c[0x10f] = 1; await this.ai(f); return }
-      else if (k === 'd') await this.done(f)
+      else if (k === 'd') { if (await this.done(f)) return }
+      else if (k === 'g') await this.doneAction(f, 'GUARD')
+      else if (k === 'l') { await this.doneAction(f, 'DELAY'); return }
+      else if (k === 'b') await this.doneAction(f, 'BANDAGE')
+      else if (k === 'e') await this.doneAction(f, 'QUIT')
+      else if (k === 's') await this.doneAction(f, 'SPEED')
     }
   }
 
-  async done(f: Fighter) {
+  /** What the Done submenu offers (FUN_320c_0e45): Guard without a non-throwing missile weapon, Bandage while a party member is Dying. */
+  doneChoices(f: Fighter) {
     const w = this.weaponOf(f.c)
     const b = w ? this.e.items?.baseOf(w) : undefined
     const canGuard = !b || b.range <= 1 || !!(b.flags & 0x10)
     const dying = this.fighters.some((o) => !o.monster && this.side(o) === 0 && o.c[0x10c] === 5)
+    return { canGuard, dying }
+  }
+
+  async done(f: Fighter): Promise<boolean> {
+    const { canGuard, dying } = this.doneChoices(f)
     const opts = [...(canGuard ? ['GUARD'] : []), 'DELAY', 'QUIT', ...(dying ? ['BANDAGE'] : []), 'SPEED', 'EXIT']
-    const o = opts[await this.ui.menu(opts, { prompt: 'Done:' })]
+    return this.doneAction(f, opts[await this.ui.menu(opts, { prompt: 'Done:' })])
+  }
+
+  /** A Done choice: GUARD, DELAY, QUIT, BANDAGE or SPEED. True when the turn is over for now (Delay). */
+  async doneAction(f: Fighter, o: string | undefined): Promise<boolean> {
     if (o === 'SPEED') { // FUN_320c_10f6: S(lower) +1, F(aster) −1, 0–9
       for (;;) {
         const k = await this.ui.menu(['SLOWER', 'FASTER', 'EXIT'], { prompt: `Game Speed = ${this.e.speed} (0=fastest 9=slowest)` })
@@ -611,16 +636,17 @@ export class Battle implements FxHost {
         else if (k === 1) this.e.speed = Math.max(0, this.e.speed - 1)
         else break
       }
-      return
+      return false
     }
     if (o === 'GUARD') { this.endTurnF(f); f.r[7] = 1; this.print(`${name(f.c)} is Guarding`) }
-    else if (o === 'DELAY') f.r[3] = 1
+    else if (o === 'DELAY') { f.r[3] = 1; return true } // picked again after everyone with higher initiative
     else if (o === 'QUIT') this.endTurnF(f)
     else if (o === 'BANDAGE') {
       const d = this.fighters.find((x) => !x.monster && this.side(x) === 0 && x.c[0x10c] === 5)
       if (d) { d.c[0x10c] = 4; d.r[0xe] = 0; this.print(`${name(d.c)} is bandaged`) }
       this.endTurnF(f)
     }
+    return false
   }
 
   async playerMove(f: Fighter) {

@@ -339,7 +339,7 @@ export async function runBattle(s: BattleScreen) {
   ui.confirm = (prompt) => raced(confirm0(prompt), false)
   ui.pick = (prompt, items) => raced(pick0(prompt, items), -1)
   const command0 = ui.command!.bind(ui)
-  ui.command = (f, items, prompt, left) => raced(command0(f, items, prompt, left), { choice: items.length - 1 })
+  ui.command = (f, items, prompt, left) => raced(command0(f, items, prompt, left), { choice: Math.max(0, items.indexOf('END TURN')) })
   s.onSkip?.(() => { if (battle) { battle.debugWin(); skipNow() } })
   s.canvas.hidden = false
   // the hidden "Magic On/Off" key (DS:6E30): Alt-M, or '2' during a computer-run turn; whether

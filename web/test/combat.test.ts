@@ -91,13 +91,16 @@ describe.skipIf(!have)('combat', () => {
         seen.push({ items, left, at: `${f.x},${f.y}` })
         if (seen.length === 1) { for (let d = 0; d < 8; d++) if (battle!.passable(f.x + [0, 1, 1, 1, 0, -1, -1, -1][d], f.y + [-1, -1, 0, 1, 1, 1, 0, -1][d], f.size) && !battle!.occupied(f.x + [0, 1, 1, 1, 0, -1, -1, -1][d], f.y + [-1, -1, 0, 1, 1, 1, 0, -1][d], f.size, f)) return d }
         if (seen.length === 2) battle!.debugWin()
-        return { choice: items.length - 1 }
+        return { choice: items.indexOf('END TURN') }
       },
       aim: async () => null, confirm: async () => false, view: async () => {}, sound: () => {}, pick: async () => -1,
     }
     await fight(e, ui, (b) => { battle = b })
     expect(seen.length).toBeGreaterThanOrEqual(2)
     expect(seen[0].items).not.toContain('MOVE')
+    expect(seen[0].items).toEqual(expect.arrayContaining(['DELAY', 'END TURN']))
+    expect(seen[0].items).not.toContain('DONE')
+    expect(seen[1].items).toContain('UNDO') // after a step
     expect(seen[1].at).not.toBe(seen[0].at) // the step was taken
     expect(seen[1].left).toBeLessThan(seen[0].left)
   })
