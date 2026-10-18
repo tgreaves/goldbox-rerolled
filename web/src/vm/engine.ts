@@ -1287,6 +1287,10 @@ export class Engine {
       this.B[EDGE - B0] = 0
       await this.run(this.vectors[4])
       if (this.quit) return
+      // an area change made by on_enter itself (the victory script's NEW_ECL #0 back to New Phlan):
+      // enter the new area properly, so its on_enter loads its map and walls (I: the original's
+      // FUN_29c3_31b4 clears the flag here; how it then shows the new area is not found)
+      if (this.areaChanged) continue
       // FUN_29c3_31b4 step 3: the Stojanow clears once the pyramid's sorcerer is beaten (FUN_4804_06b3(1))
       if (this.overland && this.area === 26 && this.read(0x4ab3) === 0xfe && this.read(0x4aa2) === 0) await this.io.river?.()
       this.areaChanged = false

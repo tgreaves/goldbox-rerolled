@@ -25,12 +25,16 @@ describe.skipIf(!have)('finale', () => {
       e.loadSave(dat, stems.map((s) => files.get(`${s}.SAV`)!))
       stems.forEach((s, i) => e.attachFiles(i, files.get(`${s}.ITM`), files.get(`${s}.SPC`)))
       await e.jump(5, 7, 1, 4, 1)
+      const towerMap = e.geo
       await e.run(addr)
       if (!e.quit) await e.enter()
       if (label === 'fight') expect(seen).toContain('combat')
       expect(seen).toContain('ending')
       expect(text.some((t) => t.startsWith('KNOWING THAT TYRANTHRAXUS HAS FINALLY BEEN DEFEATED'))).toBe(true)
       expect([e.block, e.area]).toEqual([3, 0])
+      expect(e.geo).not.toBeNull()
+      expect(e.geo).not.toBe(towerMap) // New Phlan's map, loaded by its own on_enter
+      expect([e.x, e.y]).toEqual([0, 4])
     })
   }
 })
