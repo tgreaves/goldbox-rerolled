@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => ({
               display: 'standalone',
               icons: [{ src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
             },
-            workbox: { globPatterns: ['**/*.{js,css,html,svg}'] },
+            workbox: { globPatterns: ['**/*.{js,css,html,svg}', 'journal/*.png'] },
           }),
         ],
   test: { include: ['test/**/*.test.ts'] },

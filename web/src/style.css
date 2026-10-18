@@ -489,3 +489,11 @@ dialog.panel form.additem { display: flex; flex-wrap: wrap; gap: 0.4rem 0.6rem; 
 dialog.panel form.additem label { display: inline-flex; gap: 0.3rem; align-items: center; }
 dialog.panel form.additem select { max-width: 100%; }
 dialog.panel form.additem input[type=number] { width: 4rem; }
+
+/* the journal (IMP-055) */
+dialog.panel .journal { display: grid; gap: 0.8rem; margin: 0.6rem 0; }
+dialog.panel .journal article { border-top: 1px solid #ffffff20; padding-top: 0.5rem; }
+dialog.panel .journal h3 { margin: 0 0 0.3rem; color: var(--ega-yellow); font-size: 1rem; }
+dialog.panel .journal p { margin: 0 0 0.45rem; line-height: 1.45; }
+dialog.panel img.journal-map { display: block; max-width: 100%; height: auto; margin: 0.4rem 0; background: #fff; image-rendering: auto; }
+dialog.panel p.small { font-size: 0.8rem; }

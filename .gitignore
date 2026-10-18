@@ -19,5 +19,8 @@ out/
 !web/index.html
 !web/public/
 !web/public/*.svg
+# the journal's map scans (from the Pool of Radiance Wiki, CC BY-SA; see web/src/data/journal.json)
+!web/public/journal/
+!web/public/journal/*.png
 web/dist/
 web/dist-single/

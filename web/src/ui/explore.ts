@@ -13,6 +13,7 @@ import { drawMap, landmarkAt } from './areamap'
 import type { GeoMap } from '../data/geo'
 import { listCharacters, listSaves, saveCharacter, writeSave } from '../store/user'
 import { report, revealedBy, type State } from '../rules/commissions'
+import { JOURNAL, journalReveals, revealNote, roman } from '../rules/journal'
 import { ICONS, landmarks, type Landmark } from '../rules/landmarks'
 import { Overland } from '../rules/overland'
 import { itemsFile, type Item } from '../data/items'
@@ -286,10 +287,19 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
 
   // ------------------------------------------------------------------ io
+  /** the text of the current screen, for journal reveals */
+  let screenText = ''
   const io: Io = {
     print: (text, clear) => {
       print(text, clear)
       for (const id of revealedBy(text)) known.add(id)
+      // the journal (IMP-055): the whole screen is scanned, as a number can come in a print of its own
+      screenText = clear ? text : `${screenText} ${text}`
+      for (const id of journalReveals(screenText)) {
+        if (known.has(id)) continue
+        known.add(id)
+        note(revealNote(id))
+      }
     },
     menu,
     inputNumber: async () => Math.min(Number((await input('number')).replace(/\D/g, '') || 0), 65535),
@@ -1225,6 +1235,49 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     return r.bounty > 0 || r.lines.some((l) => l.state === 'reward' || l.state === 'summoned')
   }
   const STATE_LABEL: Record<State, string> = { reward: 'Reward due', summoned: 'Summoned', open: 'Open', failed: 'Failed', closed: 'Closed' }
+  // ------------------------------------------------------------ journal (IMP-055)
+  let journalTab: 'journal' | 'proclamations' | 'tales' = 'journal'
+  let journalAll = false
+  function journal() {
+    const paras = (t: string) => t.split(/\n{2,}/).map((p) => `<p>${escape(p).replace(/\n/g, '<br>')}</p>`).join('')
+    const has = (id: string) => journalAll || known.has(id)
+    const base = import.meta.env.BASE_URL
+    const render = () => {
+      const entries = JOURNAL.journal.filter((j) => has(`journal:${j.n}`))
+      const procs = JOURNAL.proclamations.filter((p) => has(`proc:${p.id}`)).sort((a, b) => roman(a.id) - roman(b.id))
+      const tales = JOURNAL.tales.filter((t) => has(`tale:${t.n}`))
+      const tab = (k: typeof journalTab, label: string, n: number, of: number) =>
+        `<button type="button" data-tab="${k}" class="${journalTab === k ? 'on' : ''}">${label} (${n}${journalAll ? '' : ` of ${of}`})</button>`
+      let body = ''
+      if (journalTab === 'journal') body = entries.map((j) => `<article><h3>Journal entry ${j.n}</h3>${paras(j.text)}${j.images.map((src) =>
+        `<img class="journal-map" src="${base}${src}" alt="Map from journal entry ${j.n}" loading="lazy">`).join('')}</article>`).join('')
+        || '<p class="muted">Nothing yet. Papers, books and maps found on your travels are copied in here.</p>'
+      else if (journalTab === 'proclamations') body = procs.map((p) => `<article><h3>Proclamation ${p.id}</h3><p class="muted">${escape(JOURNAL.preface)}</p>${paras(p.text)}</article>`).join('')
+        || '<p class="muted">Nothing yet. The proclamations are posted on the walls of City Hall.</p>'
+      else body = tales.map((t) => `<article><h3>Tavern tale ${t.n}</h3>${paras(t.text)}</article>`).join('')
+        || '<p class="muted">Nothing yet. Listen in the taverns of New Phlan.</p>'
+      dialog.innerHTML = `<h2>Journal</h2>
+        <div class="nc-opts">${tab('journal', 'Entries', entries.length, JOURNAL.journal.length)}${tab('proclamations', 'Proclamations', procs.length, JOURNAL.proclamations.length)}${tab('tales', 'Tavern tales', tales.length, JOURNAL.tales.length)}</div>
+        <div class="journal">${body}</div>
+        <p class="muted"><label><input type="checkbox" data-all="1"${journalAll ? ' checked' : ''}> Show everything, like the printed journal (some entries are false; the original asked you not to read ahead)</label></p>
+        <p class="muted small">Text and maps from the <a href="${JOURNAL.source.journal}" target="_blank" rel="noopener">Pool of Radiance Wiki</a>, CC BY-SA.</p>
+        <form method="dialog"><button>Close</button></form>`
+    }
+    const onClick = (e: MouseEvent) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-tab]')
+      if (b) { journalTab = b.dataset.tab as typeof journalTab; render() }
+    }
+    const onChange = (e: Event) => {
+      const c = e.target as HTMLInputElement
+      if (c.dataset.all) { journalAll = c.checked; render() }
+    }
+    dialog.addEventListener('click', onClick)
+    dialog.addEventListener('change', onChange)
+    onClose(dialog, () => { dialog.removeEventListener('click', onClick); dialog.removeEventListener('change', onChange) })
+    render()
+    dialog.showModal()
+  }
+
   function commissions() {
     const r = commissionReport()
     const rows = r.lines.map((l) => `<li class="${l.state}"><span class="state">${STATE_LABEL[l.state]}</span>
@@ -1274,6 +1327,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     menuBar.innerHTML = ['Area', 'Cast', 'View', 'Encamp', 'Search', 'Look']
       .map((c) => `<button data-cmd="${c[0]}"${c === 'Search' && engine.B[0x6dca - 0x6b00] & 1 ? ' class="on"' : ''}><u>${c[0]}</u>${c.slice(1)}</button>`).join('') +
       '<button class="sound" data-cmd="settings" title="Speed, sound, font and text size">⚙ Settings</button>' +
+      '<button data-cmd="journal" title="Journal entries, proclamations and tavern tales found so far (not in the original)">Journal</button>' +
       `<button data-cmd="commissions" title="Commissions and rewards (not in the original)">Commissions${commissionsDue() ? ' <span class="due">•</span>' : ''}</button>` +
       '<button data-cmd="save" title="Save the game (any time)">Save</button>' +
       '<button class="assets" data-cmd="debug" title="Debug menu (not part of the game)">Debug</button>' +
@@ -1315,6 +1369,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         break
       case 'nosound': note('Sound needs START.EXE: go back to Assets and re-import the POOLRAD folder.'); break
       case 'commissions': commissions(); break
+      case 'journal': journal(); break
       case 'save': act(() => saveGame()); break
       case 'debug': debugMenu(); break
       case 'assets': leave(); break
