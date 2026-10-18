@@ -620,6 +620,13 @@ dialog.panel .rules-body h3 { color: var(--ega-cyan); margin: 0.8rem 0 0.2rem; f
   .party-top .rcard canvas.rc-portrait { width: 40px; height: 40px; }
   .party-top .rcard canvas.rc-icon { width: 28px; height: 28px; }
   .party-top .roster-cards .rcard { min-width: 9.5rem; }
+  /* in the row: the whole top line for the name, AC beside HP, the combat icon over the portrait's corner */
+  .party-top .rcard { position: relative; overflow: hidden; grid-template-columns: auto minmax(0, 1fr); }
+  .party-top .rcard .rc-top .rc-ac { display: none; }
+  .party-top .rcard .rc-ac2 { display: inline; color: var(--text); }
+  .party-top .rcard .rc-name { white-space: nowrap; }
+  .party-top .rcard canvas.rc-icon { position: absolute; left: calc(0.35rem + 40px - 20px); top: calc(0.25rem + 40px - 20px); width: 22px; height: 22px; border: 1px solid var(--line); }
+  .party-top .rcard .hpbar, .party-top .rcard .xpbar { max-width: 100%; }
   /* battles: the battlefield across the whole width under the cards */
   .party-top .game.in-combat {
     grid-template-columns: minmax(0, 1fr);
@@ -632,3 +639,6 @@ dialog.panel .rules-body h3 { color: var(--ega-cyan); margin: 0.8rem 0 0.2rem; f
   .party-top.frames-original .game .map { border-top-width: 0; border-left-width: 0; }
   .party-top.frames-original .game .text { border-top-width: 0; }
 }
+
+.rcard .rc-ac2 { display: none; }
+.rcard .rc-ac { white-space: nowrap; flex: none; }
