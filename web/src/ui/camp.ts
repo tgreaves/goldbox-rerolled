@@ -1,4 +1,5 @@
 // Camp screens (spec/camp.md): Encamp menu, Magic, Rest, Alter.
+import { spellText } from '../rules/spelltext'
 import type { Engine } from '../vm/engine'
 import { parseCharacter } from '../data/character'
 import type { Spell } from '../data/spells'
@@ -7,7 +8,7 @@ import { castOutside, targetKind, forget } from '../rules/magic'
 
 export interface CampUi {
   engine: Engine
-  menu(items: string[], opts?: { prompt?: string; vertical?: boolean }): Promise<number>
+  menu(items: string[], opts?: { prompt?: string; vertical?: boolean; notes?: string[] }): Promise<number>
   print(text: string, clear?: boolean): void
   view(): Promise<void>
   save(): Promise<void>
@@ -80,7 +81,7 @@ export async function cast(ui: CampUi) {
     const ready = memorised(c).filter((v) => v > 0 && v < 0x80)
     if (!ready.length) { ui.print(`${nameOf(c)} has no spells memorized`, false); return }
     const list = ready.map((id) => st.get(id)!).filter(Boolean)
-    const i = await ui.menu([...list.map((s) => s.name.toUpperCase()), 'EXIT'], { prompt: 'Spells in Memory:', vertical: true })
+    const i = await ui.menu([...list.map((s) => s.name.toUpperCase()), 'EXIT'], { prompt: 'Spells in Memory:', vertical: true, notes: list.map(spellText) })
     if (i >= list.length) return
     const s = list[i]
     if (s.side === 0) {
@@ -121,7 +122,7 @@ async function memorize(ui: CampUi) {
     if (!hasCleric && !hasMU) { ui.print(`${nameOf(c)} cannot memorize any spells`, false); return }
     ui.print(`${nameOf(c)} can memorize:${hasCleric ? `  Cleric Spells: ${row(0)}` : ''}${hasMU ? `  Magic-User Spells: ${row(1)}` : ''}`, true)
     const book: Spell[] = st.spells.filter((s) => s.id <= 55 && knows(c, s.id))
-    const i = await ui.menu([...book.map((s) => `${s.name.toUpperCase()} (${s.cls ? 'MU' : 'CL'} ${s.level})`), 'EXIT'], { prompt: 'Spells in Spell Book:', vertical: true })
+    const i = await ui.menu([...book.map((s) => `${s.name.toUpperCase()} (${s.cls ? 'MU' : 'CL'} ${s.level})`), 'EXIT'], { prompt: 'Spells in Spell Book:', vertical: true, notes: book.map(spellText) })
     if (i >= book.length) break
     if (memorise(c, book[i], st)) picked = true
   }

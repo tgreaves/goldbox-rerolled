@@ -1,10 +1,12 @@
 :root {
-  --bg: #101820;
-  --panel: #18232e;
-  --line: #2a3a4a;
-  --text: #e6edf3;
-  --muted: #8b9bab;
-  --accent: #f2c94c;
+  /* the EGA palette (IMP-057): black, dark grey lines, white text, light grey for the quieter lines, yellow highlight */
+  --bg: #000000;
+  --panel: #000000;
+  --line: #555555;
+  --text: #ffffff;
+  --muted: #aaaaaa;
+  --accent: #ffff55;
+  --field: #000000;
   color-scheme: dark;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
@@ -61,7 +63,7 @@ canvas.pixel { image-rendering: pixelated; background: #000; border: 1px solid v
 .view3d { flex: 1; width: 100%; height: 100dvh; display: block; touch-action: manipulation; image-rendering: pixelated; }
 .explore .hud {
   position: absolute; top: env(safe-area-inset-top); left: 0; right: 0; display: flex; gap: 0.75rem;
-  align-items: center; padding: 0.5rem 0.75rem; background: linear-gradient(#101820e0, #10182000);
+  align-items: center; padding: 0.5rem 0.75rem; background: linear-gradient(#000000e0, #00000000);
   pointer-events: none;
 }
 .explore .hud > * { pointer-events: auto; }
@@ -75,7 +77,7 @@ canvas.pixel { image-rendering: pixelated; background: #000; border: 1px solid v
   position: absolute; right: calc(1rem + env(safe-area-inset-right)); bottom: calc(1rem + env(safe-area-inset-bottom));
   display: grid; grid-template-columns: repeat(3, 3.25rem); grid-template-rows: repeat(2, 3.25rem); gap: 0.4rem;
 }
-.explore .pad button { font-size: 1.3rem; padding: 0; background: #18232ecc; }
+.explore .pad button { font-size: 1.3rem; padding: 0; background: #000000cc; }
 .explore .pad [data-c="l"] { grid-column: 1; grid-row: 1; }
 .explore .pad [data-c="f"] { grid-column: 2; grid-row: 1; }
 .explore .pad [data-c="r"] { grid-column: 3; grid-row: 1; }
@@ -160,7 +162,7 @@ dialog.panel form.jump label { display: grid; font-size: 0.8rem; color: var(--mu
 dialog.panel form.jump input { width: 4.5rem; }
 .game .wild {
   position: absolute; inset: 0; display: grid; align-content: center; gap: 0.6rem; padding: 1.2rem;
-  background: #0b1218; color: var(--ega-green); text-align: center;
+  background: var(--field); color: var(--ega-green); text-align: center;
 }
 .game .wild[hidden] { display: none; }
 .game .wild p { margin: 0; max-width: 32rem; justify-self: center; }
@@ -213,7 +215,7 @@ dialog.panel form.jump input { width: 4.5rem; }
 .game ol.choices button { width: 100%; text-align: left; min-height: 36px; }
 .game form.entry { display: flex; gap: 0.4rem; margin: 0.3rem 0; }
 .game form.entry input {
-  flex: 1; background: #0b1218; border: 1px solid var(--line); border-radius: 4px; padding: 0.3rem 0.5rem;
+  flex: 1; background: var(--field); border: 1px solid var(--line); border-radius: 4px; padding: 0.3rem 0.5rem;
   color: var(--ega-green); min-height: 36px; text-transform: uppercase;
 }
 .game .menu .sound { color: var(--muted); }
@@ -248,7 +250,7 @@ form.yn { display: flex; gap: 0.5rem; justify-content: flex-end; }
   .partyscreen .members td:nth-child(2), .partyscreen .members td:nth-child(3) { display: none; }
 }
 .namebox { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-.namebox input { background: #0b1218; border: 1px solid var(--line); border-radius: 4px; padding: 0.4rem 0.5rem; color: var(--ega-green); text-transform: uppercase; min-height: 40px; }
+.namebox input { background: var(--field); border: 1px solid var(--line); border-radius: 4px; padding: 0.4rem 0.5rem; color: var(--ega-green); text-transform: uppercase; min-height: 40px; }
 canvas.portrait { width: 264px; display: block; margin: 0.5rem 0; }
 form.yn span { margin-right: auto; align-self: center; }
 
@@ -297,7 +299,7 @@ dialog.panel.wide { max-width: min(76rem, 97vw); width: 100%; }
 .nc-hint { font-size: 0.85rem; }
 .nc-derived { color: var(--ega-green); }
 .nc-name { display: grid; gap: 0.25rem; color: var(--muted); margin-bottom: 0.6rem; }
-.nc-name input { background: #0b1218; border: 1px solid var(--line); border-radius: 4px; padding: 0.35rem 0.5rem; color: var(--ega-green); text-transform: uppercase; min-height: 36px; }
+.nc-name input { background: var(--field); border: 1px solid var(--line); border-radius: 4px; padding: 0.35rem 0.5rem; color: var(--ega-green); text-transform: uppercase; min-height: 36px; }
 .nc-portrait { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
 .nc-portrait canvas.portrait { width: 176px; margin: 0; }
 .nc-icon { margin-top: 0.6rem; }
@@ -356,7 +358,7 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 /* combat helpers (IMP-044) */
 .game .combat-info {
   position: absolute; z-index: 3; pointer-events: none; padding: 0.2rem 0.5rem; border-radius: 4px;
-  background: #0b1218e6; border: 1px solid var(--line); color: var(--ega-green); font-size: 0.85rem; white-space: nowrap;
+  background: #000000e6; border: 1px solid var(--line); color: var(--ega-green); font-size: 0.85rem; white-space: nowrap;
 }
 .game .combat-info.enemy { color: #ff8080; }
 .game .combat-info[hidden], .game .turnstrip[hidden] { display: none; }
@@ -520,3 +522,36 @@ table.shop input[type=number] { width: 6rem; }
 
 .quick-note { color: var(--ega-magenta); margin: 0.3rem 0 0; }
 .quick-note button { margin-left: 0.4rem; }
+
+/* ------------------------------------------------------------ the classic look (IMP-057) */
+/* square corners everywhere, as on the 1988 screen */
+*, *::before, *::after { border-radius: 0 !important; }
+button { background: #000; border: 1px solid var(--line); }
+button:hover:not(:disabled), button:focus-visible { border-color: var(--accent); outline: none; }
+button.primary { background: var(--accent); color: #000; }
+button u { color: var(--accent); text-decoration: none; }
+button.primary u { color: #000; }
+.rcard.current { background: #ffff5512; }
+/* the text window: the current screen bright, the earlier ones dimmed */
+.game .text .screen { opacity: 0.55; }
+.game .text .screen:last-child { opacity: 1; }
+/* a lone prompt ("PRESS ENTER") is one big button */
+.game .menu button.primary:only-child { flex: 1 1 100%; min-height: 52px; font-size: 1.1em; }
+/* every panel: a close button in its top corner */
+dialog.panel { position: fixed; }
+dialog.panel > .panel-close { position: absolute; top: 0.3rem; right: 0.3rem; min-height: 36px; min-width: 36px; padding: 0; z-index: 2; }
+dialog.panel > h2 { padding-right: 2.4rem; }
+/* the main menu (☰) */
+dialog.panel ul.mainmenu { list-style: none; margin: 0.6rem 0; padding: 0; display: grid; gap: 0.35rem; min-width: min(20rem, 80vw); }
+dialog.panel ul.mainmenu button { width: 100%; text-align: left; }
+dialog.panel ul.mainmenu small { display: block; color: var(--muted); font-size: 0.75rem; }
+
+/* a line under a choice: what a spell does (IMP-058) */
+.game ol.choices button small { display: block; font-size: 0.75rem; color: var(--muted); font-weight: normal; margin-top: 0.15rem; text-transform: none; }
+
+/* the Rules reference (IMP-058) */
+dialog.panel dl.rules { display: grid; grid-template-columns: minmax(8rem, max-content) 1fr; gap: 0.35rem 0.9rem; margin: 0.5rem 0; }
+dialog.panel dl.rules dt { color: var(--accent); }
+dialog.panel dl.rules dd { margin: 0; color: var(--text); line-height: 1.4; }
+dialog.panel .rules-body h3 { color: var(--ega-cyan); margin: 0.8rem 0 0.2rem; font-size: 1rem; }
+@media (max-width: 600px) { dialog.panel dl.rules { grid-template-columns: 1fr; } dialog.panel dl.rules dd { margin-bottom: 0.4rem; } }

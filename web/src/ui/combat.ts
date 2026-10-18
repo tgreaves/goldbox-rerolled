@@ -11,7 +11,7 @@ export interface BattleScreen {
   engine: Engine
   files: GameFiles
   canvas: HTMLCanvasElement
-  menu(items: string[], opts?: { prompt?: string; vertical?: boolean }): Promise<number>
+  menu(items: string[], opts?: { prompt?: string; vertical?: boolean; notes?: string[] }): Promise<number>
   print(text: string, clear?: boolean): void
   /** a skippable wait (a click, tap or key ends it early) */
   pause(ms: number): Promise<void>
@@ -158,7 +158,10 @@ export async function runBattle(s: BattleScreen) {
     const box = s.info
     if (!box) return
     if (!f || !battle) { box.hidden = true; return }
-    box.textContent = `${nameOf(f.c)}: ${condition(battle, f)}`
+    // with a party member to act by hand: the odds of hitting an enemy with their weapon (IMP-058)
+    const odds = acting && !acting.monster && !acting.c[0x10f] && battle.side(f) !== battle.side(acting) && battle.inPlay(f)
+      ? battle.hitOdds(acting, f) : null
+    box.textContent = `${nameOf(f.c)}: ${condition(battle, f)}${odds ? ` · ≈${Math.round(odds.chance * 100)}% to hit, ${odds.damage}` : ''}`
     box.className = `combat-info ${battle.side(f) ? 'enemy' : 'ally'}`
     box.hidden = false
     if (ev) {
@@ -329,16 +332,16 @@ export async function runBattle(s: BattleScreen) {
           else if (allowCell) finish({ f: null, x: cell.col, y: cell.row, cost: battle!.cost(f.x, f.y, cell.col, cell.row), ok: true })
         },
       })
-      const labels = ok.map((x) => `${x.f ? String.fromCharCode(...x.f.c.subarray(1, 1 + x.f.c[0])) : 'there'} (range ${x.cost >> 1})`)
+      const labels = ok.map((x) => `${x.f ? String.fromCharCode(...x.f.c.subarray(1, 1 + x.f.c[0])) : 'there'} (range ${x.cost >> 1}${x.note ? `, ${x.note}` : ''})`)
       void s.menu([...labels, 'EXIT'], { prompt: ok.length ? prompt : `${prompt} nobody in range`, vertical: true })
         .then((i) => finish(i < ok.length ? ok[i] : null, true))
     }),
     confirm: async (prompt) => (await s.menu(['YES', 'NO'], { prompt })) === 0,
     view: (c) => s.view(c),
     sound: (n) => s.sound(n),
-    pick: async (prompt, items) => {
+    pick: async (prompt, items, notes) => {
       if (!items.length) return -1
-      const i = await s.menu([...items, 'EXIT'], { prompt, vertical: true })
+      const i = await s.menu([...items, 'EXIT'], { prompt, vertical: true, notes })
       return i < items.length ? i : -1
     },
   }
@@ -351,7 +354,7 @@ export async function runBattle(s: BattleScreen) {
   ui.step = (f, left) => raced(step0(f, left), 'end' as const)
   ui.aim = (f, entries, prompt, allowCell) => raced(aim0(f, entries, prompt, allowCell), null)
   ui.confirm = (prompt) => raced(confirm0(prompt), false)
-  ui.pick = (prompt, items) => raced(pick0(prompt, items), -1)
+  ui.pick = (prompt, items, notes) => raced(pick0(prompt, items, notes), -1)
   const command0 = ui.command!.bind(ui)
   ui.command = (f, items, prompt, left) => raced(command0(f, items, prompt, left), { choice: Math.max(0, items.indexOf('END TURN')) })
   s.onSkip?.(() => { if (battle) { battle.debugWin(); skipNow() } })

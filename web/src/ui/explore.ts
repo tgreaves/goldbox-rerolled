@@ -8,12 +8,15 @@ import { World } from '../render/world'
 import { blit, blitCanvas, pixels, sizeCanvas } from '../render/upscale'
 import { parseFont } from '../data/font'
 import { editCharacters } from './debugedit'
+import { enhancePanel } from './panel'
+import { rulesReference } from './rulesref'
 import { Engine, A0, type Io } from '../vm/engine'
 import { drawMap, landmarkAt } from './areamap'
 import type { GeoMap } from '../data/geo'
 import { listCharacters, listSaves, saveCharacter, writeSave } from '../store/user'
 import { report, revealedBy, type State } from '../rules/commissions'
 import { JOURNAL, journalReveals, revealNote, roman } from '../rules/journal'
+import { spellText } from '../rules/spelltext'
 import { ICONS, landmarks, type Landmark } from '../rules/landmarks'
 import { Overland } from '../rules/overland'
 import { itemsFile, type Item, type ItemTables } from '../data/items'
@@ -33,7 +36,7 @@ import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
 import { creatorTools } from './creator'
 import { playEnding } from './ending'
 import { onClose } from './sheet'
-import { openSettings } from './settings'
+import { openSettings, reducedMotion } from './settings'
 import { unexepack } from '../data/exepack'
 import { checkTraining, levelLimit, newSpellChoices, train, willBecome, xpFor } from '../rules/training'
 import { initSound, play, setSoundDevice, soundDevice, unlockAudio } from '../audio/sfx'
@@ -51,6 +54,23 @@ type CharFiles = { sav: Uint8Array; itm?: Uint8Array; spc?: Uint8Array }
 export type Start =
   | { kind: 'new'; party: CharFiles[] }
   | { kind: 'load'; dat: Uint8Array; party: CharFiles[]; label: string; known?: string[] }
+
+/** The 1988 numbers in plain words (IMP-058), as tooltips on the sheet and the cards. */
+const TIPS: Record<string, string> = {
+  STR: 'Strength: to-hit and damage bonuses at 17 and above, and how much can be carried. Fighters can have 18/01 to 18/00.',
+  INT: 'Intelligence: magic-users need it.',
+  WIS: 'Wisdom: clerics with 13 or more get extra spells.',
+  DEX: 'Dexterity: better AC and missile to-hit at 15 and above.',
+  CON: 'Constitution: extra hit points per level at 15 and above.',
+  CHA: 'Charisma: how people react to the party.',
+  HP: 'Hit points: at 0 a character is down; below that, dying, and dead at −10.',
+  AC: 'Armour class: lower is better. 10 is unarmoured, 0 is excellent, below 0 takes magic.',
+  THAC0: 'To Hit Armour Class 0: the d20 roll needed to hit AC 0. To hit AC n you need THAC0 − n or more. Lower is better.',
+  Damage: 'Damage dice with the readied weapon (or fists) against man-sized foes.',
+  Movement: 'Squares per combat round. Heavy loads cut it.',
+  Experience: 'Experience points: train at a training hall when there are enough for the next level.',
+  Load: 'Everything carried, weighed in coins (each coin counts 1). Heavier loads lower movement.',
+}
 
 export function showExplore(app: HTMLElement, files: GameFiles, start: Start, back: () => void) {
 
@@ -100,6 +120,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   app.querySelector<HTMLButtonElement>('.take-control')!.addEventListener('click', () => battleControls?.takeControl())
   app.querySelector<HTMLButtonElement>('.magic-toggle')!.addEventListener('click', () => battleControls?.toggleMagic())
   const dialog = app.querySelector<HTMLDialogElement>('dialog.panel')!
+  enhancePanel(dialog)
   dialog.addEventListener('close', () => dialog.classList.remove('wide'))
   const world = new World(canvas)
 
@@ -227,7 +248,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   let pending: { resolve: (n: number) => void; items: string[] } | null = null
   /** a click, tap or key skips the current script pause */
   let skipPause: (() => void) | null = null
-  function menu(items: string[], opts: { prompt?: string; vertical?: boolean } = {}): Promise<number> {
+  function menu(items: string[], opts: { prompt?: string; vertical?: boolean; notes?: string[] } = {}): Promise<number> {
     return new Promise((resolve) => {
       if (opts.prompt) print(opts.prompt, false)
       const single = items.length === 1
@@ -238,6 +259,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           const li = document.createElement('li')
           const b = document.createElement('button')
           b.textContent = t
+          // a line under the choice: what a spell does (IMP-058)
+          const note = opts.notes?.[i]
+          if (note) { const sm = document.createElement('small'); sm.textContent = note; b.append(sm) }
           b.addEventListener('click', () => choose(i))
           li.append(b)
           list.append(li)
@@ -499,7 +523,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       return `<button class="${cls}" data-i="${i}" title="${i === cur ? 'View' : 'Select'} ${escape(c.name)}">
         <canvas class="pixel rc-portrait" width="88" height="88"></canvas>
         <span class="rc-body">
-          <span class="rc-top"><span class="rc-name">${escape(c.name)}</span><span class="rc-ac">AC ${c.ac}</span></span>
+          <span class="rc-top"><span class="rc-name">${escape(c.name)}</span><span class="rc-ac" title="${escape(TIPS.AC)}">AC ${c.ac}</span></span>
           <span class="hpbar${pct < 50 ? ' low' : ''}"><span style="width:${pct}%"></span></span>
           <span class="rc-line"><span class="rc-hp">${up ? `HP ${c.hp}/${c.hpMax}` : c.status}</span>${helpless ? ' (Helpless)' : ''}${weapon && it ? ` · ${escape(it.name(weapon))}` : ''}</span>
           ${spells ? `<span class="rc-line rc-spells" title="${escape(spells)}">✦ ${escape(spells)}</span>` : ''}
@@ -843,7 +867,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
             const free = freeSlots(c, cls, l, st)
             return `<div class="mem-level"><h4>Level ${l} <span class="muted">${total - free} of ${total} slots</span></h4>
               <div class="mem-slots">${chips}${empty}</div>
-              <div class="mem-book">${book.map((s) => `<button data-mem="${s.id}" ${free > 0 ? '' : 'disabled'}>+ ${escape(s.name)}</button>`).join('') || '<span class="muted">No spells of this level in the book.</span>'}</div></div>`
+              <div class="mem-book">${book.map((s) => `<button data-mem="${s.id}" ${free > 0 ? '' : 'disabled'} title="${escape(spellText(s))}">+ ${escape(s.name)}</button>`).join('') || '<span class="muted">No spells of this level in the book.</span>'}</div></div>`
           }).join('')
           groups.push(`<section class="mem-class"><h3>${cls ? 'Magic-User' : 'Cleric'} spells</h3>${levels}</section>`)
         }
@@ -1074,14 +1098,14 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       <div class="sheet2">
         <section>
           <div class="sheet">
-            <table>${STAT_KEYS.map((k) => `<tr><th>${k}</th><td>${c.stats[k]}${k === 'STR' ? str : ''}</td></tr>`).join('')}</table>
+            <table>${STAT_KEYS.map((k) => `<tr><th title="${escape(TIPS[k] ?? '')}">${k}</th><td>${c.stats[k]}${k === 'STR' ? str : ''}</td></tr>`).join('')}</table>
             <table>
-              <tr><th>HP</th><td>${c.hp} / ${c.hpMax}</td></tr>
-              <tr><th>AC</th><td>${c.ac}</td></tr>
-              <tr><th>THAC0</th><td>${c.thac0}</td></tr>
-              <tr><th>Damage</th><td>${c.damage}</td></tr>
-              <tr><th>Movement</th><td>${c.movement}</td></tr>
-              <tr><th>Experience</th><td>${c.exp}</td></tr>
+              <tr><th title="${escape(TIPS.HP)}">HP</th><td>${c.hp} / ${c.hpMax}</td></tr>
+              <tr><th title="${escape(TIPS.AC)}">AC</th><td>${c.ac}</td></tr>
+              <tr><th title="${escape(TIPS.THAC0)}">THAC0</th><td>${c.thac0}</td></tr>
+              <tr><th title="${escape(TIPS.Damage)}">Damage</th><td>${c.damage}</td></tr>
+              <tr><th title="${escape(TIPS.Movement)}">Movement</th><td>${c.movement}</td></tr>
+              <tr><th title="${escape(TIPS.Experience)}">Experience</th><td>${c.exp}</td></tr>
             </table>
             <table>${MONEY.map((m, i) => `<tr><th>${m}</th><td>${c.money[i]}</td></tr>`).join('')}</table>
           </div>
@@ -1089,7 +1113,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         ${t ? `<section class="gear">
           <h3>Equipped</h3><div class="slots">${equipped}</div>
           <h3>Carried</h3>${carried ? `<ul class="carried-list">${carried}</ul>` : '<p class="muted">Nothing else.</p>'}
-          <div class="enc"><span>Encumbrance ${enc} of ${cap} coins</span><meter min="0" max="${cap}" high="${Math.round(cap * 0.75)}" value="${enc}"></meter></div>
+          <div class="enc" title="${escape(TIPS.Load)}"><span>Encumbrance ${enc} of ${cap} coins</span><meter min="0" max="${cap}" high="${Math.round(cap * 0.75)}" value="${enc}"></meter></div>
         </section>` : '<section><p class="muted">Items need the ITEMS file and START.EXE: re-import the POOLRAD folder.</p></section>'}
       </div>
       ${t ? `${preview}
@@ -1301,7 +1325,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     canvas.hidden = true
     wildview.hidden = false
     drawWild([17, 15])
-    for (const at of Overland.CLEANSING_VIEW) {
+    if (!reducedMotion()) for (const at of Overland.CLEANSING_VIEW) {
       for (const id of Overland.CLEANSED.keys()) recolour(id, false)
       drawWild(at)
       await sleep(150)
@@ -1522,12 +1546,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     pad.classList.remove('disabled')
     menuBar.innerHTML = ['Area', 'Cast', 'View', 'Encamp', 'Search', 'Look']
       .map((c) => `<button data-cmd="${c[0]}"${c === 'Search' && engine.B[0x6dca - 0x6b00] & 1 ? ' class="on"' : ''}><u>${c[0]}</u>${c.slice(1)}</button>`).join('') +
-      '<button class="sound" data-cmd="settings" title="Speed, sound, font and text size">⚙ Settings</button>' +
-      '<button data-cmd="journal" title="Journal entries, proclamations and tavern tales found so far (not in the original)">Journal</button>' +
-      `<button data-cmd="commissions" title="Commissions and rewards (not in the original)">Commissions${commissionsDue() ? ' <span class="due">•</span>' : ''}</button>` +
-      '<button data-cmd="save" title="Save the game (any time)">Save</button>' +
-      '<button class="assets" data-cmd="debug" title="Debug menu (not part of the game)">Debug</button>' +
-      '<button class="assets" data-cmd="assets" title="Leave the game">Quit</button>'
+      // everything that is not a game command sits behind ☰ (IMP-057)
+      `<button class="menu-btn" data-cmd="menu" title="Journal, commissions, save, settings, rules, quit (Esc)">☰ Menu${commissionsDue() ? ' <span class="due">•</span>' : ''}</button>`
     menuBar.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => command(b.dataset.cmd!)))
   }
 
@@ -1569,7 +1589,33 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       case 'save': act(() => saveGame()); break
       case 'debug': debugMenu(); break
       case 'assets': leave(); break
+      case 'menu': mainMenu(); break
+      case 'rules': void rulesReference(dialog, engine.spells); break
     }
+  }
+
+  /** ☰ (IMP-057): the port's own pages and the things around the game. */
+  function mainMenu() {
+    const due = commissionsDue()
+    const found = [...known].filter((k) => /^(journal|tale|proc):/.test(k)).length
+    const item = (cmd: string, label: string, note: string) => `<li><button data-go="${cmd}">${label}<small>${note}</small></button></li>`
+    dialog.innerHTML = `<h2>Menu</h2>
+      <ul class="mainmenu">
+        ${item('journal', 'Journal', found ? `${found} entries, proclamations and tales found` : 'entries, proclamations and tavern tales')}
+        ${item('commissions', `Commissions${due ? ' <span class="due">•</span>' : ''}`, due ? 'a reward is waiting' : 'the City Council\'s commissions and progress')}
+        ${item('save', 'Save', 'any time, slots A–J')}
+        ${item('settings', 'Settings', 'speed, sound, font, borders, motion, text size, graphics')}
+        ${item('rules', 'Rules reference', 'classes, races, abilities, combat numbers, spells')}
+        ${item('debug', 'Debug', 'not part of the game')}
+        ${item('assets', 'Quit to the party screen', '')}
+      </ul>
+      <form method="dialog"><button>Back to the game</button></form>`
+    dialog.querySelectorAll<HTMLButtonElement>('[data-go]').forEach((b) => b.addEventListener('click', () => {
+      dialog.close()
+      const go = b.dataset.go!
+      setTimeout(() => command(go), 0)
+    }))
+    dialog.showModal()
   }
 
   const keys: Record<string, string> = {
@@ -1593,6 +1639,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       else if (/^[1-9]$/.test(e.key) && Number(e.key) <= items.length) { e.preventDefault(); choose(Number(e.key) - 1) }
       return
     }
+    if (e.key === 'Escape') { e.preventDefault(); command('menu'); return }
     if (keys[e.key]) {
       e.preventDefault()
       move(keys[e.key])

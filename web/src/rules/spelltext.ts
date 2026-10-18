@@ -1,0 +1,94 @@
+// Spell descriptions for the Cast and Memorize lists and the Rules reference (IMP-058). The numbers
+// come from the spell table in the player's START.EXE (spec/spells.md, "Tables"); the one-line
+// effects summarise the 4e53 handlers as the port runs them (spec/spells.md, "Per spell").
+import type { Spell } from '../data/spells'
+
+const EFFECT: Record<number, string> = {
+  1: 'Allies not yet in melee: +1 to hit and better morale.',
+  2: 'Enemies: −1 to hit and worse morale.',
+  3: 'Heals 1d8 hit points.',
+  4: 'Touch: 1d8 damage.',
+  5: 'Magic items show a * in item lists.',
+  6: 'Better AC and saving throws against evil creatures.',
+  7: 'Better AC and saving throws against good creatures.',
+  8: 'Halves cold damage; better saves against cold.',
+  9: 'Fire damage equal to the caster\'s level.',
+  10: 'A humanoid fights on your side.',
+  11: 'Magic items show a * in item lists.',
+  12: 'Strength 18 (exceptional strength by level).',
+  13: 'Ends an Enlarge.',
+  14: 'Charisma +2d4 while it lasts.',
+  15: 'Unerring magic damage: (level ÷ 2)d4 + level ÷ 2. Blocked by Shield.',
+  16: 'Better AC and saving throws against evil creatures.',
+  17: 'Better AC and saving throws against good creatures.',
+  18: 'Lets a magic-user read scrolls to scribe them.',
+  19: 'AC no worse than 3, +1 on saves, and no damage from Magic Missile.',
+  20: 'Touch: 1d8 + level electrical damage.',
+  21: 'Puts 4d4 hit dice of low-level creatures to sleep, weakest first. Undead and elves resist.',
+  22: 'Finds traps.',
+  23: 'Holds up to 4 humanoids still: they are helpless.',
+  24: 'Halves fire damage; +3 on saves against fire.',
+  25: 'Creatures in the area cannot cast spells.',
+  26: 'Keeps a poisoned character alive while it lasts.',
+  27: 'Charms snakes with as many hit points as the caster has.',
+  28: 'A magic hammer to fight with, while it lasts.',
+  29: 'Shows invisible creatures.',
+  30: 'Cannot be targeted; −4 to be hit while it lasts. Ends on attacking.',
+  31: 'Opens locked doors (doors offer Knock themselves).',
+  32: '1d4 images take hits meant for the caster.',
+  33: 'Target does a quarter less damage.',
+  34: 'A cloud on 4 squares: creatures in it are helpless or choking (save vs poison).',
+  35: 'Strength +1d4 to +1d8 by class.',
+  36: 'Raises dead bodies as zombies on your side.',
+  37: 'Cures blindness.',
+  38: 'Touch: blind (−4 to hit, AC and saves).',
+  39: 'Cures disease.',
+  40: 'Touch: disease.',
+  41: 'Removes magic effects on the target; better chances against lower-level magic.',
+  42: 'Allies +1 to hit and saves, enemies −1.',
+  43: 'Lifts a curse, or frees a cursed item.',
+  44: 'Touch: −4 to hit and saves.',
+  45: 'Hard to hit until the caster has acted each round.',
+  46: 'Removes magic effects on the target; better chances against lower-level magic.',
+  47: 'Level d6 fire damage to everything in the area; save for half.',
+  48: 'Twice the attacks and movement for up to level allies. Ages them a year.',
+  49: 'Holds up to 4 humanoids still: they are helpless.',
+  50: 'Everyone near the caster becomes invisible.',
+  51: 'Level d6 electrical damage along a line that bounces off walls; save for half.',
+  52: 'Better AC and saving throws against evil creatures, for those near the caster.',
+  53: 'Better AC and saving throws against good creatures, for those near the caster.',
+  54: 'No harm from non-magical missiles.',
+  55: 'Half the attacks and movement for up to level enemies.',
+  56: 'Gives back a level lost to energy drain.',
+  57: 'Haste, or ends Slow.',
+  58: 'Cures poison or disease, else heals 1d4 + 8.',
+  59: 'Strength 21.',
+  60: '20 + 1d6 electrical damage along a line; save for half.',
+  61: 'Holds a target still (save vs paralysis).',
+  62: 'Heals 2d4 + 2 hit points.',
+  63: 'Everyone near becomes invisible.',
+  64: 'A fireball: several d6 of fire damage; save for half.',
+  65: 'Magic Missile: 2d4 + 2 magic damage.',
+  67: 'Constitution and hit points improve over a day of reading.',
+}
+
+const SAVE = ['', 'save negates', 'save for half', 'special save']
+const SAVE_VS = ['vs death/poison/paralysis', 'vs petrification', 'vs rods/staves/wands', 'vs breath', 'vs spell']
+
+/** How far, how long, at whom, the save; L = caster level. */
+export function spellStats(s: Spell): string {
+  const n = (a: number, b: number, unit: string, zero: string) =>
+    a === 0 && b === 0 ? zero : b === 0 ? `${a} ${unit}` : a === 0 ? `${b}/level ${unit}` : `${a} + ${b}/level ${unit}`
+  const range = s.range[0] === 0xff ? 'touch' : n(s.range[0], s.range[1], 'sq', 'self/adjacent')
+  const dur = n(s.duration[0], s.duration[1], 'rounds', 'instant')
+  const mode = s.target & 0x0f
+  const who = s.target === 240 ? 'special' : mode === 0 ? 'the caster' : mode >= 8 && mode <= 14 ? `area${s.area ? ` (radius ${s.area})` : ''}` : mode >= 4 && mode <= 7 ? `${(mode & 3) + 1} target${mode & 3 ? 's' : ''}` : 'one target'
+  const where = ['camp only', 'combat only', 'camp or combat'][s.where] ?? ''
+  const save = s.save ? `${SAVE[s.save]} ${SAVE_VS[s.saveType] ?? ''}`.trim() : 'no save'
+  return [`range ${range}`, dur, who, save, where].join(' · ')
+}
+
+/** One line for a spell: what it does, then the numbers. */
+export function spellText(s: Spell): string {
+  return `${EFFECT[s.id] ?? ''} ${spellStats(s)}`.trim()
+}

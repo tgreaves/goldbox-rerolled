@@ -9,6 +9,7 @@ import { dexMissile, recalc } from './equip'
 import { fx, fire, damageText, healedLine, addEffect, addRaw, removeEffect, removeType, type FxHost } from './effects'
 import { heal as healChar } from './camp'
 import { line, sharedSpell } from './spellfx'
+import { spellText } from './spelltext'
 import { SPELL_MSG, casterLevel, duration as spellDuration, forget } from './magic'
 
 const DX = [0, 1, 1, 1, 0, -1, -1, -1], DY = [-1, -1, 0, 1, 1, 1, 0, -1]
@@ -26,7 +27,7 @@ export interface Fighter {
   target: Fighter | null
 }
 
-export interface AimEntry { f: Fighter | null; x: number; y: number; cost: number; ok: boolean }
+export interface AimEntry { f: Fighter | null; x: number; y: number; cost: number; ok: boolean; note?: string }
 
 /** A COMSPR frame: record (0–11, +128 for the second image) and whether it is drawn mirrored. */
 export interface SpriteFrame { rec: number; mirror?: boolean }
@@ -91,7 +92,7 @@ export interface CombatUi {
   view(c: Uint8Array): Promise<void>
   sound(n: number): void
   /** a spell or item list; −1 = exit */
-  pick(prompt: string, items: string[]): Promise<number>
+  pick(prompt: string, items: string[], notes?: string[]): Promise<number>
 }
 
 /** 'spared': nobody won or fled but ECL 0x6DE6 = 1 kept the party from being destroyed (brawls) */
@@ -720,7 +721,8 @@ export class Battle implements FxHost {
       const d = en.cost >> 1
       let ok = !!en.f && en.f !== f && d <= rng && this.canTarget(f, en.f)
       if (ok && missile) ok = !!ammo && (!adjacentEnemy || thrownStr)
-      return { ...en, ok }
+      const odds = ok && en.f ? this.hitOdds(f, en.f) : null
+      return { ...en, ok, note: odds ? `≈${Math.round(odds.chance * 100)}% to hit, ${odds.damage}` : undefined }
     })
     const pick = await this.ui.aim(f, entries, 'Aim:', false)
     if (!pick || !pick.f) return
@@ -768,7 +770,7 @@ export class Battle implements FxHost {
     let id: number
     if (slot === 11 || slot === 12) {
       const spells = it.props.filter((p) => p > 0).map((p) => p & 0x7f)
-      const k = await this.ui.pick('Cast from scroll:', spells.map((s) => st.get(s)?.name ?? `#${s}`))
+      const k = await this.ui.pick('Cast from scroll:', spells.map((s) => st.get(s)?.name ?? `#${s}`), spells.map((s) => { const sp = st.get(s); return sp ? spellText(sp) : '' }))
       if (k < 0) return
       id = spells[k]
       for (let j = 0; j < 3; j++) if ((it.raw[0x3c + j] & 0x7f) === id) { it.raw[0x3c + j] = 0; break }
@@ -787,7 +789,7 @@ export class Battle implements FxHost {
   async playerCast(f: Fighter) {
     const st = this.e.spells!
     const ready = Array.from({ length: 21 }, (_, k) => f.c[0x17 + k]).filter((v) => v > 0 && v < 0x80)
-    const i = await this.ui.pick('Cast:', ready.map((id) => st.get(id)?.name ?? `#${id}`))
+    const i = await this.ui.pick('Cast:', ready.map((id) => st.get(id)?.name ?? `#${id}`), ready.map((id) => { const s = st.get(id); return s ? spellText(s) : '' }))
     if (i < 0) return
     await this.beginCast(f, st.get(ready[i])!)
   }
@@ -932,6 +934,31 @@ export class Battle implements FxHost {
     this.recalc(ac)
     await this.settle()
     return made
+  }
+
+  /**
+   * The odds of one weapon attack (IMP-058): the AC byte the attack would use (FUN_3aae_1884: back-
+   * stab, from behind, missile range bands), then the d20 rolls 2–20 (20 counts as 100) that reach it
+   * with the attacker's THAC0 byte and its side's bonus. Effects that change the roll (Bless, Prayer,
+   * Invisibility and the like) are left out, hence "≈". Damage: the weapon's dice for the target's size.
+   */
+  hitOdds(a: Fighter, t: Fighter): { chance: number; damage: string } {
+    const ac = a.c, tc = t.c
+    const w = this.weaponOf(ac)
+    const b = w ? this.e.items?.baseOf(w) : undefined
+    let acByte = this.backstab(a, t) ? tc[0x112] - 2
+      : t.r[0xf] > 1 && this.dirTo(a, t) === t.r[9] && t.r[0x12] > 4 ? tc[0x112] : tc[0x111]
+    if (b && b.range > 1) {
+      const band = Math.floor((b.range - 1) / 3), d = this.dist(a, t)
+      if (d > band) acByte += 2
+      if (d > 2 * band) acByte += 3
+    }
+    const bonus = s8(this.e.read(ac[0x10e] ? 0x6e70 : 0x6e71))
+    let n = 0
+    for (let r = 2; r <= 20; r++) if (acByte <= (r === 20 ? 100 : r) + ac[0x110] + bonus) n++
+    const chance = this.helpless(tc) ? 1 : n / 20
+    const [cnt, sides, plus] = this.large(tc) && b ? [b.large[0], b.large[1], s8(ac[0x119]) + b.large[2] - b.small[2]] : [ac[0x115], ac[0x117], s8(ac[0x119])]
+    return { chance, damage: `${cnt}d${sides}${plus ? (plus > 0 ? '+' : '') + plus : ''}` }
   }
 
   backstab(a: Fighter, t: Fighter): boolean {

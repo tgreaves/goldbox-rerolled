@@ -6,6 +6,7 @@ import { EGA, parseRecord, toImageData, type Picture } from '../data/image'
 import { parseFont } from '../data/font'
 import { charMap } from '../data/ttf'
 import { blit, sizeCanvas } from '../render/upscale'
+import { reducedMotion } from './settings'
 
 /** The credits (FUN_290c_0206): row, column, colour, text; the font has capitals only. */
 const CREDITS: [number, number, number, string][] = [
@@ -49,6 +50,7 @@ export function showTitle(app: HTMLElement, files: GameFiles, next: () => void) 
   }
   /** 290c:06AD: palette register 1 goes 9, 11, 15, 11, 9, 1, two to four times, now and then */
   const lightning = (p: Picture) => {
+    if (reducedMotion()) return
     const STEPS: [number, number][] = [[9, 150], [11, 100], [15, 50], [11, 100], [9, 150], [1, 0]]
     const burst = () => {
       let t = 0

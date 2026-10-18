@@ -10,6 +10,7 @@ import { blit, sizeCanvas } from '../render/upscale'
 import { buildIcon } from '../render/icon'
 import { creatorTools } from './creator'
 import { openSettings } from './settings'
+import { enhancePanel } from './panel'
 import { initSound } from '../audio/sfx'
 import { saveCharacter, listSaves, writeSave } from '../store/user'
 import { rosterFrom, saveFiles, savesFrom, unzip, zip, type NamedFile } from '../store/savefiles'
@@ -46,6 +47,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
   const info = app.querySelector<HTMLElement>('.info')!
   const nav2 = app.querySelector<HTMLElement>('.functions')!
   const dialog = app.querySelector<HTMLDialogElement>('dialog')!
+  enhancePanel(dialog)
 
   const byStem = (s: string) => roster.find((c) => c.stem === s)!
   const say = (t: string) => { info.textContent = t }
