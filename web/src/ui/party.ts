@@ -12,7 +12,7 @@ import { creatorTools } from './creator'
 import { openSettings } from './settings'
 import { enhancePanel } from './panel'
 import { initSound } from '../audio/sfx'
-import { saveCharacter, listSaves, writeSave } from '../store/user'
+import { saveCharacter, listSaves, writeSave, readAutosave } from '../store/user'
 import { rosterFrom, saveFiles, savesFrom, unzip, zip, type NamedFile } from '../store/savefiles'
 import { parseSave, saveArea, saveBlock } from '../data/save'
 import type { Start } from './explore'
@@ -26,6 +26,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
 }) {
   await seedRoster(files)
   let roster = await listCharacters()
+  const auto = await readAutosave()
   let party = (await getParty()).filter((s) => roster.some((c) => c.stem === s))
   let current = 0
   let tables: Tables | null = null
@@ -85,6 +86,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
     })
     const has = party.length > 0
     const items: [string, string, boolean][] = [
+      ...(auto ? [['O', `Continue (autosave, ${new Date(auto.savedAt).toLocaleString()})`, true] as [string, string, boolean]] : []),
       ['C', 'Create character', tables !== null],
       ['D', 'Drop character', has],
       ['M', 'Modify character', has && tables !== null],
@@ -168,10 +170,15 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
       case 'B':
         nav.play({ kind: 'new', party: party.map(byStem) })
         return
+      case 'O': // the autosave (IMP-060)
+        if (auto) nav.play({ kind: 'load', dat: auto.dat, party: auto.chars, label: `autosave, ${auto.label}`, known: auto.known })
+        return
       case 'L': {
         // browser saves first, then the saves that came with the game files
         const saves = (await listSaves()).map((g) => ({ title: `${g.slot}: ${g.label}`, note: new Date(g.savedAt).toLocaleString(),
           start: { kind: 'load' as const, dat: g.dat, party: g.chars, label: `slot ${g.slot}, ${g.label}`, known: g.known } }))
+        if (auto) saves.unshift({ title: `Autosave: ${auto.label}`, note: new Date(auto.savedAt).toLocaleString(),
+          start: { kind: 'load' as const, dat: auto.dat, party: auto.chars, label: `autosave, ${auto.label}`, known: auto.known } })
         for (const slot of 'ABCDEFGHIJ') {
           const dat = files.get(`SAVGAM${slot}.DAT`)
           if (!dat) continue

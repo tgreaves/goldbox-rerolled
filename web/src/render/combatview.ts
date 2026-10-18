@@ -90,7 +90,7 @@ export class CombatView {
   }
 
   draw(bf: Battlefield, cells: CellInfo[], figures: Figure[], focus: { row: number; col: number },
-    marks: { row: number; col: number; colour: string }[] = [], cursor: { row: number; col: number }[] = [], sprites: Sprite[] = []) {
+    marks: { row: number; col: number; colour: string; fill?: string }[] = [], cursor: { row: number; col: number }[] = [], sprites: Sprite[] = []) {
     const W = this.cols * CELL, H = this.rows * CELL
     const g = sizeCanvas(this.canvas, W, H)
     const [r0, c0] = this.origin(focus.row, focus.col)
@@ -124,6 +124,8 @@ export class CombatView {
       g.restore()
     }
     for (const m of marks) {
+      if (m.fill) { g.fillStyle = m.fill; g.fillRect((m.col - c0) * CELL, (m.row - r0) * CELL, CELL, CELL) }
+      if (!m.colour) continue
       g.strokeStyle = m.colour
       g.lineWidth = 2
       g.strokeRect((m.col - c0) * CELL + 1, (m.row - r0) * CELL + 1, CELL - 2, CELL - 2)

@@ -18,7 +18,7 @@ export interface BattleScreen {
   view(c: Uint8Array): Promise<void>
   sound(n: number): void
   /** set while a step or aim waits for a tap or key; the screen routes input here */
-  input: { key?: (e: KeyboardEvent) => boolean; tap?: (e: MouseEvent) => void }
+  input: { key?: (e: KeyboardEvent) => boolean; tap?: (e: MouseEvent) => void; hover?: (e: MouseEvent) => void }
   refreshRoster(): void
   /** dismiss a menu that a key or tap answered instead */
   cancelMenu(): void
@@ -69,7 +69,7 @@ export async function runBattle(s: BattleScreen) {
   let battle: Battle | null = null
   let view: CombatView | null = null
   let focus = { row: 12, col: 25 }
-  let marks: { row: number; col: number; colour: string }[] = []
+  let marks: { row: number; col: number; colour: string; fill?: string }[] = []
   let acting: Fighter | null = null
   /** combatants shown in their action frame, and COMSPR sprites over the battlefield (spec/combat.md, "Combat visuals") */
   const poses = new Set<Fighter>()
@@ -152,6 +152,25 @@ export async function runBattle(s: BattleScreen) {
     for (let k = key(tx, ty); prev.has(k);) { const [from, d] = prev.get(k)!; dirs.unshift(d); cells.unshift({ x: k % 64, y: Math.floor(k / 64) }); k = from }
     return { cells, dirs }
   }
+  /** every square f can walk to with the movement left (IMP-059), by the same costs as route() */
+  const reachable = (f: Fighter): { x: number; y: number }[] => {
+    if (!battle) return []
+    const b = battle, budget = f.r[6]
+    const key = (x: number, y: number) => y * 64 + x
+    const best = new Map<number, number>([[key(f.x, f.y), 0]])
+    const open: [number, number, number][] = [[0, f.x, f.y]]
+    while (open.length) {
+      open.sort((a, b2) => a[0] - b2[0])
+      const [cost, x, y] = open.shift()!
+      if (cost > (best.get(key(x, y)) ?? Infinity)) continue
+      for (let d = 0; d < 8; d++) {
+        const nx = x + DIRS[d][0], ny = y + DIRS[d][1], nc = cost + (d % 2 ? 3 : 2)
+        if (nc > budget || !b.passable(nx, ny, f.size || 1) || b.occupied(nx, ny, f.size || 1, f)) continue
+        if (nc < (best.get(key(nx, ny)) ?? Infinity)) { best.set(key(nx, ny), nc); open.push([nc, nx, ny]) }
+      }
+    }
+    return [...best.keys()].filter((k) => k !== key(f.x, f.y)).map((k) => ({ x: k % 64, y: Math.floor(k / 64) }))
+  }
   const figureAt = (row: number, col: number) => battle?.fighters.find((o) => battle!.inPlay(o) &&
     footprint(o.size).some(([dx, dy]) => o.x + dx === col && o.y + dy === row)) ?? null
   const showInfo = (f: Fighter | null, ev?: MouseEvent) => {
@@ -208,7 +227,8 @@ export async function runBattle(s: BattleScreen) {
       }
       walking = null
       plan = null
-      marks = []
+      // every square in reach lightly filled, the neighbouring ones outlined (IMP-059)
+      marks = reachable(f).map((p) => ({ row: p.y, col: p.x, colour: '', fill: 'rgba(85, 85, 255, 0.22)' }))
       for (let d = 0; d < 8; d++) {
         const [dx, dy] = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]][d]
         marks.push({ row: f.y + dy, col: f.x + dx, colour: '#4c8bd6' })
@@ -309,10 +329,18 @@ export async function runBattle(s: BattleScreen) {
     menu: (items, opts) => s.menu(items, opts),
     step: (f, left) => awaitStep(f, left, null) as Promise<number | 'end' | 'undo'>,
     command: (f, items, prompt, left) => awaitStep(f, left, { items, prompt }),
-    aim: (f, entries, prompt, allowCell) => new Promise<AimEntry | null>((resolve) => {
+    aim: (f, entries, prompt, allowCell, area) => new Promise<AimEntry | null>((resolve) => {
       const ok = entries.filter((x) => x.ok)
-      marks = ok.map((x) => ({ row: x.y, col: x.x, colour: '#e05050' }))
+      const base = ok.map((x) => ({ row: x.y, col: x.x, colour: '#e05050' }))
+      marks = base
       draw()
+      // an area spell shows the squares it would cover; a second tap on the same square casts (IMP-059)
+      let previewAt: { x: number; y: number } | null = null
+      const preview = (x: number, y: number) => {
+        if (!area) return
+        marks = [...area(x, y).map((p) => ({ row: p.y, col: p.x, colour: '', fill: 'rgba(255, 85, 85, 0.35)' })), ...base, { row: y, col: x, colour: '#ffff55' }]
+        draw()
+      }
       let settled = false
       const finish = (v: AimEntry | null, fromMenu = false) => {
         if (settled) return
@@ -328,8 +356,20 @@ export async function runBattle(s: BattleScreen) {
           ev.preventDefault()
           const cell = view!.cellAt(ev, focus)
           const hit = ok.find((x) => x.f && x.f.y === cell.row && x.f.x === cell.col)
-          if (hit) finish(hit)
-          else if (allowCell) finish({ f: null, x: cell.col, y: cell.row, cost: battle!.cost(f.x, f.y, cell.col, cell.row), ok: true })
+          const pick = hit ?? (allowCell ? { f: null, x: cell.col, y: cell.row, cost: battle!.cost(f.x, f.y, cell.col, cell.row), ok: true } : null)
+          if (!pick) return
+          if (area && !(previewAt && previewAt.x === pick.x && previewAt.y === pick.y)) {
+            previewAt = { x: pick.x, y: pick.y }
+            preview(pick.x, pick.y)
+            s.print('Tap the yellow square again to cast there.')
+            return
+          }
+          finish(pick)
+        },
+        hover: (ev) => {
+          if (!area) return
+          const cell = view!.cellAt(ev, focus)
+          preview(cell.col, cell.row)
         },
       })
       const labels = ok.map((x) => `${x.f ? String.fromCharCode(...x.f.c.subarray(1, 1 + x.f.c[0])) : 'there'} (range ${x.cost >> 1}${x.note ? `, ${x.note}` : ''})`)
@@ -352,7 +392,7 @@ export async function runBattle(s: BattleScreen) {
   const [menu0, step0, aim0, confirm0, pick0] = [ui.menu.bind(ui), ui.step.bind(ui), ui.aim.bind(ui), ui.confirm.bind(ui), ui.pick.bind(ui)]
   ui.menu = (items, opts) => raced(menu0(items, opts), items.length - 1)
   ui.step = (f, left) => raced(step0(f, left), 'end' as const)
-  ui.aim = (f, entries, prompt, allowCell) => raced(aim0(f, entries, prompt, allowCell), null)
+  ui.aim = (f, entries, prompt, allowCell, area) => raced(aim0(f, entries, prompt, allowCell, area), null)
   ui.confirm = (prompt) => raced(confirm0(prompt), false)
   ui.pick = (prompt, items, notes) => raced(pick0(prompt, items, notes), -1)
   const command0 = ui.command!.bind(ui)
@@ -398,6 +438,7 @@ export async function runBattle(s: BattleScreen) {
   window.addEventListener('keydown', onMagicKey, true)
   const onHover = (ev: PointerEvent) => {
     if (!view || ev.pointerType === 'touch') return
+    s.input.hover?.(ev)
     const cell = view.cellAt(ev, focus)
     showInfo(figureAt(cell.row, cell.col), ev)
   }

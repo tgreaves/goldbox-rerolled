@@ -13,7 +13,7 @@ import { rulesReference } from './rulesref'
 import { Engine, A0, type Io } from '../vm/engine'
 import { drawMap, landmarkAt } from './areamap'
 import type { GeoMap } from '../data/geo'
-import { listCharacters, listSaves, saveCharacter, writeSave } from '../store/user'
+import { listCharacters, listSaves, saveCharacter, writeAutosave, writeSave } from '../store/user'
 import { report, revealedBy, type State } from '../rules/commissions'
 import { JOURNAL, journalReveals, revealNote, roman } from '../rules/journal'
 import { spellText } from '../rules/spelltext'
@@ -437,6 +437,19 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   start.party.forEach((c, i) => engine.attachFiles(i, c.itm, c.spc))
 
   /** Save anywhere (IMPROVEMENTS.md IMP-002): slots A-J, the original file layout. */
+  /** Autosave (IMP-060): the same files as a slot save, kept in their own record. */
+  let autosavedAt = ''
+  async function autosave(why: string) {
+    const members = engine.party()
+    if (!members.length || engine.quit) return
+    try {
+      await writeAutosave({ slot: 'A', dat: engine.toSave(members.map((_, n) => `CHRDATA${n + 1}`)), savedAt: Date.now(), known: [...known],
+        label: `${parseCharacter(members[0]).name}'s party, block ${engine.block} area ${engine.area} (${why})`,
+        chars: members.map((c) => ({ sav: c.slice(), itm: itemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })) })
+      autosavedAt = `${engine.block}:${engine.area}`
+    } catch { /* storage full or unavailable: the game goes on */ }
+  }
+
   async function saveGame() {
     const saves = await listSaves()
     const slots = [...'ABCDEFGHIJ'].map((slot) => {
@@ -1039,7 +1052,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       equipped = cells.join('')
       carried = items.filter((x) => !x.ready).map((x) => {
         const i = items.indexOf(x)
-        return `<li><button class="carried${i === sel ? ' sel' : ''}" data-i="${i}"><span>${escape(t.name(x))}</span>
+        return `<li><button class="carried${i === sel ? ' sel' : ''}" data-i="${i}" draggable="true" data-drag="${i}"><span>${escape(t.name(x))}</span>
           ${usable(x) ? '' : '<span class="cant">not for this class</span>'}<span class="w">${wt(x)}</span></button></li>`
       }).join('')
     }
@@ -1113,6 +1126,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         ${t ? `<section class="gear">
           <h3>Equipped</h3><div class="slots">${equipped}</div>
           <h3>Carried</h3>${carried ? `<ul class="carried-list">${carried}</ul>` : '<p class="muted">Nothing else.</p>'}
+          ${carried && others.length ? `<div class="give-strip"><span class="muted">Drag an item onto a name to give it:</span>${others.map((n, k) => `<span class="drop-to" data-to="${k}">${escape(parseCharacter(n).name)}</span>`).join('')}</div>` : ''}
           <div class="enc" title="${escape(TIPS.Load)}"><span>Encumbrance ${enc} of ${cap} coins</span><meter min="0" max="${cap}" high="${Math.round(cap * 0.75)}" value="${enc}"></meter></div>
         </section>` : '<section><p class="muted">Items need the ITEMS file and START.EXE: re-import the POOLRAD folder.</p></section>'}
       </div>
@@ -1146,6 +1160,27 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     dialog.querySelector<HTMLButtonElement>('button[data-quick]')?.addEventListener('click', () => {
       node[0x10f] = 0 // as the battle's Space does for this character (FUN_3334_0fc1), outside a battle (IMP-054)
       again({ message: `${c.name} will be played by hand in battle.` })
+    })
+    // drag a carried item onto a party member's name: the Trade action without the menu (IMP-059)
+    dialog.querySelectorAll<HTMLElement>('[data-drag]').forEach((el) => el.addEventListener('dragstart', (ev) => {
+      ev.dataTransfer?.setData('text/plain', el.dataset.drag!)
+      if (ev.dataTransfer) ev.dataTransfer.effectAllowed = 'move'
+    }))
+    dialog.querySelectorAll<HTMLElement>('.drop-to').forEach((el) => {
+      el.addEventListener('dragover', (ev) => { ev.preventDefault(); el.classList.add('over') })
+      el.addEventListener('dragleave', () => el.classList.remove('over'))
+      el.addEventListener('drop', (ev) => {
+        ev.preventDefault()
+        el.classList.remove('over')
+        const x = items[Number(ev.dataTransfer?.getData('text/plain'))]
+        if (!x || !t) return
+        const why = unavailable(x)
+        if (why) return again({ selected: items.indexOf(x), message: why })
+        if (scribing(x, t)) return again({ selected: items.indexOf(x), message: 'That scroll is marked for scribing: use Trade to give it.' })
+        const to = others[Number(el.dataset.to)]
+        const m = trade({ c: node, items }, { c: to, items: engine.itemsOf(to) }, x, t)
+        again(m ? { message: m } : { message: `Traded to ${parseCharacter(to).name}.` })
+      })
     })
     dialog.querySelectorAll<HTMLButtonElement>('.gear [data-i]').forEach((r) =>
       r.addEventListener('click', () => again({ selected: Number(r.dataset.i) === sel ? -1 : Number(r.dataset.i) })))
@@ -1539,8 +1574,12 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       busy = false
       if (engine.quit) note('The game has ended here. Go back to Assets to start again.')
       commandBar()
+      // autosave between actions, never inside a script: on every area change, else at most every 30 s
+      const where = `${engine.block}:${engine.area}`
+      if (where !== autosavedAt || Date.now() - lastAutosave > 30_000) { lastAutosave = Date.now(); void autosave(where !== autosavedAt ? 'new area' : 'on the way') }
     }
   }
+  let lastAutosave = Date.now()
 
   function commandBar() {
     pad.classList.remove('disabled')

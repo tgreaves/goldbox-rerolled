@@ -87,7 +87,8 @@ export interface CombatUi {
    */
   command?(f: Fighter, items: string[], prompt: string, left: number): Promise<number | 'end' | 'undo' | { choice: number }>
   /** pick a target among entries (nearest first); −1 = exit */
-  aim(f: Fighter, entries: AimEntry[], prompt: string, allowCell: boolean): Promise<AimEntry | null>
+  /** `area`: for an area spell, the squares it would cover if centred there (a preview) */
+  aim(f: Fighter, entries: AimEntry[], prompt: string, allowCell: boolean, area?: (x: number, y: number) => { x: number; y: number }[]): Promise<AimEntry | null>
   confirm(prompt: string): Promise<boolean>
   view(c: Uint8Array): Promise<void>
   sound(n: number): void
@@ -1211,7 +1212,7 @@ export class Battle implements FxHost {
     this.aimed = { x: f.x, y: f.y }
     if (mode === 0 || s.target === 240) return [f]
     const ai = !!f.c[0x10f]
-    const pickOne = async (allowEmpty: boolean): Promise<AimEntry | null> => {
+    const pickOne = async (allowEmpty: boolean, area?: (x: number, y: number) => { x: number; y: number }[]): Promise<AimEntry | null> => {
       if (ai) {
         if (!s.aiHostile) {
           if (s.id === 3) {
@@ -1233,14 +1234,26 @@ export class Battle implements FxHost {
         return null
       }
       const entries = this.aimEntries(f).map((en) => ({ ...en, ok: (en.cost >> 1) <= range && !!en.f && this.canTarget(f, en.f) }))
-      return this.ui.aim(f, entries, `Target for ${s.name}:`, allowEmpty)
+      return this.ui.aim(f, entries, `Target for ${s.name}:`, allowEmpty, area)
     }
     if (mode === 0xf) { const p = await pickOne(false); if (p) this.aimed = { x: p.x, y: p.y }; return p?.f ? [p.f] : null }
     if (mode >= 8 && mode <= 14) {
-      const p = await pickOne(true)
-      if (!p) return null
       let radius = mode & 7
       if (s.id === 47 && this.e.read(0x49e6) === 0) radius = Math.min(radius, 2)
+      // the squares the spell would cover from a centre, for the preview (IMP-059); Stinking Cloud
+      // takes the aimed square and those E, SE and S of it
+      const area = (x: number, y: number) => {
+        if (s.id === 34) return [[0, 0], [1, 0], [1, 1], [0, 1]].map(([dx, dy]) => ({ x: x + dx, y: y + dy })).filter((p) => this.passable(p.x, p.y, 1))
+        const out: { x: number; y: number }[] = []
+        for (let dy = -radius - 1; dy <= radius + 1; dy++) for (let dx = -radius - 1; dx <= radius + 1; dx++) {
+          const cx = x + dx, cy = y + dy
+          if (this.bf.get(cy, cx) === 0) continue
+          if (this.cost(x, y, cx, cy) <= 2 * radius + 1 && this.sees(x, y, cx, cy)) out.push({ x: cx, y: cy })
+        }
+        return out
+      }
+      const p = await pickOne(true, area)
+      if (!p) return null
       const centre = { x: p.x, y: p.y }
       this.aimed = centre
       return this.fighters.filter((o) => this.inPlay(o) && footprint(o.size).some(([dx, dy]) =>

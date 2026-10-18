@@ -555,3 +555,30 @@ dialog.panel dl.rules dt { color: var(--accent); }
 dialog.panel dl.rules dd { margin: 0; color: var(--text); line-height: 1.4; }
 dialog.panel .rules-body h3 { color: var(--ega-cyan); margin: 0.8rem 0 0.2rem; font-size: 1rem; }
 @media (max-width: 600px) { dialog.panel dl.rules { grid-template-columns: 1fr; } dialog.panel dl.rules dd { margin-bottom: 0.4rem; } }
+
+/* drag an item onto a name (IMP-059) */
+.give-strip { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; margin: 0.4rem 0; font-size: 0.85rem; }
+.give-strip .drop-to { border: 1px dashed var(--line); padding: 0.25rem 0.5rem; }
+.give-strip .drop-to.over { border-color: var(--accent); color: var(--accent); }
+@media (hover: none) { .give-strip { display: none; } }
+
+/* phones held sideways (IMP-060): the view on the left, party, text and commands on the right */
+@media (orientation: landscape) and (max-height: 520px) {
+  .game {
+    grid-template-columns: min(50vw, calc(100dvh - 1rem)) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: "view party" "view text" "view commands";
+    --view: calc(100dvh - 1rem);
+  }
+  .game .side { flex-direction: row; max-height: 34dvh; }
+  .game .map { display: none; } /* the Area command still shows it */
+  .game .party { flex: 1; max-height: none; }
+  .roster-cards { grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); }
+  .rcard canvas.rc-portrait, .rcard .rc-spells, .rcard .rc-badges { display: none; }
+  .game.in-combat { grid-template-columns: minmax(0, 1fr) minmax(14rem, 40vw); }
+}
+/* touch screens: every control at least 44 px high (IMP-060) */
+@media (pointer: coarse) {
+  button, select, input[type=number], input[type=text] { min-height: 44px; }
+  table.shop td.give button { min-height: 44px; }
+}

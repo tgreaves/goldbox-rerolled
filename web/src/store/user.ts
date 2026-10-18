@@ -101,3 +101,16 @@ export async function writeSave(g: SavedGame) {
   await run(SAVES, 'readwrite', (s) => s.put({ dat: buf(g.dat), label: g.label, savedAt: g.savedAt, known: g.known,
     chars: g.chars.map((c) => ({ sav: buf(c.sav), itm: buf(c.itm), spc: buf(c.spc) })) }, g.slot))
 }
+
+/** The autosave (IMP-060): its own record, beside slots A–J; written on area changes and before battles. */
+export async function writeAutosave(g: SavedGame) {
+  await run(SAVES, 'readwrite', (s) => s.put({ dat: buf(g.dat), label: g.label, savedAt: g.savedAt, known: g.known,
+    chars: g.chars.map((c) => ({ sav: buf(c.sav), itm: buf(c.itm), spc: buf(c.spc) })) }, 'auto'))
+}
+
+export async function readAutosave(): Promise<SavedGame | null> {
+  const v = await run<{ dat: ArrayBuffer; chars: { sav: ArrayBuffer; itm?: ArrayBuffer; spc?: ArrayBuffer }[]; label: string; savedAt: number; known?: string[] } | undefined>(SAVES, 'readonly', (s) => s.get('auto'))
+  if (!v) return null
+  return { slot: 'A', dat: new Uint8Array(v.dat), label: v.label, savedAt: v.savedAt, known: v.known,
+    chars: v.chars.map((c) => ({ sav: new Uint8Array(c.sav), itm: arr(c.itm), spc: arr(c.spc) })) }
+}
