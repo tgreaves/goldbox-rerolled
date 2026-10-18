@@ -25,7 +25,7 @@ import { drop, halve, join, scribing, trade, unavailable } from '../rules/invent
 import { COIN_PROMPT, coinValue, dropMoney, moneyOf, pay, receive, sellOffer, tradeMoney } from '../rules/money'
 import { shop, temple, treasure, type TownUi } from './town'
 import { camp, cast, effectNames, type CampUi } from './camp'
-import { runBattle } from './combat'
+import { runBattle, type BattleControls } from './combat'
 import { clockText, freeSlots, isScroll, knows, memorise, memorised, preparation } from '../rules/camp'
 import { castOutside, itemSpells, spendUse, targetKind } from '../rules/magic'
 import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
@@ -75,7 +75,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       <section class="text" aria-live="polite" aria-label="Messages"></section>
       <nav class="commands" aria-label="Commands">
         <div class="menu"></div>
-        <button class="take-control" title="Take back the characters on Quick (Space)">Take control</button>
+        <button class="take-control" title="Space. Every character on Quick comes back under your control" hidden>Take control</button>
+        <button class="magic-toggle" hidden>Magic: Off</button>
         <button class="assets debug-combat" title="Debug menu (not part of the game)">Debug</button>
         <div class="pad" aria-label="Movement">
           <button data-c="l" aria-label="Turn left">⟲</button>
@@ -95,7 +96,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const menuBar = app.querySelector<HTMLDivElement>('.menu')!
   const pad = app.querySelector<HTMLDivElement>('.pad')!
   app.querySelector<HTMLButtonElement>('.debug-combat')!.addEventListener('click', () => debugMenu())
-  app.querySelector<HTMLButtonElement>('.take-control')!.addEventListener('click', () => takeControl?.())
+  app.querySelector<HTMLButtonElement>('.take-control')!.addEventListener('click', () => battleControls?.takeControl())
+  app.querySelector<HTMLButtonElement>('.magic-toggle')!.addEventListener('click', () => battleControls?.toggleMagic())
   const dialog = app.querySelector<HTMLDialogElement>('dialog.panel')!
   dialog.addEventListener('close', () => dialog.classList.remove('wide'))
   const world = new World(canvas)
@@ -356,7 +358,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
               onClose(dialog, () => resolve())
             }),
             sound: play, pause: (ms) => io.pause!(ms), input: battleInput,
-            info: app.querySelector<HTMLElement>('.combat-info')!, strip: app.querySelector<HTMLElement>('.turnstrip')!, refreshRoster: () => drawRoster(), cancelMenu: () => cancelMenu(), onSkip: (w) => { winBattle = w }, onTakeControl: (t) => { takeControl = t },
+            info: app.querySelector<HTMLElement>('.combat-info')!, strip: app.querySelector<HTMLElement>('.turnstrip')!, refreshRoster: () => drawRoster(), cancelMenu: () => cancelMenu(), onSkip: (w) => { winBattle = w }, onControls: (c) => { battleControls = c; drawControls() }, controlsChanged: () => drawControls(),
           })
           // after a battle (game mode 6) the view shows PIC<block> #1, the treasure chest (FUN_10ba_27d9)
           if (r.survived) {
@@ -491,6 +493,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       // the combat panel's "(Helpless)" (FUN_10ba_09e3): effects 0x33-0x35 and 0x1F
       const helpless = up && engine.effectsOf(raw).some((e) => [0x1f, 0x33, 0x34, 0x35].includes(e.type))
       const train = t ? canTrain(t, raw) : false
+      // on Quick (c[0x10F]): the computer plays them in battle until Space / Take control
+      const quick = raw[0x10f] !== 0 && raw[0x84] < 0x80
       return `<button class="${cls}" data-i="${i}" title="${i === cur ? 'View' : 'Select'} ${escape(c.name)}">
         <canvas class="pixel rc-portrait" width="88" height="88"></canvas>
         <span class="rc-body">
@@ -498,7 +502,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           <span class="hpbar${pct < 50 ? ' low' : ''}"><span style="width:${pct}%"></span></span>
           <span class="rc-line"><span class="rc-hp">${up ? `HP ${c.hp}/${c.hpMax}` : c.status}</span>${helpless ? ' (Helpless)' : ''}${weapon && it ? ` · ${escape(it.name(weapon))}` : ''}</span>
           ${spells ? `<span class="rc-line rc-spells" title="${escape(spells)}">✦ ${escape(spells)}</span>` : ''}
-          ${effects.length || train ? `<span class="rc-badges">${effects.map((n) => `<span class="badge">${escape(n)}</span>`).join('')}${train ? '<span class="badge train">Ready to train</span>' : ''}</span>` : ''}
+          ${effects.length || train || quick ? `<span class="rc-badges">${quick ? '<span class="badge quick" title="The computer plays them in battle. Space or Take control in a battle to play them yourself">Quick</span>' : ''}${effects.map((n) => `<span class="badge">${escape(n)}</span>`).join('')}${train ? '<span class="badge train">Ready to train</span>' : ''}</span>` : ''}
         </span>
         <canvas class="pixel rc-icon" width="24" height="24"></canvas></button>`
     }).join('')
@@ -1183,8 +1187,20 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     { label: 'Wilderness: east boat landing (35,29)', to: [8, 27, 9, 29, 0] },
     { label: 'New Phlan: end of the pier (15,1)', to: [3, 0, 15, 1, 3] },
   ]
-  /** set while a battle runs: take the party's Quick members back (Space, or the button) */
-  let takeControl: (() => void) | null = null
+  /** set while a battle runs: Quick and Magic (IMP-054) */
+  let battleControls: BattleControls | null = null
+  const takeBtn = app.querySelector<HTMLButtonElement>('.take-control')!
+  const magicBtn = app.querySelector<HTMLButtonElement>('.magic-toggle')!
+  function drawControls() {
+    const st = battleControls?.state()
+    takeBtn.hidden = !st?.quick
+    magicBtn.hidden = !st
+    if (st) {
+      magicBtn.textContent = `Magic: ${st.magic ? 'On' : 'Off'}`
+      magicBtn.classList.toggle('on', st.magic)
+      magicBtn.title = `Alt-M. ${st.magic ? 'Characters on Quick may cast spells; click to stop them' : 'Characters on Quick will not cast spells; click to allow it'}`
+    }
+  }
   /** set while a battle runs: debug "Win this battle" */
   let winBattle: (() => void) | null = null
   function debugMenu() {

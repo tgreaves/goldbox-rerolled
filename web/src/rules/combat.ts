@@ -602,7 +602,15 @@ export class Battle implements FxHost {
       else if (k === 'u') await this.playerUse(f)
       else if (k === 'c') { await this.playerCast(f); if (f.r[0]) return } // "Begins Casting": the turn ends, the spell goes off when picked again
       else if (k === 't') await this.turnUndead(f)
-      else if (k === 'q') { c[0x10f] = 1; await this.ai(f); return }
+      else if (k === 'q') {
+        c[0x10f] = 1
+        // not in the original: how to get them back, and whether they may cast (IMP-054)
+        const spells = Array.from({ length: 21 }, (_, i) => c[0x17 + i]).some((v) => v > 0 && v < 0x80)
+        this.print(`${name(c)} is on Quick: the computer plays them. Space or TAKE CONTROL to play them yourself.`, { ms: 0 })
+        if (spells) this.print(this.magicOn ? 'Magic is On: they may cast spells (Alt-M or MAGIC to stop).' : 'Magic is Off: they will not cast spells (Alt-M or MAGIC to allow).', { ms: 0 })
+        await this.ai(f)
+        return
+      }
       else if (k === 'd') { if (await this.done(f)) return }
       else if (k === 'g') await this.doneAction(f, 'GUARD')
       else if (k === 'l') { await this.doneAction(f, 'DELAY'); return }
