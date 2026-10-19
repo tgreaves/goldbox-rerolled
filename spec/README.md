@@ -51,3 +51,7 @@ Formal description of the DOS *Pool of Radiance* engine (GOG release 1.3) and it
 | Addresses in this spec | `seg:off` as Ghidra names them in the merged image (`POOL_MERGED.EXE`, load segment 0x1000) |
 
 Function references use Ghidra's `FUN_seg_off` names from the merged image produced by `tools/mergeovr.py`, so they can be re-found.
+
+## Other games
+
+- [[spec/coab/README]]: Curse of the Azure Bonds, as differences from Pool of Radiance
