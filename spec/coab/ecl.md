@@ -312,7 +312,7 @@ Compared value = target − 0x7FFF, so the effective target address is:
 
 | Target | Effect | PoR |
 |---|---|---|
-| **0x2E10** | refresh square registers (event 0x53E45), and if `LOAD_AREA/WALLSETS` ran (DS:47FB) and any redraw flag (DS:8B7C/7F/82/84/81) is set: redraw view, recompute wall ahead | was 0x2C90 |
+| **0x2E10** | refresh square registers (event 0x53E45), and if `LOAD_AREA/WALLSETS` ran (DS:47FB) and any redraw flag (DS:8B7C/7F/82/84/81) is set: redraw view, clear the flags, recompute wall ahead (0x1B7B2). DS:8B7C is set by `PICTURE` (0x190EA) and a portrait (0x2002E), 8B82 by party X/Y writes (0x20846), 8B84 by the sky words 0x4BFD/E (0x20749), 8B81 by the VM reset (0x1FBDC), 8B7F at 0x1FFBB; DS:47FB by `LOAD_AREA`/`LOAD_WALLSETS` (0x1949F) and a load (0x1C057), cleared on area entry (0x1BFD5). So a picture stays until the next 0x2E10 | was 0x2C90 | was 0x2C90 |
 | 0x8000 | duel (0x2156A(1)) | same |
 | 0x8001 | solo combat (0x2156A(0)) | same |
 | **0xB200** | sound: register 0x3DE = 8 → DS:25C2, 10 → DS:25C4, else DS:25C2 (0x069B0); the initial values are effect 10 and 11 (O, data) | was 0xBA03 |

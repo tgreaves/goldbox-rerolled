@@ -22,6 +22,9 @@ export interface EclMap {
   calls: { refresh: number; sound: number; frame: number }
   /** CALL sound: register 0x3DE value → sound effect, and the effect for any other value (null: none) */
   callSounds: { by: Record<number, number>; other: number | null }
+  /** when CALL refresh draws the view again over pictures: PoR when the view changed (FUN_29c3 2C90);
+   *  CotAB also after a PICTURE, once the area's walls are loaded (0x1B7B2: flags DS:8B7C … 8B84, DS:47FB) */
+  refreshAfterPicture: boolean
   /** where a new game's scripts start: ECL block and record */
   start: { block: number; area: number }
   /** a save whose area is 0 starts here, with that area's script loaded (CotAB 1; PoR has an area 0) */
@@ -40,6 +43,7 @@ export const POR_ECL: EclMap = {
   a: 0x4900, b: 0x6b00, c: 0x9700, code: 0x9900, memorisedView: 0, viewReads: {}, ops: {}, skip: {},
   calls: { refresh: 0x2c90, sound: 0xba03, frame: -1 },
   callSounds: { by: { 8: 10, 10: 11 }, other: null },
+  refreshAfterPicture: false,
   start: { block: 3, area: 0 },
   areaZero: null,
   twoSlotSkipsFF: false,
@@ -64,6 +68,7 @@ export const COAB_ECL: EclMap = {
   skip: { 0x0c: 3, 0x3f: 1, 0x40: 1 },
   calls: { refresh: 0x2e10, sound: 0xb200, frame: 0x6803 },
   callSounds: { by: { 8: 10, 10: 11 }, other: 10 }, // 0x069B0: DS:25C2 = 10, DS:25C4 = 11
+  refreshAfterPicture: true, // PICTURE sets DS:8B7C (0x190EA)
   // the start-up code sets block 2 for a real game (spec/coab/assets.md); record 1 is block 2's first (I)
   start: { block: 2, area: 1 },
   // image 0x1C001–0x1C050: area 0 → record 1 (82 when DS:4FD5 is set, ?), loaded rather than restored

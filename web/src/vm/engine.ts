@@ -197,6 +197,7 @@ export class Engine {
     parseSave(d).wallSets.forEach((r, i) => { if (r !== 0xffff) this.walls.load(i + 1, r) })
     // the VM is reset when play starts (FUN_29c3_32f8), keeping the saved per-area variables
     this.restoring = true
+    this.wallsLoaded = true // CotAB's loader sets DS:47FB (0x1C057)
     const zero = game().ecl.areaZero
     if (this.area === 0 && zero !== null) { // a start-of-game save: the first area's script, loaded
       this.area = zero // (then reset as any load is, 0x1C05C: portrait selector, vectors, saved per-area variables)
@@ -579,6 +580,7 @@ export class Engine {
       case 0x0e: {
         this.readops(1)
         const n = this.val(1)
+        if (n !== 255) this.pictureDrawn = true
         if (n === 255) {
           this.spriteNow = null
           this.io.picture(null)
@@ -667,6 +669,7 @@ export class Engine {
         break
       }
       case 0x21: {
+        this.wallsLoaded = true
         this.readops(3)
         const b1 = this.val(1) & 0xff
         if (b1 !== 0xff && b1 !== 0x7f && this.A[NO_OVERLAND - A0]) {
@@ -818,7 +821,12 @@ export class Engine {
 
   private spriteNow: { sprite: number; picture: number } | null = null
   /** the view drawn again: pictures and encounter sprites go (see Io.clearView) */
+  /** a PICTURE was drawn since the view was (CotAB DS:8B7C) */
+  private pictureDrawn = false
+  /** LOAD_AREA or LOAD_WALLSETS has run in this area (CotAB DS:47FB) */
+  private wallsLoaded = false
   private clearPictures() {
+    this.pictureDrawn = false
     this.spriteNow = null
     this.drawnView = this.viewKey()
     this.io.clearView?.()
@@ -853,6 +861,7 @@ export class Engine {
   }
 
   private loadWallsets() {
+    this.wallsLoaded = true
     this.readops(3)
     const b = [1, 2, 3].map((i) => this.val(i) & 0xff)
     if (b[0] === 0x7f) this.walls.load(1, 0)
@@ -1244,7 +1253,8 @@ export class Engine {
     const a = (this.hi[1] << 8) | this.lo[1] // a number, not a script address
     const calls = game().ecl.calls
     if (a === calls.refresh) { // the square registers, and the 3D view drawn again (over any picture) if anything changed
-      if (this.viewKey() !== this.drawnView) this.clearPictures()
+      const pictured = game().ecl.refreshAfterPicture && this.wallsLoaded && this.pictureDrawn
+      if (pictured || this.viewKey() !== this.drawnView) this.clearPictures()
       await this.io.refresh()
     }
     else if (a === calls.sound) {
@@ -1413,6 +1423,7 @@ export class Engine {
   async enter() {
     for (;;) {
       this.clearPictures() // a new area: its view, not the last area's pictures
+      this.wallsLoaded = false
       this.areaChanged = false
       this.B[EDGE - B0] = 0
       await this.run(this.vectors[4])
