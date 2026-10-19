@@ -8,6 +8,8 @@ import type { SaveFiles } from './files'
 import type { GameRules } from './rules'
 import type { JournalData } from './journal'
 import type { ViewArt } from './view'
+import type { TitleScript } from './title'
+import type { SoundDriver } from './sound'
 
 export interface GameProfile {
   id: 'por' | 'coab'
@@ -42,6 +44,14 @@ export interface GameProfile {
   spellNotes: Record<number, string>
   /** the 3D view's floor and ground */
   view: ViewArt
+  /** the title sequence and credits */
+  title: TitleScript
+  /** the sound driver in START.EXE */
+  sound: SoundDriver
+  /** the commissions panel (IMP-023): PoR's City Council quests, read from its script variables */
+  commissions: boolean
   /** false while the port can show the game's assets but not yet play it */
   playable: boolean
+  /** a word on how far along the game is, shown when choosing it (null: complete) */
+  note: string | null
 }

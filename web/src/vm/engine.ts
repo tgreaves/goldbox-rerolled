@@ -1249,9 +1249,9 @@ export class Engine {
       await this.io.refresh()
     }
     else if (a === calls.sound) {
-      const r = this.regs.get(0x3de)
-      if (r === 8) this.io.sound(10)
-      else if (r === 10) this.io.sound(11)
+      const { by, other } = game().ecl.callSounds
+      const n = by[this.regs.get(0x3de) ?? -1] ?? other
+      if (n !== null) this.io.sound(n)
     }
     else if (a === 0xc01e) {
       const [dx, dy] = STEP[this.facing]

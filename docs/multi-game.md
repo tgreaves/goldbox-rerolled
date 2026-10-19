@@ -143,6 +143,15 @@ as data in its profile ([`../CLAUDE.md`](../CLAUDE.md)).
    PoR content in shared code, for step 7: the Rules reference text, the City Council commissions,
    the ending, the title sequence, and messages written into the port.
 7. **CotAB presentation.** Sky and ground in the 3D view, the BIGPIC overland, title, code wheel.
+   *Done 2026-10-19* (7a–7c), profile data in `games/view.ts`, `title.ts`, `sound.ts`: the floor
+   colour and the cobbled ground (SKY #252) tiled on the WebGL floor (IMP-069); BIGPIC pictures from
+   0x78 at their own 304 × 120 shape, and the overland map with the blinking city cursor read from
+   DS:0A4A/0A6A; the title sequence and credits as a per-game script (TITLE #2 with the #3 and #4
+   logos, no lightning, CURSE.CFG line 4); the sound driver at its own segment with the −0xBD shift
+   (its effects render as PoR's where the data match), and CotAB's CALL sound mapping. PoR-only
+   panels follow the profile: the journal and the commissions are hidden for CotAB. CotAB is now
+   playable, marked early. Not yet: the sun and clouds, the code wheel (skipped, IMP-068), the
+   Rules reference text and the ending for CotAB; nothing has been played through in a browser yet.
 8. **Importing PoR characters**, by the game's own "Pool" import (spec/coab/records.md), with its
    STR bug fixed and logged.
 

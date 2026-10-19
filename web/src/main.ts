@@ -59,7 +59,7 @@ async function showImport() {
       for example the game's folder from the GOG release (the data files and <code>START.EXE</code>,
       which holds the sound effects and the rules tables). They stay on this device:
       nothing is uploaded, and after importing once the game works offline.</p>
-      <ul>${GAMES.map((g) => `<li><em>${esc(g.name)}</em>: the <code>${g.folder}</code> folder${g.playable ? '' : ' (in progress: its assets can be viewed, not yet played)'}</li>`).join('')}</ul>
+      <ul>${GAMES.map((g) => `<li><em>${esc(g.name)}</em>: the <code>${g.folder}</code> folder${g.playable ? (g.note ? ` (${esc(g.note)})` : '') : ' (in progress: its assets can be viewed, not yet played)'}</li>`).join('')}</ul>
       ${stored.length ? `<div class="actions">${stored.map((g) => `<button data-game="${g.id}">${g.playable ? 'Play' : 'View'} ${esc(g.name)}</button>`).join('')}</div>` : ''}
       <div class="actions">
         <button class="primary" id="folder">Choose a game folder</button>

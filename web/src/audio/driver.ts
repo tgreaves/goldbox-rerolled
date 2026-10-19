@@ -1,18 +1,24 @@
-// The original sound driver (code segment 0x18AE of START.EXE) emulated tick by tick,
+// The original sound driver (in START.EXE; where, from the game's profile) emulated tick by tick,
 // and the PC speaker (8253 timer channel 2 + port 61h) it drives. A port of the reference
 // renderer; format and behaviour in spec/sound.md.
 
-const SEG_OFFSET = 0x8ae0 // segment 0x18AE in the load image (load segment 0x1000)
+import { game } from '../games/profile'
+import type { SoundDriver } from '../games/sound'
+
 const PIT_HZ = 1193182
 const TICK_DIV = 0x13b1 // timer interrupt every 5041 PIT clocks: 236.7 Hz
 export const TICK_MS = (TICK_DIV * 1000) / PIT_HZ
 
-// driver variables (CS-relative)
-const V_BUSY = 0x1d8, V_CHLOOP = 0x1d9, V_STRUCTSZ = 0x1da, V_EFFECT = 0x1ff, V_CURCH = 0x201
-const V_CHBASE = 0x203, V_FREQTAB = 0x205, V_RETADDR = 0x207, V_CHEFFECT = 0x209, V_ENABLE = 0x20d
-const V_JUMPTAB = 0x221, V_PCSEL = 0x3c5
-const PC_CHAN = 0x22d, PC_FREQ = 0x3ad, PC_TABLE = 0x55f
-const TY_CHAN = 0x3c7, TY_FREQ = 0x547, TY_TABLE = 0x607
+// driver variables, tables and command handlers, CS-relative in PoR's driver; a game whose driver is
+// moved adds its shift (games/sound.ts; CotAB −0xBD, spec/coab/assets.md "Sound driver")
+const OFFSETS = {
+  V_BUSY: 0x1d8, V_CHLOOP: 0x1d9, V_STRUCTSZ: 0x1da, V_EFFECT: 0x1ff, V_CURCH: 0x201,
+  V_CHBASE: 0x203, V_FREQTAB: 0x205, V_RETADDR: 0x207, V_CHEFFECT: 0x209, V_ENABLE: 0x20d,
+  V_JUMPTAB: 0x221, V_PCSEL: 0x3c5,
+  PC_CHAN: 0x22d, PC_FREQ: 0x3ad, PC_TABLE: 0x55f,
+  TY_CHAN: 0x3c7, TY_FREQ: 0x547, TY_TABLE: 0x607,
+  J_FA: 0x164e, J_FB: 0x16ac, J_FC: 0x16b3, J_FD: 0x1645, J_FE: 0x162e, J_FF: 0x167f,
+}
 const TANDY_CLOCK = 3579545
 export const NUM_EFFECTS = 21
 
@@ -23,8 +29,12 @@ class Driver {
   out42: number[] = []
   port61 = 0
 
-  constructor(image: Uint8Array) {
-    this.m.set(image.subarray(SEG_OFFSET, SEG_OFFSET + 0x10000))
+  /** the driver's offsets in this game (PoR's plus the game's shift) */
+  readonly c: Record<string, number>
+
+  constructor(image: Uint8Array, drv: SoundDriver = game().sound) {
+    this.m.set(image.subarray(drv.segment, drv.segment + 0x10000))
+    this.c = Object.fromEntries(Object.entries(OFFSETS).map(([k, v]) => [k, v + drv.shift]))
   }
 
   b(a: number) { return this.m[a & 0xffff] }
@@ -38,26 +48,26 @@ class Driver {
 
   /** CS:1742 (PC speaker) / CS:17AE (Tandy): start effect index e (= effect number - 1). */
   start(e: number, tandy = false) {
-    const table = tandy ? TY_TABLE : PC_TABLE
-    this.sw(V_EFFECT, e)
+    const table = tandy ? this.c.TY_TABLE : this.c.PC_TABLE
+    this.sw(this.c.V_EFFECT, e)
     let si = (e * 8) & 0xffff
-    this.sb(V_BUSY, 1)
-    this.sb(V_CHLOOP, 4)
-    let di = tandy ? TY_CHAN : PC_CHAN
+    this.sb(this.c.V_BUSY, 1)
+    this.sb(this.c.V_CHLOOP, 4)
+    let di = tandy ? this.c.TY_CHAN : this.c.PC_CHAN
     for (;;) {
       const ax = this.w(table + si)
       if (ax !== 0) {
         for (let bx = 0x2e; bx >= 0; bx -= 2) this.sw(di + bx, 0)
         this.sw(di + 2, ax)
-        this.sb(V_CHEFFECT + (4 - this.b(V_CHLOOP)), this.w(V_EFFECT))
+        this.sb(this.c.V_CHEFFECT + (4 - this.b(this.c.V_CHLOOP)), this.w(this.c.V_EFFECT))
         this.sw(di, 1)
       }
       di += 0x30
       si += 2
-      this.sb(V_CHLOOP, this.b(V_CHLOOP) - 1)
-      if (this.b(V_CHLOOP) === 0) break
+      this.sb(this.c.V_CHLOOP, this.b(this.c.V_CHLOOP) - 1)
+      if (this.b(this.c.V_CHLOOP) === 0) break
     }
-    this.sb(V_BUSY, 0)
+    this.sb(this.c.V_BUSY, 0)
   }
 
   snWrites: number[] = []
@@ -66,33 +76,33 @@ class Driver {
   tick() {
     this.out42 = []
     this.snWrites = []
-    if (this.b(V_BUSY) !== 0) return
-    this.sb(V_BUSY, 1)
+    if (this.b(this.c.V_BUSY) !== 0) return
+    this.sb(this.c.V_BUSY, 1)
     this.pcTick()
     this.tandyTick()
-    this.sb(V_BUSY, 0)
+    this.sb(this.c.V_BUSY, 0)
   }
 
   private pcTick() {
     let bl = 0
-    if (this.w(V_EFFECT) !== 0) {
-      this.sw(V_PCSEL, 0)
-      this.sb(V_CHLOOP, 4)
-      this.sw(V_FREQTAB, PC_FREQ)
-      let si = PC_CHAN
-      this.sw(V_CHBASE, si)
+    if (this.w(this.c.V_EFFECT) !== 0) {
+      this.sw(this.c.V_PCSEL, 0)
+      this.sb(this.c.V_CHLOOP, 4)
+      this.sw(this.c.V_FREQTAB, this.c.PC_FREQ)
+      let si = this.c.PC_CHAN
+      this.sw(this.c.V_CHBASE, si)
       for (;;) {
         if (this.w(si) !== 0) {
           this.step(si)
-          if (this.w(V_PCSEL) === 0 && this.w(si + 0xa) !== 0 && this.w(si) !== 0) this.sw(V_PCSEL, si)
+          if (this.w(this.c.V_PCSEL) === 0 && this.w(si + 0xa) !== 0 && this.w(si) !== 0) this.sw(this.c.V_PCSEL, si)
         }
         si += 0x30
-        this.sb(V_CHLOOP, this.b(V_CHLOOP) - 1)
-        if (this.b(V_CHLOOP) === 0) break
+        this.sb(this.c.V_CHLOOP, this.b(this.c.V_CHLOOP) - 1)
+        if (this.b(this.c.V_CHLOOP) === 0) break
       }
-      bl = this.b(V_ENABLE)
+      bl = this.b(this.c.V_ENABLE)
       if (bl !== 0) {
-        const sel = this.w(V_PCSEL)
+        const sel = this.w(this.c.V_PCSEL)
         if (sel === 0) bl = 0
         else {
           this.out42.push(this.w(sel + 8))
@@ -106,19 +116,19 @@ class Driver {
   /** CS:14EC: step the Tandy channels and write all four SN76489 voices. */
   private tandyTick() {
     const silence = [0x9f, 0xbf, 0xdf, 0xff]
-    if (this.w(V_EFFECT) === 0) { this.snWrites.push(...silence); return }
-    this.sb(V_CHLOOP, 4)
-    this.sw(V_FREQTAB, TY_FREQ)
-    let si = TY_CHAN
-    this.sw(V_CHBASE, si)
+    if (this.w(this.c.V_EFFECT) === 0) { this.snWrites.push(...silence); return }
+    this.sb(this.c.V_CHLOOP, 4)
+    this.sw(this.c.V_FREQTAB, this.c.TY_FREQ)
+    let si = this.c.TY_CHAN
+    this.sw(this.c.V_CHBASE, si)
     for (;;) {
       if (this.w(si) !== 0) this.step(si)
       si += 0x30
-      this.sb(V_CHLOOP, this.b(V_CHLOOP) - 1)
-      if (this.b(V_CHLOOP) === 0) break
+      this.sb(this.c.V_CHLOOP, this.b(this.c.V_CHLOOP) - 1)
+      if (this.b(this.c.V_CHLOOP) === 0) break
     }
-    if (this.b(V_ENABLE) === 0) { this.snWrites.push(...silence); return }
-    si = TY_CHAN
+    if (this.b(this.c.V_ENABLE) === 0) { this.snWrites.push(...silence); return }
+    si = this.c.TY_CHAN
     let dl = 0x80
     for (let v = 0; v < 4; v++) {
       const ax = (this.w(si + 8) >> 2) & 0xffff
@@ -180,7 +190,7 @@ class Driver {
   private parse(si: number) {
     let di = this.w(si + 2)
     if (di === 0) return
-    this.sw(V_CURCH, si)
+    this.sw(this.c.V_CURCH, si)
     let state: 'fetch' | 'note' | 'note1' | 'finish' = 'fetch'
     let bl = 0
     for (let guard = 0; ; guard++) {
@@ -189,19 +199,19 @@ class Driver {
         bl = this.b(di)
         di = (di + 1) & 0xffff
         if (bl < 0xfa) { state = 'note'; continue }
-        const target = this.w(V_JUMPTAB + (bl - 0xfa) * 2)
-        if (target === 0x164e) this.reset(si) // FA
-        else if (target === 0x16ac) di = this.w(V_RETADDR) // FB
-        else if (target === 0x16b3) { // FC
+        const target = this.w(this.c.V_JUMPTAB + (bl - 0xfa) * 2)
+        if (target === this.c.J_FA) this.reset(si) // FA
+        else if (target === this.c.J_FB) di = this.w(this.c.V_RETADDR) // FB
+        else if (target === this.c.J_FC) { // FC
           const a = this.w(di)
           di = (di + 2) & 0xffff
-          this.sw(V_RETADDR, di)
+          this.sw(this.c.V_RETADDR, di)
           di = a
-        } else if (target === 0x1645) { // FD
-          si = (this.w(di) + this.w(V_CHBASE)) & 0xffff
+        } else if (target === this.c.J_FD) { // FD
+          si = (this.w(di) + this.w(this.c.V_CHBASE)) & 0xffff
           di = (di + 2) & 0xffff
           this.reset(si)
-        } else if (target === 0x162e) { // FE
+        } else if (target === this.c.J_FE) { // FE
           const f = this.b(di)
           di = (di + 1) & 0xffff
           const a = this.w(di)
@@ -211,7 +221,7 @@ class Driver {
             if (this.w(si + f) === 0) continue
           }
           di = a
-        } else if (target === 0x167f) { // FF
+        } else if (target === this.c.J_FF) { // FF
           const f = this.b(di)
           di = (di + 1) & 0xffff
           const a = this.w(di)
@@ -226,7 +236,7 @@ class Driver {
       } else if (state === 'note') {
         const saved = di
         const cl = bl >> 5
-        const tgt = (cl * this.b(V_STRUCTSZ) + this.w(V_CHBASE)) & 0xffff
+        const tgt = (cl * this.b(this.c.V_STRUCTSZ) + this.w(this.c.V_CHBASE)) & 0xffff
         const tempo = this.w(si + 0xe) & 0xff
         this.sw(si, tempo <= 1 ? this.b(saved + 1) : tempo * this.b(saved + 1))
         let a = this.b(saved) & 0x7f
@@ -245,7 +255,7 @@ class Driver {
             if (borrow) break
           }
           a = (a + 12) & 0xffff
-          let v = this.w((a * 2 + this.w(V_FREQTAB)) & 0xffff)
+          let v = this.w((a * 2 + this.w(this.c.V_FREQTAB)) & 0xffff)
           v = octave < 16 ? v >> octave : 0
           this.sw(tgt + 4, v)
           this.sw(tgt + 8, v)
@@ -255,9 +265,9 @@ class Driver {
         di = (di + 2) & 0xffff
         state = al & 0x80 ? 'finish' : 'note1'
       } else {
-        si = this.w(V_CURCH)
+        si = this.w(this.c.V_CURCH)
         if (this.w(si) === 0) {
-          this.sb(V_CHEFFECT + ((4 - this.b(V_CHLOOP)) & 0xff), 0)
+          this.sb(this.c.V_CHEFFECT + ((4 - this.b(this.c.V_CHLOOP)) & 0xff), 0)
           di = 0
         }
         this.sw(si + 2, di)
@@ -271,7 +281,7 @@ class Driver {
   }
 
   active(tandy = false) {
-    const base = tandy ? TY_CHAN : PC_CHAN
+    const base = tandy ? this.c.TY_CHAN : this.c.PC_CHAN
     for (let c = 0; c < 4; c++) if (this.w(base + c * 0x30) !== 0) return true
     return false
   }

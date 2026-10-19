@@ -315,7 +315,7 @@ Compared value = target − 0x7FFF, so the effective target address is:
 | **0x2E10** | refresh square registers (event 0x53E45), and if `LOAD_AREA/WALLSETS` ran (DS:47FB) and any redraw flag (DS:8B7C/7F/82/84/81) is set: redraw view, recompute wall ahead | was 0x2C90 |
 | 0x8000 | duel (0x2156A(1)) | same |
 | 0x8001 | solo combat (0x2156A(0)) | same |
-| **0xB200** | sound: register 0x3DE = 8 → DS:25C2, 10 → DS:25C4, else DS:25C2 (0x069B0) | was 0xBA03 |
+| **0xB200** | sound: register 0x3DE = 8 → DS:25C2, 10 → DS:25C4, else DS:25C2 (0x069B0); the initial values are effect 10 and 11 (O, data) | was 0xBA03 |
 | 0xC01E | step forward (0x214D1) | same |
 | 0xC018 | wall ahead, only when 0x4BE6 = 0 (0x53D42) | same (map areas only) |
 | **0x6803** | **new**: draw the next frame of the current picture (frames at DS:7246, count byte DS:7246, current DS:7247, wraps to 1) at (3,3), then 0x057F9 (I: frame delay) | — |

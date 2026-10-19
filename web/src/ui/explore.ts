@@ -1635,6 +1635,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const known = new Set<string>(start.kind === 'load' ? start.known ?? [] : [])
   const commissionReport = () => report((a) => engine.read(a), known)
   function commissionsDue(): boolean {
+    if (!game().commissions) return false
     const r = commissionReport()
     return r.bounty > 0 || r.lines.some((l) => l.state === 'reward' || l.state === 'summoned')
   }
@@ -1800,7 +1801,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     dialog.innerHTML = `<h2>Menu</h2>
       <ul class="mainmenu">
         ${!JOURNAL.journal.length ? '' : item('journal', 'Journal', found ? `${found} entries, proclamations and tales found` : 'entries, proclamations and tavern tales')}
-        ${item('commissions', `Commissions${due ? ' <span class="due">•</span>' : ''}`, due ? 'a reward is waiting' : 'the City Council\'s commissions and progress')}
+        ${!game().commissions ? '' : item('commissions', `Commissions${due ? ' <span class="due">•</span>' : ''}`, due ? 'a reward is waiting' : 'the City Council\'s commissions and progress')}
         ${item('save', 'Save', 'any time, slots A–J')}
         ${item('settings', 'Settings', 'speed, sound, font, borders, motion, text size, graphics')}
         ${item('rules', 'Rules reference', 'classes, races, abilities, combat numbers, spells')}
