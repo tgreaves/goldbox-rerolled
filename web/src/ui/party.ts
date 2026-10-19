@@ -1,6 +1,7 @@
 // Party screen ("Choose a function", FUN_417f_0161; spec/architecture.md, Party screen).
 import type { GameFiles } from '../store/gamefiles'
 import { parseCharacter } from '../data/character'
+import { F } from '../games/fields'
 import { deleteCharacter, getParty, listCharacters, seedRoster, setParty } from '../store/user'
 import { escape, sheetHtml } from './sheet'
 import { unexepack } from '../data/exepack'
@@ -76,7 +77,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
       const port = sizeCanvas(card.querySelector<HTMLCanvasElement>('.pc-portrait')!, 88, 88)
       port.fillStyle = '#000'; port.fillRect(0, 0, 88, 88)
       if (tables) {
-        const h = pic('HEAD3', headRecord(tables, raw[0xbb])), b = pic('BODY3', bodyRecord(tables, raw[0xbc]))
+        const h = pic('HEAD3', headRecord(tables, raw[F.head])), b = pic('BODY3', bodyRecord(tables, raw[F.body]))
         if (h) blit(port, toImageData(h), 0, 0)
         if (b) blit(port, toImageData(b), 0, 40)
       }
@@ -127,7 +128,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
       }
       case 'M': {
         const c = byStem(cur).sav.slice()
-        if ((c[0xac] | c[0xad] | c[0xae] | c[0xaf]) !== 0) say(`${parseCharacter(c).name} can't be modified.`)
+        if ((c[F.xp] | c[F.xp + 1] | c[F.xp + 2] | c[F.xp + 3]) !== 0) say(`${parseCharacter(c).name} can't be modified.`)
         else if (await modify(c)) {
           await saveCharacter({ ...byStem(cur), sav: c })
           roster = await listCharacters()

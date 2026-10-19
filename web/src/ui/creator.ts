@@ -9,6 +9,7 @@ import { blit, sizeCanvas } from '../render/upscale'
 import { Tables, abilityRange, combatStats, hpMax, hpMin, modifyStep } from '../rules/chargen'
 import { buildIcon } from '../render/icon'
 import { createCharacter } from './newchar'
+import { F } from '../games/fields'
 
 export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (n: number) => number, tables: Tables | null) {
   function chooseFrom(title: string, list: StoredCharacter[]): Promise<StoredCharacter | null> {
@@ -68,7 +69,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
 
   /** Combat icon editor (FUN_417f_382d), as one panel; returns false if cancelled. */
   function iconEditor(c: Uint8Array): Promise<boolean> {
-    const kept = c.slice(0xbd, 0xc7)
+    const kept = c.slice(F.iconHead, F.iconColours + 6)
     const PARTS = ['Body', 'Arm', 'Leg', 'Hair/Face', 'Shield', 'Weapon']
     let part = 0
     return new Promise((resolve) => {
@@ -94,26 +95,26 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
       const draw = () => {
         paintIcon(n1, buildIcon(files, c, false))
         paintIcon(n2, buildIcon(files, c, true))
-        dialog.querySelector('[data-o="head"]')!.textContent = String(c[0xbd])
-        dialog.querySelector('[data-o="weapon"]')!.textContent = String(c[0xbe])
-        dialog.querySelector('[data-x="size"]')!.textContent = c[0xc0] === 2 ? 'Large' : 'Small'
+        dialog.querySelector('[data-o="head"]')!.textContent = String(c[F.iconHead])
+        dialog.querySelector('[data-o="weapon"]')!.textContent = String(c[F.iconBody])
+        dialog.querySelector('[data-x="size"]')!.textContent = c[F.iconSize] === 2 ? 'Large' : 'Small'
         dialog.querySelectorAll<HTMLButtonElement>('[data-part]').forEach((b) => b.classList.toggle('on', Number(b.dataset.part) === part))
-        dialog.querySelectorAll<HTMLButtonElement>('[data-c1]').forEach((b) => b.classList.toggle('on', Number(b.dataset.c1) === (c[0xc1 + part] & 0xf)))
-        dialog.querySelectorAll<HTMLButtonElement>('[data-c2]').forEach((b) => b.classList.toggle('on', Number(b.dataset.c2) === c[0xc1 + part] >> 4))
+        dialog.querySelectorAll<HTMLButtonElement>('[data-c1]').forEach((b) => b.classList.toggle('on', Number(b.dataset.c1) === (c[F.iconColours + part] & 0xf)))
+        dialog.querySelectorAll<HTMLButtonElement>('[data-c2]').forEach((b) => b.classList.toggle('on', Number(b.dataset.c2) === c[F.iconColours + part] >> 4))
       }
       const onClick = (e: MouseEvent) => {
         const b = (e.target as HTMLElement).closest('button')
         if (!b || b.closest('form')) return
         e.preventDefault()
         const x = b.dataset.x
-        if (x === 'head+') c[0xbd] = (c[0xbd] + 1) % 14
-        else if (x === 'head-') c[0xbd] = (c[0xbd] + 13) % 14
-        else if (x === 'weapon+') c[0xbe] = (c[0xbe] + 1) % 32
-        else if (x === 'weapon-') c[0xbe] = (c[0xbe] + 31) % 32
-        else if (x === 'size') c[0xc0] = c[0xc0] === 2 ? 1 : 2
+        if (x === 'head+') c[F.iconHead] = (c[F.iconHead] + 1) % 14
+        else if (x === 'head-') c[F.iconHead] = (c[F.iconHead] + 13) % 14
+        else if (x === 'weapon+') c[F.iconBody] = (c[F.iconBody] + 1) % 32
+        else if (x === 'weapon-') c[F.iconBody] = (c[F.iconBody] + 31) % 32
+        else if (x === 'size') c[F.iconSize] = c[F.iconSize] === 2 ? 1 : 2
         else if (b.dataset.part) part = Number(b.dataset.part)
-        else if (b.dataset.c1) c[0xc1 + part] = (c[0xc1 + part] & 0xf0) | Number(b.dataset.c1)
-        else if (b.dataset.c2) c[0xc1 + part] = (c[0xc1 + part] & 0x0f) | (Number(b.dataset.c2) << 4)
+        else if (b.dataset.c1) c[F.iconColours + part] = (c[F.iconColours + part] & 0xf0) | Number(b.dataset.c1)
+        else if (b.dataset.c2) c[F.iconColours + part] = (c[F.iconColours + part] & 0x0f) | (Number(b.dataset.c2) << 4)
         draw()
       }
       dialog.addEventListener('click', onClick)
@@ -122,7 +123,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
         if (done) return
         done = true
         const keep = dialog.returnValue === 'k'
-        if (!keep) c.set(kept, 0xbd)
+        if (!keep) c.set(kept, F.iconHead)
         resolve(keep)
       })
       draw()
@@ -139,8 +140,8 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
       const t = tables!
       const draw = () => {
         const rows = FIELDS.map((n, f) => {
-          const v = f === 6 ? c[0x32] : c[0x10 + f]
-          const pct = f === 0 && c[0x10] === 18 && c[0x16] ? `/${String(c[0x16] % 100).padStart(2, '0')}` : ''
+          const v = f === 6 ? c[F.maxHp] : c[F.stat[f]]
+          const pct = f === 0 && c[F.stat[0]] === 18 && c[F.strPct] ? `/${String(c[F.strPct] % 100).padStart(2, '0')}` : ''
           const range = f === 6 ? `${hpMin(t, c)}–${hpMax(t, c)}` : abilityRange(t, c, f).join('–')
           return `<tr class="${f === field ? 'current' : ''}" data-f="${f}"><th>${n}</th>
             <td><button data-d="-1" aria-label="lower ${n}">−</button></td><td class="v">${v}${pct}</td>
@@ -176,8 +177,8 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
         window.removeEventListener('keydown', onArrow, true)
         const kept = dialog.returnValue === 'k'
         if (kept) {
-          c[0x85] = 1
-          c[0x11b] = c[0x32]
+          c[F.npcShare] = 1
+          c[F.hp] = c[F.maxHp]
           combatStats(c)
         } else c.set(before)
         resolve(kept)

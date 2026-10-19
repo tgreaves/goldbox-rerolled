@@ -13,6 +13,7 @@ import {
   modifyStep, rollAbilities, setName, type Rng,
 } from '../rules/chargen'
 import { escape, onClose } from './sheet'
+import { F } from '../games/fields'
 
 const STATS = ['STR', 'INT', 'WIS', 'DEX', 'CON', 'CHA']
 const ICON_PARTS = ['Body', 'Arm', 'Leg', 'Hair/Face', 'Shield', 'Weapon']
@@ -35,13 +36,13 @@ export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, rng
 
   /** Race, gender or class changed: start again and roll, keeping the name and the looks. */
   const restart = () => {
-    const looks = c.slice(0xbb, 0xc7)
-    const size = c[0xc0]
+    const looks = c.slice(F.head, F.iconColours + 6)
+    const size = c[F.iconSize]
     c = begin(t, rng, race, gender, cls, align)
     rollAbilities(t, rng, c)
-    c.set(looks, 0xbb)
-    if (sizeTouched) c[0xc0] = size
-    else c[0xc0] = race === 1 || race === 3 || race === 5 ? 1 : 2
+    c.set(looks, F.head)
+    if (sizeTouched) c[F.iconSize] = size
+    else c[F.iconSize] = race === 1 || race === 3 || race === 5 ? 1 : 2
   }
 
   const row = (label: string, items: { v: number; text: string; ok: boolean; why?: string }[], cur: number, key: string) =>
@@ -62,12 +63,12 @@ export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, rng
     const classOk = classesFor(t, race), alignOk = alignmentsFor(t, cls)
     const statRows = STATS.map((n, f) => {
       const [lo, hi] = abilityRange(t, c, f)
-      const v = c[0x10 + f]
-      const pct = f === 0 && v === 18 && c[0x16] ? `/${String(c[0x16] % 100).padStart(2, '0')}` : ''
+      const v = c[F.stat[f]]
+      const pct = f === 0 && v === 18 && c[F.strPct] ? `/${String(c[F.strPct] % 100).padStart(2, '0')}` : ''
       return `<tr><th>${n}</th><td><button type="button" data-mod="${f}" data-d="-1" aria-label="lower ${n}">−</button></td>
         <td class="v">${v}${pct}</td><td><button type="button" data-mod="${f}" data-d="1" aria-label="raise ${n}">+</button></td><td class="muted">${lo}–${hi}</td></tr>`
     }).join('')
-    const gold = c[0x8e] | (c[0x8f] << 8)
+    const gold = c[F.money + 6] | (c[F.money + 7] << 8)
     dialog.innerHTML = `<h2>Create a character</h2>
       <div class="newchar">
         <section class="nc-choices">
@@ -80,7 +81,7 @@ export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, rng
         </section>
         <section class="nc-stats">
           <table class="modify"><tbody>${statRows}
-            <tr><th>HP</th><td><button type="button" data-mod="6" data-d="-1" aria-label="lower HP">−</button></td><td class="v">${c[0x32]}</td>
+            <tr><th>HP</th><td><button type="button" data-mod="6" data-d="-1" aria-label="lower HP">−</button></td><td class="v">${c[F.maxHp]}</td>
               <td><button type="button" data-mod="6" data-d="1" aria-label="raise HP">+</button></td><td class="muted">${hpMin(t, c)}–${hpMax(t, c)}</td></tr>
           </tbody></table>
           <p class="nc-derived">AC ${ch.ac} · THAC0 ${ch.thac0} · Age ${ch.age} · ${gold} gold</p>
@@ -91,26 +92,26 @@ export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, rng
           <div class="nc-portrait">
             <canvas class="pixel portrait" width="88" height="88"></canvas>
             <div class="iconctl">
-              <span>Head</span><button type="button" data-x="ph-">◀</button><output>${c[0xbb]}</output><button type="button" data-x="ph+">▶</button>
-              <span>Body</span><button type="button" data-x="pb-">◀</button><output>${c[0xbc]}</output><button type="button" data-x="pb+">▶</button>
+              <span>Head</span><button type="button" data-x="ph-">◀</button><output>${c[F.head]}</output><button type="button" data-x="ph+">▶</button>
+              <span>Body</span><button type="button" data-x="pb-">◀</button><output>${c[F.body]}</output><button type="button" data-x="pb+">▶</button>
             </div>
           </div>
           <div class="nc-icon">
             <canvas class="pixel ic" width="24" height="24"></canvas><canvas class="pixel ic" width="24" height="24"></canvas>
             <div class="iconctl">
-              <span>Head</span><button type="button" data-x="head-">◀</button><output>${c[0xbd]}</output><button type="button" data-x="head+">▶</button>
-              <span>Weapon</span><button type="button" data-x="weapon-">◀</button><output>${c[0xbe]}</output><button type="button" data-x="weapon+">▶</button>
-              <span>Size</span><button type="button" data-x="size" class="wide">${c[0xc0] === 2 ? 'Large' : 'Small'}</button>
+              <span>Head</span><button type="button" data-x="head-">◀</button><output>${c[F.iconHead]}</output><button type="button" data-x="head+">▶</button>
+              <span>Weapon</span><button type="button" data-x="weapon-">◀</button><output>${c[F.iconBody]}</output><button type="button" data-x="weapon+">▶</button>
+              <span>Size</span><button type="button" data-x="size" class="wide">${c[F.iconSize] === 2 ? 'Large' : 'Small'}</button>
             </div>
             <div class="parts">${ICON_PARTS.map((n, i) => `<button type="button" data-part="${i}" class="${i === part ? 'on' : ''}">${n}</button>`).join('')}</div>
-            <div class="palette"><span>Colour 1</span>${EGA.map((rgb, i) => `<button type="button" class="sw ${(c[0xc1 + part] & 0xf) === i ? 'on' : ''}" data-c1="${i}" style="background:rgb(${rgb})" aria-label="colour ${i}"></button>`).join('')}</div>
-            <div class="palette"><span>Colour 2</span>${EGA.map((rgb, i) => `<button type="button" class="sw ${c[0xc1 + part] >> 4 === i ? 'on' : ''}" data-c2="${i}" style="background:rgb(${rgb})" aria-label="colour ${i}"></button>`).join('')}</div>
+            <div class="palette"><span>Colour 1</span>${EGA.map((rgb, i) => `<button type="button" class="sw ${(c[F.iconColours + part] & 0xf) === i ? 'on' : ''}" data-c1="${i}" style="background:rgb(${rgb})" aria-label="colour ${i}"></button>`).join('')}</div>
+            <div class="palette"><span>Colour 2</span>${EGA.map((rgb, i) => `<button type="button" class="sw ${c[F.iconColours + part] >> 4 === i ? 'on' : ''}" data-c2="${i}" style="background:rgb(${rgb})" aria-label="colour ${i}"></button>`).join('')}</div>
           </div>
         </section>
       </div>
       <form method="dialog" class="yn"><button value="e">Cancel</button><button value="k" class="primary" data-act="create">Create</button></form>`
     paint(dialog.querySelector<HTMLCanvasElement>('canvas.portrait'), [
-      { p: picture('HEAD3', headRecord(t, c[0xbb])), x: 0, y: 0 }, { p: picture('BODY3', bodyRecord(t, c[0xbc])), x: 0, y: 40 }])
+      { p: picture('HEAD3', headRecord(t, c[F.head])), x: 0, y: 0 }, { p: picture('BODY3', bodyRecord(t, c[F.body])), x: 0, y: 40 }])
     const [i1, i2] = dialog.querySelectorAll<HTMLCanvasElement>('canvas.ic')
     paint(i1, [{ p: buildIcon(files, c, false), x: 0, y: 0 }])
     paint(i2, [{ p: buildIcon(files, c, true), x: 0, y: 0 }])
@@ -144,32 +145,32 @@ export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, rng
         const al = alignmentsFor(t, cls)
         if (!al.includes(align)) { notice = `${ALIGNMENTS[align]} is not allowed for a ${CLASSES[cls]}: now ${ALIGNMENTS[al[0]]}.`; align = al[0] }
         restart()
-      } else if (d.align) { align = Number(d.align); c[0xa0] = align }
-      else if (d.act === 'reroll') { rollAbilities(t, rng, c); c[0x85] = 0 }
+      } else if (d.align) { align = Number(d.align); c[F.alignment] = align }
+      else if (d.act === 'reroll') { rollAbilities(t, rng, c); c[F.npcShare] = 0 }
       else if (d.mod) {
         modifyStep(t, c, Number(d.mod), Number(d.d) as 1 | -1)
-        c[0x85] = 1 // as Modify's Keep
-        c[0x11b] = c[0x32]
+        c[F.npcShare] = 1 // as Modify's Keep
+        c[F.hp] = c[F.maxHp]
         combatStats(c)
       } else if (d.x) {
         const x = d.x
-        if (x === 'ph+') c[0xbb] = (c[0xbb] % 14) + 1
-        else if (x === 'ph-') c[0xbb] = ((c[0xbb] + 12) % 14) + 1
-        else if (x === 'pb+') c[0xbc] = (c[0xbc] % 12) + 1
-        else if (x === 'pb-') c[0xbc] = ((c[0xbc] + 10) % 12) + 1
-        else if (x === 'head+') c[0xbd] = (c[0xbd] + 1) % 14
-        else if (x === 'head-') c[0xbd] = (c[0xbd] + 13) % 14
-        else if (x === 'weapon+') c[0xbe] = (c[0xbe] + 1) % 32
-        else if (x === 'weapon-') c[0xbe] = (c[0xbe] + 31) % 32
-        else if (x === 'size') { c[0xc0] = c[0xc0] === 2 ? 1 : 2; sizeTouched = true }
+        if (x === 'ph+') c[F.head] = (c[F.head] % 14) + 1
+        else if (x === 'ph-') c[F.head] = ((c[F.head] + 12) % 14) + 1
+        else if (x === 'pb+') c[F.body] = (c[F.body] % 12) + 1
+        else if (x === 'pb-') c[F.body] = ((c[F.body] + 10) % 12) + 1
+        else if (x === 'head+') c[F.iconHead] = (c[F.iconHead] + 1) % 14
+        else if (x === 'head-') c[F.iconHead] = (c[F.iconHead] + 13) % 14
+        else if (x === 'weapon+') c[F.iconBody] = (c[F.iconBody] + 1) % 32
+        else if (x === 'weapon-') c[F.iconBody] = (c[F.iconBody] + 31) % 32
+        else if (x === 'size') { c[F.iconSize] = c[F.iconSize] === 2 ? 1 : 2; sizeTouched = true }
       } else if (d.part) part = Number(d.part)
-      else if (d.c1) c[0xc1 + part] = (c[0xc1 + part] & 0xf0) | Number(d.c1)
-      else if (d.c2) c[0xc1 + part] = (c[0xc1 + part] & 0x0f) | (Number(d.c2) << 4)
+      else if (d.c1) c[F.iconColours + part] = (c[F.iconColours + part] & 0xf0) | Number(d.c1)
+      else if (d.c2) c[F.iconColours + part] = (c[F.iconColours + part] & 0x0f) | (Number(d.c2) << 4)
       render()
     }
     const onKey = (e: KeyboardEvent) => {
       if (!dialog.open || document.activeElement instanceof HTMLInputElement) return
-      if (e.key.toLowerCase() === 'r') { e.preventDefault(); e.stopPropagation(); rollAbilities(t, rng, c); c[0x85] = 0; render() }
+      if (e.key.toLowerCase() === 'r') { e.preventDefault(); e.stopPropagation(); rollAbilities(t, rng, c); c[F.npcShare] = 0; render() }
     }
     dialog.classList.add('wide')
     dialog.addEventListener('click', onClick)

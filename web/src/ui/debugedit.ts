@@ -9,10 +9,11 @@ import { recalc } from '../rules/equip'
 import { derive, levelHp, maxLevel, xpFor } from '../rules/training'
 import type { Tables } from '../rules/chargen'
 import { onClose } from './sheet'
+import { F } from '../games/fields'
 
 const STATS = ['STR', 'INT', 'WIS', 'DEX', 'CON', 'CHA']
 const esc = (s: string) => s.replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`)
-const nameOf = (c: Uint8Array) => String.fromCharCode(...c.subarray(1, 1 + c[0]))
+const nameOf = (c: Uint8Array) => String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name]))
 const u16 = (c: Uint8Array, o: number) => c[o] | (c[o + 1] << 8)
 const set16 = (c: Uint8Array, o: number, v: number) => { c[o] = v & 0xff; c[o + 1] = (v >> 8) & 0xff }
 const u32 = (c: Uint8Array, o: number) => (c[o] | (c[o + 1] << 8) | (c[o + 2] << 16) | (c[o + 3] << 24)) >>> 0
@@ -45,24 +46,24 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
       <form class="charedit">
         <fieldset><legend>Character</legend>
           <label>Name <input name="name" maxlength="15" value="${esc(nameOf(c))}"></label>
-          ${select('Status', 'status', STATUS, c[0x10c])}
-          ${select('Alignment', 'align', ALIGNMENTS, c[0xa0])}
-          ${select('Gender', 'gender', ['Male', 'Female'], c[0x9e])}
-          ${num('Age', 'age', u16(c, 0x30), 1, 999)}
+          ${select('Status', 'status', STATUS, c[F.status])}
+          ${select('Alignment', 'align', ALIGNMENTS, c[F.alignment])}
+          ${select('Gender', 'gender', ['Male', 'Female'], c[F.gender])}
+          ${num('Age', 'age', u16(c, F.age), 1, 999)}
         </fieldset>
         <fieldset><legend>Abilities</legend>
-          ${STATS.map((s, i) => num(s, `s${i}`, c[0x10 + i], 3, 25)).join('')}
-          ${num('STR %', 'pct', c[0x16], 0, 100)}
+          ${STATS.map((s, i) => num(s, `s${i}`, c[F.stat[i]], 3, 25)).join('')}
+          ${num('STR %', 'pct', c[F.strPct], 0, 100)}
         </fieldset>
         <fieldset><legend>Hit points and experience</legend>
-          ${num('HP', 'hp', c[0x11b], 0, 255)} ${num('Max HP', 'maxhp', c[0x32], 1, 255)}
-          ${num('Experience', 'xp', u32(c, 0xac), 0, 99999999)}
+          ${num('HP', 'hp', c[F.hp], 0, 255)} ${num('Max HP', 'maxhp', c[F.maxHp], 1, 255)}
+          ${num('Experience', 'xp', u32(c, F.xp), 0, 99999999)}
         </fieldset>
         <fieldset><legend>Levels</legend>
-          ${CLASSES.slice(0, 8).map((n, k) => num(`${n} (max ${tables ? maxLevel(tables, k) : 1})`, `l${k}`, c[0x96 + k], 0, tables ? maxLevel(tables, k) : 1)).join('')}
+          ${CLASSES.slice(0, 8).map((n, k) => num(`${n} (max ${tables ? maxLevel(tables, k) : 1})`, `l${k}`, c[F.levels + k], 0, tables ? maxLevel(tables, k) : 1)).join('')}
         </fieldset>
         <fieldset><legend>Money</legend>
-          ${MONEY.map((n, k) => num(n, `m${k}`, u16(c, 0x88 + 2 * k), 0, 65535)).join('')}
+          ${MONEY.map((n, k) => num(n, `m${k}`, u16(c, F.money + 2 * k), 0, 65535)).join('')}
         </fieldset>
         <p><button class="primary">Apply</button></p>
       </form>
@@ -96,7 +97,7 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
       if (b.dataset.who) { who = Number(b.dataset.who); message = ''; render(); return }
       switch (b.dataset.act) {
         case 'heal':
-          c[0x11b] = c[0x32]; c[0x10c] = 0; c[0x10d] = 1
+          c[F.hp] = c[F.maxHp]; c[F.status] = 0; c[F.inPlay] = 1
           finish(c, `${nameOf(c)} is fully healed.`)
           break
         case 'effects':
@@ -104,12 +105,12 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
           finish(c, `${nameOf(c)} has no effects now (the stats they changed stay as they are).`)
           break
         case 'ready':
-          for (let k = 0; k < 21; k++) if (c[0x17 + k] > 0x80) c[0x17 + k] -= 0x80
+          for (let k = 0; k < F.memorisedCount; k++) if (c[F.memorised + k] > 0x80) c[F.memorised + k] -= 0x80
           finish(c, 'Every pending spell is ready.')
           break
         case 'learn': {
           const st = e.spells
-          if (st) for (const s of st.spells) if (s.cls === 1 && s.id <= 55) c[0x32 + s.id] = 1
+          if (st) for (const s of st.spells) if (s.cls === 1 && s.id <= 55) c[F.known + s.id] = 1
           finish(c, `${nameOf(c)} knows every magic-user spell.`)
           break
         }
@@ -136,35 +137,35 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
         return
       }
       const name = String((f.elements.namedItem('name') as HTMLInputElement).value).toUpperCase().slice(0, 15)
-      c[0] = name.length
-      for (let k = 0; k < 15; k++) c[1 + k] = k < name.length ? name.charCodeAt(k) & 0x7f : 0
-      c[0x10c] = clamp(v('status'), 0, STATUS.length - 1)
-      c[0x10d] = c[0x10c] === 0 || c[0x10c] === 1 ? 1 : 0
-      c[0xa0] = clamp(v('align'), 0, ALIGNMENTS.length - 1)
-      c[0x9e] = clamp(v('gender'), 0, 1)
-      set16(c, 0x30, clamp(v('age'), 1, 999))
-      for (let i = 0; i < 6; i++) c[0x10 + i] = clamp(v(`s${i}`), 3, 25)
-      c[0x16] = c[0x10] === 18 ? clamp(v('pct'), 0, 100) : 0
-      c[0x32] = clamp(v('maxhp'), 1, 255)
-      c[0x11b] = clamp(v('hp'), 0, c[0x32])
-      set32(c, 0xac, clamp(v('xp'), 0, 99999999))
+      c[F.name] = name.length
+      for (let k = 0; k < 15; k++) c[F.name + 1 + k] = k < name.length ? name.charCodeAt(k) & 0x7f : 0
+      c[F.status] = clamp(v('status'), 0, STATUS.length - 1)
+      c[F.inPlay] = c[F.status] === 0 || c[F.status] === 1 ? 1 : 0
+      c[F.alignment] = clamp(v('align'), 0, ALIGNMENTS.length - 1)
+      c[F.gender] = clamp(v('gender'), 0, 1)
+      set16(c, F.age, clamp(v('age'), 1, 999))
+      for (let i = 0; i < 6; i++) c[F.stat[i]] = clamp(v(`s${i}`), 3, 25)
+      c[F.strPct] = c[F.stat[0]] === 18 ? clamp(v('pct'), 0, 100) : 0
+      c[F.maxHp] = clamp(v('maxhp'), 1, 255)
+      c[F.hp] = clamp(v('hp'), 0, c[F.maxHp])
+      set32(c, F.xp, clamp(v('xp'), 0, 99999999))
       // levels up to the game's caps; each level gained rolls its hit points as training does, and
       // experience comes up to that level's minimum (lowering a level leaves max HP alone)
       let gained = 0
-      const hpBefore = c[0x32]
+      const hpBefore = c[F.maxHp]
       for (let k = 0; k < 8; k++) {
         const to = clamp(v(`l${k}`), 0, tables ? maxLevel(tables, k) : 1)
-        if (tables && c[0x96 + k] > 0) while (c[0x96 + k] < to) {
-          c[0x96 + k]++
+        if (tables && c[F.levels + k] > 0) while (c[F.levels + k] < to) {
+          c[F.levels + k]++
           levelHp(tables, (n) => e.rand(n), c, [k])
           gained++
-          const min = xpFor(tables, k, c[0x96 + k])
-          if (min !== 0xffffffff && u32(c, 0xac) < min) set32(c, 0xac, min)
+          const min = xpFor(tables, k, c[F.levels + k])
+          if (min !== 0xffffffff && u32(c, F.xp) < min) set32(c, F.xp, min)
         }
-        c[0x96 + k] = to
+        c[F.levels + k] = to
       }
-      for (let k = 0; k < 7; k++) set16(c, 0x88 + 2 * k, clamp(v(`m${k}`), 0, 65535))
-      finish(c, gained ? `${nameOf(c)} updated: ${gained} level${gained > 1 ? 's' : ''} gained, max HP ${hpBefore} → ${c[0x32]}.` : `${nameOf(c)} updated.`)
+      for (let k = 0; k < 7; k++) set16(c, F.money + 2 * k, clamp(v(`m${k}`), 0, 65535))
+      finish(c, gained ? `${nameOf(c)} updated: ${gained} level${gained > 1 ? 's' : ''} gained, max HP ${hpBefore} → ${c[F.maxHp]}.` : `${nameOf(c)} updated.`)
     }
     dialog.addEventListener('click', onClick)
     dialog.addEventListener('submit', onSubmit)

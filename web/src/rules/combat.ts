@@ -11,6 +11,7 @@ import { heal as healChar } from './camp'
 import { line, sharedSpell } from './spellfx'
 import { spellText } from './spelltext'
 import { SPELL_MSG, casterLevel, duration as spellDuration, forget } from './magic'
+import { F } from '../games/fields'
 
 const DX = [0, 1, 1, 1, 0, -1, -1, -1], DY = [-1, -1, 0, 1, 1, 1, 0, -1]
 
@@ -99,7 +100,7 @@ export interface CombatUi {
 /** 'spared': nobody won or fled but ECL 0x6DE6 = 1 kept the party from being destroyed (brawls) */
 export type Outcome = 'won' | 'fled' | 'destroyed' | 'spared'
 
-const name = (c: Uint8Array) => String.fromCharCode(...c.subarray(1, 1 + c[0]))
+const name = (c: Uint8Array) => String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name]))
 const u16 = (c: Uint8Array, o: number) => c[o] | (c[o + 1] << 8)
 const s8 = (v: number) => (v << 24) >> 24
 
@@ -192,10 +193,10 @@ export class Battle implements FxHost {
   rec(c: Uint8Array, i: number) { return this.of(c)?.r[i] ?? 0 }
   setRec(c: Uint8Array, i: number, v: number) { const f = this.of(c); if (f) { f.r[i] = v & 0xff; if (i === 0xa && !v) f.target = null } }
   setStatus(c: Uint8Array, status: number, msg: string) {
-    if ([6, 7, 8].includes(c[0x10c])) return
+    if ([6, 7, 8].includes(c[F.status])) return
     this.print(msg)
-    c[0x10c] = status
-    if (status !== 0 && status !== 1) { c[0x10d] = 0; c[0x11b] = 0; const f = this.of(c); if (f) this.downF(f) }
+    c[F.status] = status
+    if (status !== 0 && status !== 1) { c[F.inPlay] = 0; c[F.hp] = 0; const f = this.of(c); if (f) this.downF(f) }
   }
   damage(c: Uint8Array, dmg: number, mode: number, saved: boolean) { this.damageSync(c, dmg, mode, saved) }
   save(c: Uint8Array, type: number, bonus: number) { return this.saveSync(c, type, bonus) }
@@ -203,9 +204,9 @@ export class Battle implements FxHost {
   revive(c: Uint8Array, hp: number) {
     const f = this.of(c)
     if (!f || this.occupied(f.x, f.y, f.size || 1, f)) return false
-    c[0x10c] = 0; c[0x10d] = 1; c[0x11b] = Math.min(hp, c[0x32])
-    f.size = (c[0x6c] & 7) || 1
-    this.print(`${name(c)} ${c[0x10e] ? 'stands up and grins' : 'gets back up'}`) // FUN_5216_1869
+    c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = Math.min(hp, c[F.maxHp])
+    f.size = (c[F.sizeFlags] & 7) || 1
+    this.print(`${name(c)} ${c[F.side] ? 'stands up and grins' : 'gets back up'}`) // FUN_5216_1869
     return true
   }
   recalc(c: Uint8Array) { if (this.e.items) recalc(c, this.e.itemsOf(c), this.e.items) }
@@ -244,8 +245,8 @@ export class Battle implements FxHost {
     if (!a || !b) return
     this.ui.flight?.({ x: a.x, y: a.y }, { x: b.x, y: b.y }, kind === 'gaze' ? { frames: cycle(5), delay: 45 } : { frames: [{ rec: 10 }], delay: 30 })
   }
-  inPlay(f: Fighter) { return f.c[0x10d] !== 0 && f.size > 0 }
-  side(f: Fighter) { return f.c[0x10e] }
+  inPlay(f: Fighter) { return f.c[F.inPlay] !== 0 && f.size > 0 }
+  side(f: Fighter) { return f.c[F.side] }
   enemies(f: Fighter) { return this.fighters.filter((o) => o !== f && this.inPlay(o) && this.side(o) !== this.side(f)) }
   count(side: number) { return this.fighters.filter((f) => this.inPlay(f) && this.side(f) === side).length }
   weaponOf(c: Uint8Array): Item | null {
@@ -321,13 +322,13 @@ export class Battle implements FxHost {
       this.recalc(c)
       const r = new Uint8Array(22)
       r[0x13] = i >= partySize ? 1 : 0
-      r[9] = c[0x10e] ? (face + 4) % 8 : face
-      if (c[0x10e] === 0 && r[0x13] && ((c[0x84] & 0x7f) === 0 || (c[0x84] & 0x7f) > 102)) c[0x84] = Math.min(100, this.e.read(0x6dc6)) + 0x80
+      r[9] = c[F.side] ? (face + 4) % 8 : face
+      if (c[F.side] === 0 && r[0x13] && ((c[F.morale] & 0x7f) === 0 || (c[F.morale] & 0x7f) > 102)) c[F.morale] = Math.min(100, this.e.read(0x6dc6)) + 0x80
       this.fighters.push({ c, r, x: 0, y: 0, size: 0, index: i, monster: !!r[0x13], target: null })
     })
     // placement
-    const F = [facing, (facing + 2) % 4]
-    const inPlay = [0, 1].map((s) => this.fighters.filter((f) => f.c[0x10d] && this.side(f) === s).length)
+    const FD = [facing, (facing + 2) % 4]
+    const inPlay = [0, 1].map((s) => this.fighters.filter((f) => f.c[F.inPlay] && this.side(f) === s).length)
     const lim = inPlay.map((n) => Math.floor((n + 1) / 2))
     const blocks: [number, number][] = [[0, 0], [DX[facing * 2] * distance, DY[facing * 2] * distance]]
     const T: [number, number][][] = [
@@ -340,7 +341,7 @@ export class Battle implements FxHost {
     const used = new Set<string>()
     const V: [number, number][] = [[-1, -1], [1, 0], [1, 1], [-1, 0]]
     const D4 = [[0, 0, 1, 3], [1, 1, 0, 2], [2, 2, 1, 3], [3, 3, 2, 0]]
-    const RING_DIR = [[4, 6, 2], [6, 4, 0], [0, 6, 2], [2, 0, 4]] // ring 1–3 map directions per F (S, W, E for F0 …)
+    const RING_DIR = [[4, 6, 2], [6, 4, 0], [0, 6, 2], [2, 0, 4]] // ring 1–3 map directions per FD (S, W, E for FD0 …)
     const ORIGIN0: [number, number][] = [[5, 3], [4, 2], [5, 2], [6, 3]]
     const ORIGIN1: [number, number][] = [[3, 0], [8, 2], [7, 5], [2, 3]]
     const toArena = (col: number, row: number, bx: number, by: number) => [22 + col + 6 * bx + 5 * by, 10 + row + 5 * by]
@@ -351,7 +352,7 @@ export class Battle implements FxHost {
       const [X, Y] = toArena(col, row, bx, by)
       const key = `${s}:${t}:${bx}:${by}:${col}:${row}`
       if (used.has(key)) return false
-      const size = (f.c[0x6c] & 7) || 1
+      const size = (f.c[F.sizeFlags] & 7) || 1
       if (this.occupied(X, Y, size) || !this.passable(X, Y, size)) return false
       used.add(key)
       f.x = X; f.y = Y
@@ -359,7 +360,7 @@ export class Battle implements FxHost {
     }
     const place = (f: Fighter) => {
       const s = this.side(f)
-      const Fs = F[s]
+      const Fs = FD[s]
       for (let ring = 0; ring < 4; ring++) {
         let [bx, by] = blocks[s]
         if (ring > 0) {
@@ -394,8 +395,8 @@ export class Battle implements FxHost {
     }
     for (const f of [...this.fighters]) {
       const ok = place(f)
-      const canAct = f.c[0x10d] !== 0
-      if (ok && canAct) f.size = (f.c[0x6c] & 7) || 1
+      const canAct = f.c[F.inPlay] !== 0
+      if (ok && canAct) f.size = (f.c[F.sizeFlags] & 7) || 1
       else if (ok && !canAct) {
         f.size = 0
         if (!this.e.duel) { // in a duel the bystanders sit out and leave no body
@@ -442,8 +443,8 @@ export class Battle implements FxHost {
     let hp = 0, max = 0
     for (const f of this.fighters) {
       if (this.side(f) !== 1) continue
-      if (this.inPlay(f)) hp += f.c[0x11b]
-      max += f.c[0x32]
+      if (this.inPlay(f)) hp += f.c[F.hp]
+      max += f.c[F.maxHp]
     }
     this.enemyPct = max ? Math.floor((20 * hp) / max) * 5 : 0
   }
@@ -453,14 +454,14 @@ export class Battle implements FxHost {
     const r = f.r, c = f.c
     r[0] = 0; r[1] = 1; r[2] = 1; r[8] = 0; r[4] = 2
     await this.attacks(f, true)
-    r[5] = c[0x6b]
-    if (!c[0x10d]) r[3] = 0
+    r[5] = c[F.sweep]
+    if (!c[F.inPlay]) r[3] = 0
     else {
-      let init = Math.max(1, this.e.roll(1, 6) + dexMissile(c[0x13]))
+      let init = Math.max(1, this.e.roll(1, 6) + dexMissile(c[F.stat[3]]))
       if (surprise & (1 << this.side(f))) init -= 6
       r[3] = init < 0 || init > 20 ? 0 : init
     }
-    let m = c[0x11c] + (this.side(f) === 0 ? s8(this.e.read(0x6e72)) : 0)
+    let m = c[F.move] + (this.side(f) === 0 ? s8(this.e.read(0x6e72)) : 0)
     if (m < 1 || m > 96) m = 1
     fx.rate = 2 * m; fx.rateIsMove = true
     this.current_ = f
@@ -472,8 +473,8 @@ export class Battle implements FxHost {
   /** Attacks per round (FUN_3aae_0d23). */
   async attacks(f: Fighter, roundStart: boolean) {
     const c = f.c, t = this.e.items
-    const prev = c[0x113]
-    let x2 = c[0xa1]
+    const prev = c[F.attacksLeft]
+    let x2 = c[F.attacksBase]
     const w = this.weaponOf(c)
     const b = w && t ? t.baseOf(w) : undefined
     const missile = w && b && b.range > 1 ? this.ammo(c, w) : null
@@ -482,11 +483,11 @@ export class Battle implements FxHost {
     await fire(this, c, 18)
     let n = Math.floor((fx.rate + (this.round & 1)) / 2)
     if (missile) n = Math.min(n, Math.max(1, missile.count))
-    if (f.r[8] === 0 || n < prev || (n < 2 * prev && !missile)) c[0x113] = n
+    if (f.r[8] === 0 || n < prev || (n < 2 * prev && !missile)) c[F.attacksLeft] = n
     if (roundStart) {
-      fx.rate = c[0xa2]
+      fx.rate = c[F.attacksBase + 1]
       await fire(this, c, 18)
-      c[0x114] = Math.floor((fx.rate + (this.round & 1)) / 2)
+      c[F.attacksLeft + 1] = Math.floor((fx.rate + (this.round & 1)) / 2)
     }
   }
 
@@ -526,7 +527,7 @@ export class Battle implements FxHost {
     this.ui.redraw(f)
     await fire(this, f.c, 15)
     if (s8(f.r[3]) <= 0) return
-    if (f.c[0x10f]) await this.ai(f)
+    if (f.c[F.quick]) await this.ai(f)
     else await this.player(f)
     await this.settle()
     this.ui.redraw(f)
@@ -543,12 +544,12 @@ export class Battle implements FxHost {
       this.current_ = f
       await fire(this, f.c, 19)
       this.cloudCheck(f)
-      if (f.c[0x10c] === 5) {
+      if (f.c[F.status] === 5) {
         f.r[0xe]++
-        if (f.r[0xe] >= 10) { f.c[0x10c] = 6; this.print(`${name(f.c)} has died`) }
+        if (f.r[0xe] >= 10) { f.c[F.status] = 6; this.print(`${name(f.c)} has died`) }
       }
     }
-    if (this.fighters.some((f) => !f.monster && this.side(f) === 0 && f.c[0x10c] === 5)) this.print('Your Teammate is Dying')
+    if (this.fighters.some((f) => !f.monster && this.side(f) === 0 && f.c[F.status] === 5)) this.print('Your Teammate is Dying')
     this.ui.redraw()
     await this.settle()
     if (this.count(0) === 0 || this.count(1) === 0) {
@@ -561,14 +562,14 @@ export class Battle implements FxHost {
   // ------------------------------------------------------------ player turn
   async player(f: Fighter) {
     const c = f.c
-    if (!c[0x10d]) { this.endTurnF(f); return }
+    if (!c[F.inPlay]) { this.endTurnF(f); return }
     if (f.r[0]) { await this.castSpell(f, this.e.spells!.get(f.r[0])!, false); this.endTurnF(f); return }
     /** where the steps since the last other action began (Escape undoes them) */
     let moved = { x: f.x, y: f.y, m: f.r[6], face: f.r[9] }
     const undo = () => { f.x = moved.x; f.y = moved.y; f.r[6] = moved.m; f.r[9] = moved.face; this.ui.redraw(f) }
-    while (s8(f.r[3]) > 0 && this.inPlay(f) && !c[0x10f] && !this.ended) {
+    while (s8(f.r[3]) > 0 && this.inPlay(f) && !c[F.quick] && !this.ended) {
       const st = this.e.spells
-      const canCast = !!st && f.r[1] === 1 && this.e.read(0x49e5) === 0 && Array.from({ length: 21 }, (_, k) => c[0x17 + k]).some((v) => v > 0 && v < 0x80)
+      const canCast = !!st && f.r[1] === 1 && this.e.read(0x49e5) === 0 && Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).some((v) => v > 0 && v < 0x80)
       const flat = !!this.ui.command
       const doneRow = (): [string, string][] => {
         const { canGuard, dying } = this.doneChoices(f)
@@ -580,7 +581,7 @@ export class Battle implements FxHost {
         ...(f.r[6] > 1 && !flat ? [['MOVE', 'm'] as [string, string]] : []), ['VIEW', 'v'], ['AIM', 'a'],
         ...(this.e.itemsOf(c).length ? [['USE', 'u'] as [string, string]] : []),
         ...(canCast ? [['CAST', 'c'] as [string, string]] : []),
-        ...(c[0x96] > 0 && !f.r[0x11] ? [['TURN', 't'] as [string, string]] : []),
+        ...(c[F.levels] > 0 && !f.r[0x11] ? [['TURN', 't'] as [string, string]] : []),
         // IMP-054: with the live command prompt the Done choices sit in the same row
         ...(flat ? doneRow() : [['QUICK', 'q'], ['DONE', 'd']] as [string, string][]),
       ]
@@ -605,9 +606,9 @@ export class Battle implements FxHost {
       else if (k === 'c') { await this.playerCast(f); if (f.r[0]) return } // "Begins Casting": the turn ends, the spell goes off when picked again
       else if (k === 't') await this.turnUndead(f)
       else if (k === 'q') {
-        c[0x10f] = 1
+        c[F.quick] = 1
         // not in the original: how to get them back, and whether they may cast (IMP-054)
-        const spells = Array.from({ length: 21 }, (_, i) => c[0x17 + i]).some((v) => v > 0 && v < 0x80)
+        const spells = Array.from({ length: F.memorisedCount }, (_, i) => c[F.memorised + i]).some((v) => v > 0 && v < 0x80)
         this.print(`${name(c)} is on Quick: the computer plays them. Space or TAKE CONTROL to play them yourself.`, { ms: 0 })
         if (spells) this.print(this.magicOn ? 'Magic is On: they may cast spells (Alt-M or MAGIC to stop).' : 'Magic is Off: they will not cast spells (Alt-M or MAGIC to allow).', { ms: 0 })
         await this.ai(f)
@@ -627,7 +628,7 @@ export class Battle implements FxHost {
     const w = this.weaponOf(f.c)
     const b = w ? this.e.items?.baseOf(w) : undefined
     const canGuard = !b || b.range <= 1 || !!(b.flags & 0x10)
-    const dying = this.fighters.some((o) => !o.monster && this.side(o) === 0 && o.c[0x10c] === 5)
+    const dying = this.fighters.some((o) => !o.monster && this.side(o) === 0 && o.c[F.status] === 5)
     return { canGuard, dying }
   }
 
@@ -652,8 +653,8 @@ export class Battle implements FxHost {
     else if (o === 'DELAY') { f.r[3] = 1; return true } // picked again after everyone with higher initiative
     else if (o === 'QUIT') this.endTurnF(f)
     else if (o === 'BANDAGE') {
-      const d = this.fighters.find((x) => !x.monster && this.side(x) === 0 && x.c[0x10c] === 5)
-      if (d) { d.c[0x10c] = 4; d.r[0xe] = 0; this.print(`${name(d.c)} is bandaged`) }
+      const d = this.fighters.find((x) => !x.monster && this.side(x) === 0 && x.c[F.status] === 5)
+      if (d) { d.c[F.status] = 4; d.r[0xe] = 0; this.print(`${name(d.c)} is bandaged`) }
       this.endTurnF(f)
     }
     return false
@@ -703,7 +704,7 @@ export class Battle implements FxHost {
   async attackAlly(f: Fighter): Promise<boolean> {
     if (!(await this.ui.confirm('Attack Ally:'))) return false
     this.e.write(0x6e33, 1)
-    for (const o of this.fighters) if (!o.monster && o.c[0x84] >= 0x80 && o.c[0x10c] === 0) { o.c[0x10e] = 1; o.target = null }
+    for (const o of this.fighters) if (!o.monster && o.c[F.morale] >= 0x80 && o.c[F.status] === 0) { o.c[F.side] = 1; o.target = null }
     void f
     return true
   }
@@ -789,7 +790,7 @@ export class Battle implements FxHost {
 
   async playerCast(f: Fighter) {
     const st = this.e.spells!
-    const ready = Array.from({ length: 21 }, (_, k) => f.c[0x17 + k]).filter((v) => v > 0 && v < 0x80)
+    const ready = Array.from({ length: F.memorisedCount }, (_, k) => f.c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
     const i = await this.ui.pick('Cast:', ready.map((id) => st.get(id)?.name ?? `#${id}`), ready.map((id) => { const s = st.get(id); return s ? spellText(s) : '' }))
     if (i < 0) return
     await this.beginCast(f, st.get(ready[i])!)
@@ -817,15 +818,15 @@ export class Battle implements FxHost {
 
   /** Sweep (FUN_3aae_0e82): fighters against creatures under 1 hit die. Returns true if it happened. */
   async sweep(f: Fighter, t: Fighter): Promise<boolean> {
-    if (!(f.c[0x113] < f.r[5] && t.c[0x73] === 0 && this.dist(f, t) === 1)) return false
-    const near = this.enemiesWithin(f, 1).filter((o) => o.c[0x73] === 0)
-    if (near.length <= f.c[0x113]) return false
+    if (!(f.c[F.attacksLeft] < f.r[5] && t.c[F.hitDice] === 0 && this.dist(f, t) === 1)) return false
+    const near = this.enemiesWithin(f, 1).filter((o) => o.c[F.hitDice] === 0)
+    if (near.length <= f.c[F.attacksLeft]) return false
     const n = Math.min(near.length, f.r[5])
     this.print(`${name(f.c)} sweeps`)
     const order = [t, ...near.filter((o) => o !== t)].slice(0, n)
     for (const o of order) {
       if (!this.inPlay(o)) continue
-      f.c[0x113] = 1
+      f.c[F.attacksLeft] = 1
       this.engage(f, o)
       await this.attackF(f, o, false, null)
     }
@@ -838,7 +839,7 @@ export class Battle implements FxHost {
     if (t.r[0xf] < 3 && !fromBehind) t.r[9] = this.dirTo(t, a)
     a.r[9] = this.dirTo(a, t)
     a.target = t
-    if (a.c[0x113] <= 0 && a.c[0x114] <= 0) return
+    if (a.c[F.attacksLeft] <= 0 && a.c[F.attacksLeft + 1] <= 0) return
     const keep = this.current_
     this.current_ = a
     const made = await this.attackLoop(a, t, fromBehind, missile)
@@ -854,11 +855,11 @@ export class Battle implements FxHost {
       }
       this.recalc(a.c)
     }
-    if (a.c[0x113] <= 0 && a.c[0x114] <= 0) this.endTurnF(a)
+    if (a.c[F.attacksLeft] <= 0 && a.c[F.attacksLeft + 1] <= 0) this.endTurnF(a)
   }
 
   helpless(c: Uint8Array) { return this.e.effectsOf(c).some((e) => [31, 51, 52, 53].includes(e.type)) }
-  large(c: Uint8Array) { return c[0x6c] > 0x80 || (c[0x6c] & 7) > 1 }
+  large(c: Uint8Array) { return c[F.sizeFlags] > 0x80 || (c[F.sizeFlags] & 7) > 1 }
 
   /** Attack loop (FUN_3aae_1406); returns the attacks made with hand 1. */
   async attackLoop(a: Fighter, t: Fighter, fromBehind: boolean, missile: Item | null): Promise<number> {
@@ -883,22 +884,22 @@ export class Battle implements FxHost {
     if (this.helpless(tc)) {
       this.ui.sound(7)
       this.print(`${name(ac)} slays helpless ${name(tc)} with one cruel blow`)
-      this.inflict(t, tc[0x11b] + 5)
+      this.inflict(t, tc[F.hp] + 5)
       await removeType(this, ac, 25)
-      ac[0x113] = ac[0x114] = 0
+      ac[F.attacksLeft] = ac[F.attacksLeft + 1] = 0
       return 0
     }
     this.recalc(tc)
     const w = this.weaponOf(ac)
     const b = w ? this.e.items?.baseOf(w) : undefined
-    if (this.large(tc) && b) { ac[0x115] = b.large[0]; ac[0x117] = b.large[1]; ac[0x119] = (ac[0x119] + b.large[2] - b.small[2]) & 0xff }
+    if (this.large(tc) && b) { ac[F.dice] = b.large[0]; ac[F.sides] = b.large[1]; ac[F.bonus] = (ac[F.bonus] + b.large[2] - b.small[2]) & 0xff }
     await fire(this, tc, 11)
     const backstab = this.backstab(a, t)
     let acByte: number
     let kind = 0
-    if (backstab) { acByte = tc[0x112] - 2; kind = 2 }
-    else if (fromBehind || (t.r[0xf] > 1 && this.dirTo(a, t) === t.r[9] && t.r[0x12] > 4)) { acByte = tc[0x112]; kind = 1 }
-    else acByte = tc[0x111]
+    if (backstab) { acByte = tc[F.acRear] - 2; kind = 2 }
+    else if (fromBehind || (t.r[0xf] > 1 && this.dirTo(a, t) === t.r[9] && t.r[0x12] > 4)) { acByte = tc[F.acRear]; kind = 1 }
+    else acByte = tc[F.ac]
     if (b && b.range > 1) {
       const band = Math.floor((b.range - 1) / 3), d = this.dist(a, t)
       if (d > band) acByte += 2
@@ -906,15 +907,15 @@ export class Battle implements FxHost {
     }
     let hit = false
     for (let h = a.r[4] || 2; h >= 1; h--) {
-      while (ac[0x112 + h] > 0 && this.inPlay(t)) {
-        ac[0x112 + h]--
+      while (ac[F.attacksLeft - 1 + h] > 0 && this.inPlay(t)) {
+        ac[F.attacksLeft - 1 + h]--
         a.r[4] = h
         if (h === 1) made++
         if (this.helpless(tc) || await this.toHit(ac, tc, acByte)) {
           hit = true
           fx.hits[h]++
-          let dmg = this.e.roll(ac[0x114 + h], ac[0x116 + h]) + s8(ac[0x118 + h])
-          if (backstab) dmg *= Math.floor(ac[0x9c] / 4) + 2
+          let dmg = this.e.roll(ac[F.dice - 1 + h], ac[F.sides - 1 + h]) + s8(ac[F.bonus - 1 + h])
+          if (backstab) dmg *= Math.floor(ac[F.levels + 6] / 4) + 2
           fx.dmg = dmg & 0xff; fx.dmgType = 0; fx.spell = 0
           await fire(this, ac, 4)
           await fire(this, tc, 5)
@@ -947,24 +948,24 @@ export class Battle implements FxHost {
     const ac = a.c, tc = t.c
     const w = this.weaponOf(ac)
     const b = w ? this.e.items?.baseOf(w) : undefined
-    let acByte = this.backstab(a, t) ? tc[0x112] - 2
-      : t.r[0xf] > 1 && this.dirTo(a, t) === t.r[9] && t.r[0x12] > 4 ? tc[0x112] : tc[0x111]
+    let acByte = this.backstab(a, t) ? tc[F.acRear] - 2
+      : t.r[0xf] > 1 && this.dirTo(a, t) === t.r[9] && t.r[0x12] > 4 ? tc[F.acRear] : tc[F.ac]
     if (b && b.range > 1) {
       const band = Math.floor((b.range - 1) / 3), d = this.dist(a, t)
       if (d > band) acByte += 2
       if (d > 2 * band) acByte += 3
     }
-    const bonus = s8(this.e.read(ac[0x10e] ? 0x6e70 : 0x6e71))
+    const bonus = s8(this.e.read(ac[F.side] ? 0x6e70 : 0x6e71))
     let n = 0
-    for (let r = 2; r <= 20; r++) if (acByte <= (r === 20 ? 100 : r) + ac[0x110] + bonus) n++
+    for (let r = 2; r <= 20; r++) if (acByte <= (r === 20 ? 100 : r) + ac[F.thac0] + bonus) n++
     const chance = this.helpless(tc) ? 1 : n / 20
-    const [cnt, sides, plus] = this.large(tc) && b ? [b.large[0], b.large[1], s8(ac[0x119]) + b.large[2] - b.small[2]] : [ac[0x115], ac[0x117], s8(ac[0x119])]
+    const [cnt, sides, plus] = this.large(tc) && b ? [b.large[0], b.large[1], s8(ac[F.bonus]) + b.large[2] - b.small[2]] : [ac[F.dice], ac[F.sides], s8(ac[F.bonus])]
     return { chance, damage: `${cnt}d${sides}${plus ? (plus > 0 ? '+' : '') + plus : ''}` }
   }
 
   backstab(a: Fighter, t: Fighter): boolean {
     const c = a.c
-    if (c[0x9c] <= 0) return false
+    if (c[F.levels + 6] <= 0) return false
     const items = this.e.itemsOf(c), tb = this.e.items
     const armour = items.find((it) => it.ready && tb?.baseOf(it)?.slot === 2)
     if (armour && armour.type !== 50) return false
@@ -983,8 +984,8 @@ export class Battle implements FxHost {
     await fire(this, a, 10)
     await fire(this, t, 16)
     if (fx.roll < 0) return false
-    const bonus = s8(this.e.read(a[0x10e] ? 0x6e70 : 0x6e71))
-    return acByte <= fx.roll + a[0x110] + bonus
+    const bonus = s8(this.e.read(a[F.side] ? 0x6e70 : 0x6e71))
+    return acByte <= fx.roll + a[F.thac0] + bonus
   }
 
   /** Saving throw (FUN_5216_0d63). */
@@ -992,10 +993,10 @@ export class Battle implements FxHost {
     const r = this.e.roll(1, 20)
     if (r === 1) return false
     if (r === 20) return true
-    fx.save = r + s8(c[0x101]) + bonus
+    fx.save = r + s8(c[F.saveBonus]) + bonus
     fx.saveType = type
     void fire(this, c, 12)
-    return c[0x6d + type] <= fx.save
+    return c[F.saves + type] <= fx.save
   }
 
   /** Non-weapon damage (FUN_5216_1344). */
@@ -1011,7 +1012,7 @@ export class Battle implements FxHost {
       this.ui.effect?.(f, 'burst', 1, this.e.speed * 225)
     }
     if (f) this.inflict(f, d)
-    else c[0x11b] = Math.max(0, c[0x11b] - d)
+    else c[F.hp] = Math.max(0, c[F.hp] - d)
   }
   /** an effect's line without a pause, then the sparkle (FUN_10ba_1feb with "good") */
   announce(c: Uint8Array, msg: string) {
@@ -1027,20 +1028,20 @@ export class Battle implements FxHost {
   /** inflict (FUN_10ba_2228) and its consequences (FUN_3aae_02f9). */
   inflict(t: Fighter, dmg: number) {
     const c = t.c
-    const hp = c[0x11b]
+    const hp = c[F.hp]
     let left = hp - dmg, over = 0
     if (left < 0) { over = -left; left = 0 }
-    if (over > 9 || (left === 0 && c[0x10c] === 1)) c[0x10c] = 6
-    else if (over > 0) { c[0x10c] = 5; t.r[0xe] = over }
-    else if (left === 0) c[0x10c] = 4
+    if (over > 9 || (left === 0 && c[F.status] === 1)) c[F.status] = 6
+    else if (over > 0) { c[F.status] = 5; t.r[0xe] = over }
+    else if (left === 0) c[F.status] = 4
     if (dmg > 0) {
       t.r[1] = 0
       if (t.r[0]) { this.print(`${name(c)} lost a spell`); if (this.current_) forget(this.current_.c, t.r[0]); t.r[0] = 0 }
     }
-    if (c[0x10c] !== 0 && c[0x10c] !== 1) {
-      c[0x11b] = 0
-      c[0x10d] = 0
-      this.print(c[0x10c] === 4 ? `${name(c)} goes down` : c[0x10c] === 5 ? `${name(c)} goes down and is Dying` : `${name(c)} is killed`)
+    if (c[F.status] !== 0 && c[F.status] !== 1) {
+      c[F.hp] = 0
+      c[F.inPlay] = 0
+      this.print(c[F.status] === 4 ? `${name(c)} goes down` : c[F.status] === 5 ? `${name(c)} goes down and is Dying` : `${name(c)} is killed`)
       // FUN_5216_100a removes through FUN_5216_0026, so removal callbacks run (a grab frees its victim,
       // a charm ends); the callbacks' synchronous part runs here, the record goes at once
       const list = this.e.effectsOf(c)
@@ -1052,7 +1053,7 @@ export class Battle implements FxHost {
       }
       void fire(this, c, 13)
       this.downF(t)
-    } else c[0x11b] = left
+    } else c[F.hp] = left
   }
 
   /**
@@ -1092,8 +1093,8 @@ export class Battle implements FxHost {
       let toward = (this.dirTo(e, f) - e.r[9] + 8) % 8
       if (toward > 4) toward = 8 - toward
       if (!(s8(e.r[3]) > 0 || e.r[0xf] === 0 || toward <= 2)) continue
-      const hand = e.c[0x114] > 0 ? 2 : 1
-      if (e.c[0x112 + hand] <= 0) e.c[0x112 + hand] = 1
+      const hand = e.c[F.attacksLeft + 1] > 0 ? 2 : 1
+      if (e.c[F.attacksLeft - 1 + hand] <= 0) e.c[F.attacksLeft - 1 + hand] = 1
       const keep = e.target
       e.r[4] = hand
       await this.attackF(e, f, true, null)
@@ -1130,7 +1131,7 @@ export class Battle implements FxHost {
     }
     if (ok) {
       this.print(`${name(f.c)} Got Away`)
-      f.c[0x10c] = 3; f.c[0x10d] = 0
+      f.c[F.status] = 3; f.c[F.inPlay] = 0
       f.size = 0
     } else this.print('Escape is blocked')
     this.endTurnF(f)
@@ -1138,7 +1139,7 @@ export class Battle implements FxHost {
   }
 
   moveOf(f: Fighter) {
-    let m = f.c[0x11c] + (this.side(f) === 0 ? s8(this.e.read(0x6e72)) : 0)
+    let m = f.c[F.move] + (this.side(f) === 0 ? s8(this.e.read(0x6e72)) : 0)
     if (m < 1 || m > 96) m = 1
     if (this.e.effectsOf(f.c).some((x) => x.type === 0x27)) m *= 2
     if (this.e.effectsOf(f.c).some((x) => x.type === 0x2a)) m >>= 1
@@ -1151,7 +1152,7 @@ export class Battle implements FxHost {
     f.r[0x11] = 1
     let count = this.e.roll(1, 12), minimum = 6
     const r = this.e.roll(1, 20)
-    const L = f.c[0x96]
+    const L = f.c[F.levels]
     const col = L >= 1 && L <= 8 ? L - 1 : L <= 13 && L >= 9 ? 8 : 9
     const TABLE = [
       [10, 7, 4, 1, 1, 0, 0, -1, -1, -1], [13, 10, 7, 1, 1, 0, 0, 0, -1, -1], [16, 13, 10, 4, 1, 1, 0, 0, 0, -1],
@@ -1161,13 +1162,13 @@ export class Battle implements FxHost {
     ]
     let any = false
     while (count > 0) {
-      const t = this.enemiesWithin(f, 255).filter((e) => !e.r[0x10] && e.c[0x76] > 0).sort((a, b) => a.c[0x76] - b.c[0x76])[0]
+      const t = this.enemiesWithin(f, 255).filter((e) => !e.r[0x10] && e.c[F.undead] > 0).sort((a, b) => a.c[F.undead] - b.c[F.undead])[0]
       if (!t) break
-      const v = TABLE[Math.min(t.c[0x76], 10) - 1][col]
+      const v = TABLE[Math.min(t.c[F.undead], 10) - 1][col]
       if (r < Math.abs(v)) break
       any = true
       if (v >= 1) { this.announce(t.c, 'is turned'); t.r[0x10] = 1 }
-      else { this.print(`${name(t.c)} Is destroyed`); t.c[0x10c] = 8; t.c[0x10d] = 0; this.downF(t) }
+      else { this.print(`${name(t.c)} Is destroyed`); t.c[F.status] = 8; t.c[F.inPlay] = 0; this.downF(t) }
       if (minimum > 0) minimum--
       count--
       if (count === 0 && minimum > 0 && v < 0) count = 1
@@ -1185,7 +1186,7 @@ export class Battle implements FxHost {
     if (range === 0 && (s.target & 0xf) !== 0) range = 1
     const targets = await this.spellTargets(f, s, range)
     if (targets === null) {
-      if (!c[0x10f] && (await this.ui.confirm('Abort Spell?'))) { this.print('Spell Aborted'); if (!fromItem) forget(c, s.id) }
+      if (!c[F.quick] && (await this.ui.confirm('Abort Spell?'))) { this.print('Spell Aborted'); if (!fromItem) forget(c, s.id) }
       return
     }
     if (!fromItem) forget(c, s.id)
@@ -1211,13 +1212,13 @@ export class Battle implements FxHost {
     const mode = s.target & 0xf
     this.aimed = { x: f.x, y: f.y }
     if (mode === 0 || s.target === 240) return [f]
-    const ai = !!f.c[0x10f]
+    const ai = !!f.c[F.quick]
     const pickOne = async (allowEmpty: boolean, area?: (x: number, y: number) => { x: number; y: number }[]): Promise<AimEntry | null> => {
       if (ai) {
         if (!s.aiHostile) {
           if (s.id === 3) {
-            const near = this.fighters.filter((o) => this.inPlay(o) && this.side(o) === this.side(f) && this.dist(f, o) <= 1 && o.c[0x11b] < o.c[0x32])
-            near.sort((a, b) => a.c[0x11b] - b.c[0x11b])
+            const near = this.fighters.filter((o) => this.inPlay(o) && this.side(o) === this.side(f) && this.dist(f, o) <= 1 && o.c[F.hp] < o.c[F.maxHp])
+            near.sort((a, b) => a.c[F.hp] - b.c[F.hp])
             const p = near[0] ?? f
             return { f: p, x: p.x, y: p.y, cost: 0, ok: true }
           }
@@ -1279,14 +1280,14 @@ export class Battle implements FxHost {
       if (type) await addEffect(this, t.c, type, d, pw, flag, s.save, saved, false, SPELL_MSG[s.id] ?? '')
     }
     const saveOf = (t: Fighter, bonus = 0) => (s.save ? this.saveSync(t.c, s.saveType, bonus) : false)
-    const touch = async (t: Fighter) => s.range[0] !== 0xff || await this.toHit(c, t.c, t.c[0x111])
+    const touch = async (t: Fighter) => s.range[0] !== 0xff || await this.toHit(c, t.c, t.c[F.ac])
     if (await sharedSpell(this, this.e, c, s, L, dur, targets.map((t) => t.c))) { for (const t of targets) this.recalc(t.c); return }
     switch (s.id) {
       case 27: { // Snake Charm (190f): ignores targeting; snakes (type 0x0E) while the caster's HP lasts
-        let pool = c[0x11b]
+        let pool = c[F.hp]
         for (const t of this.fighters) {
-          if (t.c[0x9f] !== 0x0e || t.c[0x11b] > pool) continue
-          pool -= t.c[0x11b]
+          if (t.c[F.monsterType] !== 0x0e || t.c[F.hp] > pool) continue
+          pool -= t.c[F.hp]
           await addEffect(this, t.c, 0x33, 0, L, 0, 0, false, false, 'is charmed')
         }
         break
@@ -1320,9 +1321,9 @@ export class Battle implements FxHost {
       }
       case 21: { // Sleep
         let pool = this.e.roll(4, 4)
-        const costOf = (t: Uint8Array) => { const hd = s8(t[0x73]); return hd <= 1 ? (hd < 0 ? 20 : 1) : hd === 2 ? 2 : hd === 3 ? 4 : hd === 4 ? 6 : hd === 5 ? (t[0x2e] === 0 ? 10 : 20) : 20 }
+        const costOf = (t: Uint8Array) => { const hd = s8(t[F.hitDice]); return hd <= 1 ? (hd < 0 ? 20 : 1) : hd === 2 ? 2 : hd === 3 ? 4 : hd === 4 ? 6 : hd === 5 ? (t[F.race] === 0 ? 10 : 20) : 20 }
         for (const t of targets.sort((a, b) => this.dist(f, a) - this.dist(f, b))) {
-          if (t.c[0x10c] === 1 || this.e.effectsOf(t.c).some((x) => x.type === 0x35)) continue
+          if (t.c[F.status] === 1 || this.e.effectsOf(t.c).some((x) => x.type === 0x35)) continue
           const k = costOf(t.c)
           if (k > pool) continue
           pool -= k
@@ -1336,7 +1337,7 @@ export class Battle implements FxHost {
         for (const t of [...targets].reverse()) {
           // 4e53_1658: sound 2 and a bolt to each target before its save, except the last-listed one (I: a bug)
           if (t !== targets[targets.length - 1]) this.ui.flight?.({ x: f.x, y: f.y }, { x: t.x, y: t.y }, { frames: cycle(5), delay: 30, sounds: [2, 0] })
-          const saved = t.c[0x9f] > 1 || t.c[0x6c] > 1 || this.saveSync(t.c, s.saveType, bonus)
+          const saved = t.c[F.monsterType] > 1 || t.c[F.sizeFlags] > 1 || this.saveSync(t.c, s.saveType, bonus)
           await addEffect(this, t.c, 0x34, dur, L, 0, 1, saved, false, 'is held')
         }
         break
@@ -1344,7 +1345,7 @@ export class Battle implements FxHost {
       case 10: { // Charm Person
         const t = targets[0]
         if (!t) break
-        if (t.c[0x9f] > 1 || t.c[0x6c] > 1) { this.print(`${name(t.c)} is unaffected`); break }
+        if (t.c[F.monsterType] > 1 || t.c[F.sizeFlags] > 1) { this.print(`${name(t.c)} is unaffected`); break }
         await addEffect(this, t.c, 0x0b, dur, (L + this.side(f) * 128) & 0xff, 1, 1, saveOf(t), true, 'is charmed')
         break
       }
@@ -1454,14 +1455,14 @@ export class Battle implements FxHost {
   /** The computer's turn (FUN_3334_000f), simplified where marked. */
   async ai(f: Fighter) {
     const c = f.c
-    if (!c[0x10d]) { this.endTurnF(f); return }
+    if (!c[F.inPlay]) { this.endTurnF(f); return }
     let p = f.r[0x15]
     if (p === 0 || p > 4 || this.e.roll(1, 4) === 1) p = this.e.roll(1, 8) === 8 ? 4 + this.e.roll(1, 2) : this.e.roll(1, 4)
     f.r[0x15] = p
     if (await this.morale(f)) return
     if (f.r[0x14] && !f.r[0x10]) this.print(`${name(c)} flees in panic`)
     if (f.r[0]) { await this.castSpell(f, this.e.spells!.get(f.r[0])!, false); this.endTurnF(f); return }
-    if (c[0x96] > 0 && !f.r[0x11] && this.enemiesWithin(f, 255).some((e) => e.c[0x76] > 0 && !e.r[0x10])) { await this.turnUndead(f); return }
+    if (c[F.levels] > 0 && !f.r[0x11] && this.enemiesWithin(f, 255).some((e) => e.c[F.undead] > 0 && !e.r[0x10])) { await this.turnUndead(f); return }
     if (await this.aiCast(f)) return
     this.chooseWeapon(f)
     for (let tries = 0; tries < 20 && s8(f.r[3]) > 0 && this.inPlay(f); tries++) {
@@ -1521,7 +1522,7 @@ export class Battle implements FxHost {
   /** One AI step towards the target, or away when fleeing (FUN_3334_07f2). */
   async aiStep(f: Fighter, fleeing: boolean): Promise<boolean> {
     if (f.r[6] < 2 || s8(f.r[3]) <= 0) return false
-    if (f.c[0x2f] === 5 && !fleeing) return false
+    if (f.c[F.cls] === 5 && !fleeing) return false
     let base: number
     if (fleeing) {
       const face = [7, 2, 3, 6][this.e.facing]
@@ -1549,22 +1550,22 @@ export class Battle implements FxHost {
     const c = f.c
     f.r[0x14] = 0
     if (f.r[0x10]) { f.r[0x14] = 1; this.print(`${name(c)} is forced to flee`); return false }
-    if (c[0x84] < 0x80) return false
-    let m = (c[0x84] & 0x7f) * 2
+    if (c[F.morale] < 0x80) return false
+    let m = (c[F.morale] & 0x7f) * 2
     if (m > 102) m = 0
     fx.morale = m
     await fire(this, c, 17)
     m = fx.morale
-    const lost = 100 - Math.floor((100 * c[0x11b]) / Math.max(1, c[0x32]))
+    const lost = 100 - Math.floor((100 * c[F.hp]) / Math.max(1, c[F.maxHp]))
     if (m !== 0 && m >= lost) return false
     fx.morale = this.enemyPct
     await fire(this, c, 17)
     if (fx.morale !== 0 && fx.morale >= 100 - this.e.read(0x6dc6) && this.side(f) !== 0) return false
     const fast = Math.max(0, ...this.enemies(f).map((e) => this.moveOf(e) >> 1))
     if (fast <= this.moveOf(f) >> 1) { f.r[0x14] = 1; return false }
-    if (c[0x11] > 5) {
+    if (c[F.stat[1]] > 5) {
       this.print(`${name(c)} Surrenders`)
-      c[0x10c] = 4; c[0x11b] = 0; c[0x10d] = 0
+      c[F.status] = 4; c[F.hp] = 0; c[F.inPlay] = 0
       this.downF(f)
       return true
     }
@@ -1577,9 +1578,9 @@ export class Battle implements FxHost {
     // FUN_3334_0545: R[1], a ready spell, an NPC or monster or "Magic On" (DS:6E30), and enemies still in
     // play; the area's no-magic flag 0x49E5 is not tested here (only the player's Cast and AI item use check it)
     if (!st || !f.r[1]) return false
-    if (c[0x84] <= 0x7f && !this.magicOn) return false
+    if (c[F.morale] <= 0x7f && !this.magicOn) return false
     if (!this.enemies(f).length) return false
-    const mem = Array.from({ length: 21 }, (_, k) => c[0x17 + k]).filter((v) => v > 0 && v < 0x80)
+    const mem = Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
     if (!mem.length) return false
     const passes = this.e.roll(1, 7)
     for (let pass = 0; pass < passes; pass++) {
@@ -1606,11 +1607,11 @@ export class Battle implements FxHost {
     let v = (b.small[0] * b.small[1]) & 0xff
     if (it.plus > 0) v = (v + 8 * it.plus) & 0xff
     if (b.small[2] > 0) v = (v + 2 * b.small[2]) & 0xff
-    if (it.type === 0x55 && f.target && s8(f.target.c[0x76]) > 0) v = 8 // holy water against undead
+    if (it.type === 0x55 && f.target && s8(f.target.c[F.undead]) > 0) v = 8 // holy water against undead
     if (b.flags & 8) v = (v + 2 * (b.rate - 1)) & 0xff
     if (b.hands <= 1) v = (v + 3) & 0xff
     if (otherHands + b.hands > 3) v = 0
-    if (it.props[2] === 0x84 && (it.props[1] & 0x0f) !== f.c[0xa0]) v = 0 // alignment-locked
+    if (it.props[2] === 0x84 && (it.props[1] & 0x0f) !== f.c[F.alignment]) v = 0 // alignment-locked
     if (it.props[1] === 0x53) v = 0 // Javelin of Lightning
     if (it.cursed) v = 0
     return v
@@ -1630,15 +1631,15 @@ export class Battle implements FxHost {
     const weapon = () => items.find((it) => it.ready && base(it)?.slot === 0) ?? null
     const shield = () => items.find((it) => it.ready && base(it)?.slot === 1) ?? null
     const cur = weapon(), curShield = shield()
-    const otherHands = c[0x100] - (cur ? base(cur)!.hands : 0) - (curShield ? base(curShield)!.hands : 0)
+    const otherHands = c[F.hands] - (cur ? base(cur)!.hands : 0) - (curShield ? base(curShield)!.hands : 0)
     let ranged: Item | null = null, rangedScore = 1
     let melee: Item | null = null
-    let meleeScore = (c[0xa3] * c[0xa5]) & 0xff
-    if (s8(c[0xa7]) > 0) meleeScore = (meleeScore + 2 * s8(c[0xa7])) & 0xff
+    let meleeScore = (c[F.natDice] * c[F.natSides]) & 0xff
+    if (s8(c[F.natBonus]) > 0) meleeScore = (meleeScore + 2 * s8(c[F.natBonus])) & 0xff
     let bestShield: Item | null = null, shieldScore = 0
     for (const it of items) {
       const b = base(it)
-      if (!b || !(b.classes & c[0xb0])) continue
+      if (!b || !(b.classes & c[F.itemMask])) continue
       if (b.slot === 0) {
         const v = this.weaponScore(f, it, otherHands)
         if ((b.flags & 0x18) && v > rangedScore) { ranged = it; rangedScore = v }
@@ -1670,10 +1671,10 @@ export class Battle implements FxHost {
     this.recalc(c)
     const sh = shield()
     const swapShield = !(sh === bestShield || (sh && sh.cursed))
-    if (c[0x100] > 2) {
+    if (c[F.hands] > 2) {
       if (sh && sh.cursed) { if (pick) pick.ready = false } else if (sh) sh.ready = false
       changed = true
-    } else if (c[0x100] < 2 && swapShield) {
+    } else if (c[F.hands] < 2 && swapShield) {
       if (sh) sh.ready = false
       this.recalc(c)
       if (bestShield) bestShield.ready = true
@@ -1694,8 +1695,8 @@ export class Battle implements FxHost {
     const back: string[] = []
     for (const f of this.fighters) {
       const c = f.c
-      if (f.monster || c[0x84] >= 0x80 || c[0x10c] === 1 || !c[0x10f]) continue
-      c[0x10f] = 0
+      if (f.monster || c[F.morale] >= 0x80 || c[F.status] === 1 || !c[F.quick]) continue
+      c[F.quick] = 0
       back.push(name(c))
     }
     return back
@@ -1704,18 +1705,18 @@ export class Battle implements FxHost {
   /** Debug (IMP-025): every enemy still standing falls at once; the aftermath runs as for a won battle. */
   debugWin() {
     for (const f of this.fighters) {
-      if (this.side(f) !== 1 || f.c[0x10c] === 3) continue
-      f.c[0x10c] = 6; f.c[0x10d] = 0; f.c[0x11b] = 0; f.size = 0
+      if (this.side(f) !== 1 || f.c[F.status] === 3) continue
+      f.c[F.status] = 6; f.c[F.inPlay] = 0; f.c[F.hp] = 0; f.size = 0
     }
     this.ended = true
   }
 
   outcome(): Outcome {
     const party = this.fighters.filter((f) => !f.monster)
-    if (party.some((f) => [0, 1].includes(f.c[0x10c]))) return 'won'
-    if (party.some((f) => f.c[0x10c] === 3 && f.c[0x84] < 0x80)) return 'fled'
+    if (party.some((f) => [0, 1].includes(f.c[F.status]))) return 'won'
+    if (party.some((f) => f.c[F.status] === 3 && f.c[F.morale] < 0x80)) return 'fled'
     // FUN_2e08_04c9: with ECL 0x6DE6 = 1 any non-NPC on the party's side keeps the party from defeat
-    if (this.e.read(0x6de6) === 1 && party.some((f) => f.c[0x10e] === 0 && f.c[0x84] < 0x80)) return 'spared'
+    if (this.e.read(0x6de6) === 1 && party.some((f) => f.c[F.side] === 0 && f.c[F.morale] < 0x80)) return 'spared'
     return 'destroyed'
   }
 }
@@ -1732,14 +1733,14 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
   let share = 0
   /** Experience (FUN_2e08_0000) with its loot, and the award (FUN_2e08_0355). */
   const experience = (noXP: number) => {
-    if (e.duel && e.read(0x6de6)) return ((e.duelist ?? e.cur)[0x73] * 100) & 0xffff // duel: no loot, no division
+    if (e.duel && e.read(0x6de6)) return ((e.duelist ?? e.cur)[F.hitDice] * 100) & 0xffff // duel: no loot, no division
     let total = 0, taken = 0
     const loot: Item[] = []
     for (const f of b.fighters) {
       const c = f.c
-      if (c[0x10e] !== 1 || c[0x10c] === 3) continue
-      for (let i = 0; i < 7; i++) e.money[i] += u16(c, 0x88 + 2 * i)
-      total += u16(c, 0xb8) + s8short(c[0xb1] * c[0xba])
+      if (c[F.side] !== 1 || c[F.status] === 3) continue
+      for (let i = 0; i < 7; i++) e.money[i] += u16(c, F.money + 2 * i)
+      total += u16(c, F.xpBase) + s8short(c[F.hpRolled] * c[F.xpPerHp])
       if (e.read(0x6de3) !== 1) {
         for (const it of e.itemsOf(c)) {
           if (it.value > 0 || (taken < 8 && e.roll(1, 10) <= 3)) { const copy = it.copy(); copy.ready = false; loot.unshift(copy); taken++ }
@@ -1756,15 +1757,15 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
   const award = (share: number) => {
     for (const f of party) {
       const c = f.c
-      if (!c[0x10d] || c[0x10c] === 1) continue
-      const prime: Record<number, number> = { 0: 0x12, 2: 0x10, 5: 0x11, 6: 0x13 }
+      if (!c[F.inPlay] || c[F.status] === 1) continue
+      const prime: Record<number, number> = { 0: F.stat[2], 2: F.stat[0], 5: F.stat[1], 6: F.stat[3] }
       let add = share
-      if (c[0x2f] in prime) { if (c[prime[c[0x2f]]] > 15) add += Math.floor(share / 10) }
-      else if ([8, 10, 11, 12, 13, 14, 16].includes(c[0x2f])) add = Math.floor(share / 2)
-      else if ([9, 15].includes(c[0x2f])) add = Math.floor(share / 3)
-      const xp = (c[0xac] | (c[0xad] << 8) | (c[0xae] << 16) | (c[0xaf] << 24)) >>> 0
+      if (c[F.cls] in prime) { if (c[prime[c[F.cls]]] > 15) add += Math.floor(share / 10) }
+      else if ([8, 10, 11, 12, 13, 14, 16].includes(c[F.cls])) add = Math.floor(share / 2)
+      else if ([9, 15].includes(c[F.cls])) add = Math.floor(share / 3)
+      const xp = (c[F.xp] | (c[F.xp + 1] << 8) | (c[F.xp + 2] << 16) | (c[F.xp + 3] << 24)) >>> 0
       const v = xp + add
-      c[0xac] = v & 0xff; c[0xad] = (v >> 8) & 0xff; c[0xae] = (v >> 16) & 0xff; c[0xaf] = (v >>> 24) & 0xff
+      c[F.xp] = v & 0xff; c[F.xp + 1] = (v >> 8) & 0xff; c[F.xp + 2] = (v >> 16) & 0xff; c[F.xp + 3] = (v >>> 24) & 0xff
     }
   }
   if (e.duel) {
@@ -1773,11 +1774,11 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
     let won = false
     for (const f of b.fighters) {
       const c = f.c
-      if (c[0x10d] === 1 && c[0x10c] === 0 && c[0x10e] !== 1) { won = true; share = experience(0); award(share) }
+      if (c[F.inPlay] === 1 && c[F.status] === 0 && c[F.side] !== 1) { won = true; share = experience(0); award(share) }
     }
     for (const f of party) {
-      if (f.c[0x10c] === 0 || f.c[0x10c] === 1) f.c[0x10d] = 1
-      if (f.c[0x10c] === 5) f.c[0x10c] = 4
+      if (f.c[F.status] === 0 || f.c[F.status] === 1) f.c[F.inPlay] = 1
+      if (f.c[F.status] === 5) f.c[F.status] = 4
     }
     // FUN_2e08_0916 for a duel
     if (won) {
@@ -1789,17 +1790,17 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
     // not defeated, nobody standing: the same status changes as a win, but no experience or loot
     for (const f of party) {
       const c = f.c
-      if (c[0x10c] === 5) c[0x10c] = 4
-      else if (c[0x10c] === 4 && c[0x11b] > 0) { c[0x10c] = 0; c[0x10d] = 1 }
+      if (c[F.status] === 5) c[F.status] = 4
+      else if (c[F.status] === 4 && c[F.hp] > 0) { c[F.status] = 0; c[F.inPlay] = 1 }
     }
   } else if (outcome === 'won') {
     let noXP = 0
     for (const f of party) {
       const c = f.c
-      if (c[0x10c] === 3) { c[0x10c] = 0; c[0x10d] = 1 }
-      else if (c[0x10c] === 5) c[0x10c] = 4
-      else if (c[0x10c] === 4 && c[0x11b] > 0) { c[0x10c] = 0; c[0x10d] = 1 }
-      if (c[0x10d] === 0 || c[0x10c] === 1) noXP++
+      if (c[F.status] === 3) { c[F.status] = 0; c[F.inPlay] = 1 }
+      else if (c[F.status] === 5) c[F.status] = 4
+      else if (c[F.status] === 4 && c[F.hp] > 0) { c[F.status] = 0; c[F.inPlay] = 1 }
+      if (c[F.inPlay] === 0 || c[F.status] === 1) noXP++
     }
     share = experience(noXP)
     award(share)
@@ -1809,7 +1810,7 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
   } else if (outcome === 'fled') {
     e.write(0x6dc7, 0x81)
     for (const f of party) {
-      if (f.c[0x10c] === 3) { f.c[0x10c] = 0; f.c[0x10d] = 1 }
+      if (f.c[F.status] === 3) { f.c[F.status] = 0; f.c[F.inPlay] = 1 }
       else { const i = e.nodes.indexOf(f.c); if (i >= 0) e.nodes.splice(i, 1); e.inventory.delete(f.c) }
     }
     msgs.push('The party has fled.', 'Each character receives 0 experience points.')
@@ -1824,8 +1825,8 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
   // cleanup: monsters and side-1 entries leave the list; 0x6DC8 counts those out of play
   let defeated = 0
   for (const f of b.fighters) {
-    if (!f.monster && f.c[0x10e] !== 1) continue
-    if (!f.c[0x10d]) defeated++
+    if (!f.monster && f.c[F.side] !== 1) continue
+    if (!f.c[F.inPlay]) defeated++
     const i = e.nodes.indexOf(f.c)
     if (i >= 0) e.nodes.splice(i, 1)
     e.inventory.delete(f.c)
@@ -1836,8 +1837,8 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
   // fled, or gone over to the other side, are no longer counted; FUN_417f_3291 lowers it per member)
   if (!e.quit) e.write(0x6e3e, e.nodes.length)
   // NPC shares: an Okay NPC's cut of the money disappears
-  const npcs = e.party().filter((c) => c[0x84] >= 0x80 && c[0x10c] === 0)
-  const npcShares = npcs.reduce((a, c) => a + (c[0x85] & 7), 0)
+  const npcs = e.party().filter((c) => c[F.morale] >= 0x80 && c[F.status] === 0)
+  const npcShares = npcs.reduce((a, c) => a + (c[F.npcShare] & 7), 0)
   if (npcShares > 0) {
     const totalShares = npcShares + e.party().length - npcs.length
     for (let i = 0; i < 7; i++) {
@@ -1845,7 +1846,7 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
       const per = Math.floor(e.money[i] / totalShares) & 0xff
       e.money[i] = Math.max(0, e.money[i] - per * npcShares)
     }
-    for (const c of npcs) if (c[0x85]) msgs.push(`${name(c)} takes and hides his share.`)
+    for (const c of npcs) if (c[F.npcShare]) msgs.push(`${name(c)} takes and hides his share.`)
   }
   for (const a of [0x6e70, 0x6e71, 0x6e72, 0x6de3, 0x6de6]) e.write(a, 0)
   e.monstersCleared()

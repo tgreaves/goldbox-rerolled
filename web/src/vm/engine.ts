@@ -13,7 +13,7 @@ import { SpellTables } from '../data/spells'
 import { unexepack } from '../data/exepack'
 import { randomTreasure } from '../rules/randitem'
 import { advanceClock, HOUR, MINUTE } from '../rules/camp'
-import { CHAR_SIZE } from '../data/character'
+import { F } from '../games/fields'
 import { recalc } from '../rules/equip'
 
 export const A0 = 0x4900
@@ -343,25 +343,25 @@ export class Engine {
     const c = this.cur
     const u16 = (o: number) => c[o] | (c[o + 1] << 8)
     const s8 = (o: number) => ((c[o] << 24) >> 24) & 0xffff
-    if (k === 0x18) return c[0x14]
-    if (k === 0x9b) return c[0x6e]
-    if (k === 0xa0) return s8(0x73)
+    if (k === 0x18) return c[F.stat[4]]
+    if (k === 0x9b) return c[F.saves + 1]
+    if (k === 0xa0) return s8(F.hitDice)
     if (k >= 0xa5 && k <= 0xac) return c[0x76 + k - 0xa4]
-    if (k === 0xb8) return c[0x84]
+    if (k === 0xb8) return c[F.morale]
     if ([0xbb, 0xbd, 0xbf, 0xc1, 0xc3].includes(k)) return u16(0x88 + k - 0xbb)
-    if (k === 0xd8) return s8(0xa0)
-    if (k === 0xf7) return u16(0xb8)
-    if (k === 0xf9) return c[0xba]
-    if (k === 0x100) return c[0x10d] === 0 ? 0x80 : 1
+    if (k === 0xd8) return s8(F.alignment)
+    if (k === 0xf7) return u16(F.xpBase)
+    if (k === 0xf9) return c[F.xpPerHp]
+    if (k === 0x100) return c[F.inPlay] === 0 ? 0x80 : 1
     if (k === 0x10c) {
-      if (c[0x10e] === 0 && c[0x10f] !== 0) return 0x80
-      return c[0x10e] === 1 ? 0x81 : 0
+      if (c[F.side] === 0 && c[F.quick] !== 0) return 0x80
+      return c[F.side] === 1 ? 0x81 : 0
     }
     if (k === 0x10d) return 0
-    if (k === 0x11b) return c[0x11c]
+    if (k === 0x11b) return c[F.move]
     if (k === 0x2b1 || k === 0x2b4) return Math.max(0, this.nodes.indexOf(c))
     if (k === 0x2cf) {
-      const cha = c[0x15]
+      const cha = c[F.stat[5]]
       if (cha >= 8 && cha <= 12) return 25
       if (cha >= 18 && cha <= 25) return 60
       return ({ 3: 0, 4: 5, 5: 10, 6: 15, 7: 20, 13: 30, 14: 35, 15: 40, 16: 50, 17: 55 } as Record<number, number>)[cha] ?? 0
@@ -374,21 +374,21 @@ export class Engine {
   private charWrite(k: number, v: number) {
     const c = this.cur
     if (k >= 0x20 && k <= 0x70) c[0x17 + k - 0x20] = v & 0xff
-    else if (k === 0xb8) c[0x84] = (v > 0xb2 ? v - 0x32 : v) & 0xff
+    else if (k === 0xb8) c[F.morale] = (v > 0xb2 ? v - 0x32 : v) & 0xff
     else if ([0xbb, 0xbd, 0xbf, 0xc1, 0xc3].includes(k)) {
       c[0x88 + k - 0xbb] = v & 0xff
       c[0x89 + k - 0xbb] = v >> 8
-    } else if (k === 0xf7) { c[0xb8] = v & 0xff; c[0xb9] = v >> 8 }
-    else if (k === 0xf9) c[0xba] = v & 0xff
+    } else if (k === 0xf7) { c[F.xpBase] = v & 0xff; c[F.xpBase + 1] = v >> 8 }
+    else if (k === 0xf9) c[F.xpPerHp] = v & 0xff
     else if (k === 0x100) {
       if (v > 0x7f) {
-        c[0x10d] = 0
-        if (v === 0x87) c[0x10c] = 7
+        c[F.inPlay] = 0
+        if (v === 0x87) c[F.status] = 7
       }
     } else if (k === 0x10c) {
-      if (v === 0) { c[0x10e] = 0; c[0x10f] = 0 }
-      else if (v === 0x80) { c[0x10e] = 0; c[0x10f] = 1 }
-      else if (v === 0x81) { c[0x10e] = 1; c[0x10f] = 1 }
+      if (v === 0) { c[F.side] = 0; c[F.quick] = 0 }
+      else if (v === 0x80) { c[F.side] = 0; c[F.quick] = 1 }
+      else if (v === 0x81) { c[F.side] = 1; c[F.quick] = 1 }
     } else if (k === 0x312) this.setBlock(v)
     else if ((k === 0x322 || k === 0x324 || k === 0x326) && v > 0x80) {
       this.walls.load((k - 0x320) / 2, v & 0x7f)
@@ -397,7 +397,7 @@ export class Engine {
   }
 
   private readString(a: number): string {
-    if (a === B0) return String.fromCharCode(...this.cur.subarray(1, 1 + this.cur[0]))
+    if (a === B0) return String.fromCharCode(...this.cur.subarray(F.name + 1, F.name + 1 + this.cur[F.name]))
     const valid = (a >= A0 && a < 0x4d00) || (a >= B0 && a < 0x6f00) || (a >= C0 && a < CODE) || (a >= CODE && a < CODE_END)
     if (!valid) return ''
     let s = ''
@@ -412,8 +412,8 @@ export class Engine {
   private storeString(a: number, s: string) {
     if (a === B0) {
       const n = s.slice(0, 15)
-      this.cur[0] = n.length
-      for (let i = 0; i < n.length; i++) this.cur[1 + i] = n.charCodeAt(i)
+      this.cur[F.name] = n.length
+      for (let i = 0; i < n.length; i++) this.cur[F.name + 1 + i] = n.charCodeAt(i)
       return
     }
     for (const ch of s) this.write(a++, ch.charCodeAt(0))
@@ -606,8 +606,8 @@ export class Engine {
         this.readops(1)
         let t = 0
         for (const c of this.nodes) {
-          t = (t + Math.floor((c[0x11b] + 5 * Math.max(c[0x111] - 60, 0) + 5 * Math.max(c[0x110] - 39, 0)
-            + 8 * c[0x9b] + 4 * c[0x96]) / 10)) & 0xff
+          t = (t + Math.floor((c[F.hp] + 5 * Math.max(c[F.ac] - 60, 0) + 5 * Math.max(c[F.thac0] - 39, 0)
+            + 8 * c[F.levels + 5] + 4 * c[F.levels]) / 10)) & 0xff
         }
         this.write(this.addr(1), t)
         break
@@ -620,7 +620,7 @@ export class Engine {
         // selector 0: does anyone have effect e (FUN_10ba_2199)? Used with 0x13 Find Traps
         if (sel === 0) { const e = this.val(2) & 0xff; vals = [0, 0, 0, +this.nodes.some((c) => this.effectsOf(c).some((x) => x.type === e))] }
         else if (sel === 0x6ba7 || sel === 0x6c1b) {
-          const off = sel === 0x6ba7 ? 0x79 : 0x11c
+          const off = sel === 0x6ba7 ? F.thief + 2 : F.move
           const xs = this.nodes.map((c) => c[off])
           vals = [Math.min(...xs), Math.max(...xs), Math.floor(xs.reduce((a, b) => a + b, 0) / xs.length), 0]
         } else break
@@ -649,7 +649,7 @@ export class Engine {
       }
       case 0x22: {
         this.readops(2)
-        this.write(this.addr(1), +this.nodes.some((c) => c[0x2f] === 4 || c[0x2f] === 10))
+        this.write(this.addr(1), +this.nodes.some((c) => c[F.cls] === 4 || c[F.cls] === 10))
         this.write(this.addr(2), 0)
         break
       }
@@ -693,7 +693,7 @@ export class Engine {
         const p0 = this.val(2) & 0xff
         for (const c of (this.val(1) & 0xff) === 0 ? [this.cur] : this.nodes) {
           for (let j = 0; j < 7; j++) {
-            const o = 0x88 + 2 * j
+            const o = F.money + 2 * j
             const v = Math.floor(((c[o] | (c[o + 1] << 8)) * (100 - p0)) / 100)
             c[o] = v & 0xff; c[o + 1] = v >> 8
           }
@@ -759,7 +759,7 @@ export class Engine {
       case 0x39: {
         this.readops(1)
         const names = this.nodes.slice(0, this.B[PARTY_SIZE - B0] || this.nodes.length)
-          .map((c) => String.fromCharCode(...c.subarray(1, 1 + c[0])))
+          .map((c) => String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name])))
         this.cur = this.nodes[await this.io.menu(names, { prompt: this.text(1), vertical: true })]
         break
       }
@@ -849,7 +849,7 @@ export class Engine {
     const spc = this.files.record(`MON${this.block}SPC`, id)
     for (let i = 0; i < count && this.monsters < 63; i++) {
       const m = this.monsterRecord(raw)
-      m[0xbf] = this.iconSlot
+      m[F.iconSlot] = this.iconSlot
       this.nodes.push(m)
       this.inventory.set(m, parseItems(items))
       this.effects.set(m, parseEffects(spc))
@@ -862,15 +862,15 @@ export class Engine {
 
   /** A monster record as the loader leaves it (FUN_45c5_0ec4): icon size by race, random icon colours. */
   private monsterRecord(raw: Uint8Array) {
-    const m = new Uint8Array(CHAR_SIZE)
-    m.set(raw.subarray(0, CHAR_SIZE))
-    const race = m[0x2e]
-    if ([1, 3, 5].includes(race)) m[0xc0] = 1
-    else if ([2, 4, 6, 7].includes(race)) m[0xc0] = 2
+    const m = new Uint8Array(F.size)
+    m.set(raw.subarray(0, F.size))
+    const race = m[F.race]
+    if ([1, 3, 5].includes(race)) m[F.iconSize] = 1
+    else if ([2, 4, 6, 7].includes(race)) m[F.iconSize] = 2
     const colour = () => { const d = this.roll(1, 6); return ((d + 8) << 4) + d }
-    for (const k of [1, 2, 3]) m[0xc0 + k] = colour()
-    m[0xc4] = 0xc4
-    for (const k of [5, 6]) m[0xc0 + k] = colour()
+    for (const k of [1, 2, 3]) m[F.iconColours + k - 1] = colour()
+    m[F.iconColours + 3] = 0xc4
+    for (const k of [5, 6]) m[F.iconColours + k - 1] = colour()
     return m
   }
 
@@ -886,8 +886,8 @@ export class Engine {
   private async lockedDoor(kind: number): Promise<boolean> {
     const list = this.nodes
     const s8 = (v: number) => (v << 24) >> 24
-    const hasClass = (k: number) => list.some((c) => s8(c[0x96 + k]) > 0)
-    const knockCaster = () => list.find((c) => Array.from({ length: 21 }, (_, k) => c[0x17 + k]).includes(0x1f))
+    const hasClass = (k: number) => list.some((c) => s8(c[F.levels + k]) > 0)
+    const knockCaster = () => list.find((c) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).includes(0x1f))
     const opts: [string, string][] = []
     if (this.doorTries.bash) opts.push(['BASH', 'b'])
     if (this.doorTries.pick && hasClass(6)) opts.push(['PICK', 'p'])
@@ -899,12 +899,12 @@ export class Engine {
     if (k === 'b') ok = this.bashDoor(kind)
     else if (k === 'p') {
       // FUN_3e76_04df: each member rolls d100 against Open Locks (char[0x78]) while conscious; one try per door
-      if (kind === 2) ok = list.some((c) => c[0x10c] === 0 && this.roll(1, 100) <= c[0x78])
+      if (kind === 2) ok = list.some((c) => c[F.status] === 0 && this.roll(1, 100) <= c[F.thief + 1])
       this.doorTries.pick = false
     } else if (k === 'k') {
       // FUN_3e76_0648: a member with Knock memorised casts it; the door is passed, not unlocked
       const c = knockCaster()
-      if (c) { const at = Array.from({ length: 21 }, (_, j) => c[0x17 + j]).indexOf(0x1f); c[0x17 + at] = 0; ok = true }
+      if (c) { const at = Array.from({ length: F.memorisedCount }, (_, j) => c[F.memorised + j]).indexOf(0x1f); c[F.memorised + at] = 0; ok = true }
     }
     if (ok && k !== 'k' && this.geo) {
       const [dx, dy] = STEP[this.facing]
@@ -923,7 +923,7 @@ export class Engine {
    */
   private bashDoor(kind: number): boolean {
     for (const c of this.nodes) {
-      const str = c[0x10], pct = c[0x16]
+      const str = c[F.stat[0]], pct = c[F.strPct]
       const d6 = () => this.roll(1, 6)
       let ok = false
       if (kind === 3) {
@@ -959,16 +959,16 @@ export class Engine {
       const raw = this.files.record(`MON${this.block}CHA`, id)
       if (!raw) { this.io.print('Unable to load monster', false); return }
       const c = this.monsterRecord(raw)
-      c[0xab] = this.rand(256)
-      const classes = [0, 1, 2, 3, 4, 5, 6].filter((k) => ((c[0x96 + k] << 24) >> 24) > 0)
+      c[F.id] = this.rand(256)
+      const classes = [0, 1, 2, 3, 4, 5, 6].filter((k) => ((c[F.levels + k] << 24) >> 24) > 0)
       const cls = classes.length ? classes[this.roll(1, classes.length) - 1] : 2
       const img = this.startImage
       if (img) {
         const tb = (o: number) => img[0xc7c0 + o]
-        const g = c[0x9e]
+        const g = c[F.gender]
         const body = cls === 0 ? 0x8d7 : cls === 5 ? 0x8eb : cls === 6 ? 0x8f5 : 0x8e1
-        c[0xbc] = tb(body + g * 5 + this.roll(1, 5))
-        c[0xbb] = tb(0x8c7 + g * 8 + this.roll(1, 8))
+        c[F.body] = tb(body + g * 5 + this.roll(1, 5))
+        c[F.head] = tb(0x8c7 + g * 8 + this.roll(1, 8))
       }
       const n = party.length
       this.nodes.splice(n, 0, c)
@@ -978,8 +978,8 @@ export class Engine {
       this.cur = c
     }
     // the handler then writes to whoever is current (unchanged when the party was full)
-    this.cur[0x84] = (morale >> 1) | 0x80
-    this.cur[0x10e] = id === 0x18 ? 1 : 0
+    this.cur[F.morale] = (morale >> 1) | 0x80
+    this.cur[F.side] = id === 0x18 ? 1 : 0
     if (this.items) recalc(this.cur, this.itemsOf(this.cur), this.items)
   }
 
@@ -1000,17 +1000,17 @@ export class Engine {
    */
   setupDuel(copy: boolean) {
     const me = this.cur
-    for (const c of this.party()) if (c !== me) c[0x10d] = 0
+    for (const c of this.party()) if (c !== me) c[F.inPlay] = 0
     this.duel = true
     this.duelist = me
     this.B[0x6de6 - B0] = copy ? 1 : 0
     if (!copy) return
     const r = me.slice()
     const nm = 'ROLF'
-    r.fill(0, 0, 16)
-    r[0] = nm.length
-    for (let i = 0; i < nm.length; i++) r[1 + i] = nm.charCodeAt(i)
-    r[0x10e] = 1; r[0x10f] = 1; r[0x84] = 0xb2
+    r.fill(0, F.name, F.name + 16)
+    r[F.name] = nm.length
+    for (let i = 0; i < nm.length; i++) r[F.name + 1 + i] = nm.charCodeAt(i)
+    r[F.side] = 1; r[F.quick] = 1; r[F.morale] = 0xb2
     this.nodes.push(r)
     this.combatPicture.set(r, 11) // FUN_2fea_1a6f: ROLF's combat icon is CPIC<block> #11 / #139
     this.inventory.set(r, this.itemsOf(me).map((it) => it.copy()))
@@ -1031,7 +1031,7 @@ export class Engine {
       } else if (this.treasure.length || this.money.some((v) => v > 0)) await this.io.engine('treasure')
     } else {
       const names = this.nodes.slice(this.nodes.length - this.monsters)
-        .map((m) => String.fromCharCode(...m.subarray(1, 1 + m[0])))
+        .map((m) => String.fromCharCode(...m.subarray(F.name + 1, F.name + 1 + m[F.name])))
       await this.io.engine('combat', { monsters: [...new Set(names)].join(', '), count: names.length })
       if (this.monstersLoaded) {
         // no battle screen (headless): the party is treated as winning
@@ -1042,7 +1042,7 @@ export class Engine {
         this.monstersLoaded = false
         for (const a of [0x6de3, 0x6de6, 0x6e70, 0x6e71, 0x6e72]) this.B[a - B0] = 0
       }
-      if (this.duel) for (const c of this.party()) if (c[0x10c] <= 1) c[0x10d] = 1
+      if (this.duel) for (const c of this.party()) if (c[F.status] <= 1) c[F.inPlay] = 1
     }
     this.duel = false
     this.duelist = null
@@ -1051,7 +1051,7 @@ export class Engine {
 
   private async encounterMenu() {
     this.readops(14)
-    const moves = this.nodes.map((c) => c[0x11c])
+    const moves = this.nodes.map((c) => c[F.move])
     const slow = Math.min(...moves), fast = Math.max(...moves)
     const r = [5, 6, 7, 8, 9].map((i) => this.val(i) & 0xff)
     const texts = [10, 11, 12].map((i) => this.opstr.get(i) ?? '')
@@ -1095,24 +1095,24 @@ export class Engine {
       const r = this.roll(1, 20)
       if (r === 1) return false
       if (r === 20) return true
-      return c[0x6d + kind] <= r + ((c[0x101] << 24) >> 24) + b
+      return c[F.saves + kind] <= r + ((c[F.saveBonus] << 24) >> 24) + b
     }
     const hit = (c: Uint8Array) => {
       let r = this.roll(1, 20)
       if (r === 1) return false
       if (r === 20) r = 100
-      return c[0x111] < r + save
+      return c[F.ac] < r + save
     }
     // FUN_2fea_20cc: "is hit FOR n points of Damage." or "dies.", the status set as FUN_10ba_2228 does
     const said: string[] = []
     const hurt = (c: Uint8Array, d: number) => {
-      const name = String.fromCharCode(...c.subarray(1, 1 + c[0]))
-      const left = c[0x11b] - d, over = left < 0 ? -left : 0
-      if (over > 9 || (left <= 0 && c[0x10c] === 1)) c[0x10c] = 6
-      else if (over > 0) c[0x10c] = 5
-      else if (left === 0) c[0x10c] = 4
-      if (c[0x10c] !== 0 && c[0x10c] !== 1) { c[0x11b] = 0; c[0x10d] = 0 } else c[0x11b] = left
-      said.push(c[0x10c] === 6 ? `${name} dies.` : `${name} is hit FOR ${d} points of Damage.`)
+      const name = String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name]))
+      const left = c[F.hp] - d, over = left < 0 ? -left : 0
+      if (over > 9 || (left <= 0 && c[F.status] === 1)) c[F.status] = 6
+      else if (over > 0) c[F.status] = 5
+      else if (left === 0) c[F.status] = 4
+      if (c[F.status] !== 0 && c[F.status] !== 1) { c[F.hp] = 0; c[F.inPlay] = 0 } else c[F.hp] = left
+      said.push(c[F.status] === 6 ? `${name} dies.` : `${name} is hit FOR ${d} points of Damage.`)
     }
     if (!(flags & 0x80)) {
       for (let i = 0; i < flags; i++) {
@@ -1132,10 +1132,10 @@ export class Engine {
     }
     if (said.length) {
       for (const t of said) this.io.print(t, false)
-      if (said.some((t) => t.endsWith('dies.')) || party.some((c) => c[0x10c] >= 4)) this.io.sound(5)
+      if (said.some((t) => t.endsWith('dies.')) || party.some((c) => c[F.status] >= 4)) this.io.sound(5)
       await this.io.menu(['PRESS ENTER'], {})
     }
-    if (party.every((c) => c[0x11b] === 0)) {
+    if (party.every((c) => c[F.hp] === 0)) {
       await this.io.engine('party dead')
       this.quit = true
     }

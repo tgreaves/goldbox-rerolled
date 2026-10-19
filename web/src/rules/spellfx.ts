@@ -5,6 +5,7 @@ import type { Spell } from '../data/spells'
 import { Tables } from './chargen'
 import { derive, levelLimit, xpFor } from './training'
 import { addEffect, addRaw, fx, removeEffect, removeFirst, removeOne, setStr, type FxHost } from './effects'
+import { F } from '../games/fields'
 
 const u32 = (c: Uint8Array, o: number) => (c[o] | (c[o + 1] << 8) | (c[o + 2] << 16) | (c[o + 3] << 24)) >>> 0
 const setU32 = (c: Uint8Array, o: number, v: number) => { c[o] = v & 0xff; c[o + 1] = (v >> 8) & 0xff; c[o + 2] = (v >> 16) & 0xff; c[o + 3] = (v >>> 24) & 0xff }
@@ -51,16 +52,16 @@ export async function sharedSpell(h: FxHost, e: Engine, caster: Uint8Array, s: S
       break
     case 14: { // Friends (13d8): CHA + 2d4 (cap 25); the effect holds the old CHA
       if (!t) break
-      const old = t[0x15]
-      t[0x15] = Math.min(25, old + h.roll(2, 4))
+      const old = t[F.stat[5]]
+      t[F.stat[5]] = Math.min(25, old + h.roll(2, 4))
       await addEffect(h, t, 0x0e, dur, old || L, 1, 0, false, false, 'is friendly')
       break
     }
     case 26: // Slow Poison (185b): only on a poisoned target that is not Animated
-      if (!t || t[0x10c] === 1 || !h.effectsOf(t).some((x) => x.type === 0x37)) break
-      if (t[0x11b] === 0) t[0x11b] = 1
+      if (!t || t[F.status] === 1 || !h.effectsOf(t).some((x) => x.type === 0x37)) break
+      if (t[F.hp] === 0) t[F.hp] = 1
       await addEffect(h, t, 0x16, dur, 0xff, 1, 0, false, false, 'is affected')
-      h.revive(t, t[0x11b]) // handler 0x4E with arg 1, whatever the status
+      h.revive(t, t[F.hp]) // handler 0x4E with arg 1, whatever the status
       addRaw(h, t, 0x0f, 10, 0xff, 1)
       break
     case 28: await addEffect(h, caster, 0x17, dur, L, 1, 0, false, true); break // Spiritual Hammer (19c3)
@@ -68,11 +69,11 @@ export async function sharedSpell(h: FxHost, e: Engine, caster: Uint8Array, s: S
       if (!t) break
       let bonus = 0
       const r4 = h.roll(1, 4), r6 = h.roll(1, 6), r8 = h.roll(1, 8)
-      if (t[0x9b] > 0) bonus = r4
-      if (t[0x96] > 0 || t[0x9c] > 0) bonus = r6
-      if (t[0x98] > 0) bonus = r8
-      let n = t[0x10] + bonus, pct = 0
-      if (n > 18) { if (t[0x98] > 0) pct = Math.min(100, t[0x16] + 10 * (n - 18)); n = 18 }
+      if (t[F.levels + 5] > 0) bonus = r4
+      if (t[F.levels] > 0 || t[F.levels + 6] > 0) bonus = r6
+      if (t[F.levels + 2] > 0) bonus = r8
+      let n = t[F.stat[0]] + bonus, pct = 0
+      if (n > 18) { if (t[F.levels + 2] > 0) pct = Math.min(100, t[F.strPct] + 10 * (n - 18)); n = 18 }
       const { ok, pw } = setStr(h, t, n, pct)
       if (ok) say(h, t, 'is stronger')
       addRaw(h, t, 0x26, dur, pw, 1)
@@ -84,17 +85,17 @@ export async function sharedSpell(h: FxHost, e: Engine, caster: Uint8Array, s: S
       fx.area = true
       for (const d of h.all()) {
         if (n <= 0) break
-        if (d[0x10c] !== 6 || d[0x9f] !== 0) continue
-        const pw = (L + (d[0x10e] << 4)) & 0xff
-        d[0x10e] = caster[0x10e]; d[0x10f] = 1; d[0x76] = 2; d[0x6b] = 0; d[0x72] = 6
-        for (let k = 0x17; k <= 0x2b; k++) d[k] = 0
-        d[0x84] = d[0x84] > 0x7f ? 0xb2 : 0xb3
-        d[0x9f] = 4
+        if (d[F.status] !== 6 || d[F.monsterType] !== 0) continue
+        const pw = (L + (d[F.side] << 4)) & 0xff
+        d[F.side] = caster[F.side]; d[F.quick] = 1; d[F.undead] = 2; d[F.sweep] = 0; d[F.baseMove] = 6
+        for (let k = F.memorised; k < F.memorised + F.memorisedCount; k++) d[k] = 0
+        d[F.morale] = d[F.morale] > 0x7f ? 0xb2 : 0xb3
+        d[F.monsterType] = 4
         for (let i = 0x0a; i <= 0x0d; i++) h.setRec(d, i, 0)
         n-- // bug kept: spent and converted even when the body's square is taken
-        if (h.revive(d, d[0x32])) {
+        if (h.revive(d, d[F.maxHp])) {
           await addEffect(h, d, 0x20, 0, pw, 1, 0, false, false, 'is animated')
-          d[0x10c] = 1
+          d[F.status] = 1
         }
       }
       fx.area = false
@@ -115,7 +116,7 @@ export async function sharedSpell(h: FxHost, e: Engine, caster: Uint8Array, s: S
       break
     }
     case 42: // Prayer (24d6): the caster, power L + side × 16
-      await addEffect(h, caster, 0x31, dur, (L + (caster[0x10e] << 4)) & 0xff, 0, 0, false, false, 'is praying')
+      await addEffect(h, caster, 0x31, dur, (L + (caster[F.side] << 4)) & 0xff, 0, 0, false, false, 'is praying')
       break
     case 43: { // Remove Curse (2540)
       if (!t) break
@@ -125,22 +126,22 @@ export async function sharedSpell(h: FxHost, e: Engine, caster: Uint8Array, s: S
       break
     }
     case 56: { // Restoration (2c43): one drained level back, to the class whose next level is cheapest
-      if (!t || t[0x74] === 0 || !e.startImage) break
+      if (!t || t[F.drainLevels] === 0 || !e.startImage) break
       const tb = new Tables(e.startImage)
-      const hp = Math.floor(t[0x75] / t[0x74])
-      t[0x32] = (t[0x32] + hp) & 0xff; t[0x11b] = (t[0x11b] + hp) & 0xff; t[0xb1] = (t[0xb1] + hp) & 0xff
-      t[0x75] -= hp
-      t[0x74]--
+      const hp = Math.floor(t[F.drainHp] / t[F.drainLevels])
+      t[F.maxHp] = (t[F.maxHp] + hp) & 0xff; t[F.hp] = (t[F.hp] + hp) & 0xff; t[F.hpRolled] = (t[F.hpRolled] + hp) & 0xff
+      t[F.drainHp] -= hp
+      t[F.drainLevels]--
       let best = 13, min = 10_000_000, pick = -1
       for (let k = 0; k < 8; k++) {
-        const lv = t[0x96 + k]
+        const lv = t[F.levels + k]
         if (lv <= 0 || lv > best) continue
         const xp = xpFor(tb, k, lv + 1)
         if (xp > 0 && xp < min && levelLimit(t, k) > lv) { best = lv; min = xp; pick = k }
       }
       if (pick >= 0) {
-        t[0x96 + pick]++
-        if (u32(t, 0xac) < min) setU32(t, 0xac, min)
+        t[F.levels + pick]++
+        if (u32(t, F.xp) < min) setU32(t, F.xp, min)
       }
       derive(tb, t)
       h.recalc(t)

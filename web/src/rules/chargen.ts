@@ -2,7 +2,7 @@
 // Tables are read at runtime from the data segment of the player's START.EXE; nothing from the
 // game is embedded here. Behaviour, including the original's quirks, follows spec/chargen.md.
 
-import { CHAR_SIZE } from '../data/character'
+import { F } from '../games/fields'
 
 const DS = 0xc7c0 // data segment (paragraph 0x0C7C) in the START.EXE load image
 
@@ -48,29 +48,29 @@ export const bodyRecord = (t: Tables, n: number) => t.b(0x287d + n)
 
 /** Start a character: steps 1-6 of spec/chargen.md (race, gender, class, alignment, age). */
 export function begin(t: Tables, rng: Rng, race: number, gender: number, cls: number, alignment: number): Uint8Array {
-  const c = new Uint8Array(CHAR_SIZE)
-  c[0x2e] = race
-  c[0x2f] = cls
-  c[0x9e] = gender
-  c[0xa0] = alignment
-  c[0xc0] = race === 1 || race === 3 || race === 5 ? 1 : 2
-  c[0x2d] = 40
-  c[0x6c] = 1
-  c[0x73] = 1
-  c[0xa9] = 50
-  c[0xab] = rng(256)
-  c[0xbb] = 1
-  c[0xbc] = 1
-  ;[0x91, 0xa2, 0xb3, 0xc4, 0xe6, 0xf7].forEach((v, i) => (c[0xc1 + i] = v))
-  c[0x10d] = 1
+  const c = new Uint8Array(F.size)
+  c[F.race] = race
+  c[F.cls] = cls
+  c[F.gender] = gender
+  c[F.alignment] = alignment
+  c[F.iconSize] = race === 1 || race === 3 || race === 5 ? 1 : 2
+  c[F.thac0Base] = 40
+  c[F.sizeFlags] = 1
+  c[F.hitDice] = 1
+  c[F.acBase] = 50
+  c[F.id] = rng(256)
+  c[F.head] = 1
+  c[F.body] = 1
+  ;[0x91, 0xa2, 0xb3, 0xc4, 0xe6, 0xf7].forEach((v, i) => (c[F.iconColours + i] = v))
+  c[F.inPlay] = 1
   let bits = 0
   for (const k of COMPONENTS[cls]) {
-    c[0x96 + k] = 1
+    c[F.levels + k] = 1
     bits |= CLASS_BITS[k]
-    c[0x2d] = Math.max(c[0x2d], t.b(0x3c7c + k * 11 + 1))
+    c[F.thac0Base] = Math.max(c[F.thac0Base], t.b(0x3c7c + k * 11 + 1))
   }
-  c[0xb0] = bits
-  if (c[0x9c]) thiefSkills(t, c) // runs before abilities exist, so with DEX 0 (as the original)
+  c[F.itemMask] = bits
+  if (c[F.levels + 6]) thiefSkills(t, c) // runs before abilities exist, so with DEX 0 (as the original)
   saves(t, c)
   // age: single class base + NdS; multi-class the maximum of one column
   let age: number
@@ -81,23 +81,23 @@ export function begin(t: Tables, rng: Rng, race: number, gender: number, cls: nu
     const o = 0x3e5b + race * 0x1c + (AGE_COLUMN[cls] ?? 0) * 4
     age = t.w(o) + t.b(o + 2) * t.b(o + 3)
   }
-  c[0x30] = age & 0xff
-  c[0x31] = age >> 8
+  c[F.age] = age & 0xff
+  c[F.age + 1] = age >> 8
   return c
 }
 
 /** Step 7: roll abilities, HP, gold and spells (repeated on "No" to "Keep this character?"). */
 export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
-  const race = c[0x2e], cls = c[0x2f], gender = c[0x9e]
-  const age = c[0x30] | (c[0x31] << 8)
+  const race = c[F.race], cls = c[F.cls], gender = c[F.gender]
+  const age = c[F.age] | (c[F.age + 1] << 8)
   const thr = (i: number) => t.w(0x3f31 + race * 10 + i * 2)
   const lim = 0x3da3 + race * 16
-  c[0x16] = 0
+  c[F.strPct] = 0
   for (let a = 0; a < 6; a++) {
     // best of six 3d6 (the racial adjustments inside this loop are dead code in the original)
-    c[0x10 + a] = 0
-    for (let i = 0; i < 6; i++) c[0x10 + a] = Math.max(c[0x10 + a], roll(rng, 3, 6))
-    let v = c[0x10 + a]
+    c[F.stat[a]] = 0
+    for (let i = 0; i < 6; i++) c[F.stat[a]] = Math.max(c[F.stat[a]], roll(rng, 3, 6))
+    let v = c[F.stat[a]]
     const older = (i: number) => age > thr(i)
     if (a === 0) {
       if (v && older(0)) v++
@@ -116,53 +116,53 @@ export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
     }
     v = Math.max(v, t.b(0x3f81 + cls * 6 + a))
     if (a === 2 && v < 13 && CLERIC_MULTI.has(cls)) v = 13
-    c[0x10 + a] = v & 0xff
-    if (a === 0 && v === 18 && c[0x98] > 0) {
-      c[0x16] = Math.min(rng(100) + 1, t.b(lim + 4 + gender))
+    c[F.stat[a]] = v & 0xff
+    if (a === 0 && v === 18 && c[F.levels + 2] > 0) {
+      c[F.strPct] = Math.min(rng(100) + 1, t.b(lim + 4 + gender))
     }
   }
-  c[0xa1] = 2
-  c[0xa3] = 1
-  c[0xa5] = 2
-  c[0xaa] = 1
-  c[0x72] = 12
+  c[F.attacksBase] = 2
+  c[F.natDice] = 1
+  c[F.natSides] = 2
+  c[F.strAdj] = 1
+  c[F.baseMove] = 12
   // gold, level-1 spell slots and known spells
   let gold = 0, classes = 0
   for (let k = 0; k < 8; k++) {
-    if (!c[0x96 + k]) continue
-    if (k === 0) c[0xb2] = 1
-    else if (k === 5) c[0xb5] = 1
+    if (!c[F.levels + k]) continue
+    if (k === 0) c[F.clericSlots] = 1
+    else if (k === 5) c[F.muSlots] = 1
     gold += roll(rng, t.b(0x4263 + k * 2), t.b(0x4264 + k * 2))
     classes++
     if (k === 0) {
       wisdomBonus(c)
-      for (let id = 1; id <= 0x38; id++) if (t.b(0x31fa + id * 16) === 0 && t.b(0x31fb + id * 16) === 1) c[0x32 + id] = 1
+      for (let id = 1; id <= 0x38; id++) if (t.b(0x31fa + id * 16) === 0 && t.b(0x31fb + id * 16) === 1) c[F.known + id] = 1
     } else if (k === 5) {
-      c[0x3d] = c[0x44] = c[0x45] = c[0x47] = 1 // Detect Magic, Read Magic, Shield, Sleep
+      c[F.known + 11] = c[F.known + 18] = c[F.known + 19] = c[F.known + 21] = 1 // Detect Magic, Read Magic, Shield, Sleep
     }
   }
   const g = Math.floor((gold * 10) / classes)
-  c[0x8e] = g & 0xff
-  c[0x8f] = g >> 8
+  c[F.money + 6] = g & 0xff
+  c[F.money + 7] = g >> 8
   // hit points (FUN_417f_4235, FUN_417f_3f31)
   const hpRoll = hitDice(t, rng, c)
-  c[0xb1] = hpRoll & 0xff
-  c[0x32] = hpRoll & 0xff
+  c[F.hpRolled] = hpRoll & 0xff
+  c[F.maxHp] = hpRoll & 0xff
   const con = conBonus(t, c)
-  if (con < 0 && Math.abs(con) + classes >= c[0x32]) c[0x32] = 1
-  else c[0x32] = Math.trunc((c[0x32] + con) / classes) & 0xff
-  c[0x11b] = c[0x32]
-  c[0xb1] = Math.floor(c[0xb1] / classes)
+  if (con < 0 && Math.abs(con) + classes >= c[F.maxHp]) c[F.maxHp] = 1
+  else c[F.maxHp] = Math.trunc((c[F.maxHp] + con) / classes) & 0xff
+  c[F.hp] = c[F.maxHp]
+  c[F.hpRolled] = Math.floor(c[F.hpRolled] / classes)
   combatStats(c)
 }
 
 export function hitDice(t: Tables, rng: Rng, c: Uint8Array): number {
   let sum = 0
   for (let k = 0; k < 8; k++) {
-    if (!c[0x96 + k]) continue
+    if (!c[F.levels + k]) continue
     const sides = t.b(0x8be + k)
     let r = roll(rng, t.b(0x8b6 + k), sides)
-    if (c[0x96 + k] === 1 && r < Math.floor((sides * 2) / 3)) r = Math.floor((sides * 2) / 3)
+    if (c[F.levels + k] === 1 && r < Math.floor((sides * 2) / 3)) r = Math.floor((sides * 2) / 3)
     sum += r
   }
   return sum & 0xff
@@ -171,29 +171,29 @@ export function hitDice(t: Tables, rng: Rng, c: Uint8Array): number {
 export function conBonus(t: Tables, c: Uint8Array): number {
   let b = 0
   for (let k = 0; k < 8; k++) {
-    if (!c[0x96 + k]) continue
-    b += t.s(0x408e + c[0x14])
-    if (c[0x14] > 16 && c[0x2f] === 2) b++
-    if (c[0x14] > 17 && c[0x2f] === 2) b++
+    if (!c[F.levels + k]) continue
+    b += t.s(0x408e + c[F.stat[4]])
+    if (c[F.stat[4]] > 16 && c[F.cls] === 2) b++
+    if (c[F.stat[4]] > 17 && c[F.cls] === 2) b++
   }
   return (b << 24) >> 24
 }
 
 export function wisdomBonus(c: Uint8Array) {
-  const wis = c[0x12]
-  if (wis > 12 && c[0xb2]) c[0xb2]++
-  if (wis > 13 && c[0xb2]) c[0xb2]++
-  if (wis > 14 && c[0xb3]) c[0xb3]++
-  if (wis > 15 && c[0xb3]) c[0xb3]++
-  if (wis > 16 && c[0xb4]) c[0xb4]++
+  const wis = c[F.stat[2]]
+  if (wis > 12 && c[F.clericSlots]) c[F.clericSlots]++
+  if (wis > 13 && c[F.clericSlots]) c[F.clericSlots]++
+  if (wis > 14 && c[F.clericSlots + 1]) c[F.clericSlots + 1]++
+  if (wis > 15 && c[F.clericSlots + 1]) c[F.clericSlots + 1]++
+  if (wis > 16 && c[F.clericSlots + 2]) c[F.clericSlots + 2]++
 }
 
 /** FUN_51cf_0255 */
 export function saves(t: Tables, c: Uint8Array) {
   for (let i = 0; i < 5; i++) {
-    c[0x6d + i] = 20
+    c[F.saves + i] = 20
     for (let k = 0; k < 8; k++) {
-      if (c[0x96 + k] > 0) c[0x6d + i] = Math.min(c[0x6d + i], t.b(0x426e + k * 0x2d + c[0x96 + k] * 5 + i))
+      if (c[F.levels + k] > 0) c[F.saves + i] = Math.min(c[F.saves + i], t.b(0x426e + k * 0x2d + c[F.levels + k] * 5 + i))
     }
   }
 }
@@ -201,23 +201,23 @@ export function saves(t: Tables, c: Uint8Array) {
 /** FUN_51cf_0329 */
 export function thiefSkills(t: Tables, c: Uint8Array) {
   for (let s = 1; s <= 8; s++) {
-    const base = t.b(0x3cf3 + c[0x9c] * 8 + s)
-    const race = t.s(0x3d3b + c[0x2e] * 8 + s)
-    if (race < 0 && base < -race) c[0x76 + s] = 0
+    const base = t.b(0x3cf3 + c[F.levels + 6] * 8 + s)
+    const race = t.s(0x3d3b + c[F.race] * 8 + s)
+    if (race < 0 && base < -race) c[F.thief + s - 1] = 0
     else {
       let v = base + race
-      if (s < 6) v += t.s(0x3d4e + c[0x13] * 5 + s)
-      c[0x76 + s] = v & 0xff
+      if (s < 6) v += t.s(0x3d4e + c[F.stat[3]] * 5 + s)
+      c[F.thief + s - 1] = v & 0xff
     }
   }
 }
 
 /** Strength index (FUN_10ba_11ea): 3-18, then 18/xx bands 19-23, then 19-25 → 24-30. */
 export function strIndex(c: Uint8Array): number {
-  const s = c[0x10]
+  const s = c[F.stat[0]]
   if (s < 18) return s
   if (s === 18) {
-    const p = c[0x16]
+    const p = c[F.strPct]
     if (p === 0) return 18
     if (p <= 50) return 19
     if (p <= 75) return 20
@@ -262,28 +262,28 @@ function dexAc(d: number) {
 
 /** FUN_10ba_0bb8 for a character with no items (as at creation). */
 export function combatStats(c: Uint8Array) {
-  for (let i = 0; i < 6; i++) c[0x115 + i] = c[0xa3 + i]
+  for (let i = 0; i < 6; i++) c[F.dice + i] = c[F.natDice + i]
   const si = strIndex(c)
-  c[0x111] = (c[0xa9] + dexAc(c[0x13])) & 0xff
-  c[0x112] = (c[0xa9] - 2) & 0xff
-  c[0x11c] = c[0x72]
-  c[0x110] = c[0x2d]
-  if (c[0xaa]) {
-    c[0x110] = (c[0x110] + strToHit(si)) & 0xff
-    c[0x119] = (c[0x119] + strDamage(si)) & 0xff
+  c[F.ac] = (c[F.acBase] + dexAc(c[F.stat[3]])) & 0xff
+  c[F.acRear] = (c[F.acBase] - 2) & 0xff
+  c[F.move] = c[F.baseMove]
+  c[F.thac0] = c[F.thac0Base]
+  if (c[F.strAdj]) {
+    c[F.thac0] = (c[F.thac0] + strToHit(si)) & 0xff
+    c[F.bonus] = (c[F.bonus] + strDamage(si)) & 0xff
   }
-  c[0x6b] = c[0x98] || 1
+  c[F.sweep] = c[F.levels + 2] || 1
   let coins = 0
-  for (let i = 0; i < 7; i++) coins += c[0x88 + 2 * i] | (c[0x89 + 2 * i] << 8)
-  c[0x102] = coins & 0xff
-  c[0x103] = coins >> 8
+  for (let i = 0; i < 7; i++) coins += c[F.money + 2 * i] | (c[F.money + 2 * i + 1] << 8)
+  c[F.load] = coins & 0xff
+  c[F.load + 1] = coins >> 8
 }
 
 /** Set the name (≤ 15 characters, upper case, 0x20-0x7A). */
 export function setName(c: Uint8Array, name: string) {
   const n = [...name.toUpperCase()].filter((ch) => ch >= ' ' && ch <= 'z').join('').slice(0, 15)
-  c[0] = n.length
-  for (let i = 0; i < 15; i++) c[1 + i] = i < n.length ? n.charCodeAt(i) : 0
+  c[F.name] = n.length
+  for (let i = 0; i < 15; i++) c[F.name + 1 + i] = i < n.length ? n.charCodeAt(i) : 0
 }
 
 /** The file stem the original derives from the name: drop ` .*,?/\:;|`, cut to 8. */
@@ -297,8 +297,8 @@ export function fileStem(name: string) {
 export function hpMin(t: Tables, c: Uint8Array): number {
   let dice = 0, classes = 0
   for (let k = 0; k < 8; k++) {
-    if (c[0x96 + k] <= 0) continue
-    dice += c[0x96 + k]
+    if (c[F.levels + k] <= 0) continue
+    dice += c[F.levels + k]
     classes++
     if (k === 4 || k === 7) dice++
   }
@@ -310,9 +310,9 @@ export function hpMax(t: Tables, c: Uint8Array): number {
   const die = [8, 8, 10, 10, 8, 4, 6, 4]
   let sum = 0, classes = 0
   for (let k = 0; k < 8; k++) {
-    if (c[0x96 + k] <= 0) continue
+    if (c[F.levels + k] <= 0) continue
     classes++
-    sum += (c[0x96 + k] + (k === 4 || k === 7 ? 1 : 0)) * die[k]
+    sum += (c[F.levels + k] + (k === 4 || k === 7 ? 1 : 0)) * die[k]
   }
   return withCon(t, c, sum & 0xff, classes)
 }
@@ -325,39 +325,39 @@ function withCon(t: Tables, c: Uint8Array, v: number, classes: number) {
 
 /** Racial limits for ability a (0 STR … 5 CHA): [min, max] (STR by gender). */
 export function abilityRange(t: Tables, c: Uint8Array, a: number): [number, number] {
-  const lim = 0x3da3 + c[0x2e] * 16
-  if (a === 0) return [t.b(lim + c[0x9e]), t.b(lim + 2 + c[0x9e])]
+  const lim = 0x3da3 + c[F.race] * 16
+  if (a === 0) return [t.b(lim + c[F.gender]), t.b(lim + 2 + c[F.gender])]
   return [t.b(lim + 4 + a * 2), t.b(lim + 5 + a * 2)]
 }
 
 /** One Modify step on field f (0-5 abilities, 6 HP) by +1 or -1, with the original's rules and quirks. */
 export function modifyStep(t: Tables, c: Uint8Array, f: number, delta: 1 | -1) {
   if (f === 6) {
-    const v = c[0x32] + delta
-    if (v >= hpMin(t, c) && v <= hpMax(t, c)) c[0x32] = c[0x11b] = v
+    const v = c[F.maxHp] + delta
+    if (v >= hpMin(t, c) && v <= hpMax(t, c)) c[F.maxHp] = c[F.hp] = v
     return
   }
   const [lo, hi] = abilityRange(t, c, f)
-  const classMin = t.b(0x3f81 + c[0x2f] * 6 + f)
+  const classMin = t.b(0x3f81 + c[F.cls] * 6 + f)
   if (delta > 0) {
-    if (c[0x10 + f] + 1 > hi) {
-      const cap = t.b(0x3da3 + c[0x2e] * 16 + 4 + c[0x9e])
-      if (f === 0 && c[0x10] === 18 && c[0x98] > 0 && c[0x16] < cap) c[0x16]++
-    } else c[0x10 + f]++
-  } else if (f === 0 && c[0x16] > 0) {
-    c[0x16]--
+    if (c[F.stat[f]] + 1 > hi) {
+      const cap = t.b(0x3da3 + c[F.race] * 16 + 4 + c[F.gender])
+      if (f === 0 && c[F.stat[0]] === 18 && c[F.levels + 2] > 0 && c[F.strPct] < cap) c[F.strPct]++
+    } else c[F.stat[f]]++
+  } else if (f === 0 && c[F.strPct] > 0) {
+    c[F.strPct]--
   } else {
-    const v = c[0x10 + f] - 1
+    const v = c[F.stat[f]] - 1
     // quirk: dropping below the racial or the class minimum jumps to the racial minimum
-    c[0x10 + f] = v < lo || v < classMin ? lo : v
+    c[F.stat[f]] = v < lo || v < classMin ? lo : v
   }
-  if (f === 2 && c[0xb2]) {
-    c[0xb2] = 1
+  if (f === 2 && c[F.clericSlots]) {
+    c[F.clericSlots] = 1
     wisdomBonus(c)
   }
   if (f === 4) {
     const min = hpMin(t, c), max = hpMax(t, c)
-    c[0x32] = c[0x11b] = Math.min(Math.max(c[0x32], min), max)
+    c[F.maxHp] = c[F.hp] = Math.min(Math.max(c[F.maxHp], min), max)
   }
   combatStats(c)
 }

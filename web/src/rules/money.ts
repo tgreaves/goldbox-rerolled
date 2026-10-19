@@ -2,14 +2,15 @@
 // electrum, gold, platinum, gems, jewelry) and the pool, the treasure money table.
 import { Item, ITEM_SIZE, type ItemTables } from '../data/items'
 import { capacity, recalc } from './equip'
+import { F } from '../games/fields'
 
 export const COINS = ['copper', 'silver', 'electrum', 'gold', 'platinum', 'gems', 'jewelry']
 const UNITS = [1, 10, 100, 200, 1000] // DS:0D24, in copper halves of a gold piece ×200
 
-const get = (c: Uint8Array, i: number) => c[0x88 + 2 * i] | (c[0x89 + 2 * i] << 8)
-const set = (c: Uint8Array, i: number, v: number) => { c[0x88 + 2 * i] = v & 0xff; c[0x89 + 2 * i] = (v >> 8) & 0xff }
+const get = (c: Uint8Array, i: number) => c[F.money + 2 * i] | (c[F.money + 2 * i + 1] << 8)
+const set = (c: Uint8Array, i: number, v: number) => { c[F.money + 2 * i] = v & 0xff; c[F.money + 2 * i + 1] = (v >> 8) & 0xff }
 export const moneyOf = (c: Uint8Array) => [0, 1, 2, 3, 4, 5, 6].map((i) => get(c, i))
-const encumbrance = (c: Uint8Array) => c[0x102] | (c[0x103] << 8)
+const encumbrance = (c: Uint8Array) => c[F.load] | (c[F.load + 1] << 8)
 
 /** Coin value in gp, rounded to nearest (gems and jewelry excluded). */
 export function coinValue(m: number[]): number {
@@ -42,7 +43,7 @@ export function pay(c: Uint8Array, pool: number[], price: number, t: ItemTables,
 }
 
 /** Members that pool money: player characters (char[0x84] = 0) and NPCs that handle money (0xB3). */
-const pools = (c: Uint8Array) => c[0x84] === 0 || c[0x84] === 0xb3
+const pools = (c: Uint8Array) => c[F.morale] === 0 || c[F.morale] === 0xb3
 
 /** Pool (FUN_4c2d_0508): everyone who may pools all seven kinds. */
 export function poolAll(party: { c: Uint8Array; items: Item[] }[], pool: number[], t: ItemTables) {
@@ -69,7 +70,7 @@ export function share(party: { c: Uint8Array; items: Item[] }[], pool: number[],
   const shares = pool.map((v) => Math.floor(v / n))
   const rem = pool.map((v) => v % n)
   for (const m of party) {
-    if (m.c[0x84] >= 0x80) continue
+    if (m.c[F.morale] >= 0x80) continue
     for (let i = 6; i >= 0; i--) {
       if (shares[i] <= room(m.c)) {
         add(m, i, shares[i])

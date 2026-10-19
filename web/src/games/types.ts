@@ -1,6 +1,7 @@
 // What one Gold Box game is, for the parts of the port that differ between games
 // (docs/multi-game.md). Step 1: identity, files and storage; record fields, tables, rules and the
 // script VM join in later steps.
+import type { CharFields } from './fields'
 
 export interface GameProfile {
   id: 'por' | 'coab'
@@ -19,6 +20,8 @@ export interface GameProfile {
   stores: { files: string; user: string }
   /** image families the asset viewer shows, in order */
   imageFamilies: string[]
+  /** character record layout */
+  fields: CharFields
   /** false while the port can show the game's assets but not yet play it */
   playable: boolean
 }

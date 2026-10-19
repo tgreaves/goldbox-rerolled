@@ -2,6 +2,7 @@
 // "Screen layout"): 3D view top left, party roster to its right, text window below,
 // command line at the bottom. Area scripts run through the ECL engine (src/vm/engine.ts).
 import { game } from '../games/profile'
+import { F } from '../games/fields'
 import type { GameFiles } from '../store/gamefiles'
 import { parseCharacter, MONEY, type Character } from '../data/character'
 import { parseRecord, spriteImage, toImageData, type Picture } from '../data/image'
@@ -544,7 +545,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const xpp = t ? xpProgress(t, raw) : null
       const xpBar = t ? `<span class="xpbar${train ? ' ready' : ''}" title="${escape(xpp ? xpp.text : 'Every class is at its highest level')}"><span style="width:${xpp ? xpp.pct : 100}%"></span></span>` : ''
       // on Quick (c[0x10F]): the computer plays them in battle until Space / Take control
-      const quick = raw[0x10f] !== 0 && raw[0x84] < 0x80
+      const quick = raw[F.quick] !== 0 && raw[F.morale] < 0x80
       return `<button class="${cls}" data-i="${i}" title="${i === cur ? 'View' : 'Select'} ${escape(c.name)}">
         <canvas class="pixel rc-portrait" width="88" height="88"></canvas>
         <span class="rc-body">
@@ -580,7 +581,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     })
     roster.querySelectorAll<HTMLElement>('.rcard').forEach((card, i) => {
       const raw = list[i].raw
-      const key = Array.from(raw.subarray(0xbd, 0xc7)).join(',')
+      const key = Array.from(raw.subarray(F.iconHead, F.iconColours + 6)).join(',')
       let img = rosterIcons.get(key)
       if (img === undefined) { const p = buildIcon(files, raw, false); img = p ? toImageData(p) : null; rosterIcons.set(key, img) }
       const g = sizeCanvas(card.querySelector<HTMLCanvasElement>('canvas.rc-icon')!, 24, 24)
@@ -589,9 +590,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const pg = sizeCanvas(card.querySelector<HTMLCanvasElement>('canvas.rc-portrait')!, 88, 88)
       pg.fillStyle = '#000'; pg.fillRect(0, 0, 88, 88)
       if (t) {
-        const pk = `${raw[0xbb]},${raw[0xbc]}`
+        const pk = `${raw[F.head]},${raw[F.body]}`
         let pp = rosterPortraits.get(pk)
-        if (pp === undefined) { const h = pic('HEAD3', headRecord(t, raw[0xbb])), b = pic('BODY3', bodyRecord(t, raw[0xbc])); pp = [h ? toImageData(h) : null, b ? toImageData(b) : null]; rosterPortraits.set(pk, pp) }
+        if (pp === undefined) { const h = pic('HEAD3', headRecord(t, raw[F.head])), b = pic('BODY3', bodyRecord(t, raw[F.body])); pp = [h ? toImageData(h) : null, b ? toImageData(b) : null]; rosterPortraits.set(pk, pp) }
         if (pp[0]) blit(pg, pp[0], 0, 0)
         if (pp[1]) blit(pg, pp[1], 0, 40)
       }
@@ -604,10 +605,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
    * (DS:409B), for the class that levels soonest; null when every class is at its cap.
    */
   function xpProgress(t: Tables, c: Uint8Array): { pct: number; text: string } | null {
-    const xp = (c[0xac] | (c[0xad] << 8) | (c[0xae] << 16) | (c[0xaf] << 24)) >>> 0
+    const xp = (c[F.xp] | (c[F.xp + 1] << 8) | (c[F.xp + 2] << 16) | (c[F.xp + 3] << 24)) >>> 0
     let best: { pct: number; text: string; left: number } | null = null
     for (let k = 0; k < 8; k++) {
-      const L = c[0x96 + k]
+      const L = c[F.levels + k]
       if (L <= 0 || L >= levelLimit(c, k)) continue
       const next = xpFor(t, k, L + 1)
       if (next === 0 || next === 0xffffffff) continue
@@ -620,9 +621,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     return best ? { pct: best.pct, text: best.text } : null
   }
   function canTrain(t: Tables, c: Uint8Array) {
-    const xp = (c[0xac] | (c[0xad] << 8) | (c[0xae] << 16) | (c[0xaf] << 24)) >>> 0
+    const xp = (c[F.xp] | (c[F.xp + 1] << 8) | (c[F.xp + 2] << 16) | (c[F.xp + 3] << 24)) >>> 0
     for (let k = 0; k < 8; k++) {
-      const L = c[0x96 + k]
+      const L = c[F.levels + k]
       if (L <= 0 || L >= levelLimit(c, k)) continue
       const need = xpFor(t, k, L + 1)
       if (need !== 0 && need !== 0xffffffff && xp >= need) return true
@@ -695,18 +696,18 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     let split: Map<number, number> | null = null // item index → party index (−1 leave), while the split is shown
     let leaving = false
     const members = () => engine.party()
-    const load = (c: Uint8Array) => c[0x102] | (c[0x103] << 8)
-    const usable = (c: Uint8Array, it: Item) => ((t.baseOf(it)?.classes ?? 0) & c[0xb0]) !== 0
+    const load = (c: Uint8Array) => c[F.load] | (c[F.load + 1] << 8)
+    const usable = (c: Uint8Array, it: Item) => ((t.baseOf(it)?.classes ?? 0) & c[F.itemMask]) !== 0
     const nameOf = (c: Uint8Array) => parseCharacter(c).name
     /** movement after taking this extra (an item, or n coins) */
     const moveAfter = (c: Uint8Array, items: Item[], it: Item | null, coins = 0) => {
       const cc = c.slice(), list = items.map((x) => x.copy())
       if (it) list.push(it.copy())
-      if (coins) { const g = Math.min(0xffff, (cc[0x8e] | (cc[0x8f] << 8)) + coins); cc[0x8e] = g & 0xff; cc[0x8f] = g >> 8 } // weighed as gold: every coin counts 1
+      if (coins) { const g = Math.min(0xffff, (cc[F.money + 6] | (cc[F.money + 7] << 8)) + coins); cc[F.money + 6] = g & 0xff; cc[F.money + 7] = g >> 8 } // weighed as gold: every coin counts 1
       recalc(cc, list, t)
-      return cc[0x11c]
+      return cc[F.move]
     }
-    const detectCaster = () => members().find((c) => c[0x10c] === 0 && Array.from({ length: 21 }, (_, k) => c[0x17 + k]).some((v) => v === 5 || v === 11))
+    const detectCaster = () => members().find((c) => c[F.status] === 0 && Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).some((v) => v === 5 || v === 11))
     const leftovers = () => [...engine.money.some((v) => v > 0) ? [moneyLine(engine.money)] : [], ...engine.treasure.map((it) => t.name(it))]
     const moneyLine = (m: number[]) => COINS.map((n, i) => (m[i] ? `${m[i]} ${n}` : '')).filter(Boolean).join(', ')
     /** "Take all" (not in the original), rules/treasure.ts */
@@ -720,24 +721,24 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           const pct = Math.min(100, Math.round((100 * load(c)) / Math.max(1, capacity(c))))
           return `<button data-who="${k}" class="tr-member${c === taker ? ' on' : ''}" title="Coins go to the one selected">
             <span>${escape(nameOf(c))}</span><span class="loadbar${pct > 90 ? ' full' : ''}"><span style="width:${pct}%"></span></span>
-            <small>${load(c)}/${capacity(c)} · move ${c[0x11c]} · ${engine.itemsOf(c).length}/16 items</small></button>`
+            <small>${load(c)}/${capacity(c)} · move ${c[F.move]} · ${engine.itemsOf(c).length}/16 items</small></button>`
         }).join('')
         const coins = COINS.map((n, i) => ({ n, i, v: engine.money[i] })).filter((x) => x.v > 0)
         const coinRows = coins.map(({ n, i, v }) => {
-          const slower = moveAfter(taker, engine.itemsOf(taker), null, v) < taker[0x11c]
+          const slower = moveAfter(taker, engine.itemsOf(taker), null, v) < taker[F.move]
           return `<tr><td>${escape(n)}</td><td class="num">${v}</td>
             <td><input type="number" min="1" max="${v}" value="${v}" data-amount="${i}"></td>
             <td><button data-coin="${i}">Take</button>${slower ? '<small class="cant"> slows them</small>' : ''}</td></tr>`
         }).join('')
         const rows = engine.treasure.map((it, i) => {
           const give = party.map((c, k) => {
-            const why = c[0x10c] !== 0 ? 'cannot take things now' : canTakeItem(c, engine.itemsOf(c), it)
+            const why = c[F.status] !== 0 ? 'cannot take things now' : canTakeItem(c, engine.itemsOf(c), it)
             const can = usable(c, it)
-            const slower = !why && moveAfter(c, engine.itemsOf(c), it) < c[0x11c]
+            const slower = !why && moveAfter(c, engine.itemsOf(c), it) < c[F.move]
             const tip = why || `${nameOf(c)}${can ? '' : ' (cannot use it)'}${slower ? ', moves slower with it' : ''}`
             return `<button data-give="${i}:${k}" class="${can ? '' : 'unusable'}${slower ? ' slower' : ''}" ${why ? `disabled title="${escape(why === 'Overloaded' ? 'OverLoaded' : why)}"` : `title="${escape(tip)}"`}>${escape(nameOf(c).split(' ')[0])}${slower ? ' ↓' : ''}</button>`
           }).join('')
-          const better = party.filter((c) => c[0x10c] === 0 && usable(c, it)).map((c) => {
+          const better = party.filter((c) => c[F.status] === 0 && usable(c, it)).map((c) => {
             const r = readyCompare(t, c, engine.itemsOf(c), it)
             return r.gain > 0 ? `better for ${nameOf(c)}: ${r.text}` : ''
           }).filter(Boolean)
@@ -791,7 +792,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         else if (d.pool) { poolAll(members().map((c) => ({ c, items: engine.itemsOf(c) })), engine.money, t); message = 'The party\'s coins are pooled here.'; drawRoster() }
         else if (d.detect) {
           const c = detectCaster()
-          const id = c ? Array.from({ length: 21 }, (_, k) => c[0x17 + k]).find((v) => v === 5 || v === 11) : undefined
+          const id = c ? Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).find((v) => v === 5 || v === 11) : undefined
           if (c && id && engine.spells) {
             engine.cur = c
             const out = await castOutside(engine, c, engine.spells.get(id)!, [c])
@@ -857,9 +858,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         const buyer = engine.cur, items = engine.itemsOf(buyer), name = parseCharacter(buyer).name
         const gold = coinValue(moneyOf(buyer)), pooled = coinValue(engine.money)
         const stock = engine.treasure.map((it, i) => ({ it, i })).filter(({ it }) =>
-          (filter === 'all' || kind(it) === filter) && (!onlyUsable || ((t.baseOf(it)?.classes ?? 0) & buyer[0xb0]) !== 0))
+          (filter === 'all' || kind(it) === filter) && (!onlyUsable || ((t.baseOf(it)?.classes ?? 0) & buyer[F.itemMask]) !== 0))
         const rows = stock.map(({ it, i }) => {
-          const usable = ((t.baseOf(it)?.classes ?? 0) & buyer[0xb0]) !== 0
+          const usable = ((t.baseOf(it)?.classes ?? 0) & buyer[F.itemMask]) !== 0
           const why = canTakeItem(buyer, items, it) || (it.value > gold && it.value > pooled ? 'Not enough money' : '')
           return `<tr class="${usable ? '' : 'unusable'}"><td>${escape(t.name(it))}${usable ? '' : '<small class="cant">not for this class</small>'}</td>
             <td class="num">${it.value}</td><td class="num">${it.weight * Math.max(1, it.count)}</td><td class="cmp">${usable ? escape(compare(buyer, items, it)) : ''}</td>
@@ -867,7 +868,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         }).join('')
         dialog.innerHTML = `<h2>Buy</h2>
           <div class="shop-buyer">${engine.party().map((c) => `<button data-who="${engine.party().indexOf(c)}" class="${c === buyer ? 'on' : ''}">${escape(parseCharacter(c).name)}</button>`).join('')}</div>
-          <p>${escape(name)} has <strong>${gold}</strong> gp in coins${pooled ? ` · ${pooled} gp in the pool` : ''} · carrying ${buyer[0x102] | (buyer[0x103] << 8)} of ${capacity(buyer)}</p>
+          <p>${escape(name)} has <strong>${gold}</strong> gp in coins${pooled ? ` · ${pooled} gp in the pool` : ''} · carrying ${buyer[F.load] | (buyer[F.load + 1] << 8)} of ${capacity(buyer)}</p>
           <div class="shop-filter">${(['all', 'weapons', 'armour', 'other'] as const).map((f) => `<button data-f="${f}" class="${f === filter ? 'on' : ''}">${f[0].toUpperCase() + f.slice(1)}</button>`).join('')}
             <label><input type="checkbox" ${onlyUsable ? 'checked' : ''} data-usable> Only what ${escape(name)} can use</label></div>
           <table class="shop"><thead><tr><th>Item</th><th class="num">Price</th><th class="num">Weight</th><th>If readied instead</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="5" class="muted">Nothing here.</td></tr>'}</tbody></table>
@@ -914,16 +915,17 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   function memorizePanel(): Promise<void> {
     const st = engine.spells!, t = engine.items!
     let message = ''
-    const sortSlots = (c: Uint8Array) => memorised(c).sort((a, b) => (a & 0x7f) - (b & 0x7f)).forEach((v, i) => { c[0x17 + i] = v })
+    const slotLevels = Array.from({ length: F.slotLevels }, (_, i) => i + 1)
+    const sortSlots = (c: Uint8Array) => memorised(c).sort((a, b) => (a & 0x7f) - (b & 0x7f)).forEach((v, i) => { c[F.memorised + i] = v })
     return new Promise((resolve) => {
       const render = () => {
         const c = engine.cur, name = parseCharacter(c).name
-        const casters = engine.party().filter((m) => m[0x10c] === 0 && [1, 2, 3].some((l) => m[0xb1 + l] || m[0xb4 + l]))
+        const casters = engine.party().filter((m) => m[F.status] === 0 && slotLevels.some((l) => m[F.clericSlots + l - 1] || m[F.muSlots + l - 1]))
         const groups: string[] = []
         for (const cls of [0, 1]) {
-          if (![1, 2, 3].some((l) => c[0xb1 + cls * 3 + l])) continue
-          const levels = [1, 2, 3].filter((l) => c[0xb1 + cls * 3 + l]).map((l) => {
-            const total = c[0xb1 + cls * 3 + l]
+          if (!slotLevels.some((l) => c[(cls ? F.muSlots : F.clericSlots) + l - 1])) continue
+          const levels = slotLevels.filter((l) => c[(cls ? F.muSlots : F.clericSlots) + l - 1]).map((l) => {
+            const total = c[(cls ? F.muSlots : F.clericSlots) + l - 1]
             const inSlots = memorised(c).map((v, k) => ({ v, k })).filter(({ v }) => v && st.get(v & 0x7f)?.cls === cls && st.get(v & 0x7f)?.level === l)
             const chips = inSlots.map(({ v, k }) => v >= 0x80
               ? `<button class="spell pending" data-clear="${k}" title="Pending: tap to clear">${escape(st.get(v & 0x7f)!.name)} ✕</button>`
@@ -956,8 +958,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         const c = engine.cur
         if (d.who) { engine.cur = engine.party()[Number(d.who)]; drawRoster() }
         else if (d.mem) { const s = st.get(Number(d.mem))!; if (!memorise(c, s, st)) message = 'No free slot of that level.' }
-        else if (d.clear) { c[0x17 + Number(d.clear)] = 0; sortSlots(c) }
-        else if (d.clearall) for (let k = 0; k < 21; k++) if (c[0x17 + k] >= 0x80) c[0x17 + k] = 0
+        else if (d.clear) { c[F.memorised + Number(d.clear)] = 0; sortSlots(c) }
+        else if (d.clearall) for (let k = 0; k < F.memorisedCount; k++) if (c[F.memorised + k] >= 0x80) c[F.memorised + k] = 0
         render()
       }
       dialog.classList.add('wide')
@@ -1029,7 +1031,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           print(`${nameOf(made)} has been created. Use Add to put them in the party.`, false)
         }
       } else if (o === 'ADD') {
-        if (party.length >= 8 || party.filter((m) => m[0x84] < 0x80).length >= 6) { print('The party is full.', false); continue }
+        if (party.length >= 8 || party.filter((m) => m[F.morale] < 0x80).length >= 6) { print('The party is full.', false); continue }
         const inParty = new Set(party.map(nameOf))
         const roster = (await listCharacters()).filter((r) => !inParty.has(nameOf(r.sav)))
         const pick = await tools.chooseFrom('Add character', roster)
@@ -1050,7 +1052,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           print(`${nameOf(c)} has been dropped.`, false)
         }
       } else if (o === 'MODIFY') {
-        if ((c[0xac] | c[0xad] | c[0xae] | c[0xaf]) !== 0) print(`${nameOf(c)} can't be modified.`, false)
+        if ((c[F.xp] | c[F.xp + 1] | c[F.xp + 2] | c[F.xp + 3]) !== 0) print(`${nameOf(c)} can't be modified.`, false)
         else if (await tools.modify(c)) { if (engine.items) recalc(c, engine.itemsOf(c), engine.items); print(`${nameOf(c)} has been modified.`, false) }
       } else if (o === 'TRAIN') {
         const chk = checkTraining(t, c, engine.read(0x6da8))
@@ -1066,7 +1068,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           if (choices.length) {
             const st = engine.spells
             const k = await menu(choices.map((id) => (st?.get(id)?.name ?? `#${id}`).toUpperCase()), { prompt: 'Spells to choose from:', vertical: true })
-            c[0x32 + choices[k]] = 1
+            c[F.known + choices[k]] = 1
           }
         }
         if (engine.items) recalc(c, engine.itemsOf(c), engine.items)
@@ -1087,7 +1089,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const it = items[sel]
     const str = c.stats.STR === 18 && c.strPct ? `/${String(c.strPct % 100).padStart(2, '0')}` : ''
     // equipment panel (IMP-041): readied items by slot, the rest carried
-    const usable = (x: Item) => !!t && ((t.baseOf(x)?.classes ?? 0) & node[0xb0]) !== 0
+    const usable = (x: Item) => !!t && ((t.baseOf(x)?.classes ?? 0) & node[F.itemMask]) !== 0
     const wt = (x: Item) => x.weight * Math.max(1, x.count)
     const itemCell = (x: Item | undefined, label: string) => x
       ? `<button class="slot${items.indexOf(x) === sel ? ' sel' : ''}${x.cursed && x.hidden === 0 ? ' cursed' : ''}" data-i="${items.indexOf(x)}"><span class="slot-name">${label}</span>${escape(t!.name(x))}</button>`
@@ -1151,11 +1153,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         '<button data-a="drop"><u>D</u>rop</button><button data-a="halve"><u>H</u>alve</button><button data-a="join"><u>J</u>oin</button>' +
         (store ? '<button data-a="sell"><u>S</u>ell</button><button data-a="id"><u>I</u>d</button>' : '')
     }
-    const enc = node[0x102] | (node[0x103] << 8), cap = capacity(node)
+    const enc = node[F.load] | (node[F.load + 1] << 8), cap = capacity(node)
     const tb = getTables(), xpNext = tb ? xpProgress(tb, node) : null
     const sheetXp = tb ? (xpNext ? xpNext.text.replace(/^[\d,.\s]+XP: /, '') : 'highest level reached') : ''
     // c[0x10F]: Quick (computer control), kept in the record between battles; NPCs are always computer-run
-    const quick = node[0x10f] !== 0 && node[0x84] < 0x80
+    const quick = node[F.quick] !== 0 && node[F.morale] < 0x80
     dialog.classList.add('wide')
     dialog.innerHTML = `
       <div class="sheet-head"><canvas class="pixel ic sheet-icon" width="24" height="24"></canvas><div>
@@ -1208,7 +1210,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         return `<div class="spell-actions"><p>Cast ${escape(s.name)} on:</p>${engine.party().map((n, k) =>
           `<button data-sp="on-${k}">${escape(parseCharacter(n).name)}</button>`).join('')}<button data-sp="cancel">Cancel</button></div>`
       }
-      const why = engine.read(0x49e5) !== 0 ? 'cannot cast spells in this area' : node[0x10c] !== 0 ? `${c.name} is in no condition to cast any spells` : ''
+      const why = engine.read(0x49e5) !== 0 ? 'cannot cast spells in this area' : node[F.status] !== 0 ? `${c.name} is in no condition to cast any spells` : ''
       const count = (id: number) => memorised(node).filter((v) => v === id).length
       return `<div class="spell-actions"><h3>Spells</h3>${why ? `<p class="muted">${escape(why)}</p>` : ''}${ready.map((s) => {
         const combatOnly = s.side === 0
@@ -1220,7 +1222,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       // the view menu's Trade and Drop of coins (FUN_4894_0ab3): Trade not in combat, nor for an NPC in play
       const coins = c.money.map((v, i) => ({ v, i })).filter((x) => x.v > 0)
       if (!coins.length || !t) return ''
-      const npcInPlay = node[0x84] >= 0x80 && node[0x10d] !== 0 && node[0x10c] !== 1
+      const npcInPlay = node[F.morale] >= 0x80 && node[F.inPlay] !== 0 && node[F.status] !== 1
       const canTrade = !opts.combat && !npcInPlay
       const m = opts.money
       if (!m) return `<div class="money-actions">${canTrade ? '<button data-m="trade">Trade money</button>' : ''}<button data-m="drop">Drop money</button></div>`
@@ -1237,7 +1239,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       sheet(parseCharacter(node), { ...o, mode: opts.mode, combat: opts.combat })
     }
     dialog.querySelector<HTMLButtonElement>('button[data-quick]')?.addEventListener('click', () => {
-      node[0x10f] = 0 // as the battle's Space does for this character (FUN_3334_0fc1), outside a battle (IMP-054)
+      node[F.quick] = 0 // as the battle's Space does for this character (FUN_3334_0fc1), outside a battle (IMP-054)
       again({ message: `${c.name} will be played by hand in battle.` })
     })
     dialog.querySelectorAll<HTMLButtonElement>('.spell-actions button').forEach((b) => b.addEventListener('click', () => {
@@ -1338,7 +1340,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         const m = drop(node, items, it, t)
         again({ message: m })
       } else if (a === 'sell') {
-        const why = unavailable(it) || (node[0x84] >= 0x80 && node[0x10d] ? 'NPCs cannot sell' : '')
+        const why = unavailable(it) || (node[F.morale] >= 0x80 && node[F.inPlay] ? 'NPCs cannot sell' : '')
         if (!why && scribing(it, t) && !opts.after) return again({ selected: keep, confirm: 'scribe', after: 'sell' })
         again(why ? { selected: keep, message: why } : { selected: keep, confirm: 'sell' })
       } else if (a === 'sell-yes') {

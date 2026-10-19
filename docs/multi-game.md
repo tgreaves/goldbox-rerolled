@@ -72,6 +72,16 @@ deep inside shared code (`if (coab) …`); it is a choice made in the profile.
    imports and saves stay); the import screen lists every imported game. CotAB opens in the asset
    viewer until it is playable. DS and table addresses move into the profile with step 3.
 2. **Record fields.** The field map and the mechanical conversion; PoR tests green.
+   *Done 2026-10-19*: `web/src/games/fields.ts` (both games' maps; `test/fields.test.ts` reads CotAB's
+   pre-made party through its map). About 730 accesses converted; each checked to give PoR's old offset.
+   Left for later steps:
+   - the script VM's view of the current character (`charRead`/`charWrite` in `vm/engine.ts`, ECL
+     address → record offset) stays PoR-shaped until step 4;
+   - CotAB stores base and current stats: code that changes a stat permanently (creation, Modify,
+     Raise Dead's CON loss, the debug editor) writes only the current value today, and must write the
+     base too (step 6);
+   - spell slots are indexed `clericSlots + spellClass × slotLevels`, true for PoR's two classes; CotAB
+     puts druid slots between cleric and magic-user, so step 6 maps spell class to slot array.
 3. **Executable tables.** Named table lookups replace raw DS offsets; PoR tests green.
 4. **Script VM.** Addresses, variable spaces and opcodes from the profile; CotAB's scripts run
    headless over every area and square without errors (the PoR proof, repeated).

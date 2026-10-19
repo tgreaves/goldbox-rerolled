@@ -3,11 +3,12 @@
 import { game } from '../games/profile'
 import type { Engine } from '../vm/engine'
 import { parseCharacter } from '../data/character'
+import { F } from '../games/fields'
 import type { Item } from '../data/items'
 import { canTakeItem, recalc } from '../rules/equip'
 import { castOutside } from '../rules/magic'
 
-const memorisedReady = (c: Uint8Array) => Array.from({ length: 21 }, (_, k) => c[0x17 + k]).filter((v) => v > 0 && v < 0x80)
+const memorisedReady = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
 import { appraiseGem, appraiseJewel, COINS, coinValue, keepAsItem, moneyOf, pay, poolAll, receive, share, take, takeOne } from '../rules/money'
 
 export interface TownUi {
@@ -178,7 +179,7 @@ async function heal(ui: TownUi) {
   const i = await ui.menu([...SERVICES.map((s) => s.name.toUpperCase()), 'EXIT'], { prompt: `Healing for ${name}:`, vertical: true })
   if (i >= SERVICES.length) return
   const s = SERVICES[i]
-  const status = c[0x10c]
+  const status = c[F.status]
   const reason = [
     has([33]) ? '' : 'is not blind.',
     has(DISEASES) ? '' : 'is not Diseased.',
@@ -191,7 +192,7 @@ async function heal(ui: TownUi) {
   if (reason && !await yes(ui, `${name} ${reason} cast cure anyway:`)) return
   if (!await yes(ui, `${s.name} will only cost ${s.gp} gold pieces. pay for cure?`)) return
   if (!pay(c, e.money, s.gp, t, items)) { ui.print('Not enough money.', false); return }
-  const hp = (n: number) => { c[0x11b] = Math.min(c[0x32], c[0x11b] + n) }
+  const hp = (n: number) => { c[F.hp] = Math.min(c[F.maxHp], c[F.hp] + n) }
   switch (i) {
     case 0: remove([33]); break
     case 1: remove(DISEASES); break
@@ -201,7 +202,7 @@ async function heal(ui: TownUi) {
     case 5: remove([55, 22, 15]); break
     case 6: if (!reason) raiseDead(e, c); break
     case 7: remove([36]); for (const x of items) x.raw[0x36] = 0; break
-    case 8: if (!reason) { c[0x10c] = 0; c[0x11b] = 1 } break
+    case 8: if (!reason) { c[F.status] = 0; c[F.hp] = 1 } break
   }
   recalc(c, items, t)
   ui.print(`${name} is cured.`, false)
@@ -212,20 +213,20 @@ async function heal(ui: TownUi) {
 function raiseDead(e: Engine, c: Uint8Array) {
   const fx = e.effectsOf(c)
   for (let i = fx.length - 1; i >= 0; i--) if (fx[i].type === 32 || fx[i].type === 55) fx.splice(i, 1)
-  c[0x11b] = 1
-  c[0x10c] = 0
-  if (c[0x14] > 0) c[0x14]--
-  const con = c[0x14]
+  c[F.hp] = 1
+  c[F.status] = 0
+  if (c[F.stat[4]] > 0) c[F.stat[4]]--
+  const con = c[F.stat[4]]
   if (con < 14) return
-  const b = Math.max(0, c[0x32] - c[0xb1])
+  const b = Math.max(0, c[F.maxHp] - c[F.hpRolled])
   let t = 0
   for (let k = 0; k < 8; k++) {
-    const L = c[0x96 + k]
+    const L = c[F.levels + k]
     if (L <= 0) continue
     t += k === 2 ? L * (con - 14) : con > 15 ? 2 * L : L
   }
   const loss = t > 0 ? Math.floor(b / t) : b
-  if (con < 17 || c[0x98] <= 0) c[0x32] = Math.max(1, c[0x32] - loss)
+  if (con < 17 || c[F.levels + 2] <= 0) c[F.maxHp] = Math.max(1, c[F.maxHp] - loss)
 }
 
 /** Treasure screen (FUN_2e08_0ecd), after a fight or a scripted TREASURE without monsters. */

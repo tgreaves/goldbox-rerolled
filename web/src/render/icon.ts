@@ -3,13 +3,14 @@
 // and 9,10,11,12,14,15 (colour-2, high nibble). Record = part + 0x40 when large + 0x80 action pose.
 import type { GameFiles } from '../store/gamefiles'
 import { parseRecord, type Picture } from '../data/image'
+import { F } from '../games/fields'
 
 const PART_COLOURS = [1, 2, 3, 4, 6, 7] // DS:3CF5: Body, Arm, Leg, Hair/Face, Shield, Weapon
 
 export function buildIcon(files: GameFiles, c: Uint8Array, action: boolean): Picture | null {
-  const extra = (c[0xc0] === 2 ? 0x40 : 0) + (action ? 0x80 : 0)
-  const bodyRaw = files.record('CBODY', c[0xbe] + extra)
-  const headRaw = files.record('CHEAD', c[0xbd] + extra)
+  const extra = (c[F.iconSize] === 2 ? 0x40 : 0) + (action ? 0x80 : 0)
+  const bodyRaw = files.record('CBODY', c[F.iconBody] + extra)
+  const headRaw = files.record('CHEAD', c[F.iconHead] + extra)
   if (!bodyRaw) return null
   const body = parseRecord(bodyRaw).frames[0].picture
   const px = body.pixels.slice()
@@ -19,8 +20,8 @@ export function buildIcon(files: GameFiles, c: Uint8Array, action: boolean): Pic
   }
   const map = Array.from({ length: 16 }, (_, i) => i)
   PART_COLOURS.forEach((col, k) => {
-    map[col] = c[0xc1 + k] & 0xf
-    map[col + 8] = c[0xc1 + k] >> 4
+    map[col] = c[F.iconColours + k] & 0xf
+    map[col + 8] = c[F.iconColours + k] >> 4
   })
   for (let i = 0; i < px.length; i++) px[i] = map[px[i]]
   return { ...body, pixels: px }

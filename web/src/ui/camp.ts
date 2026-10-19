@@ -1,5 +1,6 @@
 // Camp screens (spec/camp.md): Encamp menu, Magic, Rest, Alter.
 import { game } from '../games/profile'
+import { F } from '../games/fields'
 import { spellText } from '../rules/spelltext'
 import type { Engine } from '../vm/engine'
 import { parseCharacter } from '../data/character'
@@ -69,7 +70,7 @@ async function magic(ui: CampUi, state: { heal: number }): Promise<boolean> {
 function activity(ui: CampUi, what: 'cast any spells' | 'memorize spells' | 'scribe any scrolls'): boolean {
   const e = ui.engine, c = e.cur
   if (what === 'cast any spells' && e.read(0x49e5) !== 0) { ui.print('cannot cast spells in this area', false); return false }
-  if (c[0x10c] === 1 || ![0, 1].includes(c[0x10c])) { ui.print(`${nameOf(c)} is in no condition to ${what}`, false); return false }
+  if (c[F.status] === 1 || ![0, 1].includes(c[F.status])) { ui.print(`${nameOf(c)} is in no condition to ${what}`, false); return false }
   return true
 }
 
@@ -114,12 +115,12 @@ async function memorize(ui: CampUi) {
   if (pending().length) {
     ui.print(`Spells to be memorized: ${pending().join(', ')}`, true)
     if (await yes(ui, 'Memorize These Spells?')) return
-    for (let k = 0; k < 21; k++) if (c[0x17 + k] >= 0x80) c[0x17 + k] = 0
+    for (let k = 0; k < F.memorisedCount; k++) if (c[F.memorised + k] >= 0x80) c[F.memorised + k] = 0
   }
   let picked = false
   for (;;) {
-    const row = (cls: number) => [1, 2, 3].map((l) => (c[0xb1 + cls * 3 + l] ? String(freeSlots(c, cls, l, st)) : '-')).join(' ')
-    const hasCleric = [1, 2, 3].some((l) => c[0xb1 + l]), hasMU = [1, 2, 3].some((l) => c[0xb4 + l])
+    const row = (cls: number) => [1, 2, 3].map((l) => (c[F.clericSlots + cls * F.slotLevels + l - 1] ? String(freeSlots(c, cls, l, st)) : '-')).join(' ')
+    const hasCleric = [1, 2, 3].some((l) => c[F.clericSlots + l - 1]), hasMU = [1, 2, 3].some((l) => c[F.muSlots + l - 1])
     if (!hasCleric && !hasMU) { ui.print(`${nameOf(c)} cannot memorize any spells`, false); return }
     ui.print(`${nameOf(c)} can memorize:${hasCleric ? `  Cleric Spells: ${row(0)}` : ''}${hasMU ? `  Magic-User Spells: ${row(1)}` : ''}`, true)
     const book: Spell[] = st.spells.filter((s) => s.id <= 55 && knows(c, s.id))
@@ -129,7 +130,7 @@ async function memorize(ui: CampUi) {
   }
   if (picked && pending().length) {
     ui.print(`Spells to be memorized: ${pending().join(', ')}`, true)
-    if (!await yes(ui, 'Memorize these spells?')) for (let k = 0; k < 21; k++) if (c[0x17 + k] >= 0x80) c[0x17 + k] = 0
+    if (!await yes(ui, 'Memorize these spells?')) for (let k = 0; k < F.memorisedCount; k++) if (c[F.memorised + k] >= 0x80) c[F.memorised + k] = 0
   }
 }
 
@@ -153,7 +154,7 @@ async function scribe(ui: CampUi) {
     const x = entries[i], s = st.get(x.id)!
     if (knows(c, x.id)) ui.print('You already know that spell', false)
     else if (entries.some((y) => y.mark && y.id === x.id)) ui.print('You are already scibing that spell', false)
-    else if (!c[0xb1 + s.cls * 3 + s.level]) ui.print('You can not scribe that spell.', false)
+    else if (!c[F.clericSlots + s.cls * F.slotLevels + s.level - 1]) ui.print('You can not scribe that spell.', false)
     else x.it.raw[0x3c + x.j] |= 0x80
   }
   if (marked().length) {
@@ -235,9 +236,9 @@ async function fix(ui: CampUi, state: { heal: number }): Promise<boolean> {
   if (!cure) return false
   if (e.read(0x49e5) !== 0) { ui.print('cannot cast spells in this area', false); return false }
   const party = () => e.party()
-  const healers = () => party().filter((c) => c[0x10c] === 0 && c[0x96] > 0 && knows(c, cure.id) && c[0xb2] > 0)
-  const wounded = () => party().filter((c) => [0, 1, 4, 5].includes(c[0x10c]) && c[0x11b] < c[0x32])
-    .sort((a, b) => (b[0x32] - b[0x11b]) - (a[0x32] - a[0x11b]))
+  const healers = () => party().filter((c) => c[F.status] === 0 && c[F.levels] > 0 && knows(c, cure.id) && c[F.clericSlots] > 0)
+  const wounded = () => party().filter((c) => [0, 1, 4, 5].includes(c[F.status]) && c[F.hp] < c[F.maxHp])
+    .sort((a, b) => (b[F.maxHp] - b[F.hp]) - (a[F.maxHp] - a[F.hp]))
   if (!wounded().length) { ui.print('The party is already healthy.', true); return false }
   if (!healers().length) { ui.print('No one in the party can cast Cure Light Wounds.', true); return false }
   ui.print('The party fixes its wounds...', true)
@@ -247,7 +248,7 @@ async function fix(ui: CampUi, state: { heal: number }): Promise<boolean> {
       while (memorised(h).includes(cure.id) && wounded().length) {
         const w = wounded()[0]
         await castOutside(e, h, cure, [w])
-        ui.print(`${nameOf(h)} heals ${nameOf(w)} (${w[0x11b]}/${w[0x32]})`, false)
+        ui.print(`${nameOf(h)} heals ${nameOf(w)} (${w[F.hp]}/${w[F.maxHp]})`, false)
       }
     }
     ui.refresh()
@@ -290,7 +291,7 @@ async function alter(ui: CampUi) {
       const c = e.cur
       if (e.party().length === 1) { ui.print('The last character cannot leave the party here.', false); continue }
       if (await yes(ui, 'Drop from party?')) {
-        ui.print(c[0x10d] ? `${nameOf(c)} bids you farewell` : `${nameOf(c)} is dumped in a ditch`, false)
+        ui.print(c[F.inPlay] ? `${nameOf(c)} bids you farewell` : `${nameOf(c)} is dumped in a ditch`, false)
         e.dropMember(c)
         ui.refresh()
       } else ui.print('Breathes A sigh of relief', false)

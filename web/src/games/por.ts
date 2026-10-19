@@ -1,5 +1,6 @@
 // Pool of Radiance (1988), the port's first game.
 import type { GameProfile } from './types'
+import { POR_FIELDS } from './fields'
 
 export const POR: GameProfile = {
   id: 'por',
@@ -16,5 +17,6 @@ export const POR: GameProfile = {
   stores: { files: 'poolrad', user: 'poolrad-user' },
   imageFamilies: ['TITLE', 'PIC', 'FINAL', 'SPRIT', 'HEAD', 'BODY', 'CHEAD', 'CBODY', 'CPIC',
     'ICON', 'COMSPR', 'SQRPACI', 'BACPAC', 'DUNGCOM', 'WILDCOM', 'RANDCOM', '8X8D'],
+  fields: POR_FIELDS,
   playable: true,
 }

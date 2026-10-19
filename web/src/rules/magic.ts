@@ -6,6 +6,7 @@ import { heal } from './camp'
 import { WorldHost } from './worldfx'
 import { addEffect as fxAdd, addRaw } from './effects'
 import { sharedSpell } from './spellfx'
+import { F } from '../games/fields'
 
 /**
  * The line each spell prints on a creature its effect took hold on (FUN_5216_1656's message, passed by the
@@ -25,7 +26,7 @@ export const SPELL_MSG: Record<number, string> = {
 /** Caster level (FUN_10ba_26c2): cleric level, magic-user level, 12 for item-only spells; 6 from an item. */
 export function casterLevel(c: Uint8Array, s: Spell, fromItem = false): number {
   if (fromItem && s.cls <= 1) return 6
-  return s.cls === 0 ? c[0x96] : s.cls === 1 ? c[0x9b] : 12
+  return s.cls === 0 ? c[F.levels] : s.cls === 1 ? c[F.levels + 5] : 12
 }
 
 /** Duration in minutes (FUN_4e53_07d6). */
@@ -42,7 +43,7 @@ export function duration(e: Engine, s: Spell, level: number, inCombat = false): 
 
 /** Remove the first memorised copy of a spell (FUN_10ba_148b). */
 export function forget(c: Uint8Array, id: number) {
-  for (let k = 0; k < 21; k++) if (c[0x17 + k] === id) { c[0x17 + k] = 0; return }
+  for (let k = 0; k < F.memorisedCount; k++) if (c[F.memorised + k] === id) { c[F.memorised + k] = 0; return }
 }
 
 /** Who a spell can be aimed at outside combat, by its side byte (FUN_4e53_0c20): 1 the caster, 2 one picked, 4 the party. */
@@ -61,7 +62,7 @@ export async function castOutside(e: Engine, caster: Uint8Array, s: Spell, targe
   const L = casterLevel(caster, s, fromItem)
   const out: string[] = []
   const h = new WorldHost(e, (m) => out.push(m))
-  const name = (c: Uint8Array) => String.fromCharCode(...c.subarray(1, 1 + c[0]))
+  const name = (c: Uint8Array) => String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name]))
   const first = targets[0]
   if (!fromItem) forget(caster, s.id)
   if (s.name) out.push(`${name(caster)} casts ${s.name}.`)
@@ -71,7 +72,7 @@ export async function castOutside(e: Engine, caster: Uint8Array, s: Spell, targe
       if (!first) break
       const amount = s.id === 3 ? e.roll(1, 8) : e.roll(2, 4) + 2
       heal(first, e.effectsOf(first), amount, false)
-      out.push(`${name(first)} is ${first[0x11b] === first[0x32] ? 'fully' : 'partially'} healed.`)
+      out.push(`${name(first)} is ${first[F.hp] === first[F.maxHp] ? 'fully' : 'partially'} healed.`)
       break
     }
     case 32: if (first) addRaw(h, first, 0x1c, dur, e.roll(1, 4), 0); break // Mirror Image

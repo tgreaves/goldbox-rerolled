@@ -5,6 +5,7 @@ import type { Spell, SpellTables } from '../data/spells'
 import type { Effect } from '../data/effects'
 import { removeEffect, type FxHost } from './effects'
 import { WorldHost } from './worldfx'
+import { F } from '../games/fields'
 
 // ------------------------------------------------------------------ clock
 /** Clock words in ECL array A: segment, minute, ten-minutes, hour, day, month, year. */
@@ -20,7 +21,7 @@ function normalise(w: number[], party: Uint8Array[]) {
   for (let u = 0; u < 6; u++) {
     if (w[u] >= LIMITS[u]) { w[u] -= LIMITS[u]; w[u + 1]++ }
   }
-  if (w[6] >= 256) for (const c of party) { const a = (c[0x30] | (c[0x31] << 8)) + 1; c[0x30] = a & 0xff; c[0x31] = a >> 8 }
+  if (w[6] >= 256) for (const c of party) { const a = (c[F.age] | (c[F.age + 1] << 8)) + 1; c[F.age] = a & 0xff; c[F.age + 1] = a >> 8 }
 }
 
 /** Advance the clock by `count` units (FUN_4b46_03d5), then time out effects by as much. */
@@ -57,19 +58,19 @@ export function clockText(e: Engine): string {
 }
 
 // ------------------------------------------------------------------ spells and slots
-export const memorised = (c: Uint8Array) => Array.from({ length: 21 }, (_, k) => c[0x17 + k])
-export const knows = (c: Uint8Array, id: number) => c[0x32 + id] !== 0
+export const memorised = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k])
+export const knows = (c: Uint8Array, id: number) => c[F.known + id] !== 0
 
 /** Free slots of a class (0 cleric, 1 MU) and level: char[0xB1 + class·3 + level] − memorised (ready or pending). */
 export function freeSlots(c: Uint8Array, cls: number, level: number, st: SpellTables): number {
-  if (level < 1 || level > 3) return 0
+  if (level < 1 || level > F.slotLevels) return 0
   let used = 0
   for (const v of memorised(c)) {
     if (!v) continue
     const s = st.get(v)
     if (s && s.cls === cls && s.level === level) used++
   }
-  return c[0xb1 + cls * 3 + level] - used
+  return c[F.clericSlots + cls * F.slotLevels + level - 1] - used
 }
 
 /** Memorise: store id + 0x80 in the first empty slot and sort by id (FUN_3f81_0824). */
@@ -77,16 +78,16 @@ export function memorise(c: Uint8Array, s: Spell, st: SpellTables): boolean {
   if (freeSlots(c, s.cls, s.level, st) <= 0) return false
   const k = memorised(c).indexOf(0)
   if (k < 0) return false
-  c[0x17 + k] = s.id + 0x80
+  c[F.memorised + k] = s.id + 0x80
   const sorted = memorised(c).sort((a, b) => (a & 0x7f) - (b & 0x7f))
-  sorted.forEach((v, i) => { c[0x17 + i] = v })
+  sorted.forEach((v, i) => { c[F.memorised + i] = v })
   return true
 }
 
 /** Clear pending spells (FUN_3f81_0214): pending memorisations, base hours, scribe marks. */
 export function clearPending(c: Uint8Array, items: Item[], t: ItemTables) {
-  for (let k = 0; k < 21; k++) if (c[0x17 + k] >= 0x80) c[0x17 + k] = 0
-  c[0x2c] = 0
+  for (let k = 0; k < F.memorisedCount; k++) if (c[F.memorised + k] >= 0x80) c[F.memorised + k] = 0
+  c[F.studyHours] = 0
   for (const it of items) if (isScroll(it, t)) for (let j = 0; j < 3; j++) it.raw[0x3c + j] &= 0x7f
 }
 
@@ -99,7 +100,7 @@ export function isScroll(it: Item, t: ItemTables) {
 export function readableScrolls(c: Uint8Array, items: Item[], fx: Effect[], t: ItemTables): Item[] {
   return items.filter((it) => {
     if (!isScroll(it, t)) return false
-    const cleric = c[0x96] > 0 && t.baseOf(it)?.slot === 12
+    const cleric = c[F.levels] > 0 && t.baseOf(it)?.slot === 12
     if (fx.some((f) => f.type === 0x10) || cleric) it.hidden = 0
     return it.hidden === 0
   })
@@ -110,9 +111,9 @@ export function preparation(c: Uint8Array, items: Item[], t: ItemTables, st: Spe
   const pending: number[] = []
   for (const v of memorised(c)) if (v >= 0x80) pending.push(st.get(v)?.level ?? 1)
   for (const it of items) if (isScroll(it, t)) for (const p of it.props) if (p & 0x80) pending.push(st.get(p)?.level ?? 1)
-  if (!pending.length) { c[0x2c] = 0; return 0 }
-  c[0x2c] = pending.some((l) => l >= 3) ? 6 : 4
-  return 60 * c[0x2c] + 15 * pending.reduce((a, b) => a + b, 0)
+  if (!pending.length) { c[F.studyHours] = 0; return 0 }
+  c[F.studyHours] = pending.some((l) => l >= 3) ? 6 : 4
+  return 60 * c[F.studyHours] + 15 * pending.reduce((a, b) => a + b, 0)
 }
 
 // ------------------------------------------------------------------ rest
@@ -133,14 +134,14 @@ function nextPendingLevel(c: Uint8Array, items: Item[], t: ItemTables, st: Spell
 
 /** Finish one spell (scribe before memorise); returns the message, or ''. */
 function finishOne(c: Uint8Array, items: Item[], t: ItemTables, st: SpellTables): string {
-  const name = String.fromCharCode(...c.subarray(1, 1 + c[0]))
+  const name = String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name]))
   for (const it of items) {
     if (!isScroll(it, t)) continue
     for (let j = 0; j < 3; j++) {
       const p = it.raw[0x3c + j]
       if (p <= 0x80) continue
       const id = p & 0x7f
-      c[0x32 + id] = 1
+      c[F.known + id] = 1
       // remove the spell (FUN_4e53_328a): the last byte holding it, and one "With n Spells" word
       for (let k = 2; k >= 0; k--) if ((it.raw[0x3c + k] & 0x7f) === id) { it.raw[0x3c + k] = 0; break }
       it.raw[0x30]--
@@ -148,10 +149,10 @@ function finishOne(c: Uint8Array, items: Item[], t: ItemTables, st: SpellTables)
       return `${name} has scribed ${st.get(id)?.name ?? id}`
     }
   }
-  for (let k = 0; k < 21; k++) {
-    if (c[0x17 + k] >= 0x80) {
-      c[0x17 + k] &= 0x7f
-      return `${name} has memorized ${st.get(c[0x17 + k])?.name ?? c[0x17 + k]}`
+  for (let k = 0; k < F.memorisedCount; k++) {
+    if (c[F.memorised + k] >= 0x80) {
+      c[F.memorised + k] &= 0x7f
+      return `${name} has memorized ${st.get(c[F.memorised + k])?.name ?? c[F.memorised + k]}`
     }
   }
   return ''
@@ -180,7 +181,7 @@ export async function restStep(e: Engine, r: RestState, camp: { heal: number }):
   e.party().forEach((c, n) => {
     const items = e.itemsOf(c)
     r.countdown[n] = (r.countdown[n] - 1) & 0xff
-    if (r.countdown[n] === 0 && c[0x2c] === 0) {
+    if (r.countdown[n] === 0 && c[F.studyHours] === 0) {
       const m = finishOne(c, items, t, st)
       if (m) messages.push(m)
       r.countdown[n] = 3 * nextPendingLevel(c, items, t, st)
@@ -190,7 +191,7 @@ export async function restStep(e: Engine, r: RestState, camp: { heal: number }):
   if (++r.hourTick >= 12) {
     r.hourTick = 0
     e.party().forEach((c, n) => {
-      if (c[0x2c] > 0 && --c[0x2c] === 0) r.countdown[n] = 3 * nextPendingLevel(c, e.itemsOf(c), t, st)
+      if (c[F.studyHours] > 0 && --c[F.studyHours] === 0) r.countdown[n] = 3 * nextPendingLevel(c, e.itemsOf(c), t, st)
     })
   }
   // encounter check
@@ -207,10 +208,10 @@ export async function restStep(e: Engine, r: RestState, camp: { heal: number }):
 
 /** Heal (FUN_5216_175d): statuses Okay, Animated, Unconscious, Dying; mummy rot blocks unless forced. */
 export function heal(c: Uint8Array, fx: Effect[], amount: number, force: boolean, inCombat = false): boolean {
-  if (![0, 1, 4, 5].includes(c[0x10c])) return false
+  if (![0, 1, 4, 5].includes(c[F.status])) return false
   if (!force && fx.some((f) => f.type === 0x32)) return false
-  c[0x11b] = Math.min(c[0x32], c[0x11b] + amount)
-  if (c[0x10c] === 5) c[0x10c] = 4
-  if (c[0x10c] === 4 && !inCombat && c[0x11b] > 0) c[0x10c] = 0
+  c[F.hp] = Math.min(c[F.maxHp], c[F.hp] + amount)
+  if (c[F.status] === 5) c[F.status] = 4
+  if (c[F.status] === 4 && !inCombat && c[F.hp] > 0) c[F.status] = 0
   return true
 }

@@ -2,6 +2,7 @@
 // party member (spec/savegame.md), exported as one ZIP and imported from loose files or a ZIP, so a
 // game moves between this port and DOSBox.
 import { parseSave } from '../data/save'
+import { F } from '../games/fields'
 import type { SavedGame, StoredCharacter } from './user'
 
 export interface NamedFile { name: string; data: Uint8Array }
@@ -56,7 +57,7 @@ export function savesFrom(files: NamedFile[]): { games: SavedGame[]; missing: st
     const lost = stems.filter((_, i) => !chars[i].sav)
     if (lost.length) { missing.push(...lost.map((s) => `${s}.SAV`)); continue }
     const first = chars[0]?.sav
-    const leader = first ? String.fromCharCode(...first.subarray(1, 1 + first[0])) : 'empty'
+    const leader = first ? String.fromCharCode(...first.subarray(F.name + 1, F.name + 1 + first[F.name])) : 'empty'
     games.push({ slot: m[1], dat, chars: chars.map((c) => ({ sav: c.sav!, itm: c.itm, spc: c.spc })),
       label: `${leader}'s party (imported)`, savedAt: Date.now(), known: readSidecar(byName.get(`SAVGAM${m[1]}.GBR`)) })
   }
@@ -81,8 +82,8 @@ export function rosterFrom(files: NamedFile[]): { chars: StoredCharacter[]; miss
   const missing: string[] = []
   for (const stem of new Set(stems)) {
     const sav = byName.get(`${stem}.CHA`)
-    if (!sav || sav.length < 0x11d) { missing.push(`${stem}.CHA`); continue }
-    chars.push({ stem, sav: sav.slice(0, 0x11d), itm: byName.get(`${stem}.ITM`), spc: byName.get(`${stem}.SPC`) })
+    if (!sav || sav.length < F.size) { missing.push(`${stem}.CHA`); continue }
+    chars.push({ stem, sav: sav.slice(0, F.size), itm: byName.get(`${stem}.ITM`), spc: byName.get(`${stem}.SPC`) })
   }
   return { chars, missing }
 }

@@ -2,6 +2,7 @@
 // All AC and THAC0 values are stored as 60 − value in the character record.
 import type { Item, ItemTables } from '../data/items'
 import { itemHandler, type FxHost } from './effects'
+import { F } from '../games/fields'
 
 const ARROW = 73
 const QUARREL = 28
@@ -32,7 +33,7 @@ const dexAC = (d: number) => d >= 1 && d <= 3 ? -4 : d === 4 ? -3 : d === 5 ? -2
 /** DEX missile to-hit and initiative adjustment (FUN_10ba_1168). */
 export const dexMissile = (d: number) => d <= 2 ? -4 : d === 3 ? -3 : d === 4 ? -2 : d === 5 ? -1 : d <= 15 ? 0 : d === 16 ? 1 : d === 17 ? 2 : d <= 20 ? 3 : d <= 23 ? 4 : d <= 25 ? 5 : 0
 
-export function strIndexOf(c: Uint8Array) { return strengthIndex(c[0x10], c[0x16]) }
+export function strIndexOf(c: Uint8Array) { return strengthIndex(c[F.stat[0]], c[F.strPct]) }
 
 /** Coins and items the character carries (encumbrance), and the most allowed (capacity). */
 export function capacity(c: Uint8Array): number {
@@ -41,7 +42,7 @@ export function capacity(c: Uint8Array): number {
 
 export function moneyWeight(c: Uint8Array): number {
   let w = 0
-  for (let i = 0; i < 7; i++) w += u16(c, 0x88 + 2 * i)
+  for (let i = 0; i < 7; i++) w += u16(c, F.money + 2 * i)
   return w
 }
 
@@ -65,40 +66,40 @@ export function recalc(c: Uint8Array, items: Item[], t: ItemTables) {
     if (it.raw[0x2f] === BAG_OF_HOLDING) bag = true
     hands += b.hands
   }
-  c[0xc7] = items.length
-  c[0x100] = hands
+  c[F.itemCount] = items.length
+  c[F.hands] = hands
   enc += moneyWeight(c)
   // natural attacks and base values
-  for (let i = 0; i < 6; i++) c[0x115 + i] = c[0xa3 + i]
-  c[0x111] = c[0xa9]
-  c[0x11c] = c[0x72]
-  c[0x110] = c[0x2d]
-  c[0x101] = 0
+  for (let i = 0; i < 6; i++) c[F.dice + i] = c[F.natDice + i]
+  c[F.ac] = c[F.acBase]
+  c[F.move] = c[F.baseMove]
+  c[F.thac0] = c[F.thac0Base]
+  c[F.saveBonus] = 0
   let shield = 0, misc = 0, ring = 0, body = 0, magicArmour = false
-  const dex = dexAC(c[0x13])
+  const dex = dexAC(c[F.stat[3]])
   const si = strIndexOf(c)
-  const strOn = c[0xaa] !== 0
+  const strOn = c[F.strAdj] !== 0
   if (!weapon) {
     if (strOn) {
-      c[0x110] += strToHit(si)
-      c[0x119] = (c[0x119] + strDamage(si)) & 0xff
+      c[F.thac0] += strToHit(si)
+      c[F.bonus] = (c[F.bonus] + strDamage(si)) & 0xff
     }
   } else {
     const b = t.baseOf(weapon)!
-    let hit = c[0x2d]
-    if (b.flags & 0x02) hit += dexMissile(c[0x13])
+    let hit = c[F.thac0Base]
+    if (b.flags & 0x02) hit += dexMissile(c[F.stat[3]])
     let dmg = b.small[2]
     if (b.flags & 0x04 && strOn) { hit += strToHit(si); dmg += strDamage(si) }
     let plus = weapon.plus
     if (b.flags & 0x80 && quarrels) plus += quarrels.plus
     if (b.flags & 0x01 && arrows) plus += arrows.plus
     dmg += plus
-    if (c[0x2e] === 2 && [36, 37, 41, 42, 43, 44].includes(weapon.type)) plus += 1 // elves: swords and plain bows
+    if (c[F.race] === 2 && [36, 37, 41, 42, 43, 44].includes(weapon.type)) plus += 1 // elves: swords and plain bows
     hit += plus
-    c[0x110] = hit & 0xff
-    c[0x119] = dmg & 0xff
-    c[0x115] = b.small[0]
-    c[0x117] = b.small[1]
+    c[F.thac0] = hit & 0xff
+    c[F.bonus] = dmg & 0xff
+    c[F.dice] = b.small[0]
+    c[F.sides] = b.small[1]
   }
   for (const it of items) {
     if (!it.ready) continue
@@ -107,9 +108,9 @@ export function recalc(c: Uint8Array, items: Item[], t: ItemTables) {
     const p = it.plus
     // armour movement (FUN_10ba_01fb)
     if (b.slot === 2) {
-      let m = it.weight <= 150 ? c[0x72] : it.weight < 400 ? 9 : 6
+      let m = it.weight <= 150 ? c[F.baseMove] : it.weight < 400 ? 9 : 6
       if (p !== 0 && m <= 9) m += 3 // a negative plus also gets the +3 (original bug)
-      c[0x11c] = m
+      c[F.move] = m
     }
     // AC (FUN_10ba_0282)
     const d = b.ac
@@ -118,7 +119,7 @@ export function recalc(c: Uint8Array, items: Item[], t: ItemTables) {
     else if (d === 0x80) {
       if (b.slot === 9) ring = Math.max(ring, p)
       else misc += p
-      c[0x101] = (c[0x101] + it.saveBonus) & 0xff
+      c[F.saveBonus] = (c[F.saveBonus] + it.saveBonus) & 0xff
     } else if ((d & 0x7f) + p > body) {
       body = (d & 0x7f) + p
       if (b.slot === 2 && p > 0) magicArmour = true
@@ -126,16 +127,16 @@ export function recalc(c: Uint8Array, items: Item[], t: ItemTables) {
   }
   if (magicArmour) ring = 0
   if (bag) enc = Math.max(readiedWeight, enc - 5000 < 0 ? 0 : enc - 5000)
-  c[0x102] = enc & 0xff
-  c[0x103] = (enc >> 8) & 0xff
+  c[F.load] = enc & 0xff
+  c[F.load + 1] = (enc >> 8) & 0xff
   // encumbrance movement (FUN_10ba_03a0)
   const excess = Math.max(0, enc - weightAllowance(si))
   const limit = excess <= 512 ? 255 : excess <= 768 ? 9 : excess <= 1024 ? 6 : 3
-  c[0x11c] = Math.min(c[0x11c], limit)
-  body = Math.max(body, c[0xa9])
-  c[0x111] = (dex + shield + misc + ring + body) & 0xff
-  c[0x112] = (body + misc + ring - 2) & 0xff
-  c[0x6b] = c[0x2e] !== 0 && c[0x98] > 0 ? c[0x98] : 1
+  c[F.move] = Math.min(c[F.move], limit)
+  body = Math.max(body, c[F.acBase])
+  c[F.ac] = (dex + shield + misc + ring + body) & 0xff
+  c[F.acRear] = (body + misc + ring - 2) & 0xff
+  c[F.sweep] = c[F.race] !== 0 && c[F.levels + 2] > 0 ? c[F.levels + 2] : 1
 }
 
 /** Ready an unreadied item (FUN_4894_14d0); returns the message to show, or '' when it worked. */
@@ -144,7 +145,7 @@ export function ready(c: Uint8Array, items: Item[], it: Item, t: ItemTables): st
   if (!b) return 'Wrong Class'
   let err = 0
   let using: Item | undefined
-  if (b.hands + c[0x100] > 2) err = 3
+  if (b.hands + c[F.hands] > 2) err = 3
   const readied = items.filter((x) => x.ready && x !== it)
   if (b.slot <= 8) {
     using = readied.find((x) => t.baseOf(x)?.slot === b.slot)
@@ -157,7 +158,7 @@ export function ready(c: Uint8Array, items: Item[], it: Item, t: ItemTables): st
     const other = readied.find((x) => x.type === it.type)
     if (other) { err = 2; using = other }
   }
-  if ((b.classes & c[0xb0]) === 0) err = 1
+  if ((b.classes & c[F.itemMask]) === 0) err = 1
   if (err === 1) return 'Wrong Class'
   if (err === 2) return `already using ${using ? t.name(using) : 'one'}`
   if (err === 3) return 'Your hands are full!'
@@ -176,7 +177,7 @@ export function unready(c: Uint8Array, items: Item[], it: Item, t: ItemTables): 
 
 /** Whether the character can take on `weight` more coins (FUN_4c2d_0000). */
 export function canCarry(c: Uint8Array, weight: number): boolean {
-  return u16(c, 0x102) + weight <= capacity(c)
+  return u16(c, F.load) + weight <= capacity(c)
 }
 
 export function canTakeItem(c: Uint8Array, items: Item[], it: Item): string {

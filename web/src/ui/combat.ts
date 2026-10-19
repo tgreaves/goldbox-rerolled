@@ -5,6 +5,7 @@ import type { GameFiles } from '../store/gamefiles'
 import { parseRecord, type Picture } from '../data/image'
 import { buildIcon } from '../render/icon'
 import { CombatView, type Figure, type Sprite } from '../render/combatview'
+import { F } from '../games/fields'
 import { Line, cycle, fight, footprint, type AimEntry, type Battle, type CombatUi, type Fighter, type Flight, type SpriteFrame } from '../rules/combat'
 
 export interface BattleScreen {
@@ -45,12 +46,12 @@ export interface BattleControls {
 
 const DIRS = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]]
 const s8 = (v: number) => (v << 24) >> 24
-const nameOf = (c: Uint8Array) => String.fromCharCode(...c.subarray(1, 1 + c[0]))
+const nameOf = (c: Uint8Array) => String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name]))
 
 /** How a combatant looks (IMP-044): the party's HP exactly, monsters only roughly. */
 function condition(b: Battle, f: Fighter): string {
-  const c = f.c, hp = c[0x11b], max = Math.max(1, c[0x32])
-  const status = ['', 'animated', '', 'running', 'unconscious', 'dying', 'dead', 'stoned', 'gone'][c[0x10c]] ?? ''
+  const c = f.c, hp = c[F.hp], max = Math.max(1, c[F.maxHp])
+  const status = ['', 'animated', '', 'running', 'unconscious', 'dying', 'dead', 'stoned', 'gone'][c[F.status]] ?? ''
   const fx = b.effectsOf(c).map((e) => e.type)
   const extra = [fx.some((t) => [31, 51, 52, 53].includes(t)) ? 'helpless' : '', fx.includes(0x1e) ? 'coughing' : '', fx.includes(0x0b) ? 'charmed' : '']
   if (!f.monster) return [`HP ${hp}/${max}`, status, ...extra].filter(Boolean).join(', ')
@@ -178,7 +179,7 @@ export async function runBattle(s: BattleScreen) {
     if (!box) return
     if (!f || !battle) { box.hidden = true; return }
     // with a party member to act by hand: the odds of hitting an enemy with their weapon (IMP-058)
-    const odds = acting && !acting.monster && !acting.c[0x10f] && battle.side(f) !== battle.side(acting) && battle.inPlay(f)
+    const odds = acting && !acting.monster && !acting.c[F.quick] && battle.side(f) !== battle.side(acting) && battle.inPlay(f)
       ? battle.hitOdds(acting, f) : null
     box.textContent = `${nameOf(f.c)}: ${condition(battle, f)}${odds ? ` · ≈${Math.round(odds.chance * 100)}% to hit, ${odds.damage}` : ''}`
     box.className = `combat-info ${battle.side(f) ? 'enemy' : 'ally'}`
@@ -205,7 +206,7 @@ export async function runBattle(s: BattleScreen) {
     const figures: Figure[] = battle.fighters.filter((f) => battle!.inPlay(f) || falling.has(f)).map((f) => {
       const ic = iconOf(f)
       const at = falling.get(f) ?? { x: f.x, y: f.y }
-      return { row: at.y, col: at.x, icon: ic.icon, action: ic.action, side: f.c[0x10e] ? 1 : 0, left: f.r[9] >= 4, pose: poses.has(f) } as Figure
+      return { row: at.y, col: at.x, icon: ic.icon, action: ic.action, side: f.c[F.side] ? 1 : 0, left: f.r[9] >= 4, pose: poses.has(f) } as Figure
     })
     const planMarks = plan ? [...plan.cells.map((p) => ({ row: p.y, col: p.x, colour: '#4c8bd6' })), { row: plan.to.y, col: plan.to.x, colour: '#55ff55' }] : []
     // the grey cursor tile (COMSPR 25) lies under the combatant whose turn it is
@@ -372,7 +373,7 @@ export async function runBattle(s: BattleScreen) {
           preview(cell.col, cell.row)
         },
       })
-      const labels = ok.map((x) => `${x.f ? String.fromCharCode(...x.f.c.subarray(1, 1 + x.f.c[0])) : 'there'} (range ${x.cost >> 1}${x.note ? `, ${x.note}` : ''})`)
+      const labels = ok.map((x) => `${x.f ? String.fromCharCode(...x.f.c.subarray(F.name + 1, F.name + 1 + x.f.c[F.name])) : 'there'} (range ${x.cost >> 1}${x.note ? `, ${x.note}` : ''})`)
       void s.menu([...labels, 'EXIT'], { prompt: ok.length ? prompt : `${prompt} nobody in range`, vertical: true })
         .then((i) => finish(i < ok.length ? ok[i] : null, true))
     }),
@@ -418,7 +419,7 @@ export async function runBattle(s: BattleScreen) {
   }
   s.onControls?.({
     takeControl, toggleMagic,
-    state: () => ({ quick: !!battle && battle.fighters.some((f) => !f.monster && f.c[0x84] < 0x80 && f.c[0x10f] !== 0), magic: !!battle?.magicOn }),
+    state: () => ({ quick: !!battle && battle.fighters.some((f) => !f.monster && f.c[F.morale] < 0x80 && f.c[F.quick] !== 0), magic: !!battle?.magicOn }),
   })
   const onMagicKey = (ev: KeyboardEvent) => {
     if (!battle) return

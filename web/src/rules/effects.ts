@@ -2,6 +2,7 @@
 // handlers themselves. Globals of the original (DS:6816..6826) live in the Fx context.
 import type { Effect } from '../data/effects'
 import { Item, ITEM_SIZE } from '../data/items'
+import { F } from '../games/fields'
 
 /** What a handler can reach: the engine-wide globals and the battle helpers. */
 export interface FxHost {
@@ -169,7 +170,7 @@ export function damageText(name: string, d: number, type: number): string {
 
 /** FUN_10ba_234a: "is fully healed" at full HP, else "is partially healed", with the pause. */
 export function healedLine(h: FxHost, c: Uint8Array) {
-  h.print(`${h.name(c)} is ${c[0x11b] === c[0x32] ? 'fully' : 'partially'} healed`)
+  h.print(`${h.name(c)} is ${c[F.hp] === c[F.maxHp] ? 'fully' : 'partially'} healed`)
 }
 
 /** FUN_3723_0000(t): negate damage (event 6) or block the effect being added (event 9). */
@@ -198,12 +199,12 @@ function deflect(h: FxHost, c: Uint8Array, pct: number) {
 
 const weaponOf = (h: FxHost, c: Uint8Array) => h.weapon(c)
 
-const nameIs = (c: Uint8Array, names: string[]) => names.includes(String.fromCharCode(...c.subarray(1, 1 + c[0])))
-const alignmentIn = (c: Uint8Array | null, set: number[]) => !!c && set.includes(c[0xa0])
+const nameIs = (c: Uint8Array, names: string[]) => names.includes(String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name])))
+const alignmentIn = (c: Uint8Array | null, set: number[]) => !!c && set.includes(c[F.alignment])
 
 async function poisonOnHit(h: FxHost, bonus: number) {
   const t = h.targetOf(h.current()!)
-  if (!t || !t[0x10d]) return
+  if (!t || !t[F.inPlay]) return
   if (!h.save(t, 0, bonus)) {
     await addEffect(h, t, 55, 0, 0xff, 0)
     h.setStatus(t, 6, `${h.name(t)} is Poisoned`)
@@ -211,7 +212,7 @@ async function poisonOnHit(h: FxHost, bonus: number) {
 }
 async function paralyse(h: FxHost, duration: number) {
   const t = h.targetOf(h.current()!)
-  if (!t || !t[0x10d]) return
+  if (!t || !t[F.inPlay]) return
   if (!h.save(t, 0, 0)) {
     if (h.announce) h.announce(t, 'is Paralyzed'); else h.print(`${h.name(t)} is Paralyzed`)
     await addEffect(h, t, 52, duration, 0x0c, 0)
@@ -220,22 +221,22 @@ async function paralyse(h: FxHost, duration: number) {
 
 /** Energy drain (FUN_3723_2122). */
 function drain(h: FxHost, t: Uint8Array, n: number) {
-  if (t[0x10c] === 1) { h.setStatus(t, 8, `${h.name(t)} is dead forever`); return }
+  if (t[F.status] === 1) { h.setStatus(t, 8, `${h.name(t)} is dead forever`); return }
   for (let i = 0; i < n; i++) {
     let total = 0
-    for (let k = 0; k < 8; k++) total += t[0x96 + k]
+    for (let k = 0; k < 8; k++) total += t[F.levels + k]
     if (total <= 0) break
-    t[0x74]++
-    const loss = Math.floor(t[0x32] / total)
-    t[0x75] += loss
-    t[0x32] = Math.max(0, t[0x32] - loss)
-    t[0xb1] = Math.max(0, t[0xb1] - loss)
-    t[0x11b] = Math.max(0, t[0x11b] - loss)
+    t[F.drainLevels]++
+    const loss = Math.floor(t[F.maxHp] / total)
+    t[F.drainHp] += loss
+    t[F.maxHp] = Math.max(0, t[F.maxHp] - loss)
+    t[F.hpRolled] = Math.max(0, t[F.hpRolled] - loss)
+    t[F.hp] = Math.max(0, t[F.hp] - loss)
     let best = 0
-    for (let k = 1; k < 8; k++) if (t[0x96 + k] > t[0x96 + best]) best = k
-    if (t[0x96 + best] <= 1) { h.setStatus(t, 8, `${h.name(t)} is drained`); return }
-    t[0x96 + best]--
-    if (t[0x11b] === 0) { h.setStatus(t, 6, `${h.name(t)} dies`); return }
+    for (let k = 1; k < 8; k++) if (t[F.levels + k] > t[F.levels + best]) best = k
+    if (t[F.levels + best] <= 1) { h.setStatus(t, 8, `${h.name(t)} is drained`); return }
+    t[F.levels + best]--
+    if (t[F.hp] === 0) { h.setStatus(t, 6, `${h.name(t)} dies`); return }
   }
   h.recalc(t)
 }
@@ -246,26 +247,26 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
   switch (type) {
     case 1: if (event === 10) fx.roll++; else if (event === 17) fx.morale += 5; break
     case 2: if (event === 10) fx.roll--; else if (event === 17) fx.morale = Math.max(0, fx.morale - 5); break
-    case 3: { const t = h.targetOf(c); if (t && t[0x9f] === 4) { if (event === 10) fx.roll += 2; else fx.dmg += 2 } break }
+    case 3: { const t = h.targetOf(c); if (t && t[F.monsterType] === 4) { if (event === 10) fx.roll += 2; else fx.dmg += 2 } break }
     case 4: if (removal) { h.print(`${h.name(c)} starts to train`); addRaw(h, c, 7, 43200, 0xff, 1) } break
     case 6: {
       const t = h.targetOf(c)
-      const b = !t ? 0 : t[0x9f] === 10 ? 1 : t[0x9f] === 9 || t[0x9f] === 12 ? 2 : t[0x9f] === 4 ? 3 : 0
+      const b = !t ? 0 : t[F.monsterType] === 10 ? 1 : t[F.monsterType] === 9 || t[F.monsterType] === 12 ? 2 : t[F.monsterType] === 4 ? 3 : 0
       if (event === 10) fx.roll += b
       else { fx.dmg += b; fx.dmgType = 9 }
       break
     }
-    case 7: if (removal) { h.print(`${h.name(c)} is hardier`); c[0x14]++; if (c[0x14] >= 20) addRaw(h, c, 62, 60, 0, 1) } break
+    case 7: if (removal) { h.print(`${h.name(c)} is hardier`); c[F.stat[4]]++; if (c[F.stat[4]] >= 20) addRaw(h, c, 62, 60, 0, 1) } break
     case 8: case 45: if (alignmentIn(cur, [2, 5, 8])) { if (event === 12) fx.save += 2 } break
     case 9: case 46: if (alignmentIn(cur, [0, 3, 6])) { if (event === 12) fx.save += 2 } break
     case 10: if (event === 6 && fx.dmgType & 2) fx.dmg = Math.floor(fx.dmg / 2); else if (event === 12) fx.save += 3; break
     case 11: { // Charm Person
-      if (removal) { c[0x10e] = (eff.power >> 6) & 1; if (c[0x84] === 0xb3) c[0x84] = 0; break }
+      if (removal) { c[F.side] = (eff.power >> 6) & 1; if (c[F.morale] === 0xb3) c[F.morale] = 0; break }
       if (!(eff.power & 0x20)) {
-        eff.power = (eff.power + 0x20 + c[0x10e] * 0x40) & 0xff
-        c[0x10e] = eff.power >> 7
-        c[0x10f] = 1
-        if (c[0x84] < 0x80) c[0x84] = 0xb3
+        eff.power = (eff.power + 0x20 + c[F.side] * 0x40) & 0xff
+        c[F.side] = eff.power >> 7
+        c[F.quick] = 1
+        if (c[F.morale] < 0x80) c[F.morale] = 0xb3
         h.setRec(c, 0xa, 0)
       }
       if (event === 17) fx.morale = 100
@@ -273,14 +274,14 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
     }
     case 12: case 38: if (removal) restoreStr(h, c, eff); break
     case 23: spiritualHammer(h, c, removal); break
-    case 14: if (removal) c[0x15] = eff.power; break
-    case 15: if (removal && rearm(h, c, 15, 10, 0xff) && c[0x11b] > 1) { fx.dmgType = 0; h.damage(c, 1, 0, false) } break
+    case 14: if (removal) c[F.stat[5]] = eff.power; break
+    case 15: if (removal && rearm(h, c, 15, 10, 0xff) && c[F.hp] > 1) { fx.dmgType = 0; h.damage(c, 1, 0, false) } break
     case 17: // Shield
-      if (event === 11) c[0x111] = Math.max(c[0x111], 57)
+      if (event === 11) c[F.ac] = Math.max(c[F.ac], 57)
       else if (event === 12) fx.save += 1
       else if (event === 6 && fx.spell === 15) fx.dmg = 0
       break
-    case 18: { const t = h.targetOf(c); if (t && t[0x9f] === 1 && t[0x6c] === 1 && nameIs(t, ['KOBOLD', 'KOBOLD LEADER', 'GOBLIN', 'GOBLIN LEADER'])) fx.roll++; break }
+    case 18: { const t = h.targetOf(c); if (t && t[F.monsterType] === 1 && t[F.sizeFlags] === 1 && nameIs(t, ['KOBOLD', 'KOBOLD LEADER', 'GOBLIN', 'GOBLIN LEADER'])) fx.roll++; break }
     case 20: if (event === 6 && fx.dmgType & 1) fx.dmg = Math.floor(fx.dmg / 2); else if (event === 12) fx.save += 3; break
     case 21: if (h.rec(c, 2)) h.print(`${h.name(c)} is silenced`); h.setRec(c, 1, 0); h.setRec(c, 2, 0); break
     case 22: if (removal) { if (has(h, c, 55)) h.setStatus(c, 6, `${h.name(c)} dies from poison`); await removeType(h, c, 15, true) } break
@@ -288,7 +289,7 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
       if (event === 1 && cur && !has(h, cur, 24)) fx.untargetable = true
       else if (event === 16) fx.roll -= 4
       break
-    case 26: { const t = h.targetOf(c); if (t && t[0x9f] === 1 && t[0x6c] === 1 && nameIs(t, ['ORC', 'ORC LEADER', 'GOBLIN', 'GOBLIN LEADER', 'HOBGOBLIN', 'HOBGOBLIN CHIEF', 'GAGOOL', 'MACE'])) fx.roll++; break }
+    case 26: { const t = h.targetOf(c); if (t && t[F.monsterType] === 1 && t[F.sizeFlags] === 1 && nameIs(t, ['ORC', 'ORC LEADER', 'GOBLIN', 'GOBLIN LEADER', 'HOBGOBLIN', 'HOBGOBLIN CHIEF', 'GAGOOL', 'MACE'])) fx.roll++; break }
     case 28: // Mirror Image
       if ((event === 5 || event === 6) && fx.spell !== 0 && !fx.area && h.roll(1, eff.power + 1) > 1) {
         fx.dmg = 0
@@ -300,22 +301,22 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
     case 30: // Stinking Cloud
       if (event === 15 && h.rec(c, 2)) h.print(`${h.name(c)} is coughing`)
       h.setRec(c, 1, 0); h.setRec(c, 2, 0)
-      if (event === 11) { c[0x112] = Math.max(0x32, c[0x112] - 2); c[0x111] = c[0x112] }
+      if (event === 11) { c[F.acRear] = Math.max(0x32, c[F.acRear] - 2); c[F.ac] = c[F.acRear] }
       break
     case 31: case 51: case 52: case 53: if (event === 7) h.endTurn(c); break
     case 32: if (removal && !fx.noRearm) {
       h.setStatus(c, 6, `${h.name(c)} collapses`)
-      c[0x10e] = eff.power >> 4; c[0x10f] = 1; c[0x76] = 0; c[0x6b] = c[0x98]; c[0x72] = 12
-      if (c[0x84] === 0xb3) c[0x84] = 0
-      c[0x9f] = 0
+      c[F.side] = eff.power >> 4; c[F.quick] = 1; c[F.undead] = 0; c[F.sweep] = c[F.levels + 2]; c[F.baseMove] = 12
+      if (c[F.morale] === 0xb3) c[F.morale] = 0
+      c[F.monsterType] = 0
     } break
-    case 33: if (event === 10) fx.roll -= 4; else if (event === 11) { c[0x111] = Math.max(0, c[0x111] - 4); c[0x112] = Math.max(0, c[0x112] - 4) } else if (event === 12) fx.save -= 4; break
+    case 33: if (event === 10) fx.roll -= 4; else if (event === 11) { c[F.ac] = Math.max(0, c[F.ac] - 4); c[F.acRear] = Math.max(0, c[F.acRear] - 4) } else if (event === 12) fx.save -= 4; break
     case 34: await handle(h, 43, eff, c, event, removal); await handle(h, 44, eff, c, event, removal); break
     case 35: if (event === 12) fx.save += 1; else fx.roll += 1; break
     case 36: if (event === 10) fx.roll -= 4; else if (event === 12) fx.save -= 4; break
     case 37: if (h.rec(c, 3) > 0) { if (event === 1) fx.untargetable = true; else fx.roll = -1 } break
     case 39: // Haste
-      if (!(eff.power & 0x10)) { eff.power |= 0x10; h.print(`${h.name(c)} ages`); const a = (c[0x30] | (c[0x31] << 8)) + 1; c[0x30] = a & 0xff; c[0x31] = a >> 8 }
+      if (!(eff.power & 0x10)) { eff.power |= 0x10; h.print(`${h.name(c)} ages`); const a = (c[F.age] | (c[F.age + 1] << 8)) + 1; c[F.age] = a & 0xff; c[F.age + 1] = a >> 8 }
       fx.rate *= 2
       break
     case 40: if (removal && h.inCombat()) { h.print('The air clears a little...'); h.clearCloud?.(c, eff.power) } break // zones are freed at the end of combat (FUN_320c_0000)
@@ -323,24 +324,24 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
     case 42: fx.rate = Math.floor(fx.rate / 2); break
     case 43: if (removal || event === -1) {
       if (removal && !rearm(h, c, 43, 60, eff.power)) break
-      if (c[0x10] > 3) { h.print(`${h.name(c)} is weakened`); c[0x10]-- } else addRaw(h, c, 31, 0, 0xff, 0)
+      if (c[F.stat[0]] > 3) { h.print(`${h.name(c)} is weakened`); c[F.stat[0]]-- } else addRaw(h, c, 31, 0, 0xff, 0)
     } break
     case 44: if (removal || event === -1) {
       if (removal && !rearm(h, c, 44, 10, eff.power)) break
-      if (c[0x11b] < 2) { if (!has(h, c, 31)) addRaw(h, c, 31, 0, 0xff, 0) } else h.damage(c, 1, 0, false)
+      if (c[F.hp] < 2) { if (!has(h, c, 31)) addRaw(h, c, 31, 0, 0xff, 0) } else h.damage(c, 1, 0, false)
     } break
-    case 47: { const a = h.current(); if (a && a[0x9f] === 1 && (a[0x6c] & 0x7f) === 2 && nameIs(a, ['OGRE', 'OGRE LEADER', 'TROLL', 'FIRE GIANT', 'HILL GIANT', 'FROST GIANT', 'STONE GIANT'])) fx.roll -= 4; break }
-    case 48: { const a = h.current(); if (a && a[0x9f] === 1 && nameIs(a, ['BUGBEAR', 'GNOLL'])) fx.roll -= 4; break }
+    case 47: { const a = h.current(); if (a && a[F.monsterType] === 1 && (a[F.sizeFlags] & 0x7f) === 2 && nameIs(a, ['OGRE', 'OGRE LEADER', 'TROLL', 'FIRE GIANT', 'HILL GIANT', 'FROST GIANT', 'STONE GIANT'])) fx.roll -= 4; break }
+    case 48: { const a = h.current(); if (a && a[F.monsterType] === 1 && nameIs(a, ['BUGBEAR', 'GNOLL'])) fx.roll -= 4; break }
     case 49: { // Prayer: allies of the caster +1/+1, enemies −1/−1
       const side = (eff.power & 0x10) >> 4
-      if (c[0x10e] === side) { if (event === 12) fx.save += 1; else fx.roll += 1 } else if (event === 12) fx.save -= 1; else fx.roll -= 1
+      if (c[F.side] === side) { if (event === 12) fx.save += 1; else fx.roll += 1 } else if (event === 12) fx.save -= 1; else fx.roll -= 1
       break
     }
     case 50: if (removal && rearm(h, c, 50, 14400, eff.power) && h.heal(c, 1, true)) healedLine(h, c); break
     case 56: addRaw(h, c, 25, 1, 0x0c, 0); break
     case 57: if (removal && !fx.noRearm) {
       h.print(`${h.name(c)} Rots...`)
-      c[0x15] = Math.max(3, c[0x15] - 2)
+      c[F.stat[5]] = Math.max(3, c[F.stat[5]] - 2)
       if (eff.power >> 4 > 1) addRaw(h, c, 57, 43200, eff.power - 0x10, 1)
       else h.setStatus(c, 6, `${h.name(c)} Dies rots away`)
     } break
@@ -352,15 +353,15 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
     case 65: await poisonOnHit(h, 4); break
     case 66: await poisonOnHit(h, 2); break
     case 67: await paralyse(h, h.roll(2, 8)); break
-    case 68: { const t = h.targetOf(c); if (t && t[0x2e] !== 2) await paralyse(h, 63); break }
+    case 68: { const t = h.targetOf(c); if (t && t[F.race] !== 2) await paralyse(h, 63); break }
     case 69: await paralyse(h, h.roll(1, 9) + 10); break
     case 70: await poisonOnHit(h, -2); break
     case 71: if (event === 1) fx.untargetable = true; else fx.roll -= 4; break
     case 72: if (h.roll(1, 100) < 96) addRaw(h, c, 25, 1, 0x0c, 0); break
     case 73: { // rake
       const t = h.targetOf(c)
-      if (fx.hits[1] === 2 && t && t[0x10d]) {
-        c[0x114] = 2; c[0x116] = 2; c[0x118] = 4; c[0x113] = 0
+      if (fx.hits[1] === 2 && t && t[F.inPlay]) {
+        c[F.attacksLeft + 1] = 2; c[F.dice + 1] = 2; c[F.sides + 1] = 4; c[F.attacksLeft] = 0
         h.setRec(c, 4, 2) // the follow-up attack loop starts at hand 2
         h.print(`${h.name(c)} Rakes...`)
         await h.attack(c, t)
@@ -370,13 +371,13 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
     }
     case 74: case 75: { // grab / blood drain
       const v = h.byIndex(eff.power & 0x3f)
-      if (event === 15 && v && v[0x10d] && c[0x10d]) {
+      if (event === 15 && v && v[F.inPlay] && c[F.inPlay]) {
         if (type === 74) {
           // crush: one 3d4 attack with hand 1 (FUN_3aae_3a86); the hold ends if the victim goes down
-          c[0x113] = 1; c[0x115] = 3; c[0x117] = 4
+          c[F.attacksLeft] = 1; c[F.dice] = 3; c[F.sides] = 4
           h.setRec(c, 4, 1)
           await h.attack(c, v)
-          if (!v[0x10d]) { await removeType(h, v, 58); await removeEffect(h, c, eff) }
+          if (!v[F.inPlay]) { await removeType(h, v, 58); await removeEffect(h, c, eff) }
         }
         else {
           h.print(`${h.name(c)} Sucks some Blood`)
@@ -393,31 +394,31 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
       }
       break
     }
-    case 76: { const t = h.targetOf(c); if (t && t[0x10d]) { addRaw(h, c, 75, 0xcf, h.indexOf(t), 1); addRaw(h, t, 58, 0, 0, 0); h.setRec(t, 6, 0) } break }
-    case 77: { const t = h.targetOf(c); if (t && t[0x10d] && t[0x10] < 19) { addRaw(h, c, 74, 0, h.indexOf(t), 1); addRaw(h, t, 58, 0, 0, 0); h.print(`${h.name(t)} is held fast`) } break }
-    case 78: if (removal && !h.revive(c, c[0x11b])) addRaw(h, c, 78, 1, eff.power, 1); break
-    case 79: { const t = h.targetOf(c); if (t && t[0x10d]) { fx.dmgType = 9; h.damage(t, h.roll(2, 10), 0, false) } break }
-    case 80: { const t = h.targetOf(c); if (t && t[0x10d]) { fx.dmgType = 0x10; h.damage(t, h.roll(1, 4), 0, false) } break }
+    case 76: { const t = h.targetOf(c); if (t && t[F.inPlay]) { addRaw(h, c, 75, 0xcf, h.indexOf(t), 1); addRaw(h, t, 58, 0, 0, 0); h.setRec(t, 6, 0) } break }
+    case 77: { const t = h.targetOf(c); if (t && t[F.inPlay] && t[F.stat[0]] < 19) { addRaw(h, c, 74, 0, h.indexOf(t), 1); addRaw(h, t, 58, 0, 0, 0); h.print(`${h.name(t)} is held fast`) } break }
+    case 78: if (removal && !h.revive(c, c[F.hp])) addRaw(h, c, 78, 1, eff.power, 1); break
+    case 79: { const t = h.targetOf(c); if (t && t[F.inPlay]) { fx.dmgType = 9; h.damage(t, h.roll(2, 10), 0, false) } break }
+    case 80: { const t = h.targetOf(c); if (t && t[F.inPlay]) { fx.dmgType = 0x10; h.damage(t, h.roll(1, 4), 0, false) } break }
     case 81: { // fear aura
       for (const e of h.enemiesNear(c, 255)) {
-        if (!e[0x10d] || h.save(e, 4, 0)) continue
-        if (e[0x73] <= 3) { h.print(`${h.name(e)} is paralyzed with fear`); addRaw(h, e, 52, 0, 0x0c, 0) }
-        else if (e[0x73] <= 5) { h.print(`${h.name(e)} is weakened by fear`); addRaw(h, e, 2, 0, 0x0c, 0) }
+        if (!e[F.inPlay] || h.save(e, 4, 0)) continue
+        if (e[F.hitDice] <= 3) { h.print(`${h.name(e)} is paralyzed with fear`); addRaw(h, e, 52, 0, 0x0c, 0) }
+        else if (e[F.hitDice] <= 5) { h.print(`${h.name(e)} is weakened by fear`); addRaw(h, e, 2, 0, 0x0c, 0) }
       }
       break
     }
     case 82: { // paralysing aura
       for (const o of h.all()) for (const e of h.effectsOf(o).filter((x) => x.type === 82 && o !== c)) h.effectsOf(o).splice(h.effectsOf(o).indexOf(e), 1)
       for (const e of h.enemiesNear(c, 255)) {
-        if (!e[0x10d]) continue
-        const bonus = 1 + (e[0x2e] === 7 ? 2 : 0)
+        if (!e[F.inPlay]) continue
+        const bonus = 1 + (e[F.race] === 7 ? 2 : 0)
         if (!h.save(e, 0, bonus)) { h.print(`${h.name(e)} is Paralyzed`); addRaw(h, e, 52, h.roll(1, 4), 0x0c, 0) }
       }
       break
     }
     case 83: { // petrifying gaze
       const t = h.targetOf(c)
-      if (!t || !t[0x10d]) break
+      if (!t || !t[F.inPlay]) break
       h.print(`${h.name(c)} gazes...`)
       h.fly?.(c, t, 'gaze')
       let victim = t
@@ -427,15 +428,15 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
     }
     case 84: { // charm gaze
       const t = h.targetOf(c)
-      if (!t || !t[0x10d]) break
+      if (!t || !t[F.inPlay]) break
       h.print(`${h.name(c)} Gazes...`)
       h.fly?.(c, t, 'gaze')
       fx.spell = 10
-      if (!h.save(t, 4, -2)) await addEffect(h, t, 11, 0, (c[0x10e] << 7) | 0x0c, 1, 1, false, true)
+      if (!h.save(t, 4, -2)) await addEffect(h, t, 11, 0, (c[F.side] << 7) | 0x0c, 1, 1, false, true)
       fx.spell = 0
       break
     }
-    case 85: case 86: { const t = h.targetOf(c); if (t && t[0x10d]) drain(h, t, type - 84); break }
+    case 85: case 86: { const t = h.targetOf(c); if (t && t[F.inPlay]) drain(h, t, type - 84); break }
     case 87: {
       const t = h.targetOf(c)
       if (t && !has(h, t, 50)) { addRaw(h, t, 50, 14400, 0, 1); addRaw(h, t, 57, 43200, (h.roll(1, 6) << 4) + 0x0f, 1); h.print(`${h.name(t)} is Diseased`) }
@@ -445,27 +446,27 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
       if (event === 8) eff.power &= ~0x10
       else if (event === 16 && !(eff.power & 0x10)) { fx.roll = -1; eff.power |= 0x10 }
       break
-    case 90: if (fx.saveType === 0) fx.save += conSave(c[0x14]); break
+    case 90: if (fx.saveType === 0) fx.save += conSave(c[F.stat[4]]); break
     case 91: if (fx.spell === 15) { fx.dmg = 0; h.print(`${h.name(c)} is unaffected`) } else if (fx.dmgType & 4) fx.dmg = 0; break
     case 93: if (fx.dmgType & 1) fx.dmg = Math.floor(fx.dmg / 2); break
     case 94: { const a = h.current(); const w = a ? weaponOf(h, a) : null; if (w && [0x80, 1].includes(h.weaponKind(w.raw[0x2e]))) fx.dmg = Math.floor(fx.dmg / 2); break }
-    case 95: if (removal && c[0x10d]) h.setStatus(c, 6, `${h.name(c)} Falls dead`); break
+    case 95: if (removal && c[F.inPlay]) h.setStatus(c, 6, `${h.name(c)} Falls dead`); break
     case 96: { const a = h.current(); const w = a ? weaponOf(h, a) : null; if (!w || (w.raw[0x32] <= 0 && w.raw[0x31] !== 0xb1)) fx.dmg = 0; break }
-    case 97: if (fx.saveType === 2 || fx.saveType === 4) fx.save += conSave(c[0x14]); break
-    case 98: c[0x11b] = Math.min(c[0x32], c[0x11b] + 3); break
+    case 97: if (fx.saveType === 2 || fx.saveType === 4) fx.save += conSave(c[F.stat[4]]); break
+    case 98: c[F.hp] = Math.min(c[F.maxHp], c[F.hp] + 3); break
     case 99: {
-      const n = c[0x10c] === 5 ? 6 - h.rec(c, 0xe) : c[0x10c] === 4 ? 6 : 0
+      const n = c[F.status] === 5 ? 6 - h.rec(c, 0xe) : c[F.status] === 4 ? 6 : 0
       if (n > 0 && h.revive(c, n)) { addRaw(h, c, 95, h.roll(1, 4) + 1, 0, 1); await removeEffect(h, c, eff) }
       break
     }
     case 100: if (!(fx.dmgType & 0x11)) addRaw(h, c, 102, h.roll(3, 6), 0, 1); break
     case 101: if (!has(h, c, 98) && !has(h, c, 59)) addRaw(h, c, 59, 3, 0, 1); break
-    case 102: if (removal && !h.revive(c, c[0x32])) addRaw(h, c, 102, 1, 0, 1); break
-    case 103: eff.flag = 0; h.print(`${h.name(c)} Turns gaseous and escapes`); c[0x10c] = 3; c[0x10d] = 0; break
+    case 102: if (removal && !h.revive(c, c[F.maxHp])) addRaw(h, c, 102, 1, 0, 1); break
+    case 103: eff.flag = 0; h.print(`${h.name(c)} Turns gaseous and escapes`); c[F.status] = 3; c[F.inPlay] = 0; break
     case 104: deflect(h, c, 60); break
     case 105: case 106: { // magic resistance 50 % / 15 %
       const a = h.current()
-      const lvl = a ? Math.max(a[0x96], a[0x9b], 1) : 1
+      const lvl = a ? Math.max(a[F.levels], a[F.levels + 5], 1) : 1
       const pct = (type === 105 ? 50 : 15) - 5 * (11 - lvl)
       if ((fx.adding !== 0 || fx.dmgType & 8) && h.roll(1, 100) <= pct) negate(0)
       break
@@ -482,11 +483,11 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
     case 116: { const a = h.current(); const w = a ? weaponOf(h, a) : null; if (w && (w.raw[0x32] << 24 >> 24) > 0) fx.dmg = Math.floor(fx.dmg / 2); break }
     case 117: { const a = h.current(); if (a && h.itemsOf(a).some((it) => it.ready && it.raw[0x2e] === 0x55)) fx.dmg = h.roll(1, 6) + 1; break }
     case 118: if (fx.dmgType & 2) fx.dmg = Math.floor(fx.dmg / 2); break
-    case 119: { const a = h.current(); const w = a ? weaponOf(h, a) : null; if ((!w || w.raw[0x32] === 0) && a && (a[0x2e] > 0 || a[0x73] < 4)) fx.dmg = 0; break }
+    case 119: { const a = h.current(); const w = a ? weaponOf(h, a) : null; if ((!w || w.raw[0x32] === 0) && a && (a[F.race] > 0 || a[F.hitDice] < 4)) fx.dmg = 0; break }
     case 120: { const a = h.current(); if (a && h.itemsOf(a).some((it) => it.ready && (it.raw[0x2e] === 0x57 || it.raw[0x2e] === 0x58))) deflect(h, c, 50); break }
     case 121: {
       const t = h.targetOf(c)
-      if (t && t[0x10d] && h.roll(1, 100) <= 25 && h.distance(c, t) < 4) {
+      if (t && t[F.inPlay] && h.roll(1, 100) <= 25 && h.distance(c, t) < 4) {
         h.endTurn(c)
         h.print(`${h.name(c)} Spits Acid`)
         h.fly?.(c, t, 'spit')
@@ -522,13 +523,13 @@ const strKey = ([s, p]: [number, number]) => s * 101 + (s === 18 ? p : 0)
  * current STR, the character gets the new STR, and the power to store is the STR to restore later.
  */
 export function setStr(h: FxHost, c: Uint8Array, str: number, pct: number): { ok: boolean; pw: number } {
-  const cs = c[0x10], cp = c[0x16]
+  const cs = c[F.stat[0]], cp = c[F.strPct]
   if (str < cs || (str === 18 && cs === 18 && pct < cp)) return { ok: false, pw: strEnc(str, pct) | 0x80 }
   const prev = h.effectsOf(c).find((e) => (e.type === 12 || e.type === 38) && e.power < 0x80)
   let pw = strEnc(cs, cp)
   if (prev) { pw = prev.power & 0x7f; prev.power = strEnc(cs, cp) | 0x80 }
-  c[0x10] = str
-  c[0x16] = str === 18 ? pct : 0
+  c[F.stat[0]] = str
+  c[F.strPct] = str === 18 ? pct : 0
   h.recalc(c)
   return { ok: true, pw }
 }
@@ -537,14 +538,14 @@ export function setStr(h: FxHost, c: Uint8Array, str: number, pct: number): { ok
 function restoreStr(h: FxHost, c: Uint8Array, eff: Effect) {
   if (eff.power >= 0x80) return
   let [s, p] = strDec(eff.power)
-  c[0x10] = s; c[0x16] = p
+  c[F.stat[0]] = s; c[F.strPct] = p
   const others = h.effectsOf(c).filter((x) => x !== eff && (x.type === 12 || x.type === 38))
   if (others.length) {
     const best = others.reduce((a, b) => (strKey(strDec(b.power)) > strKey(strDec(a.power)) ? b : a))
     const [bs, bp] = strDec(best.power)
     best.power = strEnc(s, p)
     s = bs; p = bp
-    c[0x10] = s; c[0x16] = p
+    c[F.stat[0]] = s; c[F.strPct] = p
   }
   h.recalc(c)
 }
@@ -596,7 +597,7 @@ export async function itemHandler(h: FxHost, c: Uint8Array, it: Item, arg: 0 | 1
         if (ok) h.print(`${h.name(c)} is stronger`)
         addRaw(h, c, 38, 0, pw, 1)
       } else {
-        const is1800 = c[0x10] === 18 && c[0x16] === 100
+        const is1800 = c[F.stat[0]] === 18 && c[F.strPct] === 100
         // bug kept: with 18/00 the original takes the first 38 record of any kind
         const e = h.effectsOf(c).find((x) => x.type === 38 && (is1800 || strKey(strDec(x.power)) === strKey([18, 100])))
         if (e) await removeEffect(h, c, e)
@@ -604,14 +605,14 @@ export async function itemHandler(h: FxHost, c: Uint8Array, it: Item, arg: 0 | 1
       break
     }
     case 132: // alignment-locked weapon (FUN_3723_30a5): the wrong alignment cannot hold it and is hurt
-      if (arg === 0 && (p & 0x0f) !== c[0xa0]) {
+      if (arg === 0 && (p & 0x0f) !== c[F.alignment]) {
         it.ready = false
         fx.dmgType = 8
         h.damage(c, p >> 4, 0, false)
       }
       break
     case 135: // Boulder (FUN_3723_3134)
-      if (arg === 0 && c[0x10] < 19) { it.ready = false; h.print('Must have Giant Strength') }
+      if (arg === 0 && c[F.stat[0]] < 19) { it.ready = false; h.print('Must have Giant Strength') }
       break
     case 137: // Spiritual Hammer (FUN_3723_317a): putting it away ends the effect, and with it the hammer
       if (arg === 1) await removeFirst(h, c, 23)

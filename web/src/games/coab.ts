@@ -1,6 +1,7 @@
 // Curse of the Azure Bonds (1989). Research: spec/coab/. Assets only until the later steps of
 // docs/multi-game.md make it playable.
 import type { GameProfile } from './types'
+import { COAB_FIELDS } from './fields'
 
 export const COAB: GameProfile = {
   id: 'coab',
@@ -20,5 +21,6 @@ export const COAB: GameProfile = {
   stores: { files: 'goldbox-coab', user: 'goldbox-coab-user' },
   imageFamilies: ['TITLE', 'BIGPIC', 'SKY', 'PIC', 'SPRIT', 'HEAD', 'BODY', 'CHEAD', 'CBODY', 'CPIC',
     'COMSPR', 'DUNGCOM', 'WILDCOM', 'RANDCOM', 'TILES', '8X8D'],
+  fields: COAB_FIELDS,
   playable: false,
 }

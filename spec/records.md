@@ -38,6 +38,7 @@ O = read by the character sheet (`FUN_4894_004a`, `050d`, `0608`, `0901`, `FUN_1
 | 0x33–0x6A | u8 ×56 | spells known: char[0x32 + spell id] = 1 | O (character creation, training) |
 | 0x6C | u8 | size/type flags; large if > 0x80 or `(v & 7) > 1` | O |
 | 0x6D–0x71 | u8 ×5 | saving throws: death/poison, petrification, rod/staff/wand, breath, spell | O (storage), I (order, matches AD&D) |
+| 0x74, 0x75 | u8, u8 | levels lost to energy drain, and the max HP they took (energy drain `FUN_3723_2122` adds; Restoration and training take back max HP ÷ levels) | O |
 | 0x76 | u8 | undead type (monsters; turn undead table row) | O |
 | 0x77–0x7E | u8 ×8 | thief skills % (PP, OL, F/RT, MS, HS, HN, CW, RL) | O |
 | 0x2D | u8 | 60 − base THAC0 (best class) | O |
