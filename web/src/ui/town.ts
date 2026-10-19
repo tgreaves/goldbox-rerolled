@@ -1,5 +1,6 @@
 // Shop, temple and treasure screens (spec/town.md), run when a script's COMBAT finds the shop or
 // temple flag set, or treasure without monsters. They use the exploration screen's menus and text.
+import { game } from '../games/profile'
 import type { Engine } from '../vm/engine'
 import { parseCharacter } from '../data/character'
 import type { Item } from '../data/items'
@@ -97,7 +98,7 @@ async function pooling(ui: TownUi, k: 'pool' | 'share') {
 /** Shop (FUN_2f70_053e). */
 export async function shop(ui: TownUi) {
   const e = ui.engine, t = e.items
-  if (!t) { ui.print('The shop needs the ITEMS file and START.EXE: re-import the POOLRAD folder.', false); return }
+  if (!t) { ui.print(`The shop needs the ITEMS file and START.EXE: re-import the ${game().folder} folder.`, false); return }
   e.money = [0, 0, 0, 0, 0, 0, 0]
   for (;;) {
     const has = e.money.some((v) => v > 0)
@@ -145,7 +146,7 @@ const DISEASES = [31, 34, 43, 44, 50, 57]
 /** Temple (FUN_2d14_0d09). */
 export async function temple(ui: TownUi) {
   const e = ui.engine, t = e.items
-  if (!t) { ui.print('The temple needs the ITEMS file and START.EXE: re-import the POOLRAD folder.', false); return }
+  if (!t) { ui.print(`The temple needs the ITEMS file and START.EXE: re-import the ${game().folder} folder.`, false); return }
   e.money = [0, 0, 0, 0, 0, 0, 0]
   for (;;) {
     const has = e.money.some((v) => v > 0)

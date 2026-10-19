@@ -1,18 +1,18 @@
 // The player's own game files, kept in IndexedDB so the app works offline after one import.
+// Each game has its own database (GameProfile.stores.files).
 import { readDax, daxRecord, type Dax } from '../data/dax'
+import { detect, GAMES, POR, type GameProfile } from '../games/profile'
 
-const DB = 'poolrad'
 const STORE = 'files'
 
-/** Files the port needs; anything else in the folder is ignored. */
+/** Files some game needs; anything else in the folder is ignored. */
 export function wanted(name: string): boolean {
-  const n = name.toUpperCase()
-  return n.endsWith('.DAX') || n === 'ITEMS' || n === 'START.EXE' || n === 'POOL.CFG' || /^CHRDAT.+\.(SAV|ITM|SPC)$/.test(n) || /^SAVGAM.\.DAT$/.test(n)
+  return GAMES.some((g) => g.wanted(name))
 }
 
-function openDb(): Promise<IDBDatabase> {
+function openDb(game: GameProfile): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB, 1)
+    const req = indexedDB.open(game.stores.files, 1)
     req.onupgradeneeded = () => req.result.createObjectStore(STORE)
     req.onsuccess = () => resolve(req.result)
     req.onerror = () => reject(req.error)
@@ -30,9 +30,12 @@ function tx<T>(db: IDBDatabase, mode: IDBTransactionMode, f: (s: IDBObjectStore)
 export class GameFiles {
   private daxCache = new Map<string, Dax>()
   readonly files: Map<string, Uint8Array>
+  /** the game these files are from */
+  readonly game: GameProfile
 
-  constructor(files: Map<string, Uint8Array>) {
+  constructor(files: Map<string, Uint8Array>, game: GameProfile = detect(files.keys()) ?? POR) {
     this.files = files
+    this.game = game
   }
 
   get(name: string): Uint8Array | undefined {
@@ -62,20 +65,29 @@ export class GameFiles {
 
   /** True when the minimum set for play is present. */
   complete(): boolean {
-    return ['ECL1.DAX', 'GEO1.DAX', '8X8D1.DAX', 'WALLDEF1.DAX'].every((n) => this.files.has(n))
+    return this.game.required.every((n) => this.files.has(n))
   }
 
-  static async load(): Promise<GameFiles> {
-    const db = await openDb()
+  /** True when a game's stored files are enough to start it, without reading them. */
+  static async stored(game: GameProfile): Promise<boolean> {
+    const db = await openDb(game)
+    const keys = new Set((await tx(db, 'readonly', (s) => s.getAllKeys())) as string[])
+    db.close()
+    return game.required.every((n) => keys.has(n))
+  }
+
+  static async load(game: GameProfile): Promise<GameFiles> {
+    const db = await openDb(game)
     const keys = (await tx(db, 'readonly', (s) => s.getAllKeys())) as string[]
     const files = new Map<string, Uint8Array>()
     for (const k of keys) files.set(k, new Uint8Array(await tx<ArrayBuffer>(db, 'readonly', (s) => s.get(k))))
     db.close()
-    return new GameFiles(files)
+    return new GameFiles(files, game)
   }
 
-  static async save(files: Map<string, Uint8Array>): Promise<void> {
-    const db = await openDb()
+  /** Replace a game's stored files with these. */
+  static async save(game: GameProfile, files: Map<string, Uint8Array>): Promise<void> {
+    const db = await openDb(game)
     await tx(db, 'readwrite', (s) => s.clear())
     for (const [name, bytes] of files) {
       await tx(db, 'readwrite', (s) => s.put(bytes.slice().buffer, name))
@@ -85,11 +97,17 @@ export class GameFiles {
   }
 }
 
-/** Read the files chosen by the player (folder picker or multi-select), keeping the wanted ones. */
-export async function readPicked(list: Iterable<File>): Promise<Map<string, Uint8Array>> {
+/**
+ * Read the files chosen by the player (folder picker or multi-select): work out which game they are
+ * from, then keep the ones that game uses. Subfolders are flattened (CotAB keeps its pre-made party
+ * and first save in SAVE/).
+ */
+export async function readPicked(list: Iterable<File>): Promise<{ game?: GameProfile; files: Map<string, Uint8Array> }> {
+  const all = [...list].filter((f) => wanted(f.name))
+  const game = detect(all.map((f) => f.name))
   const out = new Map<string, Uint8Array>()
-  for (const f of list) {
-    if (wanted(f.name)) out.set(f.name.toUpperCase(), new Uint8Array(await f.arrayBuffer()))
+  if (game) for (const f of all) {
+    if (game.wanted(f.name)) out.set(f.name.toUpperCase(), new Uint8Array(await f.arrayBuffer()))
   }
-  return out
+  return { game, files: out }
 }

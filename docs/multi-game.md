@@ -66,6 +66,11 @@ deep inside shared code (`if (coab) …`); it is a choice made in the profile.
 
 1. **Profiles and detection.** The profile type, PoR's profile (today's constants moved into it),
    game detection on import, game files and saves stored per game. PoR behaves exactly as before.
+   *Done 2026-10-19*: `web/src/games/` (profile type, PoR and CotAB profiles, `detect()`, the active
+   game). A folder is identified by its configuration file (`POOL.CFG`, `CURSE.CFG`), else by files
+   only one game has; each game keeps its own databases (PoR's keep their old names, so existing
+   imports and saves stay); the import screen lists every imported game. CotAB opens in the asset
+   viewer until it is playable. DS and table addresses move into the profile with step 3.
 2. **Record fields.** The field map and the mechanical conversion; PoR tests green.
 3. **Executable tables.** Named table lookups replace raw DS offsets; PoR tests green.
 4. **Script VM.** Addresses, variable spaces and opcodes from the profile; CotAB's scripts run

@@ -1,6 +1,7 @@
 // Exploration screen in the original's arrangement (spec/architecture.md, spec/graphics.md
 // "Screen layout"): 3D view top left, party roster to its right, text window below,
 // command line at the bottom. Area scripts run through the ECL engine (src/vm/engine.ts).
+import { game } from '../games/profile'
 import type { GameFiles } from '../store/gamefiles'
 import { parseCharacter, MONEY, type Character } from '../data/character'
 import { parseRecord, spriteImage, toImageData, type Picture } from '../data/image'
@@ -513,7 +514,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const [wx, wy] = engine.wildPosition
       where.textContent = `Wilderness · ${wx},${wy} · facing ${FACING[engine.facing]} · ${clockText(engine)}${searching ? ' · Searching' : ''}`
       wild.hidden = !!engine.wild
-      if (!engine.wild) wild.innerHTML = '<p><strong>Wilderness</strong></p><p>The wilderness map needs START.EXE from the game files: go back to Assets and re-import the POOLRAD folder.</p>'
+      if (!engine.wild) wild.innerHTML = `<p><strong>Wilderness</strong></p><p>The wilderness map needs START.EXE from the game files: go back to Assets and re-import the ${game().folder} folder.</p>`
       return
     }
     wild.hidden = true
@@ -1006,7 +1007,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const exe = files.get('START.EXE')
       try { tables = exe ? new Tables(unexepack(exe).image) : null } catch { tables = null }
     }
-    if (!tables) { note('The party screen needs START.EXE: re-import the POOLRAD folder.'); return }
+    if (!tables) { note(`The party screen needs START.EXE: re-import the ${game().folder} folder.`); return }
     const t = tables
     const rng = (n: number) => engine.rand(n)
     const tools = creatorTools(dialog, files, rng, t)
@@ -1182,7 +1183,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           <h3>Carried</h3>${carried ? `<ul class="carried-list">${carried}</ul>` : '<p class="muted">Nothing else.</p>'}
           ${carried && others.length ? `<div class="give-strip"><span class="muted">Drag an item onto a name to give it:</span>${others.map((n, k) => `<span class="drop-to" data-to="${k}">${escape(parseCharacter(n).name)}</span>`).join('')}</div>` : ''}
           <div class="enc" title="${escape(TIPS.Load)}"><span>Encumbrance ${enc} of ${cap} coins</span><meter min="0" max="${cap}" high="${Math.round(cap * 0.75)}" value="${enc}"></meter></div>
-        </section>` : '<section><p class="muted">Items need the ITEMS file and START.EXE: re-import the POOLRAD folder.</p></section>'}
+        </section>` : `<section><p class="muted">Items need the ITEMS file and START.EXE: re-import the ${game().folder} folder.</p></section>`}
       </div>
       ${t ? `${preview}
         ${opts.message ? `<p class="message">${escape(opts.message)}</p>` : ''}
@@ -1718,7 +1719,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     }
     if (engine.overland) {
       // the arrows are compass directions in the wilderness (FUN_3e76_0989)
-      if (!engine.wild) { note('Wilderness travel needs START.EXE: re-import the POOLRAD folder.'); return }
+      if (!engine.wild) { note(`Wilderness travel needs START.EXE: re-import the ${game().folder} folder.`); return }
       const dir = ({ f: 0, r: 1, b: 2, l: 3 } as Record<string, number>)[c]
       act(() => engine.travel(dir))
       return
@@ -1746,7 +1747,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       case 'settings':
         void openSettings(dialog, { speed: { get: () => engine.speed, set: (v) => { engine.speed = v } }, changed: () => commandBar() })
         break
-      case 'nosound': note('Sound needs START.EXE: go back to Assets and re-import the POOLRAD folder.'); break
+      case 'nosound': note(`Sound needs START.EXE: go back to Assets and re-import the ${game().folder} folder.`); break
       case 'commissions': commissions(); break
       case 'journal': journal(); break
       case 'save': act(() => saveGame()); break

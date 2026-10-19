@@ -1,4 +1,5 @@
 // Camp screens (spec/camp.md): Encamp menu, Magic, Rest, Alter.
+import { game } from '../games/profile'
 import { spellText } from '../rules/spelltext'
 import type { Engine } from '../vm/engine'
 import { parseCharacter } from '../data/character'
@@ -34,7 +35,7 @@ const SPELL_NAMED = new Set([1, 2, 5, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 20, 
 /** The camp screen (FUN_3f81_1e6f). Sets engine.campInterrupted when a rest was interrupted. */
 export async function camp(ui: CampUi) {
   const e = ui.engine
-  if (!e.items || !e.spells) { ui.print('The camp needs START.EXE and ITEMS: re-import the POOLRAD folder.', false); return }
+  if (!e.items || !e.spells) { ui.print(`The camp needs START.EXE and ITEMS: re-import the ${game().folder} folder.`, false); return }
   const state = { heal: 0 }
   for (const c of e.party()) clearPending(c, e.itemsOf(c), e.items)
   ui.print('The party makes camp...', true)

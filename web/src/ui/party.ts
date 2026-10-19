@@ -38,7 +38,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
 
   app.innerHTML = `
     <div class="partyscreen">
-      <header><h1>Pool of Radiance</h1><span><button class="muted" data-a="settings">⚙ Settings</button> <button class="muted" data-a="assets">Assets</button></span></header>
+      <header><h1>${files.game.name}</h1><span><button class="muted" data-a="settings">⚙ Settings</button> <button class="muted" data-a="assets">Assets</button></span></header>
       <section class="members" aria-label="Party"><h2>Party</h2><div class="cards"></div></section>
       <section class="info" aria-live="polite"></section>
       <nav class="functions" aria-label="Choose a function"></nav>

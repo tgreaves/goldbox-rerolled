@@ -1,8 +1,9 @@
 // The player's own data: the character roster (as original CHRDAT files) and the current party.
-// Kept in IndexedDB, separate from the imported game files.
+// Kept in IndexedDB, separate from the imported game files, one database per game
+// (GameProfile.stores.user) so each game has its own roster and saves.
 import type { GameFiles } from './gamefiles'
+import { game } from '../games/profile'
 
-const DB = 'poolrad-user'
 const CHARS = 'characters'
 const META = 'meta'
 const SAVES = 'saves'
@@ -17,7 +18,7 @@ export interface StoredCharacter {
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB, 2)
+    const req = indexedDB.open(game().stores.user, 2)
     req.onupgradeneeded = () => {
       for (const name of [CHARS, META, SAVES]) {
         if (!req.result.objectStoreNames.contains(name)) req.result.createObjectStore(name)

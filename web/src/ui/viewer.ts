@@ -4,9 +4,6 @@ import { daxRecords } from '../data/dax'
 import { parseRecord, toImageData, type Frame } from '../data/image'
 import { GeoMap, STEP } from '../data/geo'
 
-const IMAGE_FAMILIES = ['TITLE', 'PIC', 'FINAL', 'SPRIT', 'HEAD', 'BODY', 'CHEAD', 'CBODY', 'CPIC',
-  'ICON', 'COMSPR', 'SQRPACI', 'BACPAC', 'DUNGCOM', 'WILDCOM', 'RANDCOM', '8X8D']
-
 let timers: number[] = []
 
 export function showViewer(app: HTMLElement, files: GameFiles, reimport: () => void, back?: () => void) {
@@ -16,7 +13,7 @@ export function showViewer(app: HTMLElement, files: GameFiles, reimport: () => v
     const fam = n.replace(/\d*\.DAX$/, '')
     families.set(fam, [...(families.get(fam) ?? []), n])
   }
-  const shown = [...IMAGE_FAMILIES.filter((f) => families.has(f)), ...(families.has('GEO') ? ['GEO'] : [])]
+  const shown = [...files.game.imageFamilies.filter((f) => families.has(f)), ...(families.has('GEO') ? ['GEO'] : [])]
 
   app.innerHTML = `
     <div class="viewer">
@@ -24,8 +21,9 @@ export function showViewer(app: HTMLElement, files: GameFiles, reimport: () => v
         <select aria-label="Asset family">${shown.map((f) => `<option>${f}</option>`).join('')}</select>
         ${shown.map((f) => `<button data-f="${f}">${f}</button>`).join('')}
         ${back ? '<button id="back" class="primary">◀ Party screen</button>' : ''}
-        ${files.get('START.EXE') ? '' : '<p class="muted hint">Sound needs START.EXE: re-import the POOLRAD folder to include it.</p>'}
-        <button id="reimport" class="muted">Re-import files…</button>
+        ${files.game.playable ? '' : `<p class="muted hint">${files.game.name} is in progress: its assets can be viewed, not yet played.</p>`}
+        ${files.get('START.EXE') ? '' : `<p class="muted hint">Sound needs START.EXE: re-import the ${files.game.folder} folder to include it.</p>`}
+        <button id="reimport" class="muted">Games and files…</button>
       </nav>
       <main><div class="grid"></div></main>
     </div>`
