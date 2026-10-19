@@ -311,7 +311,7 @@ export class Engine {
     const h = (this.regs.get(0xc05f) ?? 0xe8) & 0xff, f = (this.regs.get(0xc059) ?? 0xdb) & 0xff
     const line = h === 8 || h === 0x41 ? 0 : 15
     const band = h === 8 ? 8 : 7
-    const floor = f === 0x0b ? 8 : f === 6 ? 1 : 6
+    const floor = game().view.floor ?? (f === 0x0b ? 8 : f === 6 ? 1 : 6)
     return { sky, line, band, floor }
   }
 

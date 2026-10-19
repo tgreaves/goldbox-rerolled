@@ -128,6 +128,16 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   enhancePanel(dialog)
   dialog.addEventListener('close', () => dialog.classList.remove('wide'))
   const world = new World(canvas)
+  // the game's ground picture on the floor (games/view.ts; CotAB SKY #252)
+  const ground = game().view.ground
+  if (ground) {
+    const rec = files.record(ground.file, ground.record)
+    const pic = rec ? parseRecord(rec).frames[0]?.picture : undefined
+    if (pic) {
+      const [from, to] = ground.rows
+      world.ground(toImageData({ ...pic, height: to - from, pixels: pic.pixels.slice(from * pic.width, to * pic.width) }), ground.repeat)
+    }
+  }
 
   // ------------------------------------------------------------ text window
   let screen: HTMLElement | null = null

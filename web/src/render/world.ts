@@ -131,7 +131,23 @@ export class World {
     const c = (i: number) => new THREE.Color().setRGB(...(EGA[i].map((v) => v / 255) as [number, number, number]), THREE.SRGBColorSpace)
     this.scene.background = c(sky)
     if (this.scene.fog) this.scene.fog.color = c(sky)
-    this.floorMaterial.color = c(floor)
+    this.floorMaterial.color = this.floorMaterial.map ? new THREE.Color(1, 1, 1) : c(floor)
+  }
+
+  /** A ground picture tiled over the floor, `repeat` times along each square (null: plain colour). */
+  ground(img: ImageData | null, repeat = 1) {
+    this.floorMaterial.map?.dispose()
+    if (!img) { this.floorMaterial.map = null; this.floorMaterial.needsUpdate = true; return }
+    const t = new THREE.CanvasTexture(pixels(img))
+    t.wrapS = t.wrapT = THREE.RepeatWrapping
+    t.repeat.set(16, 16 * repeat) // the floor plane spans the 16 × 16 map
+    t.magFilter = F > 1 ? THREE.LinearFilter : THREE.NearestFilter
+    t.minFilter = F > 1 ? THREE.LinearFilter : THREE.NearestFilter
+    t.generateMipmaps = false
+    t.colorSpace = THREE.SRGBColorSpace
+    this.floorMaterial.map = t
+    this.floorMaterial.color = new THREE.Color(1, 1, 1)
+    this.floorMaterial.needsUpdate = true
   }
 
   go(v: View, ms = 180) {

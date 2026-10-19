@@ -1,6 +1,7 @@
 // Curse of the Azure Bonds (1989). Research: spec/coab/. Assets only until the later steps of
 // docs/multi-game.md make it playable.
 import type { GameProfile } from './types'
+import { COAB_VIEW } from './view'
 import { COAB_SPELL_NOTES } from './spellnotes'
 import { COAB_FIELDS } from './fields'
 import { COAB_TABLES } from './tables'
@@ -33,5 +34,6 @@ export const COAB: GameProfile = {
   rules: COAB_RULES,
   journal: null,
   spellNotes: COAB_SPELL_NOTES,
+  view: COAB_VIEW,
   playable: false,
 }

@@ -7,6 +7,7 @@ import type { EclMap } from './ecl'
 import type { SaveFiles } from './files'
 import type { GameRules } from './rules'
 import type { JournalData } from './journal'
+import type { ViewArt } from './view'
 
 export interface GameProfile {
   id: 'por' | 'coab'
@@ -39,6 +40,8 @@ export interface GameProfile {
   journal: JournalData | null
   /** one-line spell effects by id, written for the port */
   spellNotes: Record<number, string>
+  /** the 3D view's floor and ground */
+  view: ViewArt
   /** false while the port can show the game's assets but not yet play it */
   playable: boolean
 }
