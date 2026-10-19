@@ -141,7 +141,8 @@ export class World {
     let toYaw = yaw
     while (toYaw - this.yaw > Math.PI) toYaw -= 2 * Math.PI
     while (toYaw - this.yaw < -Math.PI) toYaw += 2 * Math.PI
-    if (ms <= 0) {
+    // nothing to slide (the view refreshed in place): no wait
+    if (ms <= 0 || (!this.anim && this.camera.position.distanceTo(pos) < 1e-6 && Math.abs(toYaw - this.yaw) < 1e-6)) {
       this.camera.position.copy(pos)
       this.yaw = toYaw
       this.anim = null
@@ -242,6 +243,14 @@ export class World {
 
   busy(): boolean {
     return this.anim !== null
+  }
+
+  /** End the current slide at once (a key pressed during it: move on without waiting). */
+  finish() {
+    if (!this.anim) return
+    this.camera.position.copy(this.anim.to)
+    this.yaw = this.anim.toYaw
+    this.anim = null
   }
 
   resize(w: number, h: number) {

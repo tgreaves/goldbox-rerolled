@@ -1691,6 +1691,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       // autosave between actions, never inside a script: on every area change, else at most every 30 s
       const where = `${engine.block}:${engine.area}`
       if (where !== autosavedAt || Date.now() - lastAutosave > 30_000) { lastAutosave = Date.now(); void autosave(where !== autosavedAt ? 'new area' : 'on the way') }
+      if (queuedMove) { const q = queuedMove; queuedMove = null; if (!pending && !dialog.open && !engine.quit) setTimeout(() => move(q), 0) }
     }
   }
   let lastAutosave = Date.now()
@@ -1706,8 +1707,15 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     menuBar.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => command(b.dataset.cmd!)))
   }
 
+  /** a move pressed while the last one was still sliding: done as soon as that step is over (IMP-066) */
+  let queuedMove: string | null = null
   function move(c: string) {
     if (engine.quit) return
+    if (busy) {
+      // pressing faster than the slide: finish it now and take this move next
+      if (animDone && !pending && !dialog.open) { world.finish(); queuedMove = c }
+      return
+    }
     if (engine.overland) {
       // the arrows are compass directions in the wilderness (FUN_3e76_0989)
       if (!engine.wild) { note('Wilderness travel needs START.EXE: re-import the POOLRAD folder.'); return }
