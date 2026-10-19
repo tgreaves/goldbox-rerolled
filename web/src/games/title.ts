@@ -20,8 +20,9 @@ export interface TitleScript {
   configLine: number
   credits: {
     ms: number
-    /** rope frames (8X8D1 #202 tiles), as cell boxes x1, y1, x2, y2 */
-    frames: [number, number, number, number][]
+    /** PoR: rope boxes (the game's border tiles) as cells x1, y1, x2, y2; CotAB: the screen frame
+     *  (games/frametiles.ts) with divider rows */
+    frame: { boxes: [number, number, number, number][] } | { screen: { dividers: number[] } }
     /** row, column, colour, text (the font has capitals only) */
     lines: [number, number, number, string][]
   }
@@ -33,7 +34,7 @@ export const POR_TITLE: TitleScript = {
   configLine: 4, // POOL.CFG line 5 sets DS:49D1, the fixed-disk flag
   credits: {
     ms: 10000,
-    frames: [[1, 1, 38, 3], [1, 5, 38, 23]],
+    frame: { boxes: [[1, 1, 38, 3], [1, 5, 38, 23]] },
     // FUN_290c_0206
     lines: [
   [1, 5, 10, 'scenario created by:'], [1, 26, 14, 'tsr, inc.'], [2, 15, 10, 'jim ward'],
@@ -62,7 +63,7 @@ export const COAB_TITLE: TitleScript = {
   configLine: 3, // CURSE.CFG line 4 sets DS:4FB1
   credits: {
     ms: 10000,
-    frames: [[1, 1, 38, 23]], // frame 0x1403: one box (I)
+    frame: { screen: { dividers: [3, 8] } }, // 0x1403: the screen frame (0x1330) plus rows 3 and 8
     // 0x182AD
     lines: [
       [1, 2, 10, 'based on the tsr novel "azure bonds"'],

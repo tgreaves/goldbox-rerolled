@@ -1,6 +1,8 @@
-// The original's window frames (IMP-051): the yellow corner square and the red rope of 8X8D1.DAX
-// #202, tiles 20–22 (frame style 0 of FUN_13f1_0000: corner, vertical, horizontal), built in the
-// browser from the player's file into a CSS border image, with a switch back to plain borders.
+// The original's window frames (IMP-051), from 8X8D1.DAX #202 by the game's frame data
+// (games/frametiles.ts: PoR's yellow corner and red rope, CotAB's white frame), built in the browser
+// from the player's files into a CSS border image, with a switch back to plain borders.
+import { borderTiles, frameMask } from '../games/frametiles'
+import { unexepack } from '../data/exepack'
 import type { GameFiles } from '../store/gamefiles'
 import { parseRecord, toImageData } from '../data/image'
 
@@ -29,30 +31,33 @@ const S = 4
 
 /** A 3 × 3-tile border image: corners at the four corners, rope along the edges, the middle empty. */
 export function installFrames(files: GameFiles) {
-  if (available) return apply()
+  available = false // rebuilt for each game
   const rec = files.record('8X8D1', 202)
-  if (!rec) return
+  const exe = files.get('START.EXE')
+  let img: Uint8Array | null = null
+  try { img = exe ? unexepack(exe).image : null } catch { img = null }
+  const want = borderTiles(img)
+  if (!rec || !want) return apply()
   try {
     const tiles = parseRecord(rec).frames.map((f) => f.picture)
-    const [corner, vertical, horizontal] = [tiles[20], tiles[21], tiles[22]]
-    if (!corner || !vertical || !horizontal) return
+    const pick = (n: number) => tiles[n]
+    if (Object.values(want).some((n) => !pick(n))) return apply()
     const c = document.createElement('canvas')
     c.width = c.height = 24 * S
     const g = c.getContext('2d')!
-    const put = (p: typeof corner, cx: number, cy: number) => {
+    const put = (p: (typeof tiles)[number], cx: number, cy: number) => {
       const img = toImageData(p)
       for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
-        if (p.pixels[y * 8 + x] === 0) continue // colour 0 lets the panel show through
+        const v = p.pixels[y * 8 + x]
+        if (v === 0 || v === frameMask()) continue // colour 0 (and the game's mask colour) let the panel show through
         const i = (y * 8 + x) * 4
         g.fillStyle = `rgb(${img.data[i]},${img.data[i + 1]},${img.data[i + 2]})`
         g.fillRect((cx * 8 + x) * S, (cy * 8 + y) * S, S, S)
       }
     }
-    for (const [cx, cy] of [[0, 0], [2, 0], [0, 2], [2, 2]]) put(corner, cx, cy)
-    put(horizontal, 1, 0)
-    put(horizontal, 1, 2)
-    put(vertical, 0, 1)
-    put(vertical, 2, 1)
+    put(pick(want.tl), 0, 0); put(pick(want.t), 1, 0); put(pick(want.tr), 2, 0)
+    put(pick(want.l), 0, 1); put(pick(want.r), 2, 1)
+    put(pick(want.bl), 0, 2); put(pick(want.b), 1, 2); put(pick(want.br), 2, 2)
     document.documentElement.style.setProperty('--rope', `url(${c.toDataURL()})`)
     available = true
   } catch { /* plain borders stay */ }

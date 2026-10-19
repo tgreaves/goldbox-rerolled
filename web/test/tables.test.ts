@@ -77,3 +77,19 @@ describe('name and coin tables', () => {
     setGame(POR)
   })
 })
+
+describe('frame tiles', () => {
+  it('PoR keeps its rope; CotAB reads its white frame from the tables (0x1330)', async () => {
+    const { borderTiles, screenFrame } = await import('../src/games/frametiles')
+    setGame(POR)
+    expect(borderTiles(null)).toEqual({ tl: 20, t: 22, tr: 20, l: 21, r: 21, bl: 20, b: 22, br: 20 })
+    const dir = process.env.COAB ?? ''
+    if (!dir || !existsSync(dir)) return
+    setGame(COAB)
+    const img = image(dir)
+    expect(borderTiles(img)).toEqual({ tl: 30, t: 31, tr: 32, l: 32, r: 32, bl: 31, b: 31, br: 33 })
+    const sf = screenFrame(img, [3, 8])!
+    expect([sf.at(5, 3), sf.at(5, 5), sf.at(0, 23)]).toEqual([31, -1, 31])
+    setGame(POR)
+  })
+})
