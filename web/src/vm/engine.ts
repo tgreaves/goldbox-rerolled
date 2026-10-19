@@ -858,7 +858,7 @@ export class Engine {
     const b = [1, 2, 3].map((i) => this.val(i) & 0xff)
     if (b[0] === 0x7f) this.walls.load(1, 0)
     else if (this.A[0x49e7 - A0] && this.A[0x49e8 - A0]) {
-      for (const i of [0, 2]) { if (b[i] !== 0xff) this.walls.load(i + 1, b[i]); else this.walls.clear(i + 1) } // 0xFF empties
+      for (const i of [0, 2]) if (b[i] !== 0xff || !game().ecl.twoSlotSkipsFF) this.walls.load(i + 1, b[i])
     } else b.forEach((r, i) => { if (r !== 0xff) this.walls.load(i + 1, r); else this.walls.clear(i + 1) })
     this.mapDirty = true
   }

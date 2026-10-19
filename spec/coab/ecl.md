@@ -62,6 +62,8 @@ Calls into overlays go through VROOMM stubs that the merge already patched into 
 
 ## Loading (O)
 
+- **New game or load (0x1BFED–0x1C050)**: the area to load is A[0x4BF2]; if it is 0 the game starts at record **1** (record 82 when DS:4FD5 ≠ 0, ?) and loads its script, otherwise a load restores the saved script buffer (DS:47FB = 1). The shipped `SAVGAMA.DAT` names area 0 with an empty buffer, so a new game begins at ECL2 record 1. Then the reset (0x1FBB8) and `on_enter`.
+
 - `ECL<n>.DAX` where n = DS:5C08 (block digit); record id = area id (CotAB blocks: ECL1 80–82, ECL2 1–4, ECL3 16–18 21, ECL4 32–35 37, ECL5 48–51 53, ECL6 64 66 67 69)
 - 0x1FD3C: zero the 0x1E00 buffer, show "Loading...Please Wait", retry until size ≥ 2, copy record bytes 2.. to the buffer start; all records start `88 13`, largest 7622 code bytes (fits 0x1E00)
 - Code occupies virtual **0x8000–0x9DFF** (classifier 0x200F3)
@@ -290,7 +292,7 @@ n = operand count passed to the reader in the handler (O for every row). Status:
 | 34 | DELAY | **PASS_TIME** | **2** | 0x1B52A / 2CDA | 2AC1 | Δ | PoR read 1 operand with an uninitialised index. CotAB: clock routine 0x4129A(count = val1, unit = val2): `count` times add 1 to clock word 0x4BC6+unit and normalise, then 0x40EBE(count, unit) (I: effect expiry). Data: `PASS_TIME [0x4C06], #4` in ECL1 records 80 and 81 (travel; I: unit 4 = days) |
 | 35 | SAVE_TABLE | SAVE_TABLE | 3 | 0x196ED / 0E9D | 0EBC | = | |
 | 36 | ADD_NPC | ADD_NPC | 2 | 0x1B61A / 2DCA | 2B7E | Δ | load NPC val1 (0x3593D); morale char[0xF7] = (val2 >> 1) \| 0x80; recompute (0x4DC70, 0x4D7E8). **PoR's "enemy side for id 0x18" is gone** |
-| 37 | LOAD_WALLSETS | LOAD_WALLSETS | 3 | 0x19491 | 0C74 | ≈ | as PoR (0x7F → slot 1 set 0; 0x4BE7&0x4BE8 → ops 1, 3 only; 0xFF empties) |
+| 37 | LOAD_WALLSETS | LOAD_WALLSETS | 3 | 0x19491 | 0C74 | ≈ | as PoR (0x7F → slot 1 set 0; otherwise 0xFF empties a slot), except that with 0x4BE7 and 0x4BE8 set (ops 1 and 3 only) **an operand of 0xFF is skipped, leaving its slot as it is** (0x19563, 0x19575; PoR has no test there) |
 | 38 | PROGRAM | PROGRAM | 1 | 0x1B94E / 30FE | 2E10 | Δ | restores DS:47FF char first. 0: training/party screen (0x36850, 0x36A1C). **3: quit (DS:4FE0 = 1) then EXIT (new)**. 8: ending (0x3D02C), 0x4CFD = 0xFF, 0x7EA8 = 0xFF, every member HP = max (char[0x1A4] = char[0x78]), char[0x195] = 0, char[0x196] = 1, then "You've won. Save before quitting?" (cs string 0x1B92B); Y → 0x3631E; exit to DOS (0x06700). 9: camp (0x1B8E4), PC restored, EXIT |
 | 39 | WHO | WHO | 1 | 0x1B5CF / 2D7F | 2B33 | = | |
 | 3A | PAUSE | PAUSE | 0 | 0x1B15B / 290B | 271F | = | |

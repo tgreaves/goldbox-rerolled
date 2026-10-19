@@ -88,7 +88,7 @@ Column "PoR" = source offset in the 285-byte PoR record as copied by the convert
 | 0xE4 | 1 | base movement | 0x72 | moved | O (recalc `4d05:0eaf`) |
 | 0xE5 | 1 | hit dice / highest level | 0x73 | moved | O (`5047:042f`) |
 | 0xE6 | 1 | level used by the HP recompute for dual-class (converter sets = 0xE5) | — | new | O (copy) / I (use, `4aab:1d08`) |
-| 0xE7, 0xE8 | 1, 1 | ? (PoR 0x74, 0x75) | 0x74, 0x75 | moved | O (copy) |
+| 0xE7, 0xE8 | 1, 1 | levels lost to energy drain, and the max HP they took (I: the converter copies PoR 0x74/0x75 here, whose meaning is O in [[spec/records]]) | 0x74, 0x75 | moved | O (copy) |
 | 0xE9 | 1 | undead type | 0x76 | moved | O (copy) |
 | 0xEA–0xF1 | 8 | thief skills % (PP OL F/RT MS HS HN CW RL) | 0x77–0x7E | moved | O (copy) / I (order) |
 | 0xF2 | 4 | effect list head (stale in files) | 0x7F | moved | O (`323c:23c6`) |
@@ -219,7 +219,7 @@ Before writing (O, `323c:41a3..41d3`): A[0x1F8] = speed `DS:4FC2`; A[0x1FE] = `D
 
 Loading (O, `323c:37b5`): lists A–J that exist ("Load Which Game: "); reads the fields above; `DS:4FD7` = A[0x1FE] >> 1, `DS:4FD8` = A[0x1FE] & 1, `DS:4FC2` = A[0x1F8], B[0x67C] = 0; for each stem with an existing `<stem>.sav` (`323c:3be5`): allocate 0x1A6, `323c:22a0` (Curse source), add to the party (`323c:360a`); delete every member's roster files; load combat icons (PCs, morale < 0x80) or `CPIC` by id (+0x126); block digit = B[0x624]; if A[0x1CC] ≠ 0 (map area) and the saved state ≠ 0: 3D map A[0x18A] (if slot 1 record > 0) and the wall sets with record > 0 (`536a:1025(record, slot)`); A[0x1CC] = 0 → overland picture 0x79 (`52e0:080c`); finally `DS:4FD4` = `DS:4FD3`, `DS:4FD3` = 0.
 
-Shipped `SAVGAMA.DAT` (O): block 2, position (7, 13) facing 0, states 0/0, wall slots (0, 1), (−1, −1), (−1, −1), party `CHRDATA1–6`, speed 4, pictures 3, A[0x1CC] = 1, B[0x624] = 2, ECL buffer all zero (I: a start-of-game save, the script is reloaded).
+Shipped `SAVGAMA.DAT` (O): block 2, position (7, 13) facing 0, states 0/0, wall slots (0, 1), (−1, −1), (−1, −1), party `CHRDATA1–6`, speed 4, pictures 3, A[0x1CC] = 1, B[0x624] = 2, ECL buffer all zero: a start-of-game save; area 0 makes the loader start at record 1 with its script loaded (O, [[spec/coab/ecl]], "Loading").
 
 ---
 
@@ -296,7 +296,7 @@ Source 2: 0xBC-byte `*.hil`, name at +4, NPC test skipped. `323c:1f35` merges on
 
 ## 8. Open
 
-- 0xE7, 0xE8, 0xF6, 0xF9, 0xFA, 0x14B, 0x192 meanings (copied, rarely read).
+- 0xF6, 0xF9, 0xFA, 0x14B, 0x192 meanings (copied, rarely read).
 - 0x191 exact use (I: once-per-period ability counter).
 - Exact effect of the base-STR bug in play (which events call `4aab:18d9` for an imported character before anything resets base STR) — trace `3d53:1c90..1e97` and the `43f7` callers.
 - Bit 0x80 added to ITEMS class masks.

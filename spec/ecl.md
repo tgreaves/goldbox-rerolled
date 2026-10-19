@@ -45,7 +45,7 @@ instruction := opcode:u8 operand*
 operand     := kind:u8 payload
 ```
 
-The reader fills an operand table: kind at `DS:7005+i`, first payload byte **LO** at `DS:7085+i`, second byte **HI** at `DS:7045+i`. String operands are decoded into their own buffers, numbered by string operand within the call (`DS:6FC8 + k·0x100`, k = 1, 2, …).
+The reader fills an operand table: kind at `DS:7005+i`, first payload byte **LO** at `DS:7085+i`, second byte **HI** at `DS:7045+i`. The three tables are 0x40 bytes apart, so an instruction can carry up to 63 operands (I; CotAB has a 33-way `ON_GOTO`, [[spec/coab/ecl]]). String operands are decoded into their own buffers, numbered by string operand within the call (`DS:6FC8 + k·0x100`, k = 1, 2, …).
 
 | kind | Payload | Value as a number (`FUN_2fea_0136`) | As a string |
 |---|---|---|---|
@@ -305,7 +305,7 @@ Stored values: **0** the monsters flee ("The monsters flee."), **1** combat, **2
 |---|---|---|---|---|
 | 20 | NEW_ECL | val 1 area | 0x49F2 = old area; load `ECL<block>` record n; VM reset (vectors; flags; stack; icon slot 8; 0x6DE1 = 0xFF; 0x6DD2 = 0x6DD3 = 0; 0x49E5 = 0; **0x49E6 = 1**; unless restoring a save, 0x4A00–0x4A1F and 0x6E79–0x6E82 = 0); stop; signal an area change | O |
 | 21 | LOAD_AREA | val 1 GEO record, (op 2 unused), val 3 | if val 1 ∉ {0x7F, 0xFF} and 0x49E6 ≠ 0: 0x49C5 = val 1, load the GEO record, 0x6DC9 = 0. If val 3 ≠ 0xFF and 0x49E6 = 0: load the `BACPAC` backdrop | O |
-| 37 | LOAD_WALLSETS | val 1–3 | 0x7F: clear to set 0 in slot 1. If 0x49E7 and 0x49E8 are both set: load val 1 → slot 1, val 3 → slot 3. Else for each slot: 0xFF empties it, otherwise load that `WALLDEF<block>` record (one record may fill several slots) | O |
+| 37 | LOAD_WALLSETS | val 1–3 | 0x7F: clear to set 0 in slot 1. If 0x49E7 and 0x49E8 are both set: load val 1 → slot 1, val 3 → slot 3, with no 0xFF test (image 0x1A96D–0x1A994; no shipped script passes 0xFF there). Else for each slot: 0xFF empties it, otherwise load that `WALLDEF<block>` record (one record may fill several slots) | O |
 | 2D | CALL | addr 1 | native routine, table below | O |
 | 31 | REDRAW | — | if an encounter sprite is showing, redraw the 3D view | O |
 | 34 | DELAY | val ? | **passes game time** (the rest-loop clock routine `FUN_4b46_03d5`), not a pause. Its operand is read with an uninitialised index, so the amount is undefined; used once in the data (`DELAY #1`, ECL7 record 17), where in practice it passes 0 minutes, so nothing happens (**I**); the port does nothing | O |

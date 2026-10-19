@@ -102,8 +102,9 @@ as data in its profile ([`../CLAUDE.md`](../CLAUDE.md)).
    DESTROY_ITEMS), IF-skip counts, CALL targets and the start block are profile data.
    `test/coabsweep.test.ts`: 2 150 runs over every CotAB area from every third square, no
    interpreter errors (31 end still waiting on town or travel menus, which the test allows). Found
-   on the way: operand slots must hold 63 (CotAB has a 33-way ON_GOTO), and 0xFF in two-slot
-   LOAD_WALLSETS empties the slot. Not yet: B+0xC9 and the load-past-end flag in the character
+   on the way: operand slots must hold 63 (CotAB has a 33-way ON_GOTO), and in two-slot
+   LOAD_WALLSETS CotAB skips an operand of 0xFF while PoR loads it (both checked in the binaries,
+   profile flag `twoSlotSkipsFF`). Not yet: B+0xC9 and the load-past-end flag in the character
    view, the CALL 0x6803 picture frame, CotAB's own PICTURE (BIGPIC), DAMAGE and ADD_NPC changes,
    and its random-treasure table (step 5/6).
 5. **CotAB data.** Characters (.SAV/.SWG/.FX), saves (13 149 bytes), the roster, the pre-made party,

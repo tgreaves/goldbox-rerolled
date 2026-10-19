@@ -24,6 +24,9 @@ export interface EclMap {
   start: { block: number; area: number }
   /** a save whose area is 0 starts here, with that area's script loaded (CotAB 1; PoR has an area 0) */
   areaZero: number | null
+  /** LOAD_WALLSETS in two-slot mode (A 0x49E7 and 0x49E8 set): an operand of 0xFF leaves its slot as
+   *  it is (CotAB, image 0x19563/0x19575) or is loaded like any record (PoR, image 0x1A96D: no test) */
+  twoSlotSkipsFF: boolean
 }
 
 export type EclVariant = 'passTime' | 'findSpell' | 'protection' | 'redrawScreen' | 'dropCharacter' | 'findEffect' |
@@ -36,6 +39,7 @@ export const POR_ECL: EclMap = {
   calls: { refresh: 0x2c90, sound: 0xba03, frame: -1 },
   start: { block: 3, area: 0 },
   areaZero: null,
+  twoSlotSkipsFF: false,
 }
 
 // spec/coab/ecl.md, "B as a view of the current character". Not yet: B+0xC9 (a class level with the
@@ -60,6 +64,7 @@ export const COAB_ECL: EclMap = {
   start: { block: 2, area: 1 },
   // image 0x1C001–0x1C050: area 0 → record 1 (82 when DS:4FD5 is set, ?), loaded rather than restored
   areaZero: 1,
+  twoSlotSkipsFF: true,
 }
 
 const SIZES: ['a' | 'b' | 'c' | 'code', number][] = [['a', 0x400], ['b', 0x400], ['c', 0x200], ['code', 0x1e00]]
