@@ -29,6 +29,12 @@ export interface GameRules {
   hpModel: 'por' | 'coab'
   /** CotAB: the fixed hit points per level from the stop level, by base class */
   fixedHp: number[]
+  /** demi-human level limits: race, base class, the ability that sets the band, and the limit with
+   *  that ability below 17, at 17 and at 18 or more (18/xx counts as 18) */
+  levelLimits: { race: number; cls: number; by: 0 | 1; limits: [number, number, number] }[]
+  /** starting money: PoR's gold dice × 10 shared over the classes, or CotAB's 300 platinum (the
+   *  dice are still rolled, and the sum dropped) */
+  startMoney: 'gold' | 'platinum300'
 }
 
 export const POR_RULES: GameRules = {
@@ -37,6 +43,13 @@ export const POR_RULES: GameRules = {
   extraAttacks: { 2: 6 },
   hpModel: 'por',
   fixedHp: [],
+  // spec/progression.md; races 1 dwarf, 2 elf, 3 gnome, 4 half-elf, 5 halfling; classes 0 cleric, 2 fighter
+  levelLimits: [
+    { race: 1, cls: 2, by: 0, limits: [7, 8, 9] }, { race: 2, cls: 2, by: 0, limits: [5, 6, 7] },
+    { race: 3, cls: 2, by: 0, limits: [5, 5, 6] }, { race: 4, cls: 2, by: 0, limits: [6, 7, 8] },
+    { race: 5, cls: 2, by: 0, limits: [4, 5, 6] }, { race: 4, cls: 0, by: 0, limits: [5, 5, 5] },
+  ],
+  startMoney: 'gold',
 }
 
 export const COAB_RULES: GameRules = {
@@ -47,6 +60,15 @@ export const COAB_RULES: GameRules = {
   hpModel: 'coab',
   // §3.4: fighter and paladin 3, cleric, ranger and thief 2, magic-user 1 (druid and monk are not playable: 2, I)
   fixedHp: [2, 2, 3, 3, 2, 1, 2, 2],
+  // §3.2: PoR's, plus elf and half-elf magic-users by INT and half-elf rangers as fighters (classes 4 ranger, 5 MU)
+  levelLimits: [
+    { race: 1, cls: 2, by: 0, limits: [7, 8, 9] }, { race: 2, cls: 2, by: 0, limits: [5, 6, 7] },
+    { race: 3, cls: 2, by: 0, limits: [5, 5, 6] }, { race: 4, cls: 2, by: 0, limits: [6, 7, 8] },
+    { race: 5, cls: 2, by: 0, limits: [4, 5, 6] }, { race: 4, cls: 0, by: 0, limits: [5, 5, 5] },
+    { race: 2, cls: 5, by: 1, limits: [9, 10, 11] }, { race: 4, cls: 4, by: 0, limits: [6, 7, 8] },
+    { race: 4, cls: 5, by: 1, limits: [6, 7, 8] },
+  ],
+  startMoney: 'platinum300',
 }
 
 /** The active game's rules; start-up (setGame) switches them. */

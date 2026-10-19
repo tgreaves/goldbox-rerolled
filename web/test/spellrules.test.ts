@@ -8,8 +8,8 @@ import { R, bookSpell, casterClasses } from '../src/games/rules'
 import { F } from '../src/games/fields'
 import { unexepack } from '../src/data/exepack'
 import { Tables } from '../src/rules/chargen'
-import { derive } from '../src/rules/training'
-import { coabHitDice } from '../src/rules/chargen'
+import { derive, levelLimit } from '../src/rules/training'
+import { alignmentsFor, begin, classesFor, coabHitDice, rollAbilities } from '../src/rules/chargen'
 import { T } from '../src/games/tables'
 
 const tables = (dir: string) => SpellTables.load(new Uint8Array(readFileSync(join(dir, 'START.EXE'))))!
@@ -79,5 +79,28 @@ describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds spell book
     expect(coabHitDice(t, rng, c, [2])).toBe(3) // fighter from level 10: 3 hit points
     c[F.levels + 5] = 4
     expect(coabHitDice(t, rng, c, [5, 2])).toBe(3) // the fixed value replaces the magic-user's roll (quirk)
+  })
+
+  it('creates a human paladin with 300 platinum and base stats (§3.1, §3.10, §2.1)', () => {
+    setGame(COAB)
+    const t = new Tables(unexepack(new Uint8Array(readFileSync(join(coab, 'START.EXE')))).image)
+    expect(classesFor(t, 7)).toEqual(expect.arrayContaining([0, 2, 3, 4, 5, 6])) // human
+    expect(classesFor(t, 4)).toEqual(expect.arrayContaining([4, 10])) // half-elf: ranger, cleric/ranger
+    expect(alignmentsFor(t, 3)).toEqual([0]) // paladin: lawful good only
+    expect(alignmentsFor(t, 4)).toEqual([0, 3, 6]) // ranger: LG, NG, CG
+    let seed = 7
+    const rng = (n: number) => (seed = (seed * 1103515245 + 12345) >>> 0) % n
+    const c = begin(t, rng, 7, 0, 3, 0)
+    rollAbilities(t, rng, c)
+    expect(c.length).toBe(F.size)
+    expect(c[F.levels + 3]).toBe(1)
+    expect(c[F.money + 8] | (c[F.money + 9] << 8)).toBe(300)
+    expect(c[F.money + 6] | (c[F.money + 7] << 8)).toBe(0)
+    for (let i = 0; i < 6; i++) expect(c[F.baseStat[i]]).toBe(c[F.stat[i]])
+    expect(c[F.stat[4 /* CON */]]).toBeGreaterThanOrEqual(9) // paladin minimum
+    expect(c[F.stat[5 /* CHA */]]).toBeGreaterThanOrEqual(17)
+    const he = new Uint8Array(F.size)
+    he[F.race] = 4; he[F.stat[0]] = 18; he[F.stat[1]] = 17
+    expect([levelLimit(he, 4), levelLimit(he, 5), levelLimit(he, 2)]).toEqual([8, 7, 8]) // half-elf ranger, MU by INT, fighter
   })
 })

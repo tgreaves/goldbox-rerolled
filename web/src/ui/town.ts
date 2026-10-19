@@ -215,7 +215,7 @@ function raiseDead(e: Engine, c: Uint8Array) {
   for (let i = fx.length - 1; i >= 0; i--) if (fx[i].type === 32 || fx[i].type === 55) fx.splice(i, 1)
   c[F.hp] = 1
   c[F.status] = 0
-  if (c[F.stat[4]] > 0) c[F.stat[4]]--
+  if (c[F.stat[4]] > 0) { c[F.stat[4]]--; c[F.baseStat[4]] = c[F.stat[4]] }
   const con = c[F.stat[4]]
   if (con < 14) return
   const b = Math.max(0, c[F.maxHp] - c[F.hpRolled])

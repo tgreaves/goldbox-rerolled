@@ -142,9 +142,11 @@ export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
       c[F.known + 11] = c[F.known + 18] = c[F.known + 19] = c[F.known + 21] = 1 // Detect Magic, Read Magic, Shield, Sleep
     }
   }
-  const g = Math.floor((gold * 10) / classes)
-  c[F.money + 6] = g & 0xff
-  c[F.money + 7] = g >> 8
+  if (R.startMoney === 'gold') {
+    const g = Math.floor((gold * 10) / classes)
+    c[F.money + 6] = g & 0xff
+    c[F.money + 7] = g >> 8
+  } else { c[F.money + 8] = 300 & 0xff; c[F.money + 9] = 300 >> 8 } // CotAB: 300 platinum, the dice roll dropped
   // hit points (FUN_417f_4235, FUN_417f_3f31)
   const hpRoll = hitDice(t, rng, c)
   c[F.hpRolled] = hpRoll & 0xff
@@ -155,6 +157,7 @@ export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
   c[F.hp] = c[F.maxHp]
   c[F.hpRolled] = Math.floor(c[F.hpRolled] / classes)
   combatStats(c)
+  keepBase(c)
 }
 
 export function hitDice(t: Tables, rng: Rng, c: Uint8Array): number {
@@ -186,6 +189,15 @@ export function coabHitDice(t: Tables, rng: Rng, c: Uint8Array, classes: number[
     } else sum = R.fixedHp[k] ?? 2
   }
   return sum
+}
+
+/**
+ * The base (permanent) abilities follow the current ones after creation, Modify, Raise Dead's CON
+ * loss or an edit (CotAB keeps both, spec/coab/records.md §2.1; in PoR they are the same bytes).
+ */
+export function keepBase(c: Uint8Array) {
+  for (let i = 0; i < 6; i++) c[F.baseStat[i]] = c[F.stat[i]]
+  c[F.baseStrPct] = c[F.strPct]
 }
 
 export function conBonus(t: Tables, c: Uint8Array): number {
@@ -380,4 +392,5 @@ export function modifyStep(t: Tables, c: Uint8Array, f: number, delta: 1 | -1) {
     c[F.maxHp] = c[F.hp] = Math.min(Math.max(c[F.maxHp], min), max)
   }
   combatStats(c)
+  keepBase(c)
 }

@@ -19,17 +19,10 @@ export function xpFor(t: Tables, k: number, level: number): number {
 
 /** Demi-human level limits (spec table); 255 = none. STR without exceptional strength. */
 export function levelLimit(c: Uint8Array, k: number): number {
-  const race = c[F.race], str = c[F.stat[0]]
-  if (k === 2) {
-    const band = (lo: number, mid: number, hi: number) => (str < 17 ? lo : str === 17 ? mid : hi)
-    if (race === 1) return band(7, 8, 9)
-    if (race === 2) return band(5, 6, 7)
-    if (race === 3) return str < 18 ? 5 : 6
-    if (race === 4) return band(6, 7, 8)
-    if (race === 5) return band(4, 5, 6)
-  }
-  if (k === 0 && race === 4) return 5
-  return 255
+  const rule = R.levelLimits.find((x) => x.race === c[F.race] && x.cls === k)
+  if (!rule) return 255
+  const v = c[F.stat[rule.by]]
+  return rule.limits[v < 17 ? 0 : v === 17 ? 1 : 2]
 }
 
 /** Coins worth in gp, rounded up (FUN_4894_28be for training). */

@@ -8,7 +8,7 @@ import { Item } from '../data/items'
 import { buildItem } from '../rules/randitem'
 import { recalc } from '../rules/equip'
 import { derive, levelHp, maxLevel, xpFor } from '../rules/training'
-import type { Tables } from '../rules/chargen'
+import { keepBase, type Tables } from '../rules/chargen'
 import { onClose } from './sheet'
 import { F } from '../games/fields'
 
@@ -147,6 +147,7 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
       set16(c, F.age, clamp(v('age'), 1, 999))
       for (let i = 0; i < 6; i++) c[F.stat[i]] = clamp(v(`s${i}`), 3, 25)
       c[F.strPct] = c[F.stat[0]] === 18 ? clamp(v('pct'), 0, 100) : 0
+      keepBase(c)
       c[F.maxHp] = clamp(v('maxhp'), 1, 255)
       c[F.hp] = clamp(v('hp'), 0, c[F.maxHp])
       set32(c, F.xp, clamp(v('xp'), 0, 99999999))
