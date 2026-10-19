@@ -105,6 +105,17 @@ deep inside shared code (`if (coab) …`); it is a choice made in the profile.
    and its random-treasure table (step 5/6).
 5. **CotAB data.** Characters (.SAV/.SWG/.FX), saves (13 149 bytes), the roster, the pre-made party,
    monsters.
+   *Done 2026-10-19*: `web/src/games/files.ts`: each game's item/effect/roster extensions (PoR
+   .ITM/.SPC/.CHA, CotAB .SWG/.FX/.GUY; the 63- and 9-byte records are the same), save size, the
+   party list's place and the wall sets (CotAB keeps them after the position, PoR in A). Saves are
+   read and written in the active game's layout; exports and imports use its extensions; the
+   roster import scans `*.GUY` for CotAB (no charlist). A save naming area 0 starts at area 1 with
+   that script loaded, as the original's loader does (image 0x1C001), which is how the shipped
+   SAVGAMA.DAT starts a game. Tested: the shipped save with the pre-made party (and TRAVIS's
+   three racial effects from his .FX) loads, starts and saves back at 13 149 bytes. Monster records
+   already load through the field map (the sweep loads them). Not yet: seeding `*.GUY` roster files
+   from the game folder (only the pre-made CHRDAT files are), and CotAB stays view-only until its
+   rules (step 6).
 6. **CotAB rules.** Spells (100, five levels), slots, levels and caps, hit points, classes, temple Heal.
 7. **CotAB presentation.** Sky and ground in the 3D view, the BIGPIC overland, title, code wheel.
 8. **Importing PoR characters**, by the game's own "Pool" import (spec/coab/records.md), with its

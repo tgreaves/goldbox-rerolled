@@ -184,7 +184,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
           const dat = files.get(`SAVGAM${slot}.DAT`)
           if (!dat) continue
           const sv = parseSave(dat)
-          const chars = sv.party.map((st) => ({ sav: files.get(`${st}.SAV`)!, itm: files.get(`${st}.ITM`), spc: files.get(`${st}.SPC`) }))
+          const chars = sv.party.map((st) => ({ sav: files.get(`${st}.SAV`)!, itm: files.get(`${st}.${files.game.saves.items}`), spc: files.get(`${st}.${files.game.saves.effects}`) }))
           if (chars.some((c) => !c.sav)) continue
           const names = chars.map((c) => parseCharacter(c.sav).name)
           saves.push({ title: `${slot} (game files): ${names[0]}'s party`, note: `block ${saveBlock(sv)} area ${saveArea(sv)}`,
@@ -216,7 +216,8 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
         const input = document.createElement('input')
         input.type = 'file'
         input.multiple = true
-        input.accept = '.zip,.dat,.sav,.itm,.spc,.cha,.txt,.DAT,.SAV,.ITM,.SPC,.CHA,.TXT'
+        const S = files.game.saves
+        input.accept = ['zip', 'dat', 'sav', S.items, S.effects, S.roster, 'txt'].flatMap((x) => [`.${x.toLowerCase()}`, `.${x.toUpperCase()}`]).join(',')
         const chosen = await new Promise<File[]>((resolve) => {
           input.addEventListener('change', () => resolve([...(input.files ?? [])]), { once: true })
           input.addEventListener('cancel', () => resolve([]), { once: true })
@@ -231,11 +232,11 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
             else loose.push({ name: f.name, data })
           }
           const { games, missing } = savesFrom(loose)
-          // roster characters as the original keeps them: <name>.CHA/.ITM/.SPC and charlist.txt
+          // roster characters as the original keeps them (PoR <name>.CHA/.ITM/.SPC and charlist.txt, CotAB .GUY/.SWG/.FX)
           const found = rosterFrom(loose)
           if (!games.length && !found.chars.length) {
             const lost = [...missing, ...found.missing]
-            say(lost.length ? `Nothing imported; missing ${lost.join(', ')}.` : 'Choose a SAVGAM file (A to J) with its CHRDAT files, characters (.CHA with .ITM, .SPC and charlist.txt), or a ZIP of them.')
+            say(lost.length ? `Nothing imported; missing ${lost.join(', ')}.` : `Choose a SAVGAM file (A to J) with its CHRDAT files, characters (.${S.roster} with .${S.items} and .${S.effects}${S.roster === 'CHA' ? ' and charlist.txt' : ''}), or a ZIP of them.`)
             break
           }
           const have = new Set((await listSaves()).map((g) => g.slot))

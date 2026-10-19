@@ -1,6 +1,7 @@
 // Saved games as the original's files (IMP-006): SAVGAM<x>.DAT plus CHRDAT<x><n>.SAV/.ITM/.SPC per
 // party member (spec/savegame.md), exported as one ZIP and imported from loose files or a ZIP, so a
 // game moves between this port and DOSBox.
+import { game } from '../games/profile'
 import { parseSave } from '../data/save'
 import { F } from '../games/fields'
 import type { SavedGame, StoredCharacter } from './user'
@@ -35,8 +36,9 @@ export function saveFiles(g: SavedGame): NamedFile[] {
   g.chars.forEach((c, i) => {
     const stem = stems[i] ?? `CHRDAT${g.slot}${i + 1}`
     out.push({ name: `${stem}.SAV`, data: c.sav })
-    out.push({ name: `${stem}.ITM`, data: c.itm ?? new Uint8Array(0) })
-    out.push({ name: `${stem}.SPC`, data: c.spc ?? new Uint8Array(0) })
+    // the game's own extensions (PoR .ITM/.SPC, CotAB .SWG/.FX)
+    out.push({ name: `${stem}.${game().saves.items}`, data: c.itm ?? new Uint8Array(0) })
+    out.push({ name: `${stem}.${game().saves.effects}`, data: c.spc ?? new Uint8Array(0) })
   })
   const extra = sidecar(g)
   if (extra) out.push(extra)
@@ -53,7 +55,7 @@ export function savesFrom(files: NamedFile[]): { games: SavedGame[]; missing: st
     if (!m) continue
     let stems: string[]
     try { stems = parseSave(dat).party } catch { missing.push(`${name} (not a saved game)`); continue }
-    const chars = stems.map((s) => ({ sav: byName.get(`${s.toUpperCase()}.SAV`), itm: byName.get(`${s.toUpperCase()}.ITM`), spc: byName.get(`${s.toUpperCase()}.SPC`) }))
+    const chars = stems.map((s) => ({ sav: byName.get(`${s.toUpperCase()}.SAV`), itm: byName.get(`${s.toUpperCase()}.${game().saves.items}`), spc: byName.get(`${s.toUpperCase()}.${game().saves.effects}`) }))
     const lost = stems.filter((_, i) => !chars[i].sav)
     if (lost.length) { missing.push(...lost.map((s) => `${s}.SAV`)); continue }
     const first = chars[0]?.sav
@@ -71,19 +73,21 @@ export function charStem(name: string): string {
 
 /**
  * Roster characters from a DOS install's save folder (spec/menus.md, "Character files"): each
- * <stem>.CHA with its .ITM and .SPC; with charlist.txt, only the names it lists.
+ * <stem>.CHA with its .ITM and .SPC; with charlist.txt, only the names it lists. CotAB: every
+ * <stem>.GUY with its .SWG and .FX (no charlist, spec/coab/records.md §1).
  */
 export function rosterFrom(files: NamedFile[]): { chars: StoredCharacter[]; missing: string[] } {
   const byName = new Map(files.map((f) => [f.name.split('/').pop()!.toUpperCase(), f.data]))
   const list = byName.get('CHARLIST.TXT')
   const wanted = list ? new TextDecoder().decode(list).split(/\r?\n/).map((s) => s.trim()).filter(Boolean).map(charStem) : null
-  const stems = wanted ?? [...byName.keys()].filter((n) => n.endsWith('.CHA')).map((n) => n.slice(0, -4))
+  const S = game().saves, ext = `.${S.roster}`
+  const stems = wanted ?? [...byName.keys()].filter((n) => n.endsWith(ext)).map((n) => n.slice(0, -ext.length))
   const chars: StoredCharacter[] = []
   const missing: string[] = []
   for (const stem of new Set(stems)) {
-    const sav = byName.get(`${stem}.CHA`)
-    if (!sav || sav.length < F.size) { missing.push(`${stem}.CHA`); continue }
-    chars.push({ stem, sav: sav.slice(0, F.size), itm: byName.get(`${stem}.ITM`), spc: byName.get(`${stem}.SPC`) })
+    const sav = byName.get(`${stem}${ext}`)
+    if (!sav || sav.length < F.size) { missing.push(`${stem}${ext}`); continue }
+    chars.push({ stem, sav: sav.slice(0, F.size), itm: byName.get(`${stem}.${S.items}`), spc: byName.get(`${stem}.${S.effects}`) })
   }
   return { chars, missing }
 }

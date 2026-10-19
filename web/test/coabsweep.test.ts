@@ -6,6 +6,8 @@ import { join } from 'node:path'
 import { GameFiles } from '../src/store/gamefiles'
 import { Engine, type Io } from '../src/vm/engine'
 import { COAB, POR, setGame } from '../src/games/profile'
+import { parseSave, saveArea, saveBlock } from '../src/data/save'
+import { parseCharacter } from '../src/data/character'
 
 const dir = process.env.COAB ?? ''
 const have = dir !== '' && existsSync(dir)
@@ -75,4 +77,27 @@ describe.skipIf(!have)('Curse of the Azure Bonds scripts', () => {
     expect(runs).toBeGreaterThan(1500)
     expect(asking).toBeLessThan(runs / 10)
   }, 300000)
+
+  it('loads the shipped save with the pre-made party, starts, and saves back in its own layout', async () => {
+    setGame(COAB)
+    const files = load()
+    const dat = files.get('SAVGAMA.DAT')!
+    expect(dat.length).toBe(13149)
+    const sv = parseSave(dat)
+    expect(sv.party).toEqual(['CHRDATA1', 'CHRDATA2', 'CHRDATA3', 'CHRDATA4', 'CHRDATA5', 'CHRDATA6'])
+    expect([saveBlock(sv), sv.x, sv.y, sv.facing2]).toEqual([2, 7, 13, 0])
+    const chars = sv.party.map((st) => files.get(`${st}.SAV`)!)
+    expect(chars.map((c) => parseCharacter(c).name)).toEqual(['MATHEW', 'MARK', 'TRAVIS', 'LEDERA', 'SHARA', 'PHILIPPE'])
+    const e = new Engine(files, headless(() => 0), 1)
+    e.loadSave(dat, chars)
+    sv.party.forEach((st, i) => e.attachFiles(i, files.get(`${st}.SWG`), files.get(`${st}.FX`)))
+    expect(e.effectsOf(e.party()[2]).length).toBe(3) // TRAVIS, the dwarf: racial effects from CHRDATA3.FX
+    await e.start()
+    expect(e.party().length).toBe(6)
+    const back = e.toSave(sv.party)
+    expect(back.length).toBe(13149)
+    const again = parseSave(back)
+    expect(again.party).toEqual(sv.party)
+    expect([saveBlock(again), saveArea(again)]).toEqual([saveBlock(sv), e.area])
+  })
 })

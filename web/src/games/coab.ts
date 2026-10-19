@@ -4,6 +4,7 @@ import type { GameProfile } from './types'
 import { COAB_FIELDS } from './fields'
 import { COAB_TABLES } from './tables'
 import { COAB_ECL } from './ecl'
+import { COAB_FILES } from './files'
 
 export const COAB: GameProfile = {
   id: 'coab',
@@ -26,5 +27,6 @@ export const COAB: GameProfile = {
   fields: COAB_FIELDS,
   tables: COAB_TABLES,
   ecl: COAB_ECL,
+  saves: COAB_FILES,
   playable: false,
 }

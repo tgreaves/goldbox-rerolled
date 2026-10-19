@@ -1,4 +1,5 @@
-// SAVGAM*.DAT (spec/savegame.md)
+// SAVGAM*.DAT (spec/savegame.md; CotAB spec/coab/records.md §5), in the active game's layout
+import { game } from '../games/profile'
 
 export interface SaveGame {
   A: Uint16Array
@@ -11,6 +12,8 @@ export interface SaveGame {
   facing2: number
   areaKind: number
   party: string[]
+  /** wall-set record per slot 1–3 (0xFFFF = filled by a multi-set record) */
+  wallSets: number[]
 }
 
 export const A0 = 0x4900
@@ -22,9 +25,10 @@ export function parseSave(d: Uint8Array): SaveGame {
     for (let i = 0; i < n; i++) out[i] = d[o + 2 * i] | (d[o + 2 * i + 1] << 8)
     return out
   }
+  const L = game().saves
   const party: string[] = []
-  for (let i = 0; i < d[0x3208]; i++) {
-    const o = 0x3209 + 41 * i
+  for (let i = 0; i < d[L.partyAt]; i++) {
+    const o = L.partyAt + 1 + 41 * i
     party.push(String.fromCharCode(...d.subarray(o + 1, o + 1 + d[o])))
   }
   return {
@@ -37,6 +41,11 @@ export function parseSave(d: Uint8Array): SaveGame {
     facing2: d[0x3203],
     areaKind: d[0x3206],
     party,
+    wallSets: [0, 1, 2].map((i) => {
+      if (L.wallSetsAt < 0) return d[1 + 2 * (0x1fa + i)] | (d[2 + 2 * (0x1fa + i)] << 8) // A[0x4AFA + i]
+      const r = d[L.wallSetsAt + 4 * i] | (d[L.wallSetsAt + 4 * i + 1] << 8)
+      return r === 0 ? 0xffff : r // CotAB loads a slot only when its record is > 0
+    }),
   }
 }
 
@@ -44,4 +53,4 @@ export const saveBlock = (s: SaveGame) => s.B[0x6e12 - B0]
 export const saveArea = (s: SaveGame) => s.A[0x49f2 - A0]
 export const saveGeo = (s: SaveGame) => s.A[0x49c5 - A0]
 /** Wall-set records per slot 1-3 (0xFFFF = filled by a multi-set record). */
-export const saveWallSets = (s: SaveGame) => [0x4afa, 0x4afb, 0x4afc].map((a) => s.A[a - A0])
+export const saveWallSets = (s: SaveGame) => s.wallSets

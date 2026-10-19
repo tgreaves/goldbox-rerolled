@@ -72,7 +72,7 @@ export async function seedRoster(files: GameFiles) {
   for (const name of files.names()) {
     const m = /^(CHRDAT.+)\.SAV$/.exec(name)
     if (!m) continue
-    await saveCharacter({ stem: m[1], sav: files.get(name)!, itm: files.get(`${m[1]}.ITM`), spc: files.get(`${m[1]}.SPC`) })
+    await saveCharacter({ stem: m[1], sav: files.get(name)!, itm: files.get(`${m[1]}.${game().saves.items}`), spc: files.get(`${m[1]}.${game().saves.effects}`) })
   }
   await run(META, 'readwrite', (s) => s.put(true, 'seeded'))
 }

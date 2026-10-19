@@ -5,6 +5,7 @@
 import { canonical, native, type EclVariant } from '../games/ecl'
 import { game } from '../games/profile'
 import { T } from '../games/tables'
+import { parseSave } from '../data/save'
 import type { GameFiles } from '../store/gamefiles'
 import { GeoMap, STEP } from '../data/geo'
 import { WallSets } from '../data/walls'
@@ -190,12 +191,15 @@ export class Engine {
     this.setBlock(this.B[0x6e12 - B0])
     this.area = this.A[AREA_ID - A0]
     this.loadGeo(this.A[GEO_ID - A0])
-    ;[0x4afa, 0x4afb, 0x4afc].forEach((a, i) => {
-      const r = this.A[a - A0]
-      if (r !== 0xffff) this.walls.load(i + 1, r)
-    })
+    parseSave(d).wallSets.forEach((r, i) => { if (r !== 0xffff) this.walls.load(i + 1, r) })
     // the VM is reset when play starts (FUN_29c3_32f8), keeping the saved per-area variables
     this.restoring = true
+    const zero = game().ecl.areaZero
+    if (this.area === 0 && zero !== null) { // a start-of-game save: the first area's script, fresh
+      this.area = zero
+      this.loadEcl(zero)
+      this.restoring = false
+    }
   }
 
   private restoring = false
@@ -208,7 +212,7 @@ export class Engine {
   }
 
   /**
-   * The SAVGAM<x>.DAT image (13 137 bytes, spec/savegame.md), with the engine globals copied into
+   * The SAVGAM<x>.DAT image (the game's layout: PoR 13 137 bytes, spec/savegame.md), with the engine globals copied into
    * ECL variables first as FUN_45c5_1d58 does. stems: the character file stems for the party.
    */
   toSave(stems: string[]): Uint8Array {
@@ -221,18 +225,27 @@ export class Engine {
     this.A[0x49ff - A0] = 3 // monster pictures and portraits on
     this.A[AREA_ID - A0] = this.area
     this.B[0x6e12 - B0] = this.block
-    const d = new Uint8Array(13137)
+    const L = game().saves
+    const d = new Uint8Array(L.saveSize)
     d[0] = this.block
     const put = (o: number, words: Uint16Array) => words.forEach((v, i) => { d[o + 2 * i] = v & 0xff; d[o + 2 * i + 1] = v >> 8 })
     put(1, this.A); put(0x801, this.B); put(0x1001, this.C)
     d.set(this.code.subarray(0, 0x1e00), 0x1401)
     const [wall, event] = this.square()
     d.set([this.x, this.y, this.facing2, wall, event], 0x3201)
-    d[0x3206] = this.overland ? this.area - 23 : 1 // DS:49FA area kind: 1 map area, 2-4 wilderness
+    if (L.wallSetsAt < 0) d[0x3206] = this.overland ? this.area - 23 : 1 // DS:49FA area kind: 1 map area, 2-4 wilderness
+    else {
+      // CotAB: the previous game state (I: 4 the 3D view, 3 the overland map), and the wall sets
+      d[0x3206] = this.A[NO_OVERLAND - A0] ? 4 : 3
+      for (let s = 1; s <= 3; s++) {
+        const r = this.walls.records[s], o = L.wallSetsAt + 4 * (s - 1)
+        d[o] = r & 0xff; d[o + 1] = r >> 8; d[o + 2] = s; d[o + 3] = 0
+      }
+    }
     d[0x3207] = 2
-    d[0x3208] = stems.length
+    d[L.partyAt] = stems.length
     stems.forEach((st, i) => {
-      const o = 0x3209 + 41 * i
+      const o = L.partyAt + 1 + 41 * i
       d[o] = Math.min(st.length, 40)
       for (let j = 0; j < d[o]; j++) d[o + 1 + j] = st.charCodeAt(j)
     })

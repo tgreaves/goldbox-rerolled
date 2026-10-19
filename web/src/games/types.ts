@@ -4,6 +4,7 @@
 import type { CharFields } from './fields'
 import type { TableMap } from './tables'
 import type { EclMap } from './ecl'
+import type { SaveFiles } from './files'
 
 export interface GameProfile {
   id: 'por' | 'coab'
@@ -28,6 +29,8 @@ export interface GameProfile {
   tables: TableMap
   /** script VM memory map */
   ecl: EclMap
+  /** character and save files */
+  saves: SaveFiles
   /** false while the port can show the game's assets but not yet play it */
   playable: boolean
 }
