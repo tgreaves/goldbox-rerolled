@@ -649,3 +649,9 @@ dialog.panel .rules-body h3 { color: var(--ega-cyan); margin: 0.8rem 0 0.2rem; f
 .rcard.drop-here { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
 /* the hotkey letter on a yellow (primary) button: black, as the rest of its label */
 .game .menu button.primary u, dialog.panel button.primary u, button.primary u { color: #000; }
+
+/* the games screen: one row per game */
+.import ul.games { list-style: none; padding: 0; display: grid; gap: 0.6rem; }
+.import ul.games li { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: space-between; align-items: center;
+  padding: 0.6rem 0.8rem; border: 1px solid #ffffff22; border-radius: 6px; }
+.import ul.games .actions { margin: 0; }

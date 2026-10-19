@@ -85,6 +85,16 @@ export class GameFiles {
     return new GameFiles(files, game)
   }
 
+  /** Forget a game's imported files (its roster and saves are kept, in their own database). */
+  static async remove(game: GameProfile): Promise<void> {
+    await new Promise<void>((resolve, reject) => {
+      const req = indexedDB.deleteDatabase(game.stores.files)
+      req.onsuccess = () => resolve()
+      req.onerror = () => reject(req.error)
+      req.onblocked = () => resolve() // another tab holds it open; it goes when that tab closes
+    })
+  }
+
   /** Replace a game's stored files with these. */
   static async save(game: GameProfile, files: Map<string, Uint8Array>): Promise<void> {
     const db = await openDb(game)

@@ -23,6 +23,8 @@ const MAX_PARTY = 6
 export async function showParty(app: HTMLElement, files: GameFiles, nav: {
   title: () => void
   assets: () => void
+  /** the games screen: switch game, import another, remove one */
+  games: () => void
   play: (start: Start) => void
 }) {
   await seedRoster(files)
@@ -39,7 +41,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
 
   app.innerHTML = `
     <div class="partyscreen">
-      <header><h1>${files.game.name}</h1><span><button class="muted" data-a="settings">⚙ Settings</button> <button class="muted" data-a="assets">Assets</button></span></header>
+      <header><h1>${files.game.name}</h1><span><button class="muted" data-a="games" title="Switch game, import another, or remove one">⇄ Games</button> <button class="muted" data-a="settings">⚙ Settings</button> <button class="muted" data-a="assets">Assets</button></span></header>
       <section class="members" aria-label="Party"><h2>Party</h2><div class="cards"></div></section>
       <section class="info" aria-live="polite"></section>
       <nav class="functions" aria-label="Choose a function"></nav>
@@ -287,6 +289,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
     void openSettings(dialog)
   })
   app.querySelector('[data-a="assets"]')!.addEventListener('click', () => { window.removeEventListener('keydown', onKey); nav.assets() })
+  app.querySelector('[data-a="games"]')!.addEventListener('click', () => { window.removeEventListener('keydown', onKey); nav.games() })
   const onKey = (e: KeyboardEvent) => {
     if (dialog.open) {
       if (document.activeElement instanceof HTMLInputElement) return

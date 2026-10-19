@@ -2,7 +2,7 @@
 
 Browser reimplementation of the Gold Box engine: *Pool of Radiance* playable, *Curse of the Azure Bonds* in progress, one engine driven by per-game profiles (`src/games/`, [`../docs/multi-game.md`](../docs/multi-game.md)); see [`../docs/requirements.md`](../docs/requirements.md) for the design and [`../IMPROVEMENTS.md`](../IMPROVEMENTS.md) for departures from the original.
 
-No game data is included. On first start the app asks for a game folder from the player's own copy (`POOLRAD` for *Pool of Radiance*, `CURSE` for *Curse of the Azure Bonds*), works out which game it is, and stores its files in the browser (IndexedDB, one database per game, with each game's roster and saves kept apart) so it then works offline. *Curse of the Azure Bonds* is playable at an early stage (see [`docs/multi-game.md`](../docs/multi-game.md)).
+No game data is included. On first start the app asks for a game folder from the player's own copy (`POOLRAD` for *Pool of Radiance*, `CURSE` for *Curse of the Azure Bonds*), works out which game it is, and stores its files in the browser (IndexedDB, one database per game, with each game's roster and saves kept apart) so it then works offline. The party screen's **⇄ Games** button opens the games screen: play another imported game, import one, or remove a game's files (its characters and saves are kept). *Curse of the Azure Bonds* is playable at an early stage (see [`docs/multi-game.md`](../docs/multi-game.md)).
 
 ```sh
 npm install
