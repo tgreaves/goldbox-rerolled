@@ -88,12 +88,14 @@ describe.skipIf(!have)('Curse of the Azure Bonds scripts', () => {
     expect([saveBlock(sv), sv.x, sv.y, sv.facing2]).toEqual([2, 7, 13, 0])
     const chars = sv.party.map((st) => files.get(`${st}.SAV`)!)
     expect(chars.map((c) => parseCharacter(c).name)).toEqual(['MATHEW', 'MARK', 'TRAVIS', 'LEDERA', 'SHARA', 'PHILIPPE'])
-    const e = new Engine(files, headless(() => 0), 1)
+    const shown: unknown[] = []
+    const e = new Engine(files, { ...headless(() => 0), picture: (p: unknown) => shown.push(p) } as unknown as Io, 1)
     e.loadSave(dat, chars)
     sv.party.forEach((st, i) => e.attachFiles(i, files.get(`${st}.SWG`), files.get(`${st}.FX`)))
     expect(e.effectsOf(e.party()[2]).length).toBe(3) // TRAVIS, the dwarf: racial effects from CHRDATA3.FX
     await e.start()
     expect(e.party().length).toBe(6)
+    expect(shown).toContainEqual({ pic: 10 }) // the marked arm, not a portrait (the save's selector is 0; the reset sets 0xFF)
     const back = e.toSave(sv.party)
     expect(back.length).toBe(13149)
     const again = parseSave(back)

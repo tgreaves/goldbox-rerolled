@@ -198,10 +198,9 @@ export class Engine {
     // the VM is reset when play starts (FUN_29c3_32f8), keeping the saved per-area variables
     this.restoring = true
     const zero = game().ecl.areaZero
-    if (this.area === 0 && zero !== null) { // a start-of-game save: the first area's script, fresh
-      this.area = zero
+    if (this.area === 0 && zero !== null) { // a start-of-game save: the first area's script, loaded
+      this.area = zero // (then reset as any load is, 0x1C05C: portrait selector, vectors, saved per-area variables)
       this.loadEcl(zero)
-      this.restoring = false
     }
   }
 
