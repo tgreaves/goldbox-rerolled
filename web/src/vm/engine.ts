@@ -2,7 +2,7 @@
 // A port of tools/eclvm.py; every opcode, including the original's quirks, follows spec/ecl.md.
 // The interpreter is async: menus, input and screen refreshes await the front end (Io).
 
-import { canonical } from '../games/ecl'
+import { canonical, type EclVariant } from '../games/ecl'
 import { game } from '../games/profile'
 import { T } from '../games/tables'
 import type { GameFiles } from '../store/gamefiles'
@@ -503,6 +503,8 @@ export class Engine {
 
   private async step() {
     const op = this.code[this.pc - CODE]
+    const v = game().ecl.ops[op]
+    if (v) return this.variant(v)
     switch (op) {
       case 0x00: this.readops(0); this.exit(); break
       case 0x01: this.readops(1); this.pc = this.addr(1); break
@@ -599,7 +601,8 @@ export class Engine {
         const flag = (['EQ', 'NE', 'LT', 'GT', 'LE', 'GE'] as const)[op - 0x16]
         if (!this.flags[flag]) {
           const next = this.code[this.pc - CODE]
-          if (SKIP[next] !== undefined) this.readops(SKIP[next])
+          const n = game().ecl.skip[next] ?? SKIP[next]
+          if (n !== undefined) this.readops(n)
           else this.pc += 1
         }
         break
@@ -1150,14 +1153,84 @@ export class Engine {
     }
   }
 
+  /** Opcodes a game handles its own way (games/ecl.ts; CotAB: spec/coab/ecl.md, "Opcodes"). */
+  private async variant(v: EclVariant) {
+    switch (v) {
+      case 'divideRemainder': { // DIVIDE, plus the remainder in B 0x6E3F (CotAB 0x7F3F)
+        this.readops(3)
+        const b = this.val(2)
+        this.write(this.addr(3), b ? Math.floor(this.val(1) / b) : 0)
+        this.B[0x6e3f - B0] = b ? this.val(1) % b : 0
+        break
+      }
+      case 'returnOrExit': // RETURN; with nothing to return to, EXIT
+        this.readops(0)
+        if (this.stack.length) this.pc = this.stack.pop()!
+        else this.exit()
+        break
+      case 'passTime': // PASS_TIME count, unit: the clock words as camp uses them
+        this.readops(2)
+        await advanceClock(this, this.val(1), this.val(2))
+        break
+      case 'findSpell': { // FIND_SPELL id, dest index (1-based, 0xFF none), dest member (n − 1 if none)
+        this.readops(3)
+        const id = this.val(1) & 0xff
+        const party = this.party()
+        let at = 0xff, who = party.length - 1
+        for (let m = 0; m < party.length && at === 0xff; m++) {
+          for (let i = 1; i <= F.memorisedCount; i++) if (party[m][F.memorised + i - 1] === id) { at = i; who = m; break }
+        }
+        this.write(this.addr(2), at)
+        this.write(this.addr(3), who)
+        break
+      }
+      case 'protection': // the code-wheel check; the port asks nothing (IMP-068)
+        this.readops(1)
+        break
+      case 'redrawScreen':
+        this.readops(0)
+        this.mapDirty = true
+        await this.io.refresh()
+        break
+      case 'dropCharacter': { // the current character leaves the party; the one before becomes current
+        this.readops(0)
+        const i = this.nodes.indexOf(this.cur)
+        if (i >= 0 && i < this.party().length) {
+          this.nodes.splice(i, 1)
+          this.B[PARTY_SIZE - B0] = Math.max(0, this.B[PARTY_SIZE - B0] - 1)
+          this.cur = this.nodes[Math.max(0, i - 1)] ?? this.cur
+          this.savedCur = this.cur
+        }
+        break
+      }
+      case 'findEffect': { // EQ when the current character has the effect, else NE
+        this.readops(1)
+        const has = this.effectsOf(this.cur).some((x) => x.type === (this.val(1) & 0xff))
+        this.flags = { EQ: has ? 1 : 0, NE: has ? 0 : 1, LT: 0, GT: 0, LE: 0, GE: 0 }
+        break
+      }
+      case 'destroyItems': { // every item of a type leaves the party
+        this.readops(1)
+        const type = this.val(1) & 0xff
+        for (const c of this.party()) {
+          const items = this.itemsOf(c)
+          for (let k = items.length - 1; k >= 0; k--) if (items[k].type === type) items.splice(k, 1)
+          if (this.items) recalc(c, items, this.items)
+        }
+        break
+      }
+    }
+  }
+
   private async call() {
     this.readops(1)
-    const a = this.addr(1)
-    if (a === 0x2c90) { // the square registers, and the 3D view drawn again (over any picture) if anything changed
+    const a = (this.hi[1] << 8) | this.lo[1] // a number, not a script address
+    const calls = game().ecl.calls
+    if (a === calls.refresh) { // the square registers, and the 3D view drawn again (over any picture) if anything changed
       if (this.viewKey() !== this.drawnView) this.clearPictures()
       await this.io.refresh()
     }
-    else if (a === 0xba03) {
+    else if (a === calls.sound) {
       const r = this.regs.get(0x3de)
       if (r === 8) this.io.sound(10)
       else if (r === 10) this.io.sound(11)
@@ -1167,6 +1240,7 @@ export class Engine {
       this.x = (this.x + dx) & 15
       this.y = (this.y + dy) & 15
     } else if (a === 0x8000 || a === 0x8001) this.setupDuel(a === 0x8000)
+    // CotAB 0x6803 draws the current picture's next frame; the port animates pictures itself (step 7)
     // 0xBA03 sound, 0xC018 wall-ahead refresh and 0xC01B (dead in the DOS port) need nothing here
   }
 

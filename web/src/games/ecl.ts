@@ -14,11 +14,23 @@ export interface EclMap {
   memorisedView: number
   /** B-view reads this game adds to the shared ones (offset from B → value) */
   viewReads: Record<number, (c: Uint8Array) => number>
+  /** opcodes this game handles its own way (opcode → variant the engine implements) */
+  ops: Record<number, EclVariant>
+  /** IF-skip operand counts that differ from PoR's table */
+  skip: Record<number, number>
+  /** CALL targets, compared with the operand's raw value */
+  calls: { refresh: number; sound: number; frame: number }
 }
+
+export type EclVariant = 'passTime' | 'findSpell' | 'protection' | 'redrawScreen' | 'dropCharacter' | 'findEffect' |
+  'destroyItems' | 'returnOrExit' | 'divideRemainder'
 
 const s8 = (v: number) => ((v << 24) >> 24) & 0xffff
 
-export const POR_ECL: EclMap = { a: 0x4900, b: 0x6b00, c: 0x9700, code: 0x9900, memorisedView: 0, viewReads: {} }
+export const POR_ECL: EclMap = {
+  a: 0x4900, b: 0x6b00, c: 0x9700, code: 0x9900, memorisedView: 0, viewReads: {}, ops: {}, skip: {},
+  calls: { refresh: 0x2c90, sound: 0xba03, frame: -1 },
+}
 
 // spec/coab/ecl.md, "B as a view of the current character". Not yet: B+0xC9 (a class level with the
 // dual-class part, FUN 0x51841) and B+0x100's "loaded past the end" flag; both read the B word.
@@ -31,6 +43,13 @@ export const COAB_ECL: EclMap = {
     0xd6: (c) => s8(c[F.gender]),
     0xe4: (c) => c[0x192] & 1, // CotAB record byte 0x192 (set by the Hillsfar import), no field yet
   },
+  // spec/coab/ecl.md, "Opcodes"
+  ops: {
+    0x06: 'divideRemainder', 0x13: 'returnOrExit', 0x34: 'passTime', 0x3b: 'findSpell', 0x3c: 'protection',
+    0x3d: 'redrawScreen', 0x3e: 'dropCharacter', 0x3f: 'findEffect', 0x40: 'destroyItems',
+  },
+  skip: { 0x0c: 3, 0x3f: 1, 0x40: 1 },
+  calls: { refresh: 0x2e10, sound: 0xb200, frame: 0x6803 },
 }
 
 const SIZES: ['a' | 'b' | 'c' | 'code', number][] = [['a', 0x400], ['b', 0x400], ['c', 0x200], ['code', 0x1e00]]
