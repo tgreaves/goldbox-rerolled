@@ -187,19 +187,40 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   let animTimer: number | null = null
   const stopAnimation = () => { if (animTimer !== null) { window.clearTimeout(animTimer); animTimer = null } }
   /** Pictures and portraits are opaque; encounter sprites stand in the 3D scene instead (World.showSprite). */
-  function paint(pics: { pic: Picture; x: number; y: number; sprite?: boolean }[]) {
-    const g = sizeCanvas(overlay, 88, 88)
-    g.clearRect(0, 0, 88, 88)
+  function paint(pics: { pic: Picture; x: number; y: number; sprite?: boolean }[], w = 88, h = 88) {
+    const g = sizeCanvas(overlay, w, h)
+    g.clearRect(0, 0, w, h)
     for (const { pic, x, y, sprite } of pics) {
       blit(g, imageData(pic, sprite), x, y)
     }
+    overlay.classList.toggle('wide', w !== h) // a full-width BIGPIC keeps its own shape
     overlay.hidden = pics.length === 0
   }
-  function showPicture(p: { pic: number } | { head: number; body: number } | null) {
+  function showPicture(p: { pic: number } | { big: number } | { head: number; body: number } | null) {
     stopAnimation()
     if (!p) {
       world.showSprite(null)
       return paint([])
+    }
+    if ('big' in p) { // CotAB: a 304 × 120 BIGPIC (spec/coab/assets.md §5)
+      const pic = frames('BIGPIC', p.big)?.[0]
+      if (!pic) return
+      const show = (cursor: boolean) => {
+        paint([{ pic, x: 0, y: 0 }], pic.width, pic.height)
+        const at = cursor && p.big === game().view.overlandPicture ? engine.cityCursor : null
+        if (at) { // the city cursor, an 8 × 8 white block; the picture sits at screen (8, 8)
+          const g = overlay.getContext('2d')!
+          g.fillStyle = '#ffffff'
+          g.fillRect(at[0] * 8 - 8, at[1] * 8 - 8, 8, 8)
+        }
+      }
+      show(true)
+      if (p.big === game().view.overlandPicture && engine.cityCursor) { // blinks about 0.5 s on, 0.3 s off (0x51C48)
+        let on = true
+        const blink = () => { animTimer = window.setTimeout(() => { on = !on; show(on); blink() }, on ? 500 : 300) }
+        blink()
+      }
+      return
     }
     if ('pic' in p) {
       const f = animFrames('PIC', p.pic)

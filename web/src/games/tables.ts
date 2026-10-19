@@ -36,6 +36,9 @@ export interface TableMap {
   coinNames: TableRef
   /** coin values in copper-equivalent units, u32 × 5 (copper … platinum); gold is 200 */
   coinValues: TableRef
+  /** CotAB overland city cursor: cell x and y by place (33 bytes each) */
+  cursorX: TableRef
+  cursorY: TableRef
   /** temple service names, Pascal strings in menu order (the last is Exit) */
   templeNames: TableRef
   /** the disease effect types, entries 1–6 */
@@ -102,6 +105,7 @@ export const POR_TABLES: TableMap = {
   npcHeads: t(0x08c7), npcBodiesCleric: t(0x08d7), npcBodiesFighter: t(0x08e1), npcBodiesMagicUser: t(0x08eb), npcBodiesThief: t(0x08f5),
   raceNames: t(0x0f03, 10), classNames: t(0x0d38, 27), alignmentNames: t(0x0f53, 17), statusNames: t(0x1047, 13),
   genderNames: t(0x0fec, 7), coinNames: t(0x0ffa, 11), coinValues: t(0x0d24, 4),
+  cursorX: absent, cursorY: absent,
   templeNames: t(0x011a, 41), diseases: t(0x0113), randomItems: t(0x0970), sky: t(0x0c26), itemWords: t(0x10bc, 21), wallDx: t(0x2736), wallDy: t(0x273f),
   battleCells: t(0x2744, 4), headRecords: t(0x286f), bodyRecords: t(0x287d), spellNames: t(0x2912, 41), spellRecords: t(0x31fa, 16),
   overlandMap: t(0x3648), overlandSpecials: t(0x0c36, 6), overlandColumns: t(0x3c76),
@@ -117,6 +121,7 @@ export const COAB_TABLES: TableMap = {
   npcHeads: absent, npcBodiesCleric: absent, npcBodiesFighter: absent, npcBodiesMagicUser: absent, npcBodiesThief: absent,
   raceNames: t(0x0e9e, 10), classNames: t(0x0cb8, 27), alignmentNames: t(0x0eee, 17), statusNames: t(0x0fe2, 13),
   genderNames: t(0x0f87, 7), coinNames: t(0x0f95, 11), coinValues: t(0x0ca4, 4),
+  cursorX: t(0x0a4a), cursorY: t(0x0a6a),
   templeNames: t(0x00e6, 41), diseases: t(0x00df), randomItems: t(0x082e), sky: t(0x0a8a), itemWords: t(0x1057, 21), wallDx: t(0x2696), wallDy: t(0x269f),
   battleCells: t(0x26a4, 4), headRecords: absent, bodyRecords: absent, spellNames: t(0x27e8, 41), spellRecords: t(0x37dc, 16),
   overlandMap: absent, overlandSpecials: absent, overlandColumns: absent,

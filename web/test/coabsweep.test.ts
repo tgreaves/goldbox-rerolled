@@ -100,4 +100,24 @@ describe.skipIf(!have)('Curse of the Azure Bonds scripts', () => {
     expect(again.party).toEqual(sv.party)
     expect([saveBlock(again), saveArea(again)]).toEqual([saveBlock(sv), e.area])
   })
+
+  it('shows the overland map as a BIGPIC, with the city cursor from its tables', async () => {
+    setGame(COAB)
+    const files = load()
+    const shown: unknown[] = []
+    const io = { ...headless(() => 0), picture: (p: unknown) => shown.push(p) } as unknown as Io
+    const e = new Engine(files, io, 1)
+    e.newGame([1, 2, 3, 4, 5, 6].map((n) => files.get(`CHRDATA${n}.SAV`)!))
+    ;(e as unknown as { setBlock(b: number): void }).setBlock(1)
+    e.area = 81
+    ;(e as unknown as { loadEcl(r: number): void }).loadEcl(81)
+    ;(e as unknown as { resetVm(k: boolean): void }).resetVm(false)
+    await e.enter().catch(() => {})
+    expect(shown).toContainEqual({ big: 121 })
+    expect(e.overland).toBe(false) // no tile wilderness in CotAB
+    e.write(0x4aa1, 0)
+    expect(e.cityCursor).toEqual([4, 15])
+    e.write(0x4aa1, 31)
+    expect(e.cityCursor).toEqual([34, 1])
+  })
 })

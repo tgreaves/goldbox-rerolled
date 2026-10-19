@@ -62,7 +62,7 @@ export interface Io {
   inputNumber(): Promise<number>
   inputText(): Promise<string>
   /** Show a picture (null clears). */
-  picture(p: { pic: number } | { head: number; body: number } | null): void
+  picture(p: { pic: number } | { big: number } | { head: number; body: number } | null): void
   /** Encounter sprite at a distance (0 nearest), or the picture once it is at distance 0. */
   sprite(sprite: number, picture: number, distance: number): void
   /**
@@ -583,7 +583,10 @@ export class Engine {
         if (n === 255) {
           this.spriteNow = null
           this.io.picture(null)
-        } else if (this.B[PORTRAIT - B0] === 0xff) this.io.picture({ pic: n })
+        } else if (this.B[PORTRAIT - B0] === 0xff) {
+          const big = game().view.bigFrom
+          this.io.picture(big !== null && n >= big ? { big: n } : { pic: n }) // CotAB: full-width BIGPIC from 0x78
+        }
         else this.io.picture({ head: this.B[PORTRAIT - B0], body: n })
         break
       }
@@ -1315,7 +1318,15 @@ export class Engine {
 
   /** Overland travel (areas 25-27 once on_enter cleared ECL 0x49E6, spec/architecture.md). */
   get overland(): boolean {
-    return this.A[NO_OVERLAND - A0] === 0 && this.area >= 25 && this.area <= 27
+    return this.A[NO_OVERLAND - A0] === 0 && game().view.tileOverland.includes(this.area)
+  }
+
+  /** CotAB's overland city cursor: the cell (8-pixel units on the screen) of place A[0x4CA1], or null. */
+  get cityCursor(): [number, number] | null {
+    const img = this.startImage
+    if (!img || T.cursorX.at < 0) return null
+    const i = this.A[0x4aa1 - A0] & 0xff // ECL 0x4CA1 in CotAB's numbering
+    return [img[T.ds + T.cursorX.at + i], img[T.ds + T.cursorY.at + i]]
   }
 
   /** Wilderness position as the guide numbers it: the area's own x plus 13 columns per area after 25. */
