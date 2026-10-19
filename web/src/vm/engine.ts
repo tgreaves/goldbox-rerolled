@@ -2,6 +2,8 @@
 // A port of tools/eclvm.py; every opcode, including the original's quirks, follows spec/ecl.md.
 // The interpreter is async: menus, input and screen refreshes await the front end (Io).
 
+import { canonical } from '../games/ecl'
+import { game } from '../games/profile'
 import { T } from '../games/tables'
 import type { GameFiles } from '../store/gamefiles'
 import { GeoMap, STEP } from '../data/geo'
@@ -452,13 +454,15 @@ export class Engine {
     this.pc += 1
   }
 
-  private addr(i: number) { return (this.hi[i] << 8) | this.lo[i] }
+  /** an operand as an address: the game's own numbering translated to the engine's (games/ecl.ts) */
+  private addr(i: number) { return canonical(game().ecl, (this.hi[i] << 8) | this.lo[i]) }
 
   private val(i: number): number {
     const k = this.kind[i]
     if (k === 0) return this.lo[i]
     if (k === 1 || k === 3 || k === 0x80) return this.read(this.addr(i))
-    if (k === 2 || k === 0x81) return this.addr(i)
+    if (k === 2) return (this.hi[i] << 8) | this.lo[i] // an immediate number
+    if (k === 0x81) return this.addr(i)
     return 0
   }
 

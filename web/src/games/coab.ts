@@ -3,6 +3,7 @@
 import type { GameProfile } from './types'
 import { COAB_FIELDS } from './fields'
 import { COAB_TABLES } from './tables'
+import { COAB_ECL } from './ecl'
 
 export const COAB: GameProfile = {
   id: 'coab',
@@ -24,5 +25,6 @@ export const COAB: GameProfile = {
     'COMSPR', 'DUNGCOM', 'WILDCOM', 'RANDCOM', 'TILES', '8X8D'],
   fields: COAB_FIELDS,
   tables: COAB_TABLES,
+  ecl: COAB_ECL,
   playable: false,
 }

@@ -2,6 +2,7 @@
 import type { GameProfile } from './types'
 import { POR_FIELDS } from './fields'
 import { POR_TABLES } from './tables'
+import { POR_ECL } from './ecl'
 
 export const POR: GameProfile = {
   id: 'por',
@@ -20,5 +21,6 @@ export const POR: GameProfile = {
     'ICON', 'COMSPR', 'SQRPACI', 'BACPAC', 'DUNGCOM', 'WILDCOM', 'RANDCOM', '8X8D'],
   fields: POR_FIELDS,
   tables: POR_TABLES,
+  ecl: POR_ECL,
   playable: true,
 }
