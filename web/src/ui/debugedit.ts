@@ -3,7 +3,7 @@
 // (FUN_51cf_0000 and the item recalculation), so THAC0, saves, spell slots and AC follow.
 import { R, bookSpell } from '../games/rules'
 import type { Engine } from '../vm/engine'
-import { ALIGNMENTS, CLASSES, MONEY, STATUS } from '../data/character'
+import { ALIGNMENTS, CLASSES, GENDERS, MONEY, STATUS } from '../data/character'
 import { Item } from '../data/items'
 import { buildItem } from '../rules/randitem'
 import { recalc } from '../rules/equip'
@@ -49,7 +49,7 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
           <label>Name <input name="name" maxlength="15" value="${esc(nameOf(c))}"></label>
           ${select('Status', 'status', STATUS, c[F.status])}
           ${select('Alignment', 'align', ALIGNMENTS, c[F.alignment])}
-          ${select('Gender', 'gender', ['Male', 'Female'], c[F.gender])}
+          ${select('Gender', 'gender', GENDERS, c[F.gender])}
           ${num('Age', 'age', u16(c, F.age), 1, 999)}
         </fieldset>
         <fieldset><legend>Abilities</legend>

@@ -1633,7 +1633,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         <div class="nc-opts">${tab('journal', 'Entries', entries.length, JOURNAL.journal.length)}${tab('proclamations', 'Proclamations', procs.length, JOURNAL.proclamations.length)}${tab('tales', 'Tavern tales', tales.length, JOURNAL.tales.length)}</div>
         <div class="journal">${body}</div>
         <p class="muted"><label><input type="checkbox" data-all="1"${journalAll ? ' checked' : ''}> Show everything, like the printed journal (some entries are false; the original asked you not to read ahead)</label></p>
-        <p class="muted small">Text and maps from the <a href="${JOURNAL.source.journal}" target="_blank" rel="noopener">Pool of Radiance Wiki</a>, CC BY-SA.</p>
+        <p class="muted small">Text and maps from the <a href="${JOURNAL.source.journal}" target="_blank" rel="noopener">${escape(JOURNAL.source.name ?? '')}</a>, CC BY-SA.</p>
         <form method="dialog"><button>Close</button></form>`
     }
     const onClick = (e: MouseEvent) => {
@@ -1768,7 +1768,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const item = (cmd: string, label: string, note: string) => `<li><button data-go="${cmd}">${label}<small>${note}</small></button></li>`
     dialog.innerHTML = `<h2>Menu</h2>
       <ul class="mainmenu">
-        ${item('journal', 'Journal', found ? `${found} entries, proclamations and tales found` : 'entries, proclamations and tavern tales')}
+        ${!JOURNAL.journal.length ? '' : item('journal', 'Journal', found ? `${found} entries, proclamations and tales found` : 'entries, proclamations and tavern tales')}
         ${item('commissions', `Commissions${due ? ' <span class="due">•</span>' : ''}`, due ? 'a reward is waiting' : 'the City Council\'s commissions and progress')}
         ${item('save', 'Save', 'any time, slots A–J')}
         ${item('settings', 'Settings', 'speed, sound, font, borders, motion, text size, graphics')}

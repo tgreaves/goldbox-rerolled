@@ -132,6 +132,16 @@ as data in its profile ([`../CLAUDE.md`](../CLAUDE.md)).
    offered come from the tables, so paladins and rangers are offered in CotAB. Not yet: the paladin
    and ranger party checks in the Add menu, thief-skill item hooks, CotAB's DAMAGE flag 0x10 and
    random-treasure table, the casting level of druid spells (ranger level assumed, I).
+   **Hard-coded audit (2026-10-19)**, applying the data-driven rule. Now read from START.EXE: race,
+   class, alignment, status (with Gone, which the port's list lacked), gender and coin names, and the
+   coin values (PoR DS:0D24, CotAB DS:0CA4). Now profile data, because each is code rather than a
+   table in both binaries: the race menu, the multi-class components, age columns and cleric
+   multi-classes, the training fee, a new magic-user's spells, the CHA reaction values the scripts
+   read (B + 0x2CF). Per game: the printed journal (PoR's; CotAB none yet, so its Journal entry is
+   hidden) and the one-line spell notes (CotAB has PoR's for spells 1–56). The PoR sky colours used
+   without START.EXE are gone. Checked and left in code: the gem values (code in both games). Still
+   PoR content in shared code, for step 7: the Rules reference text, the City Council commissions,
+   the ending, the title sequence, and messages written into the port.
 7. **CotAB presentation.** Sky and ground in the 3D view, the BIGPIC overland, title, code wheel.
 8. **Importing PoR characters**, by the game's own "Pool" import (spec/coab/records.md), with its
    STR bug fixed and logged.

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { Tables } from '../src/rules/chargen'
+import { installNames } from '../src/data/character'
 import { unexepack } from '../src/data/exepack'
 import { checkTraining, derive, train, xpFor } from '../src/rules/training'
 
@@ -10,7 +11,9 @@ const dir = process.env.POOLRAD ?? ''
 const have = dir !== '' && existsSync(dir)
 
 describe.skipIf(!have)('training', () => {
-  const t = have ? new Tables(unexepack(new Uint8Array(readFileSync(join(dir, 'START.EXE')))).image) : (null as unknown as Tables)
+  const img = have ? unexepack(new Uint8Array(readFileSync(join(dir, 'START.EXE')))).image : null
+  if (img) installNames(img) // names and coin values
+  const t = img ? new Tables(img) : (null as unknown as Tables)
   const chars = () => readdirSync(dir).filter((n) => /^CHRDAT.+\.SAV$/.test(n)).map((f) => ({ f, c: new Uint8Array(readFileSync(join(dir, f))) }))
 
   it('derives the stored THAC0, slots, saves and thief skills of every pre-made character', () => {

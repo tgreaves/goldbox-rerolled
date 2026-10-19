@@ -16,13 +16,6 @@ export class Tables {
   w(off: number) { return this.img[this.ds + off] | (this.img[this.ds + off + 1] << 8) }
 }
 
-export const RACE_MENU = [1, 2, 3, 4, 5, 7] // Dwarf, Elf, Gnome, Half-Elf, Halfling, Human (Half-Orc never offered)
-const CLERIC_MULTI = new Set([8, 9, 10, 11, 12])
-/** component classes of each class id (0-7 single, 8-16 multi-class) */
-export const COMPONENTS: number[][] = [[0], [1], [2], [3], [4], [5], [6], [7],
-  [0, 2], [0, 2, 5], [0, 4], [0, 5], [0, 6], [2, 5], [2, 6], [2, 5, 6], [5, 6]]
-/** age column used for each multi-class (maximum age of that column) */
-const AGE_COLUMN: Record<number, number> = { 8: 0, 9: 0, 11: 0, 12: 0, 13: 5, 15: 5, 16: 5, 14: 2 }
 
 export type Rng = (n: number) => number // 0..n-1
 const roll = (rng: Rng, count: number, sides: number) => {
@@ -65,7 +58,7 @@ export function begin(t: Tables, rng: Rng, race: number, gender: number, cls: nu
   ;[0x91, 0xa2, 0xb3, 0xc4, 0xe6, 0xf7].forEach((v, i) => (c[F.iconColours + i] = v))
   c[F.inPlay] = 1
   let bits = 0
-  for (const k of COMPONENTS[cls]) {
+  for (const k of R.components[cls]) {
     c[F.levels + k] = 1
     bits |= t.b(T.classBits.at + k)
     c[F.thac0Base] = Math.max(c[F.thac0Base], t.b(T.thac0.at + k * T.thac0.row + 1))
@@ -79,7 +72,7 @@ export function begin(t: Tables, rng: Rng, race: number, gender: number, cls: nu
     const o = T.startAge.at + race * T.startAge.row + cls * 4
     age = t.w(o) + roll(rng, t.b(o + 2), t.b(o + 3))
   } else {
-    const o = T.startAge.at + race * T.startAge.row + (AGE_COLUMN[cls] ?? 0) * 4
+    const o = T.startAge.at + race * T.startAge.row + (R.ageColumns[cls] ?? 0) * 4
     age = t.w(o) + t.b(o + 2) * t.b(o + 3)
   }
   c[F.age] = age & 0xff
@@ -116,7 +109,7 @@ export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
       v = Math.min(v, t.b(lim + 5 + a * 2))
     }
     v = Math.max(v, t.b(T.classMins.at + cls * T.classMins.row + a))
-    if (a === 2 && v < 13 && CLERIC_MULTI.has(cls)) v = 13
+    if (a === 2 && v < 13 && R.clericMultis.includes(cls)) v = 13
     c[F.stat[a]] = v & 0xff
     if (a === 0 && v === 18 && c[F.levels + 2] > 0) {
       c[F.strPct] = Math.min(rng(100) + 1, t.b(lim + 4 + gender))
@@ -139,7 +132,7 @@ export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
       wisdomBonus(c)
       for (let id = 1; id <= R.spells.named; id++) if (t.b(T.spellRecords.at + id * T.spellRecords.row) === R.spells.cleric && t.b(T.spellRecords.at + id * T.spellRecords.row + 1) === 1) c[F.known + id] = 1
     } else if (k === 5) {
-      c[F.known + 11] = c[F.known + 18] = c[F.known + 19] = c[F.known + 21] = 1 // Detect Magic, Read Magic, Shield, Sleep
+      for (const id of R.startSpells) c[F.known + id] = 1
     }
   }
   if (R.startMoney === 'gold') {

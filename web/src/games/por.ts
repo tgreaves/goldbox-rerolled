@@ -1,10 +1,12 @@
 // Pool of Radiance (1988), the port's first game.
 import type { GameProfile } from './types'
+import { POR_SPELL_NOTES } from './spellnotes'
 import { POR_FIELDS } from './fields'
 import { POR_TABLES } from './tables'
 import { POR_ECL } from './ecl'
 import { POR_FILES } from './files'
 import { POR_RULES } from './rules'
+import { JOURNAL } from './journal'
 
 export const POR: GameProfile = {
   id: 'por',
@@ -26,5 +28,7 @@ export const POR: GameProfile = {
   ecl: POR_ECL,
   saves: POR_FILES,
   rules: POR_RULES,
+  journal: { ...JOURNAL },
+  spellNotes: POR_SPELL_NOTES,
   playable: true,
 }

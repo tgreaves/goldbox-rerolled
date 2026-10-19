@@ -38,11 +38,39 @@ export interface GameRules {
   /** the temple's healing services in the order of the game's name table (T.templeNames), with
    *  their prices (immediates in the game's code, not a table) */
   temple: { kind: TempleService; gp: number }[]
+  /** races offered at creation, in menu order (code, not a table: PoR FUN_417f_056c, CotAB 3708f) */
+  raceMenu: number[]
+  /** base classes of each class id 0–16 (single classes, then the multi-classes) */
+  components: number[][]
+  /** multi-classes: the class column of the starting-age table they use */
+  ageColumns: Record<number, number>
+  /** multi-classes with a cleric part, whose WIS is at least 13 */
+  clericMultis: number[]
+  /** training fee in gp (a code immediate) */
+  trainingCost: number
+  /** spells a new magic-user knows */
+  startSpells: number[]
+  /** the reaction adjustment scripts read for CHA 3–25 (B + 0x2CF; a code branch, not a table) */
+  chaReaction: number[]
 }
 
 export type TempleService = 'blind' | 'disease' | 'clw' | 'csw' | 'ccw' | 'heal' | 'poison' | 'raise' | 'curse' | 'stone'
 
+
+// creation and training values both games share (O: same code in both, spec/chargen.md and spec/coab/tables.md §3.9)
+const SHARED = {
+  raceMenu: [1, 2, 3, 4, 5, 7], // Dwarf, Elf, Gnome, Half-Elf, Halfling, Human (Half-Orc never offered)
+  components: [[0], [1], [2], [3], [4], [5], [6], [7], [0, 2], [0, 2, 5], [0, 4], [0, 5], [0, 6], [2, 5], [2, 6], [2, 5, 6], [5, 6]],
+  ageColumns: { 8: 0, 9: 0, 11: 0, 12: 0, 13: 5, 15: 5, 16: 5, 14: 2 },
+  clericMultis: [8, 9, 10, 11, 12],
+  trainingCost: 1000,
+  startSpells: [11, 18, 19, 21], // Detect Magic, Read Magic, Shield, Sleep
+  // CHA 3 … 25 (index 0 = CHA 0)
+  chaReaction: [0, 0, 0, 0, 5, 10, 15, 20, 25, 25, 25, 25, 25, 30, 35, 40, 50, 55, 60, 60, 60, 60, 60, 60, 60, 60],
+}
+
 export const POR_RULES: GameRules = {
+  ...SHARED,
   spells: { records: 67, named: 56, book: 55, levels: 3, cleric: 0, druid: -1, magicUser: 1, item: 2 },
   slotModel: 'absolute',
   extraAttacks: { 2: 6 },
@@ -60,6 +88,7 @@ export const POR_RULES: GameRules = {
 }
 
 export const COAB_RULES: GameRules = {
+  ...SHARED,
   // 100 spells, five levels; class byte 0 cleric, 1 druid, 2 magic-user, 3 item/monster (§3.7)
   spells: { records: 100, named: 100, book: 100, levels: 5, cleric: 0, druid: 1, magicUser: 2, item: 3 },
   slotModel: 'increments',

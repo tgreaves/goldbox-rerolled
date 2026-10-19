@@ -3,13 +3,14 @@
 // and inline Modify steppers, and the name, portrait and combat icon beside it, all at once.
 // The rules are the original's (spec/chargen.md, FUN_417f_056c; Modify FUN_417f_209f; icon editor
 // FUN_417f_382d); only the order of the questions is gone.
+import { R } from '../games/rules'
 import type { GameFiles } from '../store/gamefiles'
-import { ALIGNMENTS, CLASSES, RACES, parseCharacter } from '../data/character'
+import { ALIGNMENTS, CLASSES, GENDERS, RACES, parseCharacter } from '../data/character'
 import { EGA, parseRecord, toImageData, type Picture } from '../data/image'
 import { blit, sizeCanvas } from '../render/upscale'
 import { buildIcon } from '../render/icon'
 import {
-  RACE_MENU, Tables, abilityRange, alignmentsFor, begin, bodyRecord, classesFor, combatStats, headRecord, hpMax, hpMin,
+  Tables, abilityRange, alignmentsFor, begin, bodyRecord, classesFor, combatStats, headRecord, hpMax, hpMin,
   modifyStep, rollAbilities, setName, type Rng,
 } from '../rules/chargen'
 import { escape, onClose } from './sheet'
@@ -17,14 +18,13 @@ import { F } from '../games/fields'
 
 const STATS = ['STR', 'INT', 'WIS', 'DEX', 'CON', 'CHA']
 const ICON_PARTS = ['Body', 'Arm', 'Leg', 'Hair/Face', 'Shield', 'Weapon']
-const GENDERS = ['Male', 'Female']
 
 export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, rng: Rng, t: Tables): Promise<Uint8Array | null> {
   const picture = (family: string, id: number): Picture | null => {
     const raw = files.record(family, id)
     try { return raw ? parseRecord(raw).frames[0].picture : null } catch { return null }
   }
-  const allClasses = [...new Set(RACE_MENU.flatMap((r) => classesFor(t, r)))].sort((a, b) => a - b)
+  const allClasses = [...new Set(R.raceMenu.flatMap((r) => classesFor(t, r)))].sort((a, b) => a - b)
 
   let race = 7, gender = 0, cls = classesFor(t, 7)[0], align = alignmentsFor(t, cls)[0]
   let c = begin(t, rng, race, gender, cls, align)
@@ -72,7 +72,7 @@ export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, rng
     dialog.innerHTML = `<h2>Create a character</h2>
       <div class="newchar">
         <section class="nc-choices">
-          ${row('Race', RACE_MENU.map((r) => ({ v: r, text: RACES[r], ok: true })), race, 'race')}
+          ${row('Race', R.raceMenu.map((r) => ({ v: r, text: RACES[r], ok: true })), race, 'race')}
           ${row('Gender', GENDERS.map((g, i) => ({ v: i, text: g, ok: true })), gender, 'gender')}
           ${row('Class', allClasses.map((k) => ({ v: k, text: CLASSES[k], ok: classOk.includes(k), why: classOk.includes(k) ? '' : `Not open to a ${RACES[race]}` })), cls, 'cls')}
           ${row('Alignment', ALIGNMENTS.map((a, i) => ({ v: i, text: a, ok: alignOk.includes(i), why: alignOk.includes(i) ? '' : `Not allowed for a ${CLASSES[cls]}` })), align, 'align')}

@@ -1,16 +1,34 @@
-// Character records, 0x11D bytes (spec/records.md)
+// Character records in the active game's layout (spec/records.md; CotAB spec/coab/records.md §2)
 
 import { F } from '../games/fields'
+import { T, type TableRef } from '../games/tables'
 
-export const RACES = ['Monster', 'Dwarf', 'Elf', 'Gnome', 'Half-Elf', 'Halfling', 'Half-Orc', 'Human']
-export const CLASSES = ['Cleric', 'Druid', 'Fighter', 'Paladin', 'Ranger', 'Magic-User', 'Thief', 'Monk',
-  'Cleric/Fighter', 'Cleric/Fighter/Magic-User', 'Cleric/Ranger', 'Cleric/Magic-User', 'Cleric/Thief',
-  'Fighter/Magic-User', 'Fighter/Thief', 'Fighter/Magic-User/Thief', 'Magic-User/Thief', 'Monster']
-export const ALIGNMENTS = ['Lawful Good', 'Lawful Neutral', 'Lawful Evil', 'Neutral Good', 'True Neutral',
-  'Neutral Evil', 'Chaotic Good', 'Chaotic Neutral', 'Chaotic Evil']
-export const STATUS = ['Okay', 'Animated', 'tempgone', 'Running', 'Unconscious', 'Dying', 'Dead', 'Stoned']
-export const MONEY = ['Copper', 'Silver', 'Electrum', 'Gold', 'Platinum', 'Gems', 'Jewelry']
-const BASE_CLASSES = CLASSES.slice(0, 8)
+// The names come from the game's own START.EXE tables (installNames); until then they show as #n.
+export const RACES: string[] = []
+export const CLASSES: string[] = []
+export const ALIGNMENTS: string[] = []
+export const STATUS: string[] = []
+export const GENDERS: string[] = []
+export const MONEY: string[] = []
+/** coin values (T.coinValues): copper, silver, electrum, gold, platinum in units where gold is 200 */
+export const COIN_VALUES: number[] = []
+
+/** Fill the name lists from START.EXE's load image (T.raceNames … T.coinNames). */
+export function installNames(image: Uint8Array) {
+  const read = (t: TableRef, n: number) => Array.from({ length: n }, (_, i) => {
+    const o = T.ds + t.at + i * t.row
+    return String.fromCharCode(...image.subarray(o + 1, o + 1 + image[o]))
+  })
+  const fill = (list: string[], names: string[]) => list.splice(0, list.length, ...names)
+  fill(RACES, read(T.raceNames, 8))
+  fill(CLASSES, [...read(T.classNames, 17), RACES[0]]) // class 17, monsters, takes race 0's name
+  fill(ALIGNMENTS, read(T.alignmentNames, 9))
+  fill(STATUS, read(T.statusNames, 9))
+  fill(GENDERS, read(T.genderNames, 2))
+  fill(MONEY, read(T.coinNames, 7))
+  const u32 = (o: number) => (image[o] | (image[o + 1] << 8) | (image[o + 2] << 16) | (image[o + 3] << 24)) >>> 0
+  COIN_VALUES.splice(0, COIN_VALUES.length, ...Array.from({ length: 5 }, (_, i) => u32(T.ds + T.coinValues.at + i * T.coinValues.row)))
+}
 
 const pick = (t: string[], i: number) => t[i] ?? `#${i}`
 const u16 = (d: Uint8Array, o: number) => d[o] | (d[o + 1] << 8)
@@ -39,7 +57,7 @@ export interface Character {
 }
 
 export function parseCharacter(d: Uint8Array): Character {
-  const levels = BASE_CLASSES.map((cls, i) => ({ cls, level: d[F.levels + i] })).filter((l) => l.level > 0)
+  const levels = Array.from({ length: 8 }, (_, i) => ({ cls: pick(CLASSES, i), level: d[F.levels + i] })).filter((l) => l.level > 0)
   const bonus = (d[F.bonus] << 24) >> 24
   return {
     raw: d,
@@ -54,11 +72,11 @@ export function parseCharacter(d: Uint8Array): Character {
     ac: 60 - d[F.ac],
     thac0: 60 - d[F.thac0],
     levels,
-    gender: d[F.gender] ? 'Female' : 'Male',
+    gender: pick(GENDERS, d[F.gender]),
     alignment: pick(ALIGNMENTS, d[F.alignment]),
     exp: (d[F.xp] | (d[F.xp + 1] << 8) | (d[F.xp + 2] << 16) | (d[F.xp + 3] << 24)) >>> 0,
     status: pick(STATUS, d[F.status]),
-    money: MONEY.map((_, i) => u16(d, F.money + 2 * i)),
+    money: Array.from({ length: 7 }, (_, i) => u16(d, F.money + 2 * i)),
     npc: d[F.morale] >= 0x80,
     damage: `${d[F.dice]}d${d[F.sides]}${bonus ? (bonus > 0 ? '+' : '') + bonus : ''}`,
     movement: d[F.move],

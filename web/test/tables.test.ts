@@ -6,6 +6,8 @@ import { join } from 'node:path'
 import { unexepack } from '../src/data/exepack'
 import { Tables } from '../src/rules/chargen'
 import { COAB_TABLES, POR_TABLES, type TableMap } from '../src/games/tables'
+import { ALIGNMENTS, CLASSES, COIN_VALUES, GENDERS, MONEY, RACES, STATUS, installNames } from '../src/data/character'
+import { COAB, POR, setGame } from '../src/games/profile'
 
 const image = (dir: string) => unexepack(new Uint8Array(readFileSync(join(dir, 'START.EXE')))).image
 const bytes = (t: Tables, at: number, n: number) => Array.from({ length: n }, (_, i) => t.b(at + i))
@@ -55,5 +57,23 @@ describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds tables (sp
   it('read the hit dice and saves', () => {
     expect(bytes(t, m.hitDiceSides.at, 8)).toEqual(bytes(new Tables(por && existsSync(por) ? image(por) : img, POR_TABLES.ds), POR_TABLES.hitDiceSides.at, 8))
     expect(bytes(t, m.saves.at + 0 * m.saves.row + 1 * 5, 5)).toEqual([10, 13, 14, 16, 15]) // cleric level 1
+  })
+})
+
+describe('name and coin tables', () => {
+  it.each([['POOLRAD', POR], ['COAB', COAB]] as const)('read from %s START.EXE', (env, g) => {
+    const dir = process.env[env] ?? ''
+    if (!dir || !existsSync(dir)) return
+    setGame(g)
+    installNames(image(dir))
+    expect(RACES).toEqual(['Monster', 'Dwarf', 'Elf', 'Gnome', 'Half-Elf', 'Halfling', 'Half-Orc', 'Human'])
+    expect(CLASSES.length).toBe(18)
+    expect([CLASSES[3], CLASSES[9], CLASSES[17]]).toEqual(['Paladin', 'Cleric/Fighter/Magic-User', 'Monster'])
+    expect([ALIGNMENTS[0], ALIGNMENTS[8]]).toEqual(['Lawful Good', 'Chaotic Evil'])
+    expect(STATUS[8]).toBe('Gone')
+    expect(GENDERS).toEqual(['Male', 'Female'])
+    expect(MONEY).toEqual(['Copper', 'Silver', 'Electrum', 'Gold', 'Platinum', 'Gems', 'Jewelry'])
+    expect(COIN_VALUES).toEqual([1, 10, 100, 200, 1000])
+    setGame(POR)
   })
 })

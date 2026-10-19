@@ -6,6 +6,7 @@ import type { TableMap } from './tables'
 import type { EclMap } from './ecl'
 import type { SaveFiles } from './files'
 import type { GameRules } from './rules'
+import type { JournalData } from './journal'
 
 export interface GameProfile {
   id: 'por' | 'coab'
@@ -34,6 +35,10 @@ export interface GameProfile {
   saves: SaveFiles
   /** rules that differ between games */
   rules: GameRules
+  /** the printed journal the scripts refer to (null: none yet) */
+  journal: JournalData | null
+  /** one-line spell effects by id, written for the port */
+  spellNotes: Record<number, string>
   /** false while the port can show the game's assets but not yet play it */
   playable: boolean
 }

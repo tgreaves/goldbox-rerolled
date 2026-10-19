@@ -1,11 +1,12 @@
 // Money (spec/town.md, "Money" and "Appraise"): seven u16 words per character (copper, silver,
 // electrum, gold, platinum, gems, jewelry) and the pool, the treasure money table.
+import { COIN_VALUES } from '../data/character'
 import { Item, ITEM_SIZE, type ItemTables } from '../data/items'
 import { capacity, recalc } from './equip'
 import { F } from '../games/fields'
 
 export const COINS = ['copper', 'silver', 'electrum', 'gold', 'platinum', 'gems', 'jewelry']
-const UNITS = [1, 10, 100, 200, 1000] // DS:0D24, in copper halves of a gold piece ×200
+const UNITS = COIN_VALUES // T.coinValues, read from START.EXE: gold is 200
 
 const get = (c: Uint8Array, i: number) => c[F.money + 2 * i] | (c[F.money + 2 * i + 1] << 8)
 const set = (c: Uint8Array, i: number, v: number) => { c[F.money + 2 * i] = v & 0xff; c[F.money + 2 * i + 1] = (v >> 8) & 0xff }
@@ -14,7 +15,7 @@ const encumbrance = (c: Uint8Array) => c[F.load] | (c[F.load + 1] << 8)
 
 /** Coin value in gp, rounded to nearest (gems and jewelry excluded). */
 export function coinValue(m: number[]): number {
-  return Math.floor((m[0] * UNITS[0] + m[1] * UNITS[1] + m[2] * UNITS[2] + m[3] * UNITS[3] + m[4] * UNITS[4] + 100) / 200)
+  return Math.floor((m[0] * UNITS[0] + m[1] * UNITS[1] + m[2] * UNITS[2] + m[3] * UNITS[3] + m[4] * UNITS[4] + UNITS[3] / 2) / UNITS[3])
 }
 
 /**

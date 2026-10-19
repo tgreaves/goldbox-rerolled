@@ -1,6 +1,13 @@
-// Money rules (spec/town.md, "Money"); no game files needed.
+// Money rules (spec/town.md, "Money"); coin values come from START.EXE (POOLRAD), the rest needs no files.
 import { describe, expect, it } from 'vitest'
+import { readFileSync, existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { coinValue, sellOffer, appraiseGem } from '../src/rules/money'
+import { COIN_VALUES, installNames } from '../src/data/character'
+import { unexepack } from '../src/data/exepack'
+
+const dir = process.env.POOLRAD ?? ''
+const have = dir !== '' && existsSync(dir)
 import { Item, ITEM_SIZE } from '../src/data/items'
 
 const item = (value: number, count: number) => {
@@ -10,7 +17,9 @@ const item = (value: number, count: number) => {
 }
 
 describe('money', () => {
-  it('values coins in gp, rounding to nearest', () => {
+  it.skipIf(!have)('values coins in gp, rounding to nearest', () => {
+    installNames(unexepack(new Uint8Array(readFileSync(join(dir, 'START.EXE')))).image)
+    expect(COIN_VALUES).toEqual([1, 10, 100, 200, 1000]) // DS:0D24
     expect(coinValue([0, 0, 0, 10, 0])).toBe(10)
     expect(coinValue([0, 0, 0, 0, 1])).toBe(5) // 1 pp = 5 gp
     expect(coinValue([0, 0, 1, 0, 0])).toBe(1) // 1 ep rounds up to 1 gp

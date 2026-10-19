@@ -1,3 +1,5 @@
+import { installNames } from './data/character'
+import { unexepack } from './data/exepack'
 import './style.css'
 import { GameFiles, readPicked } from './store/gamefiles'
 import { GAMES, lastGame, setGame, type GameProfile } from './games/profile'
@@ -25,6 +27,8 @@ async function start() {
 
 async function open(files: GameFiles) {
   setGame(files.game)
+  const exe = files.get('START.EXE')
+  if (exe) try { installNames(unexepack(exe).image) } catch { /* names show as #n */ }
   await installGameFont(files)
   installFrames(files)
   if (files.game.playable) title(files)

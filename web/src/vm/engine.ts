@@ -2,6 +2,8 @@
 // A port of tools/eclvm.py; every opcode, including the original's quirks, follows spec/ecl.md.
 // The interpreter is async: menus, input and screen refreshes await the front end (Io).
 
+import { R } from '../games/rules'
+import { installNames } from '../data/character'
 import { canonical, native, type EclVariant } from '../games/ecl'
 import { game } from '../games/profile'
 import { T } from '../games/tables'
@@ -144,6 +146,7 @@ export class Engine {
     this.files = files
     this.io = io
     this.walls = new WallSets(files, 1)
+    void this.startImage // the game's name and coin tables (installNames)
     let s = seed >>> 0 || 1
     this.rng = () => {
       s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0
@@ -304,8 +307,7 @@ export class Engine {
     const img = this.startImage
     const outdoor = this.geo ? this.geo.event(this.x & 15, this.y & 15) > 0x7f : false
     const i = this.read(outdoor ? 0x49fe : 0x49fd) & 7
-    // T.sky, eight colours twice over; PoR's values without START.EXE
-    const sky = img ? img[T.ds + T.sky.at + i] : [0, 15, 12, 11, 13, 10, 9, 14][i]
+    const sky = img ? img[T.ds + T.sky.at + i] : 0 // T.sky, eight colours twice over (needs START.EXE)
     const h = (this.regs.get(0xc05f) ?? 0xe8) & 0xff, f = (this.regs.get(0xc059) ?? 0xdb) & 0xff
     const line = h === 8 || h === 0x41 ? 0 : 15
     const band = h === 8 ? 8 : 7
@@ -381,12 +383,7 @@ export class Engine {
     if (k === 0x10d) return 0
     if (k === 0x11b) return c[F.move]
     if (k === 0x2b1 || k === 0x2b4) return Math.max(0, this.nodes.indexOf(c))
-    if (k === 0x2cf) {
-      const cha = c[F.stat[5]]
-      if (cha >= 8 && cha <= 12) return 25
-      if (cha >= 18 && cha <= 25) return 60
-      return ({ 3: 0, 4: 5, 5: 10, 6: 15, 7: 20, 13: 30, 14: 35, 15: 40, 16: 50, 17: 55 } as Record<number, number>)[cha] ?? 0
-    }
+    if (k === 0x2cf) return R.chaReaction[c[F.stat[5]]] ?? 0
     if (k === 0x312) return this.block
     return undefined
   }
@@ -1018,6 +1015,7 @@ export class Engine {
     if (this.startImageCache === undefined) {
       const exe = this.files.get('START.EXE')
       try { this.startImageCache = exe ? unexepack(exe).image : null } catch { this.startImageCache = null }
+      if (this.startImageCache) installNames(this.startImageCache)
     }
     return this.startImageCache
   }

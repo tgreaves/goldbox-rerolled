@@ -2,7 +2,7 @@
 import { R, slots } from '../games/rules'
 import { T } from '../games/tables'
 import { coabHitDice, conBonus, saves, thiefSkills, wisdomBonus, type Rng, type Tables } from './chargen'
-import { CLASSES } from '../data/character'
+import { CLASSES, COIN_VALUES } from '../data/character'
 import { F } from '../games/fields'
 
 /** Trainer bit per base class (T.trainerBits): halls match it against their mask (ECL 0x6DA8). */
@@ -28,13 +28,13 @@ export function levelLimit(c: Uint8Array, k: number): number {
 /** Coins worth in gp, rounded up (FUN_4894_28be for training). */
 const coinsGp = (c: Uint8Array) => {
   const w = (i: number) => c[F.money + 2 * i] | (c[F.money + 2 * i + 1] << 8)
-  return Math.ceil((w(0) + w(1) * 10 + w(2) * 100 + w(3) * 200 + w(4) * 1000) / 200)
+  return Math.ceil([0, 1, 2, 3, 4].reduce((t, i) => t + w(i) * COIN_VALUES[i], 0) / COIN_VALUES[3])
 }
 
 /** Payment (FUN_417f_42ed): take coins from copper up, change back from platinum down. */
 export function payCoins(c: Uint8Array, gp: number) {
-  const values = [1, 10, 100, 200, 1000]
-  let owed = gp * 200
+  const values = COIN_VALUES
+  let owed = gp * values[3]
   const get = (i: number) => c[F.money + 2 * i] | (c[F.money + 2 * i + 1] << 8)
   const set = (i: number, v: number) => { c[F.money + 2 * i] = v & 0xff; c[F.money + 2 * i + 1] = (v >> 8) & 0xff }
   for (let i = 0; i < 5 && owed > 0; i++) {
@@ -63,7 +63,7 @@ export interface TrainCheck {
  */
 export function checkTraining(t: Tables, c: Uint8Array, hallMask: number, cheat = false): TrainCheck {
   if (c[F.status] !== 0 && !cheat) return { ok: false, message: 'we only train conscious people', train: [] }
-  if (coinsGp(c) < 1000 && !cheat) return { ok: false, message: 'Training costs 1000 gp.', train: [] }
+  if (coinsGp(c) < R.trainingCost && !cheat) return { ok: false, message: `Training costs ${R.trainingCost} gp.`, train: [] }
   let all = 0, eligible = 0, cap = 0
   const xp = u32(c, F.xp)
   const eligibleClasses: number[] = []
@@ -95,7 +95,7 @@ export function willBecome(c: Uint8Array, train: number[]): string[] {
 
 /** Steps 9–13: pay, gain levels, recompute, then hit points. Returns true if a new MU spell is due. */
 export function train(t: Tables, rng: Rng, c: Uint8Array, classes: number[], cheat = false): boolean {
-  if (!cheat) payCoins(c, 1000)
+  if (!cheat) payCoins(c, R.trainingCost)
   const k = [0, 1, 2, 3, 4, 5, 6, 7].filter((i) => c[F.levels + i] > 0).length
   const oldMU = c[F.levels + 5]
   for (const cls of classes) {

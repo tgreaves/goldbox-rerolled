@@ -1,21 +1,10 @@
 // The Adventurer's Journal (IMP-055): the journal entries, City Hall proclamations and tavern tales
 // the game refers to by number, from the printed journal (text via the Pool of Radiance Wiki, see
 // data/journal.json). The scripts announce each one in their text; the port notes it as revealed.
-import data from '../data/journal.json'
+import { JOURNAL } from '../games/journal'
 
-export interface JournalEntry { n: number; text: string; images: string[] }
-export interface Proclamation { id: string; text: string }
-export interface Tale { n: number; text: string }
-
-export const JOURNAL = data as {
-  source: Record<string, string>
-  preface: string
-  proclamations: Proclamation[]
-  journal: JournalEntry[]
-  tales: Tale[]
-}
-
-const PROC_IDS = new Set(JOURNAL.proclamations.map((p) => p.id))
+export { JOURNAL }
+export type { JournalEntry, Proclamation, Tale } from '../games/journal'
 
 /** Roman numeral value, for ordering proclamations. */
 export function roman(s: string): number {
@@ -45,7 +34,7 @@ export function journalReveals(screen: string): string[] {
     if (n >= 1 && n <= JOURNAL.tales.length) out.push(`tale:${n}`)
   }
   for (const m of t.matchAll(/PROCLAMATIONS?\s*([IVXLCDM]+(?:(?:[\s,]|AND)+[IVXLCDM]+)*)/g)) {
-    for (const id of m[1].split(/[^IVXLCDM]+/)) if (PROC_IDS.has(id)) out.push(`proc:${id}`)
+    for (const id of m[1].split(/[^IVXLCDM]+/)) if (JOURNAL.proclamations.some((p) => p.id === id)) out.push(`proc:${id}`)
   }
   return [...new Set(out)]
 }

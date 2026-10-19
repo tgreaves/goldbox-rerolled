@@ -6,6 +6,7 @@ import type { GameProfile } from './types'
 import { useFields } from './fields'
 import { useTables } from './tables'
 import { useRules } from './rules'
+import { useJournal } from './journal'
 
 export type { GameProfile } from './types'
 export { POR, COAB }
@@ -38,6 +39,7 @@ export function setGame(g: GameProfile) {
   useFields(g.fields)
   useTables(g.tables)
   useRules(g.rules)
+  useJournal(g.journal)
   try { localStorage.setItem(LAST_KEY, g.id) } catch { /* this page only */ }
 }
 
