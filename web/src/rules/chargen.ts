@@ -2,21 +2,21 @@
 // Tables are read at runtime from the data segment of the player's START.EXE; nothing from the
 // game is embedded here. Behaviour, including the original's quirks, follows spec/chargen.md.
 
+import { T } from '../games/tables'
 import { F } from '../games/fields'
-
-const DS = 0xc7c0 // data segment (paragraph 0x0C7C) in the START.EXE load image
 
 export class Tables {
   private readonly img: Uint8Array
-  constructor(image: Uint8Array) { this.img = image }
-  b(off: number) { return this.img[DS + off] }
-  s(off: number) { return (this.img[DS + off] << 24) >> 24 }
-  w(off: number) { return this.img[DS + off] | (this.img[DS + off + 1] << 8) }
+  private readonly ds: number
+  /** the active game's data segment unless given */
+  constructor(image: Uint8Array, ds = T.ds) { this.img = image; this.ds = ds }
+  b(off: number) { return this.img[this.ds + off] }
+  s(off: number) { return (this.img[this.ds + off] << 24) >> 24 }
+  w(off: number) { return this.img[this.ds + off] | (this.img[this.ds + off + 1] << 8) }
 }
 
 export const RACE_MENU = [1, 2, 3, 4, 5, 7] // Dwarf, Elf, Gnome, Half-Elf, Halfling, Human (Half-Orc never offered)
 const CLERIC_MULTI = new Set([8, 9, 10, 11, 12])
-const CLASS_BITS = [2, 16, 8, 64, 128, 1, 4, 32] // DS:05D6
 /** component classes of each class id (0-7 single, 8-16 multi-class) */
 export const COMPONENTS: number[][] = [[0], [1], [2], [3], [4], [5], [6], [7],
   [0, 2], [0, 2, 5], [0, 4], [0, 5], [0, 6], [2, 5], [2, 6], [2, 5, 6], [5, 6]]
@@ -32,19 +32,19 @@ const roll = (rng: Rng, count: number, sides: number) => {
 
 /** Classes offered for a race (DS:3E17 + race·12: count, ids). */
 export function classesFor(t: Tables, race: number): number[] {
-  const n = t.b(0x3e17 + race * 12)
-  return Array.from({ length: n }, (_, i) => t.b(0x3e18 + race * 12 + i))
+  const o = T.raceClasses.at + race * T.raceClasses.row
+  return Array.from({ length: t.b(o) }, (_, i) => t.b(o + 1 + i))
 }
 
 /** Alignments offered for a class (DS:3FE7 + class·10: count, ids). */
 export function alignmentsFor(t: Tables, cls: number): number[] {
-  const n = t.b(0x3fe7 + cls * 10)
-  return Array.from({ length: n }, (_, i) => t.b(0x3fe8 + cls * 10 + i))
+  const o = T.alignments.at + cls * T.alignments.row
+  return Array.from({ length: t.b(o) }, (_, i) => t.b(o + 1 + i))
 }
 
 /** Portrait record ids: head n (1-14) → HEAD3 record DS:286F[n], body n (1-12) → BODY3 record DS:287D[n]. */
-export const headRecord = (t: Tables, n: number) => t.b(0x286f + n)
-export const bodyRecord = (t: Tables, n: number) => t.b(0x287d + n)
+export const headRecord = (t: Tables, n: number) => t.b(T.headRecords.at + n)
+export const bodyRecord = (t: Tables, n: number) => t.b(T.bodyRecords.at + n)
 
 /** Start a character: steps 1-6 of spec/chargen.md (race, gender, class, alignment, age). */
 export function begin(t: Tables, rng: Rng, race: number, gender: number, cls: number, alignment: number): Uint8Array {
@@ -66,8 +66,8 @@ export function begin(t: Tables, rng: Rng, race: number, gender: number, cls: nu
   let bits = 0
   for (const k of COMPONENTS[cls]) {
     c[F.levels + k] = 1
-    bits |= CLASS_BITS[k]
-    c[F.thac0Base] = Math.max(c[F.thac0Base], t.b(0x3c7c + k * 11 + 1))
+    bits |= t.b(T.classBits.at + k)
+    c[F.thac0Base] = Math.max(c[F.thac0Base], t.b(T.thac0.at + k * T.thac0.row + 1))
   }
   c[F.itemMask] = bits
   if (c[F.levels + 6]) thiefSkills(t, c) // runs before abilities exist, so with DEX 0 (as the original)
@@ -75,10 +75,10 @@ export function begin(t: Tables, rng: Rng, race: number, gender: number, cls: nu
   // age: single class base + NdS; multi-class the maximum of one column
   let age: number
   if (cls < 8) {
-    const o = 0x3e5b + race * 0x1c + cls * 4
+    const o = T.startAge.at + race * T.startAge.row + cls * 4
     age = t.w(o) + roll(rng, t.b(o + 2), t.b(o + 3))
   } else {
-    const o = 0x3e5b + race * 0x1c + (AGE_COLUMN[cls] ?? 0) * 4
+    const o = T.startAge.at + race * T.startAge.row + (AGE_COLUMN[cls] ?? 0) * 4
     age = t.w(o) + t.b(o + 2) * t.b(o + 3)
   }
   c[F.age] = age & 0xff
@@ -90,8 +90,8 @@ export function begin(t: Tables, rng: Rng, race: number, gender: number, cls: nu
 export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
   const race = c[F.race], cls = c[F.cls], gender = c[F.gender]
   const age = c[F.age] | (c[F.age + 1] << 8)
-  const thr = (i: number) => t.w(0x3f31 + race * 10 + i * 2)
-  const lim = 0x3da3 + race * 16
+  const thr = (i: number) => t.w(T.ageing.at + race * T.ageing.row + i * 2)
+  const lim = T.raceLimits.at + race * T.raceLimits.row
   c[F.strPct] = 0
   for (let a = 0; a < 6; a++) {
     // best of six 3d6 (the racial adjustments inside this loop are dead code in the original)
@@ -114,7 +114,7 @@ export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
       v = Math.max(v, t.b(lim + 4 + a * 2))
       v = Math.min(v, t.b(lim + 5 + a * 2))
     }
-    v = Math.max(v, t.b(0x3f81 + cls * 6 + a))
+    v = Math.max(v, t.b(T.classMins.at + cls * T.classMins.row + a))
     if (a === 2 && v < 13 && CLERIC_MULTI.has(cls)) v = 13
     c[F.stat[a]] = v & 0xff
     if (a === 0 && v === 18 && c[F.levels + 2] > 0) {
@@ -132,11 +132,11 @@ export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
     if (!c[F.levels + k]) continue
     if (k === 0) c[F.clericSlots] = 1
     else if (k === 5) c[F.muSlots] = 1
-    gold += roll(rng, t.b(0x4263 + k * 2), t.b(0x4264 + k * 2))
+    gold += roll(rng, t.b(T.startGold.at + k * T.startGold.row), t.b(T.startGold.at + k * T.startGold.row + 1))
     classes++
     if (k === 0) {
       wisdomBonus(c)
-      for (let id = 1; id <= 0x38; id++) if (t.b(0x31fa + id * 16) === 0 && t.b(0x31fb + id * 16) === 1) c[F.known + id] = 1
+      for (let id = 1; id <= 0x38; id++) if (t.b(T.spellRecords.at + id * T.spellRecords.row) === 0 && t.b(T.spellRecords.at + id * T.spellRecords.row + 1) === 1) c[F.known + id] = 1
     } else if (k === 5) {
       c[F.known + 11] = c[F.known + 18] = c[F.known + 19] = c[F.known + 21] = 1 // Detect Magic, Read Magic, Shield, Sleep
     }
@@ -160,8 +160,8 @@ export function hitDice(t: Tables, rng: Rng, c: Uint8Array): number {
   let sum = 0
   for (let k = 0; k < 8; k++) {
     if (!c[F.levels + k]) continue
-    const sides = t.b(0x8be + k)
-    let r = roll(rng, t.b(0x8b6 + k), sides)
+    const sides = t.b(T.hitDiceSides.at + k)
+    let r = roll(rng, t.b(T.hitDiceCount.at + k), sides)
     if (c[F.levels + k] === 1 && r < Math.floor((sides * 2) / 3)) r = Math.floor((sides * 2) / 3)
     sum += r
   }
@@ -172,7 +172,7 @@ export function conBonus(t: Tables, c: Uint8Array): number {
   let b = 0
   for (let k = 0; k < 8; k++) {
     if (!c[F.levels + k]) continue
-    b += t.s(0x408e + c[F.stat[4]])
+    b += t.s(T.conHp.at + c[F.stat[4]])
     if (c[F.stat[4]] > 16 && c[F.cls] === 2) b++
     if (c[F.stat[4]] > 17 && c[F.cls] === 2) b++
   }
@@ -193,7 +193,7 @@ export function saves(t: Tables, c: Uint8Array) {
   for (let i = 0; i < 5; i++) {
     c[F.saves + i] = 20
     for (let k = 0; k < 8; k++) {
-      if (c[F.levels + k] > 0) c[F.saves + i] = Math.min(c[F.saves + i], t.b(0x426e + k * 0x2d + c[F.levels + k] * 5 + i))
+      if (c[F.levels + k] > 0) c[F.saves + i] = Math.min(c[F.saves + i], t.b(T.saves.at + k * T.saves.row + c[F.levels + k] * 5 + i))
     }
   }
 }
@@ -201,12 +201,12 @@ export function saves(t: Tables, c: Uint8Array) {
 /** FUN_51cf_0329 */
 export function thiefSkills(t: Tables, c: Uint8Array) {
   for (let s = 1; s <= 8; s++) {
-    const base = t.b(0x3cf3 + c[F.levels + 6] * 8 + s)
-    const race = t.s(0x3d3b + c[F.race] * 8 + s)
+    const base = t.b(T.thiefBase.at + c[F.levels + 6] * T.thiefBase.row + s)
+    const race = t.s(T.thiefRace.at + c[F.race] * T.thiefRace.row + s)
     if (race < 0 && base < -race) c[F.thief + s - 1] = 0
     else {
       let v = base + race
-      if (s < 6) v += t.s(0x3d4e + c[F.stat[3]] * 5 + s)
+      if (s < 6) v += t.s(T.thiefDex.at + c[F.stat[3]] * T.thiefDex.row + s)
       c[F.thief + s - 1] = v & 0xff
     }
   }
@@ -325,7 +325,7 @@ function withCon(t: Tables, c: Uint8Array, v: number, classes: number) {
 
 /** Racial limits for ability a (0 STR … 5 CHA): [min, max] (STR by gender). */
 export function abilityRange(t: Tables, c: Uint8Array, a: number): [number, number] {
-  const lim = 0x3da3 + c[F.race] * 16
+  const lim = T.raceLimits.at + c[F.race] * T.raceLimits.row
   if (a === 0) return [t.b(lim + c[F.gender]), t.b(lim + 2 + c[F.gender])]
   return [t.b(lim + 4 + a * 2), t.b(lim + 5 + a * 2)]
 }
@@ -338,10 +338,10 @@ export function modifyStep(t: Tables, c: Uint8Array, f: number, delta: 1 | -1) {
     return
   }
   const [lo, hi] = abilityRange(t, c, f)
-  const classMin = t.b(0x3f81 + c[F.cls] * 6 + f)
+  const classMin = t.b(T.classMins.at + c[F.cls] * T.classMins.row + f)
   if (delta > 0) {
     if (c[F.stat[f]] + 1 > hi) {
-      const cap = t.b(0x3da3 + c[F.race] * 16 + 4 + c[F.gender])
+      const cap = t.b(T.raceLimits.at + c[F.race] * T.raceLimits.row + 4 + c[F.gender])
       if (f === 0 && c[F.stat[0]] === 18 && c[F.levels + 2] > 0 && c[F.strPct] < cap) c[F.strPct]++
     } else c[F.stat[f]]++
   } else if (f === 0 && c[F.strPct] > 0) {

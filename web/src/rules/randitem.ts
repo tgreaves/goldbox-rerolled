@@ -1,8 +1,8 @@
 // Random treasure items (spec/records.md, "Random items"): the type choice of the TREASURE handler
 // and FUN_4c2d_1010, which builds the 63-byte record. Tables come from the player's START.EXE.
+import { T } from '../games/tables'
 import { Item, ITEM_SIZE } from '../data/items'
 
-const DS = 0xc7c0
 type D = (sides: number) => number // 1..sides
 
 /** Weight per unit by type (the table in the spec); 40 with count 10 for anything unlisted. */
@@ -88,7 +88,7 @@ export function buildItem(t: number, d: D, image: Uint8Array): Item {
     }
   }
   if (m) {
-    const W = (i: number) => image[DS + 0x0970 + 2 * i] | (image[DS + 0x0970 + 2 * i + 1] << 8)
+    const W = (i: number) => image[T.ds + T.randomItems.at + 2 * i] | (image[T.ds + T.randomItems.at + 2 * i + 1] << 8)
     for (let j = 0; j < 3; j++) r[0x2f + j] = W(m + j) & 0xff
     r[0x32] = m === 0x61 ? 2 : 1
     r[0x33] = m === 0x61 ? 2 : 1

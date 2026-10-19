@@ -83,6 +83,13 @@ deep inside shared code (`if (coab) …`); it is a choice made in the profile.
    - spell slots are indexed `clericSlots + spellClass × slotLevels`, true for PoR's two classes; CotAB
      puts druid slots between cleric and magic-user, so step 6 maps spell class to slot array.
 3. **Executable tables.** Named table lookups replace raw DS offsets; PoR tests green.
+   *Done 2026-10-19*: `web/src/games/tables.ts` (`T`: the data segment and about 45 tables with their
+   row sizes, for both games; `test/tables.test.ts` reads CotAB's own START.EXE through its map).
+   Three values the port hard-coded (class item bits, trainer bits, sky colours) are now read from
+   the tables. Tables only PoR has (overland map, NPC portrait picks, portrait records) are marked
+   absent for CotAB, and the code that needs them stands down. Table *lengths* that are rules (56
+   spells, 3 spell levels in the slot code, the 17 classes) and CotAB's different slot and hit-point
+   models are step 6.
 4. **Script VM.** Addresses, variable spaces and opcodes from the profile; CotAB's scripts run
    headless over every area and square without errors (the PoR proof, repeated).
 5. **CotAB data.** Characters (.SAV/.SWG/.FX), saves (13 149 bytes), the roster, the pre-made party,

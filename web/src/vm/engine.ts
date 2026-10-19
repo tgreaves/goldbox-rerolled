@@ -2,6 +2,7 @@
 // A port of tools/eclvm.py; every opcode, including the original's quirks, follows spec/ecl.md.
 // The interpreter is async: menus, input and screen refreshes await the front end (Io).
 
+import { T } from '../games/tables'
 import type { GameFiles } from '../store/gamefiles'
 import { GeoMap, STEP } from '../data/geo'
 import { WallSets } from '../data/walls'
@@ -284,9 +285,11 @@ export class Engine {
    * band from register 0xC05F, the floor from 0xC059 (FUN_54cf_00c7, 00fb, 012f).
    */
   get backdrop(): { sky: number; line: number; band: number; floor: number } {
-    const SKY = [0, 15, 12, 11, 13, 10, 9, 14] // DS:0C26, twice over
+    const img = this.startImage
     const outdoor = this.geo ? this.geo.event(this.x & 15, this.y & 15) > 0x7f : false
-    const sky = SKY[this.read(outdoor ? 0x49fe : 0x49fd) & 7]
+    const i = this.read(outdoor ? 0x49fe : 0x49fd) & 7
+    // T.sky, eight colours twice over; PoR's values without START.EXE
+    const sky = img ? img[T.ds + T.sky.at + i] : [0, 15, 12, 11, 13, 10, 9, 14][i]
     const h = (this.regs.get(0xc05f) ?? 0xe8) & 0xff, f = (this.regs.get(0xc059) ?? 0xdb) & 0xff
     const line = h === 8 || h === 0x41 ? 0 : 15
     const band = h === 8 ? 8 : 7
@@ -963,12 +966,12 @@ export class Engine {
       const classes = [0, 1, 2, 3, 4, 5, 6].filter((k) => ((c[F.levels + k] << 24) >> 24) > 0)
       const cls = classes.length ? classes[this.roll(1, classes.length) - 1] : 2
       const img = this.startImage
-      if (img) {
-        const tb = (o: number) => img[0xc7c0 + o]
+      if (img && T.npcHeads.at >= 0) {
+        const tb = (o: number) => img[T.ds + o]
         const g = c[F.gender]
-        const body = cls === 0 ? 0x8d7 : cls === 5 ? 0x8eb : cls === 6 ? 0x8f5 : 0x8e1
-        c[F.body] = tb(body + g * 5 + this.roll(1, 5))
-        c[F.head] = tb(0x8c7 + g * 8 + this.roll(1, 8))
+        const body = cls === 0 ? T.npcBodiesCleric : cls === 5 ? T.npcBodiesMagicUser : cls === 6 ? T.npcBodiesThief : T.npcBodiesFighter
+        c[F.body] = tb(body.at + g * 5 + this.roll(1, 5))
+        c[F.head] = tb(T.npcHeads.at + g * 8 + this.roll(1, 8))
       }
       const n = party.length
       this.nodes.splice(n, 0, c)

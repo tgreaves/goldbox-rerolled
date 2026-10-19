@@ -1,8 +1,9 @@
 // Combat battlefield (spec/combat.md, "Battlefield"): a 25 x 50 grid of cell values, the cell table
 // from START.EXE, and the terrain generators.
+import { T } from '../games/tables'
+
 export const ROWS = 25
 export const COLS = 50
-const DS = 0xc7c0
 
 /** Cell properties (DS:2744, 4 bytes per cell value). */
 export interface CellInfo {
@@ -17,7 +18,7 @@ export interface CellInfo {
 export function cellTable(startImage: Uint8Array): CellInfo[] {
   const out: CellInfo[] = []
   for (let c = 0; c < 0x42; c++) {
-    const o = DS + 0x2744 + c * 4
+    const o = T.ds + T.battleCells.at + c * T.battleCells.row
     out.push({ move: startImage[o], sight: startImage[o + 2], image: startImage[o + 3] })
   }
   return out

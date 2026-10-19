@@ -1,8 +1,8 @@
 // Overland travel in the wilderness (areas 25-27), spec/overland.md. The tables are read at runtime
 // from the data segment of the player's START.EXE; nothing from the game is shipped.
+import { T } from '../games/tables'
 import { unexepack } from '../data/exepack'
 
-const DS = 0xc7c0 // data segment (paragraph 0x0C7C) in the START.EXE load image
 export const WIDTH = 44
 export const HEIGHT = 36
 
@@ -19,18 +19,20 @@ export class Overland {
   private offsets: Uint8Array
 
   constructor(image: Uint8Array) {
-    const at = (o: number, n: number) => image.subarray(DS + o, DS + o + n)
-    this.map = at(0x3648, WIDTH * HEIGHT).slice()
-    const sp = at(0x0c36, 9 * 6)
+    const at = (o: number, n: number) => image.subarray(T.ds + o, T.ds + o + n)
+    this.map = at(T.overlandMap.at, WIDTH * HEIGHT).slice()
+    const sp = at(T.overlandSpecials.at, 9 * T.overlandSpecials.row)
     const w = (o: number) => sp[o] | (sp[o + 1] << 8)
-    this.specials = Array.from({ length: 9 }, (_, i) => ({ x: w(i * 6), y: w(i * 6 + 2), tile: w(i * 6 + 4) }))
-    this.dx = new Int8Array(at(0x2736, 8))
-    this.dy = new Int8Array(at(0x273f, 8))
-    this.offsets = at(0x3c76, 5).slice()
+    const r = T.overlandSpecials.row
+    this.specials = Array.from({ length: 9 }, (_, i) => ({ x: w(i * r), y: w(i * r + 2), tile: w(i * r + 4) }))
+    this.dx = new Int8Array(at(T.wallDx.at, 8))
+    this.dy = new Int8Array(at(T.wallDy.at, 8))
+    this.offsets = at(T.overlandColumns.at, 5).slice()
   }
 
   static fromStartExe(exe: Uint8Array | undefined): Overland | null {
     if (!exe) return null
+    if (T.overlandMap.at < 0) return null // a game without the tile overland
     try { return new Overland(unexepack(exe).image) } catch { return null }
   }
 

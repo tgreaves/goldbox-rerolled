@@ -1,8 +1,7 @@
-// Spell tables (spec/spells.md): names at DS:2912 (56 × 41-byte Pascal strings) and 16-byte records
-// at DS:31FA + id × 16, read from the player's START.EXE. Spell id = 1..56.
+// Spell tables (spec/spells.md): names (PoR DS:2912, 56 × 41-byte Pascal strings) and 16-byte records
+// (PoR DS:31FA + id × 16), read from the player's START.EXE at the game's T.spellNames / T.spellRecords.
+import { T } from '../games/tables'
 import { unexepack } from './exepack'
-
-const DS = 0xc7c0
 
 export interface Spell {
   id: number
@@ -37,8 +36,8 @@ export class SpellTables {
   constructor(image: Uint8Array) {
     // 57–67 are the item-only spells (class 2): records follow on, with no names (the names table holds 56)
     for (let id = 1; id <= 67; id++) {
-      const n = DS + 0x2912 + (id - 1) * 41
-      const r = image.subarray(DS + 0x31fa + id * 16, DS + 0x31fa + id * 16 + 16)
+      const n = T.ds + T.spellNames.at + (id - 1) * T.spellNames.row
+      const r = image.subarray(T.ds + T.spellRecords.at + id * T.spellRecords.row, T.ds + T.spellRecords.at + id * T.spellRecords.row + 16)
       this.spells.push({
         id, name: id <= 56 ? String.fromCharCode(...image.subarray(n + 1, n + 1 + image[n])) : '',
         cls: r[0], level: r[1], range: [r[2], r[3]], duration: [r[4], r[5]], target: r[6], side: r[7],

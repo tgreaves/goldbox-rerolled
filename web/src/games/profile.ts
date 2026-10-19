@@ -4,10 +4,12 @@ import { POR } from './por'
 import { COAB } from './coab'
 import type { GameProfile } from './types'
 import { useFields } from './fields'
+import { useTables } from './tables'
 
 export type { GameProfile } from './types'
 export { POR, COAB }
 export { F } from './fields'
+export { T } from './tables'
 
 export const GAMES: GameProfile[] = [POR, COAB]
 
@@ -33,6 +35,7 @@ export function game(): GameProfile {
 export function setGame(g: GameProfile) {
   active = g
   useFields(g.fields)
+  useTables(g.tables)
   try { localStorage.setItem(LAST_KEY, g.id) } catch { /* this page only */ }
 }
 

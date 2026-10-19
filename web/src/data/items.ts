@@ -1,9 +1,9 @@
 // Items (spec/records.md): 63-byte item records (CHRDAT*.ITM, ITEM<n>.DAX, MON<n>ITM.DAX), the
 // 16-byte base item table in ITEMS, and the name words in START.EXE's data segment.
+import { T } from '../games/tables'
 import { unexepack } from './exepack'
 
 export const ITEM_SIZE = 63
-const DS = 0xc7c0
 
 const u16 = (d: Uint8Array, o: number) => d[o] | (d[o + 1] << 8)
 const s8 = (v: number) => (v << 24) >> 24
@@ -49,7 +49,7 @@ export class ItemTables {
       })
     }
     for (let i = 0; i < 255; i++) {
-      const o = DS + 0x10bc + i * 21
+      const o = T.ds + T.itemWords.at + i * T.itemWords.row
       this.words.push(String.fromCharCode(...startImage.subarray(o + 1, o + 1 + startImage[o])))
     }
   }

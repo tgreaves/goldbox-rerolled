@@ -2,6 +2,7 @@
 // (docs/multi-game.md). Step 1: identity, files and storage; record fields, tables, rules and the
 // script VM join in later steps.
 import type { CharFields } from './fields'
+import type { TableMap } from './tables'
 
 export interface GameProfile {
   id: 'por' | 'coab'
@@ -22,6 +23,8 @@ export interface GameProfile {
   imageFamilies: string[]
   /** character record layout */
   fields: CharFields
+  /** START.EXE rules tables */
+  tables: TableMap
   /** false while the port can show the game's assets but not yet play it */
   playable: boolean
 }

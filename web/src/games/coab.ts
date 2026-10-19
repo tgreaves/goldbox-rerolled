@@ -2,6 +2,7 @@
 // docs/multi-game.md make it playable.
 import type { GameProfile } from './types'
 import { COAB_FIELDS } from './fields'
+import { COAB_TABLES } from './tables'
 
 export const COAB: GameProfile = {
   id: 'coab',
@@ -22,5 +23,6 @@ export const COAB: GameProfile = {
   imageFamilies: ['TITLE', 'BIGPIC', 'SKY', 'PIC', 'SPRIT', 'HEAD', 'BODY', 'CHEAD', 'CBODY', 'CPIC',
     'COMSPR', 'DUNGCOM', 'WILDCOM', 'RANDCOM', 'TILES', '8X8D'],
   fields: COAB_FIELDS,
+  tables: COAB_TABLES,
   playable: false,
 }

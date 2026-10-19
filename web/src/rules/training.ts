@@ -1,17 +1,18 @@
 // Training (spec/progression.md, FUN_417f_29ae) and the derived statistics after a level (FUN_51cf_0000).
+import { T } from '../games/tables'
 import { conBonus, saves, thiefSkills, wisdomBonus, type Rng, type Tables } from './chargen'
 import { CLASSES } from '../data/character'
 import { F } from '../games/fields'
 
-/** Trainer bit per base class (DS:05DE): halls match it against their mask (ECL 0x6DA8). */
-export const TRAINER_BITS = [2, 2, 8, 10, 10, 1, 4, 6]
+/** Trainer bit per base class (T.trainerBits): halls match it against their mask (ECL 0x6DA8). */
+const trainerBit = (t: Tables, k: number) => t.b(T.trainerBits.at + k)
 
 const u32 = (c: Uint8Array, o: number) => (c[o] | (c[o + 1] << 8) | (c[o + 2] << 16) | (c[o + 3] << 24)) >>> 0
 const setU32 = (c: Uint8Array, o: number, v: number) => { c[o] = v & 0xff; c[o + 1] = (v >> 8) & 0xff; c[o + 2] = (v >> 16) & 0xff; c[o + 3] = (v >>> 24) & 0xff }
 
-/** Experience needed for `level` in base class k (DS:409B, u32; 0xFFFFFFFF = cannot reach). */
+/** Experience needed for `level` in base class k (T.xp, u32; 0xFFFFFFFF = cannot reach). */
 export function xpFor(t: Tables, k: number, level: number): number {
-  const o = 0x409b + k * 0x38 + level * 4
+  const o = T.xp.at + k * T.xp.row + level * 4
   return (t.w(o) | (t.w(o + 2) << 16)) >>> 0
 }
 
@@ -75,12 +76,12 @@ export function checkTraining(t: Tables, c: Uint8Array, hallMask: number, cheat 
   for (let k = 0; k < 8; k++) {
     const L = c[F.levels + k]
     if (L <= 0) continue
-    all |= TRAINER_BITS[k]
+    all |= trainerBit(t, k)
     if (L >= levelLimit(c, k)) continue
-    const T = xpFor(t, k, L + 1)
-    if (T === 0 || T === 0xffffffff) continue
-    if (xp < T && !cheat) continue
-    eligible |= TRAINER_BITS[k]
+    const need = xpFor(t, k, L + 1)
+    if (need === 0 || need === 0xffffffff) continue
+    if (xp < need && !cheat) continue
+    eligible |= trainerBit(t, k)
     eligibleClasses.push(k)
     const N = xpFor(t, k, L + 2)
     if (N !== 0 && N !== 0xffffffff && xp >= N) cap = Math.max(cap, N - 1)
@@ -90,7 +91,7 @@ export function checkTraining(t: Tables, c: Uint8Array, hallMask: number, cheat 
     if ((all & hallMask) === 0) return { ok: false, message: "We don't train that class here", train: [] }
     if ((eligible & hallMask) === 0) return { ok: false, message: 'Not Enough Experience', train: [] }
   }
-  const train = eligibleClasses.filter((k) => cheat || (TRAINER_BITS[k] & hallMask) !== 0)
+  const train = eligibleClasses.filter((k) => cheat || (trainerBit(t, k) & hallMask) !== 0)
   return { ok: train.length > 0, message: train.length ? '' : 'Not Enough Experience', train }
 }
 
@@ -123,7 +124,7 @@ export function levelHp(t: Tables, rng: Rng, c: Uint8Array, classes: number[], k
   let R = 0
   for (const cls of classes) {
     let sum = 0
-    for (let i = 0; i < t.b(0x8b6 + cls); i++) sum += rng(t.b(0x8be + cls)) + 1
+    for (let i = 0; i < t.b(T.hitDiceCount.at + cls); i++) sum += rng(t.b(T.hitDiceSides.at + cls)) + 1
     R += sum
   }
   c[F.hpRolled] = (c[F.hpRolled] + Math.max(1, Math.trunc(R / Math.max(1, k)))) & 0xff
@@ -137,7 +138,7 @@ export function levelHp(t: Tables, rng: Rng, c: Uint8Array, classes: number[], k
 /** The highest level the game's tables allow in base class k (the experience table's cap; 1 where it has none). */
 export function maxLevel(t: Tables, k: number): number {
   let max = 1
-  for (let L = 2; L <= 13; L++) {
+  for (let L = 2; L < T.xp.levels; L++) {
     const xp = xpFor(t, k, L)
     if (xp === 0 || xp === 0xffffffff) break
     max = L
@@ -151,23 +152,23 @@ export function derive(t: Tables, c: Uint8Array) {
   for (let k = 0; k < 8; k++) {
     const L = c[F.levels + k]
     if (L <= 0) continue
-    thac = Math.max(thac, t.b(0x3c7c + k * 11 + L))
+    thac = Math.max(thac, t.b(T.thac0.at + k * T.thac0.row + L))
     high = Math.max(high, L)
   }
   c[F.thac0Base] = thac
   c[F.hitDice] = high
   c[F.attacksBase] = c[F.levels + 2] >= 7 ? 3 : 2
   if (c[F.levels] >= 2) {
-    for (let n = 1; n <= F.slotLevels; n++) c[F.clericSlots + n - 1] = t.b(0x40bc + c[F.levels] * 3 + n)
+    for (let n = 1; n <= F.slotLevels; n++) c[F.clericSlots + n - 1] = t.b(T.clericSlots.at + c[F.levels] * T.clericSlots.row + n)
     wisdomBonus(c)
   }
   if (c[F.levels] > 0) {
     for (let id = 1; id <= 0x38; id++) {
-      const cls = t.b(0x31fa + id * 16), lvl = t.b(0x31fb + id * 16)
+      const cls = t.b(T.spellRecords.at + id * T.spellRecords.row), lvl = t.b(T.spellRecords.at + id * T.spellRecords.row + 1)
       if (cls === 0 && lvl >= 1 && lvl <= 3 && c[F.clericSlots + lvl - 1] > 0) c[F.known + id] = 1
     }
   }
-  if (c[F.levels + 5] >= 2) for (let n = 1; n <= F.slotLevels; n++) c[F.muSlots + n - 1] = t.b(0x41d4 + c[F.levels + 5] * 3 + n)
+  if (c[F.levels + 5] >= 2) for (let n = 1; n <= F.slotLevels; n++) c[F.muSlots + n - 1] = t.b(T.muSlots.at + c[F.levels + 5] * T.muSlots.row + n)
   saves(t, c)
   if (c[F.levels + 6]) thiefSkills(t, c)
 }
@@ -176,7 +177,7 @@ export function derive(t: Tables, c: Uint8Array) {
 export function newSpellChoices(t: Tables, c: Uint8Array): number[] {
   const out: number[] = []
   for (let id = 1; id <= 56; id++) {
-    const cls = t.b(0x31fa + id * 16), lvl = t.b(0x31fb + id * 16)
+    const cls = t.b(T.spellRecords.at + id * T.spellRecords.row), lvl = t.b(T.spellRecords.at + id * T.spellRecords.row + 1)
     if (c[F.known + id] || lvl < 1 || lvl > 3) continue
     if (c[F.clericSlots + cls * F.slotLevels + lvl - 1] > 0) out.push(id)
   }
