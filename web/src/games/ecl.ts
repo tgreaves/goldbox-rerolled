@@ -2,6 +2,7 @@
 // Radiance's addresses internally; a game whose regions sit elsewhere has the addresses its scripts
 // use translated on the way in. Offsets inside each region are the same in both games
 // (spec/coab/ecl.md, "Memory map").
+import { F } from './fields'
 
 export interface EclMap {
   /** start of the A word array (0x400 words), B (0x400, with the character view), C (0x200), code (0x1E00 bytes) */
@@ -9,12 +10,30 @@ export interface EclMap {
   b: number
   c: number
   code: number
+  /** B-view writes to B + 0x20…0x70 land at memorised + (offset − 0x20) + this (PoR 0, CotAB 1: 1-based) */
+  memorisedView: number
+  /** B-view reads this game adds to the shared ones (offset from B → value) */
+  viewReads: Record<number, (c: Uint8Array) => number>
 }
 
-export const POR_ECL: EclMap = { a: 0x4900, b: 0x6b00, c: 0x9700, code: 0x9900 }
-export const COAB_ECL: EclMap = { a: 0x4b00, b: 0x7c00, c: 0x7a00, code: 0x8000 }
+const s8 = (v: number) => ((v << 24) >> 24) & 0xffff
 
-const SIZES: [keyof EclMap, number][] = [['a', 0x400], ['b', 0x400], ['c', 0x200], ['code', 0x1e00]]
+export const POR_ECL: EclMap = { a: 0x4900, b: 0x6b00, c: 0x9700, code: 0x9900, memorisedView: 0, viewReads: {} }
+
+// spec/coab/ecl.md, "B as a view of the current character". Not yet: B+0xC9 (a class level with the
+// dual-class part, FUN 0x51841) and B+0x100's "loaded past the end" flag; both read the B word.
+export const COAB_ECL: EclMap = {
+  a: 0x4b00, b: 0x7c00, c: 0x7a00, code: 0x8000, memorisedView: 1,
+  viewReads: {
+    0x15: (c) => c[F.stat[1]],
+    0x72: (c) => s8(c[F.race]),
+    0x73: (c) => s8(c[F.cls]),
+    0xd6: (c) => s8(c[F.gender]),
+    0xe4: (c) => c[0x192] & 1, // CotAB record byte 0x192 (set by the Hillsfar import), no field yet
+  },
+}
+
+const SIZES: ['a' | 'b' | 'c' | 'code', number][] = [['a', 0x400], ['b', 0x400], ['c', 0x200], ['code', 0x1e00]]
 /** an address no region or engine register uses: reads 0, writes are dropped */
 const NOWHERE = 0xfff0
 

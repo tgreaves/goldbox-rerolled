@@ -348,12 +348,14 @@ export class Engine {
     const c = this.cur
     const u16 = (o: number) => c[o] | (c[o + 1] << 8)
     const s8 = (o: number) => ((c[o] << 24) >> 24) & 0xffff
+    const extra = game().ecl.viewReads[k]
+    if (extra) return extra(c)
     if (k === 0x18) return c[F.stat[4]]
     if (k === 0x9b) return c[F.saves + 1]
     if (k === 0xa0) return s8(F.hitDice)
-    if (k >= 0xa5 && k <= 0xac) return c[0x76 + k - 0xa4]
+    if (k >= 0xa5 && k <= 0xac) return c[F.thief + k - 0xa5]
     if (k === 0xb8) return c[F.morale]
-    if ([0xbb, 0xbd, 0xbf, 0xc1, 0xc3].includes(k)) return u16(0x88 + k - 0xbb)
+    if ([0xbb, 0xbd, 0xbf, 0xc1, 0xc3].includes(k)) return u16(F.money + k - 0xbb)
     if (k === 0xd8) return s8(F.alignment)
     if (k === 0xf7) return u16(F.xpBase)
     if (k === 0xf9) return c[F.xpPerHp]
@@ -378,11 +380,11 @@ export class Engine {
   /** FUN_2fea_0a74 */
   private charWrite(k: number, v: number) {
     const c = this.cur
-    if (k >= 0x20 && k <= 0x70) c[0x17 + k - 0x20] = v & 0xff
+    if (k >= 0x20 && k <= 0x70) c[F.memorised + k - 0x20 + game().ecl.memorisedView] = v & 0xff
     else if (k === 0xb8) c[F.morale] = (v > 0xb2 ? v - 0x32 : v) & 0xff
     else if ([0xbb, 0xbd, 0xbf, 0xc1, 0xc3].includes(k)) {
-      c[0x88 + k - 0xbb] = v & 0xff
-      c[0x89 + k - 0xbb] = v >> 8
+      c[F.money + k - 0xbb] = v & 0xff
+      c[F.money + k - 0xbb + 1] = v >> 8
     } else if (k === 0xf7) { c[F.xpBase] = v & 0xff; c[F.xpBase + 1] = v >> 8 }
     else if (k === 0xf9) c[F.xpPerHp] = v & 0xff
     else if (k === 0x100) {
