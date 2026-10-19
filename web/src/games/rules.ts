@@ -24,12 +24,19 @@ export interface GameRules {
   slotModel: 'absolute' | 'increments'
   /** base class → the level above which it gets 3 attacks per 2 rounds */
   extraAttacks: Record<number, number>
+  /** how a level's hit points are rolled: PoR (every level's dice, 2/3 minimum at level 1) or CotAB
+   *  (FUN 0x3b230: full dice at level 1, one die after, best of two rolls, fixed from DS:3EBB) */
+  hpModel: 'por' | 'coab'
+  /** CotAB: the fixed hit points per level from the stop level, by base class */
+  fixedHp: number[]
 }
 
 export const POR_RULES: GameRules = {
   spells: { records: 67, named: 56, book: 55, levels: 3, cleric: 0, druid: -1, magicUser: 1, item: 2 },
   slotModel: 'absolute',
   extraAttacks: { 2: 6 },
+  hpModel: 'por',
+  fixedHp: [],
 }
 
 export const COAB_RULES: GameRules = {
@@ -37,6 +44,9 @@ export const COAB_RULES: GameRules = {
   spells: { records: 100, named: 100, book: 100, levels: 5, cleric: 0, druid: 1, magicUser: 2, item: 3 },
   slotModel: 'increments',
   extraAttacks: { 2: 6, 3: 6, 4: 7 }, // fighter > 6, paladin > 6, ranger > 7 (§3.3)
+  hpModel: 'coab',
+  // §3.4: fighter and paladin 3, cleric, ranger and thief 2, magic-user 1 (druid and monk are not playable: 2, I)
+  fixedHp: [2, 2, 3, 3, 2, 1, 2, 2],
 }
 
 /** The active game's rules; start-up (setGame) switches them. */

@@ -158,6 +158,7 @@ export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
 }
 
 export function hitDice(t: Tables, rng: Rng, c: Uint8Array): number {
+  if (R.hpModel === 'coab') return coabHitDice(t, rng, c, [0, 1, 2, 3, 4, 5, 6, 7].filter((k) => c[F.levels + k] > 0)) & 0xff
   let sum = 0
   for (let k = 0; k < 8; k++) {
     if (!c[F.levels + k]) continue
@@ -167,6 +168,24 @@ export function hitDice(t: Tables, rng: Rng, c: Uint8Array): number {
     sum += r
   }
   return sum & 0xff
+}
+
+/**
+ * CotAB's hit-point roll (FUN 0x3b230) for the classes given, at their current levels: below the
+ * class's stop level (DS:3EBB) the dice (the full count at level 1, one die after) rolled twice,
+ * the higher kept; from the stop level the class's fixed hit points, which replace the sum so far
+ * rather than add to it (the original's quirk, spec/coab/tables.md §3.4).
+ */
+export function coabHitDice(t: Tables, rng: Rng, c: Uint8Array, classes: number[]): number {
+  let sum = 0
+  for (const k of classes) {
+    const L = c[F.levels + k]
+    if (L < t.b(T.hitDiceStop.at + k)) {
+      const n = L > 1 ? 1 : t.b(T.hitDiceCount.at + k), sides = t.b(T.hitDiceSides.at + k)
+      sum += Math.max(roll(rng, n, sides), roll(rng, n, sides))
+    } else sum = R.fixedHp[k] ?? 2
+  }
+  return sum
 }
 
 export function conBonus(t: Tables, c: Uint8Array): number {

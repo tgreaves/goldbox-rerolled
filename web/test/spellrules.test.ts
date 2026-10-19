@@ -9,6 +9,8 @@ import { F } from '../src/games/fields'
 import { unexepack } from '../src/data/exepack'
 import { Tables } from '../src/rules/chargen'
 import { derive } from '../src/rules/training'
+import { coabHitDice } from '../src/rules/chargen'
+import { T } from '../src/games/tables'
 
 const tables = (dir: string) => SpellTables.load(new Uint8Array(readFileSync(join(dir, 'START.EXE'))))!
 const count = (st: SpellTables, cls: number) => Array.from({ length: R.spells.levels }, (_, l) => st.spells.filter((s) => bookSpell(s) && s.cls === cls && s.level === l + 1).length)
@@ -59,5 +61,23 @@ describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds spell book
     expect([at(4, 8).dr[0], at(4, 8).mu[0]]).toEqual([1, 0])
     expect([at(4, 11).dr[0], at(4, 11).mu[0]]).toEqual([2, 2])
     expect([at(2, 7).att, at(3, 7).att, at(4, 7).att, at(4, 8).att]).toEqual([3, 3, 2, 3]) // fighter/paladin > 6, ranger > 7
+  })
+
+  it('rolls hit points the CotAB way (§3.4): best of two below the stop level, fixed from it', () => {
+    setGame(COAB)
+    const t = new Tables(unexepack(new Uint8Array(readFileSync(join(coab, 'START.EXE')))).image)
+    expect(Array.from({ length: 8 }, (_, k) => t.b(T.hitDiceStop.at + k))).toEqual([10, 15, 10, 10, 11, 12, 11, 19])
+    const c = new Uint8Array(F.size)
+    const rolls: number[] = []
+    const rng = (n: number) => { rolls.push(n); return rolls.length % 2 ? 2 : 6 } // dice show 3, then 7
+    c[F.levels + 2] = 1
+    expect(coabHitDice(t, rng, c, [2])).toBe(7) // fighter level 1: 1d10 twice, the higher
+    expect(rolls).toEqual([10, 10])
+    c[F.levels + 2] = 5
+    expect(coabHitDice(t, rng, c, [2])).toBe(7) // one die after level 1
+    c[F.levels + 2] = 10
+    expect(coabHitDice(t, rng, c, [2])).toBe(3) // fighter from level 10: 3 hit points
+    c[F.levels + 5] = 4
+    expect(coabHitDice(t, rng, c, [5, 2])).toBe(3) // the fixed value replaces the magic-user's roll (quirk)
   })
 })

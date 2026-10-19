@@ -1,7 +1,7 @@
 // Training (spec/progression.md, FUN_417f_29ae) and the derived statistics after a level (FUN_51cf_0000).
 import { R, slots } from '../games/rules'
 import { T } from '../games/tables'
-import { conBonus, saves, thiefSkills, wisdomBonus, type Rng, type Tables } from './chargen'
+import { coabHitDice, conBonus, saves, thiefSkills, wisdomBonus, type Rng, type Tables } from './chargen'
 import { CLASSES } from '../data/character'
 import { F } from '../games/fields'
 
@@ -122,15 +122,16 @@ export function train(t: Tables, rng: Rng, c: Uint8Array, classes: number[], che
  * the CON bonus, both divided over the character's k classes; the wound is kept.
  */
 export function levelHp(t: Tables, rng: Rng, c: Uint8Array, classes: number[], k = [0, 1, 2, 3, 4, 5, 6, 7].filter((i) => c[F.levels + i] > 0).length) {
-  let R = 0
-  for (const cls of classes) {
+  let rolled = 0
+  if (R.hpModel === 'coab') rolled = coabHitDice(t, rng, c, classes)
+  else for (const cls of classes) {
     let sum = 0
     for (let i = 0; i < t.b(T.hitDiceCount.at + cls); i++) sum += rng(t.b(T.hitDiceSides.at + cls)) + 1
-    R += sum
+    rolled += sum
   }
-  c[F.hpRolled] = (c[F.hpRolled] + Math.max(1, Math.trunc(R / Math.max(1, k)))) & 0xff
+  c[F.hpRolled] = (c[F.hpRolled] + Math.max(1, Math.trunc(rolled / Math.max(1, k)))) & 0xff
   const C = conBonus(t, c)
-  const gain = Math.max(1, Math.trunc((R + C) / Math.max(1, k)))
+  const gain = Math.max(1, Math.trunc((rolled + C) / Math.max(1, k)))
   const damage = c[F.maxHp] - c[F.hp]
   c[F.maxHp] = (c[F.maxHp] + gain) & 0xff
   c[F.hp] = (c[F.maxHp] - damage) & 0xff
