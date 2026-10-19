@@ -1,6 +1,6 @@
 # Browser port: requirements and design
 
-The aim is a browser reimplementation of *Pool of Radiance* built on the specification in [`spec/`](../spec/README.md). Rules and scripts stay faithful to the original. Presentation and interface are modernised, and every deliberate departure from the original goes in [`IMPROVEMENTS.md`](../IMPROVEMENTS.md).
+The aim is a browser reimplementation of *Pool of Radiance*, and then of the other Gold Box games on the same engine ([`multi-game.md`](multi-game.md)), built on the specification in [`spec/`](../spec/README.md). Rules and scripts stay faithful to the original. Presentation and interface are modernised, and every deliberate departure from the original goes in [`IMPROVEMENTS.md`](../IMPROVEMENTS.md).
 
 ## Requirements (agreed 2026-10-15)
 

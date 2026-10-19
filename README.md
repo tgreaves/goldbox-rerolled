@@ -1,6 +1,10 @@
 # GoldBox Rerolled
 
-A reimplementation of SSI's Gold Box engine for the web browser, starting with *Pool of Radiance* (1988, MS-DOS release), and the reverse-engineering work behind it: a specification of the game detailed enough to recreate it, plus Python tools that read the original data files. The aim is to extend the engine to the other Gold Box games (*Curse of the Azure Bonds*, *Secret of the Silver Blades*, *Pools of Darkness* and beyond).
+A reimplementation of SSI's Gold Box engine for the web browser, and the reverse-engineering work behind it: a specification of each game detailed enough to recreate it, plus Python tools that read the original data files.
+
+- ***Pool of Radiance*** (1988, MS-DOS) is playable in the browser from start to finish: exploration, combat, camp, shops, training, character creation, saves compatible with the original, the ending.
+- ***Curse of the Azure Bonds*** (1989) is being added. Its files can be imported and its assets viewed; its records, tables, scripts, saves and rules already run on the shared engine (every area's scripts run without errors), and its presentation is next. See [`docs/multi-game.md`](docs/multi-game.md).
+- The aim is one engine for every Gold Box game (*Secret of the Silver Blades*, *Pools of Darkness* and beyond), each game described by a profile of data (record layout, rules tables, script map, save layout, rules) rather than special cases in the code.
 
 The work concentrates on the split between the engine and the data that drives the adventure: maps, scripts, text, monsters, items and graphics.
 
@@ -10,6 +14,9 @@ The work concentrates on the split between the engine and the data that drives t
 - `tools/`: Python 3, standard library only.
 - [`web/`](web/README.md): the browser port (TypeScript, Vite).
 - [`docs/requirements.md`](docs/requirements.md): requirements and design for the browser port.
+- [`docs/multi-game.md`](docs/multi-game.md): how the engine supports several games, and the status of each step.
+- [`spec/coab/`](spec/coab/README.md): *Curse of the Azure Bonds*, as differences from the PoR spec; `tools/coab/`: its extractors.
+- [`CLAUDE.md`](CLAUDE.md): standing rules and method for working in the repository (data-driven first, faithful to the original, evidence marks, commits, testing).
 - [`IMPROVEMENTS.md`](IMPROVEMENTS.md): every deliberate departure from the original.
 
 The spec files use Obsidian-style `[[spec/name]]` links; they map to `spec/name.md`.
@@ -45,13 +52,14 @@ Output from `automap.py`, `gfx.py` and the interpreter contains game text and ar
 
 ## Method
 
-- Engine: `START.EXE` + `GAME.OVR` (Borland Turbo Pascal with overlays), unpacked and merged into one image, then analysed in Ghidra through REA
+- Engine: `START.EXE` + `GAME.OVR` (Borland Turbo Pascal with overlays), unpacked and merged into one image, then analysed in Ghidra through REA and with objdump; CotAB the same way, diffed against the PoR findings
 - Data formats confirmed against every shipped file (all 1,245 DAX records decode exactly)
 - Script semantics checked by running all 29 areas through `eclvm.py`; see `spec/ecl.md`, Validation
+- The browser port repeats these checks in its tests: every PoR and every CotAB area run headless from many squares, and each game's profile is tested against that game's own files
 
 ## Status
 
-Open items are listed in [`spec/open-questions.md`](spec/open-questions.md). Nothing has been compared against the running original (DOSBox) yet.
+Open items are listed in [`spec/open-questions.md`](spec/open-questions.md) and, for the multi-game work, in [`docs/multi-game.md`](docs/multi-game.md). Nothing has been compared against the running original (DOSBox) yet.
 
 ## Credits and legal
 

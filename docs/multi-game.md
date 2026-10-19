@@ -62,6 +62,9 @@ procedure differs (CotAB's hit-point rule, slot model), the profile names which 
 live side by side in `rules/`, each with the routine address it follows. A game is never a branch
 deep inside shared code (`if (coab) …`); it is a choice made in the profile.
 
+The standing rule (2026-10-19): nothing is hard-coded that can be read from the game's files or held
+as data in its profile ([`../CLAUDE.md`](../CLAUDE.md)).
+
 ## Order of work
 
 1. **Profiles and detection.** The profile type, PoR's profile (today's constants moved into it),
@@ -117,6 +120,17 @@ deep inside shared code (`if (coab) …`); it is a choice made in the profile.
    from the game folder (only the pre-made CHRDAT files are), and CotAB stays view-only until its
    rules (step 6).
 6. **CotAB rules.** Spells (100, five levels), slots, levels and caps, hit points, classes, temple Heal.
+   *Done 2026-10-19* (6a–6e), in `web/src/games/rules.ts` and tested against CotAB's START.EXE:
+   spell counts, levels and class codes (0 cleric, 1 druid, 2 magic-user, 3 item); slots looked up
+   by spell class; the slot model (PoR absolute tables, CotAB summed increments with paladin rows
+   from level 9 and ranger rows from level 8, rangers knowing every druid spell); extra attacks
+   (paladin > 6, ranger > 7); the hit-point model (best of two, fixed from DS:3EBB, the replace
+   quirk); demi-human level limits as data (CotAB's elf/half-elf magic-users and half-elf rangers);
+   300 platinum to start; base abilities kept with the current ones; the temple's services and
+   diseases read from START.EXE, with CotAB's Heal as its code does it. Classes and alignments
+   offered come from the tables, so paladins and rangers are offered in CotAB. Not yet: the paladin
+   and ranger party checks in the Add menu, thief-skill item hooks, CotAB's DAMAGE flag 0x10 and
+   random-treasure table, the casting level of druid spells (ranger level assumed, I).
 7. **CotAB presentation.** Sky and ground in the 3D view, the BIGPIC overland, title, code wheel.
 8. **Importing PoR characters**, by the game's own "Pool" import (spec/coab/records.md), with its
    STR bug fixed and logged.
