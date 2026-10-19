@@ -5,6 +5,7 @@ import type { CharFields } from './fields'
 import type { TableMap } from './tables'
 import type { EclMap } from './ecl'
 import type { SaveFiles } from './files'
+import type { GameRules } from './rules'
 
 export interface GameProfile {
   id: 'por' | 'coab'
@@ -31,6 +32,8 @@ export interface GameProfile {
   ecl: EclMap
   /** character and save files */
   saves: SaveFiles
+  /** rules that differ between games */
+  rules: GameRules
   /** false while the port can show the game's assets but not yet play it */
   playable: boolean
 }

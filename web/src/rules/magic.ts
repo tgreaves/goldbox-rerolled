@@ -1,4 +1,5 @@
 // Casting outside combat (spec/spells.md, "Casting outside combat" and "Spell effects").
+import { castingClass } from '../games/rules'
 import type { Engine } from '../vm/engine'
 import type { Spell } from '../data/spells'
 import { recalc } from './equip'
@@ -23,10 +24,11 @@ export const SPELL_MSG: Record<number, string> = {
   57: 'is Speedy', 67: 'is Reading',
 }
 
-/** Caster level (FUN_10ba_26c2): cleric level, magic-user level, 12 for item-only spells; 6 from an item. */
+/** Caster level (FUN_10ba_26c2): the casting class's level, 12 for item-only spells; 6 from an item. */
 export function casterLevel(c: Uint8Array, s: Spell, fromItem = false): number {
-  if (fromItem && s.cls <= 1) return 6
-  return s.cls === 0 ? c[F.levels] : s.cls === 1 ? c[F.levels + 5] : 12
+  const k = castingClass(s.cls)
+  if (fromItem && k >= 0) return 6
+  return k >= 0 ? c[F.levels + k] : 12
 }
 
 /** Duration in minutes (FUN_4e53_07d6). */

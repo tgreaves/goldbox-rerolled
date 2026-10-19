@@ -1,4 +1,5 @@
 // Camp screens (spec/camp.md): Encamp menu, Magic, Rest, Alter.
+import { R, slots, bookSpell, casterClasses } from '../games/rules'
 import { game } from '../games/profile'
 import { F } from '../games/fields'
 import { spellText } from '../rules/spelltext'
@@ -119,12 +120,14 @@ async function memorize(ui: CampUi) {
   }
   let picked = false
   for (;;) {
-    const row = (cls: number) => [1, 2, 3].map((l) => (c[F.clericSlots + cls * F.slotLevels + l - 1] ? String(freeSlots(c, cls, l, st)) : '-')).join(' ')
-    const hasCleric = [1, 2, 3].some((l) => c[F.clericSlots + l - 1]), hasMU = [1, 2, 3].some((l) => c[F.muSlots + l - 1])
-    if (!hasCleric && !hasMU) { ui.print(`${nameOf(c)} cannot memorize any spells`, false); return }
-    ui.print(`${nameOf(c)} can memorize:${hasCleric ? `  Cleric Spells: ${row(0)}` : ''}${hasMU ? `  Magic-User Spells: ${row(1)}` : ''}`, true)
-    const book: Spell[] = st.spells.filter((s) => s.id <= 55 && knows(c, s.id))
-    const i = await ui.menu([...book.map((s) => `${s.name.toUpperCase()} (${s.cls ? 'MU' : 'CL'} ${s.level})`), 'EXIT'], { prompt: 'Spells in Spell Book:', vertical: true, notes: book.map(spellText) })
+    const levels = Array.from({ length: R.spells.levels }, (_, i) => i + 1)
+    const row = (cls: number) => levels.map((l) => (slots(c, cls, l) ? String(freeSlots(c, cls, l, st)) : '-')).join(' ')
+    const has = casterClasses().filter((k) => levels.some((l) => slots(c, k.cls, l)))
+    if (!has.length) { ui.print(`${nameOf(c)} cannot memorize any spells`, false); return }
+    ui.print(`${nameOf(c)} can memorize:${has.map((k) => `  ${k.name} Spells: ${row(k.cls)}`).join('')}`, true)
+    const book: Spell[] = st.spells.filter((s) => bookSpell(s) && knows(c, s.id))
+    const short = (cls: number) => casterClasses().find((k) => k.cls === cls)?.short ?? ''
+    const i = await ui.menu([...book.map((s) => `${s.name.toUpperCase()} (${short(s.cls)} ${s.level})`), 'EXIT'], { prompt: 'Spells in Spell Book:', vertical: true, notes: book.map(spellText) })
     if (i >= book.length) break
     if (memorise(c, book[i], st)) picked = true
   }
@@ -154,7 +157,7 @@ async function scribe(ui: CampUi) {
     const x = entries[i], s = st.get(x.id)!
     if (knows(c, x.id)) ui.print('You already know that spell', false)
     else if (entries.some((y) => y.mark && y.id === x.id)) ui.print('You are already scibing that spell', false)
-    else if (!c[F.clericSlots + s.cls * F.slotLevels + s.level - 1]) ui.print('You can not scribe that spell.', false)
+    else if (!slots(c, s.cls, s.level)) ui.print('You can not scribe that spell.', false)
     else x.it.raw[0x3c + x.j] |= 0x80
   }
   if (marked().length) {

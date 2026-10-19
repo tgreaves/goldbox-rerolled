@@ -1,5 +1,6 @@
 // The Rules reference (IMP-058): what the printed rule book and journal told players, in short, for
 // the game as the port runs it (spec/). Opened from ☰.
+import { R, bookSpell, casterClasses } from '../games/rules'
 import type { SpellTables } from '../data/spells'
 import { spellText } from '../rules/spelltext'
 import { onClose } from './sheet'
@@ -60,8 +61,8 @@ export function rulesReference(dialog: HTMLDialogElement, spells: SpellTables | 
     else if (tab === 'combat') body = dl(COMBAT)
     else if (tab === 'keys') body = dl(KEYS)
     else if (spells) {
-      for (const [cls, title] of [[0, 'Cleric'], [1, 'Magic-User']] as const) for (const lvl of [1, 2, 3]) {
-        const list = spells.spells.filter((s) => s.id <= 55 && s.cls === cls && s.level === lvl)
+      for (const { cls, name: title } of casterClasses()) for (let lvl = 1; lvl <= R.spells.levels; lvl++) {
+        const list = spells.spells.filter((s) => bookSpell(s) && s.cls === cls && s.level === lvl)
         if (!list.length) continue
         body += `<h3>${title} level ${lvl}</h3>${dl(list.map((s) => [s.name, spellText(s)]))}`
       }

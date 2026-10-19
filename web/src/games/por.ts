@@ -4,6 +4,7 @@ import { POR_FIELDS } from './fields'
 import { POR_TABLES } from './tables'
 import { POR_ECL } from './ecl'
 import { POR_FILES } from './files'
+import { POR_RULES } from './rules'
 
 export const POR: GameProfile = {
   id: 'por',
@@ -24,5 +25,6 @@ export const POR: GameProfile = {
   tables: POR_TABLES,
   ecl: POR_ECL,
   saves: POR_FILES,
+  rules: POR_RULES,
   playable: true,
 }

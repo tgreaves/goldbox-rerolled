@@ -1,4 +1,5 @@
 // Camp, rest, memorisation, scribing and the game clock (spec/camp.md).
+import { R, slots } from '../games/rules'
 import type { Engine } from '../vm/engine'
 import type { Item, ItemTables } from '../data/items'
 import type { Spell, SpellTables } from '../data/spells'
@@ -61,16 +62,16 @@ export function clockText(e: Engine): string {
 export const memorised = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k])
 export const knows = (c: Uint8Array, id: number) => c[F.known + id] !== 0
 
-/** Free slots of a class (0 cleric, 1 MU) and level: char[0xB1 + class·3 + level] − memorised (ready or pending). */
+/** Free slots of a spell class and level: the class's slots at that level − memorised (ready or pending). */
 export function freeSlots(c: Uint8Array, cls: number, level: number, st: SpellTables): number {
-  if (level < 1 || level > F.slotLevels) return 0
+  if (level < 1 || level > R.spells.levels) return 0
   let used = 0
   for (const v of memorised(c)) {
     if (!v) continue
     const s = st.get(v)
     if (s && s.cls === cls && s.level === level) used++
   }
-  return c[F.clericSlots + cls * F.slotLevels + level - 1] - used
+  return slots(c, cls, level) - used
 }
 
 /** Memorise: store id + 0x80 in the first empty slot and sort by id (FUN_3f81_0824). */

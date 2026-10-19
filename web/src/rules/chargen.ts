@@ -2,6 +2,7 @@
 // Tables are read at runtime from the data segment of the player's START.EXE; nothing from the
 // game is embedded here. Behaviour, including the original's quirks, follows spec/chargen.md.
 
+import { R } from '../games/rules'
 import { T } from '../games/tables'
 import { F } from '../games/fields'
 
@@ -136,7 +137,7 @@ export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
     classes++
     if (k === 0) {
       wisdomBonus(c)
-      for (let id = 1; id <= 0x38; id++) if (t.b(T.spellRecords.at + id * T.spellRecords.row) === 0 && t.b(T.spellRecords.at + id * T.spellRecords.row + 1) === 1) c[F.known + id] = 1
+      for (let id = 1; id <= R.spells.named; id++) if (t.b(T.spellRecords.at + id * T.spellRecords.row) === R.spells.cleric && t.b(T.spellRecords.at + id * T.spellRecords.row + 1) === 1) c[F.known + id] = 1
     } else if (k === 5) {
       c[F.known + 11] = c[F.known + 18] = c[F.known + 19] = c[F.known + 21] = 1 // Detect Magic, Read Magic, Shield, Sleep
     }

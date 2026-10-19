@@ -5,6 +5,7 @@ import { COAB } from './coab'
 import type { GameProfile } from './types'
 import { useFields } from './fields'
 import { useTables } from './tables'
+import { useRules } from './rules'
 
 export type { GameProfile } from './types'
 export { POR, COAB }
@@ -36,6 +37,7 @@ export function setGame(g: GameProfile) {
   active = g
   useFields(g.fields)
   useTables(g.tables)
+  useRules(g.rules)
   try { localStorage.setItem(LAST_KEY, g.id) } catch { /* this page only */ }
 }
 

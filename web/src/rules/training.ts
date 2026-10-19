@@ -1,4 +1,5 @@
 // Training (spec/progression.md, FUN_417f_29ae) and the derived statistics after a level (FUN_51cf_0000).
+import { R, slots } from '../games/rules'
 import { T } from '../games/tables'
 import { conBonus, saves, thiefSkills, wisdomBonus, type Rng, type Tables } from './chargen'
 import { CLASSES } from '../data/character'
@@ -163,9 +164,9 @@ export function derive(t: Tables, c: Uint8Array) {
     wisdomBonus(c)
   }
   if (c[F.levels] > 0) {
-    for (let id = 1; id <= 0x38; id++) {
+    for (let id = 1; id <= R.spells.named; id++) {
       const cls = t.b(T.spellRecords.at + id * T.spellRecords.row), lvl = t.b(T.spellRecords.at + id * T.spellRecords.row + 1)
-      if (cls === 0 && lvl >= 1 && lvl <= 3 && c[F.clericSlots + lvl - 1] > 0) c[F.known + id] = 1
+      if (cls === R.spells.cleric && slots(c, cls, lvl) > 0) c[F.known + id] = 1
     }
   }
   if (c[F.levels + 5] >= 2) for (let n = 1; n <= F.slotLevels; n++) c[F.muSlots + n - 1] = t.b(T.muSlots.at + c[F.levels + 5] * T.muSlots.row + n)
@@ -176,10 +177,10 @@ export function derive(t: Tables, c: Uint8Array) {
 /** Spells a new magic-user level may pick from: unknown spells whose class and level have a slot. */
 export function newSpellChoices(t: Tables, c: Uint8Array): number[] {
   const out: number[] = []
-  for (let id = 1; id <= 56; id++) {
+  for (let id = 1; id <= R.spells.named; id++) {
     const cls = t.b(T.spellRecords.at + id * T.spellRecords.row), lvl = t.b(T.spellRecords.at + id * T.spellRecords.row + 1)
-    if (c[F.known + id] || lvl < 1 || lvl > 3) continue
-    if (c[F.clericSlots + cls * F.slotLevels + lvl - 1] > 0) out.push(id)
+    if (c[F.known + id]) continue
+    if (slots(c, cls, lvl) > 0) out.push(id)
   }
   return out
 }

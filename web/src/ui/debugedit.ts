@@ -1,6 +1,7 @@
 // Debug character editor (IMP-025): change a party member's record directly. Not part of the game.
 // After a change the derived statistics are worked out again with the original rules
 // (FUN_51cf_0000 and the item recalculation), so THAC0, saves, spell slots and AC follow.
+import { R, bookSpell } from '../games/rules'
 import type { Engine } from '../vm/engine'
 import { ALIGNMENTS, CLASSES, MONEY, STATUS } from '../data/character'
 import { Item } from '../data/items'
@@ -110,7 +111,7 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
           break
         case 'learn': {
           const st = e.spells
-          if (st) for (const s of st.spells) if (s.cls === 1 && s.id <= 55) c[F.known + s.id] = 1
+          if (st) for (const s of st.spells) if (s.cls === R.spells.magicUser && bookSpell(s)) c[F.known + s.id] = 1
           finish(c, `${nameOf(c)} knows every magic-user spell.`)
           break
         }

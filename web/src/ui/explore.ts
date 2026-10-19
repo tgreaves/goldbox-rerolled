@@ -1,6 +1,7 @@
 // Exploration screen in the original's arrangement (spec/architecture.md, spec/graphics.md
 // "Screen layout"): 3D view top left, party roster to its right, text window below,
 // command line at the bottom. Area scripts run through the ECL engine (src/vm/engine.ts).
+import { R, slots, bookSpell, casterClasses } from '../games/rules'
 import { game } from '../games/profile'
 import { F } from '../games/fields'
 import type { GameFiles } from '../store/gamefiles'
@@ -915,23 +916,23 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   function memorizePanel(): Promise<void> {
     const st = engine.spells!, t = engine.items!
     let message = ''
-    const slotLevels = Array.from({ length: F.slotLevels }, (_, i) => i + 1)
+    const slotLevels = Array.from({ length: R.spells.levels }, (_, i) => i + 1)
     const sortSlots = (c: Uint8Array) => memorised(c).sort((a, b) => (a & 0x7f) - (b & 0x7f)).forEach((v, i) => { c[F.memorised + i] = v })
     return new Promise((resolve) => {
       const render = () => {
         const c = engine.cur, name = parseCharacter(c).name
-        const casters = engine.party().filter((m) => m[F.status] === 0 && slotLevels.some((l) => m[F.clericSlots + l - 1] || m[F.muSlots + l - 1]))
+        const casters = engine.party().filter((m) => m[F.status] === 0 && slotLevels.some((l) => casterClasses().some((k) => slots(m, k.cls, l))))
         const groups: string[] = []
-        for (const cls of [0, 1]) {
-          if (!slotLevels.some((l) => c[(cls ? F.muSlots : F.clericSlots) + l - 1])) continue
-          const levels = slotLevels.filter((l) => c[(cls ? F.muSlots : F.clericSlots) + l - 1]).map((l) => {
-            const total = c[(cls ? F.muSlots : F.clericSlots) + l - 1]
+        for (const { cls } of casterClasses()) {
+          if (!slotLevels.some((l) => slots(c, cls, l))) continue
+          const levels = slotLevels.filter((l) => slots(c, cls, l)).map((l) => {
+            const total = slots(c, cls, l)
             const inSlots = memorised(c).map((v, k) => ({ v, k })).filter(({ v }) => v && st.get(v & 0x7f)?.cls === cls && st.get(v & 0x7f)?.level === l)
             const chips = inSlots.map(({ v, k }) => v >= 0x80
               ? `<button class="spell pending" data-clear="${k}" title="Pending: tap to clear">${escape(st.get(v & 0x7f)!.name)} ✕</button>`
               : `<span class="spell ready">${escape(st.get(v)!.name)}</span>`).join('')
             const empty = Array.from({ length: Math.max(0, total - inSlots.length) }, () => '<span class="spell empty">empty</span>').join('')
-            const book = st.spells.filter((s) => s.id <= 55 && s.cls === cls && s.level === l && knows(c, s.id))
+            const book = st.spells.filter((s) => bookSpell(s) && s.cls === cls && s.level === l && knows(c, s.id))
             const free = freeSlots(c, cls, l, st)
             return `<div class="mem-level"><h4>Level ${l} <span class="muted">${total - free} of ${total} slots</span></h4>
               <div class="mem-slots">${chips}${empty}</div>
