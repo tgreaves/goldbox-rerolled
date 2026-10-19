@@ -1,6 +1,8 @@
 // Shop, temple and treasure screens (spec/town.md), run when a script's COMBAT finds the shop or
 // temple flag set, or treasure without monsters. They use the exploration screen's menus and text.
 import { game } from '../games/profile'
+import { R } from '../games/rules'
+import { T } from '../games/tables'
 import type { Engine } from '../vm/engine'
 import { parseCharacter } from '../data/character'
 import { F } from '../games/fields'
@@ -136,18 +138,20 @@ export async function shop(ui: TownUi) {
   }
 }
 
-/** Temple services (DS:011A): name, price, condition, effect. */
-const SERVICES: { name: string; gp: number }[] = [
-  { name: 'Cure Blindness', gp: 1000 }, { name: 'Cure Disease', gp: 1000 }, { name: 'Cure Light Wounds', gp: 100 },
-  { name: 'Cure Serious Wounds', gp: 350 }, { name: 'Cure Critical Wounds', gp: 600 }, { name: 'Neutralize Poison', gp: 1000 },
-  { name: 'Raise Dead', gp: 5500 }, { name: 'Remove Curse', gp: 3500 }, { name: 'Stone to Flesh', gp: 2000 },
-]
-const DISEASES = [31, 34, 43, 44, 50, 57]
+/** Temple services: names from the game's table (T.templeNames), kinds and prices from its rules. */
+function services(img: Uint8Array) {
+  return R.temple.map((x, i) => {
+    const o = T.ds + T.templeNames.at + i * T.templeNames.row
+    return { ...x, name: String.fromCharCode(...img.subarray(o + 1, o + 1 + img[o])) }
+  })
+}
+/** the disease effect types (T.diseases, entries 1–6) */
+const diseases = (img: Uint8Array) => Array.from({ length: 6 }, (_, i) => img[T.ds + T.diseases.at + 1 + i])
 
 /** Temple (FUN_2d14_0d09). */
 export async function temple(ui: TownUi) {
   const e = ui.engine, t = e.items
-  if (!t) { ui.print(`The temple needs the ITEMS file and START.EXE: re-import the ${game().folder} folder.`, false); return }
+  if (!t || !e.startImage) { ui.print(`The temple needs the ITEMS file and START.EXE: re-import the ${game().folder} folder.`, false); return }
   e.money = [0, 0, 0, 0, 0, 0, 0]
   for (;;) {
     const has = e.money.some((v) => v > 0)
@@ -169,40 +173,47 @@ export async function temple(ui: TownUi) {
   }
 }
 
-/** Heal (FUN_2d14_09d7): the nine services for the current character. */
+/** Heal (FUN_2d14_09d7): the game's services (PoR nine, CotAB ten) for the current character. */
 async function heal(ui: TownUi) {
   const e = ui.engine, t = e.items!
   const { c, items, name } = cur(e)
   const fx = e.effectsOf(c)
   const has = (types: number[]) => fx.some((f) => types.includes(f.type))
   const remove = (types: number[]) => { for (let i = fx.length - 1; i >= 0; i--) if (types.includes(fx[i].type)) fx.splice(i, 1) }
-  const i = await ui.menu([...SERVICES.map((s) => s.name.toUpperCase()), 'EXIT'], { prompt: `Healing for ${name}:`, vertical: true })
-  if (i >= SERVICES.length) return
-  const s = SERVICES[i]
+  const list = services(e.startImage!), DISEASES = diseases(e.startImage!)
+  const i = await ui.menu([...list.map((x) => x.name.toUpperCase()), 'EXIT'], { prompt: `Healing for ${name}:`, vertical: true })
+  if (i >= list.length) return
+  const s = list[i], kind = s.kind
   const status = c[F.status]
-  const reason = [
-    has([33]) ? '' : 'is not blind.',
-    has(DISEASES) ? '' : 'is not Diseased.',
-    '', '', '',
-    has([55]) ? '' : 'is not poisoned.',
-    status === 6 || status === 1 ? '' : 'is not dead.',
-    items.some((x) => x.cursed) || has([36]) ? '' : 'is not cursed.',
-    status === 7 ? '' : 'is not stoned.',
-  ][i]
+  const reason = {
+    blind: has([33]) ? '' : 'is not blind.',
+    disease: has(DISEASES) ? '' : 'is not Diseased.',
+    clw: '', csw: '', ccw: '', heal: '',
+    poison: has([55]) ? '' : 'is not poisoned.',
+    raise: status === 6 || status === 1 ? '' : 'is not dead.',
+    curse: items.some((x) => x.cursed) || has([36]) ? '' : 'is not cursed.',
+    stone: status === 7 ? '' : 'is not stoned.',
+  }[kind]
   if (reason && !await yes(ui, `${name} ${reason} cast cure anyway:`)) return
   if (!await yes(ui, `${s.name} will only cost ${s.gp} gold pieces. pay for cure?`)) return
   if (!pay(c, e.money, s.gp, t, items)) { ui.print('Not enough money.', false); return }
   const hp = (n: number) => { c[F.hp] = Math.min(c[F.maxHp], c[F.hp] + n) }
-  switch (i) {
-    case 0: remove([33]); break
-    case 1: remove(DISEASES); break
-    case 2: if (!reason) hp(e.roll(1, 8)); break
-    case 3: hp(e.roll(2, 8) + 1); break
-    case 4: hp(e.roll(3, 8) + 3); break
-    case 5: remove([55, 22, 15]); break
-    case 6: if (!reason) raiseDead(e, c); break
-    case 7: remove([36]); for (const x of items) x.raw[0x36] = 0; break
-    case 8: if (!reason) { c[F.status] = 0; c[F.hp] = 1 } break
+  switch (kind) {
+    case 'blind': remove([33]); break
+    case 'disease': remove(DISEASES); break
+    case 'clw': if (!reason) hp(e.roll(1, 8)); break
+    case 'csw': hp(e.roll(2, 8) + 1); break
+    case 'ccw': hp(e.roll(3, 8) + 3); break
+    case 'heal': // CotAB (image 0x1CBF6): all but 1d4 hit points; blindness, the diseases, ghoul paralysis go;
+      // INT and WIS are worked out again from the base values (feeblemind; I: items and effects not re-added)
+      hp(Math.max(0, c[F.maxHp] - c[F.hp] - e.roll(1, 4)))
+      remove([33, ...DISEASES, 68])
+      c[F.stat[1]] = c[F.baseStat[1]]; c[F.stat[2]] = c[F.baseStat[2]]
+      break
+    case 'poison': remove([55, 22, 15]); break
+    case 'raise': if (!reason) raiseDead(e, c); break
+    case 'curse': remove([36]); for (const x of items) x.raw[0x36] = 0; break
+    case 'stone': if (!reason) { c[F.status] = 0; c[F.hp] = 1 } break
   }
   recalc(c, items, t)
   ui.print(`${name} is cured.`, false)

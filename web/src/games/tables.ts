@@ -26,6 +26,10 @@ export interface TableMap {
   npcBodiesFighter: TableRef
   npcBodiesMagicUser: TableRef
   npcBodiesThief: TableRef
+  /** temple service names, Pascal strings in menu order (the last is Exit) */
+  templeNames: TableRef
+  /** the disease effect types, entries 1–6 */
+  diseases: TableRef
   /** random-item records: u16 words, record m from word m */
   randomItems: TableRef
   /** sky colours, 16 bytes */
@@ -86,7 +90,7 @@ export const POR_TABLES: TableMap = {
   ds: 0xc7c0,
   classBits: t(0x05d6), trainerBits: t(0x05de), hitDiceCount: t(0x08b6), hitDiceSides: t(0x08be), hitDiceStop: absent,
   npcHeads: t(0x08c7), npcBodiesCleric: t(0x08d7), npcBodiesFighter: t(0x08e1), npcBodiesMagicUser: t(0x08eb), npcBodiesThief: t(0x08f5),
-  randomItems: t(0x0970), sky: t(0x0c26), itemWords: t(0x10bc, 21), wallDx: t(0x2736), wallDy: t(0x273f),
+  templeNames: t(0x011a, 41), diseases: t(0x0113), randomItems: t(0x0970), sky: t(0x0c26), itemWords: t(0x10bc, 21), wallDx: t(0x2736), wallDy: t(0x273f),
   battleCells: t(0x2744, 4), headRecords: t(0x286f), bodyRecords: t(0x287d), spellNames: t(0x2912, 41), spellRecords: t(0x31fa, 16),
   overlandMap: t(0x3648), overlandSpecials: t(0x0c36, 6), overlandColumns: t(0x3c76),
   thac0: t(0x3c7c, 11), thiefBase: t(0x3cf3, 8), thiefRace: t(0x3d3b, 8), thiefDex: t(0x3d4e, 5), raceLimits: t(0x3da3, 16),
@@ -99,7 +103,7 @@ export const COAB_TABLES: TableMap = {
   ds: 0xabe0,
   classBits: t(0x3ea2), trainerBits: t(0x3eaa), hitDiceCount: t(0x081a), hitDiceSides: t(0x0822), hitDiceStop: t(0x3ebb),
   npcHeads: absent, npcBodiesCleric: absent, npcBodiesFighter: absent, npcBodiesMagicUser: absent, npcBodiesThief: absent,
-  randomItems: t(0x082e), sky: t(0x0a8a), itemWords: t(0x1057, 21), wallDx: t(0x2696), wallDy: t(0x269f),
+  templeNames: t(0x00e6, 41), diseases: t(0x00df), randomItems: t(0x082e), sky: t(0x0a8a), itemWords: t(0x1057, 21), wallDx: t(0x2696), wallDy: t(0x269f),
   battleCells: t(0x26a4, 4), headRecords: absent, bodyRecords: absent, spellNames: t(0x27e8, 41), spellRecords: t(0x37dc, 16),
   overlandMap: absent, overlandSpecials: absent, overlandColumns: absent,
   thac0: t(0x3e3a, 13), thiefBase: t(0x3ec0, 8), thiefRace: t(0x3f20, 8), thiefDex: t(0x3f33, 5), raceLimits: t(0x3f88, 16),

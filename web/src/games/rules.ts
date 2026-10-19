@@ -35,7 +35,12 @@ export interface GameRules {
   /** starting money: PoR's gold dice × 10 shared over the classes, or CotAB's 300 platinum (the
    *  dice are still rolled, and the sum dropped) */
   startMoney: 'gold' | 'platinum300'
+  /** the temple's healing services in the order of the game's name table (T.templeNames), with
+   *  their prices (immediates in the game's code, not a table) */
+  temple: { kind: TempleService; gp: number }[]
 }
+
+export type TempleService = 'blind' | 'disease' | 'clw' | 'csw' | 'ccw' | 'heal' | 'poison' | 'raise' | 'curse' | 'stone'
 
 export const POR_RULES: GameRules = {
   spells: { records: 67, named: 56, book: 55, levels: 3, cleric: 0, druid: -1, magicUser: 1, item: 2 },
@@ -50,6 +55,8 @@ export const POR_RULES: GameRules = {
     { race: 5, cls: 2, by: 0, limits: [4, 5, 6] }, { race: 4, cls: 0, by: 0, limits: [5, 5, 5] },
   ],
   startMoney: 'gold',
+  temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
+    { kind: 'ccw', gp: 600 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 }, { kind: 'curse', gp: 3500 }, { kind: 'stone', gp: 2000 }],
 }
 
 export const COAB_RULES: GameRules = {
@@ -69,6 +76,10 @@ export const COAB_RULES: GameRules = {
     { race: 4, cls: 5, by: 1, limits: [6, 7, 8] },
   ],
   startMoney: 'platinum300',
+  // DS:00E6: Heal added after Cure Critical Wounds (§3.11)
+  temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
+    { kind: 'ccw', gp: 600 }, { kind: 'heal', gp: 5000 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 },
+    { kind: 'curse', gp: 3500 }, { kind: 'stone', gp: 2000 }],
 }
 
 /** The active game's rules; start-up (setGame) switches them. */
