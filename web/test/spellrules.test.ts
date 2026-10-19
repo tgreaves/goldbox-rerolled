@@ -5,6 +5,10 @@ import { join } from 'node:path'
 import { SpellTables } from '../src/data/spells'
 import { COAB, POR, setGame } from '../src/games/profile'
 import { R, bookSpell, casterClasses } from '../src/games/rules'
+import { F } from '../src/games/fields'
+import { unexepack } from '../src/data/exepack'
+import { Tables } from '../src/rules/chargen'
+import { derive } from '../src/rules/training'
 
 const tables = (dir: string) => SpellTables.load(new Uint8Array(readFileSync(join(dir, 'START.EXE'))))!
 const count = (st: SpellTables, cls: number) => Array.from({ length: R.spells.levels }, (_, l) => st.spells.filter((s) => bookSpell(s) && s.cls === cls && s.level === l + 1).length)
@@ -33,5 +37,27 @@ describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds spell book
     expect(count(st, R.spells.magicUser)).toEqual([13, 7, 11, 10, 4])
     expect(bookSpell(st.get(36)!)).toBe(false) // Animate Dead: item/monster only in CotAB
     expect(casterClasses().map((k) => k.name)).toEqual(['Cleric', 'Druid', 'Magic-User'])
+  })
+
+  it('sums slot increments by class and level (§3.5), with paladin and ranger rows', () => {
+    setGame(COAB)
+    const t = new Tables(unexepack(new Uint8Array(readFileSync(join(coab, 'START.EXE')))).image)
+    const at = (k: number, L: number) => {
+      const c = new Uint8Array(F.size)
+      c[F.levels + k] = L
+      c[F.stat[2]] = 10 // no WIS bonus
+      derive(t, c)
+      return { cl: [...c.subarray(F.clericSlots, F.clericSlots + 5)], dr: [...c.subarray(F.druidSlots, F.druidSlots + 5)], mu: [...c.subarray(F.muSlots, F.muSlots + 5)], att: c[F.attacksBase] }
+    }
+    expect(at(0, 5).cl).toEqual([3, 3, 1, 0, 0])
+    expect(at(0, 9).cl).toEqual([4, 4, 3, 2, 1])
+    expect(at(5, 5).mu).toEqual([4, 2, 1, 0, 0])
+    expect(at(5, 11).mu).toEqual([4, 4, 4, 3, 3])
+    expect(at(3, 8).cl).toEqual([0, 0, 0, 0, 0])
+    expect(at(3, 9).cl.slice(0, 2)).toEqual([1, 0])
+    expect(at(3, 11).cl.slice(0, 2)).toEqual([2, 1])
+    expect([at(4, 8).dr[0], at(4, 8).mu[0]]).toEqual([1, 0])
+    expect([at(4, 11).dr[0], at(4, 11).mu[0]]).toEqual([2, 2])
+    expect([at(2, 7).att, at(3, 7).att, at(4, 7).att, at(4, 8).att]).toEqual([3, 3, 2, 3]) // fighter/paladin > 6, ranger > 7
   })
 })

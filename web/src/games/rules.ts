@@ -19,21 +19,31 @@ export interface SpellRules {
 
 export interface GameRules {
   spells: SpellRules
+  /** how spell slots are worked out: absolute per-level tables (PoR FUN_51cf_0000) or summed
+   *  increments with paladin and ranger rows (CotAB FUN 0x50480, spec/coab/tables.md §3.5) */
+  slotModel: 'absolute' | 'increments'
+  /** base class → the level above which it gets 3 attacks per 2 rounds */
+  extraAttacks: Record<number, number>
 }
 
 export const POR_RULES: GameRules = {
   spells: { records: 67, named: 56, book: 55, levels: 3, cleric: 0, druid: -1, magicUser: 1, item: 2 },
+  slotModel: 'absolute',
+  extraAttacks: { 2: 6 },
 }
 
 export const COAB_RULES: GameRules = {
   // 100 spells, five levels; class byte 0 cleric, 1 druid, 2 magic-user, 3 item/monster (§3.7)
   spells: { records: 100, named: 100, book: 100, levels: 5, cleric: 0, druid: 1, magicUser: 2, item: 3 },
+  slotModel: 'increments',
+  extraAttacks: { 2: 6, 3: 6, 4: 7 }, // fighter > 6, paladin > 6, ranger > 7 (§3.3)
 }
 
 /** The active game's rules; start-up (setGame) switches them. */
-export const R: GameRules = { spells: { ...POR_RULES.spells } }
+export const R: GameRules = { ...POR_RULES, spells: { ...POR_RULES.spells } }
 
 export function useRules(r: GameRules) {
+  Object.assign(R, { ...r, spells: R.spells })
   Object.assign(R.spells, r.spells)
 }
 

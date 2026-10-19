@@ -158,20 +158,52 @@ export function derive(t: Tables, c: Uint8Array) {
   }
   c[F.thac0Base] = thac
   c[F.hitDice] = high
-  c[F.attacksBase] = c[F.levels + 2] >= 7 ? 3 : 2
+  c[F.attacksBase] = Object.entries(R.extraAttacks).some(([k, above]) => c[F.levels + Number(k)] > above) ? 3 : 2
+  if (R.slotModel === 'absolute') absoluteSlots(t, c)
+  else incrementSlots(t, c)
+  saves(t, c)
+  if (c[F.levels + 6]) thiefSkills(t, c)
+}
+
+/** PoR (FUN_51cf_0000): cleric and magic-user slots from level 2 straight from the tables; WIS bonus; clerics know every cleric spell with a slot. */
+function absoluteSlots(t: Tables, c: Uint8Array) {
   if (c[F.levels] >= 2) {
     for (let n = 1; n <= F.slotLevels; n++) c[F.clericSlots + n - 1] = t.b(T.clericSlots.at + c[F.levels] * T.clericSlots.row + n)
     wisdomBonus(c)
   }
-  if (c[F.levels] > 0) {
-    for (let id = 1; id <= R.spells.named; id++) {
-      const cls = t.b(T.spellRecords.at + id * T.spellRecords.row), lvl = t.b(T.spellRecords.at + id * T.spellRecords.row + 1)
-      if (cls === R.spells.cleric && slots(c, cls, lvl) > 0) c[F.known + id] = 1
-    }
-  }
+  if (c[F.levels] > 0) learnWithSlots(t, c, R.spells.cleric)
   if (c[F.levels + 5] >= 2) for (let n = 1; n <= F.slotLevels; n++) c[F.muSlots + n - 1] = t.b(T.muSlots.at + c[F.levels + 5] * T.muSlots.row + n)
-  saves(t, c)
-  if (c[F.levels + 6]) thiefSkills(t, c)
+}
+
+/**
+ * CotAB (FUN 0x50480, spec/coab/tables.md §3.5): every slot from zero, summing per-level increments.
+ * Cleric and magic-user: 1 first-level slot, then levels 2.. of their rows. Paladin: levels 9.. of
+ * its row into the cleric slots. Ranger: levels 8.. of its row, columns 1–3 into druid slots and 4–5
+ * into magic-user levels 1–2. Then the WIS bonus (I: as PoR's); clerics and paladins know the cleric
+ * spells they have slots for, rangers every druid spell.
+ */
+function incrementSlots(t: Tables, c: Uint8Array) {
+  const n = 5
+  for (let i = 0; i < 3 * n; i++) c[F.clericSlots + i] = 0
+  const add = (table: { at: number; row: number }, from: number, level: number, put: (col: number, v: number) => void) => {
+    for (let L = from; L <= level; L++) for (let col = 1; col <= n; col++) put(col, t.b(table.at + L * table.row + col))
+  }
+  const cl = c[F.levels], pal = c[F.levels + 3], rng = c[F.levels + 4], mu = c[F.levels + 5]
+  if (cl > 0) { c[F.clericSlots]++; add(T.clericSlots, 2, cl, (col, v) => (c[F.clericSlots + col - 1] += v)) }
+  if (pal > 0) add(T.paladinSlots, 9, pal, (col, v) => (c[F.clericSlots + col - 1] += v))
+  if (rng > 0) add(T.rangerSlots, 8, rng, (col, v) => (col <= 3 ? (c[F.druidSlots + col - 1] += v) : (c[F.muSlots + col - 4] += v)))
+  if (mu > 0) { c[F.muSlots]++; add(T.muSlots, 2, mu, (col, v) => (c[F.muSlots + col - 1] += v)) }
+  wisdomBonus(c)
+  if (cl > 0 || pal > 0) learnWithSlots(t, c, R.spells.cleric)
+  if (rng > 0) for (let id = 1; id <= R.spells.named; id++) if (t.b(T.spellRecords.at + id * T.spellRecords.row) === R.spells.druid) c[F.known + id] = 1
+}
+
+/** Every spell of a class whose level has a slot becomes known. */
+function learnWithSlots(t: Tables, c: Uint8Array, cls: number) {
+  for (let id = 1; id <= R.spells.named; id++) {
+    const sc = t.b(T.spellRecords.at + id * T.spellRecords.row), lvl = t.b(T.spellRecords.at + id * T.spellRecords.row + 1)
+    if (sc === cls && slots(c, cls, lvl) > 0) c[F.known + id] = 1
+  }
 }
 
 /** Spells a new magic-user level may pick from: unknown spells whose class and level have a slot. */

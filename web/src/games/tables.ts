@@ -71,6 +71,9 @@ export interface TableMap {
   /** spell slots by level (PoR: absolute; CotAB: increments), cleric and magic-user */
   clericSlots: TableRef
   muSlots: TableRef
+  /** CotAB slot increments for paladins (cleric spells) and rangers (druid, then magic-user) */
+  paladinSlots: TableRef
+  rangerSlots: TableRef
   /** starting gold dice by class: count, sides */
   startGold: TableRef
   /** saving throws by class (row), level (·5) and kind */
@@ -86,7 +89,7 @@ export const POR_TABLES: TableMap = {
   overlandMap: t(0x3648), overlandSpecials: t(0x0c36, 6), overlandColumns: t(0x3c76),
   thac0: t(0x3c7c, 11), thiefBase: t(0x3cf3, 8), thiefRace: t(0x3d3b, 8), thiefDex: t(0x3d4e, 5), raceLimits: t(0x3da3, 16),
   raceClasses: t(0x3e17, 12), startAge: t(0x3e5b, 0x1c), ageing: t(0x3f31, 10), classMins: t(0x3f81, 6), alignments: t(0x3fe7, 10),
-  conHp: t(0x408e), xp: { at: 0x409b, row: 0x38, levels: 14 }, clericSlots: t(0x40bc, 3), muSlots: t(0x41d4, 3),
+  conHp: t(0x408e), xp: { at: 0x409b, row: 0x38, levels: 14 }, clericSlots: t(0x40bc, 3), muSlots: t(0x41d4, 3), paladinSlots: absent, rangerSlots: absent,
   startGold: t(0x4263, 2), saves: t(0x426e, 0x2d),
 }
 
@@ -99,7 +102,7 @@ export const COAB_TABLES: TableMap = {
   overlandMap: absent, overlandSpecials: absent, overlandColumns: absent,
   thac0: t(0x3e3a, 13), thiefBase: t(0x3ec0, 8), thiefRace: t(0x3f20, 8), thiefDex: t(0x3f33, 5), raceLimits: t(0x3f88, 16),
   raceClasses: t(0x3ffa, 14), startAge: t(0x404e, 0x1c), ageing: t(0x4124, 10), classMins: t(0x4174, 6), alignments: t(0x41da, 10),
-  conHp: t(0x4281), xp: { at: 0x4293, row: 0x63, levels: 13 }, clericSlots: t(0x42bc, 5), muSlots: t(0x44ab, 5),
+  conHp: t(0x4281), xp: { at: 0x4293, row: 0x63, levels: 13 }, clericSlots: t(0x42bc, 5), muSlots: t(0x44ab, 5), paladinSlots: t(0x43e5, 5), rangerSlots: t(0x4448, 5),
   startGold: t(0x45b3, 2), saves: t(0x45be, 0x3c),
 }
 
