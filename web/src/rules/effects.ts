@@ -3,6 +3,8 @@
 import type { Effect } from '../data/effects'
 import { Item, ITEM_SIZE } from '../data/items'
 import { F } from '../games/fields'
+import type { Tables } from './chargen'
+import { derive, xpFor } from './training'
 
 /** What a handler can reach: the engine-wide globals and the battle helpers. */
 export interface FxHost {
@@ -34,6 +36,8 @@ export interface FxHost {
   heal(c: Uint8Array, amount: number, force: boolean): boolean
   revive(c: Uint8Array, hp: number): boolean
   recalc(c: Uint8Array): void
+  /** the rules tables from START.EXE, when the player's files include it */
+  tables?(): Tables | null
   /** enemies of c in sight within range */
   enemiesNear(c: Uint8Array, range: number): Uint8Array[]
   /** the combatant at a list index (for grab/drain victims) */
@@ -219,26 +223,62 @@ async function paralyse(h: FxHost, duration: number) {
   }
 }
 
-/** Energy drain (FUN_3723_2122). */
-function drain(h: FxHost, t: Uint8Array, n: number) {
-  if (t[F.status] === 1) { h.setStatus(t, 8, `${h.name(t)} is dead forever`); return }
+/**
+ * The class a drain takes a level from, and the experience that level starts at (FUN_3723_2002): the
+ * highest level, ties to the later class, compared by the experience the level needs (DS:409B,
+ * 0 below level 2).
+ */
+function drainPick(tb: Tables, t: Uint8Array): { best: number; xp: number } {
+  let best = 0, xp = 0, top = 0
+  for (let k = 0; k < 8; k++) {
+    const lv = (t[F.levels + k] << 24) >> 24
+    const need = lv > 1 ? xpFor(tb, k, lv) : 0
+    if (lv >= top && (need >= xp || need === 0xffffffff)) { xp = need; best = k; top = lv }
+  }
+  return { best, xp }
+}
+
+/** Energy drain of n levels (FUN_3723_2122). */
+export function drain(h: FxHost, t: Uint8Array, n: number) {
+  h.print(`${h.name(t)} is drained ${n > 1 ? `${n} levels` : 'a level'}`)
+  if (t[F.status] === 1) { h.setStatus(t, 8, `${h.name(t)} is dead forever`); t[F.maxHp] = 0; return }
+  const tb = h.tables?.()
   for (let i = 0; i < n; i++) {
+    if (t[F.status] === 8) continue
+    t[F.drainLevels]++
     let total = 0
     for (let k = 0; k < 8; k++) total += t[F.levels + k]
-    if (total <= 0) break
-    t[F.drainLevels]++
+    if (total <= 0) break // the original divides by zero here
     const loss = Math.floor(t[F.maxHp] / total)
-    t[F.drainHp] += loss
+    // IMP-067: the lost-HP counter stops at 255 instead of wrapping
+    t[F.drainHp] = Math.min(255, t[F.drainHp] + loss)
     t[F.maxHp] = Math.max(0, t[F.maxHp] - loss)
     t[F.hpRolled] = Math.max(0, t[F.hpRolled] - loss)
     t[F.hp] = Math.max(0, t[F.hp] - loss)
-    let best = 0
-    for (let k = 1; k < 8; k++) if (t[F.levels + k] > t[F.levels + best]) best = k
-    if (t[F.levels + best] <= 1) { h.setStatus(t, 8, `${h.name(t)} is drained`); return }
-    t[F.levels + best]--
-    if (t[F.hp] === 0) { h.setStatus(t, 6, `${h.name(t)} dies`); return }
+    if (!tb) { // no START.EXE: the level comes off the highest class, as before
+      let best = 0
+      for (let k = 1; k < 8; k++) if (t[F.levels + k] > t[F.levels + best]) best = k
+      if (t[F.levels + best] <= 1) { h.setStatus(t, 8, `${h.name(t)} is dead forever`); t[F.maxHp] = 0; continue }
+      t[F.levels + best]--
+      if (t[F.hp] === 0 && t[F.status] !== 6) h.setStatus(t, 6, `${h.name(t)} is killed`)
+      h.recalc(t)
+      continue
+    }
+    if (((t[F.hitDice] << 24) >> 24) < 2) {
+      h.setStatus(t, 8, `${h.name(t)} is dead forever`)
+      t[F.maxHp] = 0
+      const { best } = drainPick(tb, t)
+      if (t[F.levels + best] > 0 && n === 2) t[F.levels + best] = 0
+    } else {
+      t[F.levels + drainPick(tb, t).best]--
+      if (t[F.hp] === 0 && t[F.status] !== 6) h.setStatus(t, 6, `${h.name(t)} is killed`)
+      derive(tb, t)
+    }
+    const { best, xp } = drainPick(tb, t)
+    t[F.hitDice] = t[F.levels + best]
+    t[F.xp] = xp & 0xff; t[F.xp + 1] = (xp >> 8) & 0xff; t[F.xp + 2] = (xp >> 16) & 0xff; t[F.xp + 3] = (xp >>> 24) & 0xff
+    h.recalc(t)
   }
-  h.recalc(t)
 }
 
 /** One handler call (FUN_5216_0000). event −1 = removal (arg 1) or a direct run. */
@@ -304,7 +344,7 @@ async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event
       if (event === 11) { c[F.acRear] = Math.max(0x32, c[F.acRear] - 2); c[F.ac] = c[F.acRear] }
       break
     case 31: case 51: case 52: case 53: if (event === 7) h.endTurn(c); break
-    case 32: if (removal && !fx.noRearm) {
+    case 32: if (removal && !fx.noRearm) { // an animated body falls; sweep = fighter level, even 0, as 3723:0b7d (the next recalc sets it ≥ 1)
       h.setStatus(c, 6, `${h.name(c)} collapses`)
       c[F.side] = eff.power >> 4; c[F.quick] = 1; c[F.undead] = 0; c[F.sweep] = c[F.levels + 2]; c[F.baseMove] = 12
       if (c[F.morale] === 0xb3) c[F.morale] = 0

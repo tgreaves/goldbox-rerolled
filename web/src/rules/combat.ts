@@ -12,6 +12,7 @@ import { line, sharedSpell } from './spellfx'
 import { spellText } from './spelltext'
 import { SPELL_MSG, casterLevel, duration as spellDuration, forget } from './magic'
 import { F } from '../games/fields'
+import { Tables } from './chargen'
 
 const DX = [0, 1, 1, 1, 0, -1, -1, -1], DY = [-1, -1, 0, 1, 1, 1, 0, -1]
 
@@ -210,6 +211,7 @@ export class Battle implements FxHost {
     return true
   }
   recalc(c: Uint8Array) { if (this.e.items) recalc(c, this.e.itemsOf(c), this.e.items) }
+  tables() { return this.e.startImage ? new Tables(this.e.startImage) : null }
   enemiesNear(c: Uint8Array, range: number) { const f = this.of(c); return f ? this.enemiesWithin(f, range).map((x) => x.c) : [] }
   byIndex(i: number) { return this.fighters[i]?.c ?? null }
   indexOf(c: Uint8Array) { return this.of(c)?.index ?? 0 }
@@ -1337,6 +1339,7 @@ export class Battle implements FxHost {
         for (const t of [...targets].reverse()) {
           // 4e53_1658: sound 2 and a bolt to each target before its save, except the last-listed one (I: a bug)
           if (t !== targets[targets.length - 1]) this.ui.flight?.({ x: f.x, y: f.y }, { x: t.x, y: t.y }, { frames: cycle(5), delay: 30, sounds: [2, 0] })
+          // only man-sized or smaller: the whole size byte > 1 is immune (4e53:1760), not the two-square test large()
           const saved = t.c[F.monsterType] > 1 || t.c[F.sizeFlags] > 1 || this.saveSync(t.c, s.saveType, bonus)
           await addEffect(this, t.c, 0x34, dur, L, 0, 1, saved, false, 'is held')
         }
@@ -1345,7 +1348,7 @@ export class Battle implements FxHost {
       case 10: { // Charm Person
         const t = targets[0]
         if (!t) break
-        if (t.c[F.monsterType] > 1 || t.c[F.sizeFlags] > 1) { this.print(`${name(t.c)} is unaffected`); break }
+        if (t.c[F.monsterType] > 1 || t.c[F.sizeFlags] > 1) { this.print(`${name(t.c)} is unaffected`); break } // as Hold Person (4e53:11f3)
         await addEffect(this, t.c, 0x0b, dur, (L + this.side(f) * 128) & 0xff, 1, 1, saveOf(t), true, 'is charmed')
         break
       }

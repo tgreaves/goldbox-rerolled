@@ -5,6 +5,7 @@ import type { Engine } from '../vm/engine'
 import { damageText, fire, fx, type FxHost } from './effects'
 import { recalc } from './equip'
 import { F } from '../games/fields'
+import { Tables } from './chargen'
 
 export class WorldHost implements FxHost {
   private readonly e: Engine
@@ -66,6 +67,7 @@ export class WorldHost implements FxHost {
     return true
   }
   recalc(c: Uint8Array) { if (this.e.items) recalc(c, this.e.itemsOf(c), this.e.items) }
+  tables() { return this.e.startImage ? new Tables(this.e.startImage) : null }
   enemiesNear() { return [] }
   byIndex(i: number) { return this.e.party()[i] ?? null }
   indexOf(c: Uint8Array) { return Math.max(0, this.e.party().indexOf(c)) }

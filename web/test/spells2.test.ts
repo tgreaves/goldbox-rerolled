@@ -6,7 +6,9 @@ import { GameFiles, wanted } from '../src/store/gamefiles'
 import { Engine, type Io } from '../src/vm/engine'
 import { parseSave } from '../src/data/save'
 import { castOutside, targetKind } from '../src/rules/magic'
-import { addRaw, removeType } from '../src/rules/effects'
+import { addRaw, drain, removeType } from '../src/rules/effects'
+import { Tables } from '../src/rules/chargen'
+import { xpFor } from '../src/rules/training'
 import { WorldHost } from '../src/rules/worldfx'
 
 const dir = process.env.POOLRAD ?? ''
@@ -70,6 +72,34 @@ describe.skipIf(!have)('shared spells', () => {
     const out = await cast(43, c)
     expect(it.cursed).toBe(false)
     expect(out).toContain(`${String.fromCharCode(...c.subarray(1, 1 + c[0]))}'s item is un-cursed`)
+  })
+
+  it('energy drain takes a level, its hit points and the experience above it (FUN_3723_2122)', () => {
+    const { e, fighter: c } = setup()
+    const out: string[] = []
+    const h = new WorldHost(e, (t) => out.push(t))
+    const tb = new Tables(e.startImage!)
+    for (let k = 0; k < 8; k++) c[0x96 + k] = 0
+    c[0x98] = 3; c[0x73] = 3; c[0x32] = 30; c[0x11b] = 30; c[0x74] = 0; c[0x75] = 0
+    drain(h, c, 1)
+    expect(out.join(' ')).toContain('is drained a level')
+    expect(c[0x98]).toBe(2)
+    expect([c[0x74], c[0x75], c[0x32]]).toEqual([1, 10, 20])
+    expect(c[0x73]).toBe(2)
+    const xp = (c[0xac] | (c[0xad] << 8) | (c[0xae] << 16) | (c[0xaf] << 24)) >>> 0
+    expect(xp).toBe(xpFor(tb, 2, 2))
+  })
+
+  it('a character drained below level 2 is gone, max HP 0; two levels at once also clear the class', () => {
+    const { e, fighter: c } = setup()
+    const h = new WorldHost(e, () => {})
+    for (let k = 0; k < 8; k++) c[0x96 + k] = 0
+    c[0x98] = 1; c[0x73] = 1; c[0x10c] = 0
+    drain(h, c, 2)
+    expect(c[0x10c]).toBe(8)
+    expect(c[0x32]).toBe(0)
+    expect(c[0x98]).toBe(0)
+    expect(c[0x74]).toBe(1) // the second level is skipped once gone
   })
 
   it('Restoration gives back a drained level', async () => {
