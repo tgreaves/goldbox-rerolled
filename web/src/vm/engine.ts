@@ -2,7 +2,7 @@
 // A port of tools/eclvm.py; every opcode, including the original's quirks, follows spec/ecl.md.
 // The interpreter is async: menus, input and screen refreshes await the front end (Io).
 
-import { canonical, type EclVariant } from '../games/ecl'
+import { canonical, native, type EclVariant } from '../games/ecl'
 import { game } from '../games/profile'
 import { T } from '../games/tables'
 import type { GameFiles } from '../store/gamefiles'
@@ -130,9 +130,9 @@ export class Engine {
   mapDirty = true
   private stop = false
   private pc = CODE
-  private kind = new Uint8Array(33)
-  private lo = new Uint8Array(33)
-  private hi = new Uint8Array(33)
+  private kind = new Uint8Array(64)
+  private lo = new Uint8Array(64)
+  private hi = new Uint8Array(64)
   private sbuf: string[] = new Array(33).fill('')
   private opstr = new Map<number, string>()
   private readonly files: GameFiles
@@ -167,9 +167,10 @@ export class Engine {
     this.nodes = party.map((c) => c.slice())
     this.cur = this.savedCur = this.nodes[0]
     this.B[PARTY_SIZE - B0] = this.nodes.length
-    this.setBlock(3)
-    this.area = 0
-    this.loadEcl(0)
+    const { block, area } = game().ecl.start
+    this.setBlock(block)
+    this.area = area
+    this.loadEcl(area)
     this.resetVm(false)
   }
 
@@ -501,8 +502,12 @@ export class Engine {
     }
   }
 
+  /** the last instruction started (for error messages) */
+  private lastPc = 0
+
   private async step() {
     const op = this.code[this.pc - CODE]
+    if (op !== undefined) this.lastPc = this.pc
     const v = game().ecl.ops[op]
     if (v) return this.variant(v)
     switch (op) {
@@ -795,7 +800,7 @@ export class Engine {
         break
       }
       case 0x3d: this.readops(0); this.topCleared = true; this.io.clearTop?.(true); break // CLEAR_TOP (FUN_29c3_2b14)
-      default: throw new Hang(`no handler for opcode ${op.toString(16)} at ${this.pc.toString(16)}`)
+      default: throw new Hang(op === undefined ? `jump outside the script to ${native(game().ecl, this.pc).toString(16)} from the instruction at ${native(game().ecl, this.lastPc).toString(16)}` : `no handler for opcode ${op.toString(16)} at ${native(game().ecl, this.pc).toString(16)}`)
     }
   }
 
@@ -840,8 +845,7 @@ export class Engine {
     const b = [1, 2, 3].map((i) => this.val(i) & 0xff)
     if (b[0] === 0x7f) this.walls.load(1, 0)
     else if (this.A[0x49e7 - A0] && this.A[0x49e8 - A0]) {
-      this.walls.load(1, b[0])
-      this.walls.load(3, b[2])
+      for (const i of [0, 2]) { if (b[i] !== 0xff) this.walls.load(i + 1, b[i]); else this.walls.clear(i + 1) } // 0xFF empties
     } else b.forEach((r, i) => { if (r !== 0xff) this.walls.load(i + 1, r); else this.walls.clear(i + 1) })
     this.mapDirty = true
   }

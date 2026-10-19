@@ -20,6 +20,8 @@ export interface EclMap {
   skip: Record<number, number>
   /** CALL targets, compared with the operand's raw value */
   calls: { refresh: number; sound: number; frame: number }
+  /** where a new game's scripts start: ECL block and record */
+  start: { block: number; area: number }
 }
 
 export type EclVariant = 'passTime' | 'findSpell' | 'protection' | 'redrawScreen' | 'dropCharacter' | 'findEffect' |
@@ -30,6 +32,7 @@ const s8 = (v: number) => ((v << 24) >> 24) & 0xffff
 export const POR_ECL: EclMap = {
   a: 0x4900, b: 0x6b00, c: 0x9700, code: 0x9900, memorisedView: 0, viewReads: {}, ops: {}, skip: {},
   calls: { refresh: 0x2c90, sound: 0xba03, frame: -1 },
+  start: { block: 3, area: 0 },
 }
 
 // spec/coab/ecl.md, "B as a view of the current character". Not yet: B+0xC9 (a class level with the
@@ -50,6 +53,8 @@ export const COAB_ECL: EclMap = {
   },
   skip: { 0x0c: 3, 0x3f: 1, 0x40: 1 },
   calls: { refresh: 0x2e10, sound: 0xb200, frame: 0x6803 },
+  // the start-up code sets block 2 for a real game (spec/coab/assets.md); record 1 is block 2's first (I)
+  start: { block: 2, area: 1 },
 }
 
 const SIZES: ['a' | 'b' | 'c' | 'code', number][] = [['a', 0x400], ['b', 0x400], ['c', 0x200], ['code', 0x1e00]]

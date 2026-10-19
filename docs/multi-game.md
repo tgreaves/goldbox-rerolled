@@ -92,6 +92,17 @@ deep inside shared code (`if (coab) …`); it is a choice made in the profile.
    models are step 6.
 4. **Script VM.** Addresses, variable spaces and opcodes from the profile; CotAB's scripts run
    headless over every area and square without errors (the PoR proof, repeated).
+   *Done 2026-10-19*: `web/src/games/ecl.ts`. The engine keeps PoR's addresses; a CotAB script's
+   addresses are translated where operands become addresses (A, B, C and code regions each moved
+   by a constant). The character view, opcode variants (DIVIDE remainder, RETURN → EXIT,
+   PASS_TIME, FIND_SPELL, the code wheel, REDRAW_SCREEN, DROP_CHARACTER, FIND_EFFECT,
+   DESTROY_ITEMS), IF-skip counts, CALL targets and the start block are profile data.
+   `test/coabsweep.test.ts`: 2 150 runs over every CotAB area from every third square, no
+   interpreter errors (31 end still waiting on town or travel menus, which the test allows). Found
+   on the way: operand slots must hold 63 (CotAB has a 33-way ON_GOTO), and 0xFF in two-slot
+   LOAD_WALLSETS empties the slot. Not yet: B+0xC9 and the load-past-end flag in the character
+   view, the CALL 0x6803 picture frame, CotAB's own PICTURE (BIGPIC), DAMAGE and ADD_NPC changes,
+   and its random-treasure table (step 5/6).
 5. **CotAB data.** Characters (.SAV/.SWG/.FX), saves (13 149 bytes), the roster, the pre-made party,
    monsters.
 6. **CotAB rules.** Spells (100, five levels), slots, levels and caps, hit points, classes, temple Heal.
