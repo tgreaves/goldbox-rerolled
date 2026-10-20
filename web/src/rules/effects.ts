@@ -306,8 +306,15 @@ export function drain(h: FxHost, t: Uint8Array, n: number) {
 function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event: number, removal: boolean): void | Promise<void> {
   const spec = game().effects.handlers[type]
   if (spec) return behave(h, spec, eff, c, removal)
-  return porHandle(h, type, eff, c, event, removal)
+  // PoR's handler is async, but it runs to the end synchronously unless its type waits for something
+  // (an attack, a removal, an effect added through its event): the rest of the event's chain must then
+  // follow at once, as the original's does, so the save, damage and attack routines see every handler
+  const p = porHandle(h, type, eff, c, event, removal)
+  return POR_WAITS.has(type) || removal ? p : undefined
 }
+
+/** PoR handler types that wait (await) inside their case of porHandle. */
+const POR_WAITS = new Set([22, 28, 34, 64, 65, 66, 67, 68, 69, 70, 73, 74, 75, 84, 99, 121])
 
 /** PoR's handlers (spec/effects.md), by type. */
 async function porHandle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event: number, removal: boolean) {
