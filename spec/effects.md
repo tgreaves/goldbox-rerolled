@@ -158,7 +158,7 @@ Ev = hook events; R = removal/expiry callback (eff[4]=1); D = invoked directly b
 | 84 / 0x54 | charm gaze | 14 | if the path is clear: "Gazes...", 681B=10. Target saves vs spell at −2; on failure adds 11 (pw = side<<7 \| 0x0C, flag 1, save negates) and runs it | O (disasm) | 0x390A7 |
 | 85 / 0x55, 86 / 0x56 | energy drain 1 / 2 levels | 2, 3 | `2122(n)`. Prints "is drained a level" / "is drained n levels". An Animated (status 1) target "is dead forever" (status 8), max HP 0, done. Else n times, skipping once status is 8: +0x74 += 1; loss = max HP ÷ total levels; loss times: max HP, +0xB1 and HP −1 each if > 0, +0x75 +1 (a byte: wraps, IMP-067 stops it at 255). If +0x73 (signed) < 2: "is dead forever" (8), max HP 0, and for n = 2 the picked class's level is set to 0. Else the picked class loses a level, HP 0 and not dead → "is killed" (6), `FUN_51cf_0000` (derived stats). Then the class is picked again: +0x73 = its level, XP = the XP that level needs; recalc `FUN_10ba_0bb8`. Pick (`3723_2002`): over classes 0–7, a level ≥ the best so far wins if its XP need (DS:409B, 0 below level 2) is ≥ the best need or 0xFFFFFFFF, so the highest level, ties to the later class | O (disasm 0x29350–0x295D1, strings `3723:20DF–2118`) | 3723_23a4 / 23c2 |
 | 87 / 0x57 | mummy rot on hit | 2, 3 | if the target lacks 50: adds 50 (dur 14400) and 57 (dur 43200, pw = (1d6<<4)+0x0F); "is Diseased" | O (disasm) | 0x3961C |
-| 88 / 0x58 | (no handler) | 14 | listed in the hook but there is no table entry (see §3) | O | – |
+| 88 / 0x58 | breath (?) | 14 | **has a handler** after all: the table entry is assigned at image 0x41CD7 → 0x41609, a breath routine matching CotAB's 88 ("Breathes!", damage type 0x24) at 0.94 structural similarity; not yet transcribed or in the port (found 2026-10-20) | O (entry), ? (behaviour) | 0x41609 |
 | 89 / 0x59 | displacement | 8, 16 | at combat start (6DE3=0, 6822=0): clears pw bit 0x10. First attack roll against it in a combat: roll := −1 (miss) and sets the bit | O | 3723_2490 |
 | 90 / 0x5A | CON poison save bonus | 12 | if save type 0: save + {CON 4-6:1, 7-10:2, 11-13:3, 14-17:4, 18-20:5} (uninitialised for CON < 4) | O | 3723_24d9 |
 | 91 / 0x5B | MM and electricity immunity | 6 | if 681B = 15: dmg 0, "is unaffected". Else if 6819&4: dmg 0 | O (disasm) | 0x39786 |
@@ -213,7 +213,8 @@ Ev = hook events; R = removal/expiry callback (eff[4]=1); D = invoked directly b
 - **94/115**: reading item-type byte 9 as 0x80 = blunt, 1 = piercing, 0 = slashing is inferred from the ITEMS column. Mace, club, hammer and sling carry 0x80; dagger, spear, bows and quarrel carry 1; swords carry 0.
 
 **Mismatch**
-- Type **88** is dispatched at event 14 but has no handler. It is harmless unless a creature carries it.
+- Type **88** is dispatched at event 14 and does have a handler (0x41609, a breath attack; earlier thought missing). No PoR monster record is known to carry it (?).
+- The dispatcher calls each event's types **in the order of its lists** (image 0x4245A), which is not numeric order; the port follows that order (`web/src/games/effectrules.ts`).
 
 **Engine quirks found**
 - PfE/PfG's −2 to the attack roll is lost: it is applied at event 11, before 6822 is rolled.

@@ -10,6 +10,7 @@ Pool of Radiance. Every finding is marked **O** (observed in the CotAB binary or
 | [[spec/coab/ecl]] | the ECL script VM: code at 0x8000, address spaces A 0x4B00 / B 0x7C00 / C 0x7A00, opcodes 0x3E–0x40 new, changed opcodes, CALL targets |
 | [[spec/coab/records]] | the 422-byte character record, items (.SWG), effects (.FX), SAVGAM (13 149 bytes), monsters, the roster (*.guy), the Pool of Radiance character import |
 | [[spec/coab/tables]] | DS base 0x0ABE (image 0xABE0); every rules table the port reads, PoR → CotAB addresses; level caps, classes, spells (100 ids, 5 levels), hit points, slots |
+| [[spec/coab/effects]] | the effect system: event lists (0–23), changed and new handlers, item effects, monster-class flags |
 | [[spec/coab/assets]] | DAX families (new SKY, BIGPIC, TILES; no SQRPACI/BACPAC/ICON/FINAL), the 3D view's sky, the BIGPIC overland, title and start-up, code wheel, sound |
 
 ## Working image

@@ -4,6 +4,7 @@ import type { Effect } from '../data/effects'
 import { Item, ITEM_SIZE } from '../data/items'
 import { F } from '../games/fields'
 import { R } from '../games/rules'
+import { game } from '../games/profile'
 import { refillUses } from './abilities'
 import type { Tables } from './chargen'
 import { derive, xpFor } from './training'
@@ -83,29 +84,17 @@ export const fx = {
 const has = (h: FxHost, c: Uint8Array, t: number) => h.effectsOf(c).some((e) => e.type === t)
 
 /** Event → effect types listening to it (FUN_5216_02fa). */
-const EVENTS: Record<number, number[]> = {
-  0: [126], 1: [25, 37, 63, 71], 2: [68, 73, 76, 77, 79, 80, 85, 86, 87],
-  3: [64, 65, 66, 67, 68, 69, 70, 79, 85, 86, 87], 4: [3, 6, 29],
-  5: [28, 41, 60, 94, 96, 101, 104, 115, 116, 117, 119, 120, 122, 123],
-  6: [10, 17, 20, 28, 60, 61, 91, 93, 101, 105, 106, 112, 113, 114, 118, 122],
-  7: [31, 51, 52, 53], 8: [56, 72, 81, 82, 89, 99], 9: [105, 106, 107, 108, 109, 110, 111, 112, 124, 125],
-  10: [1, 2, 3, 6, 18, 26, 33, 36, 49], 11: [8, 45, 9, 46, 17, 30, 33],
-  12: [8, 45, 9, 46, 10, 17, 20, 33, 36, 49, 61, 90, 97, 111, 125], 13: [74, 75, 99, 100, 103],
-  14: [83, 84, 121], 15: [11, 21, 30, 74, 75], 16: [25, 37, 47, 48, 71, 89], 17: [1, 2, 11], 18: [39, 42, 58],
-  19: [11, 23, 56, 72, 98],
-}
-/** Area effects found on any holder (Silence 15', PfE/PfG 10', Prayer). */
-const AREA = new Set([21, 45, 46, 49])
 
 /** Fire an event on a character (FUN_5216_02fa). */
 export async function fire(h: FxHost, c: Uint8Array, event: number) {
-  for (const type of EVENTS[event] ?? []) {
+  const rules = game().effects
+  for (const type of rules.events[event] ?? []) {
     let eff = h.effectsOf(c).find((e) => e.type === type)
-    if (!eff && AREA.has(type)) {
+    if (!eff && rules.area.includes(type)) {
       for (const o of h.all()) {
         const e = h.effectsOf(o).find((x) => x.type === type)
         if (!e) continue
-        if (h.inCombat() && h.distance(o, c) > (type === 49 ? 6 : 1)) continue
+        if (h.inCombat() && h.distance(o, c) > (rules.areaRadius[type] ?? 1)) continue
         eff = e
         break
       }

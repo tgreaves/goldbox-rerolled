@@ -1,5 +1,6 @@
 // Curse of the Azure Bonds (1989). Research: spec/coab/; status: docs/multi-game.md.
 import type { GameProfile } from './types'
+import { COAB_EFFECTS } from './effectrules'
 import { COAB_TREASURE } from './treasure'
 import { COAB_SOUND } from './sound'
 import { COAB_TITLE } from './title'
@@ -41,6 +42,7 @@ export const COAB: GameProfile = {
   sound: COAB_SOUND,
   commissions: false,
   treasure: COAB_TREASURE,
+  effects: COAB_EFFECTS,
   playable: true,
   note: 'early: being built, expect gaps (no sun or clouds yet, no journal, PoR-style rules reference)',
 }

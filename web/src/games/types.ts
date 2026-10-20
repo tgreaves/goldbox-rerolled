@@ -11,6 +11,7 @@ import type { ViewArt } from './view'
 import type { TitleScript } from './title'
 import type { SoundDriver } from './sound'
 import type { TreasureRules } from './treasure'
+import type { EffectRules } from './effectrules'
 
 export interface GameProfile {
   id: 'por' | 'coab'
@@ -53,6 +54,8 @@ export interface GameProfile {
   commissions: boolean
   /** random treasure items */
   treasure: TreasureRules
+  /** the effect system: event lists and area effects */
+  effects: EffectRules
   /** false while the port can show the game's assets but not yet play it */
   playable: boolean
   /** a word on how far along the game is, shown when choosing it (null: complete) */
