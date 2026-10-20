@@ -19,7 +19,7 @@ import { fight, footprint, type Battle, type CombatUi } from '../src/rules/comba
 import { shop, temple, treasure, type TownUi } from '../src/ui/town'
 import { camp, type CampUi } from '../src/ui/camp'
 import { Tables } from '../src/rules/chargen'
-import { checkTraining, newSpellChoices, train } from '../src/rules/training'
+import { checkTraining, newSpellChoices, train, xpFor } from '../src/rules/training'
 import { readyItem, recalc, unreadyItem } from '../src/rules/equip'
 import { WorldHost } from '../src/rules/worldfx'
 
@@ -156,7 +156,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     report.stats.menus++
     asked++
     if (!items.length) { fail(`an empty menu${prompt ? ` (${prompt})` : ''}`); return 0 }
-    for (const t of items) checkText(String(t), 'a menu')
+    for (const t of items) { checkText(String(t), 'a menu'); if (/^#\d+$/.test(String(t).trim())) fail(`a menu offers "${t}" (a name not found)`) }
     const n = items.length
     const planned = plan.length ? items.indexOf(plan[0]) : -1
     if (planned >= 0) plan.shift()
@@ -282,12 +282,10 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   const hall = async () => {
     const t = tables()
     if (!t) return
-    for (let n = 0; n < 6; n++) {
-      if (chance(0.4)) return
-      const party = e.party()
-      const c = party[pick(party.length)]
+    for (const c of e.party()) {
+      if (chance(0.2)) continue
       const chk = checkTraining(t, c, e.read(0x6da8))
-      if (!chk.ok) { checkText(chk.message, 'training'); continue }
+      if (!chk.ok) { checkText(chk.message, 'training'); say(`  ${nameOf(c)}: ${chk.message}`); continue }
       say(`  ${nameOf(c)} trains`)
       if (train(t, (k) => e.rand(k), c, chk.train)) {
         const choices = newSpellChoices(t, c)
@@ -386,6 +384,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     if (!(e.x >= 0 && e.x <= 15 && e.y >= 0 && e.y <= 15) || ![0, 2, 4, 6].includes(e.facing2)) fail(`the party stands at ${e.x},${e.y} facing ${e.facing2}`)
     if (!files.record(`ECL${e.block}`, e.area)) fail(`no script for area ${e.area} of block ${e.block}`)
     if (!e.money.every((v) => Number.isInteger(v) && v >= 0)) fail(`the money pool holds ${e.money.join(',')}`)
+    if (new Set(party).size !== party.length) fail('a record is in the party twice')
+    if (!party.includes(e.cur)) fail('the current character is not in the party')
     const t = e.items
     for (const c of party) {
       const who = nameOf(c)
@@ -415,6 +415,13 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
         }
       }
       if (e.effectsOf(c).length > 40) fail(`${who} has ${e.effectsOf(c).length} effects`)
+      // coins as 16-bit counts: a payment gone below 0 would show as about 65 000
+      for (let i = 0; i < 7; i++) { const v = c[F.money + 2 * i] | (c[F.money + 2 * i + 1] << 8); if (v > 60000) fail(`${who} has ${v} of coin ${i}`) }
+      // memorised spells (pending ones with bit 7) are spells of the game; the spell book holds 0 or 1
+      const st = e.spells
+      if (st) for (let k = 0; k < F.memorisedCount; k++) { const v = c[F.memorised + k]; if (v && !st.get(v & 0x7f)) fail(`${who} has spell ${v} memorised`) }
+      for (let id = 1; id < F.knownCount; id++) if (c[F.known + id] > 1) fail(`${who}'s spell book holds ${c[F.known + id]} for spell ${id}`)
+      if (c[F.status] <= 1 && c[F.maxHp] === 0) fail(`${who} stands with 0 maximum HP`)
     }
   }
 
@@ -476,6 +483,14 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     const areas: [number, number][] = []
     for (let b = 1; b <= 9; b++) for (const { id } of files.dax(`ECL${b}`)?.entries ?? []) areas.push([b, id])
     const [b, a] = areas[pick(areas.length)]
+    // a party met mid-game has earned a level in each class and the fee (so a training hall trains)
+    const t = tables()
+    if (t) for (const c of e.party()) {
+      let xp = 0
+      for (let k = 0; k < 8; k++) if (c[F.levels + k] > 0) { const need = xpFor(t, k, c[F.levels + k] + 1); if (need !== 0xffffffff) xp = Math.max(xp, need) }
+      for (let i = 0; i < 4; i++) c[F.xp + i] = (xp >>> (8 * i)) & 0xff
+      c[F.money + 8] = 0xe8; c[F.money + 9] = 0x03 // 1000 platinum
+    }
     ok = await act(`jump to block ${b} area ${a}`, () => e.jump(b, a, pick(16), pick(16), pick(4)))
     if (ok && !e.quit) await roundTrip(false) // the save to come back to is here, not at the start
   }
