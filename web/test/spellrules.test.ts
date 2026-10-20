@@ -10,7 +10,7 @@ import { F } from '../src/games/fields'
 import { unexepack } from '../src/data/exepack'
 import { Tables } from '../src/rules/chargen'
 import { derive, levelLimit } from '../src/rules/training'
-import { alignmentsFor, begin, classesFor, coabHitDice, rollAbilities } from '../src/rules/chargen'
+import { alignmentsFor, begin, classesFor, coabHitDice, rollAbilities, saves, thiefSkills } from '../src/rules/chargen'
 import { T } from '../src/games/tables'
 
 const tables = (dir: string) => SpellTables.load(new Uint8Array(readFileSync(join(dir, 'START.EXE'))))!
@@ -123,5 +123,20 @@ describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds spell book
     expect(casterLevel(who({ 2: 7 }), item)).toBe(6) // a fighter: no caster level, everything at 6
     expect(casterLevel(who({ 5: 5 }), item)).toBe(12)
     expect(casterLevel(who({ 5: 5 }), mm, true)).toBe(6) // from an item
+  })
+
+  it('recomputes the shipped thief\'s skills and saves exactly as the original stored them (0x50F5A, 0x50C6B)', () => {
+    setGame(COAB)
+    const t = new Tables(unexepack(new Uint8Array(readFileSync(join(coab, 'START.EXE')))).image)
+    for (const n of [1, 2, 3, 4, 5, 6]) {
+      const c = new Uint8Array(readFileSync(join(coab, 'SAVE', `CHRDATA${n}.SAV`)))
+      const skills = [...c.subarray(F.thief, F.thief + 8)], sv = [...c.subarray(F.saves, F.saves + 5)]
+      saves(t, c)
+      expect([...c.subarray(F.saves, F.saves + 5)], `CHRDATA${n} saves`).toEqual(sv)
+      if (c[F.levels + 6]) {
+        thiefSkills(t, c)
+        expect([...c.subarray(F.thief, F.thief + 8)], `CHRDATA${n} thief skills`).toEqual(skills) // TRAVIS: +7 everywhere
+      }
+    }
   })
 })

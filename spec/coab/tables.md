@@ -171,10 +171,17 @@ Argument: spell id; caster DS:6520. Levels read signed; f = FUN 0x51841 (a human
 3. From an item (DS:757D set by the item-use routine 0x3F9A9, for scrolls and wands) and class ≠ 3 → 6.
 Slots are pooled by spell class (0x300A0: char+0x12C + class·5 + level − memorised of that class and level), so a paladin's cleric spells use the cleric slots and a ranger's the druid/magic-user ones. A readied item with effect 0x81 adds slots (0x507C3; I: Ring of Wizardry, not yet in the port).
 
-### 3.8 Thief skills (O, FUN at 50f5a)
-- Base table now runs to **level 12**: L10 80 67 65 78 63 30 99 50 · L11 90 72 70 86 70 35 99 60 · L12 100 77 75 94 77 35 99 65. Levels 1–9 are as PoR.
-- Race and DEX tables are unchanged. DEX rows 3–8 alias the race rows, in both games. Effective level = thief level + (dual-class former thief level × flag from 51841) (I).
-- New item hooks: it walks the readied items (char+0x14D list, item+0x34 readied, item+0x3E effect & 0x7F). Effect 0x0B: PP is computed at level 5 if lower, otherwise +5; OL at level 7 if lower, otherwise +5. Effect 0x02: an effective level below 4 is treated as 4 (no bonus), otherwise +10 to every skill. Probably Gloves of Thievery / elven gear (I; the item identities are ?).
+### 3.8 Thief skills (O, 0x50F5A)
+- Level L = byte(f·former thief + thief level) (f: FUN 0x51841, §3.7a); the base table runs to level 12 (rows 1–9 as PoR; row 0 differs in OL, 19 vs 10, and is read for L = 0).
+- The first readied item (list char+0x14D, readied +0x34) whose effect byte +0x3E is > 0x80 and whose effect is 0x0B **Gloves of Thievery** or 0x02 **Gauntlets of Dexterity** (only one can count):
+  - Gauntlets: L < 4 → L = 4 and no bonus; else +10 on every skill after the clamp.
+  - Gloves: for PP (s 1), L < 5 → L = 5 and bonus 0, else bonus 5; for OL (s 2) the same with 7; later skills keep that bonus.
+- Per skill: race r (DS:3F20); if r < 0 and base < bonus − r → 0; else base + r + bonus, then DEX (DS:3F33, skills 1–5). L is restored after each skill.
+- **The bonus variable is never initialised**: without gloves it holds what the saves routine left there, 7, so every skill gets **+7**. Confirmed by the shipped TRAVIS (dwarf thief 5, DEX 17): stored 62 69 62 52 43 27 87 27 = the formula + 7. The port adds it (profile `thief.bonus`).
+- Run by creation, the recalculation (also for a former thief when f = 1), dual-classing, and readying or removing those items. In the port: creation and training so far; the item hooks need the items passed (later, with CotAB's item effect handlers).
+
+### 3.6a Saves: the CON bonus (O, 0x50C6B)
+After the table minimum: dwarves, halflings, or anyone with a readied effect-6 item (Girdle of the Dwarves): save 0 += 1 (CON 4–6), 2 (7–10), 3 (11–13), 4 (14–17), 5 (18); everyone with CON 19–20 +1, 21–22 +2, 23–24 +3, 25 +4. This is **added to the stored save number**, so it makes the death/poison save harder (I: a bug; the intent was surely a bonus). Confirmed by TRAVIS: table 12, stored 16 (CON 16). All six shipped characters recompute exactly. A stray test after the class loop uses the former level of class 7 (monk), dead in practice.
 
 ### 3.9 Ability limits, ages, ageing
 Unchanged from PoR except the new Human paladin (17+1d4) and ranger (20+1d4) start ages (O). Race limits DS:3F88 and thresholds DS:4124 are byte-identical to PoR.

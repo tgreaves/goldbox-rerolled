@@ -2,7 +2,8 @@
 // Tables are read at runtime from the data segment of the player's START.EXE; nothing from the
 // game is embedded here. Behaviour, including the original's quirks, follows spec/chargen.md.
 
-import { R } from '../games/rules'
+import { R, classLevel } from '../games/rules'
+import type { Item } from '../data/items'
 import { T } from '../games/tables'
 import { F } from '../games/fields'
 
@@ -213,27 +214,60 @@ export function wisdomBonus(c: Uint8Array) {
   if (wis > 16 && c[F.clericSlots + 2]) c[F.clericSlots + 2]++
 }
 
-/** FUN_51cf_0255 */
-export function saves(t: Tables, c: Uint8Array) {
+/** The first readied item whose handler effect (item +0x3E, ≥ 0x80) is one of `effects`; its effect. */
+function readiedEffect(items: Item[] | undefined, effects: number[]): number | null {
+  for (const it of items ?? []) {
+    const e = it.raw[0x3e]
+    if (e > 0x80 && it.raw[0x34] && effects.includes(e & 0x7f)) return e & 0x7f
+  }
+  return null
+}
+
+/** FUN_51cf_0255 (CotAB 0x50C6B, with its CON bonus on one save; items: the readied ones, if known) */
+export function saves(t: Tables, c: Uint8Array, items?: Item[]) {
   for (let i = 0; i < 5; i++) {
     c[F.saves + i] = 20
     for (let k = 0; k < 8; k++) {
       if (c[F.levels + k] > 0) c[F.saves + i] = Math.min(c[F.saves + i], t.b(T.saves.at + k * T.saves.row + c[F.levels + k] * 5 + i))
     }
   }
+  const sc = R.saveCon
+  if (sc) {
+    const con = c[F.stat[4]]
+    const band = (bands: [number, number][]) => bands.find(([hi]) => con <= hi)?.[1] ?? 0
+    let add = con >= 19 ? band(sc.all) : 0
+    if ((sc.races.includes(c[F.race]) || readiedEffect(items, [sc.itemEffect]) !== null) && con >= sc.from && con <= 18) add = band(sc.bands)
+    c[F.saves + sc.save] = (c[F.saves + sc.save] + add) & 0xff
+  }
 }
 
-/** FUN_51cf_0329 */
-export function thiefSkills(t: Tables, c: Uint8Array) {
+/** FUN_51cf_0329 (CotAB 0x50F5A: the dual-class level, a bonus on every skill, the thief items) */
+export function thiefSkills(t: Tables, c: Uint8Array, items?: Item[]) {
+  const th = R.thief
+  const s8 = (v: number) => (v << 24) >> 24
+  let L = th.dualClass ? s8(classLevel(c, 6) & 0xff) : c[F.levels + 6]
+  let bonus = th.bonus
+  const item = readiedEffect(items, [th.gloves?.effect, th.gauntlets?.effect].filter((x): x is number => x !== undefined))
+  let gauntlets = th.gauntlets !== null && item === th.gauntlets.effect
+  const gloves = th.gloves !== null && item === th.gloves.effect
+  if (gauntlets && L < th.gauntlets!.minLevel) { L = th.gauntlets!.minLevel; gauntlets = false }
+  const level = L
   for (let s = 1; s <= 8; s++) {
-    const base = t.b(T.thiefBase.at + c[F.levels + 6] * T.thiefBase.row + s)
-    const race = t.s(T.thiefRace.at + c[F.race] * T.thiefRace.row + s)
-    if (race < 0 && base < -race) c[F.thief + s - 1] = 0
-    else {
-      let v = base + race
-      if (s < 6) v += t.s(T.thiefDex.at + c[F.stat[3]] * T.thiefDex.row + s)
-      c[F.thief + s - 1] = v & 0xff
+    if (gloves) {
+      const to = th.gloves!.raise[s]
+      if (to !== undefined) { if (L < to) { L = to; bonus = 0 } else bonus = th.gloves!.bonus }
     }
+    const base = t.b(T.thiefBase.at + L * T.thiefBase.row + s)
+    const race = t.s(T.thiefRace.at + c[F.race] * T.thiefRace.row + s)
+    let v: number
+    if (race < 0 && base < (th.clampWithBonus ? bonus : 0) - race) v = 0
+    else {
+      v = base + race + bonus
+      if (s < 6) v += t.s(T.thiefDex.at + c[F.stat[3]] * T.thiefDex.row + s)
+    }
+    if (gauntlets) v += th.gauntlets!.bonus
+    c[F.thief + s - 1] = v & 0xff
+    L = level
   }
 }
 

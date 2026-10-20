@@ -2,7 +2,7 @@
 // A port of tools/eclvm.py; every opcode, including the original's quirks, follows spec/ecl.md.
 // The interpreter is async: menus, input and screen refreshes await the front end (Io).
 
-import { R } from '../games/rules'
+import { R, classLevel } from '../games/rules'
 import { installNames } from '../data/character'
 import { canonical, native, type EclVariant } from '../games/ecl'
 import { game } from '../games/profile'
@@ -377,7 +377,11 @@ export class Engine {
     if (k === 0xd8) return s8(F.alignment)
     if (k === 0xf7) return u16(F.xpBase)
     if (k === 0xf9) return c[F.xpPerHp]
-    if (k === 0x100) return c[F.inPlay] === 0 ? 0x80 : 1
+    if (k === 0x100) {
+      const past = game().ecl.loadPastEnd && this.loadedPastEnd
+      this.loadedPastEnd = false
+      return past ? 0 : c[F.inPlay] === 0 ? 0x80 : 1
+    }
     if (k === 0x10c) {
       if (c[F.side] === 0 && c[F.quick] !== 0) return 0x80
       return c[F.side] === 1 ? 0x81 : 0
@@ -559,6 +563,7 @@ export class Engine {
         this.restoreCur = true
         const n = this.val(1) & 0x7f
         if (n < this.nodes.length) this.cur = this.nodes[n]
+        this.loadedPastEnd = n >= this.nodes.length
         break
       }
       case 0x0b: await this.loadMonster(); break
@@ -640,7 +645,7 @@ export class Engine {
         let t = 0
         for (const c of this.nodes) {
           t = (t + Math.floor((c[F.hp] + 5 * Math.max(c[F.ac] - 60, 0) + 5 * Math.max(c[F.thac0] - 39, 0)
-            + 8 * c[F.levels + 5] + 4 * c[F.levels]) / 10)) & 0xff
+            + 8 * (classLevel(c, 5) & 0xff) + 4 * (classLevel(c, 0) & 0xff)) / 10)) & 0xff // levels with any dual-class part (CotAB)
         }
         this.write(this.addr(1), t)
         break
@@ -825,6 +830,8 @@ export class Engine {
   /** the view drawn again: pictures and encounter sprites go (see Io.clearView) */
   /** a PICTURE was drawn since the view was (CotAB DS:8B7C) */
   private pictureDrawn = false
+  /** the last LOAD_CHARACTER was past the end of the list (CotAB DS:8B87) */
+  private loadedPastEnd = false
   /** LOAD_AREA or LOAD_WALLSETS has run in this area (CotAB DS:47FB) */
   private wallsLoaded = false
   private clearPictures() {

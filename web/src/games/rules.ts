@@ -46,6 +46,21 @@ export interface GameRules {
   casterGate: { atLeast: Record<number, number>; level: number } | null
   /** former dual-class levels count once the new class's level has passed them (CotAB FUN 0x51841) */
   dualClass: boolean
+  /** thief skills (PoR FUN_51cf_0329, CotAB 0x50F5A): the level (with former dual-class levels in
+   *  CotAB), a bonus on every skill (CotAB: an uninitialised variable that holds 7 from the saves
+   *  routine, confirmed by the shipped characters), whether the race clamp counts it, and the first
+   *  readied item with a thief effect: gloves (raise PP/OL to a level, else +bonus) or gauntlets
+   *  (at least a level, else +bonus on every skill) */
+  thief: {
+    dualClass: boolean
+    bonus: number
+    clampWithBonus: boolean
+    gloves: { effect: number; raise: Record<number, number>; bonus: number } | null
+    gauntlets: { effect: number; minLevel: number; bonus: number } | null
+  }
+  /** CotAB: a CON bonus added to one saving throw (0 death/poison) for some races or a readied item
+   *  effect, and for everyone at CON 19+; bands are [highest CON, bonus] (0x50C6B) */
+  saveCon: { save: number; races: number[]; itemEffect: number; from: number; bands: [number, number][]; all: [number, number][] } | null
   /** races offered at creation, in menu order (code, not a table: PoR FUN_417f_056c, CotAB 3708f) */
   raceMenu: number[]
   /** base classes of each class id 0–16 (single classes, then the multi-classes) */
@@ -94,6 +109,8 @@ export const POR_RULES: GameRules = {
   casterTerms: { 0: [{ cls: 0, minus: 0 }], 1: [{ cls: 5, minus: 0 }] },
   casterGate: null,
   dualClass: false,
+  thief: { dualClass: false, bonus: 0, clampWithBonus: false, gloves: null, gauntlets: null },
+  saveCon: null,
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
     { kind: 'ccw', gp: 600 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 }, { kind: 'curse', gp: 3500 }, { kind: 'stone', gp: 2000 }],
 }
@@ -122,6 +139,11 @@ export const COAB_RULES: GameRules = {
   // no cleric or magic-user level, paladin below 9 and ranger below 8
   casterGate: { atLeast: { 0: 1, 5: 1, 3: 9, 4: 8 }, level: 6 },
   dualClass: true,
+  // 0x50F5A: Gloves of Thievery (effect 0x0B), Gauntlets of Dexterity (effect 0x02)
+  thief: { dualClass: true, bonus: 7, clampWithBonus: true, gloves: { effect: 0x0b, raise: { 1: 5, 2: 7 }, bonus: 5 }, gauntlets: { effect: 0x02, minLevel: 4, bonus: 10 } },
+  // 0x50C6B: dwarves, halflings or the Girdle of the Dwarves (effect 6): CON 4–6 +1 … 18 +5; everyone CON 19+ +1 … +4.
+  // Added to the stored save number, which makes the save harder (the shipped TRAVIS: 12 + 4 = 16; I: a bug)
+  saveCon: { save: 0, races: [1, 5], itemEffect: 6, from: 4, bands: [[6, 1], [10, 2], [13, 3], [17, 4], [18, 5]], all: [[20, 1], [22, 2], [24, 3], [25, 4]] },
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
     { kind: 'ccw', gp: 600 }, { kind: 'heal', gp: 5000 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 },
     { kind: 'curse', gp: 3500 }, { kind: 'stone', gp: 2000 }],

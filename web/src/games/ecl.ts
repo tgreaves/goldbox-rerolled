@@ -3,6 +3,7 @@
 // use translated on the way in. Offsets inside each region are the same in both games
 // (spec/coab/ecl.md, "Memory map").
 import { F } from './fields'
+import { classLevel } from './rules'
 
 export interface EclMap {
   /** start of the A word array (0x400 words), B (0x400, with the character view), C (0x200), code (0x1E00 bytes) */
@@ -28,6 +29,9 @@ export interface EclMap {
   /** DAMAGE: flag bits that make a successful save still take the damage (CotAB 0x10, which is also
    *  part of the save bonus; 0x1B22A) */
   damageDespiteSave: number
+  /** LOAD_CHARACTER past the end of the list sets a flag that the next B+0x100 read returns as 0 and
+   *  clears (CotAB DS:8B87: 0x18B39, 0x20390) */
+  loadPastEnd: boolean
   /** shown before "The entire party is killed!" when DAMAGE kills everyone (PoR "The END!", 0x1C667) */
   wipeBanner: string | null
   /** where a new game's scripts start: ECL block and record */
@@ -50,14 +54,15 @@ export const POR_ECL: EclMap = {
   callSounds: { by: { 8: 10, 10: 11 }, other: null },
   refreshAfterPicture: false,
   damageDespiteSave: 0,
+  loadPastEnd: false,
   wipeBanner: 'The END!',
   start: { block: 3, area: 0 },
   areaZero: null,
   twoSlotSkipsFF: false,
 }
 
-// spec/coab/ecl.md, "B as a view of the current character". Not yet: B+0xC9 (a class level with the
-// dual-class part, FUN 0x51841) and B+0x100's "loaded past the end" flag; both read the B word.
+// spec/coab/ecl.md, "B as a view of the current character"; B+0x100's "loaded past the end" flag is
+// loadPastEnd below.
 export const COAB_ECL: EclMap = {
   a: 0x4b00, b: 0x7c00, c: 0x7a00, code: 0x8000, memorisedView: 1,
   viewReads: {
@@ -66,6 +71,7 @@ export const COAB_ECL: EclMap = {
     0x73: (c) => s8(c[F.cls]),
     0xd6: (c) => s8(c[F.gender]),
     0xe4: (c) => c[0x192] & 1, // CotAB record byte 0x192 (set by the Hillsfar import), no field yet
+    0xc9: (c) => classLevel(c, 5) & 0xff, // the magic-user level with its dual-class part (FUN 0x51841)
   },
   // spec/coab/ecl.md, "Opcodes"
   ops: {
@@ -77,6 +83,7 @@ export const COAB_ECL: EclMap = {
   callSounds: { by: { 8: 10, 10: 11 }, other: 10 }, // 0x069B0: DS:25C2 = 10, DS:25C4 = 11
   refreshAfterPicture: true, // PICTURE sets DS:8B7C (0x190EA)
   damageDespiteSave: 0x10,
+  loadPastEnd: true,
   wipeBanner: null,
   // the start-up code sets block 2 for a real game (spec/coab/assets.md); record 1 is block 2's first (I)
   start: { block: 2, area: 1 },
