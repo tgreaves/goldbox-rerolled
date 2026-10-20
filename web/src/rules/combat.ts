@@ -1474,6 +1474,7 @@ export class Battle implements FxHost {
     if (c[F.levels] > 0 && !f.r[0x11] && this.enemiesWithin(f, 255).some((e) => e.c[F.undead] > 0 && !e.r[0x10])) { await this.turnUndead(f); return }
     if (await this.aiCast(f)) return
     this.chooseWeapon(f)
+    await fire(this, c, 14) // FUN_3334_0b3c: the gaze, breath and spit specials first (spec/combat.md)
     for (let tries = 0; tries < 20 && s8(f.r[3]) > 0 && this.inPlay(f); tries++) {
       while (f.r[0x14] && f.r[6] > 1 && s8(f.r[3]) > 0 && s8(f.r[3]) < 20) {
         if (!(await this.aiStep(f, true))) break

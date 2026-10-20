@@ -213,7 +213,7 @@ Ev = hook events; R = removal/expiry callback (eff[4]=1); D = invoked directly b
 - **94/115**: reading item-type byte 9 as 0x80 = blunt, 1 = piercing, 0 = slashing is inferred from the ITEMS column. Mace, club, hammer and sling carry 0x80; dagger, spear, bows and quarrel carry 1; swords carry 0.
 
 **Mismatch**
-- Type **88** is dispatched at event 14 and does have a handler (0x41609, a breath attack; earlier thought missing). No PoR monster record is known to carry it (?).
+- Type **88** is dispatched at event 14 and does have a handler (0x41609, a breath attack; earlier thought missing). MON5 #66 carries it (found 2026-10-20); its handler is not yet transcribed, so in the port it does nothing.
 - The dispatcher calls each event's types **in the order of its lists** (image 0x4245A), which is not numeric order; the port follows that order (`web/src/games/effectrules.ts`).
 
 **Engine quirks found**
