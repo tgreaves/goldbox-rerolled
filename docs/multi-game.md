@@ -131,7 +131,7 @@ watch, because each is an alternative path in code:
   types of its original's handler table (PoR FUN_5216_0000 1–127, CotAB DS:6FC0 1–146), and
   `test/effectmap.test.ts` checks that every effect type its events, spells, monsters, characters and
   items can add names an existing behaviour. PoR's ~120-case switch is gone: its handlers are
-  behaviours named by what they do (`rollMorale`, `resistType`, `poisonOnHit`, `paralyseOnHit`,
+  behaviours named by what they do (`rollMorale`, `resist`, `poisonOnHit`, `paralyseOnHit`,
   `drainOnHit`, `regenerate`, `blocks`, `immunities`, `stoneGaze`, `vulnerableTo`…), the switch's
   values (effect types, monster names, item types and words, dice, damage types, percentages, the
   spell Shield stops) their parameters; CotAB's map starts from PoR's entries and overrides its
@@ -167,9 +167,9 @@ watch, because each is an alternative path in code:
    the stat routine runs for the types the profile lists).
 
 **Plan, in order:** ~~CotAB's changed and new spell handlers as kinds~~ (done); ~~PoR's effect handler map made
-explicit~~ (done); PoR's effect handlers checked against the binary (spec/effects.md, "Port differences
-found"); profile functions replaced by data; the paired procedures made parametric
-where the originals allow it; named ids for effect types. When those are done, a third game should
+explicit~~ (done); ~~PoR's effect handlers checked against the binary~~ (done, spec/effects.md "Port
+status"); ~~profile functions replaced by data~~ (done); the paired procedures made parametric where
+the originals allow it (the PoR ending procedure); named ids for effect types. When those are done, a third game should
 need only its profile modules and any procedure the earlier games do not have.
 
 ## Order of work
