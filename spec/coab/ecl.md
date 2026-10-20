@@ -62,7 +62,7 @@ Calls into overlays go through VROOMM stubs that the merge already patched into 
 
 ## Loading (O)
 
-- **New game or load (0x1BFED–0x1C050)**: the area to load is A[0x4BF2]; if it is 0 the game starts at record **1** (record 82 when DS:4FD5 ≠ 0, ?) and loads its script, otherwise a load restores the saved script buffer (DS:47FB = 1). The shipped `SAVGAMA.DAT` names area 0 with an empty buffer, so a new game begins at ECL2 record 1. Then the reset (0x1FBB8) and `on_enter`.
+- **New game or load (0x1BFED–0x1C050)**: the area to load is A[0x4BF2]; if it is 0 the game starts at record **1** (record 82 when DS:4FD5 ≠ 0: the **demo**, O: the start-up menu "Curse of the Azure Bonds v1.3" with *Play* / *Demo* (strings at image 0x06, 0x25; 0x1A8) sets DS:4FD5 = 1 for key D, and then block 1 (DS:5C08) instead of 2; after the demo the menu comes back with a timeout (DS:72B0 = 1000) defaulting to D, so the demo repeats unattended (0x2C7–0x31F). ECL1 #82 is the demo's story: "On your way to the town of Tilverton you are ambushed…") and loads its script, otherwise a load restores the saved script buffer (DS:47FB = 1). The shipped `SAVGAMA.DAT` names area 0 with an empty buffer, so a new game begins at ECL2 record 1. Then the reset (0x1FBB8) and `on_enter`.
 
 - `ECL<n>.DAX` where n = DS:5C08 (block digit); record id = area id (CotAB blocks: ECL1 80–82, ECL2 1–4, ECL3 16–18 21, ECL4 32–35 37, ECL5 48–51 53, ECL6 64 66 67 69)
 - 0x1FD3C: zero the 0x1E00 buffer, show "Loading...Please Wait", retry until size ≥ 2, copy record bytes 2.. to the buffer start; all records start `88 13`, largest 7622 code bytes (fits 0x1E00)

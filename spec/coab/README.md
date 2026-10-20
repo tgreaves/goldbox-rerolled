@@ -36,7 +36,7 @@ no licence, so nothing from it is copied and every fact here is checked in the C
 
 ## Open questions (from implementing the port, 2026-10-19)
 
-- DS:4FD5, which makes a new game start at area 82 instead of 1 ([[spec/coab/ecl]], "Loading").
+- ~~DS:4FD5~~: the Demo choice of the start-up menu (block 1, record 82; [[spec/coab/ecl]], "Loading").
 - The paladin and ranger party checks in the Add menu (`3685:35ae..3647`).
 - Implementation status of everything in this folder: [`docs/multi-game.md`](../../docs/multi-game.md).
 
