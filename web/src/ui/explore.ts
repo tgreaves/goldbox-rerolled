@@ -1635,7 +1635,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         <label>Facing <select name="facing">${FACING.map((f, i) => `<option value="${i}">${f}</option>`).join('')}</select></label>
         <button>Jump</button>
       </form>
-      <p class="muted">For areas 25–27 (wilderness), X and Y are the area's own position (0–12 across).</p>
+      ${game().view.tileOverland.length ? `<p class="muted">For areas ${game().view.tileOverland.join(', ')} (wilderness), X and Y are the area's own position (0–12 across).</p>` : ''}
       <form method="dialog"><button>Close</button></form>`}`
     const go = (to: [number, number, number, number, number]) => {
       dialog.close()

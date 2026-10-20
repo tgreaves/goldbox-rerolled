@@ -1346,14 +1346,15 @@ export class Engine {
 
   /**
    * Debug jump (IMP-025, not in the original): switch block and area as a script's NEW_ECL would,
-   * then enter. Map areas take a 16x16 position; overland areas (25-27) a wilderness position,
-   * written to ECL 0x49C3/0x49C4 as the harbour script does before its boats leave.
+   * then enter. Map areas take a 16x16 position; the tile wilderness areas (`view.tileOverland`,
+   * PoR's 25-27) a wilderness position, written to ECL 0x49C3/0x49C4 as the harbour script does
+   * before its boats leave.
    */
   async jump(block: number, area: number, x: number, y: number, facing = this.facing) {
     this.setBlock(block)
     this.A[AREA_ID - A0] = this.area
     this.area = area
-    if (area >= 25 && area <= 27) {
+    if (game().view.tileOverland.includes(area)) {
       this.A[0x49c3 - A0] = x
       this.A[0x49c4 - A0] = y
       this.A[0x4a9e - A0] = 0 // not inside a lair: areas 25-27 hold the lair maps too (on_enter tests 255)
