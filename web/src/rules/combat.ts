@@ -6,7 +6,7 @@ import type { Spell } from '../data/spells'
 import type { Effect } from '../data/effects'
 import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, type Battlefield, type CellInfo } from './battlefield'
 import { dexMissile, recalc } from './equip'
-import { fx, fire, damageText, healedLine, addEffect, addRaw, removeEffect, removeType, runEffect, type FxHost } from './effects'
+import { fx, fire, damageText, healedLine, addEffect, addRaw, removeEffect, removeFirst, removeType, runEffect, type FxHost } from './effects'
 import { heal as healChar } from './camp'
 import { amount, castShared, line, spellSpec, term } from './spellkinds'
 import type { Amount, SpellSpec } from '../games/spellrules'
@@ -304,6 +304,8 @@ export class Battle implements FxHost {
 
   // ------------------------------------------------------------ the battlefield for the monster specials
   cellOf(c: Uint8Array) { const f = this.of(c); return f ? { x: f.x, y: f.y } : null }
+  choose(prompt: string, items: string[]) { return this.ui.menu(items, { prompt }) }
+  ask(prompt: string) { return this.ui.confirm(prompt) }
   async aimSpell(c: Uint8Array, id: number) {
     const f = this.of(c), s = this.e.spells?.get(id)
     if (!f || !s) return false
@@ -1655,6 +1657,60 @@ export class Battle implements FxHost {
         await addEffect(this, t.c, effect, dur, L, 0, 1, saved, false, p.msg ?? '')
       }
       if (p.runAfter) await this.runAfter(targets, effect)
+    },
+    /**
+     * Dimension Door (CotAB 0x488A1): a caster held (`heldBy`, 0x3A) frees itself from every combatant
+     * next to it whose first `releases` record (0x90, else 0x8B) holds it (power = its index): both of
+     * that holder's records go, whose removal lets go of the victim; then the caster moves to the aimed
+     * square and the line. ?: the original moves it whatever is there; the port only to a free square
+     */
+    async teleport({ f }, p) {
+      const [first, second] = p.releases as number[]
+      if (this.e.effectsOf(f.c).some((x) => x.type === (p.heldBy as number))) {
+        for (const o of this.fighters.filter((x) => x !== f && this.inPlay(x) && this.dist(f, x) <= 1)) {
+          const fx0 = this.e.effectsOf(o.c)
+          const e = fx0.find((x) => x.type === first) ?? fx0.find((x) => x.type === second)
+          if (!e || this.byIndex(e.power) !== f.c) continue
+          await removeFirst(this, o.c, first)
+          await removeFirst(this, o.c, second)
+        }
+      }
+      const { x, y } = this.aimed
+      if (this.passable(x, y, f.size || 1) && !this.occupied(x, y, f.size || 1, f)) { f.x = x; f.y = y }
+      this.ui.redraw(f)
+      this.print(line(name(f.c), p.msg ?? ''))
+    },
+    /**
+     * Fear (CotAB 0x48A52): who stands in the area template (fan: `width`, `len`, towards the aimed
+     * square, the spell's own targets ignored) saves vs `saveType`; a failure gets the effect through the
+     * add-effect routine (power 0, flag 1, negates) with the line and, whatever that did, flees: combat
+     * record +0x10 = 1, computer control, morale 0xB3 unless above 0x7F, no target; a success `unaffected`
+     */
+    async scare({ f, dur }, p) {
+      for (const c of this.fan(f.c, this.aimed.x, this.aimed.y, p.width as number, p.len as number)) {
+        if (this.saveSync(c, p.saveType as number, 0)) { this.print(line(name(c), p.unaffected as string)); continue }
+        await addEffect(this, c, p.effect as number, dur, 0, 1, 1, false, false, p.msg ?? '')
+        this.setRec(c, 0x10, 1)
+        c[F.quick] = 1
+        if (c[F.morale] <= 0x7f) c[F.morale] = 0xb3
+        this.setRec(c, 0xa, 0)
+      }
+    },
+    /**
+     * Fumble (CotAB 0x48D66): damage type `dmgType` while the first target saves vs `saveType`: a failure
+     * gets `fail`'s effect, a success `pass`'s (add-effect, power 0, flag 0, the line), its first record's
+     * handler run at once (I: the original passes no record); then Apply with `flag` and `msg` (a
+     * second save; on a failure the spell's effect replaces the first with power L)
+     */
+    async saveOrElse(x, p) {
+      const t = x.targets[0]
+      if (!t) return
+      fx.dmgType = p.dmgType as number
+      const o = (this.saveSync(t.c, p.saveType as number, 0) ? p.pass : p.fail) as { effect: number; msg: string }
+      await addEffect(this, t.c, o.effect, x.dur, 0, 0, 0, false, false, o.msg)
+      await this.runAfter([t], o.effect)
+      fx.dmgType = 0 // Apply with no damage clears it (0x44F0E)
+      await Battle.spellKinds.apply.call(this, x, p)
     },
     /**
      * Save or be affected (CotAB Entangle 0x4862B, Confusion 0x487DD): each target saves vs `saveType`;

@@ -78,4 +78,6 @@ export class WorldHost implements FxHost {
   async attack() {}
   weapon(c: Uint8Array) { const t = this.e.items; return this.e.itemsOf(c).find((it) => it.ready && t?.baseOf(it)?.slot === 0) ?? null }
   weaponKind(type: number) { return this.e.items?.base[type]?.kind ?? 0 }
+  choose(prompt: string, items: string[]) { return this.e.io.menu(items, { prompt }) }
+  async ask(prompt: string) { return (await this.e.io.menu(['Yes', 'No'], { prompt })) === 0 }
 }

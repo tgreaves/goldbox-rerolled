@@ -219,6 +219,25 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
     fx.dice = n
     h.damage(t, total, 0, false)
   },
+  /**
+   * Fire Shield (CotAB 0x48BB2): the caster picks one of `options` (the computer: the first when 1d`aiPick.d`
+   * is above `aiPick.above`, else the second; a player from the menu `prompt`) and gets its effects
+   * through the add-effect routine (power 0, flag 0, each with its line, '' none: Cold has none, as the
+   * original); a player who picks neither is asked `abort` (yes: the spell is lost), else asked again
+   */
+  async flameShield({ h, caster, dur }, p) {
+    const opts = p.options as { name: string; effects: [number, string][] }[]
+    const ai = p.aiPick as { d: number; above: number }
+    for (;;) {
+      const k = caster[F.quick] || !h.choose ? (h.roll(1, ai.d) > ai.above ? 0 : 1) : await h.choose(p.prompt as string, opts.map((o) => o.name))
+      const o = opts[k]
+      if (o) {
+        for (const [type, msg] of o.effects) await addEffect(h, caster, type, dur, 0, 0, 0, false, false, msg)
+        return
+      }
+      if (!h.ask || (await h.ask(p.abort as string))) return
+    }
+  },
   /** Animate Dead (206f): ignores targeting; every dead creature of type 0, while L lasts */
   async animateDead({ h, caster, L }, p) {
     let n = L

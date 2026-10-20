@@ -122,8 +122,8 @@ export const POR_SPELLS: SpellRules = {
 /**
  * CotAB's table (DS:72BA): ids 1–56 are PoR's spells, most with the same handler (spec/coab/spells.md
  * §2, "same"); 57–67 keep PoR's item spells where the record matches; 58 and 66–100 are its own.
- * Not yet transcribed (spec/coab/spells.md §2, port status): the new 83–86, 92, 93, 98; until they
- * are, they run Apply ('apply').
+ * Not yet transcribed (spec/coab/spells.md §2, port status): the new 92, 93, 98; until they are, they
+ * run Apply ('apply').
  */
 const POR_HANDLERS_1_57 = Object.fromEntries(Object.entries(POR_SPELLS.handlers).filter(([id]) => Number(id) <= 57 || [60, 61, 62, 63, 64, 65].includes(Number(id))))
 
@@ -155,7 +155,14 @@ export const COAB_SPELLS: SpellRules = {
     58: { k: 'heal', amount: { n: 2, d: 8, plus: 1 } }, // 47edd Cure Serious Wounds
     59: { k: 'setStrength', str: 21, pct: 0, effect: 0x92, msg: 'is stronger' }, // 47f27, by the base-STR rule (strength)
     66: { k: 'damage', amount: { n: 2, d: 8, plus: 1 }, dmgType: 8, recordDice: 1 }, // 480f5 Cause Serious Wounds
-    ...each([83, 84, 85, 86, 92, 93, 98], { k: 'apply' }),
+    ...each([92, 93, 98], { k: 'apply' }),
+    83: { k: 'teleport', heldBy: 0x3a, releases: [0x90, 0x8b], msg: 'teleports' }, // 488a1 Dimension Door
+    84: { k: 'scare', width: 3, len: 6, saveType: 4, effect: 0x8e, msg: 'runs in terror', unaffected: 'is unaffected' }, // 48a52 Fear
+    // 48bb2 Fire Shield: "flame type: " Hot (0x32 + 0x8F) or Cold (0x36 + 0x8F), the computer Hot on 1d10 > 5
+    85: { k: 'flameShield', prompt: 'flame type: ', abort: 'Abort spell?', aiPick: { d: 10, above: 5 },
+      options: [{ name: 'Hot', effects: [[0x32, 'is protected'], [0x8f, '']] }, { name: 'Cold', effects: [[0x36, ''], [0x8f, '']] }] },
+    // 48d66 Fumble: clumsy (0x1B) or, saved, slowed (0x2A), run at once; then Apply (flag 1)
+    86: { k: 'saveOrElse', dmgType: 0x40, saveType: 4, fail: { effect: 0x1b, msg: 'is clumsy' }, pass: { effect: 0x2a, msg: 'is slowed' }, flag: 1, msg: 'is clumsy' },
     78: { k: 'saveEach', effect: 0x88, saveType: 4, msg: 'is entangled', outdoorsOnly: 1 }, // 4862b Entangle
     // 486e7 Faerie Fire, 4874c Charm Monsters: the Hold loop 0x45A94 (bonus 0) over the targets bought
     // from a pool (0x2C7EA): L by size (1 → 1, 2–3 → 2, 4 → 4, else 0), 2d4 by hit dice (0–1 → 1, 2 → 2, 3 → 4, else 8)

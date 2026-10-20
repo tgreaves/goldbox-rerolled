@@ -87,6 +87,9 @@ export interface FxHost {
   bolt?(c: Uint8Array, len: number, dmg: number, save: number, bounceBonus: boolean): void
   /** CotAB's area template 0x4573F: who stands on `width` lines from c towards (x, y), `len` squares or more */
   fan?(c: Uint8Array, x: number, y: number, width: number, len: number): Uint8Array[]
+  /** a player's choice from a menu (index; anything else: none), and a yes/no question */
+  choose?(prompt: string, items: string[]): Promise<number>
+  ask?(prompt: string): Promise<boolean>
 }
 
 /** The original's globals during one dispatch chain. */

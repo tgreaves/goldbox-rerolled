@@ -488,6 +488,72 @@ describe.skipIf(!haveCoab)('CotAB new spells: 78, 79, 81, 82', () => {
   })
 })
 
+describe.skipIf(!haveCoab)('CotAB new spells: 83, 84, 85, 86', () => {
+  const files = haveCoab ? load(coab, COAB) : null
+  afterAll(() => setGame(POR))
+  const cotab = () => { setGame(COAB); return field(files!) }
+
+  it('Dimension Door (83): a hugged caster is let go, then moves to the aimed square (0x488A1)', async () => {
+    const { b, add, cast, has, printed } = cotab()
+    const mage = add(5, 5, 0, 'MAGE')
+    const bear = add(6, 5, 1, 'BEAR')
+    addRaw(b, mage.c, 0x3a, 0, 0, 0)
+    addRaw(b, bear.c, 0x90, 0, mage.index, 1)
+    await cast(mage, 83, 9, [], { x: 15, y: 5 })
+    expect([has(bear, 0x90).length, has(mage, 0x3a).length]).toEqual([0, 0])
+    expect([mage.x, mage.y]).toEqual([15, 5])
+    expect(printed).toEqual(['MAGE teleports'])
+  })
+
+  it('Fear (84): the area template; a failure flees under computer control (0x48A52)', async () => {
+    const { add, cast, has, dice, printed } = cotab()
+    const mage = add(5, 5, 0, 'MAGE')
+    const a = add(7, 5, 1, 'A'), b2 = add(9, 5, 1, 'B')
+    a.target = mage
+    dice.push(1, 20)
+    await cast(mage, 84, 7, [], { x: 8, y: 5 })
+    expect(has(a, 0x8e).map((x) => [x.duration, x.power, x.flag])).toEqual([[7, 0, 1]])
+    expect([a.r[0x10], a.c[F.quick], a.c[F.morale], a.target]).toEqual([1, 1, 0xb3, null])
+    expect(has(b2, 0x8e).length).toBe(0)
+    expect(printed).toEqual(['A runs in terror', 'B is unaffected'])
+  })
+
+  it('Fire Shield (85): the player picks Hot or Cold; the computer Hot on 1d10 > 5 (0x48BB2)', async () => {
+    const { add, cast, has, menus, confirms, dice, printed } = cotab()
+    const mage = add(5, 5, 0, 'MAGE')
+    menus.push(1)
+    await cast(mage, 85, 7, [mage])
+    expect([0x32, 0x36, 0x8f].map((t) => has(mage, t).map((x) => [x.duration, x.power]))).toEqual([[], [[9, 0]], [[9, 0]]])
+    expect(printed).toEqual([]) // Cold has no line
+    const ai = add(9, 5, 1, 'EFREET')
+    ai.c[F.quick] = 1
+    dice.push(6)
+    await cast(ai, 85, 7, [ai])
+    expect([has(ai, 0x32).length, has(ai, 0x36).length, has(ai, 0x8f).length]).toEqual([1, 0, 1])
+    expect(printed).toEqual(['EFREET is protected'])
+    const quitter = add(12, 5, 0, 'QUITTER')
+    menus.push(-1, -1); confirms.push(false, true) // neither twice: asked to abort, no, then yes
+    await cast(quitter, 85, 7, [quitter])
+    expect([menus.length, confirms.length, has(quitter, 0x8f).length]).toEqual([0, 0, 0])
+  })
+
+  it('Fumble (86): clumsy or, saved, slowed, at once; then Apply again (0x48D66)', async () => {
+    const { add, cast, has, dice, printed } = cotab()
+    const mage = add(5, 5, 0, 'MAGE')
+    const t = add(6, 5, 1, 'T')
+    await cast(mage, 86, 7, [t])
+    expect(has(t, 0x1b).map((x) => [x.duration, x.power, x.flag])).toEqual([[7, 7, 1]]) // Apply's record replaced the first
+    expect(t.r[3]).toBe(0) // 0x1B's handler (0x273C1) ended the turn
+    expect(printed).toEqual(['T is clumsy', 'T is clumsy'])
+    const u = add(7, 5, 1, 'U')
+    dice.push(20, 20)
+    printed.length = 0
+    await cast(mage, 86, 7, [u])
+    expect([has(u, 0x2a).length, has(u, 0x1b).length]).toEqual([1, 0])
+    expect(printed).toEqual(['U is slowed', 'U is Unaffected'])
+  })
+})
+
 describe.skipIf(!por || !existsSync(por))('PoR keeps its own rules', () => {
   const files = por && existsSync(por) ? load(por, POR) : null
   it('reads Stinking Cloud\'s squares from START.EXE (DS:290D)', () => {
