@@ -6,8 +6,7 @@ import type { Effect } from '../data/effects'
 import type { Item } from '../data/items'
 import { F } from '../games/fields'
 import { game } from '../games/profile'
-import type { ItemProcedure } from '../games/effectrules'
-import { behave, effectiveStat, itemKind } from './effectkinds'
+import { behave, effectiveStat, itemBehave } from './effectkinds'
 import type { Tables } from './chargen'
 import { derive, xpFor } from './training'
 
@@ -320,7 +319,7 @@ export function strDec(v: number): [number, number] {
   v &= 0x7f
   return v <= 101 ? [18, v - 1] : [v - 100, 0]
 }
-const strKey = ([s, p]: [number, number]) => s * 101 + (s === 18 ? p : 0)
+export const strKey = ([s, p]: [number, number]) => s * 101 + (s === 18 ? p : 0)
 
 /**
  * FUN_5216_115c: try to set STR to str/pct. Weaker than now: nothing changes, and the power to store is
@@ -374,59 +373,13 @@ export async function removeOne(h: FxHost, c: Uint8Array, type: number): Promise
   return true
 }
 
-// ---------------------------------------------------------------- item handlers 128–139
+// ---------------------------------------------------------------- item handlers
 /**
  * The handler of an item with item[0x3E] ≥ 0x80, run by Ready (arg 0, after readying) and Unready
- * (arg 1, after unreadying) only (FUN_4894_14d0 → FUN_5216_0000; spec/effects.md, "Item handlers").
+ * (arg 1, after unreadying) only (PoR FUN_4894_14d0 → FUN_5216_0000, CotAB 0x3F034): the behaviour the
+ * game's profile names for +0x3E & 0x7F (games/effectrules.ts `items`, rules/effectkinds.ts).
  */
 export async function itemHandler(h: FxHost, c: Uint8Array, it: Item, arg: 0 | 1) {
-  await ITEMS[game().effects.items](h, c, it, arg)
-}
-
-/** The item procedures a profile can name (games/effectrules.ts `items`). */
-const ITEMS: Record<ItemProcedure, (h: FxHost, c: Uint8Array, it: Item, arg: 0 | 1) => Promise<void>> = {
-  handlers: itemHandlers,
-  kinds: (h, c, it, arg) => itemKind(h, c, it, arg === 0),
-}
-
-/** Item handlers 128–139 by item +0x3E (PoR FUN_5216_0000). */
-async function itemHandlers(h: FxHost, c: Uint8Array, it: Item, arg: 0 | 1) {
-  const p = it.raw[0x3d]
-  switch (it.raw[0x3e]) {
-    case 131: { // Gauntlets of Ogre Power (FUN_3723_2f57): STR 18/00 as effect 38
-      if (arg === 0) {
-        const { ok, pw } = setStr(h, c, 18, 100)
-        if (ok) h.print(`${h.name(c)} is stronger`)
-        addRaw(h, c, 38, 0, pw, 1)
-      } else {
-        const is1800 = c[F.stat[0]] === 18 && c[F.strPct] === 100
-        // bug kept: with 18/00 the original takes the first 38 record of any kind
-        const e = h.effectsOf(c).find((x) => x.type === 38 && (is1800 || strKey(strDec(x.power)) === strKey([18, 100])))
-        if (e) await removeEffect(h, c, e)
-      }
-      break
-    }
-    case 132: // alignment-locked weapon (FUN_3723_30a5): the wrong alignment cannot hold it and is hurt
-      if (arg === 0 && (p & 0x0f) !== c[F.alignment]) {
-        it.ready = false
-        fx.dmgType = 8
-        h.damage(c, p >> 4, 0, false)
-      }
-      break
-    case 135: // Boulder (FUN_3723_3134)
-      if (arg === 0 && c[F.stat[0]] < 19) { it.ready = false; h.print('Must have Giant Strength') }
-      break
-    case 137: // Spiritual Hammer (FUN_3723_317a): putting it away ends the effect, and with it the hammer
-      if (arg === 1) await removeFirst(h, c, 23)
-      break
-    default: // 128–130, 133, 134, 136, 138, 139 (FUN_3723_2eda): the item grants effect item[0x3D] while readied
-      if (arg === 0) {
-        const e = addRaw(h, c, p, 0, 0x0c, 0)
-        await handle(h, p, e, c, -1, false)
-      } else {
-        const list = h.effectsOf(c)
-        const e = list.find((x) => x.type === p)
-        if (e) list.splice(list.indexOf(e), 1)
-      }
-  }
+  const spec = game().effects.items[it.raw[0x3e] & 0x7f]
+  if (spec) await itemBehave(h, spec, c, it, arg === 0)
 }

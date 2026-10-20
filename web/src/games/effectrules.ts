@@ -16,8 +16,12 @@ export interface EffectRules {
   handlers: Record<number, HandlerSpec>
   /** effect types whose removal recomputes a stat (0 STR … 5 CHA) through the game's stat routine */
   removalStat: Record<number, number[]>
-  /** what readying an item with item +0x3E ≥ 0x80 does (ItemProcedure) */
-  items: ItemProcedure
+  /**
+   * What readying (or putting away) an item with item +0x3E ≥ 0x80 does, by +0x3E & 0x7F: PoR's item
+   * handlers 128–139 (FUN_4894_14d0 → FUN_5216_0000), CotAB's item kinds (0x3F034); an item behaviour
+   * in rules/effectkinds.ts (ITEM_BEHAVIOURS) with its parameters; none listed, nothing
+   */
+  items: Record<number, HandlerSpec>
   /**
    * When adding an effect (with its message, event 9 first) takes out a record of the same type already
    * there: `longerOrPermanent` (PoR FUN_5216_1656) a timed old record when the new one lasts longer, any
@@ -28,13 +32,6 @@ export interface EffectRules {
   /** effect types whose presence stops unforced healing (PoR FUN_5216_175d: mummy rot 0x32; CotAB 0x4CE85: none) */
   healBlock: number[]
 }
-
-/**
- * Readying an item with item +0x3E ≥ 0x80: `handlers`, a handler per +0x3E value 128–139 (PoR
- * FUN_4894_14d0 → FUN_5216_0000); `kinds`, the item's kind runs the stat routine and its own
- * procedure (CotAB 0x3F034, with the generic handler 147 for kind 0).
- */
-export type ItemProcedure = 'handlers' | 'kinds'
 
 /** A behaviour key (rules/effectkinds.ts) and its parameters. */
 export interface HandlerSpec {
@@ -178,7 +175,14 @@ export const POR_EFFECTS: EffectRules = {
   areaRadius: { 49: 6 },
   handlers: POR_HANDLERS,
   removalStat: {},
-  items: 'handlers',
+  // PoR's item handlers 128–139 (spec/effects.md "Item handlers"), by +0x3E − 0x80
+  items: {
+    ...each([0, 1, 2, 5, 6, 8, 10, 11], { b: 'grantEffect', power: 0x0c, flag: 0, quietly: 1 }), // 2eda: 128–130, 133, 134, 136, 138, 139
+    3: { b: 'strengthItem', str: 18, pct: 100, effect: 38, msg: 'is stronger' }, // 131 Gauntlets of Ogre Power (0x3A187)
+    4: { b: 'alignmentLocked' }, // 132 (30a5)
+    7: { b: 'needsStrength', str: 19, msg: 'Must have Giant Strength' }, // 135 Boulder (0x3A364)
+    9: { b: 'unreadyEnds', type: 23 }, // 137 Spiritual Hammer (317a)
+  },
   replaces: 'longerOrPermanent',
   healBlock: [0x32],
 }
@@ -266,11 +270,25 @@ export const COAB_EFFECTS: EffectRules = {
     145: { b: 'dispelEvil', flag: 1 }, // 0x29D69
     140: { b: 'none' }, // 0x29E21: Lay on Hands' wait (R.paladin)
     141: { b: 'refillUses' }, // 0x29C3F: Cure Disease's week (R.paladin)
-    // 147 (0x29A23, also DS:720C), the generic item handler, runs for items only: rules/effectkinds.ts itemKind
+    // 147 (0x29A23, also DS:720C), the generic item handler, runs for items only: `items[0]`
   },
   // remove 0x4ABBA: CHA after 0x0E, STR after 0x0C, 0x26, 0x92
   removalStat: { 0x0e: [5], 0x0c: [0], 0x26: [0], 0x92: [0] },
-  items: 'kinds',
+  // the item kinds (0x3F034, spec/coab/effects.md)
+  items: {
+    0: { b: 'grantEffect', power: 0xff, flag: 1, outsideCombat: 1 }, // the generic handler 147 (0x29A23)
+    1: { b: 'doubleSlots', levels: 3 }, // Ring of Wizardry
+    2: { b: 'recomputeStats', stats: [3], thief: 1 }, // DEX and thief skills
+    4: { b: 'alignmentLocked', alsoUnready: 1 },
+    5: { b: 'recomputeStats', stats: [0] }, // STR 18/00 or 19–24
+    6: { b: 'recomputeStats', stats: [4, 5] },
+    8: { b: 'recomputeStats', fromValue: 1 }, // the stat +0x3D, +1 below 18
+    9: { b: 'unreadyEnds', type: 0x17 }, // Spiritual Hammer
+    0x0a: { b: 'recomputeStats', stats: [3] },
+    0x0b: { b: 'recomputeStats', stats: [], thief: 1 }, // thief skills
+    0x0c: { b: 'recomputeStats', stats: [1] },
+    0x0d: { b: 'recomputeStats', stats: [0, 1] },
+  },
   replaces: 'anyTimed', // 0x4CE0A: found, and its duration word > 0
   healBlock: [], // 0x4CE85: the 0x32 test is gone (0x32 is the Hot Fire Shield in CotAB)
 }

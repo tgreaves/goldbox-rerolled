@@ -10,7 +10,7 @@ import { parseItems } from '../src/data/items'
 import { parseEffects } from '../src/data/effects'
 import { SpellTables } from '../src/data/spells'
 import { COAB, POR, setGame, type GameProfile } from '../src/games/profile'
-import { BEHAVIOURS } from '../src/rules/effectkinds'
+import { BEHAVIOURS, ITEM_BEHAVIOURS } from '../src/rules/effectkinds'
 
 /** the effect type fields of the spell kinds' parameters (games/spellrules.ts) */
 const SPELL_EFFECT_KEYS = ['effect', 'opposite', 'remove', 'owner', 'casterEffect', 'probe', 'heldBy']
@@ -48,6 +48,11 @@ describe('effect handler maps', () => {
     })
   }
 
+  it('each game\'s item handlers name existing item behaviours', () => {
+    for (const g of [POR, COAB]) for (const [k, spec] of Object.entries(g.effects.items)) expect(ITEM_BEHAVIOURS[spec.b], `${g.id} item ${k}: ${spec.b}`).toBeTypeOf('function')
+    expect(Object.keys(POR.effects.items).map(Number)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) // 128–139
+  })
+
   it('CotAB names the same entries as PoR where its handler is the same', () => {
     for (const t of [1, 2, 6, 8, 10, 11, 15, 17, 21, 22, 30, 34, 44, 64, 67, 79, 99, 105, 111, 125]) expect(COAB.effects.handlers[t], `type ${t}`).toBe(POR.effects.handlers[t])
   })
@@ -75,9 +80,8 @@ for (const [g, dir] of dirs) {
       const book = start ? SpellTables.load(new Uint8Array(readFileSync(start))) : null
       for (const s of book?.spells ?? []) add(s.effect, `spell ${s.id}`)
       for (const t of spellParamTypes(g)) add(t, 'a spell kind')
-      // the item handlers that grant effect +0x3D: PoR 128–130, 133, 134, 136, 138, 139; CotAB kind 0
-      const grants = (it: { raw: Uint8Array }) => it.raw[0x3e] >= 0x80 &&
-        (g.effects.items === 'kinds' ? (it.raw[0x3e] & 0x7f) === 0 : [128, 129, 130, 133, 134, 136, 138, 139].includes(it.raw[0x3e]))
+      // the item handlers that grant effect +0x3D (PoR 128–130, 133, 134, 136, 138, 139; CotAB kind 0)
+      const grants = (it: { raw: Uint8Array }) => it.raw[0x3e] >= 0x80 && g.effects.items[it.raw[0x3e] & 0x7f]?.b === 'grantEffect'
       for (const p of files) {
         const n = p.toUpperCase(), short = p.slice(dir.length + 1)
         const read = (d: Uint8Array, src: string) => {

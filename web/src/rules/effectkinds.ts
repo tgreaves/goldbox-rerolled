@@ -11,7 +11,7 @@ import { F } from '../games/fields'
 import { R, formerLevelsCount } from '../games/rules'
 import { T } from '../games/tables'
 import { Item as ItemRecord, ITEM_SIZE } from '../data/items'
-import { addEffect, addRaw, deflect, drain, fire, fx, handle, has, healedLine, negate, rearm, removeEffect, removeFirst, removeType, restoreStr, runEffect, type FxHost } from './effects'
+import { addEffect, addRaw, deflect, drain, fire, fx, handle, has, healedLine, negate, rearm, removeEffect, removeFirst, removeType, restoreStr, runEffect, setStr, strDec, strKey, type FxHost } from './effects'
 import { refillUses } from './abilities'
 import { strDamageBonus } from './equip'
 import { thiefSkills } from './chargen'
@@ -912,6 +912,13 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   },
 }
 
+/** Run a profile-named item behaviour (rules/effects.ts itemHandler). */
+export function itemBehave(h: FxHost, spec: HandlerSpec, c: Uint8Array, it: Item, ready: boolean): Promise<void> {
+  const b = ITEM_BEHAVIOURS[spec.b]
+  if (!b) throw new Error(`unknown item behaviour ${spec.b}`)
+  return b(h, c, it, ready, spec)
+}
+
 /** Run a profile-named behaviour (rules/effects.ts handle). */
 export function behave(h: FxHost, spec: HandlerSpec, eff: Effect, c: Uint8Array, removal: boolean, event = -1, type = eff.type): void | Promise<void> {
   const b = BEHAVIOURS[spec.b]
@@ -1032,40 +1039,75 @@ function conHitPoints(h: FxHost, c: Uint8Array, con: number) {
 
 // ---------------------------------------------------------------- readied items
 /**
- * CotAB 0x3F034: what readying (or putting away) an item with item +0x3E ≥ 0x80 does, by its kind
- * (+0x3E & 0x7F). Kind 0 runs the generic item handler 147 (0x29A23, through DS:759C and DS:720C):
- * readying adds effect +0x3D (permanent, power 0xFF, removal flag 1) and runs it at once outside combat;
- * putting it away removes the first of that type. 1 Ring of Wizardry: magic-user slots of levels 1–3
- * doubled, or worked out again from the class (the other ring forgotten, I: as the original). 2, 0x0A
- * DEX (and thief skills for 2), 5 STR, 6 CON and CHA, 8 the stat +0x3D, 0x0C INT, 0x0D STR and INT,
- * 0x0B thief skills; 4 an alignment-locked weapon (+0x3D: alignment, damage << 4); 9 putting it away
- * ends Spiritual Hammer (0x17).
+ * What readying (`ready`) or putting away an item with item +0x3E ≥ 0x80 does, named in the profile by
+ * +0x3E & 0x7F (games/effectrules.ts `items`): PoR's item handler 128–139 (FUN_4894_14d0 →
+ * FUN_5216_0000, spec/effects.md "Item handlers"), CotAB's item kind (0x3F034, spec/coab/effects.md).
+ * +0x3D is the item's value (an effect type, a stat, an alignment and damage).
  */
-export async function itemKind(h: FxHost, c: Uint8Array, it: Item, ready: boolean) {
-  const v = it.raw[0x3d]
-  const thief = () => { const t = h.tables?.(); if (t) thiefSkills(t, c, h.itemsOf(c)) } // 0x50F5A
-  switch (it.raw[0x3e] & 0x7f) {
-    case 0:
-      if (!ready) { await removeFirst(h, c, v); break }
-      { const e = addRaw(h, c, v, 0, 0xff, 1); if (!h.inCombat()) await runEffect(h, v, e, c) }
-      break
-    case 1:
-      if (ready) for (let i = 0; i < 3; i++) c[F.muSlots + i] = (c[F.muSlots + i] * 2) & 0xff
-      else muSlotsAgain(h, c)
-      break
-    case 2: await effectiveStat(h, c, 3); thief(); break
-    case 4: // also when putting it away, as the original
-      if ((v & 0x0f) !== c[F.alignment]) { it.ready = false; fx.dmgType = 8; h.damage(c, v >> 4, 0, false) }
-      break
-    case 5: await effectiveStat(h, c, 0); break
-    case 6: await effectiveStat(h, c, 4); await effectiveStat(h, c, 5); break
-    case 8: if (v <= 5) await effectiveStat(h, c, v); break
-    case 9: if (!ready) await removeFirst(h, c, 0x17); break
-    case 0x0a: await effectiveStat(h, c, 3); break
-    case 0x0b: thief(); break
-    case 0x0c: await effectiveStat(h, c, 1); break
-    case 0x0d: await effectiveStat(h, c, 0); await effectiveStat(h, c, 1); break
-  }
+type ItemBehaviour = (h: FxHost, c: Uint8Array, it: Item, ready: boolean, p: HandlerSpec) => Promise<void>
+
+export const ITEM_BEHAVIOURS: Record<string, ItemBehaviour> = {
+  /**
+   * PoR 128–130, 133, 134, 136, 138, 139 (2eda), CotAB kind 0 (the generic handler 147, 0x29A23 through
+   * DS:759C and DS:720C): readying adds effect +0x3D raw (permanent, `power`, `flag`) and runs its handler
+   * at once (with `outsideCombat`, only out of combat); putting it away removes the first of that type,
+   * with `quietly` without its removal callback
+   */
+  async grantEffect(h, c, it, ready, p) {
+    const v = it.raw[0x3d]
+    if (!ready) {
+      if (!p.quietly) { await removeFirst(h, c, v); return }
+      const list = h.effectsOf(c), e = list.find((x) => x.type === v)
+      if (e) list.splice(list.indexOf(e), 1)
+      return
+    }
+    const e = addRaw(h, c, v, 0, num(p, 'power'), num(p, 'flag'))
+    if (!p.outsideCombat || !h.inCombat()) await runEffect(h, v, e, c)
+  },
+  /**
+   * PoR 131 Gauntlets of Ogre Power (0x3A187): readying tries STR `str`/`pct` (FUN_5216_115c), `msg` when
+   * it raised it, and always adds `effect` (flag 1) holding the STR to restore; putting them away removes
+   * the record of that STR (bug kept: at that STR now, the first record of the type, whatever it holds)
+   */
+  async strengthItem(h, c, _it, ready, p) {
+    const str = num(p, 'str'), pct = num(p, 'pct'), type = num(p, 'effect')
+    if (ready) {
+      const { ok, pw } = setStr(h, c, str, pct)
+      if (ok) say(h, c, p.msg as string)
+      addRaw(h, c, type, 0, pw, 1)
+      return
+    }
+    const atIt = c[F.stat[0]] === str && c[F.strPct] === pct
+    const e = h.effectsOf(c).find((x) => x.type === type && (atIt || strKey(strDec(x.power)) === strKey([str, pct])))
+    if (e) await removeEffect(h, c, e)
+  },
+  /**
+   * PoR 132 (30a5), CotAB kind 4: +0x3D low nibble an alignment, high nibble damage: of another
+   * alignment the item is put down and does that damage as magic; on readying, with `alsoUnready`
+   * (CotAB) when putting it away too
+   */
+  async alignmentLocked(h, c, it, ready, p) {
+    const v = it.raw[0x3d]
+    if ((ready || p.alsoUnready) && (v & 0x0f) !== c[F.alignment]) { it.ready = false; fx.dmgType = 8; h.damage(c, v >> 4, 0, false) }
+  },
+  /** PoR 135 Boulder (0x3A364): readied with STR below `str`, it is put down with `msg` */
+  async needsStrength(h, c, it, ready, p) { if (ready && c[F.stat[0]] < num(p, 'str')) { it.ready = false; h.print(p.msg as string) } },
+  /** PoR 137 (317a), CotAB kind 9: putting it away ends effect `type` (Spiritual Hammer), and with it the item */
+  async unreadyEnds(h, c, _it, ready, p) { if (!ready) await removeFirst(h, c, num(p, 'type')) },
+  /** CotAB kind 1 Ring of Wizardry: the magic-user slots of levels 1–`levels` doubled; put away, worked out again from the class (the other ring forgotten, I: as the original) */
+  async doubleSlots(h, c, _it, ready, p) {
+    if (ready) for (let i = 0; i < num(p, 'levels'); i++) c[F.muSlots + i] = (c[F.muSlots + i] * 2) & 0xff
+    else muSlotsAgain(h, c)
+  },
+  /**
+   * CotAB kinds 2, 5, 6, 8, 0x0A–0x0D: the current-stat routine (0x4C389) for `stats` (0 STR … 5 CHA),
+   * with `fromValue` for the stat +0x3D (when 5 or below); with `thief`, the thief skills again (0x50F5A)
+   */
+  async recomputeStats(h, c, it, _ready, p) {
+    const stats = p.fromValue ? (it.raw[0x3d] <= 5 ? [it.raw[0x3d]] : []) : list(p, 'stats')
+    for (const k of stats) await effectiveStat(h, c, k)
+    if (p.thief) { const t = h.tables?.(); if (t) thiefSkills(t, c, h.itemsOf(c)) }
+  },
 }
 
 /**
