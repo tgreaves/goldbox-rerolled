@@ -1159,13 +1159,14 @@ export class Engine {
     const s8 = (v: number) => (v << 24) >> 24
     // the save (0x42EC3 / 0x4BDA1): 1 fails, 20 succeeds, else the effects' event 12, byte compare
     const saved = (c: Uint8Array, kind: number, b: number) => {
+      fx.saved = true // CotAB DS:6FC2 (0x4BDA1): set while event 12 runs, then the outcome
       const r = this.roll(1, 20)
-      if (r === 1) return false
-      if (r === 20) return true
+      if (r === 1) return (fx.saved = false)
+      if (r === 20) return (fx.saved = true)
       fx.save = r + s8(c[F.saveBonus]) + b
       fx.saveType = kind
       void fire(host, c, 12)
-      return c[F.saves + kind] <= (fx.save & 0xff)
+      return (fx.saved = c[F.saves + kind] <= (fx.save & 0xff))
     }
     // the attack (0x42DAF / 0x4BC8D): 1 misses, 20 counts 100, the effects' event 16, against AC
     const hit = (c: Uint8Array) => {
