@@ -6,7 +6,7 @@ import type { Spell } from '../data/spells'
 import type { Effect } from '../data/effects'
 import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, type Battlefield, type CellInfo } from './battlefield'
 import { dexMissile, recalc } from './equip'
-import { fx, fire, damageText, healedLine, addEffect, addRaw, removeEffect, removeType, type FxHost } from './effects'
+import { fx, fire, damageText, healedLine, addEffect, addRaw, removeEffect, removeType, runEffect, type FxHost } from './effects'
 import { heal as healChar } from './camp'
 import { amount, castShared, line, spellSpec } from './spellkinds'
 import type { Amount, SpellSpec } from '../games/spellrules'
@@ -1509,6 +1509,13 @@ export class Battle implements FxHost {
     for (const t of targets) this.recalc(t.c)
   }
 
+  /** each target's first record of `type` runs its handler at once (CotAB 0x4AB77 with arg 0) */
+  private async runAfter(targets: Fighter[], type: number) {
+    for (const t of targets) {
+      const e = this.e.effectsOf(t.c).find((x) => x.type === type)
+      if (e) await runEffect(this, type, e, t.c)
+    }
+  }
   /** Add the spell's effect (or `type`) at power L through FUN_5216_1656, with the spell's line. */
   private async addSpellEffect(t: Fighter, s: Spell, p: SpellSpec, saved: boolean, dur: number, L: number, type = s.effect, flag = 0) {
     if (type) await addEffect(this, t.c, type, dur, L, flag, s.save, saved, false, p.msg ?? '')
@@ -1519,13 +1526,44 @@ export class Battle implements FxHost {
 
   /** The kinds that need the battlefield (the shared ones are in rules/spellkinds.ts). */
   static readonly spellKinds: Record<string, (this: Battle, x: BattleCast, p: SpellSpec) => Promise<void>> = {
-    /** Apply (PoR FUN_4e53_08c3) for an effect-only spell: touch, the save, the effect (flag `flag`; `rollDuration` per target) */
+    /**
+     * Apply (PoR FUN_4e53_08c3, CotAB 0x44EEF) for an effect-only spell: touch, the save, the effect (flag
+     * `flag`; `rollDuration` per target). Before it: with `immuneHd`, a first target of at least that many
+     * hit dice (+0xE5) only says `immuneMsg` and nothing happens (CotAB Sticks to Snakes 0x482CA); with
+     * `casterEffect`, the caster first gets that effect through the add-effect routine, power 0, no line
+     * (CotAB Dispel Evil 0x483E9). After it, with `runAfter`, the first target's ('first') or each target's
+     * ('each') first record of the effect runs its handler at once (Sticks to Snakes; Charm Monsters)
+     */
     async apply({ f, s, L, dur, targets }, p) {
+      if (p.immuneHd !== undefined && targets[0] && s8(targets[0].c[F.hitDice]) >= (p.immuneHd as number)) {
+        this.print(line(name(targets[0].c), p.immuneMsg as string))
+        return
+      }
+      if (p.casterEffect !== undefined) await addEffect(this, f.c, p.casterEffect as number, dur, 0, 0, 0, false, false, '')
       for (const t of targets) {
         const d = p.rollDuration ? amount(p.rollDuration as Amount, L, (n, k) => this.e.roll(n, k)).total : dur
         if (!(await this.spellTouch(f.c, s, t))) { this.print(`${name(f.c)} misses`); continue }
         await this.addSpellEffect(t, s, p, this.spellSave(t, s), d, L, s.effect, (p.flag as number | undefined) ?? 0)
       }
+      if (p.runAfter) await this.runAfter(p.runAfter === 'first' ? targets.slice(0, 1) : targets, s.effect)
+    },
+    /**
+     * Apply, then a probe on the caster's combat target (CotAB Poison 0x48240): event 9 there with effect
+     * `probe` being added; unless something blocks it, handler `probe` runs as the caster's (64: the
+     * current combatant's target saves vs 0 or dies). I: no combat target, nothing (the original reads
+     * through the empty pointer); the effect record the handler gets is a blank one (the original's is
+     * uninitialised)
+     */
+    async applyProbe(x, p) {
+      await Battle.spellKinds.apply.call(this, x, p)
+      const t = this.targetOf(x.f.c)
+      if (!t) return
+      const probe = p.probe as number
+      fx.adding = probe
+      await fire(this, t, 9)
+      const ok = fx.adding === probe
+      fx.adding = 0
+      if (ok) await runEffect(this, probe, { type: probe, duration: 0, power: 0, flag: 0 }, x.f.c)
     },
     /** Bless / Curse (0f4f): only the caster's side, not next to an enemy (`notEngaged`), or only the enemy */
     async applySide({ f, s, L, dur, targets }, p) {

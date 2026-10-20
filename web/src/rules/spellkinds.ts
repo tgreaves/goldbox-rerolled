@@ -8,7 +8,7 @@ import type { Amount, SpellSpec, Term } from '../games/spellrules'
 import { game } from '../games/profile'
 import { Tables } from './chargen'
 import { derive, levelLimit, xpFor } from './training'
-import { addEffect, addRaw, fx, removeEffect, removeFirst, removeOne, setStr, strEnc, type FxHost } from './effects'
+import { addEffect, addRaw, fire, fx, removeEffect, removeFirst, removeOne, setStr, strEnc, type FxHost } from './effects'
 import { effectiveStat } from './effectkinds'
 import { F } from '../games/fields'
 
@@ -170,6 +170,54 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
     if (n > 18) { if ((p.pctClasses as number[]).some(counts)) pct = Math.min(100, t[F.strPct] + 10 * (n - 18)); n = 18 }
     const power = p.bonusPower !== undefined ? (bonus + num(p, 'bonusPower')) & 0xff : undefined
     await strengthEffect(h, t, n, pct, num(p, 'effect'), dur, msgOf(p), p.unaffected as string | undefined, power)
+  },
+  /**
+   * Neutralize Poison (CotAB 0x4814A): nothing on an Animated (status 1) first target; a poisoned one
+   * (`effect`) has 0 HP made 1, `removes` taken out without re-arming (DS:6FB6), the line, and is up and
+   * in play again; anyone else is `unaffected`
+   */
+  async curePoison({ h, targets: [t] }, p) {
+    if (!t || t[F.status] === 1) return
+    if (!h.effectsOf(t).some((x) => x.type === num(p, 'effect'))) { say(h, t, p.unaffected as string); return }
+    if (t[F.hp] === 0) t[F.hp] = 1
+    fx.noRearm = true
+    for (const type of p.removes as number[]) await removeFirst(h, t, type)
+    fx.noRearm = false
+    say(h, t, msgOf(p))
+    t[F.inPlay] = 1; t[F.status] = 0
+  },
+  /**
+   * Raise Dead (CotAB 0x4848A): a first target of one of `statuses` with a base CON above 0 and not of a
+   * race in `races` loses `removes` without re-arming, is up and in play, loses a point of base CON (the
+   * current one worked out again), has 1 HP and the line; no survival roll. ?: on the battlefield the
+   * port puts no fallen body back on its square
+   */
+  async raise({ h, targets: [t] }, p) {
+    if (!t || !(p.statuses as number[]).includes(t[F.status]) || t[F.baseStat[4]] === 0 || (p.races as number[]).includes(t[F.race])) return
+    fx.noRearm = true
+    for (const type of p.removes as number[]) await removeFirst(h, t, type)
+    fx.noRearm = false
+    t[F.status] = 0; t[F.inPlay] = 1
+    t[F.baseStat[4]]--
+    await effectiveStat(h, t, 4)
+    t[F.hp] = 1
+    say(h, t, msgOf(p))
+  },
+  /**
+   * Slay Living (CotAB 0x4856D): a probe through event 9 with damage `probe` of type `probeType`; zeroed,
+   * `unaffected`; else a failed save vs `saveType` is status 6 with the line, a saved one takes the
+   * amount (type `dmgType`, the dice count kept, no save)
+   */
+  async slay({ h, L, targets: [t] }, p) {
+    if (!t) return
+    fx.dmgType = num(p, 'probeType'); fx.dmg = num(p, 'probe')
+    await fire(h, t, 9)
+    if (fx.dmg === 0) { say(h, t, p.unaffected as string); return }
+    if (!h.save(t, num(p, 'saveType'), 0)) { h.setStatus(t, 6, line(h.name(t), msgOf(p))); return }
+    fx.dmgType = num(p, 'dmgType')
+    const { n, total } = amount(p.amount as Amount, L, h.roll.bind(h))
+    fx.dice = n
+    h.damage(t, total, 0, false)
   },
   /** Animate Dead (206f): ignores targeting; every dead creature of type 0, while L lasts */
   async animateDead({ h, caster, L }, p) {

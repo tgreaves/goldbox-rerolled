@@ -119,8 +119,8 @@ export const POR_SPELLS: SpellRules = {
 /**
  * CotAB's table (DS:72BA): ids 1–56 are PoR's spells, most with the same handler (spec/coab/spells.md
  * §2, "same"); 57–67 keep PoR's item spells where the record matches; 58 and 66–100 are its own.
- * Not yet transcribed (spec/coab/spells.md §2, port status): the new 67, 68, 70, 73, 75, 76, 78, 79,
- * 81–86, 92, 93, 98; until they are, they run Apply ('apply').
+ * Not yet transcribed (spec/coab/spells.md §2, port status): the new 78, 79, 81–86, 92, 93, 98; until
+ * they are, they run Apply ('apply').
  */
 const POR_HANDLERS_1_57 = Object.fromEntries(Object.entries(POR_SPELLS.handlers).filter(([id]) => Number(id) <= 57 || [60, 61, 62, 63, 64, 65].includes(Number(id))))
 
@@ -146,17 +146,26 @@ export const COAB_SPELLS: SpellRules = {
     48: { ...POR_SPELLS.handlers[48], attacksAfter: 0 }, // 478cc → 477eb: no event-18 pass
     55: { ...POR_SPELLS.handlers[55], attacksAfter: 0 }, // 47c9e → 477eb
     51: { ...POR_SPELLS.handlers[51] }, // 47c49: the bolt routines' differences are R.bolt
+    // 0x4BE7C keeps the dice count (DS:6FB2) for 4 (45d68), 20 (46222), 65 (480ba), 66, 72, 74, 87
+    ...Object.fromEntries([4, 20, 65].map((id) => [id, { ...POR_SPELLS.handlers[id], recordDice: 1 }])),
     58: { k: 'heal', amount: { n: 2, d: 8, plus: 1 } }, // 47edd Cure Serious Wounds
     59: { k: 'setStrength', str: 21, pct: 0, effect: 0x92, msg: 'is stronger' }, // 47f27, by the base-STR rule (strength)
-    66: { k: 'damage', amount: { n: 2, d: 8, plus: 1 }, dmgType: 8 }, // 480f5 Cause Serious Wounds
-    ...each([67, 68, 70, 73, 75, 76, 78, 79, 81, 82, 83, 84, 85, 86, 92, 93, 98], { k: 'apply' }),
+    66: { k: 'damage', amount: { n: 2, d: 8, plus: 1 }, dmgType: 8, recordDice: 1 }, // 480f5 Cause Serious Wounds
+    ...each([78, 79, 81, 82, 83, 84, 85, 86, 92, 93, 98], { k: 'apply' }),
+    67: { k: 'curePoison', effect: 0x37, removes: [0x37, 0x16, 0x0f], msg: 'is unpoisoned', unaffected: 'is unaffected' }, // 4814a
+    // 48240 Poison: Apply (effect 0: only the save), then the 0x40 probe on the caster's combat target
+    68: { k: 'applyProbe', probe: 0x40 },
+    70: { k: 'apply', immuneHd: 6, immuneMsg: 'smashes them flat', runAfter: 'first' }, // 482ca Sticks to Snakes (3, 2L)
+    73: { k: 'apply', casterEffect: 4, msg: 'is affected' }, // 483e9 Dispel Evil: 4 on the caster, then 0x91
+    75: { k: 'raise', statuses: [6, 1], races: [2], removes: [0x20, 0x37], msg: 'is raised' }, // 4848a Raise Dead
+    76: { k: 'slay', probe: 0x43, probeType: 0x40, saveType: 4, msg: 'is slain', amount: { n: 2, d: 8, plus: 1 }, dmgType: 8, unaffected: 'is unaffected' }, // 4856d
     69: { k: 'apply', msg: 'is protected' }, // 45de4
     71: { k: 'heal', amount: { n: 3, d: 8, plus: 3 } }, // 48360 Cure Critical Wounds
-    72: { k: 'damage', amount: { n: 3, d: 8, plus: 3 }, dmgType: 8 }, // 483a1 Cause Critical Wounds (touch, negates)
-    74: { k: 'damage', amount: { n: 6, d: 8 }, dmgType: 9 }, // 4844a Flame Strike (half)
+    72: { k: 'damage', amount: { n: 3, d: 8, plus: 3 }, dmgType: 8, recordDice: 1 }, // 483a1 Cause Critical Wounds (touch, negates)
+    74: { k: 'damage', amount: { n: 6, d: 8 }, dmgType: 9, recordDice: 1 }, // 4844a Flame Strike (half)
     77: { k: 'apply', msg: 'is affected' }, // 45daa
-    80: { k: 'apply' }, // 48714 Invisibility to Animals (touch)
-    87: { k: 'damage', amount: { n: 3, d: 10 }, dmgType: 0x0a }, // 48e7b Ice Storm
+    80: { k: 'apply', msg: 'is invisible' }, // 48714 Invisibility to Animals (touch)
+    87: { k: 'damage', amount: { n: 3, d: 10 }, dmgType: 0x0a, recordDice: 1 }, // 48e7b Ice Storm
     88: { k: 'apply', msg: 'is protected' }, // 48ebe Minor Globe
     91: { k: 'cloud', dirs: 'killCloud', count: 9, cell: 0x1c, owner: 0x5b, msg: 'Creates a poisonous cloud' }, // 48f05 Cloudkill (DS:7579, DS:27DD)
     89: { k: 'removeCurse', effect: 0x24, item: 'unready', itemMsg: 'has an item un-cursed' }, // 47575 Remove Curse

@@ -325,6 +325,101 @@ describe.skipIf(!haveCoab)('CotAB clouds and Dispel Magic', () => {
   })
 })
 
+describe.skipIf(!haveCoab)('CotAB new spells: 67, 68, 70, 73, 75, 76', () => {
+  const files = haveCoab ? load(coab, COAB) : null
+  afterAll(() => setGame(POR))
+  const cotab = () => { setGame(COAB); return field(files!) }
+
+  it('Neutralize Poison (67): not on the Animated; a poisoned one is up with 1 HP (0x4814A)', async () => {
+    const { b, add, cast, has, printed } = cotab()
+    const cleric = add(5, 5, 0, 'CLERIC')
+    const t = add(6, 5, 0, 'T')
+    t.c[F.hp] = 0; t.c[F.status] = 6; t.c[F.inPlay] = 0
+    for (const type of [0x37, 0x16, 0x0f]) addRaw(b, t.c, type, 0, 0xff, 0)
+    await cast(cleric, 67, 9, [t])
+    expect([t.c[F.hp], t.c[F.status], t.c[F.inPlay]]).toEqual([1, 0, 1])
+    expect([0x37, 0x16, 0x0f].map((x) => has(t, x).length)).toEqual([0, 0, 0])
+    expect(printed).toEqual(['T is unpoisoned'])
+    await cast(cleric, 67, 9, [t])
+    expect(printed.at(-1)).toBe('T is unaffected')
+    const z = add(7, 5, 0, 'ZOMBIE')
+    z.c[F.status] = 1
+    addRaw(b, z.c, 0x37, 0, 0xff, 0)
+    printed.length = 0
+    await cast(cleric, 67, 9, [z])
+    expect([printed, has(z, 0x37).length]).toEqual([[], 1])
+  })
+
+  it('Poison (68): only a save on the target; handler 0x40 kills the caster\'s combat target (quirk, 0x48240)', async () => {
+    const { add, cast, dice, printed } = cotab()
+    const cleric = add(5, 5, 0, 'CLERIC')
+    const kobold = add(6, 5, 1, 'KOBOLD')
+    const orc = add(9, 5, 1, 'ORC')
+    cleric.target = orc
+    dice.push(5, 1) // the target's save (nothing follows it), then the orc's save vs 0
+    await cast(cleric, 68, 9, [kobold])
+    expect(dice).toEqual([])
+    expect([kobold.c[F.status], orc.c[F.status]]).toEqual([0, 6])
+    expect(printed).toContain('ORC is Poisoned')
+  })
+
+  it('Sticks to Snakes (70): 6 hit dice smash them; else effect 3 for 2L, run at once (0x482CA)', async () => {
+    const { add, cast, has, printed } = cotab()
+    const druid = add(5, 5, 0, 'DRUID')
+    const giant = add(6, 5, 1, 'GIANT', { hd: 6 })
+    await cast(druid, 70, 5, [giant])
+    expect([has(giant, 3).length, printed]).toEqual([0, ['GIANT smashes them flat']])
+    const orc = add(7, 5, 1, 'ORC', { hd: 1 })
+    orc.c[F.attacksLeft] = 1
+    await cast(druid, 70, 5, [orc])
+    expect(has(orc, 3).map((x) => [x.duration, x.power])).toEqual([[10, 4]]) // 5 snakes, one taken by the attack left
+    expect(printed).toContain('ORC is fighting with snakes')
+    expect(orc.r[3]).toBe(0)
+  })
+
+  it('Dispel Evil (73): effect 4 on the caster (power 0), then 0x91 at L "is affected" (0x483E9)', async () => {
+    const { add, cast, has, printed } = cotab()
+    const cleric = add(5, 5, 0, 'CLERIC')
+    await cast(cleric, 73, 9, [cleric])
+    expect(has(cleric, 4).map((x) => [x.duration, x.power])).toEqual([[9, 0]])
+    expect(has(cleric, 0x91).map((x) => [x.duration, x.power])).toEqual([[9, 9]])
+    expect(printed).toContain('CLERIC is affected')
+  })
+
+  it('Raise Dead (75): not an elf; a CON point lost, 1 HP, no survival roll (0x4848A)', async () => {
+    const { b, add, cast, has, printed } = cotab()
+    const cleric = add(5, 5, 0, 'CLERIC')
+    const dead = (race: number) => {
+      const t = add(6, 5, 0, 'T')
+      t.c[F.race] = race; t.c[F.status] = 6; t.c[F.inPlay] = 0; t.c[F.hp] = 0
+      t.c[F.baseStat[4]] = t.c[F.stat[4]] = 12
+      addRaw(b, t.c, 0x37, 0, 0xff, 0)
+      return t
+    }
+    const elf = dead(2)
+    await cast(cleric, 75, 9, [elf])
+    expect(elf.c[F.status]).toBe(6)
+    const man = dead(7)
+    await cast(cleric, 75, 9, [man])
+    expect([man.c[F.status], man.c[F.inPlay], man.c[F.hp], man.c[F.baseStat[4]], man.c[F.stat[4]]]).toEqual([0, 1, 1, 11, 11])
+    expect(has(man, 0x37).length).toBe(0)
+    expect(printed).toEqual(['T is raised'])
+  })
+
+  it('Slay Living (76): a failed save slays; a saved one takes 2d8 + 1 (0x4856D)', async () => {
+    const { add, cast, dice, hits, printed } = cotab()
+    const cleric = add(5, 5, 0, 'CLERIC')
+    const a = add(6, 5, 1, 'A')
+    await cast(cleric, 76, 9, [a])
+    expect([a.c[F.status], printed]).toEqual([6, ['A is slain']])
+    const c = add(7, 5, 1, 'C')
+    dice.push(20, 9)
+    await cast(cleric, 76, 9, [c])
+    expect(hits).toEqual([['C', 10, false]])
+    expect([fx.dice, fx.dmgType]).toEqual([2, 8])
+  })
+})
+
 describe.skipIf(!por || !existsSync(por))('PoR keeps its own rules', () => {
   const files = por && existsSync(por) ? load(por, POR) : null
   it('reads Stinking Cloud\'s squares from START.EXE (DS:290D)', () => {

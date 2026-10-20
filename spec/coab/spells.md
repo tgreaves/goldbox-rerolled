@@ -46,17 +46,17 @@ Part of [[spec/coab/README]]. Read from the CotAB image (2026-10-20). Marks: O s
 | 60 | 47fac | same arguments; the path routine changed (as 51) |
 | 66 | 480f5 | **new** Cause Serious Wounds: Apply 2d8 + 1, type 8, no touch roll, no save |
 | 67 | 4814a | **new** Neutralize Poison: Animated target → nothing; poisoned (0x37): HP 0 → 1, remove 0x37, 0x16, 0x0F, "is unpoisoned", status 0 and in play; else "is unaffected" |
-| 68 | 48240 | **new** Poison: Apply finds effect 0 (nothing, the save still rolled); then a 0x40 probe through event 9 on the **caster's combat target**, and if not vetoed handler 0x40 (save vs 0 or die) on the caster with an uninitialised effect pointer |
-| 70 | 482ca | **new** Sticks to Snakes: target HD (+0xE5) ≥ 6 → "smashes them flat"; else Apply (effect 3, 2L, power L) and run handler 3 |
+| 68 | 48240 | **new** Poison: Apply finds effect 0 (nothing, the save still rolled); then a 0x40 probe through event 9 on the **caster's combat target** (caster +0x18D → +0xA; DS:6FAD = 0x40, left set), and if not vetoed handler 0x40 run as the caster's with an uninitialised effect pointer: it is PoR's poison-on-hit, so the **current combatant's target** saves vs 0 or dies (the spell's own targets only roll a save) |
+| 70 | 482ca | **new** Sticks to Snakes: first target's HD (+0xE5, signed) ≥ 6 → "<target> smashes them flat" (plain line); else Apply (effect 3, 2L, power L) and handler 3 run on the first target's first record of 3 |
 | 71 | 48360 | **new** Cure Critical Wounds: heal 3d8 + 3 |
 | 72 | 483a1 | **new** Cause Critical Wounds: Apply 3d8 + 3, type 8, touch, save vs 4 negates |
-| 73 | 483e9 | **new** Dispel Evil: caster gets effect 4 (L, flag 0), then Apply → 0x91 (L, pw L), self |
+| 73 | 483e9 | **new** Dispel Evil: caster gets effect 4 through add-effect (duration L, power 0, flag 0, no line), then Apply → 0x91 (L, pw L) "is affected", self |
 | 74 | 4844a | **new** Flame Strike: Apply 6d8, type 9, save vs 4 for half |
-| 75 | 4848a | **new** Raise Dead: status 6 or 1, base CON > 0, not an elf; remove 0x20, 0x37; status 0, in play; base CON − 1, CON recomputed; HP 1; "is raised" (no survival roll) |
-| 76 | 4856d | **new** Slay Living: a probe (dmgType 0x40) through event 9 (zeroed → "is unaffected"); failed save vs 4 → status 6 "is slain"; saved → 2d8 + 1, type 8 |
+| 75 | 4848a | **new** Raise Dead: status 6 or 1, base CON (+0x18) > 0, race (+0x74) not 2 (elf); remove 0x20, 0x37 without re-arming; status 0, in play; base CON − 1, CON recomputed; HP 1; "is raised" (no survival roll) |
+| 76 | 4856d | **new** Slay Living: a probe through event 9 with DS:6FAF (damage type) = 0x40 and DS:6FAE (damage) = 0x43 (damage zeroed → "is unaffected"; I: no CotAB event-9 handler zeroes it for this type, so it always passes); failed save vs 4 → status 6 "is slain"; saved → 2d8 + 1 (dice count kept), type 8, no save |
 | 78 | 4862b | **new** Entangle: only where the area's outdoor word (A 0x1CC) is 0; each target saves vs 4 or gets 0x88 ("is entangled"); **bug**: its duration is Duration(0x88), whose record bytes give 6 + 3·L with L uninitialised unless the caster gate or from-item applies |
 | 79 | 486e7 → 45a94 | **new** Faerie Fire: effect 7, 4L, pw L, "is highlighted"; targets bought from a pool of L by size; **the last listed target always counts as saved** (45b4d); humanoid/size rule applies |
-| 80 | 48714 | **new** Invisibility to Animals: Apply → 0x45, 10 + L; touch (a to-hit roll on the ally) |
+| 80 | 48714 | **new** Invisibility to Animals: Apply → 0x45, 10 + L, "is invisible"; touch (a to-hit roll on the ally) |
 | 81 | 4874c → 45a94 | **new** Charm Monsters: as 79 with a pool of 2d4 by HD (0–1 → 1, 2 → 2, 3 → 4, else 8); effect 0x0B, permanent, pw L only (I: an enemy caster charms to side 0); the 0x0B handler run on each |
 | 82 | 487dd | **new** Confusion: up to 2d8 targets; each saves vs 4 or gets 0x23 for 2 + L, "is confused" |
 | 83 | 488a1 | **new** Dimension Door: releases engulf/hug holds (0x90/0x8B on the caster's holders), moves the caster to the target square, "teleports" |
@@ -73,6 +73,8 @@ Part of [[spec/coab/README]]. Read from the CotAB image (2026-10-20). Marks: O s
 | 99 | 49761 | **new** (class 3): heal 2d4 + 2, "is Healed" |
 | 100 | 4768b | **new** Bestow Curse: **does nothing** (its record has effect 0 and is not touch: Apply only rolls a save; a data bug) |
 
+Dice: 0x4BE7C (roll, keeping the dice count in DS:6FB2 for the resistances) is used by 4, 15, 20, 47/64, 65, 66, 72, 74, 76, 87, 92, 98 (O, its callers).
+
 ## 3. Durations (O)
 
 0x44E02 is byte-identical to PoR's: special cases 40 (1d6×10), 57 and 61 (5d4), 59 (1d4×10 + 40), 63 (2d10×10 in combat, else (1d10 + 10)×10), 67 (1440, dead in CotAB: Neutralize Poison never asks); otherwise record bytes 4 + 5·L. New: 69 10L, 70 2L, 73 L, 77 12, 79 4L, 80 10 + L, 82 2 + L, 84 L, 85 2 + L, 86 L, 88 L, 91 L, 94 L, 100 10L; 81, 93, 95–97 permanent.
@@ -88,4 +90,4 @@ Part of [[spec/coab/README]]. Read from the CotAB image (2026-10-20). Marks: O s
 
 ## Port status
 
-The port has a per-game spell handler map (`web/src/games/spellrules.ts`: id → kind and parameters), 2026-10-20. Ids the table marks "same" use PoR's kinds; 58, 66, 69, 71, 72, 74, 77, 80, 87, 88, 94, 95–97, 99 and 100 are expressed with existing kinds (heal, damage, apply, hold). Done since: the add-effect and heal helpers (§1) as effect rules data (`replaces`, `healBlock`), the base-STR rule for 12, 35 and 59 (`spells.strength`), and 12–15, 32 as parameters; 35's class rule (`counts`, `rollCounting`, `bonusPower`), 43/89 (`item: 'unready'`), 48/55 (`attacksAfter: 0`); 34 and 91 on the `cloud` kind (squares from START.EXE, T.gasCloud / T.killCloud; `dedupe`), the occupant check by the game's rule (`R.clouds`), 0x5B's removal (`liftZone`), 41/46's zone part (`zones` on the battle's `dispel`). Tests: `web/test/coabspells.test.ts`. I: the zone number (largest of the list + 1) and the cells a zone replaced are the port's simplification of both games' bookkeeping (the original counts the caster's zones but the last, and takes a replaced cloud or body cell from the other zone or the body list). Not yet transcribed: the new kinds (67, 68, 70, 73, 75, 76, 78, 79, 81–86, 92, 93, 98).
+The port has a per-game spell handler map (`web/src/games/spellrules.ts`: id → kind and parameters), 2026-10-20. Ids the table marks "same" use PoR's kinds; 58, 66, 69, 71, 72, 74, 77, 80, 87, 88, 94, 95–97, 99 and 100 are expressed with existing kinds (heal, damage, apply, hold). Done since: the add-effect and heal helpers (§1) as effect rules data (`replaces`, `healBlock`), the base-STR rule for 12, 35 and 59 (`spells.strength`), and 12–15, 32 as parameters; 35's class rule (`counts`, `rollCounting`, `bonusPower`), 43/89 (`item: 'unready'`), 48/55 (`attacksAfter: 0`); 34 and 91 on the `cloud` kind (squares from START.EXE, T.gasCloud / T.killCloud; `dedupe`), the occupant check by the game's rule (`R.clouds`), 0x5B's removal (`liftZone`), 41/46's zone part (`zones` on the battle's `dispel`). Tests: `web/test/coabspells.test.ts`. I: the zone number (largest of the list + 1) and the cells a zone replaced are the port's simplification of both games' bookkeeping (the original counts the caster's zones but the last, and takes a replaced cloud or body cell from the other zone or the body list). 67 (`curePoison`), 68 (`applyProbe`), 70 and 73 (`apply` with `immuneHd`, `runAfter`, `casterEffect`), 75 (`raise`), 76 (`slay`), the dice count for 4, 20, 65, 66, 72, 74, 87 (`recordDice`), 80's line. Not yet transcribed: the new kinds (78, 79, 81–86, 92, 93, 98).
