@@ -1,7 +1,7 @@
 // Monster specials of effect event 14 (the AI's turn, before its attacks) that work on the battlefield:
 // the breath bolt, thrown lightning, the area breaths, the eye rays and the gaze, with the AI target
-// hook they share. Each is the original's procedure; the game profile (games/effectrules.ts) names it
-// with its parameters for CotAB, PoR's handler switch (rules/effects.ts) calls it for type 88.
+// hook they share. Each is the original's procedure; each game's profile (games/effectrules.ts) names it
+// with its parameters (PoR's type 88 and CotAB's specials).
 // PoR: spec/effects.md; CotAB: spec/coab/effects.md §2 and §7. CotAB addresses are image offsets.
 import type { Effect } from '../data/effects'
 import type { HandlerSpec } from '../games/effectrules'
