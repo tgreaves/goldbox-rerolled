@@ -115,7 +115,7 @@ Column "PoR" = source offset in the 285-byte PoR record as copied by the convert
 | 0x137–0x13B | 5 | magic-user spell slots L1–5 | 0xB5–0xB7 → 0x137–0x139 | changed | O |
 | 0x13C | 2 | XP award base (monsters) | 0xB8 | moved | O (copy) / I (Fire Knife 350 + 8/HP) |
 | 0x13E | 1 | XP per HP | 0xBA | moved | O / I |
-| 0x13F, 0x140 | 1, 1 | portrait head, body | 0xBB, 0xBC | moved | O (copy) / I |
+| 0x13F, 0x140 | 1, 1 | portrait head, body | 0xBB, 0xBC | moved | O: written only (the PoR import copies them, 0x340E4; character set-up stores 1 and 1, 0x34D87) and never read; CotAB shows no character portrait (its HEAD/BODY records are NPC portraits for PICTURE, [[spec/coab/ecl]]) |
 | 0x141, 0x142 | 1, 1 | combat icon head, body/weapon | 0xBD, 0xBE | moved | O (copy) / I |
 | 0x143 | 1 | combat icon slot (assigned on joining) | (0xBF) | changed, not converted | O (`323c:35d9`, `3cd7`) |
 | 0x144 | 1 | icon size | 0xC0 | moved | O |
