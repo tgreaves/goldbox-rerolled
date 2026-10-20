@@ -616,4 +616,19 @@ describe.skipIf(!por || !existsSync(por))('PoR keeps its own rules', () => {
     await addEffect(b, t.c, 0x07, 20, 3, 0)
     expect(b.effectsOf(t.c).map((x) => x.duration)).toEqual([2, 20])
   })
+  it('keeps the dice count (DS:681C) where the handler rolls through FUN_5216_0e2e: 4, 15, 20, 47/64, 65', async () => {
+    setGame(POR)
+    const { add, cast, hits } = field(files!)
+    const mage = add(5, 5, 0, 'MAGE')
+    const orc = add(6, 5, 1, 'ORC')
+    const count = async (id: number, L: number) => { fx.dice = 99; await cast(mage, id, L, [orc]); return fx.dice }
+    expect(await count(4, 5)).toBe(1) // 1d8
+    expect(await count(15, 6)).toBe(3) // (L div 2) d4
+    expect(await count(20, 5)).toBe(1) // 1d8 + L
+    expect(await count(65, 6)).toBe(2) // 2d4 + 2
+    expect(await count(64, 6)).toBe(3) // (1d3 × 2 + 1) d6, the 1d3 a 1
+    expect(await count(9, 5)).toBe(99) // Burning Hands: no dice
+    expect(await count(60, 6)).toBe(99) // the Javelin rolls through FUN_5216_0de3
+    expect(hits.length).toBeGreaterThan(0) // the count is kept before the touch roll, hit or miss
+  })
 })

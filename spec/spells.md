@@ -141,7 +141,7 @@ Ranges are in game squares. Durations are in **minutes**, the unit of effect rec
 - **Heal** `FUN_5216_175d(char, amount, force)`: statuses 0, 1, 4, 5 only; without force, blocked by effect 0x32 (mummy rot). HP += amount, capped at max. Dying → Unconscious; outside combat an Unconscious character is revived (handler 0x4E); in combat it stays down.
 - **Caster level** `FUN_10ba_26c2`: class 0 → cleric level char[0x96], class 1 → magic-user level char[0x9B], class 2 (item-only spells) → 12; from an item (`DS:6DBF`), class 0/1 spells use 6.
 - **Duration** `FUN_4e53_07d6`: byte 4 + byte 5 × level, in minutes, except: 40 → 1d6×10; 57, 61 → 5d4; 59 → 1d4×10 + 40; 63 → 2d10×10 in combat, else (1d10+10)×10; 67 → 1440.
-- Dice `FUN_5216_0de3` return a byte (count 0 → 0); `FUN_5216_0e2e` also stores the count in `DS:681C`. Damage types (`DS:6819`): 1 fire, 2 cold, 4 electric, 8 magic.
+- Dice `FUN_5216_0de3` return a byte (count 0 → 0); `FUN_5216_0e2e` also stores the count in `DS:681C` (read by the fire resistances 0x3D, 0x71 and handler 0x7A). The spell handlers that roll through it: 4 (10bd), 15 (1460), 20 (14e9), 47/64 (2744), 65 (306e); Burning Hands, Lightning Bolt and the Javelin roll without it, so the count left from an earlier roll stands (O, every far call to `00b0:004d` in 4e53). Damage types (`DS:6819`): 1 fire, 2 cold, 4 electric, 8 magic.
 
 ### Per spell
 

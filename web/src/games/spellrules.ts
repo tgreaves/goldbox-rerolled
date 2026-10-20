@@ -64,7 +64,9 @@ export const POR_SPELLS: SpellRules = {
     1: { k: 'applySide', side: 'ally', notEngaged: 1, msg: 'is Blessed' }, // 100f → 0f4f
     2: { k: 'applySide', side: 'enemy', msg: 'is Cursed' }, // 1040 → 0f4f
     3: { k: 'heal', amount: { n: 1, d: 8 }, aiTarget: 'woundedNear' }, // 106b
-    4: { k: 'damage', amount: { n: 1, d: 8 }, dmgType: 8 }, // 10a7
+    // the dice through FUN_5216_0e2e, which keeps the count in DS:681C for the resistances (61, 113, 122):
+    // 4, 15, 20, 47/64 (266b), 65; 9, 51, 60 roll without it
+    4: { k: 'damage', amount: { n: 1, d: 8 }, dmgType: 8, recordDice: 1 }, // 10a7
     ...each([5, 11, 18, 22, 29], { k: 'apply', msg: 'is affected' }), // 10e9
     ...each([6, 7, 16, 17, 52, 53, 54], { k: 'apply', msg: 'is protected' }), // 1123
     8: { k: 'apply', msg: 'is cold-resistant' }, // 1162
@@ -73,9 +75,9 @@ export const POR_SPELLS: SpellRules = {
     12: { k: 'enlarge', levels: [[18, 0], [18, 0], [18, 1], [18, 51], [18, 76], [18, 91], [18, 100]], effect: 0x0c, msg: 'is stronger' }, // 12a5
     13: { k: 'reduce', effect: 0x0c, saveType: 4, msg: 'has been reduced' }, // 136e
     14: { k: 'friends', amount: { n: 2, d: 4 }, cap: 25, effect: 0x0e, msg: 'is friendly' }, // 13d8
-    15: { k: 'damage', amount: { n: 'L/2', d: 4, plus: 'L/2' }, dmgType: 8 }, // 1439
+    15: { k: 'damage', amount: { n: 'L/2', d: 4, plus: 'L/2' }, dmgType: 8, recordDice: 1 }, // 1439
     19: { k: 'apply', msg: 'is shielded' }, // 1499
-    20: { k: 'damage', amount: { n: 1, d: 8, plus: 'L' }, dmgType: 0x0c }, // 14c7
+    20: { k: 'damage', amount: { n: 1, d: 8, plus: 'L' }, dmgType: 0x0c, recordDice: 1 }, // 14c7
     21: SLEEP, // 151b
     23: { k: 'hold', bonus: [-2, -1, 0], effect: 0x34, sizeImmune: 1, msg: 'is held' }, // 1658
     24: { k: 'apply', msg: 'is fire resistant' }, // 17e9
@@ -112,7 +114,7 @@ export const POR_SPELLS: SpellRules = {
     61: { k: 'apply', rollDuration: { n: 5, d: 4 } }, // 2f99
     62: { k: 'heal', amount: { n: 2, d: 4, plus: 2 } }, // 2fd0
     64: { k: 'damage', amount: { n: { roll: [1, 3], mul: 2, add: 1 }, d: 6 }, dmgType: 9, recordDice: 1 }, // 266b
-    65: { k: 'damage', amount: { n: 2, d: 4, plus: 2 }, dmgType: 8 }, // 3058
+    65: { k: 'damage', amount: { n: 2, d: 4, plus: 2 }, dmgType: 8, recordDice: 1 }, // 3058
     66: { k: 'apply' }, // 3092: nothing
     67: { k: 'applyTo', to: 'first', duration: 1440, power: 0xff, flag: 1, msg: 'is Reading' }, // Manual of Bodily Health
   },
@@ -149,8 +151,7 @@ export const COAB_SPELLS: SpellRules = {
     48: { ...POR_SPELLS.handlers[48], attacksAfter: 0 }, // 478cc → 477eb: no event-18 pass
     55: { ...POR_SPELLS.handlers[55], attacksAfter: 0 }, // 47c9e → 477eb
     51: { ...POR_SPELLS.handlers[51] }, // 47c49: the bolt routines' differences are R.bolt
-    // 0x4BE7C keeps the dice count (DS:6FB2) for 4 (45d68), 20 (46222), 65 (480ba), 66, 72, 74, 87
-    ...Object.fromEntries([4, 20, 65].map((id) => [id, { ...POR_SPELLS.handlers[id], recordDice: 1 }])),
+    // 0x4BE7C keeps the dice count (DS:6FB2) for 4 (45d68), 20 (46222), 65 (480ba) as PoR's do, and 66, 72, 74, 87
     58: { k: 'heal', amount: { n: 2, d: 8, plus: 1 } }, // 47edd Cure Serious Wounds
     59: { k: 'setStrength', str: 21, pct: 0, effect: 0x92, msg: 'is stronger' }, // 47f27, by the base-STR rule (strength)
     66: { k: 'damage', amount: { n: 2, d: 8, plus: 1 }, dmgType: 8, recordDice: 1 }, // 480f5 Cause Serious Wounds
