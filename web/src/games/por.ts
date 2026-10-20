@@ -5,6 +5,7 @@ import { POR_ENDING } from './ending'
 import { POR_EFFECTS } from './effectrules'
 import { POR_SPELLS } from './spellrules'
 import { POR_LANDMARKS } from './landmarkrules'
+import { POR_DEBUG } from './debug'
 import { POR_TREASURE } from './treasure'
 import { POR_SOUND } from './sound'
 import { POR_TITLE } from './title'
@@ -43,6 +44,7 @@ export const POR: GameProfile = {
   treasure: POR_TREASURE,
   spells: POR_SPELLS,
   landmarks: POR_LANDMARKS,
+  debug: POR_DEBUG,
   effects: POR_EFFECTS,
   ending: POR_ENDING,
   rulesText: POR_RULES_TEXT,

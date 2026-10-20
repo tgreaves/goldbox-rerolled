@@ -403,6 +403,7 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 .roster-cards { display: grid; gap: 0.3rem; }
 .rcard { display: grid; grid-template-columns: auto 1fr auto; gap: 0.55rem; align-items: start; text-align: left; padding: 0.3rem 0.45rem; min-height: 0; color: var(--ega-green); }
 .rcard canvas.rc-portrait { width: 56px; height: 56px; }
+.rcard:not(:has(canvas.rc-portrait)) { grid-template-columns: 1fr auto; }
 .rcard canvas.rc-icon { width: 40px; height: 40px; }
 .rcard .rc-body { display: grid; gap: 0.15rem; min-width: 0; }
 .rcard .rc-top { display: flex; gap: 0.5rem; justify-content: space-between; }
@@ -632,6 +633,9 @@ dialog.panel .rules-body h3 { color: var(--ega-cyan); margin: 0.8rem 0 0.2rem; f
   .party-top .rcard .rc-ac2 { display: inline; color: var(--text); }
   .party-top .rcard .rc-name { white-space: nowrap; }
   .party-top .rcard canvas.rc-icon { position: absolute; left: calc(0.35rem + 40px - 20px); top: calc(0.25rem + 40px - 20px); width: 22px; height: 22px; border: 1px solid var(--line); }
+  /* a game without portraits (CotAB): the combat icon takes the portrait's place */
+  .party-top .rcard:not(:has(canvas.rc-portrait)) { grid-template-columns: 40px minmax(0, 1fr); }
+  .party-top .rcard:not(:has(canvas.rc-portrait)) canvas.rc-icon { position: static; order: -1; width: 40px; height: 40px; border: 0; }
   .party-top .rcard .hpbar, .party-top .rcard .xpbar { max-width: 100%; }
   /* battles: the battlefield across the whole width under the cards */
   .party-top .game.in-combat {

@@ -7,6 +7,7 @@ import { abilities, abilityName, diseased, useAbility, type Ability } from '../r
 import { startEffects } from '../rules/chargen'
 import { game } from '../games/profile'
 import { F } from '../games/fields'
+import { T } from '../games/tables'
 import type { GameFiles } from '../store/gamefiles'
 import { parseCharacter, MONEY, type Character } from '../data/character'
 import { parseRecord, spriteImage, toImageData, type Picture } from '../data/image'
@@ -583,6 +584,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     // effects as the camp Display names them, and whether a training hall would train them now
     const list = party()
     const t = getTables(), st = engine.spells, it = engine.items
+    // a portrait from HEAD/BODY where the game has the portrait record tables (PoR); CotAB characters
+    // have none (its creation shows the combat icon, spec/coab/tables.md)
+    const portraits = T.headRecords.at >= 0
     roster.innerHTML = list.map((c, i) => {
       const raw = c.raw
       const up = c.status === 'Okay' || c.status === 'Animated'
@@ -601,7 +605,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       // on Quick (c[0x10F]): the computer plays them in battle until Space / Take control
       const quick = raw[F.quick] !== 0 && raw[F.morale] < 0x80
       return `<button class="${cls}" data-i="${i}" title="${i === cur ? 'View' : 'Select'} ${escape(c.name)}">
-        <canvas class="pixel rc-portrait" width="88" height="88"></canvas>
+        ${portraits ? '<canvas class="pixel rc-portrait" width="88" height="88"></canvas>' : ''}
         <span class="rc-body">
           <span class="rc-top"><span class="rc-name">${escape(c.name)}</span><span class="rc-ac" title="${escape(TIPS.AC)}">AC ${c.ac}</span></span>
           <span class="hpbar${pct < 50 ? ' low' : ''}"><span style="width:${pct}%"></span></span>
@@ -641,7 +645,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const g = sizeCanvas(card.querySelector<HTMLCanvasElement>('canvas.rc-icon')!, 24, 24)
       g.fillStyle = '#000'; g.fillRect(0, 0, 24, 24)
       if (img) blit(g, img, 0, 0)
-      const pg = sizeCanvas(card.querySelector<HTMLCanvasElement>('canvas.rc-portrait')!, 88, 88)
+      const portrait = card.querySelector<HTMLCanvasElement>('canvas.rc-portrait')
+      if (!portrait) return
+      const pg = sizeCanvas(portrait, 88, 88)
       pg.fillStyle = '#000'; pg.fillRect(0, 0, 88, 88)
       if (t) {
         const pk = `${raw[F.head]},${raw[F.body]}`
@@ -1594,13 +1600,6 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   // ------------------------------------------------------------ debug menu
   /** Debug menu (IMP-025): jumps that skip whatever the scripts would do on the way. */
-  const JUMPS: { label: string; to: [number, number, number, number, number] }[] = [
-    // [block, area, x, y, facing]; wilderness positions as the harbour script writes them (ECL3 #0)
-    { label: 'Wilderness: west boat landing (20,29)', to: [7, 26, 7, 29, 0] },
-    { label: 'Wilderness: north side of the bay (26,27)', to: [7, 26, 13, 27, 0] },
-    { label: 'Wilderness: east boat landing (35,29)', to: [8, 27, 9, 29, 0] },
-    { label: 'New Phlan: end of the pier (15,1)', to: [3, 0, 15, 1, 3] },
-  ]
   /** set while a battle runs: Quick and Magic (IMP-054) */
   let battleControls: BattleControls | null = null
   const takeBtn = app.querySelector<HTMLButtonElement>('.take-control')!
@@ -1618,15 +1617,16 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   /** set while a battle runs: debug "Win this battle" */
   let winBattle: (() => void) | null = null
   function debugMenu() {
+    const finale = game().debug.finale
     const pos = engine.overland ? `wilderness ${engine.wildPosition.join(',')}` : `${engine.x},${engine.y} facing ${FACING[engine.facing]}`
     dialog.innerHTML = `<h2>Debug</h2>
       <p class="muted">Not part of the game. Now: block ${engine.block}, area ${engine.area}, ${pos}.</p>
       ${winBattle ? `<p><button class="primary" data-win="1">Win this battle</button> <span class="muted">every enemy falls; experience and treasure as for a won fight</span></p>
       <form method="dialog"><button>Close</button></form>` : `
       <p><button type="button" data-edit="1">Edit characters…</button> <span class="muted">abilities, HP, experience, levels, money, items</span></p>
-      <p><button type="button" data-finale="ending">Play the ending</button> <button type="button" data-finale="fight">Fight Tyranthraxus</button>
-        <span class="muted">the end of the game as its script runs it (ECL5 #7): after the final battle is won, or that battle (the guards and the NPCs' vote are skipped)</span></p>
-      <ul class="debug">${JUMPS.map((j, i) => `<li><button data-i="${i}">${escape(j.label)}</button></li>`).join('')}</ul>
+      ${finale ? `<p><button type="button" data-finale="ending">Play the ending</button> <button type="button" data-finale="fight">Fight ${escape(finale.foe)}</button>
+        <span class="muted">${escape(finale.note)}</span></p>` : ''}
+      <ul class="debug">${game().debug.jumps.map((j, i) => `<li><button data-i="${i}">${escape(j.label)}</button></li>`).join('')}</ul>
       <form class="jump">
         <label>Block <input name="block" type="number" min="1" max="8" value="${engine.block}"></label>
         <label>Area <input name="area" type="number" min="0" max="63" value="${engine.area}"></label>
@@ -1648,18 +1648,16 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       note('Debug: battle skipped as won.')
       winBattle?.()
     })
-    // the finale (ECL5 #7, Valjevo Castle's inner tower): 0xA7DC sets up and starts the battle with
-    // Tyranthraxus (monster 66); 0xA80E follows a win: the victory flags, PROGRAM 8 (the ending), the
-    // walk back to New Phlan
+    // the finale (games/debug.ts): the final area, then the script of the battle or of what follows a win
     dialog.querySelectorAll<HTMLButtonElement>('button[data-finale]').forEach((b) => b.addEventListener('click', () => {
+      if (!finale) return
       dialog.close()
       const fight = b.dataset.finale === 'fight'
-      note(fight ? 'Debug: the battle with Tyranthraxus.' : 'Debug: the ending, as after Tyranthraxus falls.')
+      note(fight ? `Debug: the battle with ${finale.foe}.` : `Debug: the ending, as after ${finale.foe} falls.`)
       act(async () => {
-        await engine.jump(5, 7, 1, 4, 1)
-        await engine.run(fight ? 0xa7dc : 0xa80e)
-        // after PROGRAM 8 the script goes on from the tower's on_enter (0x9A37: 0x4AE0 = 1 → 0xA82D,
-        // "KNOWING THAT TYRANTHRAXUS…", the walk back to New Phlan): re-enter to carry on
+        await engine.jump(...finale.at)
+        await engine.run(fight ? finale.fight : finale.ending)
+        // after the ending the script goes on from the area's on_enter: re-enter to carry on
         if (!engine.quit) await engine.enter()
       })
     }))
@@ -1667,7 +1665,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       dialog.close()
       void editCharacters(dialog, engine, getTables(), () => drawRoster())
     })
-    dialog.querySelectorAll<HTMLButtonElement>('ul.debug button').forEach((b) => b.addEventListener('click', () => go(JUMPS[Number(b.dataset.i)].to)))
+    dialog.querySelectorAll<HTMLButtonElement>('ul.debug button').forEach((b) => b.addEventListener('click', () => go(game().debug.jumps[Number(b.dataset.i)].to)))
     const f = dialog.querySelector<HTMLFormElement>('form.jump')
     f?.addEventListener('submit', (e) => {
       e.preventDefault()
