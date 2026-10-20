@@ -155,16 +155,19 @@ holds them; `test/effectkinds.test.ts`):
 - Monster-class flags as the field `classFlags` (+0x14B; PoR −1).
 - Handlers 3, 4, 7, 12/14/38/146 (empty), 13, 18, 20, 25, 26, 27, 28, 35, 37, 47, 48, 50, 54, 57, 60, 63,
   68, 69, 73, 75, 76, 77, 81, 82, 84, 85, 86, 91 (empty: no zone of its list exists), 96, 103, 110, 122,
-  123, 126, 129, 130, 131, 133, 134, 135, 136, 137, 138, 139, 142, 143, 144, 145; 141 refills the
-  paladin's uses (as before). The rest run PoR's handler (the "same as PoR" list).
+  123, 126, 129, 130, 131, 133, 134, 135, 136, 137, 138, 139, 142, 143, 144, 145; 140 (empty) and 141
+  (refills the paladin's uses). The rest name PoR's entries, the same behaviour with the same
+  parameters (the "same as PoR" list); every type 1–146 has an entry (`test/effectmap.test.ts`).
 - The monster specials of event 14 (`web/src/rules/specials.ts`, `test/specials.test.ts`): 83, 87, 88, 90,
   128, 132, with PoR's 88; 83, 86, 126 and 131 take their target through the hook. The combat host gives
   them the battlefield: the hook is the port's spell target pick for the computer, the bolt routines
   (one procedure, the games' differences as `R.bolt` flags; Lightning Bolt uses it too, 7 squares in CotAB), the area
   template (offsets `T.fanDx1`…), flights between cells, the finder and the computer's cast.
 - Removal recomputes CHA (0x0E) and STR (0x0C, 0x26, 0x92) through the current-stat routine (§5).
-- Readying and putting away items through the item kinds (§6), with handler 147; the slot routine's
-  Ring of Wizardry doubling (training's `derive` takes the items when the caller has them).
+- Readying and putting away items through the item kinds (§6), each kind an item behaviour in the
+  profile's `items` map, kind 0 the generic handler 147; the slot routine's Ring of Wizardry doubling
+  (training's `derive` takes the items when the caller has them).
+- 60 (0x28628) halves a weapon of plus 1 or 2: the profile's threshold had the wrong name (fixed 2026-10-20).
 
 Not yet, or approximated:
 
@@ -175,6 +178,4 @@ Not yet, or approximated:
   nearest-combatant search (11c:3e) takes the first of equal distance (I).
 - 130 takes the target out of play through the host's status call; CotAB's own death clean-up `e3:66`
   is not transcribed.
-- CotAB's add-with-message 0x4CD92 replaces an old record of the type whenever it has a duration; the
-  port's `addEffect` keeps PoR's rule (only for a longer or permanent one).
 - The ECL DAMAGE save (engine.ts) does not set DS:6FC2.

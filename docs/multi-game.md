@@ -105,9 +105,10 @@ The engine is meant for **every** Gold Box game, not only these two (Tristan, 20
 - the values come from the game's own files wherever they are there (START.EXE tables, DAX records,
   GAME.OVR strings), found by the same research method (CLAUDE.md, "Method for a new game").
 
-Procedure keys follow that rule (2026-10-20): the item procedure is `handlers` (a handler per item
-+0x3E value) or `kinds` (the item's kind), the effect behaviours live in `rules/effectkinds.ts`, and
-the bolt routines are one procedure whose differences are flags (`R.bolt`).
+Procedure keys follow that rule (2026-10-20): every effect type and every item handler (+0x3E & 0x7F)
+names a behaviour with its parameters in the game's profile (`games/effectrules.ts` `handlers`,
+`items`; the behaviours in `rules/effectkinds.ts`), and the bolt routines are one procedure whose
+differences are flags (`R.bolt`).
 
 ## Tracking to the goal (assessed 2026-10-20)
 
@@ -126,8 +127,19 @@ watch, because each is an alternative path in code:
   procedure with per-game data (`R.slots`: slot sources set or added from a start level into pools;
   `R.hitPoints`: dice after level 1, rolls kept best, level-1 minimum, fixed amounts from the stop
   level; `R.startMoney`: a coin and a fixed amount or the dice).
-- `game().effects.handlers` and `items`: CotAB's changed effect types run named behaviours; PoR's
-  run its switch by default. The PoR set should be an explicit map too, so that no game is the default.
+- ~~`game().effects.handlers` and `items`~~: done 2026-10-20. Each game's map is complete for the
+  types of its original's handler table (PoR FUN_5216_0000 1–127, CotAB DS:6FC0 1–146), and
+  `test/effectmap.test.ts` checks that every effect type its events, spells, monsters, characters and
+  items can add names an existing behaviour. PoR's ~120-case switch is gone: its handlers are
+  behaviours named by what they do (`rollMorale`, `resistType`, `poisonOnHit`, `paralyseOnHit`,
+  `drainOnHit`, `regenerate`, `blocks`, `immunities`, `stoneGaze`, `vulnerableTo`…), the switch's
+  values (effect types, monster names, item types and words, dice, damage types, percentages, the
+  spell Shield stops) their parameters; CotAB's map starts from PoR's entries and overrides its
+  changed types, so the same handlers name the same entries. Where both games' procedures are one
+  (end the turn, no movement, damage on a hit, blocked effects, a cloud zone lifting) they share a
+  behaviour. A behaviour that waits (an attack, a removal, an effect added through its event) is
+  async; that replaces the list of PoR types that waited. The item handlers are a map by +0x3E &
+  0x7F in both games (PoR's 128–139, CotAB's kinds).
 - `ending.por` (PoR's own ending procedure) next to the generic ending steps.
 - Optional content modules switched by data: the PoR commissions panel, the tile wilderness.
 
@@ -142,17 +154,21 @@ watch, because each is an alternative path in code:
    `saveEach`, `teleport`, `scare`, `flameShield`, `saveOrElse`, `beam`; the Hold loop's `lastSaves`
    and `runAfter`, the target picker's `pool`, the clouds' squares from START.EXE, Dispel Magic's
    `zones`), with the cloud occupant check one procedure on `R.clouds`. What is inferred is listed in
-   spec/coab/spells.md (port status). The effect handlers' own tests of spell 15 (Shield, type 91)
-   wait for PoR's effect map.
-2. Effect type numbers named in shared code (the temple's blindness, poison, paralysis; combat's
-   hold and sleep types): the same in both games so far, but they belong in data as named ids.
+   spec/coab/spells.md (port status). The effect handlers' tests of spell 15 (Shield 17, type 91) are
+   a parameter of their behaviours (`spell`).
+2. Effect type numbers named in shared code: the effect handlers' own types (what they add, test or
+   remove) are parameters of their behaviours in both games' maps (2026-10-20). Still in code: the
+   temple's blindness, poison and paralysis; combat's hold and sleep types; the cloud occupant check's
+   0x1E/0x1F; the current-stat routine's types (`rules/effectkinds.ts` effectiveStat); the monster
+   specials (`rules/specials.ts`). The same in both games so far, but they belong in data as named ids.
 3. ~~Functions inside profiles~~: done 2026-10-20 (the character view's reads are declarative entries,
    the kept files a list of patterns); profiles now hold only data.
-4. ~~Procedure keys named after games~~: done 2026-10-20 (`items: 'handlers' | 'kinds'`, `R.bolt` flags,
+4. ~~Procedure keys named after games~~: done 2026-10-20 (the item handlers as a map, `R.bolt` flags,
    the stat routine runs for the types the profile lists).
 
-**Plan, in order:** ~~CotAB's changed and new spell handlers as kinds~~ (done); PoR's effect handler map made
-explicit; profile functions replaced by data; the paired procedures made parametric
+**Plan, in order:** ~~CotAB's changed and new spell handlers as kinds~~ (done); ~~PoR's effect handler map made
+explicit~~ (done); PoR's effect handlers checked against the binary (spec/effects.md, "Port differences
+found"); profile functions replaced by data; the paired procedures made parametric
 where the originals allow it; named ids for effect types. When those are done, a third game should
 need only its profile modules and any procedure the earlier games do not have.
 

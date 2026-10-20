@@ -203,6 +203,29 @@ Ev = hook events; R = removal/expiry callback (eff[4]=1); D = invoked directly b
 | 135 / 0x87 | giant-strength item | item | ready with STR < 19: unreadies it (+0x34=0), "Must have Giant Strength" | O (disasm) | 0x3A364 |
 | 137 / 0x89 | Spiritual Hammer item | item | unready: removes effect 23 | O | 3723_317a |
 
+## Port status (2026-10-20)
+
+Each type's handler is a behaviour with parameters in the profile (`web/src/games/effectrules.ts`
+`handlers`, item handlers in `items` by +0x3E − 0x80; behaviours in `web/src/rules/effectkinds.ts`).
+The port runs each part of a handler on the event it means something for (the attack roll on 10, the
+save on 12…), where the original changes the globals whatever the event; that is harmless where nothing
+reads them, but not everywhere.
+
+**Port differences found** while making the map (checked in the binary, to transcribe; the port's
+behaviour is unchanged so far):
+- 10 / 20 Resist Cold / Fire (03e1, 06e4): the save +3 is given only when 6819 has the type, like the
+  halving; the port gives it at every event-12 save. CotAB's 20 (`resist`) is this procedure.
+- 61 (1490): the save +4 only against fire; the damage loses 2 a die as a byte (from 1 it wraps to 255,
+  which then passes the floor); non-magic fire goes through `FUN_3723_0000(0)`. 113 (2a28) the same
+  with 1 a die (0 damage wraps).
+- 122 (2d38): the oil is the current character's weapon (+0xCC), not any readied item; the 3d8 rolls
+  through `FUN_5216_0e2e`, so the dice count added is 3.
+- The handlers rolling through `FUN_5216_0e2e` (keeping the dice count, DS:681C): 75 (1835), 79
+  (1a37), 80 (1a6a), 117 (2b52), 121 (2ce8), 122 (2d6a); the port's rolls there do not keep it.
+- An item +0x3E past 139 has no handler in the original's table (its entries from 140 on are not
+  handlers: 140 → 0x3EFC1, 141 → 0x0470, I); the port's switch granted the effect, the map does
+  nothing (no item in the game's files has one).
+
 ## 3. Undeciphered, odd, and Haste/Slow
 
 **Partly undeciphered**
