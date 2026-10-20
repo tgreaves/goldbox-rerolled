@@ -554,6 +554,51 @@ describe.skipIf(!haveCoab)('CotAB new spells: 83, 84, 85, 86', () => {
   })
 })
 
+describe.skipIf(!haveCoab)('CotAB new spells: 92, 93, 98', () => {
+  const files = haveCoab ? load(coab, COAB) : null
+  afterAll(() => setGame(POR))
+  const cotab = () => { setGame(COAB); return field(files!) }
+
+  it('Cone of Cold (92): width 2, max(1, L div 2) squares; L d4 + L, type 0x0A (0x494C0)', async () => {
+    const { add, cast, hits, dice } = cotab()
+    const mage = add(5, 5, 0, 'MAGE')
+    add(7, 5, 1, 'A')
+    add(11, 5, 1, 'B') // past 3 squares
+    dice.push(10)
+    await cast(mage, 92, 6, [], { x: 6, y: 5 }) // aimed next to the caster, the cone runs on to 3 squares
+    expect(hits).toEqual([['A', 16, false]])
+    expect([fx.dice, fx.dmgType]).toEqual([6, 0x0a])
+    hits.length = 0
+    await cast(mage, 92, 1, [], { x: 6, y: 5 }) // one square: A is two away
+    expect(hits).toEqual([])
+  })
+
+  it('Feeblemind (93): the spell save moved by class while Apply runs, then put back (0x49562)', async () => {
+    const { add, cast, has, dice, printed } = cotab()
+    const mage = add(5, 5, 0, 'MAGE')
+    const mu = add(6, 5, 1, 'MU'), cl = add(7, 5, 1, 'CL')
+    mu.c[F.cls] = 5; cl.c[F.cls] = 0
+    dice.push(17)
+    await cast(mage, 93, 9, [mu])
+    expect([has(mu, 0x44).length, mu.c[F.stat[1]], mu.c[F.stat[2]], mu.c[F.saves + 4]]).toEqual([1, 7, 7, 15])
+    expect(printed).toContain('MU is stupid')
+    dice.push(14)
+    await cast(mage, 93, 9, [cl]) // 15 − 1: 14 saves
+    expect([has(cl, 0x44).length, cl.c[F.saves + 4]]).toEqual([0, 15])
+  })
+
+  it('98: the template, width 1, 3 squares; 6d6 each to monster type 0x12 only (0x49697)', async () => {
+    const { add, cast, hits, dice } = cotab()
+    const caster = add(5, 5, 0, 'CASTER')
+    const a = add(6, 5, 1, 'A'); a.c[F.monsterType] = 0x12
+    add(7, 5, 1, 'B')
+    const c = add(8, 5, 1, 'C'); c.c[F.monsterType] = 0x12
+    dice.push(20, 5, 30)
+    await cast(caster, 98, 12, [], { x: 8, y: 5 })
+    expect(hits).toEqual([['A', 20, false], ['B', 5, true], ['C', 30, false]])
+  })
+})
+
 describe.skipIf(!por || !existsSync(por))('PoR keeps its own rules', () => {
   const files = por && existsSync(por) ? load(por, POR) : null
   it('reads Stinking Cloud\'s squares from START.EXE (DS:290D)', () => {

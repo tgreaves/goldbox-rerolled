@@ -122,8 +122,7 @@ export const POR_SPELLS: SpellRules = {
 /**
  * CotAB's table (DS:72BA): ids 1–56 are PoR's spells, most with the same handler (spec/coab/spells.md
  * §2, "same"); 57–67 keep PoR's item spells where the record matches; 58 and 66–100 are its own.
- * Not yet transcribed (spec/coab/spells.md §2, port status): the new 92, 93, 98; until they are, they
- * run Apply ('apply').
+ * Every id is transcribed (spec/coab/spells.md §2 and its port status, which lists what is inferred).
  */
 const POR_HANDLERS_1_57 = Object.fromEntries(Object.entries(POR_SPELLS.handlers).filter(([id]) => Number(id) <= 57 || [60, 61, 62, 63, 64, 65].includes(Number(id))))
 
@@ -155,7 +154,12 @@ export const COAB_SPELLS: SpellRules = {
     58: { k: 'heal', amount: { n: 2, d: 8, plus: 1 } }, // 47edd Cure Serious Wounds
     59: { k: 'setStrength', str: 21, pct: 0, effect: 0x92, msg: 'is stronger' }, // 47f27, by the base-STR rule (strength)
     66: { k: 'damage', amount: { n: 2, d: 8, plus: 1 }, dmgType: 8, recordDice: 1 }, // 480f5 Cause Serious Wounds
-    ...each([92, 93, 98], { k: 'apply' }),
+    // 494c0 Cone of Cold: the template, width 2, max(1, L div 2) squares; Apply's L d4 + L, type 0x0A, half
+    92: { k: 'beam', width: 2, len: 'L/2', minLen: 1, amount: { n: 'L', d: 4, plus: 'L' }, dmgType: 0x0a, recordDice: 1 },
+    // 49562 Feeblemind: the spell save moved by class (cleric −1, magic-user +4, others +2) while Apply runs
+    93: { k: 'apply', saveShift: { save: 4, byClass: { 0: -1, 5: 4 }, other: 2 }, runAfter: 'first' },
+    // 49697 (class 3): the template, width 1, 3 squares; 6d6 each, only monster type 0x12 (others negate)
+    98: { k: 'beam', width: 1, len: 3, amount: { n: 6, d: 6 }, perTarget: 1, recordDice: 1, onlyType: 0x12 },
     83: { k: 'teleport', heldBy: 0x3a, releases: [0x90, 0x8b], msg: 'teleports' }, // 488a1 Dimension Door
     84: { k: 'scare', width: 3, len: 6, saveType: 4, effect: 0x8e, msg: 'runs in terror', unaffected: 'is unaffected' }, // 48a52 Fear
     // 48bb2 Fire Shield: "flame type: " Hot (0x32 + 0x8F) or Cold (0x36 + 0x8F), the computer Hot on 1d10 > 5

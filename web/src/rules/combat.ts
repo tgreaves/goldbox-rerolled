@@ -1563,12 +1563,39 @@ export class Battle implements FxHost {
         return
       }
       if (p.casterEffect !== undefined) await addEffect(this, f.c, p.casterEffect as number, dur, 0, 0, 0, false, false, '')
+      // `saveShift` (CotAB Feeblemind 0x49562): the first target's save byte `save` moved by its class
+      // (`byClass`, else `other`) while the spell resolves, then put back
+      const shift = p.saveShift as { save: number; byClass: Record<number, number>; other: number } | undefined
+      const st = shift && targets[0] ? targets[0].c : null, at = shift ? F.saves + shift.save : 0, kept = st ? st[at] : 0
+      if (st && shift) st[at] = (kept + (shift.byClass[st[F.cls]] ?? shift.other)) & 0xff
       for (const t of targets) {
         const d = p.rollDuration ? amount(p.rollDuration as Amount, L, (n, k) => this.e.roll(n, k)).total : dur
         if (!(await this.spellTouch(f.c, s, t))) { this.print(`${name(f.c)} misses`); continue }
         await this.addSpellEffect(t, s, p, this.spellSave(t, s), d, L, s.effect, (p.flag as number | undefined) ?? 0)
       }
       if (p.runAfter) await this.runAfter(p.runAfter === 'first' ? targets.slice(0, 1) : targets, s.effect)
+      if (st) st[at] = kept
+    },
+    /**
+     * A beam or cone (CotAB Cone of Cold 0x494C0, spell 98 0x49697): who stands in the area template
+     * (fan) from the caster towards the aimed square, `width` lines of `len` squares (a term, at least
+     * `minLen`), takes the amount (one roll, or with `perTarget` a roll each; `recordDice` keeps the
+     * count), of type `dmgType` when given; the save as the spell record says, or with `onlyType` none:
+     * a creature of another monster type counts as saved (spell 98 negates for all but type 0x12)
+     */
+    async beam({ f, s, L }, p) {
+      const roll = (n: number, d: number) => this.e.roll(n, d)
+      const len = Math.max((p.minLen as number | undefined) ?? 0, term(p.len as import('../games/spellrules').Term, L, roll))
+      const list = this.fan(f.c, this.aimed.x, this.aimed.y, p.width as number, len)
+      const once = p.perTarget || !list.length ? null : amount(p.amount as Amount, L, roll)
+      if (once && p.recordDice) fx.dice = once.n
+      for (const c of list) {
+        const r = once ?? amount(p.amount as Amount, L, roll)
+        if (!once && p.recordDice) fx.dice = r.n
+        if (p.dmgType !== undefined) fx.dmgType = p.dmgType as number
+        const saved = p.onlyType !== undefined ? c[F.monsterType] !== (p.onlyType as number) : s.save ? this.saveSync(c, s.saveType, 0) : false
+        this.damageSync(c, r.total, s.save, saved)
+      }
     },
     /**
      * Apply, then a probe on the caster's combat target (CotAB Poison 0x48240): event 9 there with effect

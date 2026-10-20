@@ -137,9 +137,13 @@ watch, because each is an alternative path in code:
    CotAB DS:72BA). The kinds are named by what they do: `apply`, `damage`, `heal`, `hold`, `sleep`,
    `cloud`, `bolt` and others in the battle (`rules/combat.ts`), the rest shared with the camp
    (`rules/spellkinds.ts`); durations are data too. CotAB's 58 and 66–100 no longer run PoR's
-   handlers. Still to transcribe: CotAB's changed handlers and its new spells that need new kinds
-   (listed in `spellrules.ts` and spec/coab/spells.md). The effect handlers' own tests of spell 15
-   (Shield, type 91) wait for PoR's effect map.
+   handlers. CotAB's changed and new handlers are transcribed (2026-10-20) as parameters on the
+   shared kinds or as new kinds named by what they do (`curePoison`, `raise`, `slay`, `applyProbe`,
+   `saveEach`, `teleport`, `scare`, `flameShield`, `saveOrElse`, `beam`; the Hold loop's `lastSaves`
+   and `runAfter`, the target picker's `pool`, the clouds' squares from START.EXE, Dispel Magic's
+   `zones`), with the cloud occupant check one procedure on `R.clouds`. What is inferred is listed in
+   spec/coab/spells.md (port status). The effect handlers' own tests of spell 15 (Shield, type 91)
+   wait for PoR's effect map.
 2. Effect type numbers named in shared code (the temple's blindness, poison, paralysis; combat's
    hold and sleep types): the same in both games so far, but they belong in data as named ids.
 3. ~~Functions inside profiles~~: done 2026-10-20 (the character view's reads are declarative entries,
@@ -147,7 +151,7 @@ watch, because each is an alternative path in code:
 4. ~~Procedure keys named after games~~: done 2026-10-20 (`items: 'handlers' | 'kinds'`, `R.bolt` flags,
    the stat routine runs for the types the profile lists).
 
-**Plan, in order:** CotAB's changed and new spell handlers as kinds; PoR's effect handler map made
+**Plan, in order:** ~~CotAB's changed and new spell handlers as kinds~~ (done); PoR's effect handler map made
 explicit; profile functions replaced by data; the paired procedures made parametric
 where the originals allow it; named ids for effect types. When those are done, a third game should
 need only its profile modules and any procedure the earlier games do not have.
