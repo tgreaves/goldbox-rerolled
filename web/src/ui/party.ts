@@ -1,6 +1,8 @@
 // Party screen ("Choose a function", FUN_417f_0161; spec/architecture.md, Party screen).
 import type { GameFiles } from '../store/gamefiles'
 import { joinRefusal } from '../rules/joining'
+import { startEffects } from '../rules/chargen'
+import { effectsFile } from '../data/effects'
 import { parseCharacter } from '../data/character'
 import { F } from '../games/fields'
 import { deleteCharacter, getParty, listCharacters, seedRoster, setParty } from '../store/user'
@@ -124,7 +126,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
         if (!c) break
         // saved as its own character file; the original then needs Add to put it in the party
         const name = parseCharacter(c).name
-        await saveCharacter({ stem: fileStem(name), sav: c })
+        await saveCharacter({ stem: fileStem(name), sav: c, spc: effectsFile(startEffects(c)) })
         roster = await listCharacters()
         say(`${name} has been created. Use Add to put them in the party.`)
         break

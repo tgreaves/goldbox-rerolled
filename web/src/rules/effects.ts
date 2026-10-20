@@ -3,6 +3,8 @@
 import type { Effect } from '../data/effects'
 import { Item, ITEM_SIZE } from '../data/items'
 import { F } from '../games/fields'
+import { R } from '../games/rules'
+import { refillUses } from './abilities'
 import type { Tables } from './chargen'
 import { derive, xpFor } from './training'
 
@@ -283,6 +285,7 @@ export function drain(h: FxHost, t: Uint8Array, n: number) {
 
 /** One handler call (FUN_5216_0000). event −1 = removal (arg 1) or a direct run. */
 async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event: number, removal: boolean) {
+  if (removal && R.paladin && type === R.paladin.cureDisease.effect) return refillUses(c) // the game's weekly refill
   const cur = h.current()
   switch (type) {
     case 1: if (event === 10) fx.roll++; else if (event === 17) fx.morale += 5; break

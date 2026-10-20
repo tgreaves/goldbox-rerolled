@@ -655,3 +655,7 @@ dialog.panel .rules-body h3 { color: var(--ega-cyan); margin: 0.8rem 0 0.2rem; f
 .import ul.games li { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: space-between; align-items: center;
   padding: 0.6rem 0.8rem; border: 1px solid #ffffff22; border-radius: 6px; }
 .import ul.games .actions { margin: 0; }
+
+/* class abilities on the sheet (CotAB paladin) */
+.ability-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-top: 0.6rem; }
+.ability-actions h3, .ability-actions p { width: 100%; margin: 0; }

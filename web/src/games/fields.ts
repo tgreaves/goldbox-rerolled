@@ -42,6 +42,8 @@ export interface CharFields {
   hitDice: number
   /** level the CotAB HP recompute uses for dual-class (CotAB only, −1 in PoR) */
   hpLevel: number
+  /** CotAB: the paladin's Cure Disease uses left (−1 in PoR) */
+  abilityUses: number
   /** levels lost to energy drain, and the max HP they took (Restoration and training give them back);
    *  CotAB: the converter copies PoR 0x74/0x75 here (I) */
   drainLevels: number
@@ -139,7 +141,7 @@ export const POR_FIELDS: CharFields = {
   size: 0x11d, name: 0x00, stat: range(0x10, 1), baseStat: range(0x10, 1), strPct: 0x16, baseStrPct: 0x16,
   memorised: 0x17, memorisedCount: 21, studyHours: 0x2c, thac0Base: 0x2d, race: 0x2e, cls: 0x2f, age: 0x30,
   maxHp: 0x32, known: 0x32, knownCount: 56, sweep: 0x6b, sizeFlags: 0x6c, saves: 0x6d, baseMove: 0x72,
-  hitDice: 0x73, hpLevel: -1, drainLevels: 0x74, drainHp: 0x75, undead: 0x76, thief: 0x77, effects: 0x7f, morale: 0x84, npcShare: 0x85,
+  hitDice: 0x73, hpLevel: -1, abilityUses: -1, drainLevels: 0x74, drainHp: 0x75, undead: 0x76, thief: 0x77, effects: 0x7f, morale: 0x84, npcShare: 0x85,
   money: 0x88, levels: 0x96, prevLevels: -1, gender: 0x9e, monsterType: 0x9f, alignment: 0xa0,
   attacksBase: 0xa1, natDice: 0xa3, natSides: 0xa5, natBonus: 0xa7, acBase: 0xa9, strAdj: 0xaa, id: 0xab,
   xp: 0xac, itemMask: 0xb0, hpRolled: 0xb1, clericSlots: 0xb2, druidSlots: -1, muSlots: 0xb5, slotLevels: 3,
@@ -154,7 +156,7 @@ export const COAB_FIELDS: CharFields = {
   size: 0x1a6, name: 0x00, stat: range(0x11, 2), baseStat: range(0x10, 2), strPct: 0x1c, baseStrPct: 0x1d,
   memorised: 0x1e, memorisedCount: 84, studyHours: 0x72, thac0Base: 0x73, race: 0x74, cls: 0x75, age: 0x76,
   maxHp: 0x78, known: 0x78, knownCount: 100, sweep: 0xdd, sizeFlags: 0xde, saves: 0xdf, baseMove: 0xe4,
-  hitDice: 0xe5, hpLevel: 0xe6, drainLevels: 0xe7, drainHp: 0xe8, undead: 0xe9, thief: 0xea, effects: 0xf2, morale: 0xf7, npcShare: 0xf8,
+  hitDice: 0xe5, hpLevel: 0xe6, abilityUses: 0x191, drainLevels: 0xe7, drainHp: 0xe8, undead: 0xe9, thief: 0xea, effects: 0xf2, morale: 0xf7, npcShare: 0xf8,
   money: 0xfb, levels: 0x109, prevLevels: 0x111, gender: 0x119, monsterType: 0x11a, alignment: 0x11b,
   attacksBase: 0x11c, natDice: 0x11e, natSides: 0x120, natBonus: 0x122, acBase: 0x124, strAdj: 0x125, id: 0x126,
   xp: 0x127, itemMask: 0x12b, hpRolled: 0x12c, clericSlots: 0x12d, druidSlots: 0x132, muSlots: 0x137, slotLevels: 5,

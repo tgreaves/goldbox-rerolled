@@ -63,6 +63,12 @@ export interface GameRules {
   /** who may join the party (CotAB Add, 0x36848+0x3815): player characters and members at most, and
    *  CotAB's paladin and ranger rules (null: none) */
   join: { pcs: number; members: number; maxRangers: number | null; evil: number[]; paladins: boolean }
+  /** innate effects a new character gets, permanent, power 0xFF, in this order: by race, then by class id
+   *  (PoR spec/chargen.md; CotAB 0x371F6, 0x37647) */
+  startEffects: { race: Record<number, number[]>; cls: Record<number, number[]> }
+  /** CotAB's paladin abilities from the View menu (0x3D530 + 0x35F0 …): Lay on Hands heals 2 × level once a
+   *  day (effect 0x8C), Cure Disease has uses that a weekly effect 0x8D refills to (level − 1) div 5 + 1 */
+  paladin: { layOnHands: { perLevel: number; effect: number; minutes: number }; cureDisease: { effect: number; minutes: number; levelsPerUse: number; initial: number } } | null
   saveCon: { save: number; races: number[]; itemEffect: number; from: number; bands: [number, number][]; all: [number, number][] } | null
   /** races offered at creation, in menu order (code, not a table: PoR FUN_417f_056c, CotAB 3708f) */
   raceMenu: number[]
@@ -114,6 +120,8 @@ export const POR_RULES: GameRules = {
   dualClass: false,
   thief: { dualClass: false, bonus: 0, clampWithBonus: false, gloves: null, gauntlets: null },
   saveCon: null,
+  startEffects: { race: { 1: [0x5a, 0x61, 0x1a, 0x2f], 2: [0x6b], 3: [0x61, 0x12, 0x2f, 0x30], 4: [0x7c], 5: [0x5a, 0x61] }, cls: {} },
+  paladin: null,
   join: { pcs: 6, members: 8, maxRangers: null, evil: [], paladins: false },
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
     { kind: 'ccw', gp: 600 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 }, { kind: 'curse', gp: 3500 }, { kind: 'stone', gp: 2000 }],
@@ -149,6 +157,8 @@ export const COAB_RULES: GameRules = {
   // Added to the stored save number, which makes the save harder (the shipped TRAVIS: 12 + 4 = 16; I: a bug)
   // a paladin joins no party with an evil member, nor an evil character a party with a paladin; three rangers at most
   join: { pcs: 6, members: 8, maxRangers: 3, evil: [2, 5, 8], paladins: true },
+  startEffects: { race: { 1: [0x61, 0x1a, 0x2f], 2: [0x6b], 3: [0x61, 0x12, 0x2f, 0x30], 4: [0x7c], 5: [0x61] }, cls: { 3: [8], 4: [0x86], 10: [0x86] } },
+  paladin: { layOnHands: { perLevel: 2, effect: 0x8c, minutes: 1440 }, cureDisease: { effect: 0x8d, minutes: 10080, levelsPerUse: 5, initial: 1 } },
   saveCon: { save: 0, races: [1, 5], itemEffect: 6, from: 4, bands: [[6, 1], [10, 2], [13, 3], [17, 4], [18, 5]], all: [[20, 1], [22, 2], [24, 3], [25, 4]] },
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
     { kind: 'ccw', gp: 600 }, { kind: 'heal', gp: 5000 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 },

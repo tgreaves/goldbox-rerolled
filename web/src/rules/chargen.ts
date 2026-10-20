@@ -4,6 +4,7 @@
 
 import { R, classLevel } from '../games/rules'
 import type { Item } from '../data/items'
+import type { Effect } from '../data/effects'
 import { T } from '../games/tables'
 import { F } from '../games/fields'
 
@@ -58,6 +59,8 @@ export function begin(t: Tables, rng: Rng, race: number, gender: number, cls: nu
   c[F.body] = 1
   ;[0x91, 0xa2, 0xb3, 0xc4, 0xe6, 0xf7].forEach((v, i) => (c[F.iconColours + i] = v))
   c[F.inPlay] = 1
+  // CotAB: a paladin starts with one Cure Disease use (0x3764B)
+  if (R.paladin && F.abilityUses >= 0 && R.components[cls]?.includes(3)) c[F.abilityUses] = R.paladin.cureDisease.initial
   let bits = 0
   for (const k of R.components[cls]) {
     c[F.levels + k] = 1
@@ -152,6 +155,12 @@ export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
   c[F.hpRolled] = Math.floor(c[F.hpRolled] / classes)
   combatStats(c)
   keepBase(c)
+}
+
+/** The innate effects of a new character (R.startEffects): race first, then class; permanent, power 0xFF. */
+export function startEffects(c: Uint8Array): Effect[] {
+  const types = [...(R.startEffects.race[c[F.race]] ?? []), ...(R.startEffects.cls[c[F.cls]] ?? [])]
+  return types.map((type) => ({ type, duration: 0, power: 0xff, flag: 0 }))
 }
 
 export function hitDice(t: Tables, rng: Rng, c: Uint8Array): number {

@@ -3,6 +3,8 @@
 // command line at the bottom. Area scripts run through the ECL engine (src/vm/engine.ts).
 import { R, slots, bookSpell, casterClasses } from '../games/rules'
 import { joinRefusal } from '../rules/joining'
+import { abilities, abilityName, diseased, useAbility, type Ability } from '../rules/abilities'
+import { startEffects } from '../rules/chargen'
 import { game } from '../games/profile'
 import { F } from '../games/fields'
 import type { GameFiles } from '../store/gamefiles'
@@ -1060,7 +1062,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       else if (o === 'CREATE') {
         const made = await tools.create(t)
         if (made) {
-          await saveCharacter({ stem: fileStem(nameOf(made)), sav: made })
+          await saveCharacter({ stem: fileStem(nameOf(made)), sav: made, spc: effectsFile(startEffects(made)) })
           print(`${nameOf(made)} has been created. Use Add to put them in the party.`, false)
         }
       } else if (o === 'ADD') {
@@ -1116,7 +1118,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   interface MoneyStep { op: 'trade' | 'drop'; to?: number; type?: number }
   /** steps of Use on the sheet: which spell, then whom */
   interface UseStep { scroll: boolean; ids: number[]; spell?: number; combatOnly?: boolean }
-  function sheet(c: Character, opts: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use' | 'scribe'; use?: UseStep; after?: 'drop' | 'trade' | 'sell'; money?: MoneyStep; combat?: boolean; mode?: 'shop' | 'temple' | 'treasure'; castOn?: number } = {}) {
+  function sheet(c: Character, opts: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use' | 'scribe'; use?: UseStep; after?: 'drop' | 'trade' | 'sell'; money?: MoneyStep; combat?: boolean; mode?: 'shop' | 'temple' | 'treasure'; castOn?: number; abilityOn?: Ability } = {}) {
     const node = c.raw
     const t = engine.items
     const items = engine.itemsOf(node)
@@ -1226,6 +1228,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         ${opts.message ? `<p class="message">${escape(opts.message)}</p>` : ''}
         <div class="item-actions">${actions || (items.length ? '<span class="muted">Pick an item to ready, use, trade or drop it.</span>' : '')}</div>` : ''}
       ${spellsPanel()}
+      ${abilitiesPanel()}
       ${moneyPanel()}
       <form method="dialog"><button>Close</button></form>`
     { const p = buildIcon(files, node, false), g = sizeCanvas(dialog.querySelector<HTMLCanvasElement>('canvas.sheet-icon')!, 24, 24)
@@ -1235,6 +1238,15 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
      * for this character, with its rules: no casting where the area forbids it (ECL 0x49E5), only
      * when Okay, combat-only spells refused, targets by the spell's side byte.
      */
+    /** Class abilities (CotAB's paladin Lay on Hands and Cure Disease), outside battles (rules/abilities.ts). */
+    function abilitiesPanel(): string {
+      const list = abilities(engine, node, !!opts.combat)
+      if (!list.length) return ''
+      if (opts.abilityOn) return `<div class="ability-actions"><p>${escape(abilityName[opts.abilityOn])}: ${opts.abilityOn === 'layOnHands' ? 'heal' : 'cure'} whom?</p>${engine.party().map((n, k) =>
+        `<button data-ab="on-${k}">${escape(parseCharacter(n).name)}</button>`).join('')}<button data-ab="cancel">Cancel</button></div>`
+      return `<div class="ability-actions"><h3>Abilities</h3>${list.map((a) => `<button data-ab="use-${a}">${escape(abilityName[a])}</button>`).join('')}</div>`
+    }
+
     function spellsPanel(): string {
       const st = engine.spells
       if (!st || opts.combat) return ''
@@ -1269,7 +1281,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       return `<div class="money-actions"><form class="money-amount"><label>How much ${escape(COIN_PROMPT[m.type])}will you ${m.op}? <input type="number" min="0" max="${c.money[m.type]}" value="${c.money[m.type]}"></label>
         <button>OK</button><button type="button" data-m="exit">Exit</button></form></div>`
     }
-    const again = (o: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use' | 'scribe'; use?: UseStep; after?: 'drop' | 'trade' | 'sell'; money?: MoneyStep; combat?: boolean; castOn?: number }) => {
+    const again = (o: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use' | 'scribe'; use?: UseStep; after?: 'drop' | 'trade' | 'sell'; money?: MoneyStep; combat?: boolean; castOn?: number; abilityOn?: Ability }) => {
       drawRoster()
       sheet(parseCharacter(node), { ...o, mode: opts.mode, combat: opts.combat })
     }
@@ -1277,6 +1289,19 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       node[F.quick] = 0 // as the battle's Space does for this character (FUN_3334_0fc1), outside a battle (IMP-054)
       again({ message: `${c.name} will be played by hand in battle.` })
     })
+    dialog.querySelectorAll<HTMLButtonElement>('.ability-actions button').forEach((b) => b.addEventListener('click', () => {
+      const a = b.dataset.ab!
+      if (a === 'cancel') return again({})
+      if (a.startsWith('use-')) return again({ abilityOn: a.slice(4) as Ability })
+      if (a.startsWith('on-') && opts.abilityOn) {
+        const t = engine.party()[Number(a.slice(3))]
+        // Cure Disease on someone not diseased: "is not diseased", then "cure anyway"
+        if (opts.abilityOn === 'cureDisease' && !diseased(engine, t) && !confirm(`${parseCharacter(t).name} is not diseased. Cure anyway?`)) return again({})
+        const out = useAbility(new WorldHost(engine), engine, node, opts.abilityOn, t)
+        for (const m of out) print(m, false)
+        again({ message: out.join(' ') })
+      }
+    }))
     dialog.querySelectorAll<HTMLButtonElement>('.spell-actions button').forEach((b) => b.addEventListener('click', () => {
       const a = b.dataset.sp!, st = engine.spells
       if (!st) return

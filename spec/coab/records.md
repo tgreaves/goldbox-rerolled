@@ -321,3 +321,9 @@ Strings at 0x36848 + 0x35AE: "Add from where? ", "Curse Pool Hillsfar Exit", "Ad
 - Refused, in this order of messages: a paladin when anyone is evil ("paladins do not join with evil scum", with a double pause); a ranger when there are 3 already ("too many rangers in party"); an evil character when a paladin is present ("<paladin> will tolerate no evil!"). Party full (6 player characters, or 8 members for an NPC) → no message.
 - The port: `web/src/rules/joining.ts` with the profile's `join` rules, used by both Add commands. PoR has only the size limits.
 
+## 9. Creation effects and paladin abilities (O)
+- **Innate effects** at creation (0x371F6, 0x37647), permanent, power 0xFF: halfling 0x61; dwarf 0x61, 0x1A, 0x2F; gnome 0x61, 0x12, 0x2F, 0x30; elf 0x6B; half-elf 0x7C; then paladin 8 (protection from evil), ranger and cleric/ranger 0x86 (giant-class damage). PoR's dwarf and halfling 0x5A is gone (its CON save bonus moved into the saves routine, [[spec/coab/tables]] §3.6a). A paladin starts with **+0x191 = 1**.
+- **Lay on Hands** (View menu "Heal", availability 0x3D530 + 0x35F0: class 3 or a counting former paladin, not in combat, status Okay, no effect 0x8C; use + 0x36D7): "Heal whom?", heals 2 × paladin level (status 0/1/4/5 and HP below max; dying → unconscious), "feels better" / "is unaffected", then effect 0x8C for 1440 minutes, even when nothing was healed.
+- **Cure Disease** (View menu "Cure", + 0x3655: as above but +0x191 > 0; use + 0x37EC): "Cure whom?"; not diseased → "is not diseased", "cure anyway:" (No spends nothing); removes one of each disease effect DS:082A (31, 34, 43, 44, 50, 57), +0x191 − 1, adds effect 0x8D for 10080 minutes with the removal call unless present, "is cured". The removal of 0x8D (0x27350 + 0x28EF) sets +0x191 = (paladin level − 1) div 5 + 1.
+- Paladins do not turn undead (the Turn command needs a cleric level).
+
