@@ -1,10 +1,14 @@
 # EXAMPLE: GoldBox Rerolled behind Caddy (automatic HTTPS). Adapt before use (docs/server.md, "Docker").
+#   export GIT_COMMIT=$(git rev-parse --short HEAD)   # the version shown at the foot of the page
 #   docker compose up -d --build                    # the app alone, on 127.0.0.1:8080
 #   DOMAIN=games.example.org docker compose --profile proxy up -d --build   # plus Caddy on 80/443
 #   docker compose exec app node server/admin.ts list-users
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
     image: goldbox-rerolled:local
     restart: unless-stopped
     environment:

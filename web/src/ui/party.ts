@@ -7,6 +7,7 @@ import { parseCharacter } from '../data/character'
 import { F } from '../games/fields'
 import { deleteCharacter, getParty, listCharacters, seedRoster, setParty } from '../store/user'
 import { escape, sheetHtml } from './sheet'
+import { T } from '../games/tables'
 import { unexepack } from '../data/exepack'
 import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
 import { parseRecord, toImageData } from '../data/image'
@@ -14,6 +15,7 @@ import { blit, sizeCanvas } from '../render/upscale'
 import { buildIcon } from '../render/icon'
 import { creatorTools } from './creator'
 import { openSettings } from './settings'
+import { accountButton } from './account'
 import { enhancePanel } from './panel'
 import { initSound } from '../audio/sfx'
 import { saveCharacter, listSaves, writeSave, readAutosave, listConflicts } from '../store/user'
@@ -45,10 +47,10 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
 
   app.innerHTML = `
     <div class="partyscreen">
-      <header><h1>${files.game.name}</h1><span><button class="muted" data-a="games" title="Switch game, import another, or remove one">⇄ Games</button> <button class="muted" data-a="settings">⚙ Settings</button> <button class="muted" data-a="assets">Assets</button></span></header>
+      <header><h1>${files.game.name}</h1><span><button data-a="account" hidden></button> <button class="muted" data-a="games" title="Switch game, import another, or remove one">⇄ Games</button> <button class="muted" data-a="settings">⚙ Settings</button> <button class="muted" data-a="assets">Assets</button></span></header>
       <section class="members" aria-label="Party"><h2>Party</h2><div class="cards"></div></section>
       <section class="info" aria-live="polite"></section>
-      <nav class="functions" aria-label="Choose a function"></nav>
+      <nav class="functions" aria-label="Functions"></nav>
       <dialog class="panel"></dialog>
     </div>`
   const tbody = app.querySelector<HTMLElement>('.members .cards')!
@@ -68,7 +70,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
           const c = parseCharacter(byStem(s).sav)
           const pct = Math.round((100 * c.hp) / Math.max(1, c.hpMax))
           return `<button class="pcard${i === current ? ' current' : ''}" data-i="${i}" title="${i === current ? 'View' : 'Select'} ${escape(c.name)}">
-            <canvas class="pixel pc-portrait" width="88" height="88"></canvas>
+            ${T.headRecords.at >= 0 ? '<canvas class="pixel pc-portrait" width="88" height="88"></canvas>' : ''}
             <span class="pc-body"><strong>${escape(c.name)}</strong>
               <span>${c.race} ${c.cls}</span>
               <span class="muted">level ${c.levels.map((l) => l.level).join('/')} · AC ${c.ac} · ${c.status}</span>
@@ -80,9 +82,11 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
     tbody.querySelectorAll<HTMLElement>('.pcard').forEach((card) => {
       const raw = byStem(party[Number(card.dataset.i)]).sav
       const pic = (family: string, id: number) => { const r = files.record(family, id); try { return r ? parseRecord(r).frames[0].picture : null } catch { return null } }
-      const port = sizeCanvas(card.querySelector<HTMLCanvasElement>('.pc-portrait')!, 88, 88)
-      port.fillStyle = '#000'; port.fillRect(0, 0, 88, 88)
-      if (tables) {
+      const portrait = card.querySelector<HTMLCanvasElement>('.pc-portrait')
+      // a game without portraits (CotAB: spec/coab/records.md) has no canvas for one
+      const port = portrait ? sizeCanvas(portrait, 88, 88) : null
+      if (port) { port.fillStyle = '#000'; port.fillRect(0, 0, 88, 88) }
+      if (port && tables) {
         const h = pic('HEAD3', headRecord(tables, raw[F.head])), b = pic('BODY3', bodyRecord(tables, raw[F.body]))
         if (h) blit(port, toImageData(h), 0, 0)
         if (b) blit(port, toImageData(b), 0, 40)
@@ -92,26 +96,36 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
       if (p) blit(ic, toImageData(p), 0, 0)
     })
     const has = party.length > 0
-    const items: [string, string, boolean][] = [
-      ...(auto ? [['O', `Continue (autosave, ${new Date(auto.savedAt).toLocaleString()})`, true] as [string, string, boolean]] : []),
-      ['C', 'Create character', tables !== null],
-      ['D', 'Drop character', has],
-      ['M', 'Modify character', has && tables !== null],
-      ['T', 'Train character', false],
-      ['V', 'View character', has],
-      ['A', 'Add character', party.length < MAX_PARTY && roster.some((c) => !party.includes(c.stem))],
-      ['R', 'Remove character', has],
-      ['L', 'Load saved game', true],
-      ['S', 'Save current game', false],
-      ['B', 'Begin adventuring', has],
-      ['X', 'Export saved game', true],
-      ['I', 'Import saved game', true],
-      ['E', 'Exit', true],
+    // the original's functions and hot keys, grouped by what they are for (IMP-073); Train and Save,
+    // which this screen never offers, are left out
+    const canAdd = party.length < MAX_PARTY && roster.some((c) => !party.includes(c.stem))
+    type Fn = { k: string; label: string; on: boolean; hint: string; off?: string; main?: boolean }
+    const groups: { title: string; fns: Fn[] }[] = [
+      { title: 'Play', fns: [
+        ...(auto ? [{ k: 'O', label: 'Continue', on: true, main: true, hint: `the autosave of ${new Date(auto.savedAt).toLocaleString()}` }] : []),
+        { k: 'B', label: 'Begin adventuring', on: has, main: !auto && has, hint: 'with this party', off: 'add or create a character first' },
+        { k: 'L', label: 'Load saved game', on: true, hint: 'slots A–J' },
+      ] },
+      { title: 'Party', fns: [
+        { k: 'A', label: 'Add character', on: canAdd, hint: 'from your roster', off: party.length >= MAX_PARTY ? 'the party is full' : 'no one else in the roster' },
+        { k: 'C', label: 'Create character', on: tables !== null, hint: 'roll a new one', off: 'needs START.EXE: re-import the game' },
+        { k: 'R', label: 'Remove character', on: has, hint: 'back to the roster', off: 'no one in the party' },
+        { k: 'V', label: 'View character', on: has, hint: 'the selected one', off: 'no one in the party' },
+        { k: 'M', label: 'Modify character', on: has && tables !== null, hint: 'abilities and hit points', off: 'no one in the party' },
+        { k: 'D', label: 'Drop character', on: has, hint: 'delete for good', off: 'no one in the party' },
+      ] },
+      { title: 'Files', fns: [
+        { k: 'X', label: 'Export saved game', on: true, hint: 'as the original\'s files' },
+        { k: 'I', label: 'Import saved game', on: true, hint: 'from the original or an export' },
+        { k: 'E', label: 'Exit', on: true, hint: 'to the title' },
+      ] },
     ]
-    nav2.innerHTML = items.map(([k, label, on]) => {
-      const at = Math.max(0, label.toUpperCase().indexOf(k))
-      return `<button data-k="${k}" ${on ? '' : 'disabled'}>${label.slice(0, at)}<u>${label[at]}</u>${label.slice(at + 1)}</button>`
-    }).join('')
+    const button = (f: Fn) => {
+      const at = Math.max(0, f.label.toUpperCase().indexOf(f.k))
+      return `<button data-k="${f.k}" class="${f.main ? 'primary' : ''}" ${f.on ? '' : 'disabled'} title="${escape(f.on ? f.hint : f.off ?? '')}">
+        <span>${f.label.slice(0, at)}<u>${f.label[at]}</u>${f.label.slice(at + 1)}</span><small>${escape(f.on ? f.hint : f.off ?? f.hint)}</small></button>`
+    }
+    nav2.innerHTML = groups.map((g) => `<section class="fgroup"><h2>${g.title}</h2><div class="fbtns">${g.fns.map(button).join('')}</div></section>`).join('')
   }
 
   const { chooseFrom, confirm, pick, create, modify } = creatorTools(dialog, files, rng, tables)
@@ -299,6 +313,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
     if (i === current) act('V')
     else { current = i; draw() }
   })
+  accountButton(app.querySelector<HTMLButtonElement>('[data-a="account"]')!, dialog)
   app.querySelector('[data-a="settings"]')!.addEventListener('click', () => {
     if (dialog.open) return
     initSound(files.get('START.EXE'))
@@ -336,6 +351,6 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
     party = (await getParty()).filter((s) => roster.some((c) => c.stem === s))
     if (!dialog.open) draw()
   })
-  say('Choose a function.')
+  say('')
   draw()
 }

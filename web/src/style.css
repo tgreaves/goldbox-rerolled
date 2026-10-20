@@ -245,9 +245,15 @@ dialog.panel form.jump input { width: 4.5rem; }
 .partyscreen .members tr.current td { color: #fff; background: #ffffff14; }
 .partyscreen .members tr.current td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .partyscreen .info { color: var(--ega-green); min-height: 1.5em; }
-.partyscreen .functions { display: grid; grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr)); gap: 0.4rem; align-content: start; }
-.partyscreen .functions button { text-align: left; }
+.partyscreen .functions { display: grid; gap: 1rem; align-content: start; }
+/* the functions in groups (IMP-073): Play, Party, Files; each button with a line on what it does */
+.partyscreen .fgroup h2 { font-size: 0.9rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.4rem; }
+.partyscreen .fbtns { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 0.4rem; }
+.partyscreen .functions button { text-align: left; display: grid; gap: 0.15rem; }
+.partyscreen .functions button small { font-size: 0.75em; color: var(--muted); }
+.partyscreen .functions button.primary small { color: inherit; opacity: 0.8; }
 .partyscreen .functions button u { color: var(--accent); text-decoration: none; font-weight: 700; }
+.partyscreen .functions button.primary u { color: inherit; text-decoration: underline; }
 .partyscreen .functions button:disabled { opacity: 0.4; cursor: default; }
 ol.pick { list-style: none; padding: 0; display: grid; gap: 0.35rem; }
 ol.pick button { width: 100%; text-align: left; }
@@ -685,3 +691,12 @@ dialog.panel form.acct { display: grid; gap: 0.5rem; justify-content: stretch; m
 a.button { display: inline-flex; align-items: center; border: 1px solid var(--line); padding: 0.5rem 0.9rem; min-height: 44px; color: inherit; text-decoration: none; background: #000; }
 a.button:hover, a.button:focus-visible { border-color: var(--accent); outline: none; }
 @media (max-width: 30rem) { .acct-field { grid-template-columns: 1fr; gap: 0.2rem; } }
+
+/* the account on the game list (IMP-072): a box near the top, not hidden in Settings */
+.import .account-top:not(:empty) { border: 1px solid var(--line); padding: 0.75rem 1rem; }
+.import .account-top h3 { margin-top: 0; }
+/* the running version at the foot of the game list and in Settings */
+.version { margin-top: 1rem; font-size: 0.8rem; }
+.version a { color: inherit; }
+
+.pcard:not(:has(canvas.pc-portrait)) { grid-template-columns: 1fr auto; }

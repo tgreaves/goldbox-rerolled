@@ -44,6 +44,8 @@ import { creatorTools } from './creator'
 import { playEnding } from './ending'
 import { onClose } from './sheet'
 import { openSettings, reducedMotion } from './settings'
+import { accountLabel, openAccount } from './account'
+import { accountStatus } from '../store/account'
 import { unexepack } from '../data/exepack'
 import { checkTraining, levelLimit, newSpellChoices, train, willBecome, xpFor } from '../rules/training'
 import { initSound, play, setSoundDevice, soundDevice, unlockAudio } from '../audio/sfx'
@@ -1838,6 +1840,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       case 'journal': journal(); break
       case 'save': act(() => saveGame()); break
       case 'debug': debugMenu(); break
+      case 'account': openAccount(dialog); break
       case 'assets': leave(); break
       case 'menu': mainMenu(); break
       case 'rules': void rulesReference(dialog, engine.spells); break
@@ -1853,6 +1856,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       <ul class="mainmenu">
         ${!JOURNAL.journal.length ? '' : item('journal', 'Journal', found ? `${found} found` : JOURNAL.proclamations.length ? 'entries, proclamations and tavern tales' : 'entries and tavern tales')}
         ${!game().commissions ? '' : item('commissions', `Commissions${due ? ' <span class="due">•</span>' : ''}`, due ? 'a reward is waiting' : 'the City Council\'s commissions and progress')}
+        ${accountStatus().available ? item('account', accountLabel(), accountStatus().user ? 'your saves on the server, sync, password' : 'keep your saves on the server and play on any device') : ''}
         ${item('save', 'Save', 'any time, slots A–J')}
         ${item('settings', 'Settings', 'speed, sound, font, borders, motion, text size, graphics')}
         ${item('rules', 'Rules reference', 'classes, races, abilities, combat numbers, spells')}

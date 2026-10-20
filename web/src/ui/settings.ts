@@ -9,6 +9,7 @@ import { gfxMode, savedGfx, setGfx, type Gfx } from '../render/upscale'
 import { SYNCED_SETTINGS } from '../store/account'
 import { localChanged } from '../store/changes'
 import { mountAccount } from './account'
+import { versionHtml } from '../version'
 
 const SIZE_KEY = 'poolrad.textsize'
 const MOTION_KEY = 'poolrad.motion'
@@ -80,6 +81,7 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
       ${seg<Gfx>('Graphics', [['pixel', 'Pixel (original)'], ['sharp', 'Sharp (even pixels, soft fit)']], savedGfx())}
       ${savedGfx() !== gfxMode() ? '<p class="message">The graphics change takes effect when the page reloads. <button type="button" data-reload="1">Reload now</button> (save first if you are in a game)</p>' : ''}
       <section class="account-sec" aria-label="Account"></section>
+      <p class="muted small version">${versionHtml()}</p>
       <form method="dialog"><button class="primary">Done</button></form>`
     mountAccount(dialog.querySelector<HTMLElement>('.account-sec')!)
   }

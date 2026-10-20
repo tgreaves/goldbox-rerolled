@@ -10,7 +10,10 @@ RUN npm ci --no-audit --no-fund
 COPY web/ ./
 # the type check covers the server too (web/tsconfig.json includes ../server)
 COPY server/ /src/server/
-RUN npm run build
+# the commit shown at the foot of the page (.git is not in the build context):
+#   GIT_COMMIT=$(git rev-parse --short HEAD) docker compose build
+ARG GIT_COMMIT=unknown
+RUN GIT_COMMIT=$GIT_COMMIT npm run build
 
 # ---- stage 2: the server, run by Node directly (type stripping), no dependencies
 FROM node:24.22.0-alpine3.24

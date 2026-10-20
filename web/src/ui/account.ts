@@ -32,7 +32,7 @@ function field(label: string, name: string, type = 'text', auto = '', extra = ''
   return `<label class="acct-field"><span>${label}</span><input name="${name}" type="${type}" autocomplete="${auto}" ${extra}></label>`
 }
 
-function render(s: AccountStatus): string {
+function render(s: AccountStatus, gameOpen = true): string {
   if (s.available !== true) return ''
   const min = s.config?.passwordMin ?? 10
   const head = `<h3>Account</h3>`
@@ -101,7 +101,7 @@ function render(s: AccountStatus): string {
     <p>Signed in as <strong>${escape(s.user)}</strong>${s.online ? '' : ' (offline: changes wait in this browser)'}. <span class="muted">${bits.join(' · ')}</span></p>
     ${s.error ? `<p class="message">${escape(s.error)}</p>` : ''}
     <div class="nc-opts"><button type="button" data-act="sync">Sync now</button><button type="button" data-act="signout">Sign out</button><button type="button" data-act="forget" title="For a shared computer">Sign out and remove this browser's copy</button></div>
-    <div class="acct-conflicts"></div>
+    ${gameOpen ? '<div class="acct-conflicts"></div>' : ''}
     <div class="nc-opts acct-manage"><a class="button" href="${escape(exportUrl())}" download>Download my data</a><button type="button" data-mode="password">Change password</button><button type="button" data-mode="newcode">New recovery code</button><button type="button" data-mode="delete">Delete account</button><button type="button" data-mode="privacy">Privacy</button></div>
     ${note}`
 }
@@ -116,10 +116,11 @@ function conflictsHtml(list: ConflictCopy[]): string {
 }
 
 /** Fill the Account section of the settings panel and keep it current. */
-export function mountAccount(el: HTMLElement) {
+/** `gameOpen` false on the game list: no game's data to show, so no conflict copies there. */
+export function mountAccount(el: HTMLElement, gameOpen = true) {
   let copies: ConflictCopy[] = []
   const draw = () => {
-    el.innerHTML = render(accountStatus())
+    el.innerHTML = render(accountStatus(), gameOpen)
     const box = el.querySelector<HTMLElement>('.acct-conflicts')
     if (box) void listConflicts().then((l) => { copies = l; box.innerHTML = conflictsHtml(l) }).catch(() => {})
   }
@@ -191,4 +192,35 @@ export function mountAccount(el: HTMLElement) {
 
 function hasInput(el: HTMLElement) {
   return [...el.querySelectorAll<HTMLInputElement>('form.acct input')].some((i) => i.value !== '')
+}
+
+/** The account's short label for a button: "Sign in" or the name, with the sync state. */
+export function accountLabel(s: AccountStatus = accountStatus()): string {
+  if (!s.user) return 'Sign in / create account'
+  const state = !s.online ? 'offline' : s.busy ? 'syncing…' : s.pending ? `${s.pending} to send` : 'synced'
+  return `Account: ${s.user} · ${state}`
+}
+
+/**
+ * A button that opens the account (IMP-072): shown only when a server answers, its label kept current
+ * (signed out it invites signing in; signed in it shows the name and sync state).
+ */
+export function accountButton(btn: HTMLButtonElement, dialog: HTMLDialogElement, gameOpen = true) {
+  const show = (s: AccountStatus) => {
+    btn.hidden = s.available !== true
+    btn.textContent = accountLabel(s)
+    btn.classList.toggle('primary', !s.user)
+  }
+  show(accountStatus())
+  const stop = onAccountStatus((s) => { if (!btn.isConnected) { stop(); return } show(s) })
+  btn.addEventListener('click', () => openAccount(dialog, gameOpen))
+}
+
+/** The account in a dialog of its own. */
+export function openAccount(dialog: HTMLDialogElement, gameOpen = true) {
+  if (dialog.open) return
+  ui.mode = 'view'; ui.message = ''
+  dialog.innerHTML = `<section class="account-sec" aria-label="Account"></section><form method="dialog"><button>Close</button></form>`
+  mountAccount(dialog.querySelector<HTMLElement>('.account-sec')!, gameOpen)
+  dialog.showModal()
 }

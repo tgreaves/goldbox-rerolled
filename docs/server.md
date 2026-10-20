@@ -229,7 +229,7 @@ docker compose exec app node server/admin.ts list-users              # the admin
 docker compose logs -f app
 ```
 
-**Updating:** `git pull && docker compose up -d --build` (the volume keeps the data).
+**Updating:** `git pull && GIT_COMMIT=$(git rev-parse --short HEAD) docker compose up -d --build` (the volume keeps the data). `GIT_COMMIT` is the version shown at the foot of the game list and in Settings; the build context has no `.git`, so without it the page says "version unknown". Builds outside Docker read it from git and add "+ local changes" when the working tree differs.
 **Backups of the volume:**
 
 ```sh

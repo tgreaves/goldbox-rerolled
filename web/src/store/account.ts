@@ -115,6 +115,12 @@ async function guarded(f: () => Promise<void>) {
   }
 }
 
+/** Before any game is open (the game list): find the server and who is signed in, for signing in or up there. */
+export async function initAccount() {
+  api ??= new HttpApi(new URL('api/v1/', document.baseURI).href)
+  await probe()
+}
+
 /** Called once a game is open: sync that game's records. */
 export async function startAccount(g: GameProfile) {
   api ??= new HttpApi(new URL('api/v1/', document.baseURI).href)
