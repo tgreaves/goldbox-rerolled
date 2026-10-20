@@ -224,6 +224,7 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
    * is above `aiPick.above`, else the second; a player from the menu `prompt`) and gets its effects
    * through the add-effect routine (power 0, flag 0, each with its line, '' none: Cold has none, as the
    * original); a player who picks neither is asked `abort` (yes: the spell is lost), else asked again
+   * (IMP-071: the web menus always return a choice, so a player cannot reach the question)
    */
   async flameShield({ h, caster, dur }, p) {
     const opts = p.options as { name: string; effects: [number, string][] }[]
