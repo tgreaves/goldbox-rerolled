@@ -24,6 +24,8 @@ came first and is playable; Curse of the Azure Bonds (CotAB) is being added. The
      procedure over per-game implementations, keep profiles as data (no functions in them where data
      will do), and keep `docs/multi-game.md` ("Where a game is described", "Tracking to the goal")
      current: it says where each game's configuration lives and what is still hard-coded.
+   - Design for games beyond Pool of Radiance and Curse of the Azure Bonds: name procedures by what
+     they do, never by a game; a new game should need only its profile and any genuinely new procedure.
 2. **Faithful to the original.** Rules and scripts behave as the original's code does, including its
    quirks. Before "fixing" anything that looks odd, check the original binary: often it is what the
    game does. Every deliberate departure goes in [`IMPROVEMENTS.md`](IMPROVEMENTS.md) (next IMP

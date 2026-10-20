@@ -8,7 +8,7 @@ export type Copy = [keyof CharFields, number]
 
 export interface CharacterImport {
   /** the source game's id, and its name for the player */
-  from: 'por'
+  from: string
   label: string
   /** source files: roster characters (extension) and save-slot characters, the source record size,
    *  and the highest morale byte allowed (NPCs are refused) */

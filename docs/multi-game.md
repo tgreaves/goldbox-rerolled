@@ -92,6 +92,22 @@ Values come first from the player's own files (START.EXE tables through `T`, DAX
 strings); what is code rather than a table in the original is profile data; only where a game's
 *procedure* differs does the profile name one of several implementations in `rules/`.
 
+## Adding a game
+
+The engine is meant for **every** Gold Box game, not only these two (Tristan, 2026-10-20). So:
+- a game is a set of profile modules in `web/src/games/` (one value per module) plus its entry in
+  `GAMES`; nothing in shared code names a game, and a game's id is only a label;
+- procedures are named by **what they do** (an ECL opcode variant, an effect behaviour, a spell
+  handler kind, a slot source), never by the game that first needed them, so a later game picks from
+  the same vocabulary and adds only what is new;
+- per-game choices are parameters of those procedures, kept in the profile;
+- the values come from the game's own files wherever they are there (START.EXE tables, DAX records,
+  GAME.OVR strings), found by the same research method (CLAUDE.md, "Method for a new game").
+
+Still to rename to that rule (they name games): the effect system's stat routine and item handlers
+(`effects.ts` STAT / ITEMS keyed 'por' | 'coab', `effectrules.ts` items), the lightning bolt
+procedure (`rules.ts` bolt.proc).
+
 ## Tracking to the goal (assessed 2026-10-20)
 
 The goal (Tristan, 2026-10-20): **one engine for every Gold Box game, fully data-driven, with no
@@ -235,9 +251,6 @@ need only its profile modules and any procedure the earlier games do not have.
 - **CotAB journal**: the Adventurer's Journal text (entries, proclamations, tales) as PoR's came from
   the wiki; Tristan will provide a source. The shipped PDF is scanned images. Until then CotAB's
   journal is hidden (`journal: null` in its profile).
-- **CotAB monster specials still missing**: eye rays (87), the breaths (88, 90, 128) and lightning
-  (132) need area templates and bolt paths in combat; PoR's own type 88 handler (MON5 #66).
-- **CotAB add-effect rule** (0x4CD92, replacing a record of the same type) and the AI target hook
-  `*DS:72BA` used by the specials (spec/coab/effects.md).
+- **CotAB add-effect rule** (0x4CD92, replacing a record of the same type; spec/coab/effects.md).
 
 Each step is committed separately with PoR's tests passing, so PoR stays playable throughout.

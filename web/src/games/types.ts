@@ -17,7 +17,8 @@ import type { RulesText } from './rulestext'
 import type { CharacterImport } from './imports'
 
 export interface GameProfile {
-  id: 'por' | 'coab'
+  /** a short id ('por', 'coab', …): a new game adds its own; nothing in shared code tests it */
+  id: string
   name: string
   /** the game's folder in the GOG release, named in the import help */
   folder: string
