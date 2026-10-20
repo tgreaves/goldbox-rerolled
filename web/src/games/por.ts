@@ -39,6 +39,7 @@ export const POR: GameProfile = {
   spellNotes: POR_SPELL_NOTES,
   view: POR_VIEW,
   title: POR_TITLE,
+  startMenu: null, // no Demo in START.EXE or GAME.OVR: the title goes to the party screen
   sound: POR_SOUND,
   commissions: true,
   treasure: POR_TREASURE,

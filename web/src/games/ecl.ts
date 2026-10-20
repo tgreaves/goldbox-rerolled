@@ -44,6 +44,11 @@ export interface EclMap {
   /** LOAD_WALLSETS in two-slot mode (A 0x49E7 and 0x49E8 set): an operand of 0xFF leaves its slot as
    *  it is (CotAB, image 0x19563/0x19575) or is loaded like any record (PoR, image 0x1A96D: no test) */
   twoSlotSkipsFF: boolean
+  /** PAUSE and CALL frame wait the game speed times this many ms (PoR FUN_1709_0dbe 225; CotAB 0x1B15B
+   *  and 0x6803 → 0x57F9: Delay(DS:4FC2 · 100)) */
+  pauseMs: number
+  /** the PROGRAM operand that ends the game (CotAB 3: DS:4FE0 = 1, then EXIT, 0x1BA7E); null: none */
+  quitProgram: number | null
 }
 
 /** One B-view read: a character field (element `index` of an array field; `signed` sign-extends a byte;
@@ -67,6 +72,8 @@ export const POR_ECL: EclMap = {
   start: { block: 3, area: 0 },
   areaZero: null,
   twoSlotSkipsFF: false,
+  pauseMs: 225,
+  quitProgram: null,
 }
 
 // spec/coab/ecl.md, "B as a view of the current character"; B+0x100's "loaded past the end" flag is
@@ -97,9 +104,11 @@ export const COAB_ECL: EclMap = {
   wipeBanner: null,
   // the start-up code sets block 2 for a real game (spec/coab/assets.md); record 1 is block 2's first (I)
   start: { block: 2, area: 1 },
-  // image 0x1C001–0x1C050: area 0 → record 1 (82 when DS:4FD5 is set, ?), loaded rather than restored
+  // image 0x1C001–0x1C050: area 0 → record 1 (82 in the demo: games/startup.ts), loaded rather than restored
   areaZero: 1,
   twoSlotSkipsFF: true,
+  pauseMs: 100,
+  quitProgram: 3,
 }
 
 const SIZES: ['a' | 'b' | 'c' | 'code', number][] = [['a', 0x400], ['b', 0x400], ['c', 0x200], ['code', 0x1e00]]

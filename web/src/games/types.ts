@@ -9,6 +9,7 @@ import type { GameRules } from './rules'
 import type { JournalData } from './journal'
 import type { ViewArt } from './view'
 import type { TitleScript } from './title'
+import type { StartMenu } from './startup'
 import type { SoundDriver } from './sound'
 import type { TreasureRules } from './treasure'
 import type { EffectRules } from './effectrules'
@@ -55,6 +56,8 @@ export interface GameProfile {
   view: ViewArt
   /** the title sequence and credits */
   title: TitleScript
+  /** the menu after the title (Play / Demo) and the demo it runs; null: straight to the party screen */
+  startMenu: StartMenu | null
   /** the sound driver in START.EXE */
   sound: SoundDriver
   /** the commissions panel (IMP-023): PoR's City Council quests, read from its script variables */

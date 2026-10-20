@@ -783,7 +783,8 @@ export class Battle implements FxHost {
     this.ui.redraw()
     await this.settle()
     if (this.count(0) === 0 || this.count(1) === 0) {
-      if (this.count(0) > 0 && this.count(1) === 0) return !(await this.ui.confirm('Continue Battle:'))
+      // not asked in a demo that says so (CotAB 0x227EF): the battle is over
+      if (this.count(0) > 0 && this.count(1) === 0 && (this.e.demo?.continueBattle ?? true)) return !(await this.ui.confirm('Continue Battle:'))
       return true
     }
     return false
@@ -2299,6 +2300,27 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
   return { share, survived, messages: msgs }
 }
 
+/**
+ * After a battle in a demo without the aftermath (CotAB 0x1EE82 with DS:4FD5 set: 0x1EE98 skips the
+ * outcome 0x1DC36, 0x1EEAC everything after the clean-up 0x1EAA7): the monsters and those on the
+ * enemy side leave the list; no outcome, experience, shares or treasure, and never the end of the game.
+ */
+function demoCleanup(e: Engine, b: Battle): { share: number; survived: boolean; messages: string[] } {
+  for (const f of b.fighters) {
+    if (!f.monster && f.c[F.side] !== 1) continue
+    const i = e.nodes.indexOf(f.c)
+    if (i >= 0) e.nodes.splice(i, 1)
+    e.inventory.delete(f.c)
+    e.effects.delete(f.c)
+  }
+  e.write(0x6e3e, e.nodes.length)
+  for (const a of [0x6e70, 0x6e71, 0x6e72, 0x6de3, 0x6de6]) e.write(a, 0)
+  e.monstersCleared()
+  e.duel = false
+  e.duelist = null
+  return { share: 0, survived: true, messages: [] }
+}
+
 /** A signed 16-bit product, as the original multiplies (never large with shipped data). */
 const s8short = (v: number) => ((v & 0xffff) << 16) >> 16
 
@@ -2324,6 +2346,7 @@ export async function fight(e: Engine, ui: CombatUi, onReady?: (b: Battle) => vo
   const surprise = e.read(0x6dcb)
   e.write(0x6dcb, 0)
   const outcome = await b.run(surprise)
+  if (e.demo && !e.demo.aftermath) return { battle: b, ...demoCleanup(e, b) }
   return { battle: b, ...aftermath(e, b, outcome) }
 }
 

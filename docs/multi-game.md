@@ -86,6 +86,7 @@ and makes one active (`setGame`), switching the live objects the rest of the cod
 | `treasure.ts` | random treasure: the type choice (nested dice bands), plus roll, scrolls, magic records | `game().treasure` |
 | `view.ts` | the 3D view and screens: floor and ground, BIGPIC, overland kind, frames, sun and clouds | `game().view` |
 | `title.ts`, `ending.ts`, `sound.ts` | title script and credits; ending script (captions read from GAME.OVR); sound driver location | `game().title` … |
+| `startup.ts` | the menu after the title (its title and choices read from START.EXE by offset, the timeouts in hundredths of a second and the key they answer) and the demo it runs: block, record, game speed and the demo mode's flags (key reads that never wait, no "Continue Battle:", no battle aftermath); `null` for a game without one (PoR) | `game().startMenu` |
 | `rulestext.ts`, `spellnotes.ts`, `journal.ts` | text written for the port: Rules reference, spell notes, the printed journal | `game().rulesText` … |
 | `imports.ts` | characters taken from another game (CotAB's "Pool" import) | `game().imports` |
 
@@ -118,7 +119,7 @@ hard-coded alternative paths.** Where things stand:
 
 **Done as data.** Record layouts, START.EXE tables, the script VM's memory map and opcode variants,
 save layouts, rules values (spells, caps, limits, money, temple, joining, creation effects), effect
-event lists, random treasure, title, ending, view dressing, sound driver, character import, and the
+event lists, random treasure, title, start-up menu and demo, ending, view dressing, sound driver, character import, and the
 names of races, classes, alignments, statuses and coins. Nothing branches on the game's id in shared
 code (checked by grep).
 
@@ -272,6 +273,16 @@ need only its profile modules and any procedure the earlier games do not have.
    forgotten, seven effect types kept when the effect file is found by the name's stem); `rules/
    import.ts` runs it and then the class bonuses. The party screen's Import takes PoR roster `.CHA`
    files and save-slot `CHRDAT??.SAV` characters when CotAB is the game. The STR bug is fixed (IMP-070).
+
+**Start-up menu and demo (2026-10-20).** `games/startup.ts`: a game with a menu after the title
+(CotAB's "Curse of the Azure Bonds v1.3" / Play / Demo, read from START.EXE) shows it; Play goes to
+the party screen as before, the demo key runs the demo: `Engine.newDemo` (block, record and speed
+from the profile, no party) and `Engine.runDemo` (the record's on_enter, then the party disbanded),
+in the explore screen with nothing saved, then the title and the menu again, which answers Demo by
+itself after the profile's timeout. The demo mode's behaviours are flags read by the procedures
+they change (key reads, "Continue Battle:", the battle aftermath), so a later game's demo is its
+profile entry. PoR's `startMenu` is null and its start-up is unchanged. spec/coab/ecl.md, "Start-up
+menu and demo"; tests `test/demo.test.ts`.
 
 **Play-testing (2026-10-20).** A headless player (`web/test/playtest.ts`, one module, the game a
 parameter; `coabplay.test.ts` and `porplay.test.ts` run it, 4 seeds × 250 steps by default,

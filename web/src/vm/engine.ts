@@ -23,6 +23,7 @@ import { F } from '../games/fields'
 import { recalc } from '../rules/equip'
 import { WorldHost } from '../rules/worldfx'
 import { fire, fx } from '../rules/effects'
+import type { DemoMode } from '../games/startup'
 
 export const A0 = 0x4900
 export const B0 = 0x6b00
@@ -83,8 +84,10 @@ export interface Io {
   glyphs?(codes: number[], at: { col: number; row: number } | null): void
   /** The river cleansing (FUN_4804_06b3(1)): the polluted river tiles recolour as the view moves down it. */
   river?(): Promise<void>
-  /** PAUSE: wait (game speed x 225 ms in the original). */
+  /** PAUSE: wait (game speed × the game's pause step: PoR 225 ms, CotAB 100 ms). */
   pause(ms: number): Promise<void>
+  /** CALL frame (CotAB 0x6803): the current picture's next frame, the script stepping its animation */
+  nextFrame?(): void
   /** Engine screens that are not implemented yet (combat, shops, camp ...). */
   engine(what: string, info?: Record<string, unknown>): Promise<void>
 }
@@ -131,6 +134,8 @@ export class Engine {
   speed = 4
   areaChanged = false
   quit = false
+  /** the demo mode (games/startup.ts) while the demo runs, else null: its flags change a few procedures */
+  demo: DemoMode | null = null
   /** set when the map or wall sets change, cleared by the front end */
   mapDirty = true
   private stop = false
@@ -178,6 +183,36 @@ export class Engine {
     this.area = area
     this.loadEcl(area)
     this.resetVm(false)
+  }
+
+  /**
+   * The demo (games/startup.ts; CotAB image 0x1F6–0x20E, 0x1BFFA): fresh variables, no party (the
+   * script brings its own NPCs), the demo's block and record at the demo's game speed.
+   */
+  newDemo(d: DemoMode) {
+    this.A.fill(0); this.B.fill(0); this.C.fill(0)
+    this.nodes = []
+    this.cur = this.savedCur = new Uint8Array(F.size) // nobody is current until an NPC joins (DS:6520 nil)
+    this.demo = d
+    this.speed = d.speed
+    this.setBlock(d.block)
+    this.area = d.record
+    this.loadEcl(d.record)
+    this.resetVm(false)
+  }
+
+  /**
+   * The demo's run (CotAB 0x1C061–0x1C084): the record's on_enter, then every member leaves the party
+   * (0x3A275(1, 1) until the list is empty). Nothing else of the game loop runs: no moving, camping or
+   * saving.
+   */
+  async runDemo() {
+    await this.run(this.vectors[4])
+    for (const c of this.nodes) { this.inventory.delete(c); this.effects.delete(c) }
+    this.nodes = []
+    this.monsters = 0
+    this.monstersLoaded = false
+    this.B[PARTY_SIZE - B0] = 0
   }
 
   /** Resume from a save game (SAVGAM*.DAT layout, spec/savegame.md). */
@@ -812,7 +847,7 @@ export class Engine {
         this.cur = this.nodes[await this.io.menu(names, { prompt: this.text(1), vertical: true })]
         break
       }
-      case 0x3a: this.readops(0); await this.io.pause(this.speed * 225); break // PAUSE (FUN_1709_0dbe)
+      case 0x3a: this.readops(0); await this.io.pause(this.speed * game().ecl.pauseMs); break // PAUSE (FUN_1709_0dbe, CotAB 0x1B15B)
       case 0x3b: {
         this.readops(3)
         // the original writes both results to engine space (addr & 0xFF): they are lost
@@ -1311,7 +1346,10 @@ export class Engine {
       this.x = (this.x + dx) & 15
       this.y = (this.y + dy) & 15
     } else if (a === 0x8000 || a === 0x8001) this.setupDuel(a === 0x8000)
-    // CotAB 0x6803 draws the current picture's next frame; the port animates pictures itself (step 7)
+    else if (a === calls.frame) { // CotAB 0x6803: the current picture's next frame, then Delay(speed · 100) (0x57F9)
+      this.io.nextFrame?.()
+      await this.io.pause(this.speed * game().ecl.pauseMs)
+    }
     // 0xBA03 sound, 0xC018 wall-ahead refresh and 0xC01B (dead in the DOS port) need nothing here
   }
 
@@ -1322,7 +1360,8 @@ export class Engine {
       this.restoreCur = false
     }
     const n = this.val(1)
-    if (n === 9) {
+    if (n === game().ecl.quitProgram) this.quit = true // CotAB PROGRAM 3 (0x1BA7E): DS:4FE0 = 1, then EXIT
+    else if (n === 9) {
       const pc = this.pc
       await this.camp(false)
       this.pc = pc

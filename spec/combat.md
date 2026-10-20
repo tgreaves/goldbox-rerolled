@@ -195,7 +195,7 @@ The turn is over when the action routine clears initiative (`FUN_10ba_2637`: ini
 4. For every combatant: effect event 19; Stinking Cloud check (`FUN_5216_0ae7`); if Dying: R[0xE] + 1, and at R[0xE] ≥ 10 status Dead.
 5. If any party member is Dying: message "Your Teammate is Dying".
 6. Recount sides; redraw. Done if either side has nobody in play.
-7. If the party has someone in play and the enemy side has nobody: prompt "Continue Battle:"; Y keeps the battle going with no enemies (useful for bandaging, curing and buffing, G), anything else ends it. (`DS:49F4` would skip the prompt but is always 0.)
+7. If the party has someone in play and the enemy side has nobody: prompt "Continue Battle:"; Y keeps the battle going with no enemies (useful for bandaging, curing and buffing, G), anything else ends it. (`DS:49F4` would skip the prompt but is always 0: a demo flag never set, cleared at start-up `0x26FDB`; CotAB's DS:4FD5 does skip it in its demo, [`coab/ecl.md`](coab/ecl.md), "Start-up menu and demo".)
 
 ### Aftermath (`FUN_2e08_1527`)
 

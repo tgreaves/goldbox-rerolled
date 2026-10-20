@@ -49,6 +49,7 @@ import { accountStatus } from '../store/account'
 import { unexepack } from '../data/exepack'
 import { checkTraining, levelLimit, newSpellChoices, train, willBecome, xpFor } from '../rules/training'
 import { initSound, play, setSoundDevice, soundDevice, unlockAudio } from '../audio/sfx'
+import type { DemoMode } from '../games/startup'
 
 const FACING = ['North', 'East', 'South', 'West']
 const STAT_KEYS = ['STR', 'INT', 'WIS', 'DEX', 'CON', 'CHA'] as const
@@ -63,6 +64,8 @@ type CharFiles = { sav: Uint8Array; itm?: Uint8Array; spc?: Uint8Array }
 export type Start =
   | { kind: 'new'; party: CharFiles[] }
   | { kind: 'load'; dat: Uint8Array; party: CharFiles[]; label: string; known?: string[] }
+  /** the start-up menu's demo (games/startup.ts): its script with its own NPCs; nothing is saved */
+  | { kind: 'demo'; demo: DemoMode }
 
 const CLASS_NAMES = ['Cleric', 'Druid', 'Fighter', 'Paladin', 'Ranger', 'Magic-User', 'Thief', 'Monk']
 
@@ -209,6 +212,15 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
   /** the running picture animation (spec/graphics.md, "Animation"): a frame stays up delay × 0.1 s, then the next, wrapping to the first */
   let animTimer: number | null = null
+  /** the PIC on show and its frame, for a script that steps it (CALL frame) */
+  let shownPic: { f: { picture: Picture }[]; i: number } | null = null
+  /** CotAB 0x6803: the next frame of the current picture, wrapping to the first; the script holds it */
+  function nextFrame() {
+    if (!shownPic || shownPic.f.length < 2) return
+    stopAnimation()
+    shownPic.i = (shownPic.i + 1) % shownPic.f.length
+    paint([{ pic: shownPic.f[shownPic.i].picture, x: 0, y: 0 }])
+  }
   const stopAnimation = () => { if (animTimer !== null) { window.clearTimeout(animTimer); animTimer = null } }
   /** Pictures and portraits are opaque; encounter sprites stand in the 3D scene instead (World.showSprite). */
   function paint(pics: { pic: Picture; x: number; y: number; sprite?: boolean }[], w = 88, h = 88) {
@@ -222,6 +234,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
   function showPicture(p: { pic: number } | { big: number } | { head: number; body: number } | null) {
     stopAnimation()
+    shownPic = null
     if (!p) {
       world.showSprite(null)
       return paint([])
@@ -251,6 +264,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       if (!f?.length) return
       let i = 0
       paint([{ pic: f[0].picture, x: 0, y: 0 }])
+      shownPic = { f, i: 0 }
       if (f.length > 1) {
         const next = () => {
           animTimer = window.setTimeout(() => {
@@ -302,6 +316,23 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const last = screen?.lastElementChild
     if (last && !newBlock) last.append(c)
     else { print('\u00a0', false); screen?.lastElementChild?.replaceChildren(c) }
+  }
+
+  // -------------------------------------------------------------- the demo
+  /** thrown through the script when the player leaves the demo (IMP-074) */
+  class DemoLeft extends Error {}
+  let demoLeft = false
+  /** ends the pause the demo's script is waiting in, when the player leaves */
+  let stopDemo: (() => void) | null = null
+  /** in a demo whose key reads never wait (CotAB 0x6819, 0x5514) a menu or an input answers at once */
+  const noWait = () => !!engine.demo && !engine.demo.keysWait
+  /** the answer then: the first choice (I: the shipped demo asks nothing) */
+  const demoAnswer = (): Promise<number> => (demoLeft ? Promise.reject(new DemoLeft()) : Promise.resolve(0))
+  function leaveDemo() {
+    if (demoLeft) return
+    demoLeft = true
+    stopDemo?.()
+    leave()
   }
 
   // ---------------------------------------------------------------- menus
@@ -381,6 +412,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const io: Io = {
     print: (text, clear) => {
       print(text, clear)
+      if (engine.demo) return // the demo finds nothing for the journal
       for (const id of revealedBy(text)) known.add(id)
       // the journal (IMP-055): the whole screen is scanned, as a number can come in a print of its own
       screenText = clear ? text : `${screenText} ${text}`
@@ -390,9 +422,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         note(revealNote(id))
       }
     },
-    menu,
-    inputNumber: async () => Math.min(Number((await input('number')).replace(/\D/g, '') || 0), 65535),
-    inputText: () => input('text'),
+    menu: (items, opts) => (noWait() ? demoAnswer() : menu(items, opts)),
+    inputNumber: async () => (noWait() ? demoAnswer() : Math.min(Number((await input('number')).replace(/\D/g, '') || 0), 65535)),
+    inputText: async () => (noWait() ? (await demoAnswer(), '') : input('text')),
+    nextFrame: () => nextFrame(),
     picture: (p) => { topBlank = false; showPicture(p) },
     clearView: () => { topBlank = false; showPicture(null) },
     clearTop,
@@ -413,14 +446,17 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         world.showSprite(f, distance)
       }
     },
-    refresh: () => sync(),
+    refresh: () => (demoLeft ? Promise.reject(new DemoLeft()) : sync()),
     sound: play,
     pause(ms) {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
+        if (demoLeft) return reject(new DemoLeft())
+        stopDemo = () => { window.clearTimeout(timer); skipPause = null; reject(new DemoLeft()) }
         const timer = window.setTimeout(done, ms)
         function done() {
           window.clearTimeout(timer)
           skipPause = null
+          stopDemo = null
           resolve()
         }
         skipPause = done
@@ -447,13 +483,15 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
             info: app.querySelector<HTMLElement>('.combat-info')!, strip: app.querySelector<HTMLElement>('.turnstrip')!, refreshRoster: () => drawRoster(), cancelMenu: () => cancelMenu(), onSkip: (w) => { winBattle = w }, onControls: (c) => { battleControls = c; drawControls() }, controlsChanged: () => drawControls(),
           })
           // after a battle (game mode 6) the view shows PIC<block> #1, the treasure chest (FUN_10ba_27d9)
-          if (r.survived) {
+          if (engine.demo && !engine.demo.aftermath) { /* CotAB 0x1EEAC: nothing after the clean-up */ }
+          else if (r.survived) {
             canvas.hidden = engine.overland
             wildview.hidden = !engine.overland
             showPicture({ pic: 1 })
             try { await treasure(townUi) } finally { showPicture(null) }
           } else await gameOver()
         } catch (err) {
+          if (err instanceof DemoLeft) throw err
           note(`Combat error: ${(err as Error).message}`)
         } finally {
           app.querySelector('.game')!.classList.remove('in-combat')
@@ -499,16 +537,19 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   initSound(files.get('START.EXE'))
   const engine = new Engine(files, io)
-  if (start.kind === 'new') engine.newGame(start.party.map((c) => c.sav))
-  else engine.loadSave(start.dat, start.party.map((c) => c.sav))
-  start.party.forEach((c, i) => engine.attachFiles(i, c.itm, c.spc))
+  if (start.kind === 'demo') engine.newDemo(start.demo)
+  else {
+    if (start.kind === 'new') engine.newGame(start.party.map((c) => c.sav))
+    else engine.loadSave(start.dat, start.party.map((c) => c.sav))
+    start.party.forEach((c, i) => engine.attachFiles(i, c.itm, c.spc))
+  }
 
   /** Save anywhere (IMPROVEMENTS.md IMP-002): slots A-J, the original file layout. */
   /** Autosave (IMP-060): the same files as a slot save, kept in their own record. */
   let autosavedAt = ''
   async function autosave(why: string) {
     const members = engine.party()
-    if (!members.length || engine.quit) return
+    if (!members.length || engine.quit || engine.demo) return // the demo saves nothing
     try {
       await writeAutosave({ slot: 'A', dat: engine.toSave(members.map((_, n) => `CHRDATA${n + 1}`)), savedAt: Date.now(), known: [...known],
         label: `${parseCharacter(members[0]).name}'s party, block ${engine.block} area ${engine.area} (${why})`,
@@ -518,6 +559,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
 
   async function saveGame() {
+    if (engine.demo) return
     const saves = await listSaves()
     const slots = [...'ABCDEFGHIJ'].map((slot) => {
       const g = saves.find((x) => x.slot === slot)
@@ -1786,6 +1828,12 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   let lastAutosave = Date.now()
 
   function commandBar() {
+    if (engine.demo) { // the demo takes no commands; it can be left (IMP-074)
+      menuBar.innerHTML = '<button class="primary" data-cmd="leave" title="Escape: back to the start-up menu">Leave demo</button>'
+      menuBar.querySelector('button')!.addEventListener('click', () => leaveDemo())
+      app.querySelector('.game')!.classList.add('demo') // no movement pad, no Debug
+      return
+    }
     pad.classList.remove('disabled')
     // View and Area are left out (IMP-061): a party card opens the sheet, the map is on screen; the
     // keys V and A still work, and Area shows where the map is hidden (phones held sideways)
@@ -1877,6 +1925,12 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
   const onKey = (e: KeyboardEvent) => {
     unlockAudio()
+    if (engine.demo && !dialog.open && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      // the demo: Escape leaves it (IMP-074); another key cuts a pause short (IMP-012)
+      if (e.key === 'Escape') { e.preventDefault(); leaveDemo() }
+      else if (skipPause && !battleInput.key) { e.preventDefault(); skipPause() }
+      return
+    }
     if (battleInput.key && !dialog.open && battleInput.key(e)) { e.preventDefault(); return }
     if (dialog.open || e.ctrlKey || e.metaKey || e.altKey) return
     if (document.activeElement instanceof HTMLInputElement) return
@@ -1971,6 +2025,18 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   commandBar()
   sync(0)
+  if (start.kind === 'demo') {
+    // the demo (CotAB 0x1C061): its on_enter, then back to the start-up loop; nothing is saved
+    note('The demo. Escape or Leave demo goes back to the start-up menu.')
+    busy = true
+    void (async () => {
+      try { await engine.runDemo() } catch (err) {
+        if (!(err instanceof DemoLeft)) { note(`Script error: ${(err as Error).message}`); return } // left by Leave demo
+      }
+      if (!demoLeft) { demoLeft = true; leave() }
+    })()
+    return
+  }
   if (start.kind === 'new') note('A new game: Begin Adventuring from the party screen.')
   else note(`Loaded: ${start.label}.`)
   act(() => engine.start())

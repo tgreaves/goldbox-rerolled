@@ -132,7 +132,7 @@ Main program (image 0x2F–0x360):
    | `game created by:`, `ssi special projects` | (1, 9, 10), (18, 9, 14) |
    | left column: `project leader:`, `george mac donald`, `programming:`, `scot bayless`, `russ brown`, `michael mancuso`, `development:`, `david shelley`, `michael mancuso`, `oran kangas` | col 2, rows 11/12, 14–17, 19–22; headings colour 14, names 11 |
    | right column: `graphic arts:`, `tom wahl`, `fred butts`, `susan manley`, `mark johnson`, `cyrus lum`, `playtesting:`, `jim jennings`, `james kucera`, `rick white`, `robert daly` | col 22, rows 11–16, 18–22; same colours |
-6. `displayInput` with the "Play Demo" menu, timeout default `'D'` (`DS:72B4`) (I: 30 s, timeout routine `0xAA56` not traced). **D** → demo (`DS:4FD5` = 1, block 1, speed 9). Otherwise **copy protection**, then block 2 and `startGameMenu` **0x36A1C**. The loop re-runs the title after a demo.
+6. `displayInput` (0x51C48) with the "Play Demo" menu, timeout default `'D'` (`DS:72B4`) after 30 s (DS:72B0 = 3000 hundredths of a second, O: the DOS clock 0x5668). **D** → demo (`DS:4FD5` = 1, block 1, speed 9; [`ecl.md`](ecl.md), "Start-up menu and demo"). Otherwise **copy protection**, then block 2 and `startGameMenu` **0x36A1C**. The loop re-runs the title after a demo.
 7. **Copy protection** **0x1C378** (`ovr004:0118`):
    - Loads TILES #1 into icon slots 0–25 and #2 into slots 26–47 (`012A:0025`); outer frame.
    - Text "Align the espruar and dethek runes / shown below, on translation wheel / like this:".

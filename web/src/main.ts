@@ -5,6 +5,7 @@ import { GameFiles, readPicked } from './store/gamefiles'
 import { GAMES, lastGame, setGame, type GameProfile } from './games/profile'
 import { showViewer } from './ui/viewer'
 import { showTitle } from './ui/title'
+import { showStartMenu } from './ui/startmenu'
 import { showParty } from './ui/party'
 import { setupOffline } from './pwa/register'
 import { installGameFont } from './ui/gamefont'
@@ -49,8 +50,21 @@ async function open(files: GameFiles) {
   else showViewer(app, files, showImport)
 }
 
-function title(files: GameFiles) {
-  showTitle(app, files, () => party(files))
+/** The title sequence, then the game's start-up menu if it has one (`again`: after a demo), else the party screen. */
+function title(files: GameFiles, again = false) {
+  showTitle(app, files, () => startUp(files, again))
+}
+
+/** The start-up menu (games/startup.ts): Play goes to the party screen, the demo key runs the demo. */
+function startUp(files: GameFiles, again: boolean) {
+  const m = files.game.startMenu
+  if (!m) return party(files)
+  showStartMenu(app, files, m, again, {
+    play: () => party(files),
+    // after the demo the start-up loop comes round again: the title (CotAB 0x2C7), then the menu
+    demo: () => import('./ui/explore').then((x) => x.showExplore(app, files, { kind: 'demo', demo: m.demo },
+      () => (m.titleAgain ? title(files, true) : startUp(files, true)))),
+  })
 }
 
 function party(files: GameFiles) {

@@ -173,6 +173,7 @@ dialog.panel form.jump input { width: 4.5rem; }
 .game.in-combat .map, .game.in-combat .pad, .game.in-combat .where { display: none; }
 .game .debug-combat, .game .take-control, .game .magic-toggle { display: none; }
 .game.in-combat .debug-combat, .game.in-combat .take-control, .game.in-combat .magic-toggle { display: inline-block; }
+.game.demo .pad, .game.demo.in-combat .debug-combat { display: none; }
 .game.in-combat .take-control[hidden], .game.in-combat .magic-toggle[hidden] { display: none; }
 .game .magic-toggle.on { border-color: var(--ega-cyan); color: var(--ega-cyan); }
 .rcard .badge.quick { border-color: var(--ega-magenta); color: var(--ega-magenta); }
@@ -230,6 +231,12 @@ dialog.panel form.jump input { width: 4.5rem; }
 /* title */
 .title { flex: 1; min-height: 100dvh; display: grid; place-items: center; align-content: center; gap: 1rem; cursor: pointer; padding: 1rem; }
 .title canvas { width: min(96vw, 160dvh); height: auto; image-rendering: pixelated; border: none; }
+.startmenu { flex: 1; min-height: 100dvh; display: grid; place-items: center; align-content: center; gap: 1.25rem; padding: 1rem; text-align: center; }
+.startmenu h1 { margin: 0; color: var(--ega-magenta); font-size: 1.4rem; }
+.startmenu .actions { display: flex; gap: 0.75rem; justify-content: center; }
+.startmenu .actions button { min-width: 7rem; }
+.startmenu .actions button u { text-decoration: none; font-weight: 700; }
+.startmenu .actions button:not(.primary) u { color: var(--accent); }
 
 /* party screen */
 .partyscreen {

@@ -42,7 +42,8 @@ Related: IMP-034 brought the Lightning Bolt path and bounce, Stinking Cloud squa
 |---|---|---|
 | IMP-003 | Mouse and touch everywhere; in the 3D view a movement pad and tap zones (left third turns left, middle moves, right third turns right). *In progress* | Keyboard only |
 | IMP-010 | Script menus are buttons (the first letter is still the hotkey); one-item "PRESS <RETURN>" prompts are a Continue button (Enter, Space or a tap); vertical menus are tappable lists. *In progress* | A keyboard menu line on row 24 ([`spec/ecl.md`](spec/ecl.md), HMENU/VMENU) |
-| IMP-012 | Script pauses (game speed × 225 ms) can be cut short with a click, tap or key. *In progress* | Pauses always run to the end |
+| IMP-012 | Script pauses (game speed × 225 ms in PoR, × 100 ms in CotAB) can be cut short with a click, tap or key, also in the demo. *In progress* | Pauses always run to the end |
+| IMP-074 | The start-up menu (CotAB's Play / Demo) is two buttons with their keys, and says when it will start the demo by itself; the demo can be left at any time with Escape or Leave demo, which go back to the title and the menu | The menu line gives no hint of its 30 s (10 s after a demo) timeout; the demo plays to its end, a key does not stop it ([`spec/coab/ecl.md`](spec/coab/ecl.md), "Start-up menu and demo") |
 | IMP-029 | In shops, temples and the treasure screen the roster picks whose turn it is; stock, services and the pile are tappable lists | Home/End select the character; key-driven lists |
 | IMP-026 | The 5 × 5 wilderness view fills the view panel; the pad shows compass arrows, and a tap towards a side of the party walks that way | Keyboard only; a 120-pixel view ([`spec/overland.md`](spec/overland.md)) |
 

@@ -62,12 +62,56 @@ Calls into overlays go through VROOMM stubs that the merge already patched into 
 
 ## Loading (O)
 
-- **New game or load (0x1BFED–0x1C050)**: the area to load is A[0x4BF2]; if it is 0 the game starts at record **1** (record 82 when DS:4FD5 ≠ 0: the **demo**, O: the start-up menu "Curse of the Azure Bonds v1.3" with *Play* / *Demo* (strings at image 0x06, 0x25; 0x1A8) sets DS:4FD5 = 1 for key D, and then block 1 (DS:5C08) instead of 2; after the demo the menu comes back with a timeout (DS:72B0 = 1000) defaulting to D, so the demo repeats unattended (0x2C7–0x31F). ECL1 #82 is the demo's story: "On your way to the town of Tilverton you are ambushed…") and loads its script, otherwise a load restores the saved script buffer (DS:47FB = 1). The shipped `SAVGAMA.DAT` names area 0 with an empty buffer, so a new game begins at ECL2 record 1. Then the reset (0x1FBB8) and `on_enter`.
+- **New game or load (0x1BFED–0x1C050)**: the area to load is A[0x4BF2]; if it is 0 the game starts at record **1** (record 82, the demo, when DS:4FD5 ≠ 0: [[#Start-up menu and demo (O)]]) and loads its script, otherwise a load restores the saved script buffer (DS:47FB = 1). The shipped `SAVGAMA.DAT` names area 0 with an empty buffer, so a new game begins at ECL2 record 1. Then the reset (0x1FBB8) and `on_enter`.
 
 - `ECL<n>.DAX` where n = DS:5C08 (block digit); record id = area id (CotAB blocks: ECL1 80–82, ECL2 1–4, ECL3 16–18 21, ECL4 32–35 37, ECL5 48–51 53, ECL6 64 66 67 69)
 - 0x1FD3C: zero the 0x1E00 buffer, show "Loading...Please Wait", retry until size ≥ 2, copy record bytes 2.. to the buffer start; all records start `88 13`, largest 7622 code bytes (fits 0x1E00)
 - Code occupies virtual **0x8000–0x9DFF** (classifier 0x200F3)
 - Reset 0x1FBB8: PC = 0x8000 (0x1FBF7), GOSUB stack freed, flags cleared, icon slot DS:761D = 8, `B[0x7EE1]` = 0xFF, `B[0x7ED2]` = `B[0x7ED3]` = 0, `A[0x4BE5]` = 0, reads the 5 vectors with the normal operand reader, `A[0x4BE6]` = 1; unless restoring a save (DS:4FDB ≠ 0) zero **0x4C00–0x4C1F** and **0x7F79–0x7F82**. Same set as PoR, addresses shifted (below). Also DS:7602 = 0x41, DS:7603 = 0x09 (engine registers 0xC059/0xC05F defaults)
+
+## Start-up menu and demo (O)
+
+The main program's loop (image 0x11F–0x352, main segment, CS = paragraph 0) and DS:4FD5, the demo flag. Port: `web/src/games/startup.ts` (`COAB_STARTUP`), `Engine.newDemo` / `runDemo`, `ui/startmenu.ts`; PoR has no menu and no demo (no "Demo" in its START.EXE or GAME.OVR); its DS:49F4 is the same flag's vestige: cleared at start-up (0x26FDB) and tested once, before "Continue Battle:" (0x22A3F), never set.
+
+**The menu.** After the title sequence (0x18702, skipped when ParamStr(1) = `STING`, 0x169–0x17A) the menu routine **0x51C48** (`lcall 0x104:0x2A`) shows the Pascal strings at **CS:0006** "Curse of the Azure Bonds v1.3 " (title, colour 13) and **CS:0025** "Play Demo" (choices; the call's other colours are 10 and 15, I: plain and highlighted), image 0x06 and 0x25; the answer goes to DS:47F6.
+- Choices: 0x5194A splits the string into runs of the characters in its set at 0x51A39 (digits and letters); a key is matched against the string's capitals (0x51F18–0x51F9B), so **P** and **D**. Enter returns the highlighted choice's key (0x51E9D), Escape returns 0 (0x51E8B).
+- **Timeout**: with DS:72B0/72B2 (a dword) non-zero the routine returns DS:72B4 once that long has passed without a key (0x51E1F–0x51E52). The time is 0x5668: INT 21h/2Ch as h·360000 + m·6000 + s·100 + hundredths, so the unit is **1/100 s**. The first menu: **3000 (30 s), key 'D'** (0x17F–0x18B); after a demo: **1000 (10 s), 'D'** (0x2D1–0x2DD); both cleared after the call (0x1B6–0x1BE, 0x308–0x310). An unattended game therefore runs the demo after 30 s and repeats it.
+- **D** sets DS:4FD5 = 1 (0x1C3–0x1CA; the repeat menu sets it to 0 or 1, 0x315–0x31F); any other answer plays.
+
+**The loop (0x1F6–0x352).** Copy protection (0x1C378) unless ParamStr(2) equals the string at DS:8C94 (**?**) or the demo is on (0x1D9–0x1F1, and 0x32C–0x344). Demo: DS:5C08 = **1** (block) and DS:4FC2 = **9** (game speed, the slowest), else block 2 (0x1F6–0x20E). Then 0x36850 (screen and memory set-up); **the party screen 0x36A1C only when not the demo** (0x22F); 0x536A0, 0x53805, 0x18850, then the game 0x1BFA8, then 0x26A50, 0x27135. Not the demo: round again. Demo: the title sequence again (0x2C7), the keys flushed (0x6952), the menu with the 10 s timeout, round again.
+
+**DS:4FD5 sites** (each is a flag of the port's demo mode where it can be reached):
+
+| Address | Routine | In the demo |
+|---|---|---|
+| 0x1CA, 0x31F | main loop | set by the menu's D |
+| 0x1EA, 0x33D | main loop | no copy protection |
+| 0x1F6 | main loop | block 1, speed 9 |
+| 0x22F | main loop | no party screen: the demo starts with an empty party |
+| 0x2BD | main loop | after the game: title, menu again |
+| **0x1BFFA** | new game (0x1BFA8) | area 0 starts at record **0x52 = 82** (not 1), and the party recompute 0x4D7E8 is skipped |
+| **0x1C069** | new game | after `on_enter`: `0x3A275(1, 1)` (drop the current character) until the party list DS:6524 is empty, then return: **no main loop** (no moving, camping, saving); the demo is ECL1 #82's `on_enter` alone (port: `Engine.runDemo`) |
+| **0x6819** | key read 0x6812 | `KeyPressed ? ReadKey : 0`: **key reads never wait** (port: `keysWait: false`). Menus (0x51C48) poll KeyPressed themselves and still wait (I: the demo shows none) |
+| 0x5514 | text input 0x53F6 | stops after one key read (I: an empty answer); not reached by the demo |
+| **0x227EF** | round end (combat) | **"Continue Battle:" is not asked** when the enemy side is gone: the battle ends (port: `continueBattle: false`) |
+| **0x1EE98** | after a battle 0x1EE82 | the outcome 0x1DC36 (who won, DS:4FE0 "party destroyed") is skipped |
+| **0x1EEAC** | after a battle | after the clean-up 0x1EAA7 (monsters and side-1 entries leave the list) everything to 0x1F04F is skipped: the members' recompute (0x4DC70), the destroyed-party path (0x1EFB6), freeing the item list at DS:6FA6, and the rest below |
+| 0x1EF4E | after a battle | (reached only outside the demo) NPC shares 0x1EBEE, the summary and experience 0x1E19C ("The party has won.", "Each character receives…", "press <enter>/<return> to continue"), treasure 0x1E7A3 (port: `aftermath: false`) |
+| 0x1DD2F | outcome 0x1DC36 | unreachable in the demo (its one caller, 0x1EEA0, is skipped) |
+| 0x36DD5 | party screen 0x36A1C, Begin | Begin with an empty party allowed; unreachable in the demo (0x22F) |
+| 0x26EE7 | start-up 0x26AA4 | cleared |
+
+There is no key test that ends the demo (O: no other reader of DS:4FD5; the key read returns what was pressed and nothing compares it in the demo's path, I). A key pressed during it is read by whatever reads keys: Ctrl-S toggles the sound (0x6841), and in combat the AI turn's keys (I).
+
+**The demo's script, ECL1 #82** (922 bytes; on_enter 0x8014, the other vectors EXIT):
+1. `LOAD_AREA 127, 127, 127` (no map), `REDRAW_SCREEN`, `PICTURE 80`; **`ADD_NPC` 85, 88, 90 with morale 100**: RUSTLE, CYNTHIA and GRENDEL (MON1CHA; control byte 0x198 = 1, morale 0xFF: the computer plays them).
+2. Pages of text with four `PAUSE`s each (PAUSE = Delay(DS:4FC2 · 100 ms), 0x1B15B → 0x57F9, so 3.6 s a page at speed 9): "ON YOUR WAY TO THE TOWN OF TILVERTON YOU ARE AMBUSHED…", "THE SYMBOLS ENSNARE YOUR WILL LIKE METAL BONDS…", then `PICTURE 121` (BIGPIC) "YOUR ONLY HOPE IS TO SEARCH THE FORGOTTEN REALMS…".
+3. `REDRAW_SCREEN`, `PICTURE 29`, "NOWHERE IN THE REALMS IS COMPLETELY SAFE…", **eleven `CALL 0x6803`** (the next frame of the picture, then the same Delay: these are the only uses of 0x6803 in the game).
+4. `SAVE 0 → 0x4BE6` (overland state), `CLEAR_MONSTERS`, 0x7F70 = 250, 0x7F71 = 8, 0x7ECB = 2, **two BLACK DRAGONs** (MON1CHA 53, picture 53), `COMBAT` with the computer on both sides, two `PAUSE`s.
+5. `SAVE 1 → 0x4BE6`, `PICTURE 1` "WHILE THE RISK OF ADVENTURE IS GREAT…", `PICTURE 123` "BUT THE ULTIMATE PRIZE IS NOT GOLD OR POWER…", "YOUR ENEMIES ARE PREPARED…", four `PAUSE`s each.
+6. **`PROGRAM 3`**: DS:4FE0 = 1 (quit), then EXIT (0x1BA7E; ECL1 #82 is its only use). Then the party is dropped (0x1C069) and the loop shows the title and the menu again.
+
+Open: which battlefield the demo's battle uses with no map loaded and 0x4BE6 = 0 (**?**; the port draws its default wilderness field).
 
 ## Vectors (O)
 
@@ -295,7 +339,7 @@ n = operand count passed to the reader in the handler (O for every row). Status:
 | 37 | LOAD_WALLSETS | LOAD_WALLSETS | 3 | 0x19491 | 0C74 | ≈ | as PoR (0x7F → slot 1 set 0; otherwise 0xFF empties a slot), except that with 0x4BE7 and 0x4BE8 set (ops 1 and 3 only) **an operand of 0xFF is skipped, leaving its slot as it is** (0x19563, 0x19575; PoR has no test there) |
 | 38 | PROGRAM | PROGRAM | 1 | 0x1B94E / 30FE | 2E10 | Δ | restores DS:47FF char first. 0: training/party screen (0x36850, 0x36A1C). **3: quit (DS:4FE0 = 1) then EXIT (new)**. 8: ending (0x3D02C), 0x4CFD = 0xFF, 0x7EA8 = 0xFF, every member HP = max (char[0x1A4] = char[0x78]), char[0x195] = 0, char[0x196] = 1, then "You've won. Save before quitting?" (cs string 0x1B92B); Y → 0x3631E; exit to DOS (0x06700). 9: camp (0x1B8E4), PC restored, EXIT |
 | 39 | WHO | WHO | 1 | 0x1B5CF / 2D7F | 2B33 | = | |
-| 3A | PAUSE | PAUSE | 0 | 0x1B15B / 290B | 271F | = | |
+| 3A | PAUSE | PAUSE | 0 | 0x1B15B / 290B | 271F | Δ | DS:4FCD += 1, then Delay(DS:4FC2 · 100 ms) (0x57F9); PoR waits speed × 225 ms |
 | 3B | FIND_IN_CHAR_LIST | **FIND_SPELL** | 3 | 0x1B683 / 2E33 | 2C03 | Δ | **fixed**: destinations are full word addresses (make_word). For each party member scan char[0x1E+i], i = 1..100, for val1. dest2 = i (1-based) of the first hit, 0xFF if none; dest3 = 0-based party index of that member (n−1 if none) |
 | 3C | PRINT_LIST | **PROTECTION** | 1 | 0x1BA8F / 323F | 2E7D | Δ | **copy-protection code-wheel check** (0x1C378: "Align the espruar and dethek runes / shown below, on translation wheel / like this:"); operand read but unused; then 0x4FA79. Data: once (ECL1 record 80, 0x9B6F) |
 | 3D | CLEAR_TOP | **REDRAW_SCREEN** | 0 | 0x1B588 / 2D38 | 2B14 | Δ | redraw frame (0x01466), recompute and show current char (0x4D7E8, 0x4FBB6), redraw current PIC (DS:724C) at (3,3) (0x52E0A); DS:8B88 = 0, DS:8B7A = 1. Data: before NEW_ECL in block changes |
@@ -318,7 +362,7 @@ Compared value = target − 0x7FFF, so the effective target address is:
 | **0xB200** | sound: register 0x3DE = 8 → DS:25C2, 10 → DS:25C4, else DS:25C2 (0x069B0); the initial values are effect 10 and 11 (O, data) | was 0xBA03 |
 | 0xC01E | step forward (0x214D1) | same |
 | 0xC018 | wall ahead, only when 0x4BE6 = 0 (0x53D42) | same (map areas only) |
-| **0x6803** | **new**: draw the next frame of the current picture (frames at DS:7246, count byte DS:7246, current DS:7247, wraps to 1) at (3,3), then 0x057F9 (I: frame delay) | — |
+| **0x6803** | **new**: draw the next frame of the current picture (frames at DS:7246, count byte DS:7246, current DS:7247, wraps to 1) at (3,3), then 0x057F9: Delay(DS:4FC2 · 100 ms), the game speed (O). Only the demo uses it | — |
 | 0xC01B | — (removed) | dead C64 tile check |
 
 Data use: 0x2E10 ×124, 0xB200 ×19, 0xC01E ×13, 0x6803 ×11 (all with a kind-1 operand). 0x8000, 0x8001, 0xC018 unused.

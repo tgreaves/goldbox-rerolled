@@ -10,6 +10,7 @@ import { COAB_DEBUG } from './debug'
 import { COAB_TREASURE } from './treasure'
 import { COAB_SOUND } from './sound'
 import { COAB_TITLE } from './title'
+import { COAB_STARTUP } from './startup'
 import { COAB_VIEW } from './view'
 import { COAB_SPELL_NOTES } from './spellnotes'
 import { COAB_FIELDS } from './fields'
@@ -42,6 +43,7 @@ export const COAB: GameProfile = {
   spellNotes: COAB_SPELL_NOTES,
   view: COAB_VIEW,
   title: COAB_TITLE,
+  startMenu: COAB_STARTUP,
   sound: COAB_SOUND,
   commissions: false,
   treasure: COAB_TREASURE,
