@@ -76,6 +76,68 @@ Damage types: 1 fire, 2 cold, 4 electricity, 8 magic, 0x10 acid, new 0x20 breath
 
 Records with the flags (MON*CHA): ETTIN 0x08; BUGBEAR, 0x0C; TROLL, OGRE, TYRANTHRAXUS 0x0E; EFREETI, SALAMANDER, HELL HOUND 0x01.
 
+## 5. The current-stat routine 0x4C389 (`4aab:18d9`, char, stat) (O)
+
+The current value (+0x11 + 2i, STR% +0x1C) from the base (+0x10 + 2i, STR% +0x1D), the readied items with
++0x3E above 0x80 (kind = +0x3E & 0x7F, value +0x3D; "kind 8" needs a base below 18) and the effects:
+
+| stat | items | effects |
+|---|---|---|
+| STR | kind 5: +0x3D 0 → 18/00, 1–6 → 19–24; kind 8 (+0x3D 0): base + 1; kind 0x0D: 3 | 0x26 adds its power (as STR in an effect's power: ≤ 101 → 18/(p−1), else p − 100) to STR when below 18/00, capped at 18, with fighters, paladins and rangers (level or former level) going on into 18/xx at 10 % a point over the current STR%; 0x92, then 0x0C set it. The best wins (`4aab:1771`: higher STR, or 18 with a higher %: an 18/xx beats 19, a quirk) |
+| INT | kind 8 (+0x3D 1) +1; kind 0x0C: 7; kind 0x0D: 3 | Feeblemind 0x44: 3 unless an item made it 7 or less |
+| WIS | kind 8 (+0x3D 2) +1 | 0x44: 3 |
+| DEX | kind 2 +4 (base ≤ 6) / +2 (≤ 13) / +1; kind 8 (+0x3D 3) +1; kind 0x0A −2 | – |
+| CON | kind 6 +1; kind 8 (+0x3D 4) +1; then max HP := rolled HP (+0x12C) + the CON bonus over every class's levels up to its fixed-HP stop level (DS:3EBB) above +0xE6, and former dual-class levels (rangers one more), divided by the classes with a level; the current HP moves by the change. CON 20+ keeps regeneration 0x3E (60 min, flag 1), else removes it (whose removal re-arms it, as PoR's 62) | – |
+| CHA | kind 6 −1; kind 8 (+0x3D 5) +1 | 0x0E adds its power |
+
+Called by the removal routine (§1), the item routine 0x3F034 and the temple's Heal (INT and WIS).
+
+## 6. Item kinds 0x3F034 (O)
+
+Ready (after +0x34 := 1) and Unready (after +0x34 := 0, not cursed) of an item with +0x3E ≥ 0x80
+(0x3F40D…0x3F57D) call 0x3F034(item, readying), which reads the character from DS:6520. By kind: **0**
+the generic handler 147 (DS:759C := 1, so the handler call takes DS:720C): ready → add raw +0x3D
+(0, 0xFF, flag 1) and, outside combat (DS:4FD3 ≠ 5), run it; unready → remove the first of that type.
+**1** Ring of Wizardry: ready doubles magic-user slots of levels 1–3; unready works them out from the
+magic-user level (with the former one when it counts, `fe:52`) as 1 + the increments of DS:44AB, then
+forgets memorised magic-user spells past the slots (the other ring and the ranger's slots are
+forgotten too, a quirk). The slot routine 0x50480 also doubles them for each readied ring (0x507C3).
+**2** DEX, then thief skills (0x50F5A); **4** alignment-locked weapon (+0x3D low nibble the alignment,
+else unreadied and +0x3D >> 4 magic damage; also on Unready); **5** STR; **6** CON and CHA; **8** the
+stat +0x3D; **9** unready ends Spiritual Hammer (0x17); **0x0A** DEX; **0x0B** thief skills; **0x0C**
+INT; **0x0D** STR and INT.
+
 ## Port status (2026-10-20)
 
-Event lists and area set: done (profile data). Handlers: PoR's for every type; CotAB's changed and new handlers listed above are being added as per-game handler data.
+Done (`web/src/games/effectrules.ts` names a behaviour per type with its parameters, `web/src/rules/coabeffects.ts`
+holds them; `test/coabeffects.test.ts`):
+
+- Event lists and area set (profile data). Events 20 (the combat and world damage routines, after event
+  6 when not saved), 21 (turn start, after event 15 when not casting) and 22 (combat start, after event 8
+  for each character) are fired in both games; PoR lists nothing for them. DS:6FC2 is `fx.saved`, set by
+  the combat and world saves as 0x4BDA1 does (1 while event 12 runs).
+- Monster-class flags as the field `classFlags` (+0x14B; PoR −1).
+- Handlers 3, 4, 7, 12/14/38/146 (empty), 13, 18, 20, 25, 26, 27, 28, 35, 37, 47, 48, 50, 54, 57, 60, 63,
+  68, 69, 73, 75, 76, 77, 81, 82, 84, 85, 86, 91 (empty: no zone of its list exists), 96, 103, 110, 122,
+  123, 126, 129, 130, 131, 133, 134, 135, 136, 137, 138, 139, 142, 143, 144, 145; 141 refills the
+  paladin's uses (as before). The rest run PoR's handler (the "same as PoR" list).
+- Removal recomputes CHA (0x0E) and STR (0x0C, 0x26, 0x92) through the current-stat routine (§5).
+- Readying and putting away items through the item kinds (§6), with handler 147; the slot routine's
+  Ring of Wizardry doubling (training's `derive` takes the items when the caller has them).
+
+Not yet, or approximated:
+
+- **Event 14 is not fired** by the port's combat AI in either game (PoR's 0x33EA6, before the melee loop),
+  so the monster specials (PoR 83, 84, 88, 121; CotAB 86, 126, 131, 139, 144, …) are written but dormant.
+  Firing it changes PoR's combat and is a step of its own.
+- **87** eye rays, **88** breath, **90** acid breath, **128** fire breath, **132** lightning: not
+  transcribed (`unported`, which does nothing; PoR's 87 and 90 mean other things and must not run).
+  They need area templates (shapes 6, 9) and bolt paths in the combat host, and disintegration.
+- The AI target hook `*DS:72BA` that 86, 126, 131 (and 83) call is not transcribed: the port keeps the
+  current target, else the nearest enemy (I). Berserk's nearest-combatant search (11c:3e) takes the
+  first of equal distance (I). Sounds (`ed:8e`) of the specials are not played.
+- 130 takes the target out of play through the host's status call; CotAB's own death clean-up `e3:66`
+  is not transcribed.
+- CotAB's add-with-message 0x4CD92 replaces an old record of the type whenever it has a duration; the
+  port's `addEffect` keeps PoR's rule (only for a longer or permanent one).
+- The ECL DAMAGE save (engine.ts) does not set DS:6FC2.

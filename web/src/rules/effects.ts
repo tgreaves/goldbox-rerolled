@@ -6,6 +6,7 @@ import { F } from '../games/fields'
 import { R } from '../games/rules'
 import { game } from '../games/profile'
 import { refillUses } from './abilities'
+import { behave, effectiveStat, itemKind } from './coabeffects'
 import type { Tables } from './chargen'
 import { derive, xpFor } from './training'
 
@@ -59,6 +60,8 @@ export interface FxHost {
   fly?(from: Uint8Array, to: Uint8Array, kind: 'gaze' | 'spit'): void
   /** effect 0x28 expired: lift that Stinking Cloud (combat only) */
   clearCloud?(c: Uint8Array, power: number): void
+  /** make t the combatant's target (combat record +0xA; combat only) */
+  setTarget?(c: Uint8Array, t: Uint8Array): void
 }
 
 /** The original's globals during one dispatch chain. */
@@ -79,28 +82,44 @@ export const fx = {
   morale: 0, // DS:6825
   hits: [0, 0, 0], // DS:6823/6824 hits per hand
   round: 0, // DS:6DE3
+  saved: false, // CotAB DS:6FC2: the last saving throw succeeded (1 while its event 12 runs)
 }
 
-const has = (h: FxHost, c: Uint8Array, t: number) => h.effectsOf(c).some((e) => e.type === t)
+export const has = (h: FxHost, c: Uint8Array, t: number) => h.effectsOf(c).some((e) => e.type === t)
 
-/** Event → effect types listening to it (FUN_5216_02fa). */
-
-/** Fire an event on a character (FUN_5216_02fa). */
-export async function fire(h: FxHost, c: Uint8Array, event: number) {
+/**
+ * Fire an event on a character (FUN_5216_02fa): each listed type in order, the holder's record or, for
+ * area effects, a neighbour's. A handler that has nothing to wait for runs at once, so a chain of them
+ * is complete when this returns (the save, damage and attack events read the globals straight after).
+ */
+export function fire(h: FxHost, c: Uint8Array, event: number): Promise<void> {
   const rules = game().effects
-  for (const type of rules.events[event] ?? []) {
-    let eff = h.effectsOf(c).find((e) => e.type === type)
-    if (!eff && rules.area.includes(type)) {
-      for (const o of h.all()) {
-        const e = h.effectsOf(o).find((x) => x.type === type)
-        if (!e) continue
-        if (h.inCombat() && h.distance(o, c) > (rules.areaRadius[type] ?? 1)) continue
-        eff = e
-        break
+  const types = rules.events[event] ?? []
+  const from = (i: number): Promise<void> => {
+    for (; i < types.length; i++) {
+      const type = types[i]
+      let eff = h.effectsOf(c).find((e) => e.type === type)
+      if (!eff && rules.area.includes(type)) {
+        for (const o of h.all()) {
+          const e = h.effectsOf(o).find((x) => x.type === type)
+          if (!e) continue
+          if (h.inCombat() && h.distance(o, c) > (rules.areaRadius[type] ?? 1)) continue
+          eff = e
+          break
+        }
       }
+      if (!eff) continue
+      const r = handle(h, type, eff, c, event, false)
+      if (r) { const next = i + 1; return r.then(() => from(next)) }
     }
-    if (eff) await handle(h, type, eff, c, event, false)
+    return Promise.resolve()
   }
+  return from(0)
+}
+
+/** Run an effect's handler directly (a "run at once" call through FUN_5216_0000, arg 0). */
+export function runEffect(h: FxHost, type: number, eff: Effect, c: Uint8Array): void | Promise<void> {
+  return handle(h, type, eff, c, -1, false)
 }
 
 /** Remove an effect record, running its removal callback when flagged (FUN_5216_0026). */
@@ -111,6 +130,14 @@ export async function removeEffect(h: FxHost, c: Uint8Array, eff: Effect) {
   if (eff.flag) await handle(h, eff.type, eff, c, -1, true)
   const j = list.indexOf(eff)
   if (j >= 0) list.splice(j, 1)
+  // CotAB 0x4ABBA: some removals recompute a stat (PoR's handlers restore it themselves)
+  for (const stat of game().effects.removalStat[eff.type] ?? []) await STAT[game().effects.items]?.(h, c, stat)
+}
+
+/** The game's current-stat routine (CotAB 0x4C389); PoR has none, its effects write the stat. */
+const STAT: Record<'por' | 'coab', ((h: FxHost, c: Uint8Array, stat: number) => void | Promise<void>) | null> = {
+  por: null,
+  coab: effectiveStat,
 }
 
 export async function removeType(h: FxHost, c: Uint8Array, type: number, silent = false) {
@@ -168,8 +195,8 @@ export function healedLine(h: FxHost, c: Uint8Array) {
   h.print(`${h.name(c)} is ${c[F.hp] === c[F.maxHp] ? 'fully' : 'partially'} healed`)
 }
 
-/** FUN_3723_0000(t): negate damage (event 6) or block the effect being added (event 9). */
-function negate(t: number) {
+/** FUN_3723_0000(t) (CotAB 0x27369): negate damage (event 6) or block the effect being added (event 9). */
+export function negate(t: number) {
   if (t === 0 || fx.adding === t) { fx.dmg = 0; fx.adding = 0 }
 }
 
@@ -272,8 +299,18 @@ export function drain(h: FxHost, t: Uint8Array, n: number) {
   }
 }
 
-/** One handler call (FUN_5216_0000). event −1 = removal (arg 1) or a direct run. */
-async function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event: number, removal: boolean) {
+/**
+ * One handler call (FUN_5216_0000; CotAB 0x4AB77). event −1 = removal (arg 1) or a direct run. The
+ * game's profile may name another behaviour for the type (rules/coabeffects.ts); else PoR's handler.
+ */
+function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event: number, removal: boolean): void | Promise<void> {
+  const spec = game().effects.handlers[type]
+  if (spec) return behave(h, spec, eff, c, removal)
+  return porHandle(h, type, eff, c, event, removal)
+}
+
+/** PoR's handlers (spec/effects.md), by type. */
+async function porHandle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event: number, removal: boolean) {
   if (removal && R.paladin && type === R.paladin.cureDisease.effect) return refillUses(c) // the game's weekly refill
   const cur = h.current()
   switch (type) {
@@ -621,6 +658,16 @@ function spiritualHammer(h: FxHost, c: Uint8Array, removal: boolean) {
  * (arg 1, after unreadying) only (FUN_4894_14d0 → FUN_5216_0000; spec/effects.md, "Item handlers").
  */
 export async function itemHandler(h: FxHost, c: Uint8Array, it: Item, arg: 0 | 1) {
+  await ITEMS[game().effects.items](h, c, it, arg)
+}
+
+/** The game's item procedure: PoR's handlers 128–139 below, or CotAB's item kinds (0x3F034). */
+const ITEMS: Record<'por' | 'coab', (h: FxHost, c: Uint8Array, it: Item, arg: 0 | 1) => Promise<void>> = {
+  por: porItem,
+  coab: (h, c, it, arg) => itemKind(h, c, it, arg === 0),
+}
+
+async function porItem(h: FxHost, c: Uint8Array, it: Item, arg: 0 | 1) {
   const p = it.raw[0x3d]
   switch (it.raw[0x3e]) {
     case 131: { // Gauntlets of Ogre Power (FUN_3723_2f57): STR 18/00 as effect 38

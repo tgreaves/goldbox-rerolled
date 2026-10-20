@@ -142,6 +142,11 @@ as data in its profile ([`../CLAUDE.md`](../CLAUDE.md)).
    without START.EXE are gone. Checked and left in code: the gem values (code in both games). Still
    PoR content in shared code, for step 7: the Rules reference text, the City Council commissions,
    the ending, the title sequence, and messages written into the port.
+   **Effects (2026-10-20)**: each game's event lists, and for CotAB a behaviour per changed effect
+   type (`games/effectrules.ts` `handlers`, `rules/coabeffects.ts`), the monster-class flags (+0x14B),
+   the new events 20–22, the current-stat routine on removal, and readied items by CotAB's item kinds
+   (Gauntlets of Ogre Power, girdles, Ring of Wizardry, Gloves of Thievery…). Not yet: event 14 (monster
+   specials, unfired in PoR too) and the area breaths and eye rays (spec/coab/effects.md, "Port status").
 7. **CotAB presentation.** Sky and ground in the 3D view, the BIGPIC overland, title, code wheel.
    *Done 2026-10-19* (7a–7c), profile data in `games/view.ts`, `title.ts`, `sound.ts`: the floor
    colour and the cobbled ground (SKY #252) tiled on the WebGL floor (IMP-069); BIGPIC pictures from

@@ -4,6 +4,7 @@ import { T } from '../games/tables'
 import { coabHitDice, conBonus, saves, thiefSkills, wisdomBonus, type Rng, type Tables } from './chargen'
 import { CLASSES, COIN_VALUES } from '../data/character'
 import { F } from '../games/fields'
+import type { Item } from '../data/items'
 
 /** Trainer bit per base class (T.trainerBits): halls match it against their mask (ECL 0x6DA8). */
 const trainerBit = (t: Tables, k: number) => t.b(T.trainerBits.at + k)
@@ -141,8 +142,11 @@ export function maxLevel(t: Tables, k: number): number {
   return max
 }
 
-/** FUN_51cf_0000: THAC0, highest level, attacks, spell slots, cleric spells known, saves, thief skills. */
-export function derive(t: Tables, c: Uint8Array) {
+/**
+ * FUN_51cf_0000: THAC0, highest level, attacks, spell slots, cleric spells known, saves, thief skills;
+ * items: the character's, when known (CotAB's slots, saves and thief skills read the readied ones).
+ */
+export function derive(t: Tables, c: Uint8Array, items?: Item[]) {
   let thac = 0, high = 0
   for (let k = 0; k < 8; k++) {
     const L = c[F.levels + k]
@@ -154,9 +158,9 @@ export function derive(t: Tables, c: Uint8Array) {
   c[F.hitDice] = high
   c[F.attacksBase] = Object.entries(R.extraAttacks).some(([k, above]) => c[F.levels + Number(k)] > above) ? 3 : 2
   if (R.slotModel === 'absolute') absoluteSlots(t, c)
-  else incrementSlots(t, c)
-  saves(t, c)
-  if (c[F.levels + 6]) thiefSkills(t, c)
+  else incrementSlots(t, c, items)
+  saves(t, c, items)
+  if (c[F.levels + 6]) thiefSkills(t, c, items)
 }
 
 /** PoR (FUN_51cf_0000): cleric and magic-user slots from level 2 straight from the tables; WIS bonus; clerics know every cleric spell with a slot. */
@@ -176,7 +180,7 @@ function absoluteSlots(t: Tables, c: Uint8Array) {
  * into magic-user levels 1–2. Then the WIS bonus (I: as PoR's); clerics and paladins know the cleric
  * spells they have slots for, rangers every druid spell.
  */
-function incrementSlots(t: Tables, c: Uint8Array) {
+function incrementSlots(t: Tables, c: Uint8Array, items?: Item[]) {
   const n = 5
   for (let i = 0; i < 3 * n; i++) c[F.clericSlots + i] = 0
   const add = (table: { at: number; row: number }, from: number, level: number, put: (col: number, v: number) => void) => {
@@ -190,6 +194,8 @@ function incrementSlots(t: Tables, c: Uint8Array) {
   wisdomBonus(c)
   if (cl > 0 || pal > 0) learnWithSlots(t, c, R.spells.cleric)
   if (rng > 0) for (let id = 1; id <= R.spells.named; id++) if (t.b(T.spellRecords.at + id * T.spellRecords.row) === R.spells.druid) c[F.known + id] = 1
+  // 0x507C3: each readied Ring of Wizardry (item +0x3E = 0x81) doubles the magic-user slots of levels 1–3
+  for (const it of items ?? []) if (it.raw[0x3e] === 0x81 && it.ready) for (let i = 0; i < 3; i++) c[F.muSlots + i] = (c[F.muSlots + i] * 2) & 0xff
 }
 
 /** Every spell of a class whose level has a slot becomes known. */

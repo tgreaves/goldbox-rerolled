@@ -195,10 +195,11 @@ export class Battle implements FxHost {
   setRec(c: Uint8Array, i: number, v: number) { const f = this.of(c); if (f) { f.r[i] = v & 0xff; if (i === 0xa && !v) f.target = null } }
   setStatus(c: Uint8Array, status: number, msg: string) {
     if ([6, 7, 8].includes(c[F.status])) return
-    this.print(msg)
+    if (msg) this.print(msg)
     c[F.status] = status
     if (status !== 0 && status !== 1) { c[F.inPlay] = 0; c[F.hp] = 0; const f = this.of(c); if (f) this.downF(f) }
   }
+  setTarget(c: Uint8Array, t: Uint8Array) { const f = this.of(c); if (f) f.target = this.of(t) }
   damage(c: Uint8Array, dmg: number, mode: number, saved: boolean) { this.damageSync(c, dmg, mode, saved) }
   save(c: Uint8Array, type: number, bonus: number) { return this.saveSync(c, type, bonus) }
   heal(c: Uint8Array, amount: number, force: boolean) { return healChar(c, this.e.effectsOf(c), amount, force, true) }
@@ -422,7 +423,8 @@ export class Battle implements FxHost {
   async run(surprise: number): Promise<Outcome> {
     this.print('A battle begins...')
     this.e.write(0x6e33, 0)
-    for (const f of this.fighters) { fx.round = 0; fx.roll = 0; this.current_ = f; await fire(this, f.c, 8) }
+    // event 8, then (CotAB 0x26A1A) event 22, combat starts, for each character in turn
+    for (const f of this.fighters) { fx.round = 0; fx.roll = 0; this.current_ = f; await fire(this, f.c, 8); await fire(this, f.c, 22) }
     this.enemyHp()
     this.ui.redraw(this.fighters[0])
     let first = true
@@ -528,6 +530,7 @@ export class Battle implements FxHost {
     this.recalc(f.c)
     this.ui.redraw(f)
     await fire(this, f.c, 15)
+    if (f.r[0] === 0) await fire(this, f.c, 21) // CotAB 0x2209E: not in the middle of casting
     if (s8(f.r[3]) <= 0) return
     if (f.c[F.quick]) await this.ai(f)
     else await this.player(f)
@@ -992,19 +995,22 @@ export class Battle implements FxHost {
 
   /** Saving throw (FUN_5216_0d63). */
   saveSync(c: Uint8Array, type: number, bonus: number): boolean {
+    // CotAB DS:6FC2 (0x4BDA1): set while event 12 runs, then the outcome
+    fx.saved = true
     const r = this.e.roll(1, 20)
-    if (r === 1) return false
-    if (r === 20) return true
+    if (r === 1) return (fx.saved = false)
+    if (r === 20) return (fx.saved = true)
     fx.save = r + s8(c[F.saveBonus]) + bonus
     fx.saveType = type
     void fire(this, c, 12)
-    return c[F.saves + type] <= fx.save
+    return (fx.saved = c[F.saves + type] <= fx.save)
   }
 
   /** Non-weapon damage (FUN_5216_1344). */
   damageSync(c: Uint8Array, dmg: number, mode: number, saved: boolean) {
     fx.dmg = dmg
     void fire(this, c, 6)
+    if (!saved) void fire(this, c, 20) // CotAB 0x4CAB2: damage not saved
     let d = fx.dmg
     if (saved) d = mode === 1 ? 0 : mode === 2 ? d >> 1 : d
     const f = this.of(c)

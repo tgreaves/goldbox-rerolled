@@ -35,6 +35,9 @@ export const dexMissile = (d: number) => d <= 2 ? -4 : d === 3 ? -3 : d === 4 ? 
 
 export function strIndexOf(c: Uint8Array) { return strengthIndex(c[F.stat[0]], c[F.strPct]) }
 
+/** The STR damage bonus when the character's STR adjustments apply (CotAB `ed:5c`, 0x4E40A; PoR FUN_10ba_1219) */
+export function strDamageBonus(c: Uint8Array) { return c[F.strAdj] ? strDamage(strIndexOf(c)) : 0 }
+
 /** Coins and items the character carries (encumbrance), and the most allowed (capacity). */
 export function capacity(c: Uint8Array): number {
   return weightAllowance(strIndexOf(c)) + 1500

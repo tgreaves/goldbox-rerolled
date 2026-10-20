@@ -29,7 +29,7 @@ export class WorldHost implements FxHost {
   setRec() {}
   setStatus(c: Uint8Array, status: number, msg: string) {
     if ([6, 7, 8].includes(c[F.status])) return
-    this.print(msg)
+    if (msg) this.print(msg)
     c[F.status] = status
     if (status !== 0 && status !== 1) { c[F.inPlay] = 0; c[F.hp] = 0; this.e.io.sound(5) } // FUN_577f_0e11 outside combat
   }
@@ -37,6 +37,7 @@ export class WorldHost implements FxHost {
   damage(c: Uint8Array, dmg: number, mode: number, saved: boolean) {
     fx.dmg = dmg
     void fire(this, c, 6)
+    if (!saved) void fire(this, c, 20) // CotAB 0x4CAB2: damage not saved
     let d = fx.dmg
     if (saved) d = mode === 1 ? 0 : mode === 2 ? d >> 1 : d
     if (d <= 0) return
@@ -46,13 +47,14 @@ export class WorldHost implements FxHost {
     this.setStatus(c, left < -9 ? 6 : 4, left < -9 ? `${this.name(c)} is killed` : `${this.name(c)} goes down`)
   }
   save(c: Uint8Array, type: number, bonus: number) {
+    fx.saved = true // CotAB DS:6FC2, as the combat save
     const r = this.e.roll(1, 20)
-    if (r === 1) return false
-    if (r === 20) return true
+    if (r === 1) return (fx.saved = false)
+    if (r === 20) return (fx.saved = true)
     fx.save = r + ((c[F.saveBonus] << 24) >> 24) + bonus
     fx.saveType = type
     void fire(this, c, 12)
-    return c[F.saves + type] <= fx.save
+    return (fx.saved = c[F.saves + type] <= fx.save)
   }
   heal(c: Uint8Array, amount: number, force: boolean) {
     if (![0, 1, 4, 5].includes(c[F.status])) return false

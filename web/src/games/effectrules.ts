@@ -8,6 +8,25 @@ export interface EffectRules {
   /** effects that also act for characters near their holder, and how far in combat (default 1) */
   area: number[]
   areaRadius: Record<number, number>
+  /**
+   * Handlers that differ from PoR's: effect type → a behaviour named in rules/coabeffects.ts, with its
+   * parameters. Types not listed run PoR's handler (rules/effects.ts).
+   */
+  handlers: Record<number, HandlerSpec>
+  /** effect types whose removal recomputes a stat (0 STR … 5 CHA) through the game's stat routine */
+  removalStat: Record<number, number[]>
+  /**
+   * The current-stat routine (CotAB 0x4C389: base + readied items + effects) and what readying an item
+   * with item +0x3E ≥ 0x80 does: PoR's item handlers 128–139 (FUN_4894_14d0 → FUN_5216_0000), or
+   * CotAB's item kinds (0x3F034, with the generic handler 147 for kind 0)
+   */
+  items: 'por' | 'coab'
+}
+
+/** A behaviour key (rules/coabeffects.ts) and its parameters. */
+export interface HandlerSpec {
+  b: string
+  [param: string]: string | number | number[]
 }
 
 export const POR_EFFECTS: EffectRules = {
@@ -24,6 +43,9 @@ export const POR_EFFECTS: EffectRules = {
   },
   area: [21, 45, 46, 49],
   areaRadius: { 49: 6 },
+  handlers: {},
+  removalStat: {},
+  items: 'por',
 }
 
 export const COAB_EFFECTS: EffectRules = {
@@ -41,5 +63,66 @@ export const COAB_EFFECTS: EffectRules = {
     20: [50, 54], 21: [35], 22: [138], 23: [74],
   },
   area: [21, 45, 46, 49],
-  areaRadius: { 49: 6 },
+  areaRadius: { 49: 6 },  // changed and new handlers (DS:6FC0 + 4·type, filled at 0x29E28 and 0x4AA3A); spec/coab/effects.md §2
+  handlers: {
+    3: { b: 'snakes' }, // 0x2742C
+    4: { b: 'attackerClass', flag: 1, roll: -7 }, // 0x274AF (Dispel Evil's defence)
+    7: { b: 'acBoth', add: 2, cap: 0x3c }, // 0x2752F
+    12: { b: 'none' }, 14: { b: 'none' }, 38: { b: 'none' }, 146: { b: 'none' }, // 0x276B7, 0x27705, 0x29E21: the stat comes from 0x4C389
+    13: { b: 'suffocate' }, // 0x276C9
+    18: { b: 'targetClass', flag: 2, roll: 1 }, // 0x2779A (gnomes)
+    20: { b: 'resist', type: 1, save: 3 }, // 0x277D0
+    25: { b: 'invisibility' }, // 0x27A16
+    26: { b: 'targetClass', flag: 4, roll: 1 }, // 0x27A4B (dwarves)
+    27: { b: 'endTurn' }, // 0x273C1, shared with 31, 51, 52, 53
+    28: { b: 'mirrorImage' }, // 0x27A8F
+    35: { b: 'confusion' }, // 0x27D29
+    37: { b: 'notReady' }, // 0x27ED0
+    47: { b: 'attackerKind', types: [2, 10], size: 2, roll: -4 }, // 0x284A3
+    48: { b: 'attackerKind', types: [1], size: 2, roll: -4 }, // 0x284F2
+    50: { b: 'weakTo', saveOn: 2, double: 1, saved: 1 }, // 0x28562: cold +2 save, unsaved fire ×2
+    54: { b: 'weakTo', saveOn: 1, double: 2, saved: 0 }, // 0x28593: fire +2 save, cold ×2 (DS:5D0B, 0 in combat)
+    57: { b: 'engulf' }, // 0x2E582
+    60: { b: 'magicWeapons', none: 3 }, // 0x28628: plus 0 nothing, below 3 half
+    63: { b: 'minorGlobe', below: 4 }, // 0x2871A
+    68: { b: 'feeblemind' }, // 0x288E5
+    69: { b: 'untargetableBy', type: 19, roll: -4 }, // 0x28986
+    73: { b: 'immune', mask: 0x20, say: 1 }, // 0x28A22
+    75: { b: 'giantBane', type: 3 }, // 0x28A6A
+    76: { b: 'bane', type: 8, roll: 3, dmg: 3 }, // 0x28AC2
+    77: { b: 'berserk', say: 1, restore: 0 }, // 0x28B03
+    81: { b: 'halve' }, // 0x28CCF
+    82: { b: 'fireColdSave' }, // 0x28CE0
+    84: { b: 'absorbElectricity' }, // 0x28D31
+    85: { b: 'piercingOne' }, // 0x28D64
+    91: { b: 'none' }, // 0x28E09: lifts a zone of the list DS:7579, which the port does not make
+    86: { b: 'spitAcid', range: 7, pct: 30 }, // 0x49B5E
+    // not ported yet (spec/coab/effects.md, "Port status"): the area breaths and the eye rays; PoR's
+    // handlers for these types (87 mummy rot, 90 CON poison bonus) must not run in CotAB
+    87: { b: 'unported' }, 88: { b: 'unported' }, 90: { b: 'unported' }, 128: { b: 'unported' }, 132: { b: 'unported' },
+    96: { b: 'hug' }, // 0x2ED5C
+    103: { b: 'extraDamage', lacks: [0x14, 0x36, 0x3d], sides: 6 }, // 0x293AD
+    110: { b: 'immune', mask: 2, say: 0 }, // 0x29502
+    122: { b: 'holdOnHit', save: 0 }, // 0x29873
+    123: { b: 'hitDamage', count: 2, sides: 8, dmgType: 0x0a }, // 0x298ED
+    126: { b: 'gazeHold', minutes: 60 }, // 0x4A214
+    129: { b: 'magicResistance' }, // 0x29973
+    130: { b: 'quarrelSlays', type: 0x1c, word: 0x87 }, // 0x29993
+    131: { b: 'breatheFire', pct: 50, dmg: 7 }, // 0x4A001
+    133: { b: 'blocks', types: [0x8e, 0x1d, 0x44], mask: 0x40 }, // 0x29AA0
+    134: { b: 'rangerVsGiants', flag: 8 }, // 0x29ACC
+    135: { b: 'immune', mask: 4, say: 0 }, // 0x29B05
+    136: { b: 'noMove' }, // 0x29B1C
+    137: { b: 'berserk', say: 0, restore: 1 }, // 0x29B30
+    138: { b: 'startInvisible' }, // 0x29C20
+    139: { b: 'heldVictim', marker: 0x8b, attacks: 2, also: 0x0d }, // 0x2EB16
+    142: { b: 'runsAway' }, // 0x29C82
+    143: { b: 'zap' }, // 0x29CC5
+    144: { b: 'heldVictim', marker: 0x90, attacks: 1, also: 0 }, // 0x2EC4C
+    145: { b: 'dispelEvil', flag: 1 }, // 0x29D69
+    // 147 (0x29A23, also DS:720C), the generic item handler, runs for items only: rules/coabeffects.ts itemKind
+  },
+  // remove 0x4ABBA: CHA after 0x0E, STR after 0x0C, 0x26, 0x92
+  removalStat: { 0x0e: [5], 0x0c: [0], 0x26: [0], 0x92: [0] },
+  items: 'coab',
 }
