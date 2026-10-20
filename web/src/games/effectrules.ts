@@ -88,7 +88,8 @@ export const COAB_EFFECTS: EffectRules = {
     20: { b: 'resist', type: 1, save: 3 }, // 0x277D0
     25: { b: 'invisibility' }, // 0x27A16
     26: { b: 'targetClass', flag: 4, roll: 1 }, // 0x27A4B (dwarves)
-    27: { b: 'endTurn' }, // 0x273C1, shared with 31, 51, 52, 53
+    // 0x273C1 (thunk 0x64:0x2F at DS:6FC0 + 4·type): ends the turn whenever it runs, also run at once
+    27: { b: 'endTurn' }, 31: { b: 'endTurn' }, 51: { b: 'endTurn' }, 52: { b: 'endTurn' }, 53: { b: 'endTurn' },
     28: { b: 'mirrorImage' }, // 0x27A8F
     35: { b: 'confusion' }, // 0x27D29
     37: { b: 'notReady' }, // 0x27ED0
@@ -109,7 +110,7 @@ export const COAB_EFFECTS: EffectRules = {
     82: { b: 'fireColdSave' }, // 0x28CE0
     84: { b: 'absorbElectricity' }, // 0x28D31
     85: { b: 'piercingOne' }, // 0x28D64
-    91: { b: 'none' }, // 0x28E09: lifts a zone of the list DS:7579, which the port does not make
+    91: { b: 'liftZone', cell: 0x1c }, // 0x28E09: lifts the owner's Cloudkill zone (list DS:7579)
     // the monster specials [14] (rules/specials.ts); `hook`/`spell`: the spell whose computer target
     // pick (*DS:72BA) chooses the target. PoR's 87 (mummy rot) and 90 (CON poison bonus) mean other things.
     83: { b: 'gazeStone', spell: 0x41, word: 0x76 }, // 0x497CE

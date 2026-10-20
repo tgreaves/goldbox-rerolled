@@ -103,6 +103,21 @@ export interface GameRules {
    * previous stop (PoR: the line's whole cost, every stop)
    */
   bolt: { lightning: number; skipLast: boolean; mapAreaOnly: boolean; noRepeatBounce: boolean; chargeSinceLast: boolean }
+  /**
+   * The cloud occupant check, one procedure (PoR FUN_5216_0ae7; CotAB 0x4B8F7, which takes a flag: 1 when
+   * moving or from a cast, 0 at round end). `gas`: a creature on a `cell` square, not under any of
+   * `immune`, saves vs 0: success "starts to cough" (0x1E for 1 round), failure "chokes and gags from
+   * nausea" (0x1F for 1d4 + 1); `roundEnd`: also at round end (CotAB: not, its flag is 0 there);
+   * `apply`: through the add-effect routine with its line and event 9, the cloud's owner the current
+   * character meanwhile, then the record's handler at once (CotAB), else raw, the turn ended on a
+   * failure (PoR). `kill` (CotAB): a creature on a `cell` square dies by its hit dice: `bands`
+   * [lowest, highest, save bonus or null for no save] (saves vs `save`), "is Poisoned" (`poison` added
+   * raw), then status 6 "is killed"; null: the game has no such cloud
+   */
+  clouds: {
+    gas: { cell: number; immune: number[]; roundEnd: boolean; apply: boolean }
+    kill: { cell: number; save: number; bands: [number, number, number | null][]; poison: number } | null
+  }
 }
 
 export type TempleService = 'blind' | 'disease' | 'clw' | 'csw' | 'ccw' | 'heal' | 'poison' | 'raise' | 'curse' | 'stone'
@@ -146,6 +161,7 @@ export const POR_RULES: GameRules = {
   casterGate: null,
   dualClass: false,
   bolt: { lightning: 8, skipLast: false, mapAreaOnly: false, noRepeatBounce: false, chargeSinceLast: false },
+  clouds: { gas: { cell: 0x1e, immune: [0x1e, 0x1f, 0x20, 0x6f, 0x7d], roundEnd: true, apply: false }, kill: null }, // FUN_5216_0ae7
   thief: { dualClass: false, bonus: 0, clampWithBonus: false, gloves: null, gauntlets: null },
   saveCon: null,
   startEffects: { race: { 1: [0x5a, 0x61, 0x1a, 0x2f], 2: [0x6b], 3: [0x61, 0x12, 0x2f, 0x30], 4: [0x7c], 5: [0x5a, 0x61] }, cls: {} },
@@ -190,6 +206,8 @@ export const COAB_RULES: GameRules = {
   casterGate: { atLeast: { 0: 1, 5: 1, 3: 9, 4: 8 }, level: 6 },
   dualClass: true,
   bolt: { lightning: 7, skipLast: true, mapAreaOnly: true, noRepeatBounce: true, chargeSinceLast: true }, // 0x478F6, 0x479B4
+  // 0x4B8F7: no 0x1E immunity; HD 0–4 die, 5 save at −4, 6 save, 7 and up (and below 0) unaffected
+  clouds: { gas: { cell: 0x1e, immune: [0x1f, 0x20, 0x6f, 0x7d], roundEnd: false, apply: true }, kill: { cell: 0x1c, save: 0, bands: [[0, 4, null], [5, 5, -4], [6, 6, 0]], poison: 0x37 } },
   // 0x50F5A: Gloves of Thievery (effect 0x0B), Gauntlets of Dexterity (effect 0x02)
   thief: { dualClass: true, bonus: 7, clampWithBonus: true, gloves: { effect: 0x0b, raise: { 1: 5, 2: 7 }, bonus: 5 }, gauntlets: { effect: 0x02, minLevel: 4, bonus: 10 } },
   // 0x50C6B: dwarves, halflings or the Girdle of the Dwarves (effect 6): CON 4–6 +1 … 18 +5; everyone CON 19+ +1 … +4.

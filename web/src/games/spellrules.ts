@@ -84,7 +84,7 @@ export const POR_SPELLS: SpellRules = {
     31: { k: 'apply' }, // 1a4f: Knock does nothing here (no effect type)
     32: { k: 'images', amount: { n: 1, d: 4 }, effect: 0x1c }, // 1a8a
     33: { k: 'apply', msg: 'is weakened' }, // 1acc
-    34: { k: 'cloud', cells: [[0, 0], [1, 0], [1, 1], [0, 1]], cell: 0x1e, owner: 0x28, msg: 'Creates a noxious cloud' }, // 1b11, DS:290D
+    34: { k: 'cloud', dirs: 'gasCloud', count: 4, cell: 0x1e, owner: 0x28, msg: 'Creates a noxious cloud' }, // 1b11, DS:290D
     35: { k: 'strengthByClass', bonus: [{ cls: [5], d: 4 }, { cls: [0, 6], d: 6 }, { cls: [2], d: 8 }], pctClasses: [2], effect: 0x26, msg: 'is stronger' }, // 1f41
     36: { k: 'animateDead', effect: 0x20, msg: 'is animated' }, // 206f
     37: { k: 'cure', effect: 0x21, msg: 'can see' }, // 2217
@@ -119,9 +119,8 @@ export const POR_SPELLS: SpellRules = {
 /**
  * CotAB's table (DS:72BA): ids 1–56 are PoR's spells, most with the same handler (spec/coab/spells.md
  * §2, "same"); 57–67 keep PoR's item spells where the record matches; 58 and 66–100 are its own.
- * Not yet transcribed (spec/coab/spells.md §2, port status): the changed handlers 34, 41/46, and the
- * new 67, 68, 70, 73, 75, 76, 78, 79, 81–86, 91–93, 98; until they are, they run PoR's handler for the
- * same id or, for new ids, Apply ('apply').
+ * Not yet transcribed (spec/coab/spells.md §2, port status): the new 67, 68, 70, 73, 75, 76, 78, 79,
+ * 81–86, 92, 93, 98; until they are, they run Apply ('apply').
  */
 const POR_HANDLERS_1_57 = Object.fromEntries(Object.entries(POR_SPELLS.handlers).filter(([id]) => Number(id) <= 57 || [60, 61, 62, 63, 64, 65].includes(Number(id))))
 
@@ -139,6 +138,10 @@ export const COAB_SPELLS: SpellRules = {
     // 46bcb Strength: a class counts with a level or a former level past +0xE6; only its die is rolled;
     // fighters, paladins and rangers into 18/xx; power = bonus + 100, no line (0x26, stat routine 0x4C389)
     35: { k: 'strengthByClass', bonus: [{ cls: [5], d: 4 }, { cls: [0, 6], d: 6 }, { cls: [2], d: 8 }], pctClasses: [2, 3, 4], effect: 0x26, counts: 'levelOrFormer', rollCounting: 1, bonusPower: 100 },
+    34: { ...POR_SPELLS.handlers[34], dedupe: 1 }, // 4675b: 0x1E-byte zone (DS:7575, cells DS:27D9), each occupant once
+    // 47154: PoR's part, then the zones round the aimed square against their owner's magic-user level;
+    // Cloudkill's matched through DS:27D9 read on for 9 entries (quirk kept)
+    ...each([41, 46], { ...POR_SPELLS.handlers[41], zones: [{ cell: 0x1e, owner: 0x28, dirs: 'gasCloud', count: 4 }, { cell: 0x1c, owner: 0x5b, dirs: 'gasCloud', count: 9 }] }),
     43: { k: 'removeCurse', effect: 0x24, item: 'unready', itemMsg: 'has an item un-cursed' }, // 47575
     48: { ...POR_SPELLS.handlers[48], attacksAfter: 0 }, // 478cc → 477eb: no event-18 pass
     55: { ...POR_SPELLS.handlers[55], attacksAfter: 0 }, // 47c9e → 477eb
@@ -146,7 +149,7 @@ export const COAB_SPELLS: SpellRules = {
     58: { k: 'heal', amount: { n: 2, d: 8, plus: 1 } }, // 47edd Cure Serious Wounds
     59: { k: 'setStrength', str: 21, pct: 0, effect: 0x92, msg: 'is stronger' }, // 47f27, by the base-STR rule (strength)
     66: { k: 'damage', amount: { n: 2, d: 8, plus: 1 }, dmgType: 8 }, // 480f5 Cause Serious Wounds
-    ...each([67, 68, 70, 73, 75, 76, 78, 79, 81, 82, 83, 84, 85, 86, 91, 92, 93, 98], { k: 'apply' }),
+    ...each([67, 68, 70, 73, 75, 76, 78, 79, 81, 82, 83, 84, 85, 86, 92, 93, 98], { k: 'apply' }),
     69: { k: 'apply', msg: 'is protected' }, // 45de4
     71: { k: 'heal', amount: { n: 3, d: 8, plus: 3 } }, // 48360 Cure Critical Wounds
     72: { k: 'damage', amount: { n: 3, d: 8, plus: 3 }, dmgType: 8 }, // 483a1 Cause Critical Wounds (touch, negates)
@@ -155,6 +158,7 @@ export const COAB_SPELLS: SpellRules = {
     80: { k: 'apply' }, // 48714 Invisibility to Animals (touch)
     87: { k: 'damage', amount: { n: 3, d: 10 }, dmgType: 0x0a }, // 48e7b Ice Storm
     88: { k: 'apply', msg: 'is protected' }, // 48ebe Minor Globe
+    91: { k: 'cloud', dirs: 'killCloud', count: 9, cell: 0x1c, owner: 0x5b, msg: 'Creates a poisonous cloud' }, // 48f05 Cloudkill (DS:7579, DS:27DD)
     89: { k: 'removeCurse', effect: 0x24, item: 'unready', itemMsg: 'has an item un-cursed' }, // 47575 Remove Curse
     90: POR_SPELLS.handlers[36], // 46d89 Animate Dead
     94: { k: 'hold', bonus: [-3, -1, 0], effect: 0x34, sizeImmune: 0, msg: 'is held' }, // 463b4 → 45a94 (I: the magic-user bonus)

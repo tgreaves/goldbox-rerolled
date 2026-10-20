@@ -13,7 +13,7 @@ import type { Amount, SpellSpec } from '../games/spellrules'
 import { spellText } from './spelltext'
 import { casterLevel, duration as spellDuration, forget } from './magic'
 import { F } from '../games/fields'
-import { R } from '../games/rules'
+import { R, formerLevelsCount } from '../games/rules'
 import { T } from '../games/tables'
 import { Tables } from './chargen'
 
@@ -161,8 +161,12 @@ export class Line {
   }
 }
 
-/** A Stinking Cloud (19-byte record at DS:6DBB): its owner, number and the 4 cells it replaced. */
-interface Cloud { owner: Uint8Array; n: number; cells: { x: number; y: number; old: number }[] }
+/**
+ * A cloud zone (PoR's 19-byte records at DS:6DBB; CotAB's 0x1E-byte ones, Stinking Cloud at DS:7575 and
+ * Cloudkill at DS:7579): its owner, number, the cell value it draws (one list per value), the aimed
+ * square it was laid from, the cells it replaced, and CotAB's "resisted" byte (+0x1D, Dispel Magic).
+ */
+interface Cloud { owner: Uint8Array; n: number; cell: number; x: number; y: number; cells: { x: number; y: number; old: number }[]; resisted: boolean }
 /** One cast in combat: the caster, the spell at level L with its duration, and its targets. */
 interface BattleCast { f: Fighter; s: Spell; L: number; dur: number; targets: Fighter[] }
 
@@ -236,24 +240,66 @@ export class Battle implements FxHost {
   weapon(c: Uint8Array) { return c === this.current_?.c && this.firing ? this.firing : this.weaponOf(c) }
   private firing: Item | null = null
   weaponKind(type: number) { return this.e.items?.base[type]?.kind ?? 0 }
-  /** effect 0x28 expiring (spec/effects.md): the owner's cloud lifts; other clouds are redrawn over it */
-  clearCloud(c: Uint8Array, power: number) {
-    const i = this.clouds.findIndex((z) => z.owner === c && z.n === power >> 4)
-    if (i < 0) return
+  /**
+   * The owner's zone expiring (effect 0x28, spec/effects.md; CotAB 0x5B, 0x28E09): the zone of cells
+   * `cell` numbered power >> 4 lifts, a body's square going back to the body cell; the other zones of
+   * that list are drawn again over it. False when there is no such zone.
+   */
+  clearCloud(c: Uint8Array, power: number, cell = 0x1e) {
+    const i = this.clouds.findIndex((z) => z.owner === c && z.n === power >> 4 && z.cell === cell)
+    if (i < 0) return false
     const [z] = this.clouds.splice(i, 1)
     for (const t of z.cells) {
       const body = this.bodies.find((b) => b.x === t.x && b.y === t.y && b.f.size === 0)
       if (body) { body.cell = t.old; this.bf.set(t.y, t.x, 0x1f) } else this.bf.set(t.y, t.x, t.old)
     }
-    for (const o of this.clouds) for (const t of o.cells) this.bf.set(t.y, t.x, 0x1e)
+    for (const o of this.clouds) if (o.cell === cell) for (const t of o.cells) this.bf.set(t.y, t.x, o.cell)
     this.ui.redraw()
+    return true
   }
-  /** Stinking Cloud occupant check (FUN_5216_0ae7) */
-  cloudCheck(t: Fighter) {
-    if (!this.inPlay(t) || !footprint(t.size).some(([dx, dy]) => this.bf.get(t.y + dy, t.x + dx) === 0x1e)) return
-    if (this.e.effectsOf(t.c).some((x) => [0x1e, 0x1f, 0x20, 0x6f, 0x7d].includes(x.type))) return
-    if (this.saveSync(t.c, 0, 0)) { this.print(`${name(t.c)} starts to cough`); addRaw(this, t.c, 0x1e, 1, 0xff, 0) }
-    else { this.print(`${name(t.c)} chokes and gags from nausea`); addRaw(this, t.c, 0x1f, this.e.roll(1, 4) + 1, 0xff, 0); this.endTurnF(t) }
+  /**
+   * The cloud occupant check (PoR FUN_5216_0ae7, CotAB 0x4B8F7), by the game's rule (R.clouds): `gas`
+   * only when `moving` (a step or a cast; at round end too where the rule says so), CotAB's `kill` always
+   */
+  async cloudCheck(t: Fighter, moving = true) {
+    const rule = R.clouds
+    const on = (cell: number) => this.inPlay(t) && footprint(t.size).some(([dx, dy]) => this.bf.get(t.y + dy, t.x + dx) === cell)
+    if (moving && on(rule.gas.cell) && !this.e.effectsOf(t.c).some((x) => rule.gas.immune.includes(x.type))) {
+      const saved = this.saveSync(t.c, 0, 0)
+      if (rule.gas.apply) {
+        // 0x4B9C3: the zone over the creature's square (0x4B7B3) is the current character meanwhile;
+        // the add-effect routine (event 9, its line with the sparkle), then the record's handler
+        const z = this.clouds.find((o) => o.cell === rule.gas.cell && o.cells.some((q) => q.x === t.x && q.y === t.y))
+        const keep = this.current_
+        if (z) this.current_ = this.of(z.owner) ?? keep
+        const [type, dur, msg] = saved ? [0x1e, 1, 'starts to cough'] : [0x1f, this.e.roll(1, 4) + 1, 'chokes and gags from nausea']
+        await addEffect(this, t.c, type, dur, 0xff, 0, 0, saved, true, msg) // I: runs the new record (the original the first of its type)
+        this.current_ = keep
+      } else if (saved) { this.print(`${name(t.c)} starts to cough`); addRaw(this, t.c, 0x1e, 1, 0xff, 0) }
+      else { this.print(`${name(t.c)} chokes and gags from nausea`); addRaw(this, t.c, 0x1f, this.e.roll(1, 4) + 1, 0xff, 0); this.endTurnF(t) }
+    }
+    const kill = rule.kill
+    if (kill && on(kill.cell)) {
+      // 0x4BB2F: by hit dice; a band without a save dies, else a failed save does
+      const hd = s8(t.c[F.hitDice])
+      const band = kill.bands.find(([lo, hi]) => hd >= lo && hd <= hi)
+      if (band && (band[2] === null || !this.saveSync(t.c, kill.save, band[2]))) {
+        this.print(`${name(t.c)} is Poisoned`)
+        addRaw(this, t.c, kill.poison, 0, 0xff, 0)
+        this.setStatus(t.c, 6, `${name(t.c)} is killed`)
+      }
+    }
+  }
+  /**
+   * A cloud's squares from the aimed square: the spec's `cells`, or `count` direction indices from entry 1
+   * of the table `dirs` (T.gasCloud, T.killCloud) through the direction vectors (T.wallDx / wallDy; 8 is
+   * the square itself). Null for a spell that lays no cloud, or without START.EXE.
+   */
+  cloudCells(p: SpellSpec): number[][] | null {
+    if (p.cells) return p.cells as number[][]
+    const t = this.tables(), ref = p.dirs ? T[p.dirs as 'gasCloud' | 'killCloud'] : null
+    if (!t || !ref || ref.at < 0) return null
+    return Array.from({ length: p.count as number }, (_, i) => { const d = t.b(ref.at + 1 + i); return [s8(t.b(T.wallDx.at + d)), s8(t.b(T.wallDy.at + d))] })
   }
 
   // ------------------------------------------------------------ the battlefield for the monster specials
@@ -716,7 +762,7 @@ export class Battle implements FxHost {
     for (const f of this.fighters) {
       this.current_ = f
       await fire(this, f.c, 19)
-      this.cloudCheck(f)
+      await this.cloudCheck(f, R.clouds.gas.roundEnd) // CotAB 0x2272D: flag 0, only the killing cloud
       if (f.c[F.status] === 5) {
         f.r[0xe]++
         if (f.r[0xe] >= 10) { f.c[F.status] = 6; this.print(`${name(f.c)} has died`) }
@@ -1287,7 +1333,7 @@ export class Battle implements FxHost {
       this.print(`${name(g.c)} reacts`)
       await this.attackF(g, f, false, null)
     }
-    this.cloudCheck(f)
+    await this.cloudCheck(f)
     if (!this.inPlay(f) || this.helpless(f.c)) f.r[6] = 0
     // each step plays the footstep (sound 10) in transient mode, which holds the game for delay(10 cs)
     this.ui.sound(10)
@@ -1423,8 +1469,9 @@ export class Battle implements FxHost {
       if (spec.outdoorRadius !== undefined && this.e.read(0x49e6) === 0) radius = Math.min(radius, spec.outdoorRadius as number)
       // the squares the spell would cover from a centre, for the preview (IMP-059); a cloud takes its
       // own cells from the aimed square (Stinking Cloud: here, E, SE and S)
+      const cloud = this.cloudCells(spec)
       const area = (x: number, y: number) => {
-        if (spec.cells) return (spec.cells as number[][]).map(([dx, dy]) => ({ x: x + dx, y: y + dy })).filter((q) => this.passable(q.x, q.y, 1))
+        if (cloud) return cloud.map(([dx, dy]) => ({ x: x + dx, y: y + dy })).filter((q) => this.passable(q.x, q.y, 1))
         const out: { x: number; y: number }[] = []
         for (let dy = -radius - 1; dy <= radius + 1; dy++) for (let dx = -radius - 1; dx <= radius + 1; dx++) {
           const cx = x + dx, cy = y + dy
@@ -1576,17 +1623,25 @@ export class Battle implements FxHost {
         if (p.attacksAfter) await this.attacks(t, false)
       }
     },
-    /** Stinking Cloud (FUN_4e53_1b11): the cloud's cells from the aimed square, owned through effect `owner` */
+    /**
+     * A gas cloud (PoR Stinking Cloud FUN_4e53_1b11; CotAB Stinking Cloud 0x4675B, Cloudkill 0x48F05): a
+     * zone of `cell` squares (cloudCells) from the aimed square, owned through effect `owner` (duration L,
+     * power n × 16 + L, flag 1); then the occupant check on whoever stands there, each creature once
+     * with `dedupe` (CotAB Stinking Cloud 0x46B40), else once per square (Cloudkill, PoR). I: the zone
+     * number and the replaced cells as before (the port's simplification of both games' bookkeeping)
+     */
     async cloud({ f, L }, p) {
       const c = f.c
-      const n = this.clouds.length ? Math.max(...this.clouds.map((z) => z.n)) + 1 : 1
-      const z: Cloud = { owner: c, n: n & 0x0f, cells: [] }
-      for (const [dx, dy] of p.cells as number[][]) {
-        const x = this.aimed.x + dx, y = this.aimed.y + dy
+      const cell = p.cell as number
+      const mine = this.clouds.filter((z) => z.cell === cell)
+      const n = mine.length ? Math.max(...mine.map((z) => z.n)) + 1 : 1
+      const z: Cloud = { owner: c, n: n & 0x0f, cell, x: this.aimed.x, y: this.aimed.y, cells: [], resisted: false }
+      const squares = (this.cloudCells(p) ?? []).map(([dx, dy]) => ({ x: this.aimed.x + dx, y: this.aimed.y + dy }))
+      for (const { x, y } of squares) {
         const v = this.bf.get(y, x)
         if (x < 0 || y < 0 || x >= COLS || y >= ROWS || (this.cells[v]?.move ?? 0xff) === 0xff) continue
         z.cells.push({ x, y, old: v })
-        this.bf.set(y, x, p.cell as number)
+        this.bf.set(y, x, cell)
       }
       this.clouds.push(z)
       addRaw(this, c, p.owner as number, L, ((z.n << 4) + L) & 0xff, 1)
@@ -1595,10 +1650,51 @@ export class Battle implements FxHost {
       this.ui.show?.()
       this.ui.hold?.(this.e.speed * 225)
       this.ui.redraw()
+      const occupants: Fighter[] = []
       for (const t of z.cells) {
         const o = this.occupied(t.x, t.y, 1)
-        if (o) this.cloudCheck(o)
+        if (o && !(p.dedupe && occupants.includes(o))) occupants.push(o)
       }
+      for (const o of occupants) await this.cloudCheck(o)
+    },
+    /**
+     * Dispel Magic (PoR 2385, CotAB 0x47154): the shared part on the effects; then with `zones` (CotAB,
+     * DS:6FB7 = 1) each square of the 3×3 round the aimed square, in the original's order (here, N, NE, E,
+     * SE, S, SW, W, NW): on a cell of a listed zone kind, each zone of that kind not yet `resisted` that
+     * has one of its `count` squares (from the direction table `dirs`, entry 1 on) there rolls d100 against
+     * the chance of L against its owner's magic-user level (with the former dual-class level when the
+     * **current** character's count, 0x47096; the chance a byte): success removes the owner's `owner`
+     * effect of the zone's number (which lifts it), failure marks the zone resisted for good. Quirk kept:
+     * Cloudkill zones are matched through Stinking Cloud's table read on for 9 entries (DS:27D9)
+     */
+    async dispel(x, p) {
+      const { f, L, targets } = x
+      await castShared({ h: this, e: this.e, caster: f.c, s: x.s, L, dur: x.dur, targets: targets.map((t) => t.c) }, p)
+      const zones = p.zones as { cell: number; owner: number; dirs: 'gasCloud' | 'killCloud'; count: number }[] | undefined
+      if (!zones) return
+      const t = this.tables()
+      const area = fx.area
+      fx.area = true
+      const { x: ax, y: ay } = this.aimed
+      for (const [dx, dy] of [[0, 0], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]]) {
+        const sx = ax + dx, sy = ay + dy
+        const kind = zones.find((k) => k.cell === this.bf.get(sy, sx))
+        if (!kind || !t) continue
+        const ref = T[kind.dirs]
+        for (const z of this.clouds.filter((o) => o.cell === kind.cell)) {
+          for (let i = 1; i <= kind.count; i++) {
+            const d = t.b(ref.at + i)
+            if (z.x + s8(t.b(T.wallDx.at + d)) !== sx || z.y + s8(t.b(T.wallDy.at + d)) !== sy || z.resisted) continue
+            const o = z.owner
+            const lv = s8(o[F.levels + 5]) + (formerLevelsCount(f.c) ? s8(o[F.prevLevels + 5]) : 0)
+            const chance = (L > lv ? 50 + 5 * (L - lv) : L < lv ? 50 - 2 * (lv - L) : 50) & 0xff
+            if (this.e.roll(1, 100) > chance) { z.resisted = true; continue }
+            const eff = this.e.effectsOf(o).find((e) => e.type === kind.owner && e.power >> 4 === z.n)
+            if (eff) await removeEffect(this, o, eff)
+          }
+        }
+      }
+      fx.area = area
     },
   }
 

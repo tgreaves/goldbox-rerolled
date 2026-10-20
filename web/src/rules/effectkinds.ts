@@ -65,6 +65,16 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     const add = num(p, 'add'), cap = num(p, 'cap')
     for (const o of [F.ac, F.acRear]) c[o] = c[o] < cap - add ? c[o] + add : cap
   },
+  /**
+   * 91 removal (0x28E09): the owner's zone of `cell` squares numbered power >> 4 lifts, "The air clears
+   * a little..." when there was one (the old cells back, a body's cell where one lies, the other zones of
+   * the list drawn again); outside combat there are no zones (freed when combat ends)
+   */
+  liftZone(h, eff, c, removal, p) {
+    if (!removal || !h.inCombat()) return
+    const z = h.clearCloud?.(c, eff.power, num(p, 'cell'))
+    if (z) h.print('The air clears a little...')
+  },
   /** 13 [15] (0x276C9): the count runs out, then death */
   suffocate(h, eff, c) {
     if (eff.power === 0) h.setStatus(c, 6, `${h.name(c)} Suffocates`)

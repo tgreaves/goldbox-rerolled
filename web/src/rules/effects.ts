@@ -61,7 +61,8 @@ export interface FxHost {
   /** a gaze (the spell bolt, 45 ms) or acid spit (COMSPR 10, 30 ms) flies from one to the other (combat only) */
   fly?(from: Uint8Array, to: Uint8Array, kind: 'gaze' | 'spit'): void
   /** effect 0x28 expired: lift that Stinking Cloud (combat only) */
-  clearCloud?(c: Uint8Array, power: number): void
+  /** the owner's cloud zone numbered power >> 4 of the cells `cell` (default 0x1E) lifts; true if there was one */
+  clearCloud?(c: Uint8Array, power: number, cell?: number): boolean
   /** make t the combatant's target (combat record +0xA; combat only) */
   setTarget?(c: Uint8Array, t: Uint8Array): void
   // the battlefield, for the monster specials of event 14 (rules/specials.ts; combat only)
