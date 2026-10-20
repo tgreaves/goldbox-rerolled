@@ -110,6 +110,13 @@ export interface GameRules {
    */
   bolt: { lightning: number; skipLast: boolean; mapAreaOnly: boolean; noRepeatBounce: boolean; chargeSinceLast: boolean }
   /**
+   * When a battle is fought on a wilderness battlefield and what decides its terrain:
+   * `overlandTile`, on the tile wilderness, the overland tile the party stands on (PoR FUN_34c7_11b4);
+   * `placeFlags`, whenever the map flag (ECL, engine numbering) is 0, the terrain flags of the overland
+   * place (ECL `place`) from T.placeTerrain (CotAB 0x25CC0: A 0x1CC = 0 → WILDCOM and 0x25C58)
+   */
+  wildBattle: { kind: 'overlandTile' } | { kind: 'placeFlags'; mapFlag: number; place: number }
+  /**
    * The cloud occupant check, one procedure (PoR FUN_5216_0ae7; CotAB 0x4B8F7, which takes a flag: 1 when
    * moving or from a cast, 0 at round end). `gas`: a creature on a `cell` square, not under any of
    * `immune`, saves vs 0: success "starts to cough" (0x1E for 1 round), failure "chokes and gags from
@@ -167,6 +174,7 @@ export const POR_RULES: GameRules = {
   casterGate: null,
   dualClass: false,
   bolt: { lightning: 8, skipLast: false, mapAreaOnly: false, noRepeatBounce: false, chargeSinceLast: false },
+  wildBattle: { kind: 'overlandTile' },
   clouds: { gas: { cell: 0x1e, immune: [0x1e, 0x1f, 0x20, 0x6f, 0x7d], roundEnd: true, apply: false }, kill: null }, // FUN_5216_0ae7
   thief: { dualClass: false, bonus: 0, clampWithBonus: false, gloves: null, gauntlets: null },
   saveCon: null,
@@ -212,6 +220,9 @@ export const COAB_RULES: GameRules = {
   casterGate: { atLeast: { 0: 1, 5: 1, 3: 9, 4: 8 }, level: 6 },
   dualClass: true,
   bolt: { lightning: 7, skipLast: true, mapAreaOnly: true, noRepeatBounce: true, chargeSinceLast: true }, // 0x478F6, 0x479B4
+  // 0x25D56: the grid builder takes the map generator only when A 0x1CC (ECL 0x4BE6, the engine's 0x49E6)
+  // is set; the place is A byte 0x342 (ECL 0x4CA1, the engine's 0x4AA1)
+  wildBattle: { kind: 'placeFlags', mapFlag: 0x49e6, place: 0x4aa1 },
   // 0x4B8F7: no 0x1E immunity; HD 0–4 die, 5 save at −4, 6 save, 7 and up (and below 0) unaffected
   clouds: { gas: { cell: 0x1e, immune: [0x1f, 0x20, 0x6f, 0x7d], roundEnd: false, apply: true }, kill: { cell: 0x1c, save: 0, bands: [[0, 4, null], [5, 5, -4], [6, 6, 0]], poison: 0x37 } },
   // 0x50F5A: Gloves of Thievery (effect 0x0B), Gauntlets of Dexterity (effect 0x02)

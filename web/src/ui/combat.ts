@@ -460,7 +460,7 @@ export async function runBattle(s: BattleScreen) {
   try {
     const result = await fight(e, ui, (b) => {
       battle = b
-      view = new CombatView(s.canvas, s.files, !!e.overland)
+      view = new CombatView(s.canvas, s.files, b.bf.outdoors) // WILDCOM for a wilderness field, whatever the area
       const r = s.canvas.getBoundingClientRect()
       view.fit(r.width, r.height)
       resize.observe(s.canvas)

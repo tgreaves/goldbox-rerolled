@@ -84,9 +84,17 @@ const OPEN = 0x17
 
 /** Wilderness battlefield (FUN_34c7_11b4) for the overland tile the party stands on. */
 export function wildBattlefield(tile: number, read4AB3: number, roll: Roll): Battlefield {
+  return wildField(terrainFlags(tile, read4AB3), roll)
+}
+
+/**
+ * A wilderness battlefield from its terrain feature flags: open ground, then the river, tree, scatter
+ * and finishing passes (PoR FUN_34c7_11b4; CotAB 0x25C58 with the flags from its place table, whose
+ * passes 0x25690, 0x2579B, 0x25ADA are taken as PoR's, I).
+ */
+export function wildField(flags: number, roll: Roll): Battlefield {
   const bf = new Battlefield(true)
   bf.cells.fill(OPEN)
-  const flags = terrainFlags(tile, read4AB3)
   riverPass(bf, flags, roll)
   treePass(bf, flags, roll)
   scatterPass(bf, flags, roll)

@@ -4,7 +4,7 @@ import type { Engine } from '../vm/engine'
 import type { Item } from '../data/items'
 import type { Spell } from '../data/spells'
 import type { Effect } from '../data/effects'
-import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, type Battlefield, type CellInfo } from './battlefield'
+import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, wildField, type Battlefield, type CellInfo } from './battlefield'
 import { dexMissile, recalc } from './equip'
 import { fx, fire, damageText, healedLine, addEffect, addRaw, removeEffect, removeFirst, removeOne, removeType, runEffect, type FxHost } from './effects'
 import { heal as healChar } from './camp'
@@ -2333,15 +2333,18 @@ export async function fight(e: Engine, ui: CombatUi, onReady?: (b: Battle) => vo
   if (!img || !e.items) throw new Error('combat needs START.EXE and ITEMS')
   const roll = (n: number) => e.roll(1, n)
   let bf: Battlefield
-  if (e.overland && e.wild) {
+  const wb = R.wildBattle
+  if (wb.kind === 'overlandTile' && e.overland && e.wild) {
     const [gx, gy] = e.wildPosition
     bf = wildBattlefield(e.wild.map[gy * 44 + gx], e.read(0x4ab3), roll)
+  } else if (wb.kind === 'placeFlags' && e.read(wb.mapFlag) === 0) {
+    bf = wildField(img[T.ds + T.placeTerrain.at + (e.read(wb.place) & 0xff)], roll)
   } else if (e.geo) bf = mapBattlefield(e.geo, e.x, e.y, roll, e.area)
   else bf = wildBattlefield(1, 0, roll)
   const b = new Battle(e, ui, bf, cellTable(img))
   const partySize = e.party().length
   const distance = Math.min(2, e.read(0x6dc1))
-  b.setup(partySize, e.facing, distance, !e.overland)
+  b.setup(partySize, e.facing, distance, !bf.outdoors) // a map area when the map generator built the field
   onReady?.(b)
   const surprise = e.read(0x6dcb)
   e.write(0x6dcb, 0)

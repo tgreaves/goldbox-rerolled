@@ -87,6 +87,9 @@ describe.skipIf(!haveCoab)('Curse of the Azure Bonds start-up menu and demo', ()
         battles++
         const r = await fight(e, combatUi)
         rounds += r.battle.round
+        // 0x4BE6 is 0 before COMBAT: CotAB builds a wilderness field (WILDCOM, 0x25CC0) whose terrain is
+        // the place table's entry for ECL 0x4CA1 (0 here: plain ground), not a map area
+        expect(r.battle.bf.outdoors).toBe(true)
         expect(r.messages).toEqual([]) // no outcome, experience or treasure in the demo
         expect(r.survived).toBe(true)
       },
