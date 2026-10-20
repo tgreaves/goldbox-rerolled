@@ -91,6 +91,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         <div class="combat-info" hidden></div>
         <div class="turnstrip" hidden></div>
         <div class="wild" hidden></div>
+        <canvas class="skylayer" width="88" height="88" hidden></canvas>
         <canvas class="overlay" width="88" height="88" hidden></canvas>
         <div class="where"></div>
       </section>
@@ -118,6 +119,23 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     </div>`
   const canvas = app.querySelector<HTMLCanvasElement>('.view3d')!
   const overlay = app.querySelector<HTMLCanvasElement>('.overlay')!
+  const skylayer = app.querySelector<HTMLCanvasElement>('.skylayer')!
+  /** the sun or clouds over the view (CotAB), in the original's 88 × 88 view coordinates */
+  function drawSky() {
+    const art = game().view.skyArt, at = engine.overland ? null : engine.skyArt
+    skylayer.hidden = !at
+    if (!art || !at) return
+    const g = sizeCanvas(skylayer, 88, 88)
+    g.clearRect(0, 0, 88, 88)
+    const pic = frames('SKY', at.record)?.[0] ?? (() => { const r = files.record('SKY', at.record); return r ? parseRecord(r).frames[0]?.picture : undefined })()
+    if (!pic) return
+    const img = toImageData(pic)
+    for (let i = 0; i < pic.pixels.length; i++) if (pic.pixels[i] === art.mask) img.data[i * 4 + 3] = 0
+    const tmp = document.createElement('canvas')
+    tmp.width = pic.width; tmp.height = pic.height
+    tmp.getContext('2d')!.putImageData(img, 0, 0)
+    g.drawImage(tmp, at.x, at.y)
+  }
   const where = app.querySelector<HTMLDivElement>('.where')!
   const wild = app.querySelector<HTMLDivElement>('.wild')!
   const log = app.querySelector<HTMLElement>('.text')!
@@ -532,6 +550,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       world.colours(bd.sky, bd.floor)
       world.go({ x: engine.x, y: engine.y, facing: engine.facing }, ms)
     }
+    drawSky()
     drawMinimap()
     drawRoster()
     showWhere()

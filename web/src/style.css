@@ -202,6 +202,11 @@ dialog.panel form.jump input { width: 4.5rem; }
   image-rendering: pixelated; display: block; background: #000; touch-action: manipulation;
 }
 .game .wildview[hidden], .game .view3d[hidden], .game .combatview[hidden] { display: none; }
+.game .skylayer {
+  position: absolute; inset: 0; margin: auto; height: 100%; width: auto; aspect-ratio: 1;
+  max-width: 100%; image-rendering: pixelated; pointer-events: none;
+}
+.game .skylayer[hidden] { display: none; }
 .game .overlay {
   position: absolute; inset: 0; margin: auto; height: 100%; width: auto; aspect-ratio: 1;
   max-width: 100%; image-rendering: pixelated; pointer-events: none;

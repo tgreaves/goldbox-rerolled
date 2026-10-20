@@ -123,4 +123,20 @@ describe.skipIf(!have)('Curse of the Azure Bonds scripts', () => {
     e.write(0x4aa1, 31)
     expect(e.cityCursor).toEqual([34, 1])
   })
+
+  it('puts the sun and clouds in the day sky (spec/coab/assets.md §3)', () => {
+    setGame(COAB)
+    const files = load()
+    const e = new Engine(files, headless(() => 0), 1)
+    e.newGame([1, 2].map((n) => files.get(`CHRDATA${n}.SAV`)!))
+    const set = (hour: number, facing2: number, sky: number) => { e.write(0x49c9, hour); e.facing2 = facing2; e.write(0x49fd, sky); e.write(0x49fe, sky) }
+    set(3, 2, 3) // 3 am facing east, sky index 3 = colour 11
+    expect(e.skyArt).toEqual({ record: 251, x: 56, y: 16 })
+    set(14, 6, 3)
+    expect(e.skyArt).toEqual({ record: 251, x: 0, y: 8 })
+    set(10, 0, 3)
+    expect(e.skyArt).toEqual({ record: 250, x: 0, y: 0 })
+    set(10, 0, 0) // night sky: nothing
+    expect(e.skyArt).toBeNull()
+  })
 })

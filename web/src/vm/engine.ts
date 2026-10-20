@@ -305,6 +305,16 @@ export class Engine {
    * DS:0C26 by ECL 0x49FD, or 0x49FE when the party's square has event bit 7; the horizon line and
    * band from register 0xC05F, the floor from 0xC059 (FUN_54cf_00c7, 00fb, 012f).
    */
+  /** The sky picture the view shows now (games/view.ts skyArt): its SKY record and view pixel position. */
+  get skyArt(): { record: number; x: number; y: number } | null {
+    const art = game().view.skyArt
+    if (!art || this.backdrop.sky !== art.daySky) return null
+    if (this.geo && this.geo.event(this.x & 15, this.y & 15) > 0x7f) return null // the square's own sky
+    const h = this.read(0x49c9) // the clock's hour word (ECL 0x4BC9 in CotAB)
+    const r = art.rules.find((x) => x.facing2 === this.facing2 && h >= x.hours[0] && h <= x.hours[1])
+    return r ? { record: r.record, x: (r.col[0] + r.col[1] * h) * 8, y: (r.row[0] + r.row[1] * h) * 8 } : null
+  }
+
   get backdrop(): { sky: number; line: number; band: number; floor: number } {
     const img = this.startImage
     const outdoor = this.geo ? this.geo.event(this.x & 15, this.y & 15) > 0x7f : false
