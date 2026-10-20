@@ -1,10 +1,14 @@
 // One Settings panel (IMP-046): game speed (in a game), sound device, font, window borders and text size. Speed is
-// the game's own (saved with the game); the rest are per-browser conveniences in localStorage.
+// the game's own (saved with the game); the rest are per-browser conveniences in localStorage, which travel
+// with an account when signed in (the Account section, IMP-072).
 import { play, setSoundDevice, soundAvailable, soundDevice, unlockAudio, type Device } from '../audio/sfx'
 import { fontChoice, gameFontAvailable, setFontChoice } from './gamefont'
 import { frameChoice, framesAvailable, setFrameChoice, type FrameChoice } from './frames'
 import { onClose } from './sheet'
 import { gfxMode, savedGfx, setGfx, type Gfx } from '../render/upscale'
+import { SYNCED_SETTINGS } from '../store/account'
+import { localChanged } from '../store/changes'
+import { mountAccount } from './account'
 
 const SIZE_KEY = 'poolrad.textsize'
 const MOTION_KEY = 'poolrad.motion'
@@ -75,12 +79,17 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
       ${seg<TextSize>('Text size', [['normal', 'Normal'], ['large', 'Large']], textSize())}
       ${seg<Gfx>('Graphics', [['pixel', 'Pixel (original)'], ['sharp', 'Sharp (even pixels, soft fit)']], savedGfx())}
       ${savedGfx() !== gfxMode() ? '<p class="message">The graphics change takes effect when the page reloads. <button type="button" data-reload="1">Reload now</button> (save first if you are in a game)</p>' : ''}
+      <section class="account-sec" aria-label="Account"></section>
       <form method="dialog"><button class="primary">Done</button></form>`
+    mountAccount(dialog.querySelector<HTMLElement>('.account-sec')!)
   }
+  // the settings that travel with an account (IMP-072): reported when the panel closes changed
+  const snapshot = () => SYNCED_SETTINGS.map((k) => { try { return localStorage.getItem(k) } catch { return null } }).join('\n')
+  const before = snapshot()
   return new Promise((resolve) => {
     const onClick = (e: MouseEvent) => {
       const b = (e.target as HTMLElement).closest('button')
-      if (!b || b.closest('form')) return
+      if (!b || b.closest('form') || b.closest('.account-sec')) return
       e.preventDefault()
       const d = b.dataset
       if (d.speed && host.speed) host.speed.set(Math.max(0, Math.min(9, host.speed.get() + Number(d.speed))))
@@ -96,7 +105,11 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
       render()
     }
     dialog.addEventListener('click', onClick)
-    onClose(dialog, () => { dialog.removeEventListener('click', onClick); resolve() })
+    onClose(dialog, () => {
+      dialog.removeEventListener('click', onClick)
+      if (snapshot() !== before) localChanged('docs/settings')
+      resolve()
+    })
     render()
     dialog.showModal()
   })

@@ -16,7 +16,8 @@ import { creatorTools } from './creator'
 import { openSettings } from './settings'
 import { enhancePanel } from './panel'
 import { initSound } from '../audio/sfx'
-import { saveCharacter, listSaves, writeSave, readAutosave } from '../store/user'
+import { saveCharacter, listSaves, writeSave, readAutosave, listConflicts } from '../store/user'
+import { onPulled } from '../store/account'
 import { importsFrom, rosterFrom, saveFiles, savesFrom, unzip, zip, type NamedFile } from '../store/savefiles'
 import { parseSave, saveArea, saveBlock } from '../data/save'
 import type { Start } from './explore'
@@ -32,7 +33,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
 }) {
   await seedRoster(files)
   let roster = await listCharacters()
-  const auto = await readAutosave()
+  let auto = await readAutosave()
   let party = (await getParty()).filter((s) => roster.some((c) => c.stem === s))
   let current = 0
   let tables: Tables | null = null
@@ -187,6 +188,13 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
           start: { kind: 'load' as const, dat: g.dat, party: g.chars, label: `slot ${g.slot}, ${g.label}`, known: g.known } }))
         if (auto) saves.unshift({ title: `Autosave: ${auto.label}`, note: new Date(auto.savedAt).toLocaleString(),
           start: { kind: 'load' as const, dat: auto.dat, party: auto.chars, label: `autosave, ${auto.label}`, known: auto.known } })
+        // conflict copies the sync kept (IMP-072): the version that lost when two devices saved the same slot
+        for (const c of await listConflicts().catch(() => [])) {
+          if (!c.save) continue
+          const g = c.save, where = c.ofId === 'AUTO' ? 'autosave' : `slot ${c.ofId}`
+          saves.push({ title: `${c.ofId === 'AUTO' ? 'Autosave' : c.ofId} (conflict copy, ${c.from === 'browser' ? "this browser's" : "another device's"}): ${g.label}`, note: new Date(g.savedAt).toLocaleString(),
+            start: { kind: 'load' as const, dat: g.dat, party: g.chars, label: `conflict copy of ${where}, ${g.label}`, known: g.known } })
+        }
         for (const slot of 'ABCDEFGHIJ') {
           const dat = files.get(`SAVGAM${slot}.DAT`)
           if (!dat) continue
@@ -319,6 +327,15 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
     } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) act(e.key.toUpperCase())
   }
   window.addEventListener('keydown', onKey)
+  // the sync brought records from the server (IMP-072): show them
+  const stopPulled = onPulled(async () => {
+    if (!app.contains(nav2)) { stopPulled(); return }
+    await seedRoster(files)
+    roster = await listCharacters()
+    auto = await readAutosave()
+    party = (await getParty()).filter((s) => roster.some((c) => c.stem === s))
+    if (!dialog.open) draw()
+  })
   say('Choose a function.')
   draw()
 }
