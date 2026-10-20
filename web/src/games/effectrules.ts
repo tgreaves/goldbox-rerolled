@@ -230,6 +230,7 @@ export const COAB_EFFECTS: EffectRules = {
     68: { b: 'feeblemind' }, // 0x288E5
     69: { b: 'untargetableBy', type: 19, detect: 0x18, roll: -4 }, // 0x28986
     73: { b: 'immune', mask: 0x20, say: 1 }, // 0x28A22
+    74: { b: 'none' }, // 0x28A5E: an empty handler (PoR's grab and crush; the type is dead in CotAB, event 23 never fires)
     75: { b: 'giantBane', type: 3 }, // 0x28A6A
     76: { b: 'bane', type: 8, roll: 3, dmg: 3 }, // 0x28AC2
     77: { b: 'berserk', say: 1, restore: 0 }, // 0x28B03
