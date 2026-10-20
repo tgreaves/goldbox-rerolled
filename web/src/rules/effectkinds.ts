@@ -45,11 +45,11 @@ function nearest(h: FxHost, c: Uint8Array): Uint8Array | null {
   }
   return best
 }
-/** a victim held by an engulfer or hugger: 0x3A (held, pw = its index) run at once, then the holder's marker */
-function hold(h: FxHost, holder: Uint8Array, v: Uint8Array, marker: number, also?: () => void) {
-  const e = addRaw(h, v, 0x3a, 0, h.indexOf(v), 0)
+/** a victim held by an engulfer or hugger: `held` (0x3A, pw = its index) run at once, then the holder's marker */
+function hold(h: FxHost, holder: Uint8Array, v: Uint8Array, held: number, marker: number, also?: () => void) {
+  const e = addRaw(h, v, held, 0, h.indexOf(v), 0)
   const after = () => { also?.(); addRaw(h, holder, marker, 0, h.indexOf(v), 1) }
-  const r = runEffect(h, 0x3a, e, v)
+  const r = runEffect(h, held, e, v)
   return r ? r.then(after) : after()
 }
 
@@ -585,12 +585,12 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   // ---------------------------------------------------------------- first transcribed from CotAB
 
   /** 3 [7] fighting snakes (0x2742C): the snakes take the attacks left; the turn ends */
-  snakes(h, eff, c, removal) {
+  snakes(h, eff, c, removal, _p, _ev, type) {
     if (removal) return // I: the original would remove itself again through its own callback
     const end = () => { say(h, c, 'is fighting with snakes'); h.endTurn(c) }
     const left = (c[F.attacksLeft] + c[F.attacksLeft + 1]) & 0xff
     if (eff.power > left) { eff.power -= left; return end() }
-    return removeFirst(h, c, 3).then(end)
+    return removeFirst(h, c, type).then(end)
   },
   /** 4 [16] (0x274AF): an attacker of the flagged class misses more (Dispel Evil's defence) */
   attackerClass(h, _e, _c, _r, p) { if (flags(h.current()) & num(p, 'flag')) fx.roll += num(p, 'roll') },
@@ -621,42 +621,43 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     fx.dmg = (fx.dmg & 0xff) >> 1
     fx.save += num(p, 'save')
   },
-  /** 25 [1, 16] Invisibility (0x27A16): an attacker without 0x18 can neither target nor hit well */
-  invisibility(h, _e, _c, removal) {
+  /** 25 [1, 16] Invisibility (0x27A16): an attacker without `detect` (0x18) can neither target nor hit well */
+  invisibility(h, _e, _c, removal, p) {
     if (removal) return
     const a = h.current()
-    if (!a || !has(h, a, 0x18)) { fx.untargetable = true; fx.roll -= 4 }
+    if (!a || !has(h, a, num(p, 'detect'))) { fx.untargetable = true; fx.roll -= 4 }
   },
   /** CotAB 27 [7] (0x273C1, as 31, 51–53): ends the turn whenever it runs; with `event` (PoR 31, 51–53, 3723_133f) only on that event */
   endTurn(h, _e, c, _r, p, event) { if (p.event === undefined || event === p.event) h.endTurn(c) },
   /** 28 [5, 6] Mirror Image (0x27A8F): 1d((pw>>4)+1) > 1 against a single-target spell; pw − 1 per image */
-  mirrorImage(h, eff, c) {
+  mirrorImage(h, eff, c, _r, _p, _ev, type) {
     if (!(h.roll(1, (eff.power >> 4) + 1) > 1 && fx.spell > 0 && !fx.area)) return
     negate(0)
     say(h, c, 'lost an image')
     eff.power = (eff.power - 1) & 0xff
-    if (eff.power === 0) return removeFirst(h, c, 0x1c).then(() => {})
+    if (eff.power === 0) return removeFirst(h, c, type).then(() => {})
   },
-  /** 35 [21] Confusion (0x27D29): d100, then a save vs spell at −2 ends it */
-  async confusion(h, _e, c) {
+  /** 35 [21] Confusion (0x27D29): d100 (running away with `flee`, berserk with `berserk`), then a save vs spell at −2 ends it */
+  async confusion(h, _e, c, _r, p, _ev, type) {
+    const flee = num(p, 'flee'), berserk = num(p, 'berserk')
     const d = h.roll(1, 100)
     if (d >= 1 && d <= 10) {
-      await removeFirst(h, c, 0x23)
+      await removeFirst(h, c, type)
       h.setRec(c, 0x10, 1)
       c[F.quick] = 1
       if (c[F.morale] <= 0x7f) c[F.morale] = 0xb3
       h.setRec(c, 0xa, 0)
-      await addEffect(h, c, 0x8e, 10, 0, 1, 1, false, false, 'runs away')
+      await addEffect(h, c, flee, 10, 0, 1, 1, false, false, 'runs away')
     } else if (d >= 11 && d <= 60) {
       say(h, c, 'is confused')
       h.endTurn(c)
     } else if (d >= 61 && d <= 80) {
-      // 0x89 holds the side to return to; it runs at once even if the add was blocked (no record then)
-      await addEffect(h, c, 0x89, 1, c[F.side], 1, 1, false, false, 'goes berserk')
-      const e = h.effectsOf(c).find((x) => x.type === 0x89) ?? { type: 0x89, duration: 1, power: c[F.side], flag: 1 }
-      await runEffect(h, 0x89, e, c)
+      // the berserk record holds the side to return to; it runs at once even if the add was blocked (no record then)
+      await addEffect(h, c, berserk, 1, c[F.side], 1, 1, false, false, 'goes berserk')
+      const e = h.effectsOf(c).find((x) => x.type === berserk) ?? { type: berserk, duration: 1, power: c[F.side], flag: 1 }
+      await runEffect(h, berserk, e, c)
     } else if (d >= 81 && d <= 100) say(h, c, 'is enraged')
-    if (h.save(c, 4, -2)) await removeFirst(h, c, 0x23)
+    if (h.save(c, 4, -2)) await removeFirst(h, c, type)
   },
   /** 37 [1, 16] (0x27ED0): with no initiative left, untargetable and unhittable (PoR: with some) */
   notReady(h, _e, c) { if (h.rec(c, 3) === 0) { fx.untargetable = true; fx.roll = -1 } },
@@ -673,19 +674,19 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (fx.dmgType & num(p, 'saveOn')) fx.save += 2
     else if (fx.dmgType & num(p, 'double') && (!num(p, 'saved') || !fx.saved)) fx.dmg = (fx.dmg * 2) & 0xff
   },
-  /** 57 [2] engulf (0x2E582): both hand-1 hits on an active target: held (0x3A), suffocating (0x0D, 2d4) */
-  engulf(h, _e, c) {
-    const t = h.targetOf(c)
-    if (fx.hits[1] !== 2 || !t || !t[F.inPlay] || has(h, t, 0x3a) || has(h, t, 0x0d)) return
+  /** 57 [2] engulf (0x2E582): both hand-1 hits on an active target: `held` (0x3A), `suffocate` (0x0D, 2d4), the engulfer's `marker` */
+  engulf(h, _e, c, _r, p) {
+    const t = h.targetOf(c), held = num(p, 'held'), choke = num(p, 'suffocate')
+    if (fx.hits[1] !== 2 || !t || !t[F.inPlay] || has(h, t, held) || has(h, t, choke)) return
     h.print(`${h.name(c)} engulfs ${h.name(t)}`)
-    return hold(h, c, t, 0x8b, () => { addRaw(h, t, 0x0d, 0, h.roll(2, 4), 0) })
+    return hold(h, c, t, held, num(p, 'marker'), () => { addRaw(h, t, choke, 0, h.roll(2, 4), 0) })
   },
-  /** 96 [2] hug (0x2ED5C): a roll of 18 or more holds the target (0x3A), the hugger gets 0x90 */
-  hug(h, _e, c) {
+  /** 96 [2] hug (0x2ED5C): a roll of 18 or more holds the target (`held`, 0x3A), the hugger gets `marker` (0x90) */
+  hug(h, _e, c, _r, p) {
     const t = h.targetOf(c)
     if (s8(fx.roll) < 18 || !t) return
     h.print(`${h.name(c)} hugs ${h.name(t)}`)
-    return hold(h, c, t, 0x90)
+    return hold(h, c, t, num(p, 'held'), num(p, 'marker'))
   },
   /** 60 [5] (0x28628): no weapon or plus 0 does nothing, a plus below `full` half */
   magicWeapons(h, _e, _c, _r, p) {
@@ -709,11 +710,11 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     const s = h.rec(c, 0)
     if (s > 0) { say(h, c, 'lost a spell'); forget(c, s); h.setRec(c, 0, 0) }
   },
-  /** 69 [1] (0x28986): an attacker of the type without 0x18 cannot target; its roll is worse either way */
+  /** 69 [1] (0x28986): an attacker of the type without `detect` (0x18) cannot target; its roll is worse either way */
   untargetableBy(h, _e, _c, _r, p) {
     const a = h.current()
     if (!a || a[F.monsterType] !== num(p, 'type')) return
-    if (!has(h, a, 0x18)) fx.untargetable = true
+    if (!has(h, a, num(p, 'detect'))) fx.untargetable = true
     fx.roll += num(p, 'roll')
   },
   /** 73, 110, 135 [6] (0x28A22, 0x29502, 0x29B05): damage of the type negated */
@@ -791,11 +792,11 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     const t = h.targetOf(c)
     if (t && !list(p, 'lacks').some((x) => has(h, t, x))) fx.dmg = (fx.dmg + h.roll(1, num(p, 'sides'))) & 0xff
   },
-  /** 122 [2] (0x29873): the target saves or is held for good (0x34, pw 0xFF) */
+  /** 122 [2] (0x29873): the target saves or is held for good (`effect` 0x34, pw 0xFF) */
   holdOnHit(h, _e, c, _r, p) {
     const t = h.targetOf(c)
     if (!t || h.save(t, num(p, 'save'), 0)) return
-    addRaw(h, t, 0x34, 0, 0xff, 0)
+    addRaw(h, t, num(p, 'effect'), 0, 0xff, 0)
     say(h, t, 'is paralyzed')
   },
   /** 123 [2] (0x298ED): count d sides of the damage type to the target; with `active` (PoR 79, 80: 1a19, 1a4c) only to an active one, the type set only then */
@@ -805,7 +806,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     fx.dmgType = num(p, 'dmgType')
     if (t) h.damage(t, h.roll(num(p, 'count'), num(p, 'sides')), 0, false)
   },
-  /** 126 [14] gaze (0x4A214): a new target; it saves vs petrification or is held (0x34) for `minutes` */
+  /** 126 [14] gaze (0x4A214): a new target; it saves vs petrification or is held (`effect` 0x34) for `minutes` */
   async gazeHold(h, _e, c, _r, p) {
     h.setRec(c, 0xa, 0)
     const t = await hookTarget(h, c, num(p, 'hook'))
@@ -813,7 +814,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     say(h, c, 'gazes...')
     h.fly?.(c, t, 'gaze')
     if (h.save(t, 1, 0)) return
-    addRaw(h, t, 0x34, num(p, 'minutes'), 0xff, 0)
+    addRaw(h, t, num(p, 'effect'), num(p, 'minutes'), 0xff, 0)
     say(h, t, 'is paralyzed')
   },
   /** 129 [6, 9] (0x29973): every effect added and all magic damage negated */
@@ -860,16 +861,16 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   },
   /** 136 [7] (0x29B1C): no movement this turn; with `moveRate` (PoR 58 [18], 1452) the movement rate 0 too */
   noMove(h, _e, c, _r, p) { h.setRec(c, 6, 0); if (p.moveRate && fx.rateIsMove) fx.rate = 0 },
-  /** 138 [22] (0x29C20): invisible (25) from the start of combat */
-  startInvisible(h, _e, c) { addRaw(h, c, 0x19, 0xff, 0xff, 0) },
+  /** 138 [22] (0x29C20): invisible (`effect` 25) from the start of combat */
+  startInvisible(h, _e, c, _r, p) { addRaw(h, c, num(p, 'effect'), 0xff, 0xff, 0) },
   /**
    * 139, 144 [14] the engulfer's and the hugger's hold (0x2EB16, 0x2EC4C): while both are active, an
    * attack of 2d8 (`attacks` of them) on the victim, then the turn ends; otherwise (or on removal) the
-   * victim is let go (0x3A, and `also`) and the marker goes.
+   * victim is let go (`held` 0x3A, and `also`) and the marker goes.
    */
   async heldVictim(h, eff, c, removal, p) {
     const v = h.byIndex(eff.power)
-    const free = async () => { if (v) { await removeFirst(h, v, 0x3a); if (num(p, 'also')) await removeFirst(h, v, num(p, 'also')) } }
+    const free = async () => { if (v) { await removeFirst(h, v, num(p, 'held')); if (num(p, 'also')) await removeFirst(h, v, num(p, 'also')) } }
     if (removal || !c[F.inPlay] || !v || !v[F.inPlay]) {
       await free()
       if (!removal) { eff.flag = 0; await removeEffect(h, c, eff) }
@@ -900,15 +901,14 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     fx.dmg = dmg
     fx.dmgType = type
   },
-  /** 145 [2] Dispel Evil's touch (0x29D69): a flagged target failing a save vs spell is gone; 4 and 0x91 leave */
+  /** 145 [2] Dispel Evil's touch (0x29D69): a flagged target failing a save vs spell is gone; `removes` (4 and 0x91) leave the current character */
   async dispelEvil(h, _e, c, _r, p) {
     const t = h.targetOf(c)
     if (!t) return
     if (!(flags(t) & num(p, 'flag')) || h.save(t, 4, 0)) { say(h, t, 'resists dispel evil'); return }
     h.setStatus(t, 8, `${h.name(t)} is dispelled`)
     const a = h.current() ?? c
-    await removeFirst(h, a, 4)
-    await removeFirst(h, a, 0x91)
+    for (const t of list(p, 'removes')) await removeFirst(h, a, t)
   },
 }
 

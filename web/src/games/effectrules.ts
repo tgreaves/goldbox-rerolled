@@ -213,22 +213,22 @@ export const COAB_EFFECTS: EffectRules = {
     13: { b: 'suffocate' }, // 0x276C9
     18: { b: 'targetClass', flag: 2, roll: 1 }, // 0x2779A (gnomes)
     20: { b: 'resist', type: 1, save: 3 }, // 0x277D0
-    25: { b: 'invisibility' }, // 0x27A16
+    25: { b: 'invisibility', detect: 0x18 }, // 0x27A16
     26: { b: 'targetClass', flag: 4, roll: 1 }, // 0x27A4B (dwarves)
     // 0x273C1 (thunk 0x64:0x2F at DS:6FC0 + 4·type): ends the turn whenever it runs, also run at once
     27: { b: 'endTurn' }, 31: { b: 'endTurn' }, 51: { b: 'endTurn' }, 52: { b: 'endTurn' }, 53: { b: 'endTurn' },
     28: { b: 'mirrorImage' }, // 0x27A8F
-    35: { b: 'confusion' }, // 0x27D29
+    35: { b: 'confusion', flee: 0x8e, berserk: 0x89 }, // 0x27D29
     37: { b: 'notReady' }, // 0x27ED0
     47: { b: 'attackerKind', types: [2, 10], size: 2, roll: -4 }, // 0x284A3
     48: { b: 'attackerKind', types: [1], size: 2, roll: -4 }, // 0x284F2
     50: { b: 'weakTo', saveOn: 2, double: 1, saved: 1 }, // 0x28562: cold +2 save, unsaved fire ×2
     54: { b: 'weakTo', saveOn: 1, double: 2, saved: 0 }, // 0x28593: fire +2 save, cold ×2 (DS:5D0B, 0 in combat)
-    57: { b: 'engulf' }, // 0x2E582
+    57: { b: 'engulf', held: 0x3a, suffocate: 0x0d, marker: 0x8b }, // 0x2E582
     60: { b: 'magicWeapons', full: 3 }, // 0x28628: plus 0 nothing, below 3 half
     63: { b: 'minorGlobe', below: 4 }, // 0x2871A
     68: { b: 'feeblemind' }, // 0x288E5
-    69: { b: 'untargetableBy', type: 19, roll: -4 }, // 0x28986
+    69: { b: 'untargetableBy', type: 19, detect: 0x18, roll: -4 }, // 0x28986
     73: { b: 'immune', mask: 0x20, say: 1 }, // 0x28A22
     75: { b: 'giantBane', type: 3 }, // 0x28A6A
     76: { b: 'bane', type: 8, roll: 3, dmg: 3 }, // 0x28AC2
@@ -248,12 +248,12 @@ export const COAB_EFFECTS: EffectRules = {
     90: { b: 'breathArea', uses: 3, dmgType: 0x30, spell: 0x3d, width: 1, len: 6, ownSide: 1, msg: 'breathes acid' }, // 0x49C94
     128: { b: 'breathArea', uses: 3, dmgType: 0x21, spell: 0x3d, width: 3, len: 9, ownSide: 0, msg: 'breathes fire' }, // 0x49E74
     132: { b: 'throwLightning', rounds: 4, spell: 0x33, count: 16, sides: 6, len: 10, save: 4 }, // 0x4A121
-    96: { b: 'hug' }, // 0x2ED5C
+    96: { b: 'hug', held: 0x3a, marker: 0x90 }, // 0x2ED5C
     103: { b: 'extraDamage', lacks: [0x14, 0x36, 0x3d], sides: 6 }, // 0x293AD
     110: { b: 'immune', mask: 2, say: 0 }, // 0x29502
-    122: { b: 'holdOnHit', save: 0 }, // 0x29873
+    122: { b: 'holdOnHit', save: 0, effect: 0x34 }, // 0x29873
     123: { b: 'hitDamage', count: 2, sides: 8, dmgType: 0x0a }, // 0x298ED
-    126: { b: 'gazeHold', minutes: 60, hook: 0x41 }, // 0x4A214
+    126: { b: 'gazeHold', minutes: 60, hook: 0x41, effect: 0x34 }, // 0x4A214
     129: { b: 'magicResistance' }, // 0x29973
     130: { b: 'quarrelSlays', type: 0x1c, word: 0x87 }, // 0x29993
     131: { b: 'breatheFire', pct: 50, dmg: 7, hook: 0x41 }, // 0x4A001
@@ -262,12 +262,12 @@ export const COAB_EFFECTS: EffectRules = {
     135: { b: 'immune', mask: 4, say: 0 }, // 0x29B05
     136: { b: 'noMove' }, // 0x29B1C
     137: { b: 'berserk', say: 0, restore: 1 }, // 0x29B30
-    138: { b: 'startInvisible' }, // 0x29C20
-    139: { b: 'heldVictim', marker: 0x8b, attacks: 2, also: 0x0d }, // 0x2EB16
+    138: { b: 'startInvisible', effect: 0x19 }, // 0x29C20
+    139: { b: 'heldVictim', marker: 0x8b, attacks: 2, held: 0x3a, also: 0x0d }, // 0x2EB16
     142: { b: 'runsAway' }, // 0x29C82
     143: { b: 'zap' }, // 0x29CC5
-    144: { b: 'heldVictim', marker: 0x90, attacks: 1, also: 0 }, // 0x2EC4C
-    145: { b: 'dispelEvil', flag: 1 }, // 0x29D69
+    144: { b: 'heldVictim', marker: 0x90, attacks: 1, held: 0x3a, also: 0 }, // 0x2EC4C
+    145: { b: 'dispelEvil', flag: 1, removes: [4, 0x91] }, // 0x29D69
     140: { b: 'none' }, // 0x29E21: Lay on Hands' wait (R.paladin)
     141: { b: 'refillUses' }, // 0x29C3F: Cure Disease's week (R.paladin)
     // 147 (0x29A23, also DS:720C), the generic item handler, runs for items only: `items[0]`
