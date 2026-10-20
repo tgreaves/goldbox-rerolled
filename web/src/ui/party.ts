@@ -17,7 +17,7 @@ import { openSettings } from './settings'
 import { enhancePanel } from './panel'
 import { initSound } from '../audio/sfx'
 import { saveCharacter, listSaves, writeSave, readAutosave } from '../store/user'
-import { rosterFrom, saveFiles, savesFrom, unzip, zip, type NamedFile } from '../store/savefiles'
+import { importsFrom, rosterFrom, saveFiles, savesFrom, unzip, zip, type NamedFile } from '../store/savefiles'
 import { parseSave, saveArea, saveBlock } from '../data/save'
 import type { Start } from './explore'
 
@@ -224,7 +224,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
         input.type = 'file'
         input.multiple = true
         const S = files.game.saves
-        input.accept = ['zip', 'dat', 'sav', S.items, S.effects, S.roster, 'txt'].flatMap((x) => [`.${x.toLowerCase()}`, `.${x.toUpperCase()}`]).join(',')
+        input.accept = ['zip', 'dat', 'sav', S.items, S.effects, S.roster, 'txt', ...files.game.imports.flatMap((i) => [i.roster, 'spc'])].flatMap((x) => [`.${x.toLowerCase()}`, `.${x.toUpperCase()}`]).join(',')
         const chosen = await new Promise<File[]>((resolve) => {
           input.addEventListener('change', () => resolve([...(input.files ?? [])]), { once: true })
           input.addEventListener('cancel', () => resolve([]), { once: true })
@@ -241,6 +241,9 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
           const { games, missing } = savesFrom(loose)
           // roster characters as the original keeps them (PoR <name>.CHA/.ITM/.SPC and charlist.txt, CotAB .GUY/.SWG/.FX)
           const found = rosterFrom(loose)
+          // characters from another game (CotAB: Pool of Radiance), converted as the original's Add does
+          const brought = tables ? importsFrom(loose, tables) : { chars: [], from: [] }
+          found.chars.push(...brought.chars.filter((b) => !found.chars.some((c) => c.stem === b.stem)))
           if (!games.length && !found.chars.length) {
             const lost = [...missing, ...found.missing]
             say(lost.length ? `Nothing imported; missing ${lost.join(', ')}.` : `Choose a SAVGAM file (A to J) with its CHRDAT files, characters (.${S.roster} with .${S.items} and .${S.effects}${S.roster === 'CHA' ? ' and charlist.txt' : ''}), or a ZIP of them.`)

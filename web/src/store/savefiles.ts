@@ -2,6 +2,8 @@
 // party member (spec/savegame.md), exported as one ZIP and imported from loose files or a ZIP, so a
 // game moves between this port and DOSBox.
 import { game } from '../games/profile'
+import { convert, importable } from '../rules/import'
+import type { Tables } from '../rules/chargen'
 import { parseSave } from '../data/save'
 import { F } from '../games/fields'
 import type { SavedGame, StoredCharacter } from './user'
@@ -69,6 +71,30 @@ export function savesFrom(files: NamedFile[]): { games: SavedGame[]; missing: st
 /** The original's file stem for a character (DS:0D1A): the name without ` .*,?/\:;|`, first 8 characters. */
 export function charStem(name: string): string {
   return name.replace(/[ .*,?/\\:;|]/g, '').slice(0, 8).toUpperCase()
+}
+
+/**
+ * Characters from another game the active one takes (games/imports.ts; CotAB's "Pool" source): roster
+ * files (<name>.CHA) with their effects when the stem matches the name, and save-slot files
+ * (CHRDAT<x><n>.SAV) without (the original looks the effects up by the name's stem), converted.
+ */
+export function importsFrom(files: NamedFile[], t: Tables): { chars: StoredCharacter[]; from: string[] } {
+  const byName = new Map(files.map((f) => [f.name.split('/').pop()!.toUpperCase(), f.data]))
+  const chars: StoredCharacter[] = [], from: string[] = []
+  for (const imp of game().imports) {
+    for (const [name, data] of byName) {
+      const roster = name.endsWith(`.${imp.roster}`)
+      if (!roster && !imp.saveSlot.test(name)) continue
+      if (!importable(imp, data)) continue
+      const nm = String.fromCharCode(...data.subarray(1, 1 + data[0]))
+      const stem = charStem(nm)
+      const spc = roster ? byName.get(`${stem}.SPC`) : undefined
+      const { sav, spc: fx } = convert(imp, data, spc, t)
+      chars.push({ stem, sav, spc: fx })
+      if (!from.includes(imp.label)) from.push(imp.label)
+    }
+  }
+  return { chars, from }
 }
 
 /**

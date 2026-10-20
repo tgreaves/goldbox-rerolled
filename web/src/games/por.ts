@@ -45,6 +45,7 @@ export const POR: GameProfile = {
   effects: POR_EFFECTS,
   ending: POR_ENDING,
   rulesText: POR_RULES_TEXT,
+  imports: [],
   playable: true,
   note: null,
 }

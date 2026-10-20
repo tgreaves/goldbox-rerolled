@@ -284,6 +284,8 @@ Not converted (left 0, O by absence from `323c:14b3`): memorised spells and scri
 
 Net effect, PoR → CotAB: name, stats (race-clamped; STR% unclamped; base STR bug), race/class/age/gender/alignment, levels, XP, max/current HP, rolled HP, known spells (minus Animate Dead), spell slots L1–3, thief skills, status, icons and portrait kept; items, money (→ 300 pp), memorised spells and non-racial effects lost.
 
+The port: `web/src/games/imports.ts` (the data) and `web/src/rules/import.ts`, with step 3's bug fixed (IMP-070).
+
 ### 7.4 CotAB → its own files
 
 Characters made or saved in CotAB are written as `.guy/.swg/.fx` (§1). A CotAB character is not written back in PoR format (O: no 285-byte writer).

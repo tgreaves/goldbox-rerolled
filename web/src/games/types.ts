@@ -14,6 +14,7 @@ import type { TreasureRules } from './treasure'
 import type { EffectRules } from './effectrules'
 import type { EndingScript } from './ending'
 import type { RulesText } from './rulestext'
+import type { CharacterImport } from './imports'
 
 export interface GameProfile {
   id: 'por' | 'coab'
@@ -62,6 +63,8 @@ export interface GameProfile {
   ending: EndingScript
   /** the Rules reference's text */
   rulesText: RulesText
+  /** characters this game takes from other games (CotAB: from PoR) */
+  imports: CharacterImport[]
   /** false while the port can show the game's assets but not yet play it */
   playable: boolean
   /** a word on how far along the game is, shown when choosing it (null: complete) */

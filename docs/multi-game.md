@@ -159,5 +159,20 @@ as data in its profile ([`../CLAUDE.md`](../CLAUDE.md)).
    Rules reference text and the ending for CotAB; nothing has been played through in a browser yet.
 8. **Importing PoR characters**, by the game's own "Pool" import (spec/coab/records.md), with its
    STR bug fixed and logged.
+   *Done 2026-10-20*: `games/imports.ts` holds the conversion as data (fields copied by name through
+   both games' maps, stats clamped to CotAB's race limits, 300 platinum, no items, Animate Dead
+   forgotten, seven effect types kept when the effect file is found by the name's stem); `rules/
+   import.ts` runs it and then the class bonuses. The party screen's Import takes PoR roster `.CHA`
+   files and save-slot `CHRDAT??.SAV` characters when CotAB is the game. The STR bug is fixed (IMP-070).
+
+## Backlog
+
+- **CotAB journal**: the Adventurer's Journal text (entries, proclamations, tales) as PoR's came from
+  the wiki; Tristan will provide a source. The shipped PDF is scanned images. Until then CotAB's
+  journal is hidden (`journal: null` in its profile).
+- **CotAB monster specials still missing**: eye rays (87), the breaths (88, 90, 128) and lightning
+  (132) need area templates and bolt paths in combat; PoR's own type 88 handler (MON5 #66).
+- **CotAB add-effect rule** (0x4CD92, replacing a record of the same type) and the AI target hook
+  `*DS:72BA` used by the specials (spec/coab/effects.md).
 
 Each step is committed separately with PoR's tests passing, so PoR stays playable throughout.
