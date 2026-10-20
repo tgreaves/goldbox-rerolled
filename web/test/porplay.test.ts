@@ -12,6 +12,9 @@ const have = dir !== '' && existsSync(dir)
 const seeds = Number(process.env.POR_PLAY_SEEDS ?? 4)
 const steps = Number(process.env.POR_PLAY_STEPS ?? 250)
 const first = Number(process.env.POR_PLAY_FIRST ?? 1)
+// WALLDEF5 #24/#25 need ECL 0x49E7/0x49E8, which Valjevo's entrance (block 5 area 6) sets before the
+// areas inside use them (engine.test.ts's sweep allows the same)
+const JUMPED = [/WALLDEF5 has no record 25/]
 
 describe.skipIf(!have)('Pool of Radiance played headless', () => {
   afterAll(() => setGame(POR))
@@ -20,7 +23,7 @@ describe.skipIf(!have)('Pool of Radiance played headless', () => {
     const files = loadFiles(POR, dir)
     const failures: string[] = []
     for (let seed = first; seed < first + seeds; seed++) {
-      const r = await play({ game: POR, files, seed, steps, jump: seed % 2 === 0, trace: process.env.POR_PLAY_TRACE === '1' })
+      const r = await play({ game: POR, files, seed, steps, jump: seed % 2 === 0, jumpArtifacts: JUMPED, trace: process.env.POR_PLAY_TRACE === '1' })
       const st = r.stats
       console.log(`seed ${seed}${seed % 2 === 0 ? ' (jumped)' : ''}: ${r.steps} steps, ${st.areas.size} areas (${[...st.areas].join(' ')}), ${st.battles} battles (${st.won} won, ${st.fled} fled, ${st.lost} lost, ${st.rounds} rounds), ${st.saves} saves, ${st.menus} menus, screens ${[...st.screens].map(([k, v]) => `${k}×${v}`).join(' ')}; ${st.ended}${r.stuck.length ? `; stuck ${r.stuck.length}: ${r.stuck[0]}` : ''}`)
       failures.push(...r.failures)

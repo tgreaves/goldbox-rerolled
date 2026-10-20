@@ -288,11 +288,16 @@ random area. After each step: no exception; no script looping without asking; HP
 statuses, in-play and side bytes valid, no NaN, undefined or fraction written into a party record
 or an ECL variable (the records are watched), item and effect lists sane, money whole and not
 negative, the party in an area with a script and on the map; no text with `undefined`/`NaN`; a save
-loads and saves back the same; a battle ends within 150 rounds (a stalemate, both sides on computer
-control unable to reach each other, is called off and listed, not failed). Found and fixed:
+loads and saves back the same; a battle ends within 400 rounds (a stalemate, both sides on computer
+control unable to reach each other: nobody standing hurt for 30 rounds, is called off and listed,
+not failed; so is WALLDEF5 #25 after a jump into Valjevo past the area that sets 0x49E7/0x49E8, as
+in the script sweep). Found and fixed:
 healing an unconscious character left it out of play (both games); CotAB items cast PoR-shifted
 spell ids; the debug jump took CotAB's areas 25–27 for PoR's wilderness; grab and blood drain
-(PoR 74, 75) called their own removal for ever. Not covered: rendering, the DOM panels (the
+(PoR 74, 75) called their own removal for ever. Found, not changed: in large map-area battles
+(New Phlan's city watch, the Tilverton kennel) monsters placed in the neighbouring squares can be
+walled off from the party, and with everyone on Quick nobody reaches anybody: the placement's ring
+wall check is marked I in spec/combat.md, so this may be the original's own behaviour. Not covered: rendering, the DOM panels (the
 treasure split, Buy, Memorize), the town and overland menus beyond random play, anything past
 where random play gets (CotAB: Tilverton and the jumped-to areas).
 

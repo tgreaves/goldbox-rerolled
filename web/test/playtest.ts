@@ -35,6 +35,11 @@ export interface PlayOptions {
    * random block, so that one run reaches what a party fresh from the start would take hours to
    */
   jump?: boolean
+  /**
+   * exceptions that only a jumped start can raise, because the area expects what the areas before it
+   * set (the sweep tests allow the same ones); listed with the run's stuck notes, not failed
+   */
+  jumpArtifacts?: RegExp[]
 }
 
 export interface PlayReport {
@@ -62,7 +67,7 @@ export function loadFiles(g: GameProfile, dir: string): GameFiles {
   return new GameFiles(m, g)
 }
 
-const BATTLE_ROUNDS = 150
+const BATTLE_ROUNDS = 400 // a battle of fifty that keeps hurting someone can take a couple of hundred rounds
 const STALEMATE = 30
 const STEP_MENUS = 150 // after this many menus in one step the player takes the last choice (usually EXIT or LEAVE)
 const nameOf = (c: Uint8Array) => String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + Math.min(c[F.name], 15)))
@@ -155,7 +160,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     const n = items.length
     const planned = plan.length ? items.indexOf(plan[0]) : -1
     if (planned >= 0) plan.shift()
-    const k = planned >= 0 ? planned : ++stepMenus > STEP_MENUS ? n - 1 : quick ? Math.max(0, items.indexOf('QUICK')) : sensible(items, prompt)
+    // in a battle Quick comes before the menu limit: the last choice there (DONE, then EXIT) goes round
+    const k = planned >= 0 ? planned : quick && items.includes('QUICK') ? items.indexOf('QUICK') : ++stepMenus > STEP_MENUS ? n - 1 : sensible(items, prompt)
     say(`  [${prompt}] ${items.join('/')} -> ${items[k]}`)
     return k
   }
@@ -209,8 +215,9 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     if (!items.length || c[F.status] !== 0) return
     const it = items[pick(items.length)]
     const host = new WorldHost(e, (m) => say(m))
-    const m = it.ready ? await unreadyItem(host, c, items, it, t) : await readyItem(host, c, items, it, t)
-    say(`  ${nameOf(c)} ${it.ready ? 'readies' : 'puts away'} ${t.name(it)}${m ? `: ${m}` : ''}`)
+    const was = it.ready
+    const m = was ? await unreadyItem(host, c, items, it, t) : await readyItem(host, c, items, it, t)
+    say(`  ${nameOf(c)} ${was ? 'puts away' : 'readies'} ${t.name(it)}${m ? `: ${m}` : ''}`)
   }
 
   let ending = false
@@ -243,12 +250,14 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   }
   const describe = (f: Battle['fighters'][number]) => `${nameOf(f.c)} side ${f.c[F.side]} at ${f.x},${f.y} size ${f.size} status ${f.c[F.status]} in ${f.c[F.inPlay]} hp ${f.c[F.hp]} quick ${f.c[F.quick]} r ${[...f.r].join(',')} fx ${battle!.effectsOf(f.c).map((x) => x.type).join(',')} move ${f.c[F.move]}`
   let capped = false
-  /** everyone's HP and status, and the round they last changed: no change for STALEMATE rounds is a stalemate */
+  /** the standing fighters' HP and status, and the round they last changed: no change for STALEMATE rounds is a stalemate */
   let lastState = '', changedAt = 0
   function roundCap() {
     if (!battle || capped) return
-    const state = battle.fighters.map((f) => `${f.c[F.hp]}/${f.c[F.status]}`).join(' ') // (positions can see-saw for ever)
-    if (state !== lastState) { lastState = state; changedAt = battle.round }
+    // those still standing and their HP (positions can see-saw for ever; the dying bleed on their own)
+    const b = battle
+    const state = b.fighters.map((f) => (b.inPlay(f) ? `${f.c[F.hp]}/${f.c[F.status]}` : '-')).join(' ')
+    if (state !== lastState) { if (process.env.PLAY_STATE) say(`  state r${b.round}: ${state}`); lastState = state; changedAt = battle.round }
     else if (battle.round - changedAt >= STALEMATE) {
       // nobody is hurt any more: both sides on computer control cannot reach each other (the
       // original's step AI tries five directions towards the target, no path finding); a player would
@@ -306,7 +315,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
         changedAt = 0
         say(`  party: ${e.party().map((c) => `${nameOf(c)} ${c[F.hp]}/${c[F.maxHp]} st${c[F.status]} in${c[F.inPlay]}`).join(', ')}`)
         try {
-          const r = await fight(e, combatUi, (b) => { battle = b })
+          // Magic On for the party's Quick members in half the battles (Alt-M), so their spells are cast
+          const r = await fight(e, combatUi, (b) => { battle = b; b.magicOn = chance(0.5) })
           report.stats.rounds += battle?.round ?? 0
           const out = e.read(0x6dc7)
           if (!r.survived) report.stats.lost++
@@ -446,6 +456,10 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       await f()
     } catch (err) {
       const msg = (err as Error).message
+      if (o.jump && o.jumpArtifacts?.some((r) => r.test(msg))) {
+        report.stuck.push(`after the jump: ${msg} (${where()})`)
+        return false
+      }
       if (/^runaway script/.test(msg) && asked > 0) {
         // still asking after the last choice every time: a town or travel menu waiting for the player
         report.stuck.push(`${msg} (${where()})`)
