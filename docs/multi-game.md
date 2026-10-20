@@ -273,6 +273,29 @@ need only its profile modules and any procedure the earlier games do not have.
    import.ts` runs it and then the class bonuses. The party screen's Import takes PoR roster `.CHA`
    files and save-slot `CHRDAT??.SAV` characters when CotAB is the game. The STR bug is fixed (IMP-070).
 
+**Play-testing (2026-10-20).** A headless player (`web/test/playtest.ts`, one module, the game a
+parameter; `coabplay.test.ts` and `porplay.test.ts` run it, 4 seeds × 250 steps by default,
+`COAB_PLAY_SEEDS`/`COAB_PLAY_STEPS` and `POR_PLAY_…` for longer runs, `…_TRACE=1` for the whole game).
+From the shipped `SAVGAMA.DAT` and pre-made party, as the app loads them, it plays by seeded random
+choices: moves and turns through `Engine.command` (towards the squares it has visited least),
+Search, Look, Encamp, wilderness travel; random answers to script menus, numbers and text (rarely
+dropping a member); every screen the engine hands over runs its rules code: battles through `fight`
+with the party on Quick or a member's commands chosen at random (aim, cast, use, move), shops,
+temples and treasure through `ui/town.ts`, camp through `ui/camp.ts`, the training hall's Train;
+items readied and put away; a hurt party camps to heal; saves (the game's writer) loaded back, and
+after a lost battle the last save loaded again. Every other seed starts with a debug jump to a
+random area. After each step: no exception; no script looping without asking; HP within max,
+statuses, in-play and side bytes valid, no NaN, undefined or fraction written into a party record
+or an ECL variable (the records are watched), item and effect lists sane, money whole and not
+negative, the party in an area with a script and on the map; no text with `undefined`/`NaN`; a save
+loads and saves back the same; a battle ends within 150 rounds (a stalemate, both sides on computer
+control unable to reach each other, is called off and listed, not failed). Found and fixed:
+healing an unconscious character left it out of play (both games); CotAB items cast PoR-shifted
+spell ids; the debug jump took CotAB's areas 25–27 for PoR's wilderness; grab and blood drain
+(PoR 74, 75) called their own removal for ever. Not covered: rendering, the DOM panels (the
+treasure split, Buy, Memorize), the town and overland menus beyond random play, anything past
+where random play gets (CotAB: Tilverton and the jumped-to areas).
+
 ## Backlog
 
 - ~~CotAB journal~~: done 2026-10-20, from the Gold Box Wiki's transcription (source from Tristan):
