@@ -14,7 +14,7 @@ import { POR_TABLES } from './tables'
 import { POR_ECL } from './ecl'
 import { POR_FILES } from './files'
 import { POR_RULES } from './rules'
-import { JOURNAL } from './journal'
+import { POR_JOURNAL } from './journal'
 
 export const POR: GameProfile = {
   id: 'por',
@@ -33,7 +33,7 @@ export const POR: GameProfile = {
   ecl: POR_ECL,
   saves: POR_FILES,
   rules: POR_RULES,
-  journal: { ...JOURNAL },
+  journal: POR_JOURNAL,
   spellNotes: POR_SPELL_NOTES,
   view: POR_VIEW,
   title: POR_TITLE,

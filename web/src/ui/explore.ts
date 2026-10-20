@@ -1688,7 +1688,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
   const STATE_LABEL: Record<State, string> = { reward: 'Reward due', summoned: 'Summoned', open: 'Open', failed: 'Failed', closed: 'Closed' }
   // ------------------------------------------------------------ journal (IMP-055)
-  let journalTab: 'journal' | 'proclamations' | 'tales' = 'journal'
+  let journalTab: 'journal' | 'proclamations' | 'tales' | 'background' = 'journal'
   let journalAll = false
   function journal() {
     const paras = (t: string) => t.split(/\n{2,}/).map((p) => `<p>${escape(p).replace(/\n/g, '<br>')}</p>`).join('')
@@ -1698,21 +1698,27 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const entries = JOURNAL.journal.filter((j) => has(`journal:${j.n}`))
       const procs = JOURNAL.proclamations.filter((p) => has(`proc:${p.id}`)).sort((a, b) => roman(a.id) - roman(b.id))
       const tales = JOURNAL.tales.filter((t) => has(`tale:${t.n}`))
-      const tab = (k: typeof journalTab, label: string, n: number, of: number) =>
-        `<button type="button" data-tab="${k}" class="${journalTab === k ? 'on' : ''}">${label} (${n}${journalAll ? '' : ` of ${of}`})</button>`
+      const bg = JOURNAL.background ?? []
+      // a tab only for what the game's journal has (CotAB has no proclamations; background is read from the start)
+      if ((journalTab === 'proclamations' && !JOURNAL.proclamations.length) || (journalTab === 'background' && !bg.length)) journalTab = 'journal'
+      const tab = (k: typeof journalTab, label: string, n: number, of: number) => !of ? '' :
+        `<button type="button" data-tab="${k}" class="${journalTab === k ? 'on' : ''}">${label} (${n}${journalAll || k === 'background' ? '' : ` of ${of}`})</button>`
+      const empty = JOURNAL.empty ?? {}
       let body = ''
       if (journalTab === 'journal') body = entries.map((j) => `<article><h3>Journal entry ${j.n}</h3>${paras(j.text)}${j.images.map((src) =>
         `<img class="journal-map" src="${base}${src}" alt="Map from journal entry ${j.n}" loading="lazy">`).join('')}</article>`).join('')
-        || '<p class="muted">Nothing yet. Papers, books and maps found on your travels are copied in here.</p>'
+        || `<p class="muted">${escape(empty.journal ?? 'Nothing yet.')}</p>`
       else if (journalTab === 'proclamations') body = procs.map((p) => `<article><h3>Proclamation ${p.id}</h3><p class="muted">${escape(JOURNAL.preface)}</p>${paras(p.text)}</article>`).join('')
-        || '<p class="muted">Nothing yet. The proclamations are posted on the walls of City Hall.</p>'
+        || `<p class="muted">${escape(empty.proclamations ?? 'Nothing yet.')}</p>`
+      else if (journalTab === 'background') body = bg.map((b) => `<article><h3>${escape(b.title)}</h3>${paras(b.text)}</article>`).join('')
       else body = tales.map((t) => `<article><h3>Tavern tale ${t.n}</h3>${paras(t.text)}</article>`).join('')
-        || '<p class="muted">Nothing yet. Listen in the taverns of New Phlan.</p>'
+        || `<p class="muted">${escape(empty.tales ?? 'Nothing yet.')}</p>`
+      const maps = JOURNAL.journal.some((j) => j.images.length)
       dialog.innerHTML = `<h2>Journal</h2>
-        <div class="nc-opts">${tab('journal', 'Entries', entries.length, JOURNAL.journal.length)}${tab('proclamations', 'Proclamations', procs.length, JOURNAL.proclamations.length)}${tab('tales', 'Tavern tales', tales.length, JOURNAL.tales.length)}</div>
+        <div class="nc-opts">${tab('journal', 'Entries', entries.length, JOURNAL.journal.length)}${tab('proclamations', 'Proclamations', procs.length, JOURNAL.proclamations.length)}${tab('tales', 'Tavern tales', tales.length, JOURNAL.tales.length)}${tab('background', 'Background', bg.length, bg.length)}</div>
         <div class="journal">${body}</div>
         <p class="muted"><label><input type="checkbox" data-all="1"${journalAll ? ' checked' : ''}> Show everything, like the printed journal (some entries are false; the original asked you not to read ahead)</label></p>
-        <p class="muted small">Text and maps from the <a href="${JOURNAL.source.journal}" target="_blank" rel="noopener">${escape(JOURNAL.source.name ?? '')}</a>, CC BY-SA.</p>
+        <p class="muted small">Text${maps ? ' and maps' : ''} from the <a href="${JOURNAL.source.journal}" target="_blank" rel="noopener">${escape(JOURNAL.source.name ?? '')}</a>, CC BY-SA.</p>
         <form method="dialog"><button>Close</button></form>`
     }
     const onClick = (e: MouseEvent) => {
@@ -1847,7 +1853,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const item = (cmd: string, label: string, note: string) => `<li><button data-go="${cmd}">${label}<small>${note}</small></button></li>`
     dialog.innerHTML = `<h2>Menu</h2>
       <ul class="mainmenu">
-        ${!JOURNAL.journal.length ? '' : item('journal', 'Journal', found ? `${found} entries, proclamations and tales found` : 'entries, proclamations and tavern tales')}
+        ${!JOURNAL.journal.length ? '' : item('journal', 'Journal', found ? `${found} found` : JOURNAL.proclamations.length ? 'entries, proclamations and tavern tales' : 'entries and tavern tales')}
         ${!game().commissions ? '' : item('commissions', `Commissions${due ? ' <span class="due">•</span>' : ''}`, due ? 'a reward is waiting' : 'the City Council\'s commissions and progress')}
         ${item('save', 'Save', 'any time, slots A–J')}
         ${item('settings', 'Settings', 'speed, sound, font, borders, motion, text size, graphics')}

@@ -254,9 +254,10 @@ need only its profile modules and any procedure the earlier games do not have.
 
 ## Backlog
 
-- **CotAB journal**: the Adventurer's Journal text (entries, proclamations, tales) as PoR's came from
-  the wiki; Tristan will provide a source. The shipped PDF is scanned images. Until then CotAB's
-  journal is hidden (`journal: null` in its profile).
-- **CotAB add-effect rule** (0x4CD92, replacing a record of the same type; spec/coab/effects.md).
+- ~~CotAB journal~~: done 2026-10-20, from the Gold Box Wiki's transcription (source from Tristan):
+  entries 1–59, tavern tales 1–62 and the four background notes (`data/coab-journal.json`, built by
+  `tools/coab/journal_coab.py`); CotAB has no proclamations. Eight entries are only a picture in
+  the printed journal and say so.
+- ~~CotAB add-effect rule~~: done 2026-10-20 (`effects.replaces`).
 
 Each step is committed separately with PoR's tests passing, so PoR stays playable throughout.

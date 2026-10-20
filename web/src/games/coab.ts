@@ -15,6 +15,7 @@ import { COAB_TABLES } from './tables'
 import { COAB_ECL } from './ecl'
 import { COAB_FILES } from './files'
 import { COAB_RULES } from './rules'
+import { COAB_JOURNAL } from './journal'
 
 export const COAB: GameProfile = {
   id: 'coab',
@@ -35,7 +36,7 @@ export const COAB: GameProfile = {
   ecl: COAB_ECL,
   saves: COAB_FILES,
   rules: COAB_RULES,
-  journal: null,
+  journal: COAB_JOURNAL,
   spellNotes: COAB_SPELL_NOTES,
   view: COAB_VIEW,
   title: COAB_TITLE,
@@ -48,5 +49,5 @@ export const COAB: GameProfile = {
   rulesText: COAB_RULES_TEXT,
   imports: COAB_IMPORTS,
   playable: true,
-  note: 'early: being built, expect gaps (no sun or clouds yet, no journal, PoR-style rules reference)',
+  note: 'early: being built, expect gaps',
 }
