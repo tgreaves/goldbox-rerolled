@@ -6,7 +6,8 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { readDax, daxRecords } from '../src/data/dax'
-import { parseItems } from '../src/data/items'
+import { Item, ITEM_SIZE, parseItems } from '../src/data/items'
+import { fx, type FxHost } from '../src/rules/effects'
 import { parseEffects } from '../src/data/effects'
 import { SpellTables } from '../src/data/spells'
 import { COAB, POR, setGame, type GameProfile } from '../src/games/profile'
@@ -51,6 +52,18 @@ describe('effect handler maps', () => {
   it('each game\'s item handlers name existing item behaviours', () => {
     for (const g of [POR, COAB]) for (const [k, spec] of Object.entries(g.effects.items)) expect(ITEM_BEHAVIOURS[spec.b], `${g.id} item ${k}: ${spec.b}`).toBeTypeOf('function')
     expect(Object.keys(POR.effects.items).map(Number)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) // 128–139
+  })
+
+  it('CotAB 60 (0x28628): no weapon or plus 0 does nothing, a plus below 3 half, 3 and more full', () => {
+    const spec = COAB.effects.handlers[60]
+    const hit = (plus: number | null) => {
+      const w = plus === null ? null : new Item(Object.assign(new Uint8Array(ITEM_SIZE), { [0x32]: plus & 0xff }))
+      const h = { current: () => new Uint8Array(1), weapon: () => w } as unknown as FxHost
+      fx.dmg = 9
+      BEHAVIOURS[spec.b](h, { type: 60, duration: 0, power: 0, flag: 0 }, new Uint8Array(1), false, spec, 5, 60)
+      return fx.dmg
+    }
+    expect([hit(null), hit(0), hit(1), hit(2), hit(3), hit(-1)]).toEqual([0, 0, 4, 4, 9, 4])
   })
 
   it('CotAB names the same entries as PoR where its handler is the same', () => {

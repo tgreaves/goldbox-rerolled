@@ -225,7 +225,7 @@ export const COAB_EFFECTS: EffectRules = {
     50: { b: 'weakTo', saveOn: 2, double: 1, saved: 1 }, // 0x28562: cold +2 save, unsaved fire ×2
     54: { b: 'weakTo', saveOn: 1, double: 2, saved: 0 }, // 0x28593: fire +2 save, cold ×2 (DS:5D0B, 0 in combat)
     57: { b: 'engulf' }, // 0x2E582
-    60: { b: 'magicWeapons', none: 3 }, // 0x28628: plus 0 nothing, below 3 half
+    60: { b: 'magicWeapons', full: 3 }, // 0x28628: plus 0 nothing, below 3 half
     63: { b: 'minorGlobe', below: 4 }, // 0x2871A
     68: { b: 'feeblemind' }, // 0x288E5
     69: { b: 'untargetableBy', type: 19, roll: -4 }, // 0x28986
