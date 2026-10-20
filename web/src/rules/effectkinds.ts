@@ -340,41 +340,47 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     }
   },
   /**
-   * 74 grab and crush [13, 15] (3aae_3a86): the victim at index power & 0x3F; while both are active, on
-   * 15 `attacks` attack of `dice`d`sides` from hand 1 and the turn ends, the hold (`held` on the victim,
-   * then this record) going when the victim falls; otherwise both go
+   * 74 grab and crush [13, 15] (3aae_3a86, PoR image 0x2E566): the victim at index power & 0x3F; while
+   * both are active (not a removal), on 15 `attacks` attack of `dice`d`sides` from hand 1 and the turn
+   * ends, then the record goes if the victim fell (its removal call lets the victim go). Otherwise
+   * `held` goes from the victim, and, unless this is the record's own removal call, the record goes
+   * with its call-on-removal flag cleared first (0x2E5C6), so the removal does not call back
    */
-  async crush(h, eff, c, _r, p, event) {
+  async crush(h, eff, c, removal, p, event) {
     const v = h.byIndex(eff.power & 0x3f)
-    if (event === 15 && v && v[F.inPlay] && c[F.inPlay]) {
+    if (!removal && event === 15 && v && v[F.inPlay] && c[F.inPlay]) {
       c[F.attacksLeft] = num(p, 'attacks'); c[F.dice] = num(p, 'dice'); c[F.sides] = num(p, 'sides')
       h.setRec(c, 4, 1)
       await h.attack(c, v)
-      if (!v[F.inPlay]) { await removeType(h, v, num(p, 'held')); await removeEffect(h, c, eff) }
       h.endTurn(c)
+      if (!v[F.inPlay]) await removeEffect(h, c, eff)
     } else {
       if (v) await removeType(h, v, num(p, 'held'))
-      await removeEffect(h, c, eff)
+      if (!removal) { eff.flag = 0; await removeEffect(h, c, eff) }
     }
   },
   /**
-   * 75 blood drain [13, 15] (0x3899F): the victim at index power & 0x3F; while both are active, on 15
-   * `msg`, 1d`sides` (type 0) to the victim, the duration down 16 a point (the record goes once its
-   * high part is at most the damage) and the turn ends; otherwise `held` on the victim and this record go
+   * 75 blood drain [13, 15] (PoR image 0x2899F): the victim at index power & 0x3F; while both are active
+   * (not a removal), on 15 `msg`, 1d`sides` (type 0) to the victim and the turn ends; then, the victim
+   * still active and the pool (duration >> 4) above the damage, the pool down by it (16 a point), else
+   * the record goes (its removal call lets the victim go). Otherwise `held` goes from the victim, the
+   * record too unless this is its own removal call (flag cleared first, 0x289FF), and a drainer still
+   * active with its victim active is forced to flee (combat record +0x10 = 1, 0x28A37: sated)
    */
-  async bloodDrain(h, eff, c, _r, p, event) {
+  async bloodDrain(h, eff, c, removal, p, event) {
     const v = h.byIndex(eff.power & 0x3f)
-    if (event === 15 && v && v[F.inPlay] && c[F.inPlay]) {
+    if (!removal && event === 15 && v && v[F.inPlay] && c[F.inPlay]) {
       say(h, c, p.msg as string)
       const d = rollKeeping(h, 1, num(p, 'sides'), p.keep)
       fx.dmgType = 0
       h.damage(v, d, 0, false)
-      eff.duration = Math.max(0, eff.duration - d * 16)
-      if (eff.duration >> 4 <= d) await removeEffect(h, c, eff)
       h.endTurn(c)
+      if (v[F.inPlay] && eff.duration >> 4 > d) eff.duration = (eff.duration - (d << 4)) & 0xffff
+      else await removeEffect(h, c, eff)
     } else {
       if (v) await removeType(h, v, num(p, 'held'))
-      await removeEffect(h, c, eff)
+      if (!removal) { eff.flag = 0; await removeEffect(h, c, eff) }
+      if (c[F.inPlay] && v && v[F.inPlay]) h.setRec(c, 0x10, 1)
     }
   },
   /** 76 stirge attach [2] (18b5): an active target: `drain` on the holder (duration `duration`, power its index, flag 1), `held` on it, its move gone */
