@@ -10,6 +10,7 @@ import type { JournalData } from './journal'
 import type { ViewArt } from './view'
 import type { TitleScript } from './title'
 import type { SoundDriver } from './sound'
+import type { TreasureRules } from './treasure'
 
 export interface GameProfile {
   id: 'por' | 'coab'
@@ -50,6 +51,8 @@ export interface GameProfile {
   sound: SoundDriver
   /** the commissions panel (IMP-023): PoR's City Council quests, read from its script variables */
   commissions: boolean
+  /** random treasure items */
+  treasure: TreasureRules
   /** false while the port can show the game's assets but not yet play it */
   playable: boolean
   /** a word on how far along the game is, shown when choosing it (null: complete) */

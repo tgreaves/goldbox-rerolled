@@ -301,3 +301,16 @@ Source 2: 0xBC-byte `*.hil`, name at +4, NPC test skipped. `323c:1f35` merges on
 - Exact effect of the base-STR bug in play (which events call `4aab:18d9` for an imported character before anything resets base STR) — trace `3d53:1c90..1e97` and the `43f7` callers.
 - Bit 0x80 added to ITEMS class masks.
 - Druid slots at 0x132 (no druid in play).
+
+## 7. Random treasure items (O, builder 0x42D97, type choice 0x1A5A3–0x1A6E2)
+
+Same procedure as PoR's (`FUN_4c2d_1010`, [[spec/records]] "Random items"), different tables. The port holds both as data (`web/src/games/treasure.ts`).
+
+- **Type choice**: as [[spec/coab/ecl]] "Random treasure types"; r2 48/49 gives 0x3B (PoR repeats the previous type), r1 93–98 a d15 over 0x47/0x54/0x4F, r1 99–100 0x3B.
+- **Plus** (0x42D5F): d20, 1–14 +1, 15–20 +2; no +3, so bracers are AC 6 or AC 4 only.
+- **Names, weights (incl. type 9 count 5; unlisted 40 with count 10), values (plus × k)**: identical to PoR.
+- **Javelin** (type 0x15, d5 = 5): record 0x31, the real Javelin of Lightning (PoR's 0x90 is one word short, a bug).
+- **Scrolls**: d3 spells, each level d5: MU 1 d13+8, 2 d7+28, 3 d11+44, 4 d9+80, 5 d4+90; cleric 1 d8, 2 d7+21, **3 d8+36** (Animate Dead 36 never), 4 d5+65, 5 d6+70 (Cure Serious Wounds 58 never, I: an oversight); value 300 × level each.
+- **Magic records**: 0x3F, 0x43 → 0x29; 0x4E, 0x4F → 0x21; 0x54, 0x5C → 0x09; 0x47 d8 1–5 → 0x11, 6–8 → 0x01; anything else blank. Records at DS:0830 + 16k (word m = 1 + 8k from DS:082E), 7 of them: Potion Extra Healing, Giant Strength, Healing, Speed (unreachable), Wand of Magic Missiles, Gauntlets of Ogre Power, Javelin of Lightning; plus and save bonus always 1. Their +0x3D are CotAB spell ids (3, 59, 3, 48, 15, 38, 51).
+- So TREASURE can only make types 0x47, 0x54, 0x4F from the magic group.
+
