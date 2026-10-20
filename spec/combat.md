@@ -937,11 +937,23 @@ The tests run in the order listed, so the first matching row wins. If the result
 
 #### River pass (O, `FUN_34c7_0bde`)
 
-Runs if d100 ≤ 75 (flag 0x10) or ≤ 35 (flag 0x20).
+Runs if d100 ≤ 75 (flag 0x10) or ≤ 35 (flag 0x20); the d100 is rolled whatever the flags (chance 0).
 
-- Start column = `34 − 5d4`, then decreased until `(col + 2) mod 7 = 0` (so 12, 19 or 26)
-- For each row 0–24, while the column is below 50: set (row, col) = 0x32 and (row, col+1) = 0x33 (the two water banks); 1 in 20 rows becomes a ford (0x34, 0x35); then col + 1. The river runs diagonally down and to the right.
-- A crossing is always added: row `r = 16 − d9`, fords at (r, start + r) and (r + 1, start + r + 1)
+- Start column = `34 − 5d4` (one `roll(5, 4)`), then decreased until `(col + 2) mod 7 = 0` (so 12, 19 or 26)
+- For each row 0–24, while the column is at most 49: (row, col) = 0x32 and (row, col+1) = 0x33 (the two
+  water banks; at column 49 the second write lands on the next row's column 0, the grid being one flat
+  array: with start 26, row 23 puts 0x33 at (24, 0)); then d20 = 1 **or an odd number of fords so far**
+  → a ford (nested `FUN_34c7_0b97`): (row, col) = 0x34, (row, col+1) = 0x35, fords + 1. So fords come
+  in pairs of rows. Then col + 1. The river runs diagonally down and to the right.
+- Only if no ford was made: a crossing at row `r = 16 − d9`, col = start + r: the ford procedure at
+  (r, col) and at (r + 1, col + 1) (four cells)
+- Columns outer, rows inner in the tree and scatter passes below too (PoR image 0x25B01, 0x25E17).
+
+Port (2026-10-20): `riverCrossing` differs from this: single-row fords rolled before the banks, the
+crossing always added and as two cells, no d100 without a river flag, the column-49 write clipped; and
+the port's tree and scatter passes scan rows outer (`columns: false`). The fields are of the same kind
+but not the original's; kept so that PoR's fields stay as they were until the fix is decided (the
+CotAB passes, spec/coab/combat.md, follow their original exactly).
 
 #### Tree pass (O, `FUN_34c7_0d13`)
 

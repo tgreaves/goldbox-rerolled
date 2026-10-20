@@ -23,6 +23,48 @@ export interface SpellRules {
   itemSpell: { mask: number; above: number; minus: number }
 }
 
+/** A number worked out from a wilderness field's terrain flags: `base`, then each step whose flag is set,
+ *  in order (`=` sets, `+` adds); `under`: a result below its first number becomes its second */
+export interface FlagValue { base: number; steps: [flag: number, op: '=' | '+', n: number][]; under?: [number, number] }
+/** a cell drawn from a run: `base` + 1d`sides` */
+export type CellDie = [base: number, sides: number]
+/** a river's course: d100 ≤ `chance` to run; start column `from` − `count`d`sides`, then lowered until
+ *  (column + `offset`) mod `every` = 0; one column right per row */
+export interface RiverCourse { chance: FlagValue; from: number; count: number; sides: number; every: number; offset: number }
+/**
+ * One pass of a wilderness battlefield (spec/combat.md, "Wilderness battlefields"; spec/coab/combat.md).
+ * Each names a procedure in rules/battlefield.ts by what it does; its numbers are the game's.
+ * - `riverCrossing`: the banks or, on 1 in `fordDie`, a ford in every row; then a sure crossing at row
+ *   `crossing.from` − d`crossing.die` (the port's PoR river; spec/combat.md "River pass": not yet the original's)
+ * - `riverHalves`: each row a `left` and a `right` half of the water, then on 1 in `fordDie` a ford:
+ *   `ford[0]` for the right half and `ford[1]` below it (CotAB 0x25690)
+ * - `treesBySize`: a d10 size gives the trunk (`trunk` + size) and, below 5, the crown above (`crown` +
+ *   size); with flag `swamp` the size is 3 + d3 (PoR FUN_34c7_0d13)
+ * - `treesOrLogs`: nothing with flag `skip`; else d100 ≤ chance again → a `log`, otherwise a `crown`
+ *   above and a `trunk`, each its own roll (CotAB 0x2579B)
+ * - `scatterTerrain`: d255 against cactus (`a`), shrubs (6), rocks (`b`), marsh plants (`c`), tufts (`d`),
+ *   tall cactus and puddles (PoR FUN_34c7_0e9e)
+ * - `scatterOdds`: a flag `score` picks a row of `odds`; d`die` falls in the first band whose running
+ *   sum holds it, band i setting `cells[i]` (CotAB 0x25ADA, 0x25932)
+ * - `finishing`: odd rocks, bones and flowers on blank ground (PoR FUN_34c7_0000, shared with map areas)
+ * `columns`: scan columns outer, rows inner, as both originals do; false scans rows outer (the port's PoR
+ * passes so far: fields of the same kind, the dice drawn in another order; spec/combat.md).
+ */
+export type WildPass =
+  | { pass: 'riverCrossing'; course: RiverCourse; bank: [number, number]; ford: [number, number]; fordDie: number; crossing: { from: number; die: number } }
+  | { pass: 'riverHalves'; course: RiverCourse; left: CellDie; right: CellDie; fordDie: number; ford: [number, number] }
+  | { pass: 'treesBySize'; chance: FlagValue; swamp: number; trunk: number; crown: number; columns: boolean }
+  | { pass: 'treesOrLogs'; skip: number; chance: FlagValue; log: CellDie; crown: CellDie; trunk: CellDie; columns: boolean }
+  | {
+    pass: 'scatterTerrain'; a: FlagValue; b: FlagValue; c: FlagValue; d: FlagValue; shrubs: number
+    cactus: number; tallCactus: [number, number]; shrub: CellDie; rocks: CellDie; marsh: number; tuft: number; puddleFlag: number; columns: boolean
+  }
+  | { pass: 'scatterOdds'; score: FlagValue; die: number; odds: { from: number; to: number; odds: number[] }[]; cells: CellDie[]; columns: boolean }
+  | { pass: 'finishing' }
+/** a wilderness battlefield: every cell `fill`, then the passes in order; `blank` are the cells drawn as
+ *  blank ground (image slot 0x16 in T.battleCells), the ones the passes may change */
+export interface WildFieldSpec { fill: number; blank: number[]; passes: WildPass[] }
+
 export interface GameRules {
   spells: SpellRules
   /** how spell slots are worked out (PoR FUN_51cf_0000, CotAB FUN 0x50480, spec/coab/tables.md §3.5):
@@ -116,6 +158,8 @@ export interface GameRules {
    * place (ECL `place`) from T.placeTerrain (CotAB 0x25CC0: A 0x1CC = 0 → WILDCOM and 0x25C58)
    */
   wildBattle: { kind: 'overlandTile' } | { kind: 'placeFlags'; mapFlag: number; place: number }
+  /** how a wilderness battlefield is built from its terrain flags (rules/battlefield.ts wildField) */
+  wildField: WildFieldSpec
   /**
    * The cloud occupant check, one procedure (PoR FUN_5216_0ae7; CotAB 0x4B8F7, which takes a flag: 1 when
    * moving or from a cast, 0 at round end). `gas`: a creature on a `cell` square, not under any of
@@ -175,6 +219,19 @@ export const POR_RULES: GameRules = {
   dualClass: false,
   bolt: { lightning: 8, skipLast: false, mapAreaOnly: false, noRepeatBounce: false, chargeSinceLast: false },
   wildBattle: { kind: 'overlandTile' },
+  // FUN_34c7_11b4: open ground, river FUN_34c7_0bde, trees 0d13, scatter 0e9e, finishing 0000
+  wildField: {
+    fill: 0x17, blank: [0x17, 0x36],
+    passes: [
+      { pass: 'riverCrossing', course: { chance: { base: 0, steps: [[0x20, '=', 35], [0x10, '=', 75]] }, from: 34, count: 5, sides: 4, every: 7, offset: 2 },
+        bank: [0x32, 0x33], ford: [0x34, 0x35], fordDie: 20, crossing: { from: 16, die: 9 } },
+      { pass: 'treesBySize', chance: { base: 1, steps: [[0x02, '=', 1], [0x04, '=', 3], [0x40, '=', 4], [0x08, '=', 7], [0x80, '=', 0]] }, swamp: 0x40, trunk: 0x23, crown: 0x1f, columns: false },
+      { pass: 'scatterTerrain', a: { base: 0, steps: [[0x80, '=', 15]] }, b: { base: 15, steps: [[0x02, '=', 45], [0x04, '=', 25], [0x80, '=', 10]] },
+        c: { base: 0, steps: [[0x40, '=', 30]] }, d: { base: 40, steps: [[0x02, '=', 10], [0x40, '=', 5], [0x80, '=', 25]] }, shrubs: 6,
+        cactus: 0x3c, tallCactus: [0x40, 0x41], shrub: [0x36, 3], rocks: [0x29, 4], marsh: 0x39, tuft: 0x2d, puddleFlag: 0x40, columns: false },
+      { pass: 'finishing' },
+    ],
+  },
   clouds: { gas: { cell: 0x1e, immune: [0x1e, 0x1f, 0x20, 0x6f, 0x7d], roundEnd: true, apply: false }, kill: null }, // FUN_5216_0ae7
   thief: { dualClass: false, bonus: 0, clampWithBonus: false, gloves: null, gauntlets: null },
   saveCon: null,
@@ -223,6 +280,22 @@ export const COAB_RULES: GameRules = {
   // 0x25D56: the grid builder takes the map generator only when A 0x1CC (ECL 0x4BE6, the engine's 0x49E6)
   // is set; the place is A byte 0x342 (ECL 0x4CA1, the engine's 0x4AA1)
   wildBattle: { kind: 'placeFlags', mapFlag: 0x49e6, place: 0x4aa1 },
+  // 0x25C58: open ground, river 0x25690, trees and logs 0x2579B, scatter 0x25ADA (0x25932); no finishing
+  // pass, which in CotAB's RandCom would put tables and chairs outdoors (spec/coab/combat.md)
+  wildField: {
+    fill: 0x17, blank: [0x17, 0x36],
+    passes: [
+      { pass: 'riverHalves', course: { chance: { base: 0, steps: [[0x20, '=', 35], [0x10, '=', 75]] }, from: 34, count: 5, sides: 4, every: 7, offset: 2 },
+        left: [0x3b, 2], right: [0x3d, 2], fordDie: 20, ford: [0x40, 0x41] },
+      { pass: 'treesOrLogs', skip: 0x80, chance: { base: 10, steps: [[0x02, '+', -5], [0x04, '+', -2], [0x40, '+', 5], [0x08, '+', 10]], under: [0, 1] },
+        log: [0x29, 2], crown: [0x1f, 5], trunk: [0x24, 5], columns: true },
+      { pass: 'scatterOdds', score: { base: 50, steps: [[0x10, '+', 10], [0x20, '+', 30], [0x40, '+', 20], [0x04, '+', -10], [0x02, '+', -20], [0x80, '+', -50]] },
+        die: 100,
+        odds: [{ from: -30, to: 9, odds: [0, 0, 0, 30, 15] }, { from: 10, to: 29, odds: [0, 1, 5, 20, 10] }, { from: 30, to: 69, odds: [0, 2, 5, 10, 5] },
+          { from: 70, to: 89, odds: [10, 2, 10, 10, 1] }, { from: 90, to: 110, odds: [15, 5, 15, 10, 1] }],
+        cells: [[0x39, 2], [0x2f, 2], [0x2b, 4], [0x36, 3], [0x31, 4]], columns: true },
+    ],
+  },
   // 0x4B8F7: no 0x1E immunity; HD 0–4 die, 5 save at −4, 6 save, 7 and up (and below 0) unaffected
   clouds: { gas: { cell: 0x1e, immune: [0x1f, 0x20, 0x6f, 0x7d], roundEnd: false, apply: true }, kill: { cell: 0x1c, save: 0, bands: [[0, 4, null], [5, 5, -4], [6, 6, 0]], poison: 0x37 } },
   // 0x50F5A: Gloves of Thievery (effect 0x0B), Gauntlets of Dexterity (effect 0x02)

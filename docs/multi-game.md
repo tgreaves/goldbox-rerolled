@@ -79,7 +79,7 @@ and makes one active (`setGame`), switching the live objects the rest of the cod
 | `tables.ts` | START.EXE tables: data segment, address and row size of each (rules, names, frames, temple …) | `T.thac0.at` |
 | `ecl.ts` | the script VM: memory regions, character view, opcode variants, CALL targets, start area | `game().ecl` |
 | `files.ts` | character and save files: extensions, save size, where the party list and wall sets are | `game().saves` |
-| `rules.ts` | rules values and procedure choices: spells, slots, hit points, caster level, thief skills, level limits, money, temple, joining, creation effects, paladin abilities | `R` |
+| `rules.ts` | rules values and procedure choices: spells, slots, hit points, caster level, thief skills, level limits, money, temple, joining, creation effects, paladin abilities, when a battle is fought on a wilderness field and how that field is built (`wildBattle`, `wildField`: the passes in order with their numbers) | `R` |
 | `spellrules.ts` | spell handlers: every spell id's handler kind and parameters (as the original's handler table), the duration special cases | `game().spells` |
 | `landmarkrules.ts` | what the area map's landmarks look for in the script text (shopkeepers' lines, the temple's god, named places) | `game().landmarks` |
 | `effectrules.ts` | the effect system: event lists in the original's order, area effects, per-type handler map, item kinds | `game().effects` |
@@ -143,6 +143,13 @@ watch, because each is an alternative path in code:
   async; that replaces the list of PoR types that waited. The item handlers are a map by +0x3E &
   0x7F in both games (PoR's 128–139, CotAB's kinds).
 - `ending.por` (PoR's own ending procedure) next to the generic ending steps.
+- `R.wildField` (2026-10-20): one wilderness driver (fill, then the passes the profile lists with their
+  numbers; the flag arithmetic `FlagValue` and the river's course are shared data). The passes are
+  named by what they do: CotAB's `riverHalves`, `treesOrLogs`, `scatterOdds` (transcribed from 0x25690,
+  0x2579B, 0x25ADA; no finishing pass) and PoR's `riverCrossing`, `treesBySize`, `scatterTerrain`,
+  `finishing`. PoR's river and scan order are still the port's, not the original's (spec/combat.md,
+  "River pass"); once they follow it, the two rivers are close enough to merge. CotAB's map-area
+  generator (0x2555D, which furnishes rooms) is not transcribed: CotAB map fields use PoR's.
 - Optional content modules switched by data: the PoR commissions panel, the tile wilderness.
 
 **Still hard-coded game knowledge in shared code (the gaps).**

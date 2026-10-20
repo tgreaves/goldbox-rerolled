@@ -12,6 +12,7 @@ Pool of Radiance. Every finding is marked **O** (observed in the CotAB binary or
 | [[spec/coab/tables]] | DS base 0x0ABE (image 0xABE0); every rules table the port reads, PoR → CotAB addresses; level caps, classes, spells (100 ids, 5 levels), hit points, slots |
 | [[spec/coab/spells]] | spell handlers by id: which match PoR, which changed, the new spells 58–100, durations, quirks |
 | [[spec/coab/effects]] | the effect system: event lists (0–23), changed and new handlers, item effects, monster-class flags |
+| [[spec/coab/combat]] | the battlefield: grid builder 0x25CC0, the wilderness passes (river, trees and logs, scatter; no finishing pass), the cell table DS:26A4 |
 | [[spec/coab/assets]] | DAX families (new SKY, BIGPIC, TILES; no SQRPACI/BACPAC/ICON/FINAL), the 3D view's sky, the BIGPIC overland, title and start-up, code wheel, sound |
 
 ## Working image

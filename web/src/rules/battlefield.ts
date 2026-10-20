@@ -1,6 +1,7 @@
 // Combat battlefield (spec/combat.md, "Battlefield"): a 25 x 50 grid of cell values, the cell table
 // from START.EXE, and the terrain generators.
 import { T } from '../games/tables'
+import { R, type FlagValue, type RiverCourse, type WildFieldSpec, type WildPass } from '../games/rules'
 
 export const ROWS = 25
 export const COLS = 50
@@ -80,86 +81,161 @@ export function terrainFlags(tile: number, read4AB3: number): number {
   return flags
 }
 
-const OPEN = 0x17
-
 /** Wilderness battlefield (FUN_34c7_11b4) for the overland tile the party stands on. */
-export function wildBattlefield(tile: number, read4AB3: number, roll: Roll): Battlefield {
-  return wildField(terrainFlags(tile, read4AB3), roll)
+export function wildBattlefield(tile: number, read4AB3: number, roll: Roll, spec: WildFieldSpec = R.wildField): Battlefield {
+  return wildField(terrainFlags(tile, read4AB3), roll, spec)
+}
+
+/** A number from the terrain flags (FlagValue: a base, then set or add for each flag present, in order). */
+export function flagValue(v: FlagValue, flags: number): number {
+  let n = v.base
+  for (const [flag, op, k] of v.steps) if (flags & flag) n = op === '=' ? k : n + k
+  if (v.under && n < v.under[0]) n = v.under[1]
+  return n
 }
 
 /**
- * A wilderness battlefield from its terrain feature flags: open ground, then the river, tree, scatter
- * and finishing passes (PoR FUN_34c7_11b4; CotAB 0x25C58 with the flags from its place table, whose
- * passes 0x25690, 0x2579B, 0x25ADA are taken as PoR's, I).
+ * A wilderness battlefield from its terrain feature flags: every cell `spec.fill`, then the game's passes
+ * in order (R.wildField; PoR FUN_34c7_11b4: river, trees, scatter, finishing; CotAB 0x25C58: river
+ * 0x25690, trees 0x2579B, scatter 0x25ADA, no finishing pass. spec/combat.md, spec/coab/combat.md).
  */
-export function wildField(flags: number, roll: Roll): Battlefield {
+export function wildField(flags: number, roll: Roll, spec: WildFieldSpec = R.wildField): Battlefield {
   const bf = new Battlefield(true)
-  bf.cells.fill(OPEN)
-  riverPass(bf, flags, roll)
-  treePass(bf, flags, roll)
-  scatterPass(bf, flags, roll)
-  finishingPass(bf, roll, -1)
+  bf.cells.fill(spec.fill)
+  const blank = (row: number, col: number) => spec.blank.includes(bf.get(row, col))
+  for (const p of spec.passes) {
+    switch (p.pass) {
+      case 'riverCrossing': riverCrossing(bf, p, flags, roll); break
+      case 'riverHalves': riverHalves(bf, p, flags, roll); break
+      case 'treesBySize': treesBySize(bf, p, flags, roll, blank); break
+      case 'treesOrLogs': treesOrLogs(bf, p, flags, roll, blank); break
+      case 'scatterTerrain': scatterTerrain(bf, p, flags, roll, blank); break
+      case 'scatterOdds': scatterOdds(bf, p, flags, roll, blank); break
+      case 'finishing': finishingPass(bf, roll, -1); break
+    }
+  }
   return bf
 }
 
-/** River (FUN_34c7_0bde): a diagonal river with fords and one sure crossing. */
-function riverPass(bf: Battlefield, flags: number, roll: Roll) {
-  const chance = flags & 0x10 ? 75 : flags & 0x20 ? 35 : 0
-  if (!chance || roll(100) > chance) return
-  let start = 34 - roll(4) - roll(4) - roll(4) - roll(4) - roll(4)
-  while ((start + 2) % 7 !== 0) start--
+type Pass<K extends WildPass['pass']> = Extract<WildPass, { pass: K }>
+type Blank = (row: number, col: number) => boolean
+
+/** every cell, columns outer and rows inner (as the originals' passes) or rows outer; rows from `first` */
+function scan(columns: boolean, first: number, fn: (row: number, col: number) => void) {
+  if (columns) for (let col = 0; col < COLS; col++) for (let row = first; row < ROWS; row++) fn(row, col)
+  else for (let row = first; row < ROWS; row++) for (let col = 0; col < COLS; col++) fn(row, col)
+}
+
+/** A river's start column, or null when it does not run: d100 ≤ chance; from − count·dN, lowered to the period. */
+function riverStart(c: RiverCourse, flags: number, roll: Roll): number | null {
+  const chance = flagValue(c.chance, flags)
+  if (roll(100) > chance) return null
+  let start = c.from
+  for (let i = 0; i < c.count; i++) start -= roll(c.sides)
+  while ((start + c.offset) % c.every > 0) start--
+  return start
+}
+
+/** River with fords and one sure crossing (the port's PoR river, FUN_34c7_0bde; spec/combat.md "River pass"). */
+function riverCrossing(bf: Battlefield, p: Pass<'riverCrossing'>, flags: number, roll: Roll) {
+  if (!flagValue(p.course.chance, flags)) return // no d100 without a river (the original rolls it anyway)
+  const start = riverStart(p.course, flags, roll)
+  if (start === null) return
   let col = start
   for (let row = 0; row < ROWS && col < COLS; row++, col++) {
-    const ford = roll(20) === 1
-    bf.set(row, col, ford ? 0x34 : 0x32)
-    bf.set(row, col + 1, ford ? 0x35 : 0x33)
+    const ford = roll(p.fordDie) === 1
+    bf.set(row, col, ford ? p.ford[0] : p.bank[0])
+    bf.set(row, col + 1, ford ? p.ford[1] : p.bank[1])
   }
-  const r = 16 - roll(9)
-  bf.set(r, start + r, 0x34)
-  bf.set(r + 1, start + r + 1, 0x35)
+  const r = p.crossing.from - roll(p.crossing.die)
+  bf.set(r, start + r, p.ford[0])
+  bf.set(r + 1, start + r + 1, p.ford[1])
 }
 
-/** Trees and logs (FUN_34c7_0d13). */
-function treePass(bf: Battlefield, flags: number, roll: Roll) {
-  let chance = 1
-  if (flags & 0x04) chance = 3
-  if (flags & 0x40) chance = 4
-  if (flags & 0x08) chance = 7
-  if (flags & 0x80) chance = 0
-  for (let row = 1; row < ROWS; row++) for (let col = 0; col < COLS; col++) {
-    if (bf.get(row, col) !== OPEN || bf.get(row - 1, col) !== OPEN) continue
-    if (roll(100) > chance) continue
+/**
+ * River drawn as two halves a row, each half a picture of its own, and fords that point downstream
+ * (CotAB 0x25690 with 0x2563C): the ford's lower cell is the next row's left half, which that row
+ * overwrites, so only `ford[0]` stays (O, spec/coab/combat.md "River").
+ */
+function riverHalves(bf: Battlefield, p: Pass<'riverHalves'>, flags: number, roll: Roll) {
+  const start = riverStart(p.course, flags, roll)
+  if (start === null) return
+  let col = start
+  for (let row = 0; row < ROWS; row++) {
+    if (col > COLS - 1) continue
+    bf.set(row, col, p.left[0] + roll(p.left[1]))
+    if (col < COLS - 1) bf.set(row, col + 1, p.right[0] + roll(p.right[1]))
+    if (roll(p.fordDie) === 1) {
+      if (col < COLS - 1) bf.set(row, col + 1, p.ford[0])
+      if (row < ROWS - 1 && col < COLS - 1) bf.set(row + 1, col + 1, p.ford[1])
+    }
+    col++
+  }
+}
+
+/** Trees and logs by size (PoR FUN_34c7_0d13). */
+function treesBySize(bf: Battlefield, p: Pass<'treesBySize'>, flags: number, roll: Roll, blank: Blank) {
+  const chance = flagValue(p.chance, flags)
+  scan(p.columns, 1, (row, col) => {
+    if (!blank(row, col) || !blank(row - 1, col)) return
+    if (roll(100) > chance) return
     const r = roll(10)
     let size = r <= 8 ? Math.floor((r + 1) / 2) : 4 + roll(2)
-    if (flags & 0x40) size = 3 + roll(3)
-    bf.set(row, col, 0x23 + size)
-    if (size < 5) bf.set(row - 1, col, 0x1f + size)
-  }
+    if (flags & p.swamp) size = 3 + roll(3)
+    bf.set(row, col, p.trunk + size)
+    if (size < 5) bf.set(row - 1, col, p.crown + size)
+  })
 }
 
-/** Rocks, shrubs, marsh plants, tufts and cactus (FUN_34c7_0e9e). */
-function scatterPass(bf: Battlefield, flags: number, roll: Roll) {
-  let a = 0, b = 15, c = 0, d = 40
-  if (flags & 0x02) { b = 45; d = 10 }
-  if (flags & 0x04) b = 25
-  if (flags & 0x40) { d = 5; c = 30 }
-  if (flags & 0x80) { a = 15; d = 25; b = 10 }
-  for (let row = 0; row < ROWS; row++) for (let col = 0; col < COLS; col++) {
-    if (bf.get(row, col) !== OPEN) continue
+/** A log, or a tree whose crown and trunk are drawn apart (CotAB 0x2579B). */
+function treesOrLogs(bf: Battlefield, p: Pass<'treesOrLogs'>, flags: number, roll: Roll, blank: Blank) {
+  if (flags & p.skip) return
+  const chance = flagValue(p.chance, flags)
+  scan(p.columns, 1, (row, col) => {
+    if (!blank(row, col) || !blank(row - 1, col)) return
+    if (roll(100) > chance) return
+    if (roll(100) <= chance) { bf.set(row, col, p.log[0] + roll(p.log[1])); return }
+    bf.set(row - 1, col, p.crown[0] + roll(p.crown[1]))
+    bf.set(row, col, p.trunk[0] + roll(p.trunk[1]))
+  })
+}
+
+/** Rocks, shrubs, marsh plants, tufts and cactus (PoR FUN_34c7_0e9e). */
+function scatterTerrain(bf: Battlefield, p: Pass<'scatterTerrain'>, flags: number, roll: Roll, blank: Blank) {
+  const a = flagValue(p.a, flags), b = flagValue(p.b, flags), c = flagValue(p.c, flags), d = flagValue(p.d, flags)
+  scan(p.columns, 0, (row, col) => {
+    if (!blank(row, col)) return
     const r = roll(255)
     if (r <= a) {
       const k = roll(4)
-      if (k === 4 && row > 0 && bf.get(row - 1, col) === OPEN) { bf.set(row, col, 0x40); bf.set(row - 1, col, 0x41) }
-      else if (k < 4) bf.set(row, col, 0x3c + k)
-    } else if (r <= a + 6) bf.set(row, col, 0x36 + roll(3))
-    else if (r <= a + 6 + b) bf.set(row, col, 0x29 + roll(4))
-    else if (r <= a + 6 + b + c) bf.set(row, col, 0x39 + Math.floor((roll(10) - 1) / 3))
-    else if (r <= a + 6 + b + c + d) {
+      if (k === 4 && row > 0 && blank(row - 1, col)) { bf.set(row, col, p.tallCactus[0]); bf.set(row - 1, col, p.tallCactus[1]) }
+      else if (k < 4) bf.set(row, col, p.cactus + k)
+    } else if (r <= a + p.shrubs) bf.set(row, col, p.shrub[0] + roll(p.shrub[1]))
+    else if (r <= a + p.shrubs + b) bf.set(row, col, p.rocks[0] + roll(p.rocks[1]))
+    else if (r <= a + p.shrubs + b + c) bf.set(row, col, p.marsh + Math.floor((roll(10) - 1) / 3))
+    else if (r <= a + p.shrubs + b + c + d) {
       const k = roll(4)
-      bf.set(row, col, k === 4 && !(flags & 0x40) ? 0x2d + roll(3) : 0x2d + k)
+      bf.set(row, col, k === 4 && !(flags & p.puddleFlag) ? p.tuft + roll(3) : p.tuft + k)
     }
-  }
+  })
 }
+
+/** One roll a blank cell against a row of odds chosen by a flag score (CotAB 0x25ADA, 0x25932). */
+function scatterOdds(bf: Battlefield, p: Pass<'scatterOdds'>, flags: number, roll: Roll, blank: Blank) {
+  const score = flagValue(p.score, flags)
+  const odds = p.odds.find((o) => score >= o.from && score <= o.to)?.odds
+  scan(p.columns, 0, (row, col) => {
+    if (!blank(row, col) || !odds) return
+    const r = roll(p.die)
+    let sum = 0
+    for (let i = 0; i < odds.length; i++) {
+      sum += odds[i]
+      if (r <= sum) { bf.set(row, col, p.cells[i][0] + roll(p.cells[i][1])); return }
+    }
+  })
+}
+
+const OPEN = 0x17
 
 /** Finishing pass (FUN_34c7_0000): columns outer, rows inner; odd rocks, rarely a bone or a potted flower, on open ground. */
 export function finishingPass(bf: Battlefield, roll: Roll, area: number) {
