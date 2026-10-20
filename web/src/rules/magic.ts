@@ -5,24 +5,11 @@ import type { Spell } from '../data/spells'
 import { recalc } from './equip'
 import { heal } from './camp'
 import { WorldHost } from './worldfx'
-import { addEffect as fxAdd, addRaw } from './effects'
-import { sharedSpell } from './spellfx'
+import { addEffect as fxAdd } from './effects'
+import { amount, castShared, spellSpec } from './spellkinds'
+import { game } from '../games/profile'
+import type { Amount } from '../games/spellrules'
 import { F } from '../games/fields'
-
-/**
- * The line each spell prints on a creature its effect took hold on (FUN_5216_1656's message, passed by the
- * 4e53 handlers; spec/combat.md "Combat visuals": in combat it comes with the sparkle and sound 4).
- */
-export const SPELL_MSG: Record<number, string> = {
-  1: 'is Blessed', 2: 'is Cursed', 5: 'is affected', 11: 'is affected', 18: 'is affected', 22: 'is affected', 29: 'is affected',
-  26: 'is affected', 41: 'is affected', 46: 'is affected',
-  6: 'is protected', 7: 'is protected', 16: 'is protected', 17: 'is protected', 52: 'is protected', 53: 'is protected', 54: 'is protected',
-  8: 'is cold-resistant', 24: 'is fire resistant', 12: 'is stronger', 35: 'is stronger', 59: 'is stronger', 13: 'has been reduced',
-  14: 'is friendly', 19: 'is shielded', 21: 'falls asleep', 23: 'is held', 49: 'is held', 25: 'is silenced', 10: 'is charmed', 27: 'is charmed',
-  30: 'is invisible', 50: 'is invisible', 63: 'is invisible', 32: 'is duplicated', 33: 'is weakened', 36: 'is animated', 38: 'is blind',
-  40: 'is diseased', 42: 'is praying', 44: 'has been cursed!', 45: 'is blinking', 48: 'is Hasted', 55: 'is Slowed', 56: 'is restored',
-  57: 'is Speedy', 67: 'is Reading',
-}
 
 /** Caster level (PoR FUN_10ba_26c2, CotAB 0x4F8BF): the game's terms for the spell class (R.casterTerms),
  *  12 for item-only spells, 6 when nothing qualifies under the game's gate, 6 from an item. */
@@ -35,14 +22,12 @@ export function casterLevel(c: Uint8Array, s: Spell, fromItem = false): number {
   return L
 }
 
-/** Duration in minutes (FUN_4e53_07d6). */
+/** Duration in minutes (FUN_4e53_07d6): the game's special cases (games/spellrules.ts), else d0 + d1 × level. */
 export function duration(e: Engine, s: Spell, level: number, inCombat = false): number {
-  switch (s.id) {
-    case 63: return inCombat ? e.roll(2, 10) * 10 : (e.roll(1, 10) + 10) * 10
-    case 40: return e.roll(1, 6) * 10
-    case 57: case 61: return e.roll(5, 4)
-    case 59: return e.roll(1, 4) * 10 + 40
-    case 67: return 1440
+  const special = game().spells.durations[s.id]
+  if (special) {
+    const r = !inCombat && special.outside ? special.outside : special
+    return e.roll(r.n, r.d) * (r.mul ?? 1) + (r.add ?? 0)
   }
   return s.duration[0] + s.duration[1] * level
 }
@@ -73,19 +58,16 @@ export async function castOutside(e: Engine, caster: Uint8Array, s: Spell, targe
   if (!fromItem) forget(caster, s.id)
   if (s.name) out.push(`${name(caster)} casts ${s.name}.`)
   const dur = duration(e, s, L)
-  switch (s.id) {
-    case 3: case 62: { // Cure Light Wounds, Potion of Healing
-      if (!first) break
-      const amount = s.id === 3 ? e.roll(1, 8) : e.roll(2, 4) + 2
-      heal(first, e.effectsOf(first), amount, false)
+  const p = spellSpec(s.id)
+  if (p.k === 'heal') {
+    // out of combat the line always follows (FUN_10ba_234a), the healing revives (no combat flag)
+    if (first) {
+      heal(first, e.effectsOf(first), amount(p.amount as Amount, L, (n, d) => e.roll(n, d)).total, false)
       out.push(`${name(first)} is ${first[F.hp] === first[F.maxHp] ? 'fully' : 'partially'} healed.`)
-      break
     }
-    case 32: if (first) addRaw(h, first, 0x1c, dur, e.roll(1, 4), 0); break // Mirror Image
-    default:
-      if (await sharedSpell(h, e, caster, s, L, dur, targets)) break
-      // the plain handlers: the effect at power L through FUN_5216_1656, with the spell's line
-      if (s.effect) for (const c of targets) await fxAdd(h, c, s.effect, dur, L, 0, 0, false, false, SPELL_MSG[s.id] ?? '')
+  } else if (!(await castShared({ h, e, caster, s, L, dur, targets }, p))) {
+    // the kinds that need the battlefield add the spell's effect at power L through FUN_5216_1656, as Apply does
+    if (s.effect) for (const c of targets) await fxAdd(h, c, s.effect, dur, L, 0, 0, false, false, p.msg ?? '')
   }
   for (const c of targets) recalc(c, e.itemsOf(c), t)
   return out

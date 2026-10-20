@@ -3,6 +3,7 @@ import type { GameProfile } from './types'
 import { POR_RULES_TEXT } from './rulestext'
 import { POR_ENDING } from './ending'
 import { POR_EFFECTS } from './effectrules'
+import { POR_SPELLS } from './spellrules'
 import { POR_TREASURE } from './treasure'
 import { POR_SOUND } from './sound'
 import { POR_TITLE } from './title'
@@ -39,6 +40,7 @@ export const POR: GameProfile = {
   sound: POR_SOUND,
   commissions: true,
   treasure: POR_TREASURE,
+  spells: POR_SPELLS,
   effects: POR_EFFECTS,
   ending: POR_ENDING,
   rulesText: POR_RULES_TEXT,

@@ -12,6 +12,7 @@ import type { TitleScript } from './title'
 import type { SoundDriver } from './sound'
 import type { TreasureRules } from './treasure'
 import type { EffectRules } from './effectrules'
+import type { SpellRules } from './spellrules'
 import type { EndingScript } from './ending'
 import type { RulesText } from './rulestext'
 import type { CharacterImport } from './imports'
@@ -58,6 +59,8 @@ export interface GameProfile {
   commissions: boolean
   /** random treasure items */
   treasure: TreasureRules
+  /** spell handlers: each spell id's handler kind and parameters, and the duration special cases */
+  spells: SpellRules
   /** the effect system: event lists and area effects */
   effects: EffectRules
   /** the ending (PROGRAM 8) */

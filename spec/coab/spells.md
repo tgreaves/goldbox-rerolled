@@ -87,4 +87,4 @@ Part of [[spec/coab/README]]. Read from the CotAB image (2026-10-20). Marks: O s
 
 ## Port status
 
-Being made into a per-game spell handler map (id → handler key and parameters), as for the effects; see docs/multi-game.md.
+The port has a per-game spell handler map (`web/src/games/spellrules.ts`: id → kind and parameters), 2026-10-20. Ids the table marks "same" use PoR's kinds; 58, 66, 69, 71, 72, 74, 77, 80, 87, 88, 94, 95–97, 99 and 100 are expressed with existing kinds (heal, damage, apply, hold). Not yet transcribed: the changed handlers (12–15, 32, 34, 35, 41/46, 43/89, 48/55, 59's base-STR rule) and the new kinds (67, 68, 70, 73, 75, 76, 78, 79, 81–86, 91–93, 98), plus the changed add-effect and heal helpers (§1).

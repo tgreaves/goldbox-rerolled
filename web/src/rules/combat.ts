@@ -8,9 +8,10 @@ import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, type Battlefiel
 import { dexMissile, recalc } from './equip'
 import { fx, fire, damageText, healedLine, addEffect, addRaw, removeEffect, removeType, type FxHost } from './effects'
 import { heal as healChar } from './camp'
-import { line, sharedSpell } from './spellfx'
+import { amount, castShared, line, spellSpec } from './spellkinds'
+import type { Amount, SpellSpec } from '../games/spellrules'
 import { spellText } from './spelltext'
-import { SPELL_MSG, casterLevel, duration as spellDuration, forget } from './magic'
+import { casterLevel, duration as spellDuration, forget } from './magic'
 import { F } from '../games/fields'
 import { R } from '../games/rules'
 import { T } from '../games/tables'
@@ -162,6 +163,8 @@ export class Line {
 
 /** A Stinking Cloud (19-byte record at DS:6DBB): its owner, number and the 4 cells it replaced. */
 interface Cloud { owner: Uint8Array; n: number; cells: { x: number; y: number; old: number }[] }
+/** One cast in combat: the caster, the spell at level L with its duration, and its targets. */
+interface BattleCast { f: Fighter; s: Spell; L: number; dur: number; targets: Fighter[] }
 
 export class Battle implements FxHost {
   readonly fighters: Fighter[] = []
@@ -1366,12 +1369,13 @@ export class Battle implements FxHost {
     this.print(`Spell: ${s.name}`, { ms: 0 })
     // FUN_4e53_0c20: the caster turns to the aim point in its action frame, the spell bolt flies there
     const aim = this.aimed
+    const sound = spellSpec(s.id).sound ?? 2
     if (aim && (aim.x !== f.x || aim.y !== f.y)) {
       f.r[9] = this.dirToCell(f, aim.x, aim.y)
       this.ui.pose?.(f, true)
-      this.ui.flight?.({ x: f.x, y: f.y }, aim, { frames: cycle(5), delay: 30, sounds: [s.id === 47 ? 11 : s.id === 51 ? 8 : 2, 0] })
+      this.ui.flight?.({ x: f.x, y: f.y }, aim, { frames: cycle(5), delay: 30, sounds: [sound, 0] })
       this.ui.pose?.(f, false)
-    } else this.ui.sound(s.id === 47 ? 11 : s.id === 51 ? 8 : 2)
+    } else this.ui.sound(sound)
     fx.spell = s.id
     fx.area = (s.target & 0xf) >= 8 && (s.target & 0xf) <= 14
     try { await this.applySpell(f, s, L, targets) } finally { fx.spell = 0; fx.area = false }
@@ -1387,7 +1391,7 @@ export class Battle implements FxHost {
     const pickOne = async (allowEmpty: boolean, area?: (x: number, y: number) => { x: number; y: number }[]): Promise<AimEntry | null> => {
       if (ai) {
         if (!s.aiHostile) {
-          if (s.id === 3) {
+          if (spellSpec(s.id).aiTarget === 'woundedNear') {
             const near = this.fighters.filter((o) => this.inPlay(o) && this.side(o) === this.side(f) && this.dist(f, o) <= 1 && o.c[F.hp] < o.c[F.maxHp])
             near.sort((a, b) => a.c[F.hp] - b.c[F.hp])
             const p = near[0] ?? f
@@ -1414,11 +1418,13 @@ export class Battle implements FxHost {
     if (mode === 0xf) { const p = await pickOne(false); if (p) this.aimed = { x: p.x, y: p.y }; return p?.f ? [p.f] : null }
     if (mode >= 8 && mode <= 14) {
       let radius = mode & 7
-      if (s.id === 47 && this.e.read(0x49e6) === 0) radius = Math.min(radius, 2)
-      // the squares the spell would cover from a centre, for the preview (IMP-059); Stinking Cloud
-      // takes the aimed square and those E, SE and S of it
+      const spec = spellSpec(s.id)
+      // Fireball outdoors (ECL 0x49E6 = 0) is held to its outdoor radius
+      if (spec.outdoorRadius !== undefined && this.e.read(0x49e6) === 0) radius = Math.min(radius, spec.outdoorRadius as number)
+      // the squares the spell would cover from a centre, for the preview (IMP-059); a cloud takes its
+      // own cells from the aimed square (Stinking Cloud: here, E, SE and S)
       const area = (x: number, y: number) => {
-        if (s.id === 34) return [[0, 0], [1, 0], [1, 1], [0, 1]].map(([dx, dy]) => ({ x: x + dx, y: y + dy })).filter((p) => this.passable(p.x, p.y, 1))
+        if (spec.cells) return (spec.cells as number[][]).map(([dx, dy]) => ({ x: x + dx, y: y + dy })).filter((q) => this.passable(q.x, q.y, 1))
         const out: { x: number; y: number }[] = []
         for (let dy = -radius - 1; dy <= radius + 1; dy++) for (let dx = -radius - 1; dx <= radius + 1; dx++) {
           const cx = x + dx, cy = y + dy
@@ -1446,146 +1452,154 @@ export class Battle implements FxHost {
     return out.length ? out : null
   }
 
-  /** Spell effects in combat (spec/spells.md, "Per spell"). */
+  /** Spell effects in combat (spec/spells.md, "Per spell"): the kind the game gives the spell id. */
   async applySpell(f: Fighter, s: Spell, L: number, targets: Fighter[]) {
-    const c = f.c
     const dur = spellDuration(this.e, s, L, true)
-    const add = async (t: Fighter, saved = false, type = s.effect, d = dur, pw = L, flag = 0) => {
-      if (type) await addEffect(this, t.c, type, d, pw, flag, s.save, saved, false, SPELL_MSG[s.id] ?? '')
-    }
-    const saveOf = (t: Fighter, bonus = 0) => (s.save ? this.saveSync(t.c, s.saveType, bonus) : false)
-    const touch = async (t: Fighter) => s.range[0] !== 0xff || await this.toHit(c, t.c, t.c[F.ac])
-    if (await sharedSpell(this, this.e, c, s, L, dur, targets.map((t) => t.c))) { for (const t of targets) this.recalc(t.c); return }
-    switch (s.id) {
-      case 27: { // Snake Charm (190f): ignores targeting; snakes (type 0x0E) while the caster's HP lasts
-        let pool = c[F.hp]
-        for (const t of this.fighters) {
-          if (t.c[F.monsterType] !== 0x0e || t.c[F.hp] > pool) continue
-          pool -= t.c[F.hp]
-          await addEffect(this, t.c, 0x33, 0, L, 0, 0, false, false, 'is charmed')
-        }
-        break
-      }
-      case 1: case 2: { // Bless / Curse
-        const mine = targets.filter((t) => (s.id === 1 ? this.side(t) === this.side(f) && (this.enemiesWithin(t, 1).length === 0) : this.side(t) !== this.side(f)))
-        for (const t of mine) await add(t)
-        break
-      }
-      case 3: case 62: { // 4e53_106b: no sparkle; FUN_10ba_234a's line when the healing took
-        const t = targets[0]
-        if (t && healChar(t.c, this.e.effectsOf(t.c), s.id === 3 ? this.e.roll(1, 8) : this.e.roll(2, 4) + 2, false, true)) healedLine(this, t.c)
-        break
-      }
-      case 4: case 20: { // Cause Light Wounds, Shocking Grasp
-        const t = targets[0]
-        if (!t) break
-        if (!(await touch(t))) { this.print(`${name(c)} misses`); break }
-        fx.dmgType = s.id === 4 ? 8 : 0x0c
-        this.damageSync(t.c, s.id === 4 ? this.e.roll(1, 8) : L + this.e.roll(1, 8), 0, false)
-        break
-      }
-      case 9: { const t = targets[0]; if (t) { fx.dmgType = 9; this.damageSync(t.c, L, 0, false) } break }
-      case 15: case 65: { // Magic Missile, Wand of Magic Missiles
-        const t = targets[0]
-        if (!t) break
-        fx.dmgType = 8
-        const dmg = s.id === 15 ? this.e.roll(L >> 1, 4) + (L >> 1) : this.e.roll(2, 4) + 2
-        this.damageSync(t.c, dmg, 0, false)
-        break
-      }
-      case 21: { // Sleep
-        let pool = this.e.roll(4, 4)
-        const costOf = (t: Uint8Array) => { const hd = s8(t[F.hitDice]); return hd <= 1 ? (hd < 0 ? 20 : 1) : hd === 2 ? 2 : hd === 3 ? 4 : hd === 4 ? 6 : hd === 5 ? (t[F.race] === 0 ? 10 : 20) : 20 }
-        for (const t of targets.sort((a, b) => this.dist(f, a) - this.dist(f, b))) {
-          if (t.c[F.status] === 1 || this.e.effectsOf(t.c).some((x) => x.type === 0x35)) continue
-          const k = costOf(t.c)
-          if (k > pool) continue
-          pool -= k
-          await addEffect(this, t.c, 0x35, dur, L, 0, 0, false, false, 'falls asleep')
-        }
-        break
-      }
-      case 23: case 49: { // Hold Person
-        const n = targets.length
-        const bonus = n === 1 ? (s.id === 23 ? -2 : -3) : n === 2 ? -1 : 0
-        for (const t of [...targets].reverse()) {
-          // 4e53_1658: sound 2 and a bolt to each target before its save, except the last-listed one (I: a bug)
-          if (t !== targets[targets.length - 1]) this.ui.flight?.({ x: f.x, y: f.y }, { x: t.x, y: t.y }, { frames: cycle(5), delay: 30, sounds: [2, 0] })
-          // only man-sized or smaller: the whole size byte > 1 is immune (4e53:1760), not the two-square test large()
-          const saved = t.c[F.monsterType] > 1 || t.c[F.sizeFlags] > 1 || this.saveSync(t.c, s.saveType, bonus)
-          await addEffect(this, t.c, 0x34, dur, L, 0, 1, saved, false, 'is held')
-        }
-        break
-      }
-      case 10: { // Charm Person
-        const t = targets[0]
-        if (!t) break
-        if (t.c[F.monsterType] > 1 || t.c[F.sizeFlags] > 1) { this.print(`${name(t.c)} is unaffected`); break } // as Hold Person (4e53:11f3)
-        await addEffect(this, t.c, 0x0b, dur, (L + this.side(f) * 128) & 0xff, 1, 1, saveOf(t), true, 'is charmed')
-        break
-      }
-      case 47: case 64: { // Fireball, Necklace of Missiles
-        const n = s.id === 47 ? L : this.e.roll(1, 3) * 2 + 1
-        const dmg = this.e.roll(n, 6)
-        fx.dice = n
-        if (s.id === 47) this.ui.look?.(this.aimed) // the view centres on the aim point; no burst graphic of its own
-        for (const t of targets) { fx.dmgType = 9; this.damageSync(t.c, dmg, 2, saveOf(t)) }
-        break
-      }
-      case 51: { // Lightning Bolt (PoR FUN_4e53_2bb7, CotAB 0x47C49): the aimed square, then the bolt
-        const dmg = this.e.roll(L, 6)
-        this.boltHit(this.aimed.x, this.aimed.y, dmg, 4)
-        this.bolt(c, R.bolt.lightning, dmg, 4, true)
-        this.ui.redraw()
-        break
-      }
-      case 48: case 55: { // Haste / Slow
-        const mine = targets.filter((t) => (s.id === 48 ? this.side(t) === this.side(f) : this.side(t) !== this.side(f))).slice(0, L)
-        const opposite = s.id === 48 ? 0x2a : 0x27
-        for (const t of mine) {
-          if (this.e.effectsOf(t.c).some((x) => x.type === opposite)) { await removeType(this, t.c, opposite); continue }
-          await add(t)
-          await this.attacks(t, false)
-        }
-        break
-      }
-      case 34: { // Stinking Cloud (FUN_4e53_1b11): the aimed square is the upper left of 4 (DS:290D: here, E, SE, S)
-        const n = this.clouds.length ? Math.max(...this.clouds.map((z) => z.n)) + 1 : 1
-        const z: Cloud = { owner: c, n: n & 0x0f, cells: [] }
-        for (const [dx, dy] of [[0, 0], [1, 0], [1, 1], [0, 1]]) {
-          const x = this.aimed.x + dx, y = this.aimed.y + dy
-          const v = this.bf.get(y, x)
-          if (x < 0 || y < 0 || x >= COLS || y >= ROWS || (this.cells[v]?.move ?? 0xff) === 0xff) continue
-          z.cells.push({ x, y, old: v })
-          this.bf.set(y, x, 0x1e)
-        }
-        this.clouds.push(z)
-        addRaw(this, c, 0x28, L, ((z.n << 4) + L) & 0xff, 1)
-        // the line without a pause, the redraw showing the cloud, then the pause
-        this.print(`${name(c)} Creates a noxious cloud`, { ms: 0 })
-        this.ui.show?.()
-        this.ui.hold?.(this.e.speed * 225)
-        this.ui.redraw()
-        for (const t of z.cells) {
-          const o = this.occupied(t.x, t.y, 1)
-          if (o) this.cloudCheck(o)
-        }
-        break
-      }
-      case 32: if (targets[0]) addRaw(this, targets[0].c, 0x1c, dur, this.e.roll(1, 4), 0); break
-      case 33: case 38: case 40: case 44: { // touch / save effects
-        const t = targets[0]
-        if (!t) break
-        if (s.range[0] === 0xff && !(await touch(t))) { this.print(`${name(c)} misses`); break }
-        await add(t, saveOf(t), s.effect, dur, L, s.id === 40 ? 1 : 0)
-        break
-      }
-      case 60: { const t = targets[0]; if (t) { fx.dmgType = 0x0c; this.damageSync(t.c, 20 + this.e.roll(1, 6), 2, this.saveSync(t.c, 4, 0)) } break }
-      case 61: for (const t of targets) await addEffect(this, t.c, 0x34, this.e.roll(5, 4), L, 0, 1, this.saveSync(t.c, 0, 0)); break
-      default:
-        for (const t of targets) await add(t, saveOf(t))
-    }
+    const p = spellSpec(s.id)
+    const kind = Battle.spellKinds[p.k]
+    if (kind) await kind.call(this, { f, s, L, dur, targets }, p)
+    else await castShared({ h: this, e: this.e, caster: f.c, s, L, dur, targets: targets.map((t) => t.c) }, p)
     for (const t of targets) this.recalc(t.c)
+  }
+
+  /** Add the spell's effect (or `type`) at power L through FUN_5216_1656, with the spell's line. */
+  private async addSpellEffect(t: Fighter, s: Spell, p: SpellSpec, saved: boolean, dur: number, L: number, type = s.effect, flag = 0) {
+    if (type) await addEffect(this, t.c, type, dur, L, flag, s.save, saved, false, p.msg ?? '')
+  }
+  private spellSave(t: Fighter, s: Spell, bonus = 0) { return s.save ? this.saveSync(t.c, s.saveType, bonus) : false }
+  /** a touch spell (range byte 0xFF) rolls to hit against the target's AC */
+  private async spellTouch(c: Uint8Array, s: Spell, t: Fighter) { return s.range[0] !== 0xff || await this.toHit(c, t.c, t.c[F.ac]) }
+
+  /** The kinds that need the battlefield (the shared ones are in rules/spellkinds.ts). */
+  static readonly spellKinds: Record<string, (this: Battle, x: BattleCast, p: SpellSpec) => Promise<void>> = {
+    /** Apply (PoR FUN_4e53_08c3) for an effect-only spell: touch, the save, the effect (flag `flag`; `rollDuration` per target) */
+    async apply({ f, s, L, dur, targets }, p) {
+      for (const t of targets) {
+        const d = p.rollDuration ? amount(p.rollDuration as Amount, L, (n, k) => this.e.roll(n, k)).total : dur
+        if (!(await this.spellTouch(f.c, s, t))) { this.print(`${name(f.c)} misses`); continue }
+        await this.addSpellEffect(t, s, p, this.spellSave(t, s), d, L, s.effect, (p.flag as number | undefined) ?? 0)
+      }
+    },
+    /** Bless / Curse (0f4f): only the caster's side, not next to an enemy (`notEngaged`), or only the enemy */
+    async applySide({ f, s, L, dur, targets }, p) {
+      const mine = targets.filter((t) => (p.side === 'ally' ? this.side(t) === this.side(f) && (!p.notEngaged || this.enemiesWithin(t, 1).length === 0) : this.side(t) !== this.side(f)))
+      for (const t of mine) await this.addSpellEffect(t, s, p, false, dur, L)
+    },
+    /** heal the first target by the amount (no revive in combat); FUN_10ba_234a's line, or `msg`, when it took */
+    async heal({ L, targets }, p) {
+      const t = targets[0]
+      if (t && healChar(t.c, this.e.effectsOf(t.c), amount(p.amount as Amount, L, (n, k) => this.e.roll(n, k)).total, false, true)) {
+        if (p.msg) this.announce(t.c, p.msg); else healedLine(this, t.c)
+      }
+    },
+    /**
+     * Apply with damage: one roll of the amount for every target (`recordDice` keeps its dice count for
+     * the resistances), damage type `dmgType`, a touch roll for touch spells, the save byte's mode (half
+     * or negates); `look` centres the view on the aim point (Fireball has no burst graphic of its own)
+     */
+    async damage({ f, s, L, targets }, p) {
+      if (!targets.length) return
+      const { n, total } = amount(p.amount as Amount, L, (k, d) => this.e.roll(k, d))
+      if (p.recordDice) fx.dice = n
+      if (p.look) this.ui.look?.(this.aimed)
+      for (const t of targets) {
+        if (!(await this.spellTouch(f.c, s, t))) { this.print(`${name(f.c)} misses`); continue }
+        fx.dmgType = p.dmgType as number
+        this.damageSync(t.c, total, s.save, this.spellSave(t, s))
+      }
+    },
+    /** Sleep (151b): a pool of hit dice, nearest first; the Animated, the asleep and the too costly are skipped */
+    async sleep({ f, L, dur, targets }, p) {
+      let pool = amount(p.pool as Amount, L, (n, k) => this.e.roll(n, k)).total
+      const hdCost = p.hdCost as number[], hd5 = p.hd5 as number[], other = p.other as number
+      const costOf = (t: Uint8Array) => {
+        const hd = s8(t[F.hitDice])
+        if (hd < 0) return other
+        if (hd < hdCost.length) return hdCost[hd]
+        if (hd === hdCost.length) return t[F.race] === 0 ? hd5[0] : hd5[1]
+        return other
+      }
+      for (const t of targets.sort((a, b) => this.dist(f, a) - this.dist(f, b))) {
+        if (t.c[F.status] === 1 || this.e.effectsOf(t.c).some((x) => x.type === (p.effect as number))) continue
+        const k = costOf(t.c)
+        if (k > pool) continue
+        pool -= k
+        await addEffect(this, t.c, p.effect as number, dur, L, 0, 0, false, false, p.msg ?? '')
+      }
+    },
+    /**
+     * Hold (1658): last to first, a save bonus by the number of targets (`bonus`: 1, 2, more); with
+     * `sizeImmune` only man-sized or smaller (the whole size byte > 1, 4e53:1760) can be held
+     */
+    async hold({ f, s, L, dur, targets }, p) {
+      const n = targets.length
+      const bonus = (p.bonus as number[])[Math.min(n, 3) - 1]
+      for (const t of [...targets].reverse()) {
+        // 4e53_1658: sound 2 and a bolt to each target before its save, except the last-listed one (I: a bug)
+        if (t !== targets[targets.length - 1]) this.ui.flight?.({ x: f.x, y: f.y }, { x: t.x, y: t.y }, { frames: cycle(5), delay: 30, sounds: [2, 0] })
+        const saved = (!!p.sizeImmune && (t.c[F.monsterType] > 1 || t.c[F.sizeFlags] > 1)) || this.saveSync(t.c, s.saveType, bonus)
+        await addEffect(this, t.c, p.effect as number, dur, L, 0, 1, saved, false, p.msg ?? '')
+      }
+    },
+    /** Charm Person (11dd): power L + the caster's side × `sideMul`, run at once; only man-sized or smaller */
+    async charm({ f, s, L, dur, targets }, p) {
+      const t = targets[0]
+      if (!t) return
+      if (t.c[F.monsterType] > 1 || t.c[F.sizeFlags] > 1) { this.print(`${name(t.c)} is unaffected`); return } // as Hold Person (4e53:11f3)
+      await addEffect(this, t.c, s.effect, dur, (L + this.side(f) * (p.sideMul as number)) & 0xff, 1, 1, this.spellSave(t, s), true, p.msg ?? '')
+    },
+    /** Snake Charm (190f): ignores targeting; creatures of `monsterType` while the caster's HP lasts */
+    async charmByHp({ f, L }, p) {
+      let pool = f.c[F.hp]
+      for (const t of this.fighters) {
+        if (t.c[F.monsterType] !== (p.monsterType as number) || t.c[F.hp] > pool) continue
+        pool -= t.c[F.hp]
+        await addEffect(this, t.c, p.effect as number, 0, L, 0, 0, false, false, p.msg ?? '')
+      }
+    },
+    /** Lightning Bolt (PoR FUN_4e53_2bb7, CotAB 0x47C49): the aimed square, then the bolt (R.bolt) */
+    async bolt({ f, L }, p) {
+      const dmg = amount(p.amount as Amount, L, (n, k) => this.e.roll(n, k)).total
+      this.boltHit(this.aimed.x, this.aimed.y, dmg, p.saveType as number)
+      this.bolt(f.c, R.bolt.lightning, dmg, p.saveType as number, true)
+      this.ui.redraw()
+    },
+    /**
+     * Haste / Slow (2764): up to L targets of the caster's side (`ally`) or the enemy's; one with the
+     * `opposite` effect only loses it; with `attacksAfter`, event 18 recounts the attacks
+     */
+    async hasteSlow({ f, s, L, dur, targets }, p) {
+      const mine = targets.filter((t) => (p.side === 'ally' ? this.side(t) === this.side(f) : this.side(t) !== this.side(f))).slice(0, L)
+      for (const t of mine) {
+        if (this.e.effectsOf(t.c).some((x) => x.type === (p.opposite as number))) { await removeType(this, t.c, p.opposite as number); continue }
+        await this.addSpellEffect(t, s, p, false, dur, L)
+        if (p.attacksAfter) await this.attacks(t, false)
+      }
+    },
+    /** Stinking Cloud (FUN_4e53_1b11): the cloud's cells from the aimed square, owned through effect `owner` */
+    async cloud({ f, L }, p) {
+      const c = f.c
+      const n = this.clouds.length ? Math.max(...this.clouds.map((z) => z.n)) + 1 : 1
+      const z: Cloud = { owner: c, n: n & 0x0f, cells: [] }
+      for (const [dx, dy] of p.cells as number[][]) {
+        const x = this.aimed.x + dx, y = this.aimed.y + dy
+        const v = this.bf.get(y, x)
+        if (x < 0 || y < 0 || x >= COLS || y >= ROWS || (this.cells[v]?.move ?? 0xff) === 0xff) continue
+        z.cells.push({ x, y, old: v })
+        this.bf.set(y, x, p.cell as number)
+      }
+      this.clouds.push(z)
+      addRaw(this, c, p.owner as number, L, ((z.n << 4) + L) & 0xff, 1)
+      // the line without a pause, the redraw showing the cloud, then the pause
+      this.print(`${name(c)} ${p.msg ?? ''}`, { ms: 0 })
+      this.ui.show?.()
+      this.ui.hold?.(this.e.speed * 225)
+      this.ui.redraw()
+      for (const t of z.cells) {
+        const o = this.occupied(t.x, t.y, 1)
+        if (o) this.cloudCheck(o)
+      }
+    },
   }
 
   // ------------------------------------------------------------ computer AI

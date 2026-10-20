@@ -80,6 +80,7 @@ and makes one active (`setGame`), switching the live objects the rest of the cod
 | `ecl.ts` | the script VM: memory regions, character view, opcode variants, CALL targets, start area | `game().ecl` |
 | `files.ts` | character and save files: extensions, save size, where the party list and wall sets are | `game().saves` |
 | `rules.ts` | rules values and procedure choices: spells, slots, hit points, caster level, thief skills, level limits, money, temple, joining, creation effects, paladin abilities | `R` |
+| `spellrules.ts` | spell handlers: every spell id's handler kind and parameters (as the original's handler table), the duration special cases | `game().spells` |
 | `effectrules.ts` | the effect system: event lists in the original's order, area effects, per-type handler map, item kinds | `game().effects` |
 | `treasure.ts` | random treasure: the type choice (nested dice bands), plus roll, scrolls, magic records | `game().treasure` |
 | `view.ts` | the 3D view and screens: floor and ground, BIGPIC, overland kind, frames, sun and clouds | `game().view` |
@@ -131,10 +132,14 @@ watch, because each is an alternative path in code:
 - Optional content modules switched by data: the PoR commissions panel, the tile wilderness.
 
 **Still hard-coded game knowledge in shared code (the gaps).**
-1. **Spell handlers are keyed by PoR's spell ids** (`rules/combat.ts` cast switch, `rules/spellfx.ts`,
-   spell durations in `rules/magic.ts`). Ids 1–56 mean the same spells in CotAB, but 57+ do not (CotAB
-   58 is Cure Serious Wounds; PoR's 58 is Keoghtum's Ointment), and CotAB's spells 58–100 have no
-   handlers. This is the largest gap: spell handlers need a per-game map like the effects'.
+1. ~~Spell handlers keyed by PoR's spell ids~~: done 2026-10-20. Each game lists a handler kind and
+   its parameters for every spell id (`games/spellrules.ts`, from the original's table: PoR DS:6B84,
+   CotAB DS:72BA). The kinds are named by what they do: `apply`, `damage`, `heal`, `hold`, `sleep`,
+   `cloud`, `bolt` and others in the battle (`rules/combat.ts`), the rest shared with the camp
+   (`rules/spellkinds.ts`); durations are data too. CotAB's 58 and 66–100 no longer run PoR's
+   handlers. Still to transcribe: CotAB's changed handlers and its new spells that need new kinds
+   (listed in `spellrules.ts` and spec/coab/spells.md). The effect handlers' own tests of spell 15
+   (Shield, type 91) wait for PoR's effect map.
 2. Effect type numbers named in shared code (the temple's blindness, poison, paralysis; combat's
    hold and sleep types): the same in both games so far, but they belong in data as named ids.
 3. ~~Functions inside profiles~~: done 2026-10-20 (the character view's reads are declarative entries,
@@ -142,8 +147,8 @@ watch, because each is an alternative path in code:
 4. ~~Procedure keys named after games~~: done 2026-10-20 (`items: 'handlers' | 'kinds'`, `R.bolt` flags,
    the stat routine runs for the types the profile lists).
 
-**Plan, in order:** spell handlers per game (CotAB's spells read from its binary); PoR's effect
-handler map made explicit; profile functions replaced by data; the paired procedures made parametric
+**Plan, in order:** CotAB's changed and new spell handlers as kinds; PoR's effect handler map made
+explicit; profile functions replaced by data; the paired procedures made parametric
 where the originals allow it; named ids for effect types. When those are done, a third game should
 need only its profile modules and any procedure the earlier games do not have.
 

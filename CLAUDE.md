@@ -77,5 +77,5 @@ use, no unbounded background jobs.
 - `tools/`: Python decoders and the headless interpreter; `tools/coab/`: CotAB extractors
 - `web/src/games/`: game profiles: `fields.ts` (character record), `tables.ts` (START.EXE tables),
   `ecl.ts` (script VM map and opcode variants), `files.ts` (saves), `rules.ts` (rules values and
-  procedure choices), `por.ts` / `coab.ts`
+  procedure choices), `spellrules.ts` / `effectrules.ts` (spell and effect handler maps), `por.ts` / `coab.ts`
 - `docs/multi-game.md`: the multi-game design and its step-by-step status
