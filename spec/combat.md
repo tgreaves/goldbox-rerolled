@@ -949,11 +949,15 @@ Runs if d100 ≤ 75 (flag 0x10) or ≤ 35 (flag 0x20); the d100 is rolled whatev
   (r, col) and at (r + 1, col + 1) (four cells)
 - Columns outer, rows inner in the tree and scatter passes below too (PoR image 0x25B01, 0x25E17).
 
-Port (2026-10-20): `riverCrossing` differs from this: single-row fords rolled before the banks, the
-crossing always added and as two cells, no d100 without a river flag, the column-49 write clipped; and
-the port's tree and scatter passes scan rows outer (`columns: false`). The fields are of the same kind
-but not the original's; kept so that PoR's fields stay as they were until the fix is decided (the
-CotAB passes, spec/coab/combat.md, follow their original exactly).
+The d20 is rolled in every row the river crosses, also when an odd count forces the ford. The ford
+procedure takes the row and column it is called with and writes through the flat grid too.
+
+Port: matches this since 2026-10-20 (`rules/battlefield.ts` `river`, the procedure CotAB's river uses
+too, with PoR's numbers in the profile: fixed banks, `pairs`, the crossing, `edge: 'spill'`); the tree,
+scatter and finishing passes scan columns outer. Before that the port rolled single-row fords before
+the banks, always added a two-cell crossing, skipped the d100 without a river flag, clipped the
+column-49 write and scanned rows outer. Tested whole field for field against a statement-by-statement
+transcription of `FUN_34c7_11b4` and its passes (`test/wildfield.test.ts`).
 
 #### Tree pass (O, `FUN_34c7_0d13`)
 

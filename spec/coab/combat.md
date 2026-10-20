@@ -163,7 +163,9 @@ The map-area generator (0x2555D) is not transcribed: CotAB map fields are still 
 finishing pass (**?** how far they differ).
 
 `rules/battlefield.ts` `wildField(flags, roll, spec)`: one driver (fill, then the passes the profile
-lists, `R.wildField`), the passes named by what they do; CotAB: `riverHalves`, `treesOrLogs`,
-`scatterOdds`, no finishing pass; PoR: `riverCrossing`, `treesBySize`, `scatterTerrain`, `finishing`.
+lists, `R.wildField`), the passes named by what they do; CotAB: `river`, `treesOrLogs`,
+`scatterOdds`, no finishing pass; PoR: `river`, `treesBySize`, `scatterTerrain`, `finishing`. The river
+is one procedure for both games (the course, two cells a row, the d20 after them, a ford procedure with
+its cells as offsets): CotAB's numbers are the halves by d2, no pairs, no crossing and `edge: 'clip'`.
 Shared as data: the flag arithmetic (`FlagValue`: a base, then set or add per flag) and the river's
 course. Tested cell for cell against this transcription with scripted dice (`test/wildfield.test.ts`).

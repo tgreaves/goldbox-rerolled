@@ -26,18 +26,21 @@ export interface SpellRules {
 /** A number worked out from a wilderness field's terrain flags: `base`, then each step whose flag is set,
  *  in order (`=` sets, `+` adds); `under`: a result below its first number becomes its second */
 export interface FlagValue { base: number; steps: [flag: number, op: '=' | '+', n: number][]; under?: [number, number] }
-/** a cell drawn from a run: `base` + 1d`sides` */
+/** a cell drawn from a run: `base` + 1d`sides` (`sides` 0: `base`, no die) */
 export type CellDie = [base: number, sides: number]
-/** a river's course: d100 ≤ `chance` to run; start column `from` − `count`d`sides`, then lowered until
- *  (column + `offset`) mod `every` = 0; one column right per row */
+/** a river's course: d100 ≤ `chance` to run (the d100 rolled whatever the chance); start column `from` −
+ *  `count`d`sides`, then lowered until (column + `offset`) mod `every` = 0; one column right per row */
 export interface RiverCourse { chance: FlagValue; from: number; count: number; sides: number; every: number; offset: number }
 /**
  * One pass of a wilderness battlefield (spec/combat.md, "Wilderness battlefields"; spec/coab/combat.md).
- * Each names a procedure in rules/battlefield.ts by what it does; its numbers are the game's.
- * - `riverCrossing`: the banks or, on 1 in `fordDie`, a ford in every row; then a sure crossing at row
- *   `crossing.from` − d`crossing.die` (the port's PoR river; spec/combat.md "River pass": not yet the original's)
- * - `riverHalves`: each row a `left` and a `right` half of the water, then on 1 in `fordDie` a ford:
- *   `ford[0]` for the right half and `ford[1]` below it (CotAB 0x25690)
+ * Each names a procedure in rules/battlefield.ts by what it does; its numbers are the game's. The passes
+ * that visit every cell scan columns outer, rows inner (both originals).
+ * - `river`: each row while the column is on the field, the two `cells` of the water, then d`fordDie`
+ *   (always rolled): 1, or with `pairs` an odd count of fords so far, → a ford, its `ford` cells at
+ *   [row + dr, column + dc]; then a `crossing` (the ford at rows r and r + 1, r = `from` − d`die`) if no
+ *   ford was made. `edge`: `spill`, the grid is one flat array and a cell past column 49 lands in the
+ *   next row's column 0 (PoR FUN_34c7_0bde, FUN_34c7_0b97); `clip`, a cell past the edge, and the
+ *   second cell's die, are skipped (CotAB 0x25690, 0x2563C)
  * - `treesBySize`: a d10 size gives the trunk (`trunk` + size) and, below 5, the crown above (`crown` +
  *   size); with flag `swamp` the size is 3 + d3 (PoR FUN_34c7_0d13)
  * - `treesOrLogs`: nothing with flag `skip`; else d100 ≤ chance again → a `log`, otherwise a `crown`
@@ -47,19 +50,19 @@ export interface RiverCourse { chance: FlagValue; from: number; count: number; s
  * - `scatterOdds`: a flag `score` picks a row of `odds`; d`die` falls in the first band whose running
  *   sum holds it, band i setting `cells[i]` (CotAB 0x25ADA, 0x25932)
  * - `finishing`: odd rocks, bones and flowers on blank ground (PoR FUN_34c7_0000, shared with map areas)
- * `columns`: scan columns outer, rows inner, as both originals do; false scans rows outer (the port's PoR
- * passes so far: fields of the same kind, the dice drawn in another order; spec/combat.md).
  */
 export type WildPass =
-  | { pass: 'riverCrossing'; course: RiverCourse; bank: [number, number]; ford: [number, number]; fordDie: number; crossing: { from: number; die: number } }
-  | { pass: 'riverHalves'; course: RiverCourse; left: CellDie; right: CellDie; fordDie: number; ford: [number, number] }
-  | { pass: 'treesBySize'; chance: FlagValue; swamp: number; trunk: number; crown: number; columns: boolean }
-  | { pass: 'treesOrLogs'; skip: number; chance: FlagValue; log: CellDie; crown: CellDie; trunk: CellDie; columns: boolean }
+  | {
+    pass: 'river'; course: RiverCourse; cells: [CellDie, CellDie]; fordDie: number; pairs: boolean
+    ford: [dr: number, dc: number, cell: number][]; crossing: { from: number; die: number } | null; edge: 'spill' | 'clip'
+  }
+  | { pass: 'treesBySize'; chance: FlagValue; swamp: number; trunk: number; crown: number }
+  | { pass: 'treesOrLogs'; skip: number; chance: FlagValue; log: CellDie; crown: CellDie; trunk: CellDie }
   | {
     pass: 'scatterTerrain'; a: FlagValue; b: FlagValue; c: FlagValue; d: FlagValue; shrubs: number
-    cactus: number; tallCactus: [number, number]; shrub: CellDie; rocks: CellDie; marsh: number; tuft: number; puddleFlag: number; columns: boolean
+    cactus: number; tallCactus: [number, number]; shrub: CellDie; rocks: CellDie; marsh: number; tuft: number; puddleFlag: number
   }
-  | { pass: 'scatterOdds'; score: FlagValue; die: number; odds: { from: number; to: number; odds: number[] }[]; cells: CellDie[]; columns: boolean }
+  | { pass: 'scatterOdds'; score: FlagValue; die: number; odds: { from: number; to: number; odds: number[] }[]; cells: CellDie[] }
   | { pass: 'finishing' }
 /** a wilderness battlefield: every cell `fill`, then the passes in order; `blank` are the cells drawn as
  *  blank ground (image slot 0x16 in T.battleCells), the ones the passes may change */
@@ -219,16 +222,16 @@ export const POR_RULES: GameRules = {
   dualClass: false,
   bolt: { lightning: 8, skipLast: false, mapAreaOnly: false, noRepeatBounce: false, chargeSinceLast: false },
   wildBattle: { kind: 'overlandTile' },
-  // FUN_34c7_11b4: open ground, river FUN_34c7_0bde, trees 0d13, scatter 0e9e, finishing 0000
+  // FUN_34c7_11b4: open ground, river FUN_34c7_0bde (ford FUN_34c7_0b97), trees 0d13, scatter 0e9e, finishing 0000
   wildField: {
     fill: 0x17, blank: [0x17, 0x36],
     passes: [
-      { pass: 'riverCrossing', course: { chance: { base: 0, steps: [[0x20, '=', 35], [0x10, '=', 75]] }, from: 34, count: 5, sides: 4, every: 7, offset: 2 },
-        bank: [0x32, 0x33], ford: [0x34, 0x35], fordDie: 20, crossing: { from: 16, die: 9 } },
-      { pass: 'treesBySize', chance: { base: 1, steps: [[0x02, '=', 1], [0x04, '=', 3], [0x40, '=', 4], [0x08, '=', 7], [0x80, '=', 0]] }, swamp: 0x40, trunk: 0x23, crown: 0x1f, columns: false },
+      { pass: 'river', course: { chance: { base: 0, steps: [[0x20, '=', 35], [0x10, '=', 75]] }, from: 34, count: 5, sides: 4, every: 7, offset: 2 },
+        cells: [[0x32, 0], [0x33, 0]], fordDie: 20, pairs: true, ford: [[0, 0, 0x34], [0, 1, 0x35]], crossing: { from: 16, die: 9 }, edge: 'spill' },
+      { pass: 'treesBySize', chance: { base: 1, steps: [[0x02, '=', 1], [0x04, '=', 3], [0x40, '=', 4], [0x08, '=', 7], [0x80, '=', 0]] }, swamp: 0x40, trunk: 0x23, crown: 0x1f },
       { pass: 'scatterTerrain', a: { base: 0, steps: [[0x80, '=', 15]] }, b: { base: 15, steps: [[0x02, '=', 45], [0x04, '=', 25], [0x80, '=', 10]] },
         c: { base: 0, steps: [[0x40, '=', 30]] }, d: { base: 40, steps: [[0x02, '=', 10], [0x40, '=', 5], [0x80, '=', 25]] }, shrubs: 6,
-        cactus: 0x3c, tallCactus: [0x40, 0x41], shrub: [0x36, 3], rocks: [0x29, 4], marsh: 0x39, tuft: 0x2d, puddleFlag: 0x40, columns: false },
+        cactus: 0x3c, tallCactus: [0x40, 0x41], shrub: [0x36, 3], rocks: [0x29, 4], marsh: 0x39, tuft: 0x2d, puddleFlag: 0x40 },
       { pass: 'finishing' },
     ],
   },
@@ -285,15 +288,15 @@ export const COAB_RULES: GameRules = {
   wildField: {
     fill: 0x17, blank: [0x17, 0x36],
     passes: [
-      { pass: 'riverHalves', course: { chance: { base: 0, steps: [[0x20, '=', 35], [0x10, '=', 75]] }, from: 34, count: 5, sides: 4, every: 7, offset: 2 },
-        left: [0x3b, 2], right: [0x3d, 2], fordDie: 20, ford: [0x40, 0x41] },
+      { pass: 'river', course: { chance: { base: 0, steps: [[0x20, '=', 35], [0x10, '=', 75]] }, from: 34, count: 5, sides: 4, every: 7, offset: 2 },
+        cells: [[0x3b, 2], [0x3d, 2]], fordDie: 20, pairs: false, ford: [[0, 1, 0x40], [1, 1, 0x41]], crossing: null, edge: 'clip' },
       { pass: 'treesOrLogs', skip: 0x80, chance: { base: 10, steps: [[0x02, '+', -5], [0x04, '+', -2], [0x40, '+', 5], [0x08, '+', 10]], under: [0, 1] },
-        log: [0x29, 2], crown: [0x1f, 5], trunk: [0x24, 5], columns: true },
+        log: [0x29, 2], crown: [0x1f, 5], trunk: [0x24, 5] },
       { pass: 'scatterOdds', score: { base: 50, steps: [[0x10, '+', 10], [0x20, '+', 30], [0x40, '+', 20], [0x04, '+', -10], [0x02, '+', -20], [0x80, '+', -50]] },
         die: 100,
         odds: [{ from: -30, to: 9, odds: [0, 0, 0, 30, 15] }, { from: 10, to: 29, odds: [0, 1, 5, 20, 10] }, { from: 30, to: 69, odds: [0, 2, 5, 10, 5] },
           { from: 70, to: 89, odds: [10, 2, 10, 10, 1] }, { from: 90, to: 110, odds: [15, 5, 15, 10, 1] }],
-        cells: [[0x39, 2], [0x2f, 2], [0x2b, 4], [0x36, 3], [0x31, 4]], columns: true },
+        cells: [[0x39, 2], [0x2f, 2], [0x2b, 4], [0x36, 3], [0x31, 4]] },
     ],
   },
   // 0x4B8F7: no 0x1E immunity; HD 0–4 die, 5 save at −4, 6 save, 7 and up (and below 0) unaffected

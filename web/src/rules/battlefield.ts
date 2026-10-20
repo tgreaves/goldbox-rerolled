@@ -1,7 +1,7 @@
 // Combat battlefield (spec/combat.md, "Battlefield"): a 25 x 50 grid of cell values, the cell table
 // from START.EXE, and the terrain generators.
 import { T } from '../games/tables'
-import { R, type FlagValue, type RiverCourse, type WildFieldSpec, type WildPass } from '../games/rules'
+import { R, type CellDie, type FlagValue, type RiverCourse, type WildFieldSpec, type WildPass } from '../games/rules'
 
 export const ROWS = 25
 export const COLS = 50
@@ -96,8 +96,9 @@ export function flagValue(v: FlagValue, flags: number): number {
 
 /**
  * A wilderness battlefield from its terrain feature flags: every cell `spec.fill`, then the game's passes
- * in order (R.wildField; PoR FUN_34c7_11b4: river, trees, scatter, finishing; CotAB 0x25C58: river
- * 0x25690, trees 0x2579B, scatter 0x25ADA, no finishing pass. spec/combat.md, spec/coab/combat.md).
+ * in order (R.wildField; PoR FUN_34c7_11b4: river FUN_34c7_0bde, trees 0d13, scatter 0e9e, finishing
+ * 0000; CotAB 0x25C58: river 0x25690, trees 0x2579B, scatter 0x25ADA, no finishing pass. spec/combat.md,
+ * spec/coab/combat.md).
  */
 export function wildField(flags: number, roll: Roll, spec: WildFieldSpec = R.wildField): Battlefield {
   const bf = new Battlefield(true)
@@ -105,8 +106,7 @@ export function wildField(flags: number, roll: Roll, spec: WildFieldSpec = R.wil
   const blank = (row: number, col: number) => spec.blank.includes(bf.get(row, col))
   for (const p of spec.passes) {
     switch (p.pass) {
-      case 'riverCrossing': riverCrossing(bf, p, flags, roll); break
-      case 'riverHalves': riverHalves(bf, p, flags, roll); break
+      case 'river': river(bf, p, flags, roll); break
       case 'treesBySize': treesBySize(bf, p, flags, roll, blank); break
       case 'treesOrLogs': treesOrLogs(bf, p, flags, roll, blank); break
       case 'scatterTerrain': scatterTerrain(bf, p, flags, roll, blank); break
@@ -120,13 +120,13 @@ export function wildField(flags: number, roll: Roll, spec: WildFieldSpec = R.wil
 type Pass<K extends WildPass['pass']> = Extract<WildPass, { pass: K }>
 type Blank = (row: number, col: number) => boolean
 
-/** every cell, columns outer and rows inner (as the originals' passes) or rows outer; rows from `first` */
-function scan(columns: boolean, first: number, fn: (row: number, col: number) => void) {
-  if (columns) for (let col = 0; col < COLS; col++) for (let row = first; row < ROWS; row++) fn(row, col)
-  else for (let row = first; row < ROWS; row++) for (let col = 0; col < COLS; col++) fn(row, col)
+/** every cell, columns outer and rows inner (as both originals' passes); rows from `first` */
+function scan(first: number, fn: (row: number, col: number) => void) {
+  for (let col = 0; col < COLS; col++) for (let row = first; row < ROWS; row++) fn(row, col)
 }
 
-/** A river's start column, or null when it does not run: d100 ≤ chance; from − count·dN, lowered to the period. */
+/** A river's start column, or null when it does not run: d100 ≤ chance (rolled whatever the chance);
+ *  from − count·dN, lowered to the period. */
 function riverStart(c: RiverCourse, flags: number, roll: Roll): number | null {
   const chance = flagValue(c.chance, flags)
   if (roll(100) > chance) return null
@@ -136,47 +136,45 @@ function riverStart(c: RiverCourse, flags: number, roll: Roll): number | null {
   return start
 }
 
-/** River with fords and one sure crossing (the port's PoR river, FUN_34c7_0bde; spec/combat.md "River pass"). */
-function riverCrossing(bf: Battlefield, p: Pass<'riverCrossing'>, flags: number, roll: Roll) {
-  if (!flagValue(p.course.chance, flags)) return // no d100 without a river (the original rolls it anyway)
-  const start = riverStart(p.course, flags, roll)
-  if (start === null) return
-  let col = start
-  for (let row = 0; row < ROWS && col < COLS; row++, col++) {
-    const ford = roll(p.fordDie) === 1
-    bf.set(row, col, ford ? p.ford[0] : p.bank[0])
-    bf.set(row, col + 1, ford ? p.ford[1] : p.bank[1])
-  }
-  const r = p.crossing.from - roll(p.crossing.die)
-  bf.set(r, start + r, p.ford[0])
-  bf.set(r + 1, start + r + 1, p.ford[1])
-}
+const cellOf = (c: CellDie, roll: Roll) => (c[1] ? c[0] + roll(c[1]) : c[0])
 
 /**
- * River drawn as two halves a row, each half a picture of its own, and fords that point downstream
- * (CotAB 0x25690 with 0x2563C): the ford's lower cell is the next row's left half, which that row
- * overwrites, so only `ford[0]` stays (O, spec/coab/combat.md "River").
+ * A river running down and to the right, one column a row, with fords (PoR FUN_34c7_0bde with the ford
+ * FUN_34c7_0b97; CotAB 0x25690 with 0x2563C; spec/combat.md "River pass", spec/coab/combat.md "River").
+ * Edge `spill`: the original's grid is one flat array, so a cell at column 50 is the next row's column 0
+ * (PoR: start 26, row 23 puts the second bank at (24, 0)); `clip`: the original tests the edge first.
  */
-function riverHalves(bf: Battlefield, p: Pass<'riverHalves'>, flags: number, roll: Roll) {
+function river(bf: Battlefield, p: Pass<'river'>, flags: number, roll: Roll) {
   const start = riverStart(p.course, flags, roll)
   if (start === null) return
+  const put = (row: number, col: number, v: number) => {
+    if (p.edge === 'clip') bf.set(row, col, v)
+    else { const i = row * COLS + col; if (i >= 0 && i < ROWS * COLS) bf.cells[i] = v }
+  }
+  let fords = 0
+  const ford = (row: number, col: number) => {
+    for (const [dr, dc, v] of p.ford) put(row + dr, col + dc, v)
+    fords++
+  }
   let col = start
   for (let row = 0; row < ROWS; row++) {
     if (col > COLS - 1) continue
-    bf.set(row, col, p.left[0] + roll(p.left[1]))
-    if (col < COLS - 1) bf.set(row, col + 1, p.right[0] + roll(p.right[1]))
-    if (roll(p.fordDie) === 1) {
-      if (col < COLS - 1) bf.set(row, col + 1, p.ford[0])
-      if (row < ROWS - 1 && col < COLS - 1) bf.set(row + 1, col + 1, p.ford[1])
-    }
+    put(row, col, cellOf(p.cells[0], roll))
+    if (p.edge === 'spill' || col < COLS - 1) put(row, col + 1, cellOf(p.cells[1], roll))
+    if (roll(p.fordDie) === 1 || (p.pairs && fords % 2 === 1)) ford(row, col)
     col++
+  }
+  if (p.crossing && fords === 0) {
+    const r = p.crossing.from - roll(p.crossing.die)
+    ford(r, start + r)
+    ford(r + 1, start + r + 1)
   }
 }
 
 /** Trees and logs by size (PoR FUN_34c7_0d13). */
 function treesBySize(bf: Battlefield, p: Pass<'treesBySize'>, flags: number, roll: Roll, blank: Blank) {
   const chance = flagValue(p.chance, flags)
-  scan(p.columns, 1, (row, col) => {
+  scan(1, (row, col) => {
     if (!blank(row, col) || !blank(row - 1, col)) return
     if (roll(100) > chance) return
     const r = roll(10)
@@ -191,7 +189,7 @@ function treesBySize(bf: Battlefield, p: Pass<'treesBySize'>, flags: number, rol
 function treesOrLogs(bf: Battlefield, p: Pass<'treesOrLogs'>, flags: number, roll: Roll, blank: Blank) {
   if (flags & p.skip) return
   const chance = flagValue(p.chance, flags)
-  scan(p.columns, 1, (row, col) => {
+  scan(1, (row, col) => {
     if (!blank(row, col) || !blank(row - 1, col)) return
     if (roll(100) > chance) return
     if (roll(100) <= chance) { bf.set(row, col, p.log[0] + roll(p.log[1])); return }
@@ -203,7 +201,7 @@ function treesOrLogs(bf: Battlefield, p: Pass<'treesOrLogs'>, flags: number, rol
 /** Rocks, shrubs, marsh plants, tufts and cactus (PoR FUN_34c7_0e9e). */
 function scatterTerrain(bf: Battlefield, p: Pass<'scatterTerrain'>, flags: number, roll: Roll, blank: Blank) {
   const a = flagValue(p.a, flags), b = flagValue(p.b, flags), c = flagValue(p.c, flags), d = flagValue(p.d, flags)
-  scan(p.columns, 0, (row, col) => {
+  scan(0, (row, col) => {
     if (!blank(row, col)) return
     const r = roll(255)
     if (r <= a) {
@@ -224,7 +222,7 @@ function scatterTerrain(bf: Battlefield, p: Pass<'scatterTerrain'>, flags: numbe
 function scatterOdds(bf: Battlefield, p: Pass<'scatterOdds'>, flags: number, roll: Roll, blank: Blank) {
   const score = flagValue(p.score, flags)
   const odds = p.odds.find((o) => score >= o.from && score <= o.to)?.odds
-  scan(p.columns, 0, (row, col) => {
+  scan(0, (row, col) => {
     if (!blank(row, col) || !odds) return
     const r = roll(p.die)
     let sum = 0

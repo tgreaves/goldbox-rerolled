@@ -1,6 +1,6 @@
 // Wilderness battlefields (spec/combat.md, "Wilderness battlefields"; spec/coab/combat.md).
-// PoR: a regression check with seeded dice, so a change to the shared generator leaves PoR's fields as
-// they were (fingerprints taken from the port before the generator became parametric, 2026-10-20).
+// Both games: the passes with scripted dice, and whole fields cell for cell against a statement-by-
+// statement transcription of the original's routines.
 import { describe, expect, it } from 'vitest'
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -25,43 +25,6 @@ export function fingerprint(cells: Uint8Array): string {
   return h.toString(16).padStart(8, '0')
 }
 
-// every flag byte PoR's tile table gives (FUN_34c7_08a4), plus 0
-const POR_FLAGS = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x11, 0x12, 0x14, 0x18, 0x20, 0x21, 0x28, 0x40, 0x41, 0x44, 0x48, 0x60, 0x80, 0x81, 0x88, 0x90, 0xa0]
-
-const POR_PRINTS: Record<string, string> = {
-  '0/1': '41b1bbc4', '0/77': '52b485ad', '0/4242': 'c314b8aa', '1/1': '41b1bbc4', '1/77': '52b485ad', '1/4242': 'c314b8aa',
-  '2/1': 'ab12c132', '2/77': 'b12f41e1', '2/4242': '87e47c37', '3/1': 'ab12c132', '3/77': 'b12f41e1', '3/4242': '87e47c37',
-  '4/1': 'a2f11db3', '4/77': '7df0a085', '4/4242': 'd4e00379', '5/1': 'a2f11db3', '5/77': '7df0a085', '5/4242': 'd4e00379',
-  '8/1': '273ab0f2', '8/77': '99633fbf', '8/4242': '4c012994', '9/1': '273ab0f2', '9/77': '99633fbf', '9/4242': '4c012994',
-  '11/1': 'b9a46d51', '11/77': 'e7b645b6', '11/4242': '4f2cd5e6', '12/1': 'da5204ed', '12/77': '96bce668', '12/4242': '804f5c4f',
-  '14/1': '7fa1a85e', '14/77': 'd717b096', '14/4242': '5244a5b7', '18/1': '5638de7a', '18/77': '1c90cc90', '18/4242': '65ac5309',
-  '20/1': '5f5f2a32', '20/77': '81034375', '20/4242': '4f2cd5e6', '21/1': '5f5f2a32', '21/77': '81034375', '21/4242': '4f2cd5e6',
-  '28/1': 'acdb7adc', '28/77': 'e9e48d5a', '28/4242': '65ac5309', '40/1': '30321a33', '40/77': 'd50ab00d', '40/4242': '59b056a9',
-  '41/1': '30321a33', '41/77': 'd50ab00d', '41/4242': '59b056a9', '44/1': '23487a84', '44/77': '55302adb', '44/4242': 'c7b8a77a',
-  '48/1': '7988dc90', '48/77': '87202e24', '48/4242': '39ab9fc6', '60/1': '381385f7', '60/77': '97da1707', '60/4242': 'c705ea8d',
-  '80/1': 'b5e16ab9', '80/77': 'dc1520e8', '80/4242': '523ccd3c', '81/1': 'b5e16ab9', '81/77': 'dc1520e8', '81/4242': '523ccd3c',
-  '88/1': 'b5e16ab9', '88/77': 'dc1520e8', '88/4242': '523ccd3c', '90/1': '496cf86f', '90/77': '11e19da1', '90/4242': 'deace1a6',
-  'a0/1': '7178db6d', 'a0/77': 'eaac129a', 'a0/4242': 'deace1a6',
-}
-
-describe('PoR wilderness battlefield (seeded regression)', () => {
-  it('builds the same fields as before for every flag byte and three seeds', () => {
-    const got: Record<string, string> = {}
-    for (const f of POR_FLAGS) for (const seed of [1, 77, 4242]) got[`${f.toString(16)}/${seed}`] = fingerprint(wildField(f, seeded(seed), POR_RULES.wildField).cells)
-    expect(got).toEqual(POR_PRINTS)
-  })
-
-  it('classifies the overland tile first (arid tile with ECL 0x4AB3 = 0xFF)', () => {
-    expect(fingerprint(wildBattlefield(0x6d, 0xff, seeded(5), POR_RULES.wildField).cells)).toBe(fingerprint(wildField(0x01, seeded(5), POR_RULES.wildField).cells))
-  })
-})
-
-// ---------------------------------------------------------------------------------------------------
-// CotAB (spec/coab/combat.md): its own passes, cell for cell against the transcription.
-
-const COAB_FIELD = COAB_RULES.wildField
-const only = (pass: WildPass['pass']): WildFieldSpec => ({ ...COAB_FIELD, passes: COAB_FIELD.passes.filter((p) => p.pass === pass) })
-
 /** dice from a script of [sides, value]; each call must ask for the sides scripted; then `rest(sides)` */
 function scripted(script: [number, number][], rest: (sides: number) => number = (n) => n) {
   const asked: number[] = []
@@ -76,6 +39,188 @@ function scripted(script: [number, number][], rest: (sides: number) => number = 
 }
 
 const cell = (bf: { get(r: number, c: number): number }, r: number, c: number) => bf.get(r, c)
+
+// every flag byte PoR's tile table gives (FUN_34c7_08a4), plus 0
+const POR_FLAGS = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x08, 0x09, 0x11, 0x12, 0x14, 0x18, 0x20, 0x21, 0x28, 0x40, 0x41, 0x44, 0x48, 0x60, 0x80, 0x81, 0x88, 0x90, 0xa0]
+
+/**
+ * PoR's wilderness generator transcribed from the disassembly, one statement per instruction group:
+ * FUN_34c7_11b4 (fill), FUN_34c7_0bde + FUN_34c7_0b97 (river), FUN_34c7_0d13 (trees), FUN_34c7_0e9e
+ * (scatter), FUN_34c7_0000 (finishing; the area, DS:84DC, is an overland one, never 10). The grid is the
+ * original's flat array (row·50 + col); roll(count, sides) is the game's FUN_5216_0de3.
+ */
+function porReference(flags: number, d: Roll): Uint8Array {
+  const g = new Uint8Array(1250).fill(0x17)
+  const roll = (count: number, sides: number) => { let s = 0; for (let i = 0; i < count; i++) s += d(sides); return s }
+  const slot16 = (v: number) => v === 0x17 || v === 0x36 // DS:2747[v·4] = 0x16
+  const flag = (b: number) => (flags & b) !== 0 // FUN_34c7_08a4 on the tile
+  const put = (i: number, v: number) => { if (i >= 0 && i < 1250) g[i] = v }
+  // FUN_34c7_0bde (image 0x2584E)
+  let fords = 0, chance = 0
+  if (flag(0x20)) chance = 0x23
+  if (flag(0x10)) chance = 0x4b
+  if (roll(1, 0x64) <= chance) {
+    let c = 0x22 - roll(5, 4)
+    while ((c + 2) % 7 > 0) c--
+    const start = c
+    const ford = (row: number, col: number) => { put(row * 50 + col, 0x34); put(row * 50 + col + 1, 0x35); fords++ } // FUN_34c7_0b97
+    for (let row = 0; row <= 0x18; row++) {
+      if (c > 0x31) continue
+      put(row * 50 + c, 0x32)
+      put(row * 50 + c + 1, 0x33)
+      if (roll(1, 0x14) === 1 || (fords & 1) === 1) ford(row, c)
+      c++
+    }
+    if (fords === 0) {
+      const r = 0x0c - roll(1, 9) + 4
+      const col = r + start
+      ford(r, col)
+      ford(r + 1, col + 1)
+    }
+  }
+  // FUN_34c7_0d13 (0x25983)
+  let ch = 1
+  if (flag(0x02)) ch = 1
+  if (flag(0x04)) ch = 3
+  if (flag(0x40)) ch = 4
+  if (flag(0x08)) ch = 7
+  if (flag(0x80)) ch = 0
+  for (let col = 0; col <= 0x31; col++) for (let row = 1; row <= 0x18; row++) {
+    if (!slot16(g[row * 50 + col]) || !slot16(g[(row - 1) * 50 + col])) continue
+    if (roll(1, 0x64) > ch) continue
+    let size = roll(1, 0x0a)
+    if (size > 8) size = roll(1, 2) + 4
+    else size = (size + 1) >> 1
+    if (flag(0x40)) size = roll(1, 3) + 3
+    g[row * 50 + col] = size + 0x1f + 4
+    if (size < 5) g[(row - 1) * 50 + col] = size + 0x1f
+  }
+  // FUN_34c7_0e9e (0x25B0E)
+  let a = 0, b = 15, dd = 40, c = 0
+  const shrubs = 6
+  if (flag(0x02)) { b = 0x2d; dd = 0x0a }
+  if (flag(0x04)) b = 0x19
+  if (flag(0x40)) { dd = 5; c = 0x1e }
+  if (flag(0x80)) { a = 0x0f; dd = 0x19; b = 0x0a }
+  for (let col = 0; col <= 0x31; col++) for (let row = 0; row <= 0x18; row++) {
+    if (!slot16(g[row * 50 + col])) continue
+    const r = roll(1, 0xff)
+    if (r <= a) {
+      const k = roll(1, 4)
+      if (k === 4 && row > 0 && slot16(g[(row - 1) * 50 + col])) { g[(row - 1) * 50 + col] = 0x41; g[row * 50 + col] = 0x40 }
+      if (k < 4) g[row * 50 + col] = k + 0x1f + 0x1d
+    } else if (r <= a + shrubs) g[row * 50 + col] = roll(1, 3) + 0x1f + 0x17
+    else if (r <= a + shrubs + b) g[row * 50 + col] = roll(1, 4) + 0x1f + 0x0a
+    else if (r <= a + shrubs + b + c) g[row * 50 + col] = Math.floor((roll(1, 0x0a) - 1) / 3) + 1 + 0x1f + 0x19
+    else if (r <= a + shrubs + b + c + dd) {
+      let k = roll(1, 4)
+      if (k === 4 && !flag(0x40)) k = roll(1, 3)
+      g[row * 50 + col] = k + 0x1f + 0x0e
+    }
+  }
+  // FUN_34c7_0000 (0x24C70)
+  for (let col = 0; col <= 0x31; col++) for (let row = 0; row <= 0x18; row++) {
+    if (!slot16(g[row * 50 + col])) continue
+    const r = roll(1, 0x64)
+    if (r >= 1 && r <= 0x61) continue
+    if (r === 0x62) g[row * 50 + col] = 0x1a
+    else if (r === 0x63) g[row * 50 + col] = 0x1b
+    else if (r === 0x64 && roll(1, 0x64) === 1) g[row * 50 + col] = roll(1, 0x0a) <= 6 ? 0x1c : 0x1d
+  }
+  return g
+}
+
+// fingerprints of porReference (not of the port): every flag byte, three seeds
+const POR_PRINTS: Record<string, string> = {
+  '0/1': '1e955efe', '0/77': '495f3f01', '0/4242': '3e881d90', '1/1': '1e955efe', '1/77': '495f3f01', '1/4242': '3e881d90',
+  '2/1': 'e23ac61e', '2/77': '35376bc9', '2/4242': '63acbfc1', '3/1': 'e23ac61e', '3/77': '35376bc9', '3/4242': '63acbfc1',
+  '4/1': '97084316', '4/77': 'aa45a2ad', '4/4242': 'e14f7014', '5/1': '97084316', '5/77': 'aa45a2ad', '5/4242': 'e14f7014',
+  '8/1': 'e261fe3c', '8/77': '746a4dc4', '8/4242': 'abe3c24d', '9/1': 'e261fe3c', '9/77': '746a4dc4', '9/4242': 'abe3c24d',
+  '11/1': '3639e2fc', '11/77': 'f9c51054', '11/4242': '3e881d90', '12/1': 'f4490536', '12/77': '2f361201', '12/4242': '63acbfc1',
+  '14/1': '5bbdbd41', '14/77': 'ef92e42d', '14/4242': 'e14f7014', '18/1': 'b2de42ed', '18/77': 'b8b01d0b', '18/4242': 'abe3c24d',
+  '20/1': '1e955efe', '20/77': '495f3f01', '20/4242': '3e881d90', '21/1': '1e955efe', '21/77': '495f3f01', '21/4242': '3e881d90',
+  '28/1': 'e261fe3c', '28/77': '746a4dc4', '28/4242': 'abe3c24d', '40/1': '08a399ed', '40/77': 'e8743079', '40/4242': '389e3ff3',
+  '41/1': '08a399ed', '41/77': 'e8743079', '41/4242': '389e3ff3', '44/1': '21e48e6c', '44/77': 'e8830053', '44/4242': 'a67de596',
+  '48/1': 'a987bcf5', '48/77': '7f2188ae', '48/4242': '3e1dbd3c', '60/1': '08a399ed', '60/77': 'e8743079', '60/4242': '389e3ff3',
+  '80/1': '6a45c596', '80/77': '442dacae', '80/4242': '1dad8ee7', '81/1': '6a45c596', '81/77': '442dacae', '81/4242': '1dad8ee7',
+  '88/1': '6a45c596', '88/77': '442dacae', '88/4242': '1dad8ee7', '90/1': '38dc7690', '90/77': '45fa92e8', '90/4242': '1dad8ee7',
+  'a0/1': '6a45c596', 'a0/77': '442dacae', 'a0/4242': '1dad8ee7',
+}
+
+const POR_FIELD = POR_RULES.wildField
+const porOnly = (pass: WildPass['pass']): WildFieldSpec => ({ ...POR_FIELD, passes: POR_FIELD.passes.filter((p) => p.pass === pass) })
+
+describe('PoR wilderness battlefield (FUN_34c7_11b4)', () => {
+  it('matches the transcription for every flag byte with seeded dice', () => {
+    for (let flags = 0; flags < 0x100; flags++) for (const seed of [5, 2024]) {
+      const a = wildField(flags, seeded(seed * 263 + flags), POR_FIELD).cells
+      const b = porReference(flags, seeded(seed * 263 + flags))
+      expect(Array.from(a), `flags ${flags.toString(16)} seed ${seed}`).toEqual(Array.from(b))
+    }
+  })
+
+  it('the transcription\'s fields for PoR\'s flag bytes are the recorded ones', () => {
+    const got: Record<string, string> = {}
+    for (const f of POR_FLAGS) for (const seed of [1, 77, 4242]) got[`${f.toString(16)}/${seed}`] = fingerprint(porReference(f, seeded(seed)))
+    expect(got).toEqual(POR_PRINTS)
+  })
+
+  it('classifies the overland tile first (arid tile with ECL 0x4AB3 = 0xFF)', () => {
+    expect(fingerprint(wildBattlefield(0x6d, 0xff, seeded(5), POR_FIELD).cells)).toBe(fingerprint(wildField(0x01, seeded(5), POR_FIELD).cells))
+  })
+
+  it('river FUN_34c7_0bde: banks, then the d20; fords in pairs of rows; no crossing after a ford', () => {
+    // flag 0x10; d100 = 75; 5d4 = 5 → 29 → 26. Row 0: d20 = 1, a ford; row 1: d20 = 7, but one ford so
+    // far: a ford again; row 2: two fords, d20 = 2: banks
+    const s = scripted([[100, 75], [4, 1], [4, 1], [4, 1], [4, 1], [4, 1], [20, 1], [20, 7], [20, 2]], () => 20)
+    const bf = wildField(0x10, s.roll, porOnly('river'))
+    expect([cell(bf, 0, 26), cell(bf, 0, 27), cell(bf, 1, 27), cell(bf, 1, 28)]).toEqual([0x34, 0x35, 0x34, 0x35])
+    for (let row = 2; row <= 22; row++) expect([cell(bf, row, 26 + row), cell(bf, row, 27 + row)], `row ${row}`).toEqual([0x32, 0x33])
+    // row 23 at column 49: the second bank spills into (24, 0); row 24 would be column 50: nothing
+    expect(cell(bf, 23, 49)).toBe(0x32)
+    expect(cell(bf, 24, 0)).toBe(0x33)
+    expect(Array.from(bf.cells).filter((v) => v !== 0x17)).toHaveLength(2 * 24)
+    expect(s.asked).toEqual([100, 4, 4, 4, 4, 4, ...Array(24).fill(20)])
+  })
+
+  it('river: without a ford, the crossing at rows r and r + 1 (r = 16 − d9), the ford\'s four cells', () => {
+    // start 12 (5d4 = 20); every d20 = 20; d9 = 9 → r = 7, columns 19 and 20
+    const s = scripted([[100, 1], [4, 4], [4, 4], [4, 4], [4, 4], [4, 4], ...Array(25).fill([20, 20]), [9, 9]])
+    const bf = wildField(0x10, s.roll, porOnly('river'))
+    expect(s.left()).toBe(0)
+    expect([cell(bf, 7, 19), cell(bf, 7, 20), cell(bf, 8, 20), cell(bf, 8, 21)]).toEqual([0x34, 0x35, 0x34, 0x35])
+    expect([cell(bf, 6, 18), cell(bf, 6, 19), cell(bf, 9, 21), cell(bf, 9, 22)]).toEqual([0x32, 0x33, 0x32, 0x33])
+    expect(cell(bf, 24, 36)).toBe(0x32)
+  })
+
+  it('river: the d100 is rolled whatever the flags; above the chance nothing more', () => {
+    for (const [flags, d] of [[0x00, 1], [0x01, 1], [0x20, 36]] as const) {
+      const s = scripted([[100, d]])
+      const bf = wildField(flags, s.roll, porOnly('river'))
+      expect(bf.cells.every((v) => v === 0x17)).toBe(true)
+      expect(s.asked).toEqual([100])
+    }
+  })
+
+  it('trees FUN_34c7_0d13 and scatter FUN_34c7_0e9e scan columns outer', () => {
+    // flag 0x08: 7 %. (1,0) d100 = 7, d10 = 3 → size 2: trunk 0x25, crown 0x21 at (0,0); then (2,0)'s d100
+    const t = scripted([[100, 7], [10, 3], [100, 100]], () => 100)
+    const bf = wildField(0x08, t.roll, porOnly('treesBySize'))
+    expect([cell(bf, 0, 0), cell(bf, 1, 0)]).toEqual([0x21, 0x25])
+    expect(t.asked.length).toBe(1 + 23 + 49 * 24) // column 0: no d100 at (2,0), the trunk above
+    // scatter, flags 0: rocks (r ≤ 21) at (0,0) and (1,0) take the first two cells of column 0
+    const sc = scripted([[255, 21], [4, 1], [255, 7], [4, 2]], () => 255)
+    const f = wildField(0, sc.roll, porOnly('scatterTerrain'))
+    expect([cell(f, 0, 0), cell(f, 1, 0), cell(f, 0, 1)]).toEqual([0x2a, 0x2b, 0x17])
+  })
+})
+
+// ---------------------------------------------------------------------------------------------------
+// CotAB (spec/coab/combat.md): its own passes, cell for cell against the transcription.
+
+const COAB_FIELD = COAB_RULES.wildField
+const only = (pass: WildPass['pass']): WildFieldSpec => ({ ...COAB_FIELD, passes: COAB_FIELD.passes.filter((p) => p.pass === pass) })
+
 
 /**
  * The CotAB wilderness generator transcribed from the disassembly, one statement per instruction group:
@@ -160,7 +305,7 @@ describe('CotAB wilderness battlefield (0x25C58)', () => {
       [2, 1], [2, 2], [20, 1], // row 0, col 26: 0x3C, 0x3F, then the ford: (0,27) = 0x40, (1,27) = 0x41
       [2, 2], [2, 1], [20, 2], // row 1, col 27: 0x3D overwrites the 0x41, 0x3E
     ], (n) => (n === 20 ? 20 : 1))
-    const bf = wildField(0x10, s.roll, only('riverHalves'))
+    const bf = wildField(0x10, s.roll, only('river'))
     expect([cell(bf, 0, 26), cell(bf, 0, 27)]).toEqual([0x3c, 0x40])
     expect([cell(bf, 1, 27), cell(bf, 1, 28)]).toEqual([0x3d, 0x3e])
     for (let row = 2; row <= 22; row++) expect([cell(bf, row, 26 + row), cell(bf, row, 27 + row)], `row ${row}`).toEqual([0x3c, 0x3e])
@@ -175,7 +320,7 @@ describe('CotAB wilderness battlefield (0x25C58)', () => {
   it('river: d100 above the chance (35 for flag 0x20) or no river flag draws nothing, after one d100', () => {
     for (const [flags, d] of [[0x20, 36], [0x00, 1], [0x01, 1]] as const) {
       const s = scripted([[100, d]])
-      const bf = wildField(flags, s.roll, only('riverHalves'))
+      const bf = wildField(flags, s.roll, only('river'))
       expect(bf.cells.every((v) => v === 0x17)).toBe(true)
       expect(s.asked).toEqual([100])
     }
@@ -184,7 +329,7 @@ describe('CotAB wilderness battlefield (0x25C58)', () => {
       const dice: [number, number][] = [[100, 1]]
       let left = sum
       for (let i = 0; i < 5; i++) { const k = Math.min(4, left - (4 - i)); dice.push([4, k]); left -= k }
-      const bf = wildField(0x10, scripted(dice, (n) => (n === 20 ? 20 : 1)).roll, only('riverHalves'))
+      const bf = wildField(0x10, scripted(dice, (n) => (n === 20 ? 20 : 1)).roll, only('river'))
       expect(cell(bf, 0, start), `5d4 = ${sum}`).toBe(0x3c)
       expect(cell(bf, 0, start - 1)).toBe(0x17)
     }
