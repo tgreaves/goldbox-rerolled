@@ -8,7 +8,7 @@ import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, type Battlefiel
 import { dexMissile, recalc } from './equip'
 import { fx, fire, damageText, healedLine, addEffect, addRaw, removeEffect, removeType, runEffect, type FxHost } from './effects'
 import { heal as healChar } from './camp'
-import { amount, castShared, line, spellSpec } from './spellkinds'
+import { amount, castShared, line, spellSpec, term } from './spellkinds'
 import type { Amount, SpellSpec } from '../games/spellrules'
 import { spellText } from './spelltext'
 import { casterLevel, duration as spellDuration, forget } from './magic'
@@ -1487,8 +1487,29 @@ export class Battle implements FxHost {
       return this.fighters.filter((o) => this.inPlay(o) && footprint(o.size).some(([dx, dy]) =>
         this.cost(centre.x, centre.y, o.x + dx, o.y + dy) <= 2 * radius + 1 && this.sees(centre.x, centre.y, o.x + dx, o.y + dy)))
     }
-    const n = (mode & 3) + 1
     const out: Fighter[] = []
+    const pool = spellSpec(s.id).pool as { size: import('../games/spellrules').Term; by: 'sizeFlags' | 'hitDice'; costs: number[]; other: number } | undefined
+    if (pool) {
+      // CotAB 0x2C7EA (target mode 5): picks are bought from a pool (L, or a roll) by each one's size
+      // or hit dice; the pick that goes over still counts and ends it (from the second on), as does
+      // a cancel or an empty pool; the computer picking one again loses a point of the pool
+      let left = term(pool.size, casterLevel(f.c, s, false), (k, d) => this.e.roll(k, d)) & 0xff, spent = 0
+      for (;;) {
+        const p = await pickOne(false)
+        if (!p?.f) break
+        if (out.includes(p.f)) { if (ai) left = (left - 1) & 0xff; else this.print('Already been targeted') }
+        else {
+          out.push(p.f)
+          this.aimed = { x: p.x, y: p.y }
+          const v = p.f.c[F[pool.by]]
+          spent = (spent + (v < pool.costs.length ? pool.costs[v] : pool.other)) & 0xff
+          if (out.length > 1 && spent > left) break
+        }
+        if (left === 0) break
+      }
+      return out.length ? out : null
+    }
+    const n = (mode & 3) + 1
     for (let i = 0; i < n; i++) {
       const p = await pickOne(false)
       if (!p?.f) continue
@@ -1613,17 +1634,40 @@ export class Battle implements FxHost {
       }
     },
     /**
-     * Hold (1658): last to first, a save bonus by the number of targets (`bonus`: 1, 2, more); with
-     * `sizeImmune` only man-sized or smaller (the whole size byte > 1, 4e53:1760) can be held
+     * Hold (PoR 1658; CotAB's loop 0x45A94 for Hold Person, Hold Monsters, Faerie Fire, Charm Monsters):
+     * last to first, a save bonus by the number of targets (`bonus`: 1, 2, more; I: CotAB's Hold Person
+     * leaves it uninitialised past 4 targets); with `sizeImmune` only man-sized or smaller (the whole size
+     * byte > 1, 4e53:1760) can be held; with `lastSaves` the last-listed target counts as saved without
+     * a roll (CotAB 0x45B4D for 79 and 81: the pool target that went over, or the last pick; quirk
+     * kept). The effect is `effect` or the spell's, power L; with `runAfter` each target's record of it
+     * runs its handler at once afterwards (Charm Monsters 0x4874C)
      */
     async hold({ f, s, L, dur, targets }, p) {
       const n = targets.length
       const bonus = (p.bonus as number[])[Math.min(n, 3) - 1]
+      const last = targets[targets.length - 1]
+      const effect = (p.effect as number | undefined) ?? s.effect
       for (const t of [...targets].reverse()) {
         // 4e53_1658: sound 2 and a bolt to each target before its save, except the last-listed one (I: a bug)
-        if (t !== targets[targets.length - 1]) this.ui.flight?.({ x: f.x, y: f.y }, { x: t.x, y: t.y }, { frames: cycle(5), delay: 30, sounds: [2, 0] })
-        const saved = (!!p.sizeImmune && (t.c[F.monsterType] > 1 || t.c[F.sizeFlags] > 1)) || this.saveSync(t.c, s.saveType, bonus)
-        await addEffect(this, t.c, p.effect as number, dur, L, 0, 1, saved, false, p.msg ?? '')
+        if (t !== last) this.ui.flight?.({ x: f.x, y: f.y }, { x: t.x, y: t.y }, { frames: cycle(5), delay: 30, sounds: [2, 0] })
+        let saved = p.lastSaves && t === last ? true : this.saveSync(t.c, s.saveType, bonus)
+        if (p.sizeImmune && (t.c[F.monsterType] > 1 || t.c[F.sizeFlags] > 1)) saved = true
+        await addEffect(this, t.c, effect, dur, L, 0, 1, saved, false, p.msg ?? '')
+      }
+      if (p.runAfter) await this.runAfter(targets, effect)
+    },
+    /**
+     * Save or be affected (CotAB Entangle 0x4862B, Confusion 0x487DD): each target saves vs `saveType`;
+     * the effect through the add-effect routine (power 0, flag 0, negated by the save) with the line.
+     * `outdoorsOnly`: nothing in a map area (A 0x1CC, ECL 0x49E6, not 0); `upTo`: only the first that
+     * many targets (a roll made first)
+     */
+    async saveEach({ L, dur, targets }, p) {
+      if (p.outdoorsOnly && this.e.read(0x49e6) !== 0) return
+      const n = p.upTo ? amount(p.upTo as Amount, L, (k, d) => this.e.roll(k, d)).total : targets.length
+      for (const t of targets.slice(0, n)) {
+        const saved = this.saveSync(t.c, p.saveType as number, 0)
+        await addEffect(this, t.c, p.effect as number, dur, 0, 0, 1, saved, false, p.msg ?? '')
       }
     },
     /** Charm Person (11dd): power L + the caster's side × `sideMul`, run at once; only man-sized or smaller */

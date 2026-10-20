@@ -10,6 +10,7 @@ import { amount, castShared, spellSpec } from './spellkinds'
 import { game } from '../games/profile'
 import type { Amount } from '../games/spellrules'
 import { F } from '../games/fields'
+import { T } from '../games/tables'
 
 /** Caster level (PoR FUN_10ba_26c2, CotAB 0x4F8BF): the game's terms for the spell class (R.casterTerms),
  *  12 for item-only spells, 6 when nothing qualifies under the game's gate, 6 from an item. */
@@ -22,9 +23,20 @@ export function casterLevel(c: Uint8Array, s: Spell, fromItem = false): number {
   return L
 }
 
-/** Duration in minutes (FUN_4e53_07d6): the game's special cases (games/spellrules.ts), else d0 + d1 × level. */
+/**
+ * Duration in minutes (FUN_4e53_07d6): the game's special cases (games/spellrules.ts), else d0 + d1 ×
+ * level. A case naming a `record` takes d0 and d1 from that spell record instead, read from START.EXE
+ * (CotAB Entangle's Duration(0x88), a bug kept; I: at the cast's level, which the original leaves
+ * uninitialised for that record's class byte unless its caster gate or an item gives 6, as here)
+ */
 export function duration(e: Engine, s: Spell, level: number, inCombat = false): number {
   const special = game().spells.durations[s.id]
+  if (special && 'record' in special) {
+    const img = e.startImage
+    if (!img) return s.duration[0] + s.duration[1] * level
+    const at = T.ds + T.spellRecords.at + special.record * T.spellRecords.row
+    return img[at + 4] + img[at + 5] * level
+  }
   if (special) {
     const r = !inCombat && special.outside ? special.outside : special
     return e.roll(r.n, r.d) * (r.mul ?? 1) + (r.add ?? 0)

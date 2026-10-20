@@ -35,8 +35,11 @@ export interface SpellRules {
    * it only when the new STR beats the base STR, and the current STR is worked out again (0x4C389)
    */
   strength: 'setCurrent' | 'overBase'
-  /** FUN_4e53_07d6's special cases by id (else record bytes 4 + 5 × L); `outside` when it differs out of combat */
-  durations: Record<number, Rolled & { outside?: Rolled }>
+  /**
+   * FUN_4e53_07d6's special cases by id (else record bytes 4 + 5 × L); `outside` when it differs out of
+   * combat; `record`: another spell record's bytes 4 + 5 × L (CotAB Entangle's Duration(0x88))
+   */
+  durations: Record<number, (Rolled & { outside?: Rolled }) | { record: number }>
 }
 
 const each = (ids: number[], spec: SpellSpec) => Object.fromEntries(ids.map((id) => [id, spec]))
@@ -119,13 +122,14 @@ export const POR_SPELLS: SpellRules = {
 /**
  * CotAB's table (DS:72BA): ids 1–56 are PoR's spells, most with the same handler (spec/coab/spells.md
  * §2, "same"); 57–67 keep PoR's item spells where the record matches; 58 and 66–100 are its own.
- * Not yet transcribed (spec/coab/spells.md §2, port status): the new 78, 79, 81–86, 92, 93, 98; until
- * they are, they run Apply ('apply').
+ * Not yet transcribed (spec/coab/spells.md §2, port status): the new 83–86, 92, 93, 98; until they
+ * are, they run Apply ('apply').
  */
 const POR_HANDLERS_1_57 = Object.fromEntries(Object.entries(POR_SPELLS.handlers).filter(([id]) => Number(id) <= 57 || [60, 61, 62, 63, 64, 65].includes(Number(id))))
 
 export const COAB_SPELLS: SpellRules = {
-  durations: DURATIONS,
+  // 0x44E02 is PoR's; Entangle's handler asks for Duration(0x88), past the table: 6 + 3·L (a bug kept)
+  durations: { ...DURATIONS, 78: { record: 0x88 } },
   strength: 'overBase',
   handlers: {
     ...POR_HANDLERS_1_57,
@@ -151,7 +155,13 @@ export const COAB_SPELLS: SpellRules = {
     58: { k: 'heal', amount: { n: 2, d: 8, plus: 1 } }, // 47edd Cure Serious Wounds
     59: { k: 'setStrength', str: 21, pct: 0, effect: 0x92, msg: 'is stronger' }, // 47f27, by the base-STR rule (strength)
     66: { k: 'damage', amount: { n: 2, d: 8, plus: 1 }, dmgType: 8, recordDice: 1 }, // 480f5 Cause Serious Wounds
-    ...each([78, 79, 81, 82, 83, 84, 85, 86, 92, 93, 98], { k: 'apply' }),
+    ...each([83, 84, 85, 86, 92, 93, 98], { k: 'apply' }),
+    78: { k: 'saveEach', effect: 0x88, saveType: 4, msg: 'is entangled', outdoorsOnly: 1 }, // 4862b Entangle
+    // 486e7 Faerie Fire, 4874c Charm Monsters: the Hold loop 0x45A94 (bonus 0) over the targets bought
+    // from a pool (0x2C7EA): L by size (1 → 1, 2–3 → 2, 4 → 4, else 0), 2d4 by hit dice (0–1 → 1, 2 → 2, 3 → 4, else 8)
+    79: { k: 'hold', bonus: [0, 0, 0], sizeImmune: 1, lastSaves: 1, msg: 'is highlighted', pool: { size: 'L', by: 'sizeFlags', costs: [0, 1, 2, 2, 4], other: 0 } },
+    81: { k: 'hold', bonus: [0, 0, 0], sizeImmune: 1, lastSaves: 1, runAfter: 'each', msg: 'is charmed', pool: { size: { roll: [2, 4] }, by: 'hitDice', costs: [1, 1, 2, 4], other: 8 } },
+    82: { k: 'saveEach', effect: 0x23, saveType: 4, msg: 'is confused', upTo: { n: 2, d: 8 } }, // 487dd Confusion
     67: { k: 'curePoison', effect: 0x37, removes: [0x37, 0x16, 0x0f], msg: 'is unpoisoned', unaffected: 'is unaffected' }, // 4814a
     // 48240 Poison: Apply (effect 0: only the save), then the 0x40 probe on the caster's combat target
     68: { k: 'applyProbe', probe: 0x40 },

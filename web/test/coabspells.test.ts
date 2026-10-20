@@ -34,10 +34,15 @@ function field(files: GameFiles) {
   const dice: number[] = []
   e.roll = (n: number) => dice.length ? dice.shift()! : n
   const printed: string[] = []
-  const menus: number[] = [], confirms: boolean[] = []
+  const menus: number[] = [], confirms: boolean[] = [], aims: (Fighter | null)[] = []
   const ui = {
     print: (t: string) => printed.push(t), redraw: () => {}, pause: async () => {}, sound: () => {},
     menu: async () => menus.shift() ?? 0, confirm: async () => confirms.shift() ?? false,
+    // the player's picks in turn (null: cancel)
+    aim: async (_f: Fighter, entries: { f: Fighter | null; x: number; y: number }[]) => {
+      const t = aims.shift()
+      return t ? entries.find((en) => en.f === t) ?? { f: t, x: t.x, y: t.y, cost: 0, ok: true } : null
+    },
   } as unknown as CombatUi
   const bf = new Battlefield(false)
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) bf.set(r, c, OPEN)
@@ -65,7 +70,7 @@ function field(files: GameFiles) {
     try { await b.applySpell(f, e.spells!.get(id)!, L, targets) } finally { fx.spell = 0 }
   }
   const has = (f: Fighter, type: number) => b.effectsOf(f.c).filter((x) => x.type === type)
-  return { e, b, bf, add, hits, printed, dice, menus, confirms, cast, has }
+  return { e, b, bf, add, hits, printed, dice, menus, confirms, aims, cast, has }
 }
 
 const por = process.env.POOLRAD ?? '', coab = process.env.COAB ?? ''
@@ -417,6 +422,69 @@ describe.skipIf(!haveCoab)('CotAB new spells: 67, 68, 70, 73, 75, 76', () => {
     await cast(cleric, 76, 9, [c])
     expect(hits).toEqual([['C', 10, false]])
     expect([fx.dice, fx.dmgType]).toEqual([2, 8])
+  })
+})
+
+describe.skipIf(!haveCoab)('CotAB new spells: 78, 79, 81, 82', () => {
+  const files = haveCoab ? load(coab, COAB) : null
+  afterAll(() => setGame(POR))
+  const cotab = () => { setGame(COAB); return field(files!) }
+
+  it('Entangle (78): only outside a map area; Duration(0x88) = 6 + 3·L (bug kept, 0x4862B)', async () => {
+    const { e, add, cast, has, dice, printed } = cotab()
+    const druid = add(5, 5, 0, 'DRUID')
+    const a = add(8, 5, 1, 'A'), b2 = add(9, 5, 1, 'B')
+    e.write(0x49e6, 1)
+    await cast(druid, 78, 5, [a, b2])
+    expect(has(a, 0x88).length).toBe(0)
+    e.write(0x49e6, 0)
+    dice.push(1, 20)
+    await cast(druid, 78, 5, [a, b2])
+    expect(has(a, 0x88).map((x) => [x.duration, x.power, x.flag])).toEqual([[21, 0, 0]])
+    expect(has(b2, 0x88).length).toBe(0)
+    expect(printed).toEqual(['A is entangled', 'B is Unaffected'])
+  })
+
+  it('Faerie Fire (79): targets bought from a pool of L by size; the last one always saves (0x2C7EA, 0x45B4D)', async () => {
+    const { b, e, add, cast, has, aims, printed } = cotab()
+    const druid = add(5, 5, 0, 'DRUID')
+    druid.c[F.levels + 4] = 10 // ranger 10: druid spells at 3
+    druid.c[F.quick] = 0
+    const a = add(7, 5, 1, 'A'), b2 = add(8, 5, 1, 'B'), c = add(9, 5, 1, 'C', { size: 2 })
+    aims.push(a, a, b2, c, a)
+    const targets = await b.spellTargets(druid, e.spells!.get(79)!, 10)
+    expect(targets).toEqual([a, b2, c]) // 1 + 1 + 2 > 3: C counts and ends it
+    expect(printed).toEqual(['Already been targeted'])
+    expect(b.aimed).toEqual({ x: 9, y: 5 })
+    printed.length = 0
+    await cast(druid, 79, 3, targets!, b.aimed)
+    expect([a, b2, c].map((t) => has(t, 7).map((x) => [x.duration, x.power]))).toEqual([[[12, 3]], [[12, 3]], []])
+    expect(printed).toEqual(['C is Unaffected', 'B is highlighted', 'A is highlighted'])
+  })
+
+  it('Charm Monsters (81): a pool of 2d4 by hit dice; the charmed change sides at once (0x4874C)', async () => {
+    const { b, e, add, cast, aims, dice, printed } = cotab()
+    const mage = add(5, 5, 0, 'MAGE')
+    mage.c[F.levels + 5] = 9
+    mage.c[F.quick] = 0
+    const ogre = add(7, 5, 1, 'OGRE', { hd: 3 }), kob = add(8, 5, 1, 'KOBOLD', { hd: 0 }), orc = add(9, 5, 1, 'ORC', { hd: 1 })
+    dice.push(3)
+    aims.push(ogre, kob, orc)
+    const targets = await b.spellTargets(mage, e.spells!.get(81)!, 10)
+    expect(targets).toEqual([ogre, kob]) // 4 (alone it counts) + 1 > 3
+    await cast(mage, 81, 9, targets!, b.aimed)
+    expect([ogre.c[F.side], kob.c[F.side], orc.c[F.side]]).toEqual([0, 1, 1])
+    expect(printed).toEqual(['KOBOLD is Unaffected', 'OGRE is charmed'])
+  })
+
+  it('Confusion (82): up to 2d8 targets, each saves or is confused (power 0, 2 + L)', async () => {
+    const { add, cast, has, dice } = cotab()
+    const mage = add(5, 5, 0, 'MAGE')
+    const a = add(8, 5, 1, 'A'), b2 = add(9, 5, 1, 'B')
+    dice.push(1) // 2d8 → 1: the first target only
+    await cast(mage, 82, 7, [a, b2])
+    expect(has(a, 0x23).map((x) => [x.duration, x.power])).toEqual([[9, 0]])
+    expect(has(b2, 0x23).length).toBe(0)
   })
 })
 
