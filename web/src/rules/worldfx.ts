@@ -4,9 +4,9 @@
 import type { Engine } from '../vm/engine'
 import { damageText, fire, fx, type FxHost } from './effects'
 import { recalc } from './equip'
+import { heal as healChar } from './camp'
 import { F } from '../games/fields'
 import { Tables } from './chargen'
-import { game } from '../games/profile'
 
 export class WorldHost implements FxHost {
   private readonly e: Engine
@@ -58,12 +58,7 @@ export class WorldHost implements FxHost {
     return (fx.saved = c[F.saves + type] <= fx.save)
   }
   heal(c: Uint8Array, amount: number, force: boolean) {
-    if (![0, 1, 4, 5].includes(c[F.status])) return false
-    const block = game().effects.healBlock // FUN_5216_175d's mummy rot (CotAB 0x4CE85: none)
-    if (!force && this.e.effectsOf(c).some((f) => block.includes(f.type))) return false
-    c[F.hp] = Math.min(c[F.maxHp], c[F.hp] + amount)
-    if (c[F.hp] > 0 && (c[F.status] === 4 || c[F.status] === 5)) { c[F.status] = 0; c[F.inPlay] = 1 }
-    return true
+    return healChar(c, this.e.effectsOf(c), amount, force, false)
   }
   revive(c: Uint8Array, hp: number) {
     c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = Math.min(hp, c[F.maxHp])

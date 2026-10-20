@@ -191,7 +191,7 @@ Resulting timing for one character: the base hours, then each spell 15 minutes �
 - Only status Okay, Animated, Unconscious or Dying (set `5216:173D` = {0, 1, 4, 5}); Dead, Stoned, Running and tempgone are skipped.
 - Blocked when the character has effect **0x32** (mummy rot), which heals 1 HP every 10 days on its own ([[spec/effects]]).
 - HP += 1, capped at max HP.
-- If char[0x10D] = 0 afterwards: Dying → Unconscious; an Unconscious character outside combat runs effect 0x4E (revive) as a removal call, which returns it to Okay when HP > 0 (**I**, [[spec/effects]]).
+- If char[0x10D] = 0 afterwards: Dying → Unconscious; an Unconscious character outside combat (game mode DS:49F3 ≠ 5) runs effect 0x4E (revive) as a removal call (0x43985): its handler `FUN_3723_19d9` calls `FUN_5216_1869(current HP)`, which sets status Okay, **char[0x10D] = 1** (back in play) and HP, with no test of the HP (**O**, 0x439FF–0x43A14; CotAB the same, heal 0x4CE85, revive 0x4CFAD/0x4CFB6; [[spec/effects]]).
 
 Natural healing is therefore **1 HP per character per 24 hours of rest**, whatever the class, level or Constitution.
 

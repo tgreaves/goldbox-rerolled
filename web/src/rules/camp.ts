@@ -208,14 +208,24 @@ export async function restStep(e: Engine, r: RestState, camp: { heal: number }):
   return { messages, interrupted: false }
 }
 
-/** Heal (FUN_5216_175d, CotAB 0x4CE85): statuses Okay, Animated, Unconscious, Dying; the game's blocking
- *  effects (`effects.healBlock`: PoR's mummy rot) stop it unless forced. */
-export function heal(c: Uint8Array, fx: Effect[], amount: number, force: boolean, inCombat = false): boolean {
+/**
+ * Heal (FUN_5216_175d, CotAB 0x4CE85): statuses Okay, Animated, Unconscious, Dying; the game's blocking
+ * effects (`effects.healBlock`: PoR's mummy rot) stop it unless forced. Then, for someone out of play
+ * (char in-play byte 0): Dying becomes Unconscious, and outside combat an Unconscious character is
+ * revived by effect 0x4E's removal (FUN_3723_19d9 → FUN_5216_1869, CotAB 0x4CFAD): Okay and back in
+ * play with the HP it has now. `revive` does that last step (a host prints "gets back up").
+ */
+export function heal(c: Uint8Array, fx: Effect[], amount: number, force: boolean, inCombat = false, revive?: (c: Uint8Array) => void): boolean {
   if (![0, 1, 4, 5].includes(c[F.status])) return false
   const block = game().effects.healBlock
   if (!force && fx.some((f) => block.includes(f.type))) return false
   c[F.hp] = Math.min(c[F.maxHp], c[F.hp] + amount)
-  if (c[F.status] === 5) c[F.status] = 4
-  if (c[F.status] === 4 && !inCombat && c[F.hp] > 0) c[F.status] = 0
+  if (c[F.inPlay] === 0) {
+    if (c[F.status] === 5) c[F.status] = 4
+    if (c[F.status] === 4 && !inCombat) {
+      if (revive) revive(c)
+      else { c[F.status] = 0; c[F.inPlay] = 1 }
+    }
+  }
   return true
 }

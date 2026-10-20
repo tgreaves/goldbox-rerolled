@@ -165,6 +165,20 @@ describe.skipIf(!haveCoab)('CotAB spells done as parameters (6da4862)', () => {
     c[F.hp] = 5
     expect(heal(c, [{ type: 0x32, duration: 5, power: 0, flag: 0 }], 4, false, true)).toBe(false) // PoR's mummy rot
   })
+
+  it('healing someone unconscious outside combat brings them back into play (FUN_5216_175d → 1869, CotAB 0x4CF05 → 0x4CFB6)', () => {
+    for (const g of [POR, COAB]) {
+      setGame(g)
+      const c = new Uint8Array(F.size)
+      c[F.maxHp] = 20; c[F.hp] = 0; c[F.status] = 4; c[F.inPlay] = 0
+      expect(heal(c, [], 1, false)).toBe(true)
+      expect([c[F.hp], c[F.status], c[F.inPlay]]).toEqual([1, 0, 1])
+      c[F.hp] = 0; c[F.status] = 5; c[F.inPlay] = 0 // in combat: Dying becomes Unconscious, still out of play
+      heal(c, [], 1, false, true)
+      expect([c[F.hp], c[F.status], c[F.inPlay]]).toEqual([1, 4, 0])
+    }
+    setGame(POR)
+  })
 })
 
 describe.skipIf(!haveCoab)('CotAB changed handlers', () => {
