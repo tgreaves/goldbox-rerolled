@@ -81,6 +81,7 @@ and makes one active (`setGame`), switching the live objects the rest of the cod
 | `files.ts` | character and save files: extensions, save size, where the party list and wall sets are | `game().saves` |
 | `rules.ts` | rules values and procedure choices: spells, slots, hit points, caster level, thief skills, level limits, money, temple, joining, creation effects, paladin abilities | `R` |
 | `spellrules.ts` | spell handlers: every spell id's handler kind and parameters (as the original's handler table), the duration special cases | `game().spells` |
+| `landmarkrules.ts` | what the area map's landmarks look for in the script text (shopkeepers' lines, the temple's god, named places) | `game().landmarks` |
 | `effectrules.ts` | the effect system: event lists in the original's order, area effects, per-type handler map, item kinds | `game().effects` |
 | `treasure.ts` | random treasure: the type choice (nested dice bands), plus roll, scrolls, magic records | `game().treasure` |
 | `view.ts` | the 3D view and screens: floor and ground, BIGPIC, overland kind, frames, sun and clouds | `game().view` |

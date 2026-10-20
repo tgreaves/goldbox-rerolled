@@ -4,11 +4,12 @@
 // walked and classified from what it does (spec/ecl.md, spec/town.md).
 import type { GeoMap } from '../data/geo'
 import { unpackText } from '../data/text'
+import { game } from '../games/profile'
+import { canonical } from '../games/ecl'
 
-const CODE = 0x9900
-
-/** Operand count per opcode, and which operand (0-based) holds a count of further operands. */
-const OPS: Record<number, [number, number?]> = {
+/** Operand count per opcode, and which operand (0-based) holds a count of further operands (PoR; a game's
+ *  differences are `ecl.operands`). */
+const BASE_OPS: Record<number, [number, number?]> = {
   0x00: [0], 0x01: [1], 0x02: [1], 0x03: [2], 0x04: [3], 0x05: [3], 0x06: [3], 0x07: [3], 0x08: [2], 0x09: [2],
   0x0a: [1], 0x0b: [3], 0x0c: [3], 0x0d: [0], 0x0e: [1], 0x0f: [2], 0x10: [2], 0x11: [1], 0x12: [1], 0x13: [0],
   0x14: [4], 0x15: [3, 2], 0x16: [0], 0x17: [0], 0x18: [0], 0x19: [0], 0x1a: [0], 0x1b: [0], 0x1c: [0], 0x1d: [1],
@@ -16,6 +17,8 @@ const OPS: Record<number, [number, number?]> = {
   0x29: [14], 0x2a: [3], 0x2b: [2, 1], 0x2c: [6], 0x2d: [1], 0x2e: [5], 0x2f: [3], 0x30: [3], 0x31: [0], 0x32: [1],
   0x33: [0], 0x34: [1], 0x35: [3], 0x36: [2], 0x37: [3], 0x38: [1], 0x39: [1], 0x3a: [0], 0x3b: [3], 0x3c: [1], 0x3d: [0],
 }
+/** the engine's temple and shop flags (ECL, in PoR's numbering: rules/landmarks reads canonical addresses) */
+const TEMPLE_FLAG = 0x6de2, SHOP_FLAG = 0x6e6c
 const GOTO = 0x01, GOSUB = 0x02, SAVE = 0x09, NEW_ECL = 0x20, ON_GOTO = 0x25, ON_GOSUB = 0x26, PROGRAM = 0x38
 const ENDS = new Set([0x00, 0x13, GOTO, NEW_ECL]) // EXIT, RETURN, GOTO, NEW_ECL
 const isIf = (op: number) => op >= 0x16 && op <= 0x1b
@@ -24,9 +27,10 @@ interface Operand { kind: number; word: number; text?: string }
 interface Instr { op: number; ops: Operand[]; next: number }
 
 function decode(code: Uint8Array, pc: number): Instr | null {
+  const CODE = game().ecl.code
   const at = (a: number) => code[a - CODE]
   const op = at(pc)
-  const spec = OPS[op]
+  const spec = game().ecl.operands[op] ?? BASE_OPS[op]
   if (!spec || pc < CODE || pc - CODE >= code.length) return null
   const ops: Operand[] = []
   let p = pc
@@ -49,7 +53,8 @@ function decode(code: Uint8Array, pc: number): Instr | null {
 }
 
 const constant = (o: Operand | undefined) => (o && (o.kind === 0 || o.kind === 2) ? o.word : undefined)
-const address = (o: Operand | undefined) => (o && (o.kind === 1 || o.kind === 3) ? o.word : undefined)
+/** a variable operand's address in the engine's (PoR's) numbering, whatever the game */
+const address = (o: Operand | undefined) => (o && (o.kind === 1 || o.kind === 3) ? canonical(game().ecl, o.word) : undefined)
 
 /** Everything reachable from `start` (all branches), up to `limit` instructions. */
 function walk(code: Uint8Array, start: number, limit = 400) {
@@ -84,7 +89,7 @@ function walk(code: Uint8Array, start: number, limit = 400) {
 
 /** Handlers per event number: the largest ON_GOTO reachable from on_step (vector 1). */
 function handlers(code: Uint8Array): number[] {
-  const v = decode(code, CODE + 4)
+  const v = decode(code, game().ecl.code + 4)
   if (!v || v.op !== GOTO) return []
   // the dispatch itself only, so stop before descending into the handlers it lists
   const seen = new Set<number>()
@@ -122,26 +127,20 @@ export const ICONS: Record<Kind, string> = {
 const sentence = (t: string) => t.replace(/^'/, '').split(/(?<=[.!?])\s/)[0].trim()
 
 function classify(w: ReturnType<typeof walk>, door: ((n: number) => Kind | null)): { kind: Kind; label: string } | null {
+  const rules = game().landmarks
   const all = w.texts.join(' ')
-  const has = (re: RegExp) => re.test(all)
-  if (has(/\bTAVERN\b/)) return { kind: 'tavern', label: 'Tavern' }
-  if (w.saves.some(([a, v]) => a === 0x6de2 && v === 1)) {
-    const god = /(?:PRIESTS|PRIESTESS \w+) OF (\w+)/.exec(all)?.[1]
+  const named = (marks: typeof rules.first) => marks.find((m) => m.re.test(all))
+  const first = named(rules.first)
+  if (first) return first
+  if (w.saves.some(([a, v]) => a === TEMPLE_FLAG && v === 1)) {
+    const god = rules.god.exec(all)?.[1]
     return { kind: 'temple', label: god ? `Temple of ${god[0]}${god.slice(1).toLowerCase()}` : 'Temple' }
   }
-  if (w.saves.some(([a, v]) => a === 0x6e6c && v === 1)) {
-    // the four New Phlan shops (spec/town.md), told apart by the shopkeeper's line
-    if (has(/JEWELRY/)) return { kind: 'jeweller', label: 'Jeweller' }
-    if (has(/ARMS AND ARMOR/)) return { kind: 'armoury', label: 'Arms and armour' }
-    if (has(/SILVER/)) return { kind: 'silver', label: 'Silversmith' }
-    if (has(/OFFERS YOU ITEMS FOR SALE/)) return { kind: 'store', label: 'General store' }
-    return { kind: 'shop', label: 'Shop' }
-  }
+  if (w.saves.some(([a, v]) => a === SHOP_FLAG && v === 1)) return named(rules.shops) ?? { kind: 'shop', label: 'Shop' }
   if (w.programs.includes(0)) return { kind: 'training', label: 'Training hall' }
-  if (w.programs.includes(9) && has(/REST/)) return { kind: 'inn', label: 'Inn' }
-  if (has(/CITY HALL/)) return { kind: 'hall', label: 'City Hall' }
-  if (has(/HARBOR MASTER|BOARD A BOAT/)) return { kind: 'harbour', label: has(/HARBOR MASTER/) ? 'Harbour master' : 'Boats' }
-  if (has(/GATEWAY/)) return { kind: 'gate', label: 'Gateway' }
+  if (w.programs.includes(9) && /REST/.test(all)) return { kind: 'inn', label: 'Inn' }
+  const place = named(rules.places)
+  if (place) return place
   for (const n of w.newEcl) {
     const k = door(n)
     if (k) return { kind: k, label: k === 'training' ? 'Training halls' : 'City Hall' }
@@ -162,7 +161,7 @@ export function landmarks(code: Uint8Array, geo: GeoMap, record: (n: number) => 
       const c = record(n)
       let k: Kind | null = null
       if (c) {
-        const w = walk(c, CODE + 4 * 4, 2000) // from on_enter, reaching the area's handlers
+        const w = walk(c, game().ecl.code + 4 * 4, 2000) // from on_enter, reaching the area's handlers
         const steps = handlers(c).map((t) => walk(c, t))
         if (steps.some((s) => s.programs.includes(0)) || w.programs.includes(0)) k = 'training'
         else if ([w, ...steps].some((s) => s.texts.some((t) => /CITY HALL/.test(t)))) k = 'hall'

@@ -5,6 +5,7 @@ import { COAB_RULES_TEXT } from './rulestext'
 import { COAB_ENDING } from './ending'
 import { COAB_EFFECTS } from './effectrules'
 import { COAB_SPELLS } from './spellrules'
+import { COAB_LANDMARKS } from './landmarkrules'
 import { COAB_TREASURE } from './treasure'
 import { COAB_SOUND } from './sound'
 import { COAB_TITLE } from './title'
@@ -44,6 +45,7 @@ export const COAB: GameProfile = {
   commissions: false,
   treasure: COAB_TREASURE,
   spells: COAB_SPELLS,
+  landmarks: COAB_LANDMARKS,
   effects: COAB_EFFECTS,
   ending: COAB_ENDING,
   rulesText: COAB_RULES_TEXT,

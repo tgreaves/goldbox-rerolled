@@ -19,6 +19,9 @@ export interface EclMap {
   ops: Record<number, EclVariant>
   /** IF-skip operand counts that differ from PoR's table */
   skip: Record<number, number>
+  /** operand counts for reading scripts statically (rules/landmarks.ts) that differ from PoR's:
+   *  opcode → [fixed operands, index of the operand holding a count of further ones] */
+  operands: Record<number, [number, number?]>
   /** CALL targets, compared with the operand's raw value */
   calls: { refresh: number; sound: number; frame: number }
   /** CALL sound: register 0x3DE value → sound effect, and the effect for any other value (null: none) */
@@ -54,7 +57,7 @@ export type EclVariant = 'passTime' | 'findSpell' | 'protection' | 'redrawScreen
   'destroyItems' | 'returnOrExit' | 'divideRemainder'
 
 export const POR_ECL: EclMap = {
-  a: 0x4900, b: 0x6b00, c: 0x9700, code: 0x9900, memorisedView: 0, viewReads: {}, ops: {}, skip: {},
+  a: 0x4900, b: 0x6b00, c: 0x9700, code: 0x9900, memorisedView: 0, viewReads: {}, ops: {}, skip: {}, operands: {},
   calls: { refresh: 0x2c90, sound: 0xba03, frame: -1 },
   callSounds: { by: { 8: 10, 10: 11 }, other: null },
   refreshAfterPicture: false,
@@ -84,6 +87,8 @@ export const COAB_ECL: EclMap = {
     0x3d: 'redrawScreen', 0x3e: 'dropCharacter', 0x3f: 'findEffect', 0x40: 'destroyItems',
   },
   skip: { 0x0c: 3, 0x3f: 1, 0x40: 1 },
+  // the handlers' operand-reader counts (0x1FA02; tools/coab/ecl_coab.py): PASS_TIME takes 2, three new opcodes
+  operands: { 0x34: [2], 0x3e: [0], 0x3f: [1], 0x40: [1] },
   calls: { refresh: 0x2e10, sound: 0xb200, frame: 0x6803 },
   callSounds: { by: { 8: 10, 10: 11 }, other: 10 }, // 0x069B0: DS:25C2 = 10, DS:25C4 = 11
   refreshAfterPicture: true, // PICTURE sets DS:8B7C (0x190EA)

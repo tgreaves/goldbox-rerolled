@@ -37,3 +37,32 @@ describe.skipIf(!have)('landmarks', () => {
     expect(area(2, 20, 20)).toEqual([])
   })
 })
+
+// CotAB's Tilverton (block 2, area 1), its script read at its own code base and operand counts
+const coab = process.env.COAB ?? ''
+describe.skipIf(!coab || !existsSync(coab))("landmarks in Curse of the Azure Bonds", () => {
+  it("finds Tilverton's training hall, shops, temple and tavern", async () => {
+    const { readdirSync: rd, statSync } = await import('node:fs')
+    const { Engine } = await import('../src/vm/engine')
+    const { COAB, POR, setGame, wants } = await import('../src/games/profile')
+    setGame(COAB)
+    try {
+      const m = new Map<string, Uint8Array>()
+      const walkDir = (d: string) => { for (const n of rd(d)) { const p = join(d, n); if (statSync(p).isDirectory()) walkDir(p); else if (wants(COAB, n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(p))) } }
+      walkDir(coab)
+      const files = new GameFiles(m, COAB)
+      const io = { print: () => {}, menu: async (i: unknown[]) => i.length - 1, inputNumber: async () => 0, inputText: async () => 'X', picture: () => {}, sprite: () => {}, refresh: async () => {}, pause: async () => {}, sound: () => {}, engine: async () => {} }
+      const e = new Engine(files, io as never, 1)
+      e.newGame([files.get('CHRDATA1.SAV')!])
+      const vm = e as unknown as { setBlock(b: number): void; loadEcl(r: number): void; resetVm(k: boolean): void }
+      vm.setBlock(2); e.area = 1; vm.loadEcl(1); vm.resetVm(false)
+      await Promise.race([e.enter(), new Promise((r) => setTimeout(r, 2000))])
+      const record = (n: number) => { const raw = files.record('ECL2', n); if (!raw) return null; const c = new Uint8Array(0x1e00); c.set(raw.subarray(2, 2 + 0x1e00)); return c }
+      const marks = landmarks(e.code, e.geo!, record)
+      expect(new Set(marks.map((l) => l.label))).toEqual(new Set(['Training hall', 'Shop', 'Temple', 'Arms and armour', 'Tavern']))
+      expect(marks.find((l) => l.x === 12 && l.y === 7)?.detail).toBe('WE HAVE A SELECTION OF THE FINEST CORMYR STEEL.')
+    } finally {
+      setGame(POR)
+    }
+  })
+})
