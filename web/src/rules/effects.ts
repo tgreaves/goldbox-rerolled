@@ -1,7 +1,7 @@
 // Effects ("affects", spec/effects.md): per-event dispatch of effect handlers (FUN_5216_02fa) and the
 // handlers themselves. Globals of the original (DS:6816..6826) live in the Fx context.
 import type { Effect } from '../data/effects'
-import { Item, ITEM_SIZE } from '../data/items'
+import type { Item } from '../data/items'
 import { F } from '../games/fields'
 import { R } from '../games/rules'
 import { game } from '../games/profile'
@@ -224,7 +224,7 @@ export function negate(t: number) {
 }
 
 /** FUN_3723_001f: re-arm a periodic effect unless suppressed. */
-function rearm(h: FxHost, c: Uint8Array, type: number, duration: number, power: number): boolean {
+export function rearm(h: FxHost, c: Uint8Array, type: number, duration: number, power: number): boolean {
   if (fx.noRearm) return false
   addRaw(h, c, type, duration, power, 1)
   return true
@@ -245,7 +245,6 @@ function deflect(h: FxHost, c: Uint8Array, pct: number) {
 const weaponOf = (h: FxHost, c: Uint8Array) => h.weapon(c)
 
 const nameIs = (c: Uint8Array, names: string[]) => names.includes(String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name])))
-const alignmentIn = (c: Uint8Array | null, set: number[]) => !!c && set.includes(c[F.alignment])
 
 async function poisonOnHit(h: FxHost, bonus: number) {
   const t = h.targetOf(h.current()!)
@@ -324,11 +323,14 @@ export function drain(h: FxHost, t: Uint8Array, n: number) {
 
 /**
  * One handler call (FUN_5216_0000; CotAB 0x4AB77). event −1 = removal (arg 1) or a direct run. The
- * game's profile may name another behaviour for the type (rules/coabeffects.ts); else PoR's handler.
+ * game's profile names the behaviour for the type (games/effectrules.ts `handlers`, rules/effectkinds.ts).
+ * A behaviour that waits for something (an attack, a removal, an effect added through its event) is
+ * async; the others are synchronous, so the rest of the event's chain follows at once, as the original's
+ * does, and the save, damage and attack routines see every handler.
  */
-function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event: number, removal: boolean): void | Promise<void> {
+export function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event: number, removal: boolean): void | Promise<void> {
   const spec = game().effects.handlers[type]
-  if (spec) return behave(h, spec, eff, c, removal)
+  if (spec) return behave(h, spec, eff, c, removal, event, type)
   // PoR's handler is async, but it runs to the end synchronously unless its type waits for something
   // (an attack, a removal, an effect added through its event): the rest of the event's chain must then
   // follow at once, as the original's does, so the save, damage and attack routines see every handler
@@ -342,83 +344,7 @@ const POR_WAITS = new Set([22, 28, 34, 64, 65, 66, 67, 68, 69, 70, 73, 74, 75, 8
 /** PoR's handlers (spec/effects.md), by type. */
 async function porHandle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event: number, removal: boolean) {
   if (removal && R.paladin && type === R.paladin.cureDisease.effect) return refillUses(c) // the game's weekly refill
-  const cur = h.current()
   switch (type) {
-    case 1: if (event === 10) fx.roll++; else if (event === 17) fx.morale += 5; break
-    case 2: if (event === 10) fx.roll--; else if (event === 17) fx.morale = Math.max(0, fx.morale - 5); break
-    case 3: { const t = h.targetOf(c); if (t && t[F.monsterType] === 4) { if (event === 10) fx.roll += 2; else fx.dmg += 2 } break }
-    case 4: if (removal) { h.print(`${h.name(c)} starts to train`); addRaw(h, c, 7, 43200, 0xff, 1) } break
-    case 6: {
-      const t = h.targetOf(c)
-      const b = !t ? 0 : t[F.monsterType] === 10 ? 1 : t[F.monsterType] === 9 || t[F.monsterType] === 12 ? 2 : t[F.monsterType] === 4 ? 3 : 0
-      if (event === 10) fx.roll += b
-      else { fx.dmg += b; fx.dmgType = 9 }
-      break
-    }
-    case 7: if (removal) { h.print(`${h.name(c)} is hardier`); c[F.stat[4]]++; if (c[F.stat[4]] >= 20) addRaw(h, c, 62, 60, 0, 1) } break
-    case 8: case 45: if (alignmentIn(cur, [2, 5, 8])) { if (event === 12) fx.save += 2 } break
-    case 9: case 46: if (alignmentIn(cur, [0, 3, 6])) { if (event === 12) fx.save += 2 } break
-    case 10: if (event === 6 && fx.dmgType & 2) fx.dmg = Math.floor(fx.dmg / 2); else if (event === 12) fx.save += 3; break
-    case 11: { // Charm Person
-      if (removal) { c[F.side] = (eff.power >> 6) & 1; if (c[F.morale] === 0xb3) c[F.morale] = 0; break }
-      if (!(eff.power & 0x20)) {
-        eff.power = (eff.power + 0x20 + c[F.side] * 0x40) & 0xff
-        c[F.side] = eff.power >> 7
-        c[F.quick] = 1
-        if (c[F.morale] < 0x80) c[F.morale] = 0xb3
-        h.setRec(c, 0xa, 0)
-      }
-      if (event === 17) fx.morale = 100
-      break
-    }
-    case 12: case 38: if (removal) restoreStr(h, c, eff); break
-    case 23: spiritualHammer(h, c, removal); break
-    case 14: if (removal) c[F.stat[5]] = eff.power; break
-    case 15: if (removal && rearm(h, c, 15, 10, 0xff) && c[F.hp] > 1) { fx.dmgType = 0; h.damage(c, 1, 0, false) } break
-    case 17: // Shield
-      if (event === 11) c[F.ac] = Math.max(c[F.ac], 57)
-      else if (event === 12) fx.save += 1
-      else if (event === 6 && fx.spell === 15) fx.dmg = 0
-      break
-    case 18: { const t = h.targetOf(c); if (t && t[F.monsterType] === 1 && t[F.sizeFlags] === 1 && nameIs(t, ['KOBOLD', 'KOBOLD LEADER', 'GOBLIN', 'GOBLIN LEADER'])) fx.roll++; break }
-    case 20: if (event === 6 && fx.dmgType & 1) fx.dmg = Math.floor(fx.dmg / 2); else if (event === 12) fx.save += 3; break
-    case 21: if (h.rec(c, 2)) h.print(`${h.name(c)} is silenced`); h.setRec(c, 1, 0); h.setRec(c, 2, 0); break
-    case 22: if (removal) { if (has(h, c, 55)) h.setStatus(c, 6, `${h.name(c)} dies from poison`); await removeType(h, c, 15, true) } break
-    case 25: // Invisibility
-      if (event === 1 && cur && !has(h, cur, 24)) fx.untargetable = true
-      else if (event === 16) fx.roll -= 4
-      break
-    case 26: { const t = h.targetOf(c); if (t && t[F.monsterType] === 1 && t[F.sizeFlags] === 1 && nameIs(t, ['ORC', 'ORC LEADER', 'GOBLIN', 'GOBLIN LEADER', 'HOBGOBLIN', 'HOBGOBLIN CHIEF', 'GAGOOL', 'MACE'])) fx.roll++; break }
-    case 28: // Mirror Image
-      if ((event === 5 || event === 6) && fx.spell !== 0 && !fx.area && h.roll(1, eff.power + 1) > 1) {
-        fx.dmg = 0
-        h.print(`${h.name(c)} lost an image`)
-        if (--eff.power <= 0) await removeEffect(h, c, eff)
-      }
-      break
-    case 29: if (event === 4) fx.dmg -= Math.floor(fx.dmg / 4); break
-    case 30: // Stinking Cloud
-      if (event === 15 && h.rec(c, 2)) h.print(`${h.name(c)} is coughing`)
-      h.setRec(c, 1, 0); h.setRec(c, 2, 0)
-      if (event === 11) { c[F.acRear] = Math.max(0x32, c[F.acRear] - 2); c[F.ac] = c[F.acRear] }
-      break
-    case 31: case 51: case 52: case 53: if (event === 7) h.endTurn(c); break
-    case 32: if (removal && !fx.noRearm) { // an animated body falls; sweep = fighter level, even 0, as 3723:0b7d (the next recalc sets it ≥ 1)
-      h.setStatus(c, 6, `${h.name(c)} collapses`)
-      c[F.side] = eff.power >> 4; c[F.quick] = 1; c[F.undead] = 0; c[F.sweep] = c[F.levels + 2]; c[F.baseMove] = 12
-      if (c[F.morale] === 0xb3) c[F.morale] = 0
-      c[F.monsterType] = 0
-    } break
-    case 33: if (event === 10) fx.roll -= 4; else if (event === 11) { c[F.ac] = Math.max(0, c[F.ac] - 4); c[F.acRear] = Math.max(0, c[F.acRear] - 4) } else if (event === 12) fx.save -= 4; break
-    case 34: await handle(h, 43, eff, c, event, removal); await handle(h, 44, eff, c, event, removal); break
-    case 35: if (event === 12) fx.save += 1; else fx.roll += 1; break
-    case 36: if (event === 10) fx.roll -= 4; else if (event === 12) fx.save -= 4; break
-    case 37: if (h.rec(c, 3) > 0) { if (event === 1) fx.untargetable = true; else fx.roll = -1 } break
-    case 39: // Haste
-      if (!(eff.power & 0x10)) { eff.power |= 0x10; h.print(`${h.name(c)} ages`); const a = (c[F.age] | (c[F.age + 1] << 8)) + 1; c[F.age] = a & 0xff; c[F.age + 1] = a >> 8 }
-      fx.rate *= 2
-      break
-    case 40: if (removal && h.inCombat()) h.clearCloud?.(c, eff.power, 0x1e, 'The air clears a little...'); break // FUN_3723_0cc3; zones are freed at the end of combat (FUN_320c_0000)
     case 41: { const a = h.current(); const w = a ? weaponOf(h, a) : null; if (w && w.raw[0x32] === 0) deflect(h, c, 100); break }
     case 42: fx.rate = Math.floor(fx.rate / 2); break
     case 43: if (removal || event === -1) {
@@ -634,12 +560,15 @@ export function setStr(h: FxHost, c: Uint8Array, str: number, pct: number): { ok
   return { ok: true, pw }
 }
 
-/** FUN_3723_04ba, removal of 12/38: an active record restores the STR it holds; the strongest other record then takes over. */
-function restoreStr(h: FxHost, c: Uint8Array, eff: Effect) {
+/**
+ * FUN_3723_04ba, removal of 12/38 (`types`): an active record restores the STR it holds; the strongest
+ * other record then takes over.
+ */
+export function restoreStr(h: FxHost, c: Uint8Array, eff: Effect, types = [12, 38]) {
   if (eff.power >= 0x80) return
   let [s, p] = strDec(eff.power)
   c[F.stat[0]] = s; c[F.strPct] = p
-  const others = h.effectsOf(c).filter((x) => x !== eff && (x.type === 12 || x.type === 38))
+  const others = h.effectsOf(c).filter((x) => x !== eff && types.includes(x.type))
   if (others.length) {
     const best = others.reduce((a, b) => (strKey(strDec(b.power)) > strKey(strDec(a.power)) ? b : a))
     const [bs, bp] = strDec(best.power)
@@ -664,25 +593,6 @@ export async function removeOne(h: FxHost, c: Uint8Array, type: number): Promise
   h.print(`${h.name(c)} is Cured`)
   await removeEffect(h, c, e)
   return true
-}
-
-// ---------------------------------------------------------------- Spiritual Hammer (effect 23)
-/**
- * Handler 23 (FUN_3723_07e0): while the effect lasts the character has a Spiritual Hammer +1 (type 20,
- * words 0x14 "Hammer" and 0xF3 "Spiritual", item handler 137); a thrown one comes back at round end
- * (event 19). When the effect goes, so does the hammer.
- */
-function spiritualHammer(h: FxHost, c: Uint8Array, removal: boolean) {
-  const items = h.itemsOf(c)
-  const hammer = items.find((i) => i.type === 20 && i.raw[0x31] === 0xf3)
-  if (removal) { if (hammer) items.splice(items.indexOf(hammer), 1) }
-  else if (!hammer && items.length < 16) {
-    const r = new Uint8Array(ITEM_SIZE)
-    r[0x2e] = 20; r[0x30] = 0x14; r[0x31] = 0xf3; r[0x32] = 1; r[0x3d] = 0x17; r[0x3e] = 0x89
-    items.push(new Item(r))
-    h.print(`${h.name(c)} Gains an item`)
-  }
-  h.recalc(c)
 }
 
 // ---------------------------------------------------------------- item handlers 128–139

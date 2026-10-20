@@ -13,6 +13,7 @@ import type { Effect } from '../src/data/effects'
 import { Tables } from '../src/rules/chargen'
 import { addEffect, addRaw, fire, fx, removeEffect, type FxHost } from '../src/rules/effects'
 import { readyItem, recalc, unreadyItem } from '../src/rules/equip'
+import { BEHAVIOURS } from '../src/rules/effectkinds'
 
 const dir = process.env.COAB ?? ''
 const have = dir !== '' && existsSync(dir)
@@ -126,10 +127,11 @@ describe.skipIf(!have)('CotAB effect handlers', () => {
   })
   afterAll(() => setGame(POR))
 
-  it('PoR has no handler overrides; CotAB names a behaviour for each changed type', () => {
-    expect(POR.effects.handlers).toEqual({})
-    expect(POR.effects.items).toBe('handlers')
+  it('each game names a behaviour for its types; CotAB shares PoR\'s where the handler is the same', () => {
+    expect(POR.effects.handlers[1]).toEqual({ b: 'rollMorale', roll: 1, morale: 5 })
+    expect(COAB.effects.handlers[1]).toBe(POR.effects.handlers[1])
     expect(COAB.effects.handlers[134]).toEqual({ b: 'rangerVsGiants', flag: 8 })
+    for (const g of [POR, COAB]) for (const [t, spec] of Object.entries(g.effects.handlers)) expect(BEHAVIOURS[spec.b], `${g.id} ${t} ${spec.b}`).toBeTypeOf('function')
   })
 
   it('a ranger adds the ranger level against the giant class (+0x14B & 8, ETTIN in the data)', async () => {

@@ -9,8 +9,9 @@ export interface EffectRules {
   area: number[]
   areaRadius: Record<number, number>
   /**
-   * Handlers that differ from PoR's: effect type → a behaviour named in rules/effectkinds.ts, with its
-   * parameters. Types not listed run PoR's handler (rules/effects.ts).
+   * Every effect type's handler (PoR FUN_5216_0000's table, CotAB DS:6FC0 + 4·type): a behaviour named in
+   * rules/effectkinds.ts, with its parameters. A game's types that are the same as another game's name
+   * the same behaviour with the same parameters (CotAB's are PoR's but for the changed ones).
    */
   handlers: Record<number, HandlerSpec>
   /** effect types whose removal recomputes a stat (0 STR … 5 CHA) through the game's stat routine */
@@ -38,7 +39,48 @@ export type ItemProcedure = 'handlers' | 'kinds'
 /** A behaviour key (rules/effectkinds.ts) and its parameters. */
 export interface HandlerSpec {
   b: string
-  [param: string]: string | number | number[]
+  [param: string]: string | number | number[] | number[][] | string[]
+}
+
+const each = (types: number[], spec: HandlerSpec) => Object.fromEntries(types.map((t) => [t, spec]))
+
+/** PoR's handlers by type (spec/effects.md §2; segment 3723 unless an image offset is given). */
+const POR_HANDLERS: Record<number, HandlerSpec> = {
+  ...each([5, 13, 16, 19, 24, 27], { b: 'none' }), // 319b (16: 0647; 24 is read by 25)
+  1: { b: 'rollMorale', roll: 1, morale: 5 }, // 010d Bless
+  2: { b: 'rollMorale', roll: -1, morale: -5 }, // 011d Curse
+  3: { b: 'vsTargetType', bonus: [[4, 2]] }, // 013b
+  4: { b: 'expireInto', msg: 'starts to train', type: 7, duration: 43200, power: 0xff, flag: 1 }, // 0x373AF
+  6: { b: 'vsTargetType', bonus: [[10, 1], [9, 2], [12, 2], [4, 3]], dmgType: 9 }, // 01c3 flaming weapon
+  7: { b: 'statUp', stat: 4, msg: 'is hardier', at: 20, effect: 62, duration: 60 }, // 0x37463
+  ...each([8, 45], { b: 'saveVsAlignment', alignments: [2, 5, 8], save: 2 }), // 0377 Protection from Evil
+  ...each([9, 46], { b: 'saveVsAlignment', alignments: [0, 3, 6], save: 2 }), // 03ac Protection from Good
+  10: { b: 'resistType', type: 2, save: 3 }, // 03e1 Resist Cold
+  11: { b: 'charmed', morale: 100 }, // 0400 Charm Person
+  ...each([12, 38], { b: 'restoreStrength', types: [12, 38] }), // 04ba Enlarge, Strength
+  14: { b: 'restoreStat', stat: 5 }, // 05d6 Friends
+  15: { b: 'poisonTick', duration: 10, power: 0xff }, // 05eb
+  17: { b: 'shield', ac: 57, save: 1, spell: 15 }, // 064e Shield: no Magic Missile
+  18: { b: 'namedFoe', who: 'target', monsterType: 1, size: 1, roll: 1, names: ['KOBOLD', 'KOBOLD LEADER', 'GOBLIN', 'GOBLIN LEADER'] }, // 0679 (DS:342)
+  20: { b: 'resistType', type: 1, save: 3 }, // 06e4 Resist Fire
+  21: { b: 'breakSpell', msg: 'is silenced' }, // 0x3793F Silence
+  22: { b: 'poisonEnds', poison: 55, msg: 'dies from poison', also: 15 }, // 0x379A5 Slow Poison
+  // 0x37A10 Spiritual Hammer: type 20, words 0x14 "Hammer" 0xF3 "Spiritual", +1, effect 0x17, item handler 0x89
+  23: { b: 'conjuredItem', bytes: [[0x2e, 20], [0x30, 0x14], [0x31, 0xf3], [0x32, 1], [0x3d, 0x17], [0x3e, 0x89]], match: [0x2e, 0x31], msg: 'Gains an item' },
+  25: { b: 'unseen', detect: 24, roll: -4 }, // 0918 Invisibility
+  26: { b: 'namedFoe', who: 'target', monsterType: 1, size: 1, roll: 1, names: ['ORC', 'ORC LEADER', 'GOBLIN', 'GOBLIN LEADER', 'HOBGOBLIN', 'HOBGOBLIN CHIEF', 'GAGOOL', 'MACE'] }, // 0947 (DS:382)
+  28: { b: 'imageLost' }, // 0x37BF0 Mirror Image
+  29: { b: 'damageCut', part: 4 }, // 0a3d Ray of Enfeeblement
+  30: { b: 'breakSpell', msg: 'is coughing', sayOn: 15, acWorse: 2, acFloor: 0x32 }, // 0x37C95 Stinking Cloud
+  ...each([31, 51, 52, 53], { b: 'endTurn', event: 7 }), // 133f helpless, Snake Charm, Hold, Sleep
+  32: { b: 'collapse', msg: 'collapses', move: 12 }, // 0x37D4B Animate Dead
+  33: { b: 'penalty', roll: -4, ac: -4, save: -4 }, // 0bac Cause Blindness
+  34: { b: 'runTypes', types: [43, 44] }, // 0bcf Cause Disease
+  35: { b: 'saveElseRoll', save: 1, roll: 1 }, // 0c06 Prayer's ally half
+  36: { b: 'penalty', roll: -4, save: -4 }, // 0c15 Bestow Curse
+  37: { b: 'blink' }, // 0c26 Blink
+  39: { b: 'attackRate', ages: 0x10, msg: 'ages', mul: 2 }, // 0x37E7B Haste
+  40: { b: 'liftZone', cell: 0x1e }, // 0x37EF3 the Stinking Cloud's zone (FUN_3723_0cc3)
 }
 
 export const POR_EFFECTS: EffectRules = {
@@ -55,7 +97,7 @@ export const POR_EFFECTS: EffectRules = {
   },
   area: [21, 45, 46, 49],
   areaRadius: { 49: 6 },
-  handlers: {},
+  handlers: POR_HANDLERS,
   removalStat: {},
   items: 'handlers',
   replaces: 'longerOrPermanent',
@@ -77,8 +119,10 @@ export const COAB_EFFECTS: EffectRules = {
     20: [50, 54], 21: [35], 22: [138], 23: [74],
   },
   area: [21, 45, 46, 49],
-  areaRadius: { 49: 6 },  // changed and new handlers (DS:6FC0 + 4·type, filled at 0x29E28 and 0x4AA3A); spec/coab/effects.md §2
+  areaRadius: { 49: 6 },
+  // PoR's handlers, then the changed and new ones (DS:6FC0 + 4·type, filled at 0x29E28 and 0x4AA3A); spec/coab/effects.md §2
   handlers: {
+    ...POR_HANDLERS,
     3: { b: 'snakes' }, // 0x2742C
     4: { b: 'attackerClass', flag: 1, roll: -7 }, // 0x274AF (Dispel Evil's defence)
     7: { b: 'acBoth', add: 2, cap: 0x3c }, // 0x2752F
