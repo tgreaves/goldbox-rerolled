@@ -28,6 +28,8 @@ const s8 = (v: number) => (v << 24) >> 24
 const num = (p: HandlerSpec, k: string) => p[k] as number
 const list = (p: HandlerSpec, k: string) => p[k] as number[]
 const say = (h: FxHost, c: Uint8Array, msg: string) => h.print(`${h.name(c)} ${msg}`)
+/** a roll; with `keep`, through the dice routine that records the count (PoR FUN_5216_0e2e → DS:681C, CotAB 0x4BE7C) */
+const rollKeeping = (h: FxHost, n: number, d: number, keep: unknown) => { if (keep) fx.dice = n; return h.roll(n, d) }
 const flags = (c: Uint8Array | null) => (c && F.classFlags >= 0 ? c[F.classFlags] : 0)
 const nameIs = (c: Uint8Array, names: string[]) => names.includes(String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name])))
 /** a spell record byte (DS:37DC + 16·id: +1 level, +8 save effect), when START.EXE is there */
@@ -97,11 +99,6 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   saveVsAlignment(h, _e, _c, _r, p, event) {
     const a = h.current()
     if (a && list(p, 'alignments').includes(a[F.alignment]) && event === 12) fx.save += num(p, 'save')
-  },
-  /** 10, 20 Resist Cold / Fire [6, 12] (03e1, 06e4): damage of `type` halved on 6; the save `save` better on 12 */
-  resistType(_h, _e, _c, _r, p, event) {
-    if (event === 6 && fx.dmgType & num(p, 'type')) fx.dmg = Math.floor(fx.dmg / 2)
-    else if (event === 12) fx.save += num(p, 'save')
   },
   /**
    * 11 Charm Person [15, 17, 19] (0400): the first call (power bit 0x20 clear) marks the power, keeps the
@@ -286,14 +283,20 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     else h.setStatus(c, 6, `${h.name(c)} ${p.death as string}`)
   },
   /**
-   * 61 strong fire resistance [6, 12] (1490): damage of `type` loses `per` a die, never below the dice
-   * count (DS:681C), and without the `magic` bit none at all (6); the save +`save` (12)
+   * 61, 113 (PoR 1490, 2a28): whatever the event, damage of `type` loses `per` for each die of the dice
+   * count (DS:681C) as a byte, put back up to the count when below it (so 1 − 2 wraps to 255 and stays);
+   * with `save` the save is that much better; with `magic`, damage without that bit is negated
+   * (FUN_3723_0000(0)). 61 is strong fire resistance (−2 a die, save +4, magic fire only), 113 −1 a die
    */
-  resistPerDie(_h, _e, _c, _r, p, event) {
-    if (event === 6 && fx.dmgType & num(p, 'type')) {
-      fx.dmg = Math.max(fx.dice, fx.dmg - num(p, 'per') * fx.dice)
-      if (!(fx.dmgType & num(p, 'magic'))) fx.dmg = 0
-    } else if (event === 12) fx.save += num(p, 'save')
+  resistPerDie(_h, _e, _c, _r, p) {
+    if (!(fx.dmgType & num(p, 'type'))) return
+    for (let i = 1; i <= fx.dice; i++) {
+      fx.dmg = (fx.dmg - num(p, 'per')) & 0xff
+      if (fx.dmg < fx.dice) fx.dmg = fx.dice
+    }
+    if (p.save === undefined) return
+    fx.save += num(p, 'save')
+    if (p.magic !== undefined && !(fx.dmgType & num(p, 'magic'))) negate(0)
   },
   /** 64–66, 70 [3] (FUN_3723_1545): the current character's active target saves vs 0 at `bonus` or gets `effect` (add-effect) and status 6 with `msg` */
   async poisonOnHit(h, _e, _c, _r, p) {
@@ -363,7 +366,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     const v = h.byIndex(eff.power & 0x3f)
     if (event === 15 && v && v[F.inPlay] && c[F.inPlay]) {
       say(h, c, p.msg as string)
-      const d = h.roll(1, num(p, 'sides'))
+      const d = rollKeeping(h, 1, num(p, 'sides'), p.keep)
       fx.dmgType = 0
       h.damage(v, d, 0, false)
       eff.duration = Math.max(0, eff.duration - d * 16)
@@ -532,18 +535,17 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   immunities(_h, _e, _c, _r, p, event) {
     if (event === 9) { for (const t of list(p, 'types')) negate(t) } else if (fx.saveType === num(p, 'saveType')) fx.save = 100
   },
-  /** 113 [6] (2a28): damage of `mask` less one a die, never below the dice count (DS:681C) */
-  lessPerDie(_h, _e, _c, _r, p) { if (fx.dmgType & num(p, 'mask')) fx.dmg = Math.max(fx.dice, fx.dmg - fx.dice) },
   /** 116 [5] (2ae6): an attacker's magic weapon (plus above 0) does half */
   halveByPlus(h) { const a = h.current(), w = a ? h.weapon(a) : null; if (w && s8(w.raw[0x32]) > 0) fx.dmg = Math.floor(fx.dmg / 2) },
   /**
-   * 117, 122 [5, 6] (2b20, 2d38): an attacker with a readied item of type `item` (holy water, oil) does
-   * `roll` [n, d, add]; with `diceOn`, damage of that type gains the dice count
+   * 117, 122 [5, 6] (2b20, 2d38): the current character's weapon (+0xCC) of item type `item` (holy water,
+   * oil) does `roll` [n, d, add] (rolled keeping the count with `keep`); with `diceOn`, damage of that
+   * type then gains the dice count, as a byte
    */
   vulnerableTo(h, _e, _c, _r, p) {
-    const a = h.current(), [n, d, add] = list(p, 'roll')
-    if (a && h.itemsOf(a).some((it) => it.ready && it.raw[0x2e] === num(p, 'item'))) fx.dmg = h.roll(n, d) + add
-    if (p.diceOn !== undefined && fx.dmgType & num(p, 'diceOn')) fx.dmg += fx.dice
+    const a = h.current(), w = a ? h.weapon(a) : null, [n, d, add] = list(p, 'roll')
+    if (w && w.raw[0x2e] === num(p, 'item')) fx.dmg = (rollKeeping(h, n, d, p.keep) + add) & 0xff
+    if (p.diceOn !== undefined && fx.dmgType & num(p, 'diceOn')) fx.dmg = (fx.dmg + fx.dice) & 0xff
   },
   /** 119 [5] (2b7d): no weapon or one of plus 0 does nothing, unless the attacker is race 0 with `hd` hit dice or more */
   needsEnchantment(h, _e, _c, _r, p) {
@@ -562,7 +564,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
       say(h, c, 'Spits Acid')
       h.fly?.(c, t, 'spit')
       fx.dmgType = num(p, 'dmgType')
-      h.damage(t, h.roll(n, d), 2, h.save(t, num(p, 'save'), 0))
+      h.damage(t, rollKeeping(h, n, d, p.keep), 2, h.save(t, num(p, 'save'), 0))
       await removeEffect(h, c, eff)
       await removeType(h, c, num(p, 'also'))
     }
@@ -615,9 +617,12 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (eff.power === 0) h.setStatus(c, 6, `${h.name(c)} Suffocates`)
     else eff.power--
   },
-  /** 20 (0x277D0): damage of the type halved and its save better, whichever event; not on removal */
+  /**
+   * 10, 20 Resist Cold / Fire (PoR 03e1, 06e4; CotAB 20 0x277D0): whatever the event, damage of `type`
+   * halved (as a byte) and the save `save` better; CotAB's 20 not on removal, PoR's also then (`onRemoval`)
+   */
   resist(_h, _e, _c, removal, p) {
-    if (removal || !(fx.dmgType & num(p, 'type'))) return
+    if ((removal && !p.onRemoval) || !(fx.dmgType & num(p, 'type'))) return
     fx.dmg = (fx.dmg & 0xff) >> 1
     fx.save += num(p, 'save')
   },
@@ -804,7 +809,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     const t = h.targetOf(c)
     if (p.active && !(t && t[F.inPlay])) return
     fx.dmgType = num(p, 'dmgType')
-    if (t) h.damage(t, h.roll(num(p, 'count'), num(p, 'sides')), 0, false)
+    if (t) h.damage(t, rollKeeping(h, num(p, 'count'), num(p, 'sides'), p.keep), 0, false)
   },
   /** 126 [14] gaze (0x4A214): a new target; it saves vs petrification or is held (`effect` 0x34) for `minutes` */
   async gazeHold(h, _e, c, _r, p) {

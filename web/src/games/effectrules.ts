@@ -52,14 +52,14 @@ const POR_HANDLERS: Record<number, HandlerSpec> = {
   7: { b: 'statUp', stat: 4, msg: 'is hardier', at: 20, effect: 62, duration: 60 }, // 0x37463
   ...each([8, 45], { b: 'saveVsAlignment', alignments: [2, 5, 8], save: 2 }), // 0377 Protection from Evil
   ...each([9, 46], { b: 'saveVsAlignment', alignments: [0, 3, 6], save: 2 }), // 03ac Protection from Good
-  10: { b: 'resistType', type: 2, save: 3 }, // 03e1 Resist Cold
+  10: { b: 'resist', type: 2, save: 3, onRemoval: 1 }, // 03e1 Resist Cold
   11: { b: 'charmed', morale: 100 }, // 0400 Charm Person
   ...each([12, 38], { b: 'restoreStrength', types: [12, 38] }), // 04ba Enlarge, Strength
   14: { b: 'restoreStat', stat: 5 }, // 05d6 Friends
   15: { b: 'poisonTick', duration: 10, power: 0xff }, // 05eb
   17: { b: 'shield', ac: 57, save: 1, spell: 15 }, // 064e Shield: no Magic Missile
   18: { b: 'namedFoe', who: 'target', monsterType: 1, size: 1, roll: 1, names: ['KOBOLD', 'KOBOLD LEADER', 'GOBLIN', 'GOBLIN LEADER'] }, // 0679 (DS:342)
-  20: { b: 'resistType', type: 1, save: 3 }, // 06e4 Resist Fire
+  20: { b: 'resist', type: 1, save: 3, onRemoval: 1 }, // 06e4 Resist Fire
   21: { b: 'breakSpell', msg: 'is silenced' }, // 0x3793F Silence
   22: { b: 'poisonEnds', poison: 55, msg: 'dies from poison', also: 15 }, // 0x379A5 Slow Poison
   // 0x37A10 Spiritual Hammer: type 20, words 0x14 "Hammer" 0xF3 "Spiritual", +1, effect 0x17, item handler 0x89
@@ -104,12 +104,12 @@ const POR_HANDLERS: Record<number, HandlerSpec> = {
   72: { b: 'grant', type: 25, duration: 1, power: 0x0c, below: 96 }, // 1730 95 % invisibility
   73: { b: 'rake', attacks: 2, dice: 2, sides: 4, msg: 'Rakes...' }, // 0x3E4B2
   74: { b: 'crush', attacks: 1, dice: 3, sides: 4, held: 58 }, // 3aae_3a86
-  75: { b: 'bloodDrain', sides: 4, held: 58, msg: 'Sucks some Blood' }, // 0x3899F
+  75: { b: 'bloodDrain', sides: 4, held: 58, msg: 'Sucks some Blood', keep: 1 }, // 0x3899F
   76: { b: 'attach', drain: 75, duration: 0xcf, held: 58 }, // 18b5 stirge
   77: { b: 'holdFast', maxStr: 19, crush: 74, held: 58, msg: 'is held fast' }, // 0x38B65
   78: { b: 'revive', full: 0, keepPower: 1 }, // 19d9
-  79: { b: 'hitDamage', count: 2, sides: 10, dmgType: 9, active: 1 }, // 1a19 fire on hit
-  80: { b: 'hitDamage', count: 1, sides: 4, dmgType: 0x10, active: 1 }, // 1a4c acid on hit
+  79: { b: 'hitDamage', count: 2, sides: 10, dmgType: 9, active: 1, keep: 1 }, // 1a19 fire on hit
+  80: { b: 'hitDamage', count: 1, sides: 4, dmgType: 0x10, active: 1, keep: 1 }, // 1a4c acid on hit
   81: { b: 'fearAura', saveType: 4, hdUpTo: [3, 5], effects: [52, 2], power: 0x0c, msgs: ['is paralyzed with fear', 'is weakened by fear'] }, // 0x38CDA
   82: { b: 'paralysingAura', bonus: 1, raceBonus: [7, 2], effect: 52, roll: [1, 4], power: 0x0c, msg: 'is Paralyzed' }, // 0x38DD8
   83: { b: 'stoneGaze', reflectable: 127, word: 0x76, save: 1, status: 7, msg: 'is Stoned' }, // 0x38EDD (word 0x76 "Mirror")
@@ -142,16 +142,16 @@ const POR_HANDLERS: Record<number, HandlerSpec> = {
   110: { b: 'immuneType', mask: 2 }, // 29d9
   111: { b: 'immunities', types: [55, 52], saveType: 0 }, // 29f0 poison, paralysis
   112: { b: 'immuneType', mask: 1 }, // 2a11
-  113: { b: 'lessPerDie', mask: 1 }, // 2a28
+  113: { b: 'resistPerDie', type: 1, per: 1 }, // 2a28
   114: { b: 'halveType', mask: 4 }, // 2a6d
   115: { b: 'halveByWeaponKind', kinds: [0, 1], unarmed: 1 }, // 2a87
   116: { b: 'halveByPlus' }, // 2ae6
-  117: { b: 'vulnerableTo', item: 0x55, roll: [1, 6, 1] }, // 2b20 holy water
+  117: { b: 'vulnerableTo', item: 0x55, roll: [1, 6, 1], keep: 1 }, // 2b20 holy water
   118: { b: 'halveType', mask: 2 }, // 2b63
   119: { b: 'needsEnchantment', hd: 4 }, // 2b7d
   120: { b: 'deflect', pct: 50, items: [0x57, 0x58] }, // 2bc8 hurled boulders
-  121: { b: 'spitOnce', pct: 25, range: 4, roll: [8, 4], dmgType: 0x10, save: 3, also: 80 }, // 0x39E4C
-  122: { b: 'vulnerableTo', item: 0x56, roll: [3, 8, 0], diceOn: 9 }, // 2d38 oil
+  121: { b: 'spitOnce', pct: 25, range: 4, roll: [8, 4], dmgType: 0x10, save: 3, also: 80, keep: 1 }, // 0x39E4C
+  122: { b: 'vulnerableTo', item: 0x56, roll: [3, 8, 0], diceOn: 9, keep: 1 }, // 2d38 oil
   123: { b: 'halfForWord', word: 0xb1 }, // 2d88 Silver
   124: { b: 'blocks', types: [11, 53], pct: 30 }, // 2de4 half-elves
   125: { b: 'immunities', types: [11, 53, 52, 55], saveType: 0 }, // 2e08 undead
