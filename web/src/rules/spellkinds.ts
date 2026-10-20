@@ -49,6 +49,7 @@ export function amount(a: Amount, L: number, roll: (n: number, d: number) => num
 export interface Cast { h: FxHost; e: Engine; caster: Uint8Array; s: Spell; L: number; dur: number; targets: Uint8Array[] }
 export type SpellKind = (x: Cast, p: SpellSpec) => Promise<void>
 
+const s8 = (v: number) => (v << 24) >> 24
 const num = (p: SpellSpec, k: string, dflt = 0) => (p[k] as number | undefined) ?? dflt
 const msgOf = (p: SpellSpec) => p.msg ?? ''
 
@@ -82,12 +83,12 @@ export function overBase(t: Uint8Array, str: number, pct: number): number | null
  * a STR above the base one adds the effect (the line, power the new STR, flag 1) and the current STR
  * is worked out again (0x4C389); otherwise `unaffected` is said, if given, and nothing is added.
  */
-async function strengthEffect(h: FxHost, t: Uint8Array, str: number, pct: number, effect: number, dur: number, msg: string, unaffected?: string) {
+async function strengthEffect(h: FxHost, t: Uint8Array, str: number, pct: number, effect: number, dur: number, msg: string, unaffected?: string, power?: number) {
   if (game().spells.strength === 'overBase') {
     const pw = overBase(t, str, pct)
     if (pw === null) { if (unaffected) say(h, t, unaffected); return }
-    say(h, t, msg)
-    addRaw(h, t, effect, dur, pw, 1)
+    if (msg) say(h, t, msg)
+    addRaw(h, t, effect, dur, power ?? pw, 1)
     await effectiveStat(h, t, 0)
     return
   }
@@ -148,17 +149,27 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
     if (p.stat !== undefined) await effectiveStat(h, caster, num(p, 'stat'))
   },
   /**
-   * Strength (1f41): every class bonus is rolled (`bonus`, in order: the classes and the die), and the
-   * last that applies wins; over 18, the classes `pctClasses` get 18/(% + 10 × excess), others 18
+   * Strength (PoR 1f41, CotAB 0x46BCB): a die per class group (`bonus`, in order: the classes and the
+   * die), the last group that applies wins; PoR rolls every die first, with `rollCounting` (CotAB) only a
+   * group that applies rolls (none: the original's bonus is uninitialised, I: 0). A class applies with a
+   * level above 0 (PoR, unsigned), or with `counts: 'levelOrFormer'` (CotAB) a level above 0 or a former
+   * dual-class level above the level kept at the change (+0xE6), both signed. Over 18 the classes
+   * `pctClasses` get 18/(% + 10 × excess, at most 100), others 18. The game's STR rule decides; with
+   * `bonusPower` the effect's power is the bonus + that (CotAB: 0x26 holds the bonus, which the stat
+   * routine 0x4C389 adds to STR), and without `msg` nothing is said (CotAB)
    */
   async strengthByClass({ h, dur, targets: [t] }, p) {
     if (!t) return
-    const rolled = (p.bonus as { cls: number[]; d: number }[]).map((b) => ({ cls: b.cls, r: h.roll(1, b.d) }))
+    const former = p.counts === 'levelOrFormer'
+    const counts = (k: number) => former ? s8(t[F.levels + k]) > 0 || s8(t[F.prevLevels + k]) > s8(t[F.hpLevel]) : t[F.levels + k] > 0
+    const groups = p.bonus as { cls: number[]; d: number }[]
+    const rolled = p.rollCounting ? groups.map((b) => ({ cls: b.cls, r: 0 })) : groups.map((b) => ({ cls: b.cls, r: h.roll(1, b.d) }))
     let bonus = 0
-    for (const b of rolled) if (b.cls.some((k) => t[F.levels + k] > 0)) bonus = b.r
+    rolled.forEach((b, i) => { if (b.cls.some(counts)) bonus = p.rollCounting ? h.roll(1, groups[i].d) : b.r })
     let n = t[F.stat[0]] + bonus, pct = 0
-    if (n > 18) { if ((p.pctClasses as number[]).some((k) => t[F.levels + k] > 0)) pct = Math.min(100, t[F.strPct] + 10 * (n - 18)); n = 18 }
-    await strengthEffect(h, t, n, pct, num(p, 'effect'), dur, msgOf(p), p.unaffected as string | undefined)
+    if (n > 18) { if ((p.pctClasses as number[]).some(counts)) pct = Math.min(100, t[F.strPct] + 10 * (n - 18)); n = 18 }
+    const power = p.bonusPower !== undefined ? (bonus + num(p, 'bonusPower')) & 0xff : undefined
+    await strengthEffect(h, t, n, pct, num(p, 'effect'), dur, msgOf(p), p.unaffected as string | undefined, power)
   },
   /** Animate Dead (206f): ignores targeting; every dead creature of type 0, while L lasts */
   async animateDead({ h, caster, L }, p) {
@@ -199,12 +210,27 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
       if (any) good(h, t, msgOf(p))
     }
   },
-  /** Remove Curse (2540): the effect, else the first cursed item's flag */
+  /**
+   * Remove Curse (PoR 2540, CotAB 0x47575): the effect ("is Cured", then "is un-cursed"), else the first
+   * cursed item: PoR clears its curse flag; with `item: 'unready'` (CotAB) it stays cursed but is
+   * unreadied (whether it was readied or not, as the original); when its +0x3E is above 0x7F the generic
+   * item handler runs with arg 1 (DS:759C = 1 sends 0x4AB77 to handler 147, 0x29A23, whatever the item's
+   * kind: the first effect of type item +0x3D goes) and the six stats are worked out again (0x4C389);
+   * then `itemMsg` (default PoR's "'s item is un-cursed")
+   */
   async removeCurse({ h, targets: [t] }, p) {
     if (!t) return
     if (await removeOne(h, t, num(p, 'effect'))) { good(h, t, 'is un-cursed'); return }
     const it = h.itemsOf(t).find((x) => x.cursed)
-    if (it) { it.raw[0x36] = 0; good(h, t, "'s item is un-cursed") }
+    if (!it) return
+    if (p.item === 'unready') {
+      it.ready = false
+      if (it.raw[0x3e] > 0x7f) {
+        await removeFirst(h, t, it.raw[0x3d])
+        for (let k = 0; k < 6; k++) await effectiveStat(h, t, k)
+      }
+    } else it.raw[0x36] = 0
+    good(h, t, (p.itemMsg as string | undefined) ?? "'s item is un-cursed")
   },
   /** Restoration (2c43): one drained level back, to the class whose next level is cheapest */
   async restore({ h, e, targets: [t] }, p) {

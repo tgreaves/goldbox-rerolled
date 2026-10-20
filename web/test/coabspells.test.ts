@@ -10,6 +10,7 @@ import { Battle, type CombatUi, type Fighter } from '../src/rules/combat'
 import { Battlefield, ROWS, COLS, type CellInfo } from '../src/rules/battlefield'
 import { addEffect, addRaw, fx } from '../src/rules/effects'
 import { heal } from '../src/rules/camp'
+import { Item, ITEM_SIZE } from '../src/data/items'
 import { COAB, POR, setGame, wants, type GameProfile } from '../src/games/profile'
 import { F } from '../src/games/fields'
 
@@ -156,6 +157,77 @@ describe.skipIf(!haveCoab)('CotAB spells done as parameters (6da4862)', () => {
     setGame(POR)
     c[F.hp] = 5
     expect(heal(c, [{ type: 0x32, duration: 5, power: 0, flag: 0 }], 4, false, true)).toBe(false) // PoR's mummy rot
+  })
+})
+
+describe.skipIf(!haveCoab)('CotAB changed handlers', () => {
+  const files = haveCoab ? load(coab, COAB) : null
+  afterAll(() => setGame(POR))
+  const cotab = () => { setGame(COAB); return field(files!) }
+
+  it('Strength (35): only the group that applies rolls; 18/xx for fighters; power = bonus + 100, no line (0x46BCB)', async () => {
+    const { add, cast, has, dice, printed } = cotab()
+    const cleric = add(5, 5, 0, 'CLERIC')
+    const t = add(6, 5, 0, 'T', { str: 17 })
+    t.c[F.levels + 2] = 3 // fighter 3
+    dice.push(4, 99) // the fighter's d8 only
+    await cast(cleric, 35, 5, [t])
+    expect(dice).toEqual([99])
+    expect(has(t, 0x26).map((x) => [x.power, x.flag])).toEqual([[104, 1]])
+    expect([t.c[F.stat[0]], t.c[F.strPct]]).toEqual([18, 30]) // 17 + 4 = 21: 18/(0 + 30)
+    expect(printed).toEqual([])
+  })
+
+  it('Strength (35): a former dual-class level counts once past +0xE6', async () => {
+    const { add, cast, has, dice } = cotab()
+    const cleric = add(5, 5, 0, 'CLERIC')
+    const dual = (kept: number) => {
+      const t = add(6, 5, 0, 'DUAL', { str: 12 })
+      t.c[F.levels + 0] = 6; t.c[F.prevLevels + 2] = 5; t.c[F.hpLevel] = kept // fighter 5, then cleric
+      return t
+    }
+    const a = dual(4)
+    dice.push(3, 7) // cleric's d6, then the fighter's d8 wins
+    await cast(cleric, 35, 5, [a])
+    expect(has(a, 0x26).map((x) => x.power)).toEqual([107])
+    const b = dual(5)
+    dice.push(3, 7)
+    await cast(cleric, 35, 5, [b])
+    expect(has(b, 0x26).map((x) => x.power)).toEqual([103]) // the former fighter level no longer counts
+  })
+
+  it('Remove Curse (43, 89): the first cursed item is unreadied, still cursed; its effect goes (0x47575)', async () => {
+    const { b, add, cast, has, printed } = cotab()
+    const cleric = add(5, 5, 0, 'CLERIC')
+    const t = add(6, 5, 0, 'T')
+    const raw = new Uint8Array(ITEM_SIZE)
+    raw[0x34] = 1; raw[0x36] = 1; raw[0x3e] = 0x80; raw[0x3d] = 0x07
+    const it = new Item(raw)
+    b.itemsOf(t.c).push(it)
+    addRaw(b, t.c, 0x07, 0, 0xff, 0)
+    await cast(cleric, 89, 9, [t])
+    expect([it.ready, it.cursed]).toEqual([false, true])
+    expect(has(t, 0x07)).toEqual([])
+    expect(printed).toContain('T has an item un-cursed')
+    addRaw(b, t.c, 0x24, 0, 0xff, 0) // the curse effect goes first, and only it
+    it.ready = true
+    await cast(cleric, 43, 9, [t])
+    expect([has(t, 0x24).length, it.ready]).toEqual([0, true])
+    expect(printed.slice(-2)).toEqual(['T is Cured', 'T is un-cursed'])
+  })
+
+  it('Haste (48) and Slow (55): no event-18 pass after Apply (0x477EB)', async () => {
+    const { add, cast, has } = cotab()
+    const mage = add(5, 5, 0, 'MAGE')
+    const t = add(6, 5, 0, 'T')
+    t.c[F.attacksBase] = 2; t.c[F.attacksLeft] = 7
+    await cast(mage, 48, 3, [t])
+    expect(has(t, 0x27).length).toBe(1)
+    expect(t.c[F.attacksLeft]).toBe(7)
+    const o = add(9, 5, 1, 'ORC')
+    o.c[F.attacksBase] = 2; o.c[F.attacksLeft] = 7
+    await cast(mage, 55, 3, [o, t]) // only the enemy side
+    expect([has(o, 0x2a).length, has(t, 0x2a).length, o.c[F.attacksLeft]]).toEqual([1, 0, 7])
   })
 })
 

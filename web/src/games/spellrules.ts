@@ -119,9 +119,9 @@ export const POR_SPELLS: SpellRules = {
 /**
  * CotAB's table (DS:72BA): ids 1–56 are PoR's spells, most with the same handler (spec/coab/spells.md
  * §2, "same"); 57–67 keep PoR's item spells where the record matches; 58 and 66–100 are its own.
- * Not yet transcribed (spec/coab/spells.md §2, port status): the changed handlers 34, 35,
- * 41/46, 43/89, 48/55, and the new 67, 68, 70, 73, 75, 76, 78, 79, 81–86, 91–93, 98; until they are,
- * they run PoR's handler for the same id or, for new ids, Apply ('apply').
+ * Not yet transcribed (spec/coab/spells.md §2, port status): the changed handlers 34, 41/46, and the
+ * new 67, 68, 70, 73, 75, 76, 78, 79, 81–86, 91–93, 98; until they are, they run PoR's handler for the
+ * same id or, for new ids, Apply ('apply').
  */
 const POR_HANDLERS_1_57 = Object.fromEntries(Object.entries(POR_SPELLS.handlers).filter(([id]) => Number(id) <= 57 || [60, 61, 62, 63, 64, 65].includes(Number(id))))
 
@@ -136,6 +136,12 @@ export const COAB_SPELLS: SpellRules = {
     14: { k: 'applyTo', to: 'first', power: { n: 2, d: 4 }, flag: 1, stat: 5, msg: 'is friendly' }, // 4614a: no CHA write, no cap
     15: { k: 'damage', amount: { n: '(L+1)/2', d: 4, plus: 'n' }, dmgType: 8, recordDice: 1 }, // 46191: (L+1) div 2 missiles
     32: { k: 'images', amount: { n: 1, d: 4 }, levelShift: 4, msg: 'is duplicated' }, // 466b8: Apply, power (1d4 << 4) | L
+    // 46bcb Strength: a class counts with a level or a former level past +0xE6; only its die is rolled;
+    // fighters, paladins and rangers into 18/xx; power = bonus + 100, no line (0x26, stat routine 0x4C389)
+    35: { k: 'strengthByClass', bonus: [{ cls: [5], d: 4 }, { cls: [0, 6], d: 6 }, { cls: [2], d: 8 }], pctClasses: [2, 3, 4], effect: 0x26, counts: 'levelOrFormer', rollCounting: 1, bonusPower: 100 },
+    43: { k: 'removeCurse', effect: 0x24, item: 'unready', itemMsg: 'has an item un-cursed' }, // 47575
+    48: { ...POR_SPELLS.handlers[48], attacksAfter: 0 }, // 478cc → 477eb: no event-18 pass
+    55: { ...POR_SPELLS.handlers[55], attacksAfter: 0 }, // 47c9e → 477eb
     51: { ...POR_SPELLS.handlers[51] }, // 47c49: the bolt routines' differences are R.bolt
     58: { k: 'heal', amount: { n: 2, d: 8, plus: 1 } }, // 47edd Cure Serious Wounds
     59: { k: 'setStrength', str: 21, pct: 0, effect: 0x92, msg: 'is stronger' }, // 47f27, by the base-STR rule (strength)
@@ -149,7 +155,7 @@ export const COAB_SPELLS: SpellRules = {
     80: { k: 'apply' }, // 48714 Invisibility to Animals (touch)
     87: { k: 'damage', amount: { n: 3, d: 10 }, dmgType: 0x0a }, // 48e7b Ice Storm
     88: { k: 'apply', msg: 'is protected' }, // 48ebe Minor Globe
-    89: POR_SPELLS.handlers[43], // 47575 Remove Curse
+    89: { k: 'removeCurse', effect: 0x24, item: 'unready', itemMsg: 'has an item un-cursed' }, // 47575 Remove Curse
     90: POR_SPELLS.handlers[36], // 46d89 Animate Dead
     94: { k: 'hold', bonus: [-3, -1, 0], effect: 0x34, sizeImmune: 0, msg: 'is held' }, // 463b4 → 45a94 (I: the magic-user bonus)
     ...each([95, 96, 97], { k: 'apply' }), // 4960e, 4963c, 4966a
