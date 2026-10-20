@@ -1,7 +1,7 @@
 // Curse of the Azure Bonds played headless from the shipped save (test/playtest.ts): seeded random
 // play through movement, scripts, battles, shops, temples, camp and training, with saves loaded back
 // and the state checked after every step. Needs COAB. COAB_PLAY_SEEDS and COAB_PLAY_STEPS make the
-// run longer (defaults 4 × 250); COAB_PLAY_TRACE=1 prints the whole game.
+// run longer (defaults 8 × 300); COAB_PLAY_TRACE=1 prints the whole game.
 import { afterAll, describe, expect, it } from 'vitest'
 import { existsSync } from 'node:fs'
 import { COAB, POR, setGame } from '../src/games/profile'
@@ -9,8 +9,8 @@ import { loadFiles, play } from './playtest'
 
 const dir = process.env.COAB ?? ''
 const have = dir !== '' && existsSync(dir)
-const seeds = Number(process.env.COAB_PLAY_SEEDS ?? 4)
-const steps = Number(process.env.COAB_PLAY_STEPS ?? 250)
+const seeds = Number(process.env.COAB_PLAY_SEEDS ?? 8)
+const steps = Number(process.env.COAB_PLAY_STEPS ?? 300)
 const first = Number(process.env.COAB_PLAY_FIRST ?? 1)
 
 describe.skipIf(!have)('Curse of the Azure Bonds played headless', () => {

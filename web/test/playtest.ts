@@ -24,7 +24,8 @@ import { readyItem, recalc, unreadyItem } from '../src/rules/equip'
 import { WorldHost } from '../src/rules/worldfx'
 import { drop, halve, join as joinStacks, trade } from '../src/rules/inventory'
 import { castOutside, itemSpells, spendUse, targetKind } from '../src/rules/magic'
-import { isScroll } from '../src/rules/camp'
+import { isScroll, knows, memorise } from '../src/rules/camp'
+import { bookSpell } from '../src/games/rules'
 
 export interface PlayOptions {
   game: GameProfile
@@ -210,6 +211,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     refresh: () => {},
     stopper: () => { const stop = chance(0.1); return { stopped: () => stop, done: () => {} } },
     pause: async () => {},
+    memorizePanel: () => memorizePanel(),
   })
   /**
    * The character sheet's item commands as the sheet runs them (explore.ts): ready or put away, Use
@@ -339,7 +341,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
         capped = false
         lastState = ''
         changedAt = 0
-        say(`  party: ${e.party().map((c) => `${nameOf(c)} ${c[F.hp]}/${c[F.maxHp]} st${c[F.status]} in${c[F.inPlay]}`).join(', ')}`)
+        const ready = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80).length
+        say(`  party: ${e.party().map((c) => `${nameOf(c)} ${c[F.hp]}/${c[F.maxHp]} st${c[F.status]} in${c[F.inPlay]} sp${ready(c)}`).join(', ')}`)
         try {
           // Magic On for the party's Quick members in half the battles (Alt-M), so their spells are cast
           const r = await fight(e, combatUi, (b) => { battle = b; b.magicOn = chance(0.5) })
@@ -466,6 +469,24 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     lastSave.chars.forEach((c, i) => e.attachFiles(i, c.itm, c.spc))
   } else e = load(lastSave.dat, lastSave.chars, o.seed)
   watchEngine()
+  /**
+   * Memorize as the camp's Memorize panel does (IMP-043: memorise() into free slots, spells from the
+   * book at random); `prepare` camps, memorizes and rests for as long as learning them takes
+   */
+  const memorizePanel = async () => {
+    const st = e.spells
+    if (!st) return
+    for (const c of e.party()) {
+      if (c[F.status] !== 0) continue
+      const book = st.spells.filter((sp) => bookSpell(sp) && knows(c, sp.id))
+      for (let n = 0; n < 30 && book.length; n++) memorise(c, book[pick(book.length)], st)
+    }
+  }
+  const prepare = async () => {
+    plan = ['MAGIC', 'MEMORIZE', 'REST', 'REST', 'EXIT', 'EXIT']
+    await e.command('e')
+    plan = []
+  }
   /** someone standing has less than half their HP, or someone is down */
   const hurt = () => e.party().some((c) => (c[F.status] === 0 && c[F.hp] * 2 < c[F.maxHp]) || c[F.status] === 4 || c[F.status] === 5)
   /** squares stepped on, so that the walk goes where it has not been (towards exits and new areas) */
@@ -552,6 +573,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     const r = rnd()
     if (r < 0.02) ok = await act('save and load', () => roundTrip())
     else if (r < 0.04) ok = await act('fiddle with items', fiddle)
+    else if (r < 0.05) ok = await act('memorize and rest', prepare)
     else if (r < 0.06) {
       const party = e.party()
       e.cur = party[pick(party.length)]
