@@ -96,19 +96,25 @@ export const COAB_EFFECTS: EffectRules = {
     84: { b: 'absorbElectricity' }, // 0x28D31
     85: { b: 'piercingOne' }, // 0x28D64
     91: { b: 'none' }, // 0x28E09: lifts a zone of the list DS:7579, which the port does not make
-    86: { b: 'spitAcid', range: 7, pct: 30 }, // 0x49B5E
-    // not ported yet (spec/coab/effects.md, "Port status"): the area breaths and the eye rays; PoR's
-    // handlers for these types (87 mummy rot, 90 CON poison bonus) must not run in CotAB
-    87: { b: 'unported' }, 88: { b: 'unported' }, 90: { b: 'unported' }, 128: { b: 'unported' }, 132: { b: 'unported' },
+    // the monster specials [14] (rules/specials.ts); `hook`/`spell`: the spell whose computer target
+    // pick (*DS:72BA) chooses the target. PoR's 87 (mummy rot) and 90 (CON poison bonus) mean other things.
+    83: { b: 'gazeStone', spell: 0x41, word: 0x76 }, // 0x497CE
+    86: { b: 'spitAcid', range: 7, pct: 30, hook: 0x41 }, // 0x49B5E
+    // 0x2E842: disintegrate, stone, death, wounding by reach, then Fear, Slow, Sleep
+    87: { b: 'eyeRays', shots: 4, ranges: [2, 3, 4, 5], saves: [3, 1, 0], statuses: [8, 7, 6], frames: [5, 10, 5, 5], wound: [2, 8, 1], spells: [0x54, 0x37, 0x15] },
+    88: { b: 'breathBolt', pct: 50, spell: 0x33, len: 10, save: 3, dmgType: 0x24 }, // 0x499CD
+    90: { b: 'breathArea', uses: 3, dmgType: 0x30, spell: 0x3d, width: 1, len: 6, ownSide: 1, msg: 'breathes acid' }, // 0x49C94
+    128: { b: 'breathArea', uses: 3, dmgType: 0x21, spell: 0x3d, width: 3, len: 9, ownSide: 0, msg: 'breathes fire' }, // 0x49E74
+    132: { b: 'throwLightning', rounds: 4, spell: 0x33, count: 16, sides: 6, len: 10, save: 4 }, // 0x4A121
     96: { b: 'hug' }, // 0x2ED5C
     103: { b: 'extraDamage', lacks: [0x14, 0x36, 0x3d], sides: 6 }, // 0x293AD
     110: { b: 'immune', mask: 2, say: 0 }, // 0x29502
     122: { b: 'holdOnHit', save: 0 }, // 0x29873
     123: { b: 'hitDamage', count: 2, sides: 8, dmgType: 0x0a }, // 0x298ED
-    126: { b: 'gazeHold', minutes: 60 }, // 0x4A214
+    126: { b: 'gazeHold', minutes: 60, hook: 0x41 }, // 0x4A214
     129: { b: 'magicResistance' }, // 0x29973
     130: { b: 'quarrelSlays', type: 0x1c, word: 0x87 }, // 0x29993
-    131: { b: 'breatheFire', pct: 50, dmg: 7 }, // 0x4A001
+    131: { b: 'breatheFire', pct: 50, dmg: 7, hook: 0x41 }, // 0x4A001
     133: { b: 'blocks', types: [0x8e, 0x1d, 0x44], mask: 0x40 }, // 0x29AA0
     134: { b: 'rangerVsGiants', flag: 8 }, // 0x29ACC
     135: { b: 'immune', mask: 4, say: 0 }, // 0x29B05

@@ -93,6 +93,16 @@ export interface GameRules {
   startSpells: number[]
   /** the reaction adjustment scripts read for CHA 3–25 (B + 0x2CF; a code branch, not a table) */
   chaReaction: number[]
+  /**
+   * The bolt routines, one procedure (hit a cell, then the path from the aimed square away from the
+   * caster, with bounces; spec/combat.md "Lightning Bolt", spec/coab/effects.md §7): PoR FUN_4e53_28bc /
+   * FUN_4e53_295b, CotAB 0x478F6 / 0x479B4. `lightning`: Lightning Bolt's length in squares (PoR 8 at
+   * 0x4111A, CotAB 7 at 0x47C7F); `skipLast`: a stop does not hit the creature the previous stop hit;
+   * `mapAreaOnly`: bounces only where ECL 0x49E6 (CotAB 0x4BE6) = 1; `noRepeatBounce`: not twice without
+   * crossing a cell of movement 1; `chargeSinceLast`: each stop costs what the line added since the
+   * previous stop (PoR: the line's whole cost, every stop)
+   */
+  bolt: { lightning: number; skipLast: boolean; mapAreaOnly: boolean; noRepeatBounce: boolean; chargeSinceLast: boolean }
 }
 
 export type TempleService = 'blind' | 'disease' | 'clw' | 'csw' | 'ccw' | 'heal' | 'poison' | 'raise' | 'curse' | 'stone'
@@ -135,6 +145,7 @@ export const POR_RULES: GameRules = {
   casterTerms: { 0: [{ cls: 0, minus: 0 }], 1: [{ cls: 5, minus: 0 }] },
   casterGate: null,
   dualClass: false,
+  bolt: { lightning: 8, skipLast: false, mapAreaOnly: false, noRepeatBounce: false, chargeSinceLast: false },
   thief: { dualClass: false, bonus: 0, clampWithBonus: false, gloves: null, gauntlets: null },
   saveCon: null,
   startEffects: { race: { 1: [0x5a, 0x61, 0x1a, 0x2f], 2: [0x6b], 3: [0x61, 0x12, 0x2f, 0x30], 4: [0x7c], 5: [0x5a, 0x61] }, cls: {} },
@@ -178,6 +189,7 @@ export const COAB_RULES: GameRules = {
   // no cleric or magic-user level, paladin below 9 and ranger below 8
   casterGate: { atLeast: { 0: 1, 5: 1, 3: 9, 4: 8 }, level: 6 },
   dualClass: true,
+  bolt: { lightning: 7, skipLast: true, mapAreaOnly: true, noRepeatBounce: true, chargeSinceLast: true }, // 0x478F6, 0x479B4
   // 0x50F5A: Gloves of Thievery (effect 0x0B), Gauntlets of Dexterity (effect 0x02)
   thief: { dualClass: true, bonus: 7, clampWithBonus: true, gloves: { effect: 0x0b, raise: { 1: 5, 2: 7 }, bonus: 5 }, gauntlets: { effect: 0x02, minLevel: 4, bonus: 10 } },
   // 0x50C6B: dwarves, halflings or the Girdle of the Dwarves (effect 6): CON 4–6 +1 … 18 +5; everyone CON 19+ +1 … +4.

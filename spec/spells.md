@@ -207,7 +207,7 @@ L = caster level; "1st" = only the first target is used.
 3. Each of the 4 squares (offsets `DS:290D` through the direction tables) whose cell movement byte < 0xFF becomes cell 0x1E.
 4. Each creature standing there gets `0ae7`, skipped if not in play, not on cell 0x1E, or already under 0x1E, 0x1F, 0x20 (animated), 0x6F or 0x7D. Save vs type 0: success "starts to cough", effect 0x1E for 1 round (power FF, handler runs); failure "chokes and gags from nausea", 0x1F helpless for 1d4 + 1 rounds (the turn ends).
 
-`FUN_4e53_30d9` looks like the missing handler of effect 88 (I): each round a 50 % chance of a breath bolt doing the breather's max HP in electric damage over 10 squares, save vs breath for half, power as charges.
+`FUN_4e53_30d9` is the handler of effect 88, the breath bolt (O, [[spec/effects]] row 88): the Lightning Bolt routines `28bc`/`295b` for the breather's max HP (damage type 0x0C) over 10 squares from the square beside it, save vs breath for half, 3 uses; after round 0 a 50 % chance.
 
 ## Open
 

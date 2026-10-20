@@ -447,11 +447,11 @@ r0 (8, bolt)  r1 (9)   r2 (10)    r3 (11)
 - **Fireball** (`266b`): level d6 (or `2·d3 + 1` d6 for spell 64), damage type 9, save for half. If ECL 0x49E6 = 0 (outdoors) the area is re-scanned at radius 2, else radius 3. The AI's test always uses 3. No "needs 3 enemies" rule exists in the code.
 - **Lightning Bolt** (`2bb7` → `295b`): damage roll(L, 6) once; each creature hit saves vs spell (type 4) for half (`28bc`).
   1. Hit the creature on the aimed square.
-  2. remaining = 16 half-squares; the line runs from the target square towards target + sign·(target − caster)·remaining.
+  2. remaining = 2·len half-squares (`295b(len, dmg, save, bonus)` at 0x40E8B: Lightning Bolt passes 8, its roll, 4 and 1 at 0x4111A; the breath bolt of effect 88 10, max HP, 3 and 0); the line runs from the target square towards target + sign·(target − caster)·remaining.
   3. Step until a new creature, a cell 0 (stop), a cell with movement byte > 1, or cost ≥ remaining; hit the creature there.
   4. remaining −= the line's cumulative cost at each stop (bug: passing several creatures shortens the bolt).
   5. At a blocking cell the new origin is the wall cell and sign = −sign: the bolt comes straight back through the caster, not at the angle of incidence; the last-hit memory is cleared, so creatures can be hit twice.
-  6. On the first bounce only, if the wall-to-caster cost ≤ 8, 8 more half-squares are spent.
+  6. On the first bounce only, with `bonus`, if the wall-to-caster cost ≤ 8, 8 more half-squares are spent.
   7. The line walker (`FUN_46c1_01a0` init, `FUN_46c1_02cc` step) is Bresenham on the major axis: error 2·minor − major, a diagonal step when the error is ≥ 0 (so a tie goes diagonal first); the 26-byte record carries the cumulative cost as a byte (+2 straight, +3 diagonal). The step stops at the end point without moving.
   8. Every stop calls `28bc` on the cell reached, which hits whatever creature stands there (so a 2×2 creature can be hit again when the bolt stops on its second cell) and reports a bounce when the cell's movement byte is 0xFF. A cell value 0 (off the field) ends the bolt.
 - **Magic Missile** (`1439`): damage `roll(L >> 1, 4) + (L >> 1)`, type 8, so a level-1 caster does 0 (the guide says (L+1)/2 × (1d4+1); confirm in play).

@@ -7,6 +7,7 @@ import { R } from '../games/rules'
 import { game } from '../games/profile'
 import { refillUses } from './abilities'
 import { behave, effectiveStat, itemKind } from './coabeffects'
+import { breathBolt } from './specials'
 import type { Tables } from './chargen'
 import { derive, xpFor } from './training'
 
@@ -62,6 +63,28 @@ export interface FxHost {
   clearCloud?(c: Uint8Array, power: number): void
   /** make t the combatant's target (combat record +0xA; combat only) */
   setTarget?(c: Uint8Array, t: Uint8Array): void
+  // the battlefield, for the monster specials of event 14 (rules/specials.ts; combat only)
+  /** the aimed square (PoR DS:6DB9/6DBA, CotAB DS:7573/7574) */
+  aimed?: { x: number; y: number }
+  /** the cell a combatant stands on (its top-left) */
+  cellOf?(c: Uint8Array): { x: number; y: number } | null
+  /**
+   * The computer's spell target pick (PoR DS:6B84[0] = FUN_3aae_20c3(spell, ai 1, &ok); CotAB
+   * *DS:72BA): aims and sets the combatant's target; false without a target
+   */
+  aimSpell?(c: Uint8Array, spell: number): Promise<boolean>
+  /** the AI target finder over the whole field (FUN_3aae_37e4(c, 0xFF, 0, forceNew); CotAB 0x2E394): sets the target */
+  pickTarget?(c: Uint8Array, forceNew: boolean): Uint8Array | null
+  /** cast a spell as the computer does (PoR FUN_4e53_0c20, CotAB 0x45251) */
+  castAs?(c: Uint8Array, spell: number): Promise<void>
+  /** a flight between cells (FUN_10ba_1a29) with the first `count` frames of COMSPR cycle `slot` (FUN_10ba_19de) */
+  flyCells?(from: { x: number; y: number }, to: { x: number; y: number }, slot: number, count: number, delay: number): void
+  /** the bolt hit on a cell (PoR FUN_4e53_28bc, CotAB 0x478F6): damage type 0x0C, a save of `save` halves */
+  boltHit?(x: number, y: number, dmg: number, save: number): void
+  /** the bolt path from the aimed square away from c (PoR FUN_4e53_295b, CotAB 0x479B4) */
+  bolt?(c: Uint8Array, len: number, dmg: number, save: number, bounceBonus: boolean): void
+  /** CotAB's area template 0x4573F: who stands on `width` lines from c towards (x, y), `len` squares or more */
+  fan?(c: Uint8Array, x: number, y: number, width: number, len: number): Uint8Array[]
 }
 
 /** The original's globals during one dispatch chain. */
@@ -314,7 +337,7 @@ function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event: numb
 }
 
 /** PoR handler types that wait (await) inside their case of porHandle. */
-const POR_WAITS = new Set([22, 28, 34, 64, 65, 66, 67, 68, 69, 70, 73, 74, 75, 84, 99, 121])
+const POR_WAITS = new Set([22, 28, 34, 64, 65, 66, 67, 68, 69, 70, 73, 74, 75, 84, 88, 99, 121])
 
 /** PoR's handlers (spec/effects.md), by type. */
 async function porHandle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event: number, removal: boolean) {
@@ -518,6 +541,7 @@ async function porHandle(h: FxHost, type: number, eff: Effect, c: Uint8Array, ev
       if (t && !has(h, t, 50)) { addRaw(h, t, 50, 14400, 0, 1); addRaw(h, t, 57, 43200, (h.roll(1, 6) << 4) + 0x0f, 1); h.print(`${h.name(t)} is Diseased`) }
       break
     }
+    case 88: await breathBolt(h, eff, c, { b: 'breathBolt', pct: 50, spell: 51, len: 10, save: 3 }); break // FUN_4e53_30d9 (image 0x41609)
     case 89: // displacement
       if (event === 8) eff.power &= ~0x10
       else if (event === 16 && !(eff.power & 0x10)) { fx.roll = -1; eff.power |= 0x10 }

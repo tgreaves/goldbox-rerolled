@@ -12,6 +12,8 @@ import { line, sharedSpell } from './spellfx'
 import { spellText } from './spelltext'
 import { SPELL_MSG, casterLevel, duration as spellDuration, forget } from './magic'
 import { F } from '../games/fields'
+import { R } from '../games/rules'
+import { T } from '../games/tables'
 import { Tables } from './chargen'
 
 const DX = [0, 1, 1, 1, 0, -1, -1, -1], DY = [-1, -1, 0, 1, 1, 1, 0, -1]
@@ -105,6 +107,12 @@ const name = (c: Uint8Array) => String.fromCharCode(...c.subarray(F.name + 1, F.
 const u16 = (c: Uint8Array, o: number) => c[o] | (c[o + 1] << 8)
 const s8 = (v: number) => (v << 24) >> 24
 
+/** A spell's range (FUN_4e53_0729): byte 2 + byte 3 × level as a byte; touch (0xFF) 1; 0 with targets 1. */
+function spellRange(s: Spell, L: number) {
+  const range = s.range[0] === 0xff ? 1 : (s.range[0] + s.range[1] * L) & 0xff
+  return range === 0 && (s.target & 0xf) !== 0 ? 1 : range
+}
+
 /** Footprint cells (FUN_577f_0000): 1 = 1×1, 2 = 1 wide × 2 tall, 3 = 2 wide × 1 tall, 4 = 2×2. */
 function footprint(size: number): [number, number][] {
   return size === 2 ? [[0, 0], [0, 1]] : size === 3 ? [[0, 0], [1, 0]] : size === 4 ? [[0, 0], [1, 0], [0, 1], [1, 1]] : [[0, 0]]
@@ -115,6 +123,8 @@ export class Line {
   x: number
   y: number
   cost = 0
+  /** the direction of the last step, 0 N … 7 NW clockwise (the record's +0x17, CotAB 0x54EE4); 8 before any */
+  dir = 8
   private err: number
   private readonly dx: number
   private readonly dy: number
@@ -133,6 +143,7 @@ export class Line {
   }
   /** one cell along; false at the end */
   step(): boolean {
+    const x = this.x, y = this.y
     const xMajor = this.dx > this.dy
     if (xMajor ? this.x === this.x1 : this.y === this.y1) return false
     if (this.err >= 0) {
@@ -144,6 +155,7 @@ export class Line {
       this.cost = (this.cost + 2) & 0xff
     }
     if (xMajor) this.x += this.sx; else this.y += this.sy
+    this.dir = DX.findIndex((v, i) => v === Math.sign(this.x - x) && DY[i] === Math.sign(this.y - y))
     return true
   }
 }
@@ -239,6 +251,159 @@ export class Battle implements FxHost {
     if (this.e.effectsOf(t.c).some((x) => [0x1e, 0x1f, 0x20, 0x6f, 0x7d].includes(x.type))) return
     if (this.saveSync(t.c, 0, 0)) { this.print(`${name(t.c)} starts to cough`); addRaw(this, t.c, 0x1e, 1, 0xff, 0) }
     else { this.print(`${name(t.c)} chokes and gags from nausea`); addRaw(this, t.c, 0x1f, this.e.roll(1, 4) + 1, 0xff, 0); this.endTurnF(t) }
+  }
+
+  // ------------------------------------------------------------ the battlefield for the monster specials
+  cellOf(c: Uint8Array) { const f = this.of(c); return f ? { x: f.x, y: f.y } : null }
+  async aimSpell(c: Uint8Array, id: number) {
+    const f = this.of(c), s = this.e.spells?.get(id)
+    if (!f || !s) return false
+    return (await this.spellTargets(f, s, spellRange(s, casterLevel(c, s, false)), true)) !== null
+  }
+  pickTarget(c: Uint8Array, forceNew: boolean) {
+    const f = this.of(c)
+    if (!f) return null
+    f.target = this.findTarget(f, forceNew)
+    return f.target?.c ?? null
+  }
+  async castAs(c: Uint8Array, id: number) {
+    const f = this.of(c), s = this.e.spells?.get(id)
+    if (f && s) await this.castSpell(f, s, false, true)
+  }
+  flyCells(from: { x: number; y: number }, to: { x: number; y: number }, slot: number, count: number, delay: number) {
+    this.ui.flight?.(from, to, { frames: cycle(slot - 13).slice(0, count), delay })
+  }
+  /** the bolt hit on a cell (PoR FUN_4e53_28bc, CotAB 0x478F6 with no creature to skip) */
+  boltHit(x: number, y: number, dmg: number, save: number) { this.boltCell(x, y, dmg, save, null, false) }
+  /**
+   * One stop of a bolt (PoR FUN_4e53_28bc, CotAB 0x478F6): the creature on the cell is hit (with
+   * R.bolt.skipLast not the one hit at the previous stop, `last`); the bolt bounces off a cell of
+   * movement 0xFF (with mapAreaOnly only in a map area, ECL 0x49E6 = 1; with noRepeatBounce not when
+   * `bounced` is still set). Damage type 0x0C, a save of `save` halves.
+   */
+  private boltCell(x: number, y: number, dmg: number, save: number, last: Fighter | null, bounced: boolean): boolean {
+    const rule = R.bolt
+    const occ = this.occupied(x, y, 1), v = this.bf.get(y, x)
+    const bounce = v > 0 && (this.cells[v]?.move ?? 0xff) === 0xff && (!rule.mapAreaOnly || this.e.read(0x49e6) === 1) && !(rule.noRepeatBounce && bounced)
+    if (occ && !(rule.skipLast && occ === last)) {
+      fx.dmgType = 0x0c
+      this.damageSync(occ.c, dmg, 2, this.saveSync(occ.c, save, 0))
+      fx.dmgType = 0
+    }
+    return bounce
+  }
+  /**
+   * The bolt path (PoR FUN_4e53_295b, CotAB 0x479B4, spec/combat.md "Lightning Bolt"): from the aimed
+   * square away from c, 2·len half-squares; it stops at each new creature, a cell 0 (the end), a cell of
+   * movement above 1 or the length, and hits there (boltCell). A bounce makes that cell the new origin
+   * and sends the bolt straight back through c (the last-hit memory cleared); on the first bounce, with
+   * `bounceBonus`, a wall within 8 half-squares of c costs 8 more. PoR takes the line's cumulative cost
+   * off at every stop (a bug); with R.bolt.chargeSinceLast (CotAB) only what was added since the previous
+   * stop, which after a bounce (a new line whose cost starts at 0) wraps below zero as a byte and ends
+   * the bolt (O, 0x47C01); noRepeatBounce clears its flag on each cell of movement 1 crossed.
+   */
+  bolt(c: Uint8Array, len: number, dmg: number, save: number, bounceBonus: boolean) {
+    const f = this.of(c)
+    if (!f || (f.x === this.aimed.x && f.y === this.aimed.y)) return
+    const rule = R.bolt
+    const move = (v: number) => this.cells[v]?.move ?? 0xff
+    const at = (x: number, y: number) => ({ occ: this.occupied(x, y, 1), v: this.bf.get(y, x) })
+    let { x: ox, y: oy } = this.aimed
+    let last = at(ox, oy).occ
+    let sign = 1, first = bounceBonus, remaining = (2 * len) & 0xff, bounced = false, prev = 0
+    fx.area = true
+    while (remaining > 0) {
+      const line = new Line(ox, oy, ox + sign * (ox - f.x) * remaining, oy + sign * (oy - f.y) * remaining)
+      for (;;) {
+        const from = { x: line.x, y: line.y }
+        let here = at(line.x, line.y)
+        for (;;) {
+          const ok = line.step()
+          here = at(line.x, line.y)
+          if (move(here.v) === 1) bounced = false
+          if (!ok || (here.occ && here.occ !== last) || here.v === 0 || move(here.v) > 1 || line.cost >= remaining) break
+        }
+        const before = last
+        last = here.occ
+        if (here.v === 0) remaining = 0
+        // each segment flies as lightning, 4 frames at 50 ms (FUN_10ba_19de(19))
+        if (line.x !== from.x || line.y !== from.y) this.ui.flight?.(from, { x: line.x, y: line.y }, { frames: cycle(6), delay: 50 })
+        const bounce = this.boltCell(line.x, line.y, dmg, save, before, bounced)
+        bounced = bounce
+        if (bounce) {
+          // the bolt comes straight back through the caster (bug: not at the angle of incidence)
+          ox = line.x; oy = line.y
+          this.aimed = { x: ox, y: oy }
+          const back = new Line(ox, oy, f.x, f.y)
+          while (back.step());
+          if (first && back.cost <= 8) line.cost = (line.cost + 8) & 0xff
+          sign = -sign; first = false; last = null
+        }
+        const spent = rule.chargeSinceLast ? (line.cost - prev) & 0xff : line.cost
+        prev = line.cost
+        remaining = spent < remaining ? remaining - spent : 0
+        if (bounce || remaining === 0) break
+      }
+    }
+    fx.area = false
+  }
+  /**
+   * CotAB's area template 0x4573F(x0, y0, x, y, width, len): the line from c's cell to (x, y) is walked
+   * and its step directions repeated past the end until the cost reaches 2·len half-squares or the end
+   * leaves 1..48 × 1..23; the end is clamped to the field and brought back to where the line of sight
+   * stops (the routine 11c:39, whose range is an uninitialised word, ?: taken as unlimited); then who
+   * stands on that line, in order (once a creature is met a second time, nobody further is added: the
+   * repeat flag is never cleared, a quirk, O 0x458F0); with width 2 also on the line to the end moved
+   * by T.fanDx1/fanDy1, with 3 also T.fanDx2/fanDy2, both by the direction of the step onto the last
+   * creature of the first line (I: the last step's when there was none; the original reads an unset
+   * variable). c itself (the current combatant) is left out.
+   */
+  fan(c: Uint8Array, x: number, y: number, width: number, len: number): Uint8Array[] {
+    const f = this.of(c)
+    if (!f) return []
+    const x0 = f.x, y0 = f.y
+    const dirs: number[] = []
+    let l = new Line(x0, y0, x, y)
+    while (l.step()) dirs.push(l.dir)
+    let cost = l.cost, i = 0
+    while (dirs.length && cost < ((2 * len) & 0xff)) {
+      if (!(x > 0 && x < 0x31 && y > 0 && y < 0x18)) break
+      const d = dirs[i]
+      cost = (cost + (d & 1 ? 3 : 2)) & 0xff
+      x += DX[d]; y += DY[d]
+      i = i === dirs.length - 1 ? 0 : i + 1
+    }
+    const clamp = (p: { x: number; y: number }) => ({ x: Math.min(0x31, Math.max(0, p.x)), y: Math.min(0x18, Math.max(0, p.y)) })
+    const end = this.sightEnd(x0, y0, clamp({ x, y }))
+    const list: Fighter[] = []
+    let repeat = false, onLast = 8
+    l = new Line(x0, y0, end.x, end.y)
+    while (l.step()) {
+      const o = this.occupied(l.x, l.y, 1)
+      if (!o) continue
+      if (!list.length) repeat = false
+      else if (list.includes(o)) repeat = true
+      if (!repeat) list.push(o)
+      onLast = l.dir
+    }
+    const lastDir = onLast < 8 ? onLast : l.dir
+    const t = this.tables()
+    const side = (tx: number, ty: number) => {
+      if (!t || T.fanDx1.at < 0 || lastDir > 7) return
+      const p = clamp({ x: end.x + s8(t.b(tx + lastDir)), y: end.y + s8(t.b(ty + lastDir)) })
+      const s = new Line(x0, y0, p.x, p.y)
+      while (s.step()) { const o = this.occupied(s.x, s.y, 1); if (o && !list.includes(o)) list.push(o) }
+    }
+    if (width > 1) side(T.fanDx1.at, T.fanDy1.at)
+    if (width > 2) side(T.fanDx2.at, T.fanDy2.at)
+    return list.filter((o) => o !== this.current_).map((o) => o.c)
+  }
+  /** Where the line of sight from (x0, y0) towards p stops: the first cell that blocks it, else p (I: the
+   *  sight rule of `sees`, on the line walker as the original's routine uses) */
+  sightEnd(x0: number, y0: number, p: { x: number; y: number }) {
+    const l = new Line(x0, y0, p.x, p.y)
+    while (l.step()) if ((this.cells[this.bf.get(l.y, l.x)]?.sight ?? 2) > 0) return { x: l.x, y: l.y }
+    return p
   }
 
   // ------------------------------------------------------------ basics
@@ -1187,14 +1352,12 @@ export class Battle implements FxHost {
 
   // ------------------------------------------------------------ spells
   /** Cast a spell now (FUN_4e53_0c20): choose targets, then apply. */
-  async castSpell(f: Fighter, s: Spell, fromItem: boolean) {
+  async castSpell(f: Fighter, s: Spell, fromItem: boolean, ai = false) {
     const c = f.c
     const L = casterLevel(c, s, fromItem)
-    let range = s.range[0] === 0xff ? 1 : (s.range[0] + s.range[1] * L) & 0xff
-    if (range === 0 && (s.target & 0xf) !== 0) range = 1
-    const targets = await this.spellTargets(f, s, range)
+    const targets = await this.spellTargets(f, s, spellRange(s, L), ai)
     if (targets === null) {
-      if (!c[F.quick] && (await this.ui.confirm('Abort Spell?'))) { this.print('Spell Aborted'); if (!fromItem) forget(c, s.id) }
+      if (!ai && !c[F.quick] && (await this.ui.confirm('Abort Spell?'))) { this.print('Spell Aborted'); if (!fromItem) forget(c, s.id) }
       return
     }
     if (!fromItem) forget(c, s.id)
@@ -1216,11 +1379,11 @@ export class Battle implements FxHost {
   }
 
   /** Targets (FUN_3aae_20c3): self, one or several picks, or an area around the aimed square. */
-  async spellTargets(f: Fighter, s: Spell, range: number): Promise<Fighter[] | null> {
+  async spellTargets(f: Fighter, s: Spell, range: number, forceAi = false): Promise<Fighter[] | null> {
     const mode = s.target & 0xf
     this.aimed = { x: f.x, y: f.y }
     if (mode === 0 || s.target === 240) return [f]
-    const ai = !!f.c[F.quick]
+    const ai = forceAi || !!f.c[F.quick]
     const pickOne = async (allowEmpty: boolean, area?: (x: number, y: number) => { x: number; y: number }[]): Promise<AimEntry | null> => {
       if (ai) {
         if (!s.aiHostile) {
@@ -1232,10 +1395,13 @@ export class Battle implements FxHost {
           }
           return { f, x: f.x, y: f.y, cost: 0, ok: true }
         }
+        // up to 20 × the finder FUN_3aae_37e4(caster, range, 0, 1), which clears the target and sets its
+        // pick; a rejected pick stays the target
         for (let i = 0; i < 20; i++) {
           const list = this.enemiesWithin(f, range)
-          if (!list.length) return null
+          if (!list.length) { f.target = null; return null }
           const t = list[this.e.roll(1, list.length) - 1]
+          f.target = t
           if (s.area > 0 && this.fighters.some((o) => this.inPlay(o) && this.side(o) === this.side(f) && this.dist(t, o) <= s.area)) continue
           if (this.helpless(t.c) && [51, 52, 53, 31].includes(s.effect)) continue
           return { f: t, x: t.x, y: t.y, cost: 0, ok: true }
@@ -1366,48 +1532,10 @@ export class Battle implements FxHost {
         for (const t of targets) { fx.dmgType = 9; this.damageSync(t.c, dmg, 2, saveOf(t)) }
         break
       }
-      case 51: { // Lightning Bolt (FUN_4e53_2bb7, path FUN_4e53_295b, hit FUN_4e53_28bc)
+      case 51: { // Lightning Bolt (PoR FUN_4e53_2bb7, CotAB 0x47C49): the aimed square, then the bolt
         const dmg = this.e.roll(L, 6)
-        const at = (x: number, y: number) => ({ occ: this.occupied(x, y, 1), v: this.bf.get(y, x) })
-        const hit = (x: number, y: number) => {
-          const { occ, v } = at(x, y)
-          if (occ) { fx.dmgType = 0x0c; this.damageSync(occ.c, dmg, 2, this.saveSync(occ.c, 4, 0)); fx.dmgType = 0 }
-          return v > 0 && (this.cells[v]?.move ?? 0xff) === 0xff
-        }
-        let { x: ox, y: oy } = this.aimed
-        hit(ox, oy)
-        if (f.x === ox && f.y === oy) break
-        let last = at(ox, oy).occ
-        let segFrom = { x: ox, y: oy }
-        let sign = 1, first = true, remaining = 16
-        while (remaining > 0) {
-          const line = new Line(ox, oy, ox + sign * (ox - f.x) * remaining, oy + sign * (oy - f.y) * remaining)
-          for (;;) {
-            let here = at(line.x, line.y)
-            for (;;) {
-              const ok = line.step()
-              here = at(line.x, line.y)
-              if (!ok || (here.occ && here.occ !== last) || here.v === 0 || (this.cells[here.v]?.move ?? 0xff) > 1 || line.cost >= remaining) break
-            }
-            last = here.occ
-            // each segment of the bolt flies as lightning, 4 frames at 50 ms (FUN_4e53_295b)
-            if (line.x !== segFrom.x || line.y !== segFrom.y) this.ui.flight?.(segFrom, { x: line.x, y: line.y }, { frames: cycle(6), delay: 50 })
-            segFrom = { x: line.x, y: line.y }
-            if (here.v === 0) remaining = 0
-            const bounce = hit(line.x, line.y)
-            if (bounce) {
-              // the bolt comes straight back through the caster (bug: not at the angle of incidence)
-              ox = line.x; oy = line.y
-              const back = new Line(ox, oy, f.x, f.y)
-              while (back.step());
-              if (first && back.cost <= 8) line.cost = (line.cost + 8) & 0xff
-              sign = -sign; first = false; last = null
-            }
-            // bug kept: the cumulative cost is taken off at every stop
-            remaining = line.cost < remaining ? remaining - line.cost : 0
-            if (bounce || remaining === 0) break
-          }
-        }
+        this.boltHit(this.aimed.x, this.aimed.y, dmg, 4)
+        this.bolt(c, R.bolt.lightning, dmg, 4, true)
         this.ui.redraw()
         break
       }
@@ -1516,10 +1644,13 @@ export class Battle implements FxHost {
     f.r[7] = 1
   }
 
-  /** Target finder (FUN_3aae_37e4): keep a valid target, else a random enemy (terrain ignored on a second pass). */
-  findTarget(f: Fighter): Fighter | null {
-    if (f.target && this.inPlay(f.target) && this.side(f.target) !== this.side(f) && this.canTarget(f, f.target)) return f.target
-    for (const pass of [0, 1]) {
+  /**
+   * Target finder (FUN_3aae_37e4): keep a valid target, else a random enemy (terrain ignored on a second
+   * pass); with forceNew always a new one, in sight, in one pass.
+   */
+  findTarget(f: Fighter, forceNew = false): Fighter | null {
+    if (!forceNew && f.target && this.inPlay(f.target) && this.side(f.target) !== this.side(f) && this.canTarget(f, f.target)) return f.target
+    for (const pass of forceNew ? [0] : [0, 1]) {
       const list = this.enemies(f).filter((e) => pass === 1 || this.seesF(f, e))
       for (let i = 0; i < 20 && list.length; i++) {
         const t = list[this.e.roll(1, list.length) - 1]

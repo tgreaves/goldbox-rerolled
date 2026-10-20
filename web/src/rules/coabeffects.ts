@@ -13,6 +13,7 @@ import { addEffect, addRaw, fire, fx, has, negate, removeEffect, removeFirst, ru
 import { strDamageBonus } from './equip'
 import { thiefSkills } from './chargen'
 import { forget } from './magic'
+import { breathArea, breathBolt, eyeRays, gazeStone, hookTarget, throwLightning } from './specials'
 
 type Behaviour = (h: FxHost, eff: Effect, c: Uint8Array, removal: boolean, p: HandlerSpec) => void | Promise<void>
 
@@ -25,18 +26,6 @@ const flags = (c: Uint8Array | null) => (c && F.classFlags >= 0 ? c[F.classFlags
 function spellByte(h: FxHost, id: number, k: number): number | null {
   const t = h.tables?.()
   return t ? t.b(T.spellRecords.at + id * T.spellRecords.row + k) : null
-}
-/**
- * The AI target hook `*DS:72BA` that monster specials call before acting: the port keeps the current
- * target while it stands, else takes the nearest enemy in play (I: the hook's own choice is not
- * transcribed).
- */
-function aiTarget(h: FxHost, c: Uint8Array): Uint8Array | null {
-  const t = h.targetOf(c)
-  if (t && t[F.inPlay]) return t
-  const near = h.enemiesNear(c, 255).filter((e) => e[F.inPlay])
-  near.sort((a, b) => h.distance(c, a) - h.distance(c, b))
-  return near[0] ?? null
 }
 /** the combatant nearest to c, of any side (the berserk search 11c:3e, I: ties to the earlier entry) */
 function nearest(h: FxHost, c: Uint8Array): Uint8Array | null {
@@ -58,8 +47,6 @@ function hold(h: FxHost, holder: Uint8Array, v: Uint8Array, marker: number, also
 
 export const BEHAVIOURS: Record<string, Behaviour> = {
   none() {},
-  /** not transcribed yet (spec/coab/effects.md, "Port status"): does nothing */
-  unported() {},
 
   /** 3 [7] fighting snakes (0x2742C): the snakes take the attacks left; the turn ends */
   snakes(h, eff, c, removal) {
@@ -245,8 +232,8 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (w && h.weaponKind(w.type) === 1) fx.dmg = 1
   },
   /** 86 [14] acid spit (0x49B5E): within range, d100 ≤ pct: the spitter's max HP, half on a save vs breath */
-  spitAcid(h, _e, c, _r, p) {
-    const t = aiTarget(h, c)
+  async spitAcid(h, _e, c, _r, p) {
+    const t = await hookTarget(h, c, num(p, 'hook'))
     const d = h.roll(1, 100)
     if (!t || h.distance(c, t) >= num(p, 'range')) return
     if (d > num(p, 'pct')) { say(h, c, 'Spits Acid and Misses'); return }
@@ -273,9 +260,9 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (t) h.damage(t, h.roll(num(p, 'count'), num(p, 'sides')), 0, false)
   },
   /** 126 [14] gaze (0x4A214): a new target; it saves vs petrification or is held (0x34) for `minutes` */
-  gazeHold(h, _e, c, _r, p) {
+  async gazeHold(h, _e, c, _r, p) {
     h.setRec(c, 0xa, 0)
-    const t = aiTarget(h, c)
+    const t = await hookTarget(h, c, num(p, 'hook'))
     if (!t) return
     say(h, c, 'gazes...')
     h.fly?.(c, t, 'gaze')
@@ -293,8 +280,8 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     return fire(h, c, 13)
   },
   /** 131 [14] (0x4A001): adjacent, d100 ≤ pct: "Breathes Fire", fire damage, half on a save vs breath; the turn ends */
-  breatheFire(h, _e, c, _r, p) {
-    const t = aiTarget(h, c)
+  async breatheFire(h, _e, c, _r, p) {
+    const t = await hookTarget(h, c, num(p, 'hook'))
     if (h.roll(1, 100) > num(p, 'pct') || !t || h.distance(c, t) >= 2) return
     fx.dmgType = 1
     h.endTurn(c)
@@ -302,6 +289,16 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     h.fly?.(c, t, 'spit')
     h.damage(t, num(p, 'dmg'), 2, h.save(t, 3, 0))
   },
+  /** 83 [14] petrifying gaze through the AI target hook (0x497CE, rules/specials.ts) */
+  gazeStone(h, e, c, _r, p) { return gazeStone(h, e, c, p) },
+  /** 87 [14] eye rays (0x2E842) */
+  eyeRays(h, e, c, _r, p) { return eyeRays(h, e, c, p) },
+  /** 88 [14] the breath bolt (0x499CD; PoR's 88, FUN_4e53_30d9) */
+  breathBolt(h, e, c, _r, p) { return breathBolt(h, e, c, p) },
+  /** 90, 128 [14] the area breaths (0x49C94, 0x49E74) */
+  breathArea(h, e, c, _r, p) { return breathArea(h, e, c, p) },
+  /** 132 [14] thrown lightning (0x4A121) */
+  throwLightning(h, e, c, _r, p) { return throwLightning(h, e, c, p) },
   /** 133 [6] (0x29AA0): blocks some effects, and damage of a type */
   blocks(_h, _e, _c, _r, p) {
     for (const t of list(p, 'types')) negate(t)

@@ -36,14 +36,14 @@ Part of [[spec/coab/README]]. Read from the CotAB image (2026-10-20); machine-re
 
 ## 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147)
 
-**Same as PoR** (structure identical, globals translated): 1 2 5 6 8/45 9/46 10 11 15 16 17 19 21 24 29 30 31/51/52/53 33 34 36 39 41 42 43 44 49 55 56 58 59 61 62 64 65 66 67 70 71 72 78 79 80 89 92 93 94 97 98 99 100 101 102 104–118 120 124 125 127. Small changes: 20 and 25 act only when arg = 0; 22, 32, 95 call the far set-status routine; 40 has a 0x1E-byte zone record at DS:7575; 83 first picks its own target through the AI hook `*DS:72BA` and exits without one; 32's sweep uses the fighter level with its dual-class part.
+**Same as PoR** (structure identical, globals translated): 1 2 5 6 8/45 9/46 10 11 15 16 17 19 21 24 29 30 31/51/52/53 33 34 36 39 41 42 43 44 49 55 56 58 59 61 62 64 65 66 67 70 71 72 78 79 80 89 92 93 94 97 98 99 100 101 102 104–118 120 124 125 127; 88 too but for a dead store (below). Small changes: 20 and 25 act only when arg = 0; 22, 32, 95 call the far set-status routine; 40 has a 0x1E-byte zone record at DS:7575; 32's sweep uses the fighter level with its dual-class part.
 
 **Changed or new** (event in brackets):
 
 - Stats and saves: **3** [7] fighting snakes (pw −= attacks left, removed when that empties it; turn ends). **4** [16] attacker with +0x14B & 1 → roll −7 (Dispel Evil's defence). **7** [11] AC front/rear +2, capped 0x3C. **12/38, 14, 146** empty: removal recomputes the stat (§1); PoR wrote the stat from the power. **13** [15] suffocation: pw 0 → status 6 "Suffocates", else pw −1. **35** [21] Confusion, d100: 1–10 "runs away" (removes 35, rec[0x10] = 1, computer control, morale 0xB3, target cleared, adds 0x8E for 10); 11–60 "is confused", turn ends; 61–80 "goes berserk" (adds 0x89 with pw = own side and runs it); 81–100 "is enraged"; then a save vs type 4 at −2 removes 35. **50** [12, 20] cold → save +2; fire unsaved (DS:6FC2 = 0) → damage ×2. **54** [12, 20] fire → save +2; cold with DS:5D0B = 0 → ×2 (5D0B: probably a bug for 6FC2, ?). **68** (direct) Feeblemind: current INT and WIS := 7, "is stupid"; in combat the spell being cast is lost.
 - Combat modifiers: **18** [10] target +0x14B & 2 → roll +1 (PoR's name list gone). **26** [10] target +0x14B & 4 → roll +1. **27** [7] ends the turn. **28** roll 1d((pw>>4)+1), pw −1 per image lost. **37** applies when rec[3] = 0 (PoR > 0). **47** [16] attacker monster type ∈ {2, 10} and size & 0x7F = 2 → roll −4. **48** [16] monster type 1 and size 2 → roll −4. **60** [5] weapon missing or plus 0 → 0; plus < 3 → /2. **63** [6, 9] Minor Globe: a resolving spell of level < 4 → negated. **69** [1] attacker monster type 19 without 0x18 → untargetable; roll −4 either way. **73** [6] damage type & 0x20 → negated, "is unaffected". **75** [4, 10, 13] target monster type 3 → damage 3·1d12 + 4 + STR bonus (I); roll +2. **76** [4, 10] target type 8 → roll +3, damage +3. **81** [5] damage /2. **82** [5, 6] fire or cold → save vs type 4: saved and the spell's save effect ≠ 0 → 0, else /2. **84** [6] electricity → negated; HP +8 (a 1d8 rolled and discarded, I: bug). **85** [5] piercing weapon (ITEMS kind 1, I) → damage 1. **103** [4] target without 0x14, 0x36, 0x3D → +1d6. **110** [6] full cold immunity. **129** [6, 9] 100% magic resistance (adding, or damage type & 8 → negated). **133** [6] blocks 0x8E, 0x1D, 0x44; damage type & 0x40 → negated. **134** [4] target +0x14B & 8 (giant class) → damage + the holder's ranger level. **135** [6] electricity → negated. **136** [7] combat-rec[6] (movement) := 0. **143** [5] adjacent attacker takes 2 × the damage as type 8 ("gets zapped").
 - On-hit: **57** [2] engulf (both hand-1 hits, target active without 0x3A and 0x0D: "engulfs", target 0x3A (pw = its index, run at once) and 0x0D (pw 2d4), engulfer 0x8B). **96** [2] hug on roll ≥ 18 (target 0x3A, hugger 0x90). **122** [2] save vs 0 or Hold 0x34 (permanent, pw 0xFF), "is paralyzed". **123** [2] 2d8 of damage type 0x0A. **130** [5] quarrel with name word 0x87 → target gone (status 8). **145** [2] Dispel Evil touch: target +0x14B & 1 failing a save vs 4 → status 8 "is dispelled", and effects 4 and 0x91 leave the attacker; else "resists dispel evil".
-- Monster specials [14]: **86** spit acid (within 7, d100 ≤ 30; damage = the spitter's max HP, half on a save vs 3). **87** eye rays (up to 4 a turn, each once: disintegrate ≤ 2 squares, stone ≤ 3, death ≤ 4, wounds ≤ 5). **88** "Breathes!" (damage type 0x24). **90** acid breath (3 uses, area shape 6, aborts if its own side is in the area; max HP, half on a save vs 3). **91** a second cloud zone. **126** gaze (save vs 1 or Hold 0x34 for 60, "is paralyzed"). **128** fire breath (3 uses, shape 9, damage type 0x21). **131** d100 ≤ 50 and adjacent: "Breathes Fire", 7 damage, half on a save vs 3. **132** "throws lightning": two 16d6 bolts. **139** the engulfer's hold (2 attacks of 2d8 on the victim while both are active).
+- Monster specials [14] (the hook = the AI's spell target pick `*DS:72BA(&DS:7760, 1, spell)`, §7): **83** petrifying gaze (0x497CE): target cleared, the hook for spell 0x41; none, nothing. "gazes..." (no pause), the spell bolt (`19de(18)`, 4 frames, 45 ms); with 0x7F on the gazer, the target's first readied item with name word 0x76 in any of +0x2F, +0x30, +0x31 "reflects it!" (flight back) and the gazer is the victim (PoR looks at +0x31 only); save vs 1 or status 7 "is Stoned". **86** spit acid (0x49B5E; the hook for 0x41, within 7, d100 ≤ 30; damage = the spitter's max HP, half on a save vs 3). **87** eye rays (0x2E842): the target cleared and a new one found (`2e711(1)`: the finder 0x2E394(c, 0xFF, 0, forceNew), then a line-of-sight call whose result is unused); up to 4 times while there is a target, the first unused of: distance (0x4F758) ≤ 2 "fires a disintegrate ray", save vs 3 or status 8 "is disintergrated" (sic); ≤ 3 "fires a stone to flesh ray", save vs 1 or 7 "is Stoned"; ≤ 4 "fires a death ray", save vs 0 or 6 "is killed"; ≤ 5 "wounds you" (the beholder's name), 2d8 + 1 (`e3:52`, no save, damage type left as it is); each with one frame of `19de(k + 13)` (k 5, or 10 for stone) flying to the target at 30 ms (`2e6a9`) and `2e711(0)` (keep the target if still valid, else a new one) after it; otherwise the first unused of the spells 0x54 Fear, 0x37 Slow, 0x15 Sleep (kinds 0x10/0x20/0x40) through the cast routine 0x45251 (`c2:39(spell, ai 1, announce 1, &ok)`). **88** "Breathes!" (0x499CD): PoR's 88 ([[spec/effects]] row 88) with DS:6FAF := 0x24 first, a dead store: the hit routine sets 0x0C (0x47977) and clears it after; the bolt routines are CotAB's (§7). No CotAB monster carries it. **90** acid breath (0x49C94): DS:7760 := 0; round 0 (DS:75A7) sets pw := 3; pw 0 → nothing; DS:6FAF := 0x30; the hook for 0x3D (range 6); with a target the area template 0x4573F(x, y, aim, width 1, length 6); any listed combatant whose side (+0x197) is not the breather's opposite (0x4F5B4) cancels it, as does an empty list; "breathes acid", one frame of `19de(18)` to the first listed (30 ms), each listed takes max HP, half on a save vs 3; pw − 1; the turn ends. **91** a second cloud zone. **126** gaze (the hook for 0x41; save vs 1 or Hold 0x34 for 60, "is paralyzed"). **128** fire breath (0x49E74): as 90 without the DS:7760 reset and the own-side check; DS:6FAF := 0x21, the template with width 3 and length 9, "breathes fire". **131** (the hook for 0x41) d100 ≤ 50 and adjacent: "Breathes Fire", 7 damage, half on a save vs 3. **132** "throws lightning" (0x4A121): in rounds 0–3 only (DS:75A7 < 4); the pause; the hook for 0x33 (Lightning Bolt; its ok flag unread, so without a target the aim stays on the thrower's own square and the first bolt hits it); invisibility goes (0x4C023); `19de(19)`, flight to the aim (4 frames, 50 ms); 0x478F6 on the aimed square with 16d6 (`e3:52`), then 0x479B4(10, a fresh 16d6, save 4, bonus 0); the turn ends. **139** the engulfer's hold (2 attacks of 2d8 on the victim while both are active).
 - Holds and markers: **77** [15] and **137** berserk (computer control, morale 0xB3/0xB2, nearest combatant as target, side := its side XOR 1, "goes berzerk"; removal: 77 side 0, 137 side := pw). **140** (0x8C) Lay on Hands used (marker). **141** (0x8D) removal: the paladin's Cure Disease uses ([[spec/coab/records]] §9). **142** (0x8E) runs away; removal: morale 0xB3 → 0, computer control off, rec[0x10] := 0. **144** (0x90) the hugger's hold.
 - **147** (0x93) the generic item handler, also DS:720C: ready → add raw effect item[0x3D] (duration 0, power 0xFF, flag 1), run at once outside combat; unready → remove the first of that type with its callback. Item +0x3E now: 0x80 = grant effect +0x3D; 0x81 and up = stat or ability kinds (& 0x7F) for the effective-stat routine and 0x3F034. PoR's item handlers 128–139 do not exist in CotAB. Spiritual Hammer (23) makes its item with +0x3E = 0xA0.
 
@@ -107,6 +107,42 @@ else unreadied and +0x3D >> 4 magic damage; also on Unready); **5** STR; **6** C
 stat +0x3D; **9** unready ends Spiritual Hammer (0x17); **0x0A** DEX; **0x0B** thief skills; **0x0C**
 INT; **0x0D** STR and INT.
 
+## 7. The target hook, bolts and the area template (O unless marked)
+
+**Target hook** `*DS:72BA`: in combat 0x2C781 (`2a55:2231`, set at 0x21E41; `c2:34` outside), CotAB's
+`FUN_3aae_20c3(spell, ai, &ok)`: ok := 1, the list DS:744E (count) / DS:744F (pointers) emptied, DS:6FB7 := 0,
+the aim DS:7573/7574 := the caster's square; then by mode (spell byte 6 & 0xF) as PoR's, through the picker
+0x2C56C (PoR `1e16`, I: not compared line by line), with a mode 5 of its own; a failed pick sets ok := 0.
+The specials call it with ai = 1 for spell 0x33 (Lightning Bolt: range 4 + level, mode 8), 0x3D (range 6, one
+pick, effect 0x34, so helpless targets are refused) or 0x41 (range 12, one pick). The finder sets the
+target (combat record +0xA), which 83, 86, 126 and 131 read afterwards.
+
+**Bolt hit** 0x478F6(x, y, dmg, save, last, &bounce), against PoR's `28bc`: the creature on the cell is hit
+unless it is `last` (the one the previous stop hit); bounce := the cell has movement 0xFF, **and** ECL
+A[0x1CC] (0x4BE6, the map-area word) = 1, **and** the flag was 0 (never twice in a row), else 0. Damage type
+0x0C, a save of `save` halves (mode 2), `19de(19)`, the type back to 0.
+
+**Bolt path** 0x479B4(len, dmg, save, bonus), against PoR's `295b` ([[spec/combat]], Lightning Bolt): the
+same walk, plus: crossing a cell of movement 1 clears the bounce flag; `last` goes to the hit and is
+replaced after it; the length is charged with the cost added since the previous stop (PoR: the line's whole
+cost at every stop). After a bounce the new line's cost starts at 0 while the previous stop's cost is
+kept, so the next difference wraps below zero as a byte and ends the bolt (a quirk, 0x47C01). Lightning
+Bolt (0x47C49): 0x478F6(aim, L d6, 4, 0), then 0x479B4(**7**, the same roll, 4, 1); PoR 8. Javelin of
+Lightning (0x47FB0): 20 + 1d6 on the aim, then 0x479B4(3, 20, 4, 0).
+
+**Area template** 0x4573F(x0, y0, x1, y1, width, len) (nested: 0x455E6 sets the line, 0x45627 clamps,
+0x45672 collects). The line walker 0x54CA5/0x54D4C (PoR's, plus +0x17 = the direction of the last step,
+from DS:255A) runs from (x0, y0) to (x1, y1), keeping each step's direction; while its cost is below 2·len
+and (x1, y1) lies in 1..48 × 1..23, the end moves on by those directions in turn (DS:2696/269F; +2 straight,
++3 diagonal). The end is clamped to 0..49 × 0..24 and brought back by the line-of-sight routine 11c:39
+(0x54EF1) to where sight stops; its range argument is an uninitialised word (bp−0x78, ?: the port sets no
+limit). The creatures met on that line (0x55BB5) are listed in order; once one is met a second time (a 2×2
+creature's second cell) a flag is set that is never cleared, and nobody further is listed (a quirk, 0x458F0).
+Width 2 adds those on the line to the end + (DS:0A22, DS:0A2A)[d], width 3 also to the end + (DS:0A12,
+DS:0A1A)[d], d the direction of the step onto the last creature listed on the first line (unset without
+one, ?: the port takes the last step's); these lines are not cut by sight. The list (DS:744E/744F) leaves
+out the current combatant (DS:6520). Three spell handlers call it too (0x48A8C, 0x49522, 0x496D1).
+
 ## Port status (2026-10-20)
 
 Done (`web/src/games/effectrules.ts` names a behaviour per type with its parameters, `web/src/rules/coabeffects.ts`
@@ -121,21 +157,22 @@ holds them; `test/coabeffects.test.ts`):
   68, 69, 73, 75, 76, 77, 81, 82, 84, 85, 86, 91 (empty: no zone of its list exists), 96, 103, 110, 122,
   123, 126, 129, 130, 131, 133, 134, 135, 136, 137, 138, 139, 142, 143, 144, 145; 141 refills the
   paladin's uses (as before). The rest run PoR's handler (the "same as PoR" list).
+- The monster specials of event 14 (`web/src/rules/specials.ts`, `test/specials.test.ts`): 83, 87, 88, 90,
+  128, 132, with PoR's 88; 83, 86, 126 and 131 take their target through the hook. The combat host gives
+  them the battlefield: the hook is the port's spell target pick for the computer, the bolt routines
+  (one procedure, the games' differences as `R.bolt` flags; Lightning Bolt uses it too, 7 squares in CotAB), the area
+  template (offsets `T.fanDx1`…), flights between cells, the finder and the computer's cast.
 - Removal recomputes CHA (0x0E) and STR (0x0C, 0x26, 0x92) through the current-stat routine (§5).
 - Readying and putting away items through the item kinds (§6), with handler 147; the slot routine's
   Ring of Wizardry doubling (training's `derive` takes the items when the caller has them).
 
 Not yet, or approximated:
 
-- **Event 14 is not fired** by the port's combat AI in either game (PoR's 0x33EA6, before the melee loop),
-  so the monster specials (PoR 83, 84, 88, 121; CotAB 86, 126, 131, 139, 144, …) are written but dormant.
-  Firing it changes PoR's combat and is a step of its own.
-- **87** eye rays, **88** breath, **90** acid breath, **128** fire breath, **132** lightning: not
-  transcribed (`unported`, which does nothing; PoR's 87 and 90 mean other things and must not run).
-  They need area templates (shapes 6, 9) and bolt paths in the combat host, and disintegration.
-- The AI target hook `*DS:72BA` that 86, 126, 131 (and 83) call is not transcribed: the port keeps the
-  current target, else the nearest enemy (I). Berserk's nearest-combatant search (11c:3e) takes the
-  first of equal distance (I). Sounds (`ed:8e`) of the specials are not played.
+- The hook's picker 0x2C56C and the finder 0x2E394 are taken to be PoR's (I); the eye rays' spells go
+  through the port's cast, which lacks 0x45251's own check (with effect 0x4A, 1 in 2 "miscasts", 0x45373). The template's
+  sight range and side-line direction where the original reads unset memory (§7, ?). The three spell
+  handlers that use the template (0x48A8C, 0x49522, 0x496D1) are not ported. Berserk's
+  nearest-combatant search (11c:3e) takes the first of equal distance (I).
 - 130 takes the target out of play through the host's status call; CotAB's own death clean-up `e3:66`
   is not transcribed.
 - CotAB's add-with-message 0x4CD92 replaces an old record of the type whenever it has a duration; the

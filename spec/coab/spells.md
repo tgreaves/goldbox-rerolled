@@ -8,7 +8,7 @@ Part of [[spec/coab/README]]. Read from the CotAB image (2026-10-20). Marks: O s
 - **Cast** 0x45251 (PoR `4e53_0c20`): at 0x45540 sets DS:6FB1 = id, calls the table entry, clears 6FB1 and 6FB7. Changes: the refusal outside combat says "can't be cast here..."; **new** (0x45373): a caster with effect 0x4A who rolls 1 on 1d2 "miscasts" and loses the spell.
 - **Same as PoR**: Apply 0x44EEF (`08c3`), Duration 0x44E02 (`07d6`, byte-identical incl. its special cases), Bless filter 0x45C10 (`0f4f`), Cure Disease core 0x46FA7 (`228a`), dice, to-hit 0x4BCF5, remove-first "is Cured" 0x4C0FD, effect display, has-effect.
 - **Changed helpers**: add-effect 0x4CD91 (an existing record of the same type with duration > 0 is always removed before the new one is added; PoR replaced only for a longer or permanent new one); heal 0x4CE85 (the mummy-rot 0x32 block without force is gone); save 0x4BDA1 also writes DS:6FC2; damage 0x4CA6A fires event 20.
-- **New helpers**: 0x45A94 the Hold loop (23, 49, 79, 81, 94); 0x4573F(x0, y0, tx, ty, width, length) a beam/cone builder (steps from the caster towards the point, orthogonal 2 diagonal 3, to 2·length; side lines DS:0A12/0A1A for width ≥ 2, DS:0A22/0A2A for width ≥ 3; caster excluded; I for the exact shape); 0x4C1D8(ch, str, pct) true if the new STR beats the **base** STR (+0x10, %+0x1D), power = str + 100, or pct + 1 when str = 18 (encoder 0x4C160).
+- **New helpers**: 0x45A94 the Hold loop (23, 49, 79, 81, 94); 0x4573F(x0, y0, tx, ty, width, length) a beam/cone builder (steps from the caster towards the point, orthogonal 2 diagonal 3, to 2·length; side lines to the end moved by DS:0A22/0A2A for width ≥ 2, DS:0A12/0A1A for width ≥ 3; caster excluded; O, [[spec/coab/effects]] §7); 0x4C1D8(ch, str, pct) true if the new STR beats the **base** STR (+0x10, %+0x1D), power = str + 100, or pct + 1 when str = 18 (encoder 0x4C160).
 - Globals: PoR 6C94/6C95 → 744E/744F (target count, list); 6DB9/6DBA → 7573/7574 (target x, y); 6DBB → 7575 (Stinking Cloud zones), new 7579 (Cloudkill zones); 6DBF → 757D (from item). Zone record 0x13 → 0x1E bytes (x +0x1A, y +0x1B, n +0x1C, new "resisted" +0x1D, per-square flags +0x10).
 
 ## 2. Per spell id
@@ -38,7 +38,7 @@ Part of [[spec/coab/README]]. Read from the CotAB image (2026-10-20). Marks: O s
 | 43, 89 | 47575 | **changed** Remove Curse: removes 0x24; otherwise the first cursed item is **unreadied** (it stays cursed), its handler run with arg 1 if +0x3E > 0x7F, all six stats recomputed, "has an item un-cursed" |
 | 47, 64 | 476f2 | same |
 | 48, 55 | 478cc, 47c9e → 477eb | **changed** Haste/Slow: PoR's event-18 pass on each target after Apply is gone |
-| 51 | 47c49 | **changed** Lightning Bolt: L d6 type 4, but the path 0x478F6 (new argument, impassable/outdoor checks) and hit 0x479B4 (length 8 → 7, I; reflection reworked, ?) changed |
+| 51 | 47c49 | **changed** Lightning Bolt: L d6 type 4, but the hit 0x478F6 (new argument: skips the creature the previous stop hit; bounces only in a map area and not twice running) and the path 0x479B4 (length 8 → 7 at 0x47C7F; charges the cost since the previous stop) changed, O ([[spec/coab/effects]] §7) |
 | 56 | 47cd8 | same (XP stride 0x63) |
 | 58 | 47edd | **new** Cure Serious Wounds: heal 2d8 + 1 |
 | 59 | 47f27 | **changed** (item) Giant Strength: STR 21 via 0x4C1D8, raw **0x92**, 1d4×10 + 40, flag 1, STR recomputed |

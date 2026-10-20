@@ -104,6 +104,15 @@ export interface TableMap {
   startGold: TableRef
   /** saving throws by class (row), level (·5) and kind */
   saves: TableRef
+  /**
+   * CotAB's area template 0x4573F: by the direction of the step onto the last creature of its centre
+   * line, s8 offsets of the end point for the second line (`fanDx1`/`fanDy1`, DS:0A22/0A2A) and the
+   * third (`fanDx2`/`fanDy2`, DS:0A12/0A1A), 8 bytes each (PoR has no such template)
+   */
+  fanDx1: TableRef
+  fanDy1: TableRef
+  fanDx2: TableRef
+  fanDy2: TableRef
 }
 
 export const POR_TABLES: TableMap = {
@@ -121,6 +130,7 @@ export const POR_TABLES: TableMap = {
   raceClasses: t(0x3e17, 12), startAge: t(0x3e5b, 0x1c), ageing: t(0x3f31, 10), classMins: t(0x3f81, 6), alignments: t(0x3fe7, 10),
   conHp: t(0x408e), xp: { at: 0x409b, row: 0x38, levels: 14 }, clericSlots: t(0x40bc, 3), muSlots: t(0x41d4, 3), paladinSlots: absent, rangerSlots: absent,
   startGold: t(0x4263, 2), saves: t(0x426e, 0x2d),
+  fanDx1: absent, fanDy1: absent, fanDx2: absent, fanDy2: absent,
 }
 
 export const COAB_TABLES: TableMap = {
@@ -138,6 +148,7 @@ export const COAB_TABLES: TableMap = {
   raceClasses: t(0x3ffa, 14), startAge: t(0x404e, 0x1c), ageing: t(0x4124, 10), classMins: t(0x4174, 6), alignments: t(0x41da, 10),
   conHp: t(0x4281), xp: { at: 0x4293, row: 0x63, levels: 13 }, clericSlots: t(0x42bc, 5), muSlots: t(0x44ab, 5), paladinSlots: t(0x43e5, 5), rangerSlots: t(0x4448, 5),
   startGold: t(0x45b3, 2), saves: t(0x45be, 0x3c),
+  fanDx1: t(0x0a22), fanDy1: t(0x0a2a), fanDx2: t(0x0a12), fanDy2: t(0x0a1a),
 }
 
 /** The active game's tables; start-up (setGame) switches them. */
