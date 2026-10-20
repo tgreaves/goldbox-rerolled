@@ -1,0 +1,11 @@
+# EXAMPLE Caddyfile for GoldBox Rerolled (docs/server.md, "Running it publicly").
+# Caddy gets and renews the HTTPS certificate for $DOMAIN, and appends the client's address to
+# X-Forwarded-For, which the app reads with TRUST_PROXY=1.
+{$DOMAIN} {
+	encode zstd gzip
+	# bodies above 10 MB never reach the app (its own limit is lower)
+	request_body {
+		max_size 10MB
+	}
+	reverse_proxy app:8080
+}

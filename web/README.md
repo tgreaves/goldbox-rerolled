@@ -14,4 +14,6 @@ POOLRAD=/path/to/POOLRAD COAB=/path/to/CURSE npm test   # decoder tests against 
 
 Current state: *Pool of Radiance* plays from start to finish in the browser (delivery steps 1–5 of [`../docs/requirements.md`](../docs/requirements.md), and of step 6 the area map, journal and speed controls; art packs are not started). *Curse of the Azure Bonds*: steps 1–7 of [`../docs/multi-game.md`](../docs/multi-game.md) are done (detection, record fields, rules tables, script VM, characters and saves, rules, presentation); it is playable at an early stage, not yet played through. Working rules are in [`../CLAUDE.md`](../CLAUDE.md).
 
+With the server in [`../server`](../docs/server.md) (`node server/main.ts` after `npm run build`), Settings gains an Account section and the player's saves, roster, party and settings sync to it; without it nothing changes.
+
 Note: `npm audit` reports a denial-of-service issue in `braces`, pulled in by `vite-plugin-singlefile`. It only runs at build time on your own files.

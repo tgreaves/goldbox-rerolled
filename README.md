@@ -13,6 +13,7 @@ The work concentrates on the split between the engine and the data that drives t
 - [`spec/`](spec/README.md): the specification. Every statement is marked **O** (observed in the engine code or data), **I** (inferred) or **?** (unknown). Start at `spec/README.md`.
 - `tools/`: Python 3, standard library only.
 - [`web/`](web/README.md): the browser port (TypeScript, Vite).
+- [`server/`](docs/server.md): the optional server: serves the app and keeps players' accounts and data (Node 24, no dependencies).
 - [`docs/requirements.md`](docs/requirements.md): requirements and design for the browser port.
 - [`docs/multi-game.md`](docs/multi-game.md): how the engine supports several games, and the status of each step.
 - [`spec/coab/`](spec/coab/README.md): *Curse of the Azure Bonds*, as differences from the PoR spec; `tools/coab/`: its extractors.
@@ -56,6 +57,19 @@ Output from `automap.py`, `gfx.py` and the interpreter contains game text and ar
 - Data formats confirmed against every shipped file (all 1,245 DAX records decode exactly)
 - Script semantics checked by running all 29 areas through `eclvm.py`; see `spec/ecl.md`, Validation
 - The browser port repeats these checks in its tests: every PoR and every CotAB area run headless from many squares, and each game's profile is tested against that game's own files
+
+## Server and accounts (optional)
+
+The app works on its own, with everything kept in the browser. The small server in `server/` serves it and adds accounts: each player's saved games, autosave, characters, party, journal finds and settings are kept on the server (per game, in the original file formats) and synced to every browser they sign in on, with offline changes queued and clashes kept as conflict copies. The game files are never uploaded. Players sign up in Settings → Account (or by invite, or the admin CLI makes accounts); there is a recovery code instead of email, data export and account deletion.
+
+```sh
+cd web && npm ci && npm run build && cd ..
+COOKIE_SECURE=0 node server/main.ts            # http://localhost:8080/ on a LAN (plain HTTP)
+node server/admin.ts help                      # accounts, invites, stats
+docker compose up -d --build                   # or with Docker (docker-compose.yml is an example to adapt)
+```
+
+[`docs/server.md`](docs/server.md) has the design, API, data layout, security model, configuration, the systemd unit, Docker, and what to do before running it publicly.
 
 ## Status
 

@@ -79,3 +79,7 @@ use, no unbounded background jobs.
   `ecl.ts` (script VM map and opcode variants), `files.ts` (saves), `rules.ts` (rules values and
   procedure choices), `spellrules.ts` / `effectrules.ts` (spell and effect handler maps), `por.ts` / `coab.ts`
 - `docs/multi-game.md`: the multi-game design and its step-by-step status
+- `server/`: the optional accounts and sync server (Node 24, no dependencies; game-neutral: records keyed by
+  the profile id, files in each game's own formats); `web/src/store/sync.ts`, `account.ts`: the browser's side;
+  `docs/server.md`: design, API, security, deployment (systemd, Docker); its tests are `web/test/server.test.ts`
+  and `sync.test.ts`

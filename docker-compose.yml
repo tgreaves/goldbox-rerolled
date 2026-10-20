@@ -1,0 +1,55 @@
+# EXAMPLE: GoldBox Rerolled behind Caddy (automatic HTTPS). Adapt before use (docs/server.md, "Docker").
+#   docker compose up -d --build                    # the app alone, on 127.0.0.1:8080
+#   DOMAIN=games.example.org docker compose --profile proxy up -d --build   # plus Caddy on 80/443
+#   docker compose exec app node server/admin.ts list-users
+services:
+  app:
+    build: .
+    image: goldbox-rerolled:local
+    restart: unless-stopped
+    environment:
+      SIGNUP: open            # open | invite | off
+      MAX_USERS: "1000"
+      QUOTA_MB: "20"
+      COOKIE_SECURE: "1"      # HTTPS via the proxy; "0" only for plain HTTP on a LAN
+      TRUST_PROXY: "1"        # take the client address from the proxy's X-Forwarded-For
+      # SESSION_DAYS: "30"
+      # LOG_REQUESTS: "1"
+    volumes:
+      - gbr-data:/data
+    # reachable from this host only; Caddy reaches it over the compose network
+    ports:
+      - "127.0.0.1:8080:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  caddy:
+    profiles: ["proxy"]
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  gbr-data:
+  caddy-data:
+  caddy-config:

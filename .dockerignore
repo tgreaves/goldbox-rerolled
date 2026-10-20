@@ -1,0 +1,33 @@
+# only web/ and server/ are needed to build the image
+.git
+.github
+**/node_modules
+web/dist
+web/dist-single
+web/dev-dist
+**/__pycache__
+*.pyc
+out/
+spec/
+tools/
+docs/
+# game files and anything made from them
+POOLRAD/
+CURSE/
+*.DAX
+*.EXE
+*.OVR
+*.DAT
+*.SAV
+*.ITM
+*.SPC
+*.CHA
+*.GUY
+*.SWG
+*.FX
+*.pkg
+*.zip
+# players' data and local server data
+data/
+*.local
+.env
