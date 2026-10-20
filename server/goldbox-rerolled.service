@@ -1,0 +1,36 @@
+# GoldBox Rerolled server as a systemd user service (docs/server.md, "systemd").
+# Install:
+#   mkdir -p ~/.config/systemd/user
+#   cp server/goldbox-rerolled.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now goldbox-rerolled
+#   sudo loginctl enable-linger $USER     # keep it running without a login session
+# Edit WorkingDirectory / Environment below to match this checkout and your setup.
+[Unit]
+Description=GoldBox Rerolled (web app and save sync)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/pool-of-radiance-re
+ExecStart=/usr/bin/env node server/main.ts
+Environment=PORT=8080
+Environment=HOST=0.0.0.0
+# Environment=DATA_DIR=%h/.local/share/goldbox-rerolled
+# Plain HTTP on a LAN: cookies without the Secure flag. Leave at 1 behind an HTTPS proxy.
+Environment=COOKIE_SECURE=0
+# Behind a reverse proxy (Caddy, nginx) on this machine: set TRUST_PROXY=1 and HOST=127.0.0.1
+Environment=TRUST_PROXY=0
+Environment=SIGNUP=open
+Environment=MAX_USERS=1000
+Environment=QUOTA_MB=20
+Restart=on-failure
+RestartSec=5
+# hardening that works for user services
+NoNewPrivileges=yes
+PrivateTmp=yes
+UMask=0077
+
+[Install]
+WantedBy=default.target

@@ -125,6 +125,7 @@ Related: IMP-034 brought the Lightning Bolt path and bounce, Stinking Cloud squa
 | IMP-002 | Save anywhere: Save in the command bar writes slot A–J in the original layout. *In progress* (quicksave to come; changes difficulty, so a setting is planned) | Saving only from camp and the party screen ([`spec/camp.md`](spec/camp.md)) |
 | IMP-006 | Saves export and import as the original files: Export writes `SAVGAM<x>.DAT` and each member's `CHRDAT<x><n>.SAV/.ITM/.SPC` in one ZIP; Import takes them loose or zipped (a DOSBox folder works) and asks before replacing a slot. The original files keep the original format exactly; the port's own additions (journal and commission discoveries) travel in a separate `SAVGAM<x>.GBR` that the original ignores; it also takes roster characters, `<name>.CHA/.ITM/.SPC` with `charlist.txt`, into the roster | Files in the game folder |
 | IMP-005 | Runs offline as an installable web app or a single file; the game files are imported once and kept in the browser. *In progress* | A DOS program reading its folder |
+| IMP-072 | Accounts and server storage (optional): a small server (`server/`, [`docs/server.md`](docs/server.md)) serves the app and keeps each player's saved games, autosave, roster, party, journal finds (in each save's `.GBR`) and settings, per game, in the original file formats. *In progress*: the server first, then the browser's automatic sync | Everything stays on the one PC |
 
 ## Development
 
