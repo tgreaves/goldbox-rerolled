@@ -81,6 +81,38 @@ const POR_HANDLERS: Record<number, HandlerSpec> = {
   37: { b: 'blink' }, // 0c26 Blink
   39: { b: 'attackRate', ages: 0x10, msg: 'ages', mul: 2 }, // 0x37E7B Haste
   40: { b: 'liftZone', cell: 0x1e }, // 0x37EF3 the Stinking Cloud's zone (FUN_3723_0cc3)
+  41: { b: 'deflect', pct: 100, plainWeapon: 1 }, // 1086 Protection from Normal Missiles
+  42: { b: 'attackRate', div: 2 }, // 10c1 Slow
+  43: { b: 'loseStrength', duration: 60, floor: 3, msg: 'is weakened', helpless: 31 }, // 0x3830E
+  44: { b: 'loseHp', duration: 10, helpless: 31 }, // 1168
+  47: { b: 'namedFoe', who: 'attacker', monsterType: 1, size: 2, sizeMask: 0x7f, roll: -4, names: ['OGRE', 'OGRE LEADER', 'TROLL', 'FIRE GIANT', 'HILL GIANT', 'FROST GIANT', 'STONE GIANT'] }, // 11f9 (DS:402)
+  48: { b: 'namedFoe', who: 'attacker', monsterType: 1, roll: -4, names: ['BUGBEAR', 'GNOLL'] }, // 0x384A6
+  49: { b: 'prayer', sideBit: 0x10, save: 1, roll: 1 }, // 12b2 Prayer
+  50: { b: 'regenerate', duration: 14400, force: 1 }, // 12fb mummy rot's healing
+  ...each([54, 55, 60, 63], { b: 'none' }), // 1355, 135c, 319b (55: the poisoned marker)
+  56: { b: 'grant', type: 25, duration: 1, power: 0x0c }, // 1363 permanent invisibility
+  57: { b: 'rot', stat: 5, loss: 2, floor: 3, duration: 43200, msg: 'Rots...', death: 'Dies rots away' }, // 0x385C9 mummy rot's decay
+  58: { b: 'noMove', moveRate: 1 }, // 1452 held
+  59: { b: 'expireInto', type: 98, duration: 0, power: 0xff, flag: 0 }, // 1472 regeneration delay
+  61: { b: 'resistPerDie', type: 1, per: 2, magic: 8, save: 4 }, // 1490 strong fire resistance
+  62: { b: 'regenerate', duration: 60, force: 0 }, // 14eb regeneration
+  64: { b: 'poisonOnHit', bonus: 0, effect: 55, msg: 'is Poisoned' }, // 165d → 1545
+  65: { b: 'poisonOnHit', bonus: 4, effect: 55, msg: 'is Poisoned' }, // 1671
+  66: { b: 'poisonOnHit', bonus: 2, effect: 55, msg: 'is Poisoned' }, // 1685
+  67: { b: 'paralyseOnHit', roll: [2, 8], effect: 52, power: 0x0c, msg: 'is Paralyzed' }, // 1699 → 15eb
+  68: { b: 'paralyseOnHit', duration: 63, notRace: 2, effect: 52, power: 0x0c, msg: 'is Paralyzed' }, // 16bb ghoul
+  69: { b: 'paralyseOnHit', roll: [1, 9, 10], effect: 52, power: 0x0c, msg: 'is Paralyzed' }, // 16e6
+  70: { b: 'poisonOnHit', bonus: -2, effect: 55, msg: 'is Poisoned' }, // 170b
+  71: { b: 'hidden', roll: -4 }, // 171f
+  72: { b: 'grant', type: 25, duration: 1, power: 0x0c, below: 96 }, // 1730 95 % invisibility
+  73: { b: 'rake', attacks: 2, dice: 2, sides: 4, msg: 'Rakes...' }, // 0x3E4B2
+  74: { b: 'crush', attacks: 1, dice: 3, sides: 4, held: 58 }, // 3aae_3a86
+  75: { b: 'bloodDrain', sides: 4, held: 58, msg: 'Sucks some Blood' }, // 0x3899F
+  76: { b: 'attach', drain: 75, duration: 0xcf, held: 58 }, // 18b5 stirge
+  77: { b: 'holdFast', maxStr: 19, crush: 74, held: 58, msg: 'is held fast' }, // 0x38B65
+  78: { b: 'revive', full: 0, keepPower: 1 }, // 19d9
+  79: { b: 'hitDamage', count: 2, sides: 10, dmgType: 9, active: 1 }, // 1a19 fire on hit
+  80: { b: 'hitDamage', count: 1, sides: 4, dmgType: 0x10, active: 1 }, // 1a4c acid on hit
 }
 
 export const POR_EFFECTS: EffectRules = {

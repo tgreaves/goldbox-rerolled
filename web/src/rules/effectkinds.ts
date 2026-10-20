@@ -10,7 +10,7 @@ import { F } from '../games/fields'
 import { R, formerLevelsCount } from '../games/rules'
 import { T } from '../games/tables'
 import { Item as ItemRecord, ITEM_SIZE } from '../data/items'
-import { addEffect, addRaw, fire, fx, handle, has, negate, rearm, removeEffect, removeFirst, removeType, restoreStr, runEffect, type FxHost } from './effects'
+import { addEffect, addRaw, deflect, fire, fx, handle, has, healedLine, negate, rearm, removeEffect, removeFirst, removeType, restoreStr, runEffect, type FxHost } from './effects'
 import { strDamageBonus } from './equip'
 import { thiefSkills } from './chargen'
 import { forget } from './magic'
@@ -234,6 +234,165 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (p.mul !== undefined) fx.rate *= num(p, 'mul'); else fx.rate = Math.floor(fx.rate / num(p, 'div'))
   },
 
+  /** 41 Protection from Normal Missiles [5] (1086): an attacker's weapon of plus 0 is deflected (FUN_3723_0fac) at `pct` %; 104 [5] (2901), 120 [5] (2bc8): any attacker, or one with a readied item of a type in `items` */
+  deflect(h, _e, c, _r, p) {
+    const a = h.current()
+    if (p.plainWeapon) { const w = a ? h.weapon(a) : null; if (!w || w.raw[0x32] !== 0) return }
+    if (p.items && !(a && h.itemsOf(a).some((it) => it.ready && list(p, 'items').includes(it.raw[0x2e])))) return
+    deflect(h, c, num(p, 'pct'))
+  },
+  /**
+   * 43 Cause Disease's STR (removal or a direct run, 0x3830E): on removal re-armed for `duration` (or
+   * nothing when suppressed); above `floor`, `msg` and the stat −1; else `helpless` added for good
+   */
+  loseStrength(h, eff, c, removal, p, event, type) {
+    if (!removal && event !== -1) return
+    if (removal && !rearm(h, c, type, num(p, 'duration'), eff.power)) return
+    if (c[F.stat[0]] > num(p, 'floor')) { say(h, c, p.msg as string); c[F.stat[0]]-- } else addRaw(h, c, num(p, 'helpless'), 0, 0xff, 0)
+  },
+  /** 44 Cause Disease's HP (removal or a direct run, 1168): re-armed for `duration`; below 2 HP `helpless` (once), else 1 point */
+  loseHp(h, eff, c, removal, p, event, type) {
+    if (!removal && event !== -1) return
+    if (removal && !rearm(h, c, type, num(p, 'duration'), eff.power)) return
+    if (c[F.hp] < 2) { if (!has(h, c, num(p, 'helpless'))) addRaw(h, c, num(p, 'helpless'), 0, 0xff, 0) } else h.damage(c, 1, 0, false)
+  },
+  /** 49 Prayer [10, 12] (12b2): the side of the power's `sideBit` gets +`save` (12) / +`roll` (else), the other side as much less */
+  prayer(_h, eff, c, _r, p, event) {
+    const side = eff.power & num(p, 'sideBit') ? 1 : 0
+    const k = c[F.side] === side ? 1 : -1
+    if (event === 12) fx.save += k * num(p, 'save'); else fx.roll += k * num(p, 'roll')
+  },
+  /** 50 mummy rot's healing, 62 regeneration (removal, 12fb, 14eb): re-armed for `duration`, then 1 HP (`force`: past what blocks healing) */
+  regenerate(h, eff, c, removal, p, _ev, type) {
+    if (removal && rearm(h, c, type, num(p, 'duration'), eff.power) && h.heal(c, 1, !!num(p, 'force'))) healedLine(h, c)
+  },
+  /** 56 [8, 19] (1363), 72 (1730): effect `type` added raw (`duration`, `power`, flag 0), with `below` only when d100 is below it */
+  grant(h, _e, c, _r, p) {
+    if (p.below !== undefined && !(h.roll(1, 100) < num(p, 'below'))) return
+    addRaw(h, c, num(p, 'type'), num(p, 'duration'), num(p, 'power'), 0)
+  },
+  /**
+   * 57 mummy rot's decay (removal, 0x385C9), unless suppressed: `msg`, the stat − `loss` (not below
+   * `floor`); with uses left (power >> 4 above 1) re-armed one fewer for `duration`, else `death` and status 6
+   */
+  rot(h, eff, c, removal, p, _ev, type) {
+    if (!removal || fx.noRearm) return
+    const k = F.stat[num(p, 'stat')]
+    say(h, c, p.msg as string)
+    c[k] = Math.max(num(p, 'floor'), c[k] - num(p, 'loss'))
+    if (eff.power >> 4 > 1) addRaw(h, c, type, num(p, 'duration'), eff.power - 0x10, 1)
+    else h.setStatus(c, 6, `${h.name(c)} ${p.death as string}`)
+  },
+  /**
+   * 61 strong fire resistance [6, 12] (1490): damage of `type` loses `per` a die, never below the dice
+   * count (DS:681C), and without the `magic` bit none at all (6); the save +`save` (12)
+   */
+  resistPerDie(_h, _e, _c, _r, p, event) {
+    if (event === 6 && fx.dmgType & num(p, 'type')) {
+      fx.dmg = Math.max(fx.dice, fx.dmg - num(p, 'per') * fx.dice)
+      if (!(fx.dmgType & num(p, 'magic'))) fx.dmg = 0
+    } else if (event === 12) fx.save += num(p, 'save')
+  },
+  /** 64–66, 70 [3] (FUN_3723_1545): the current character's active target saves vs 0 at `bonus` or gets `effect` (add-effect) and status 6 with `msg` */
+  async poisonOnHit(h, _e, _c, _r, p) {
+    const t = h.targetOf(h.current()!)
+    if (!t || !t[F.inPlay]) return
+    if (!h.save(t, 0, num(p, 'bonus'))) {
+      await addEffect(h, t, num(p, 'effect'), 0, 0xff, 0)
+      h.setStatus(t, 6, `${h.name(t)} ${p.msg as string}`)
+    }
+  },
+  /**
+   * 67–69 [2, 3] (FUN_3723_15eb): for `duration` minutes (or `roll` [n, d, add], rolled first), the
+   * current character's active target saves vs 0 or, `msg` and the sparkle, gets `effect` (power
+   * `power`); with `notRace`, not when the holder's target is of that race (68: elves)
+   */
+  async paralyseOnHit(h, _e, c, _r, p) {
+    if (p.notRace !== undefined) { const t = h.targetOf(c); if (!t || t[F.race] === num(p, 'notRace')) return }
+    const r = p.roll as number[] | undefined
+    const duration = r ? h.roll(r[0], r[1]) + (r[2] ?? 0) : num(p, 'duration')
+    const t = h.targetOf(h.current()!)
+    if (!t || !t[F.inPlay]) return
+    if (!h.save(t, 0, 0)) {
+      if (h.announce) h.announce(t, p.msg as string); else say(h, t, p.msg as string)
+      await addEffect(h, t, num(p, 'effect'), duration, num(p, 'power'), 0)
+    }
+  },
+  /** 71 always hidden [1, 16] (171f): untargetable (1), else the roll by `roll` */
+  hidden(_h, _e, _c, _r, p, event) { if (event === 1) fx.untargetable = true; else fx.roll += num(p, 'roll') },
+  /**
+   * 73 rake [2] (0x3E4B2, seg 3AAE): both hand-1 attacks hit an active target: hand 2 gets `attacks`
+   * attacks of `dice`d`sides`, hand 1 none, `msg`, the attacks from hand 2, the turn ends
+   */
+  async rake(h, _e, c, _r, p) {
+    const t = h.targetOf(c)
+    if (fx.hits[1] === 2 && t && t[F.inPlay]) {
+      c[F.attacksLeft + 1] = num(p, 'attacks'); c[F.dice + 1] = num(p, 'dice'); c[F.sides + 1] = num(p, 'sides'); c[F.attacksLeft] = 0
+      h.setRec(c, 4, 2) // the follow-up attack loop starts at hand 2
+      say(h, c, p.msg as string)
+      await h.attack(c, t)
+      h.endTurn(c)
+    }
+  },
+  /**
+   * 74 grab and crush [13, 15] (3aae_3a86): the victim at index power & 0x3F; while both are active, on
+   * 15 `attacks` attack of `dice`d`sides` from hand 1 and the turn ends, the hold (`held` on the victim,
+   * then this record) going when the victim falls; otherwise both go
+   */
+  async crush(h, eff, c, _r, p, event) {
+    const v = h.byIndex(eff.power & 0x3f)
+    if (event === 15 && v && v[F.inPlay] && c[F.inPlay]) {
+      c[F.attacksLeft] = num(p, 'attacks'); c[F.dice] = num(p, 'dice'); c[F.sides] = num(p, 'sides')
+      h.setRec(c, 4, 1)
+      await h.attack(c, v)
+      if (!v[F.inPlay]) { await removeType(h, v, num(p, 'held')); await removeEffect(h, c, eff) }
+      h.endTurn(c)
+    } else {
+      if (v) await removeType(h, v, num(p, 'held'))
+      await removeEffect(h, c, eff)
+    }
+  },
+  /**
+   * 75 blood drain [13, 15] (0x3899F): the victim at index power & 0x3F; while both are active, on 15
+   * `msg`, 1d`sides` (type 0) to the victim, the duration down 16 a point (the record goes once its
+   * high part is at most the damage) and the turn ends; otherwise `held` on the victim and this record go
+   */
+  async bloodDrain(h, eff, c, _r, p, event) {
+    const v = h.byIndex(eff.power & 0x3f)
+    if (event === 15 && v && v[F.inPlay] && c[F.inPlay]) {
+      say(h, c, p.msg as string)
+      const d = h.roll(1, num(p, 'sides'))
+      fx.dmgType = 0
+      h.damage(v, d, 0, false)
+      eff.duration = Math.max(0, eff.duration - d * 16)
+      if (eff.duration >> 4 <= d) await removeEffect(h, c, eff)
+      h.endTurn(c)
+    } else {
+      if (v) await removeType(h, v, num(p, 'held'))
+      await removeEffect(h, c, eff)
+    }
+  },
+  /** 76 stirge attach [2] (18b5): an active target: `drain` on the holder (duration `duration`, power its index, flag 1), `held` on it, its move gone */
+  attach(h, _e, c, _r, p) {
+    const t = h.targetOf(c)
+    if (!t || !t[F.inPlay]) return
+    addRaw(h, c, num(p, 'drain'), num(p, 'duration'), h.indexOf(t), 1)
+    addRaw(h, t, num(p, 'held'), 0, 0, 0)
+    h.setRec(t, 6, 0)
+  },
+  /** 77 hug [2] (0x38B65): an active target with STR below `maxStr`: `crush` on the holder (power its index, flag 1), `held` on it, `msg` */
+  holdFast(h, _e, c, _r, p) {
+    const t = h.targetOf(c)
+    if (!t || !t[F.inPlay] || t[F.stat[0]] >= num(p, 'maxStr')) return
+    addRaw(h, c, num(p, 'crush'), 0, h.indexOf(t), 1)
+    addRaw(h, t, num(p, 'held'), 0, 0, 0)
+    say(h, t, p.msg as string)
+  },
+  /** 78, 102 (removal, 19d9, 2866): back up with the current HP (or `full`: the maximum); blocked, re-armed for 1 (the power kept with `keepPower`, else 0) */
+  revive(h, eff, c, removal, p, _ev, type) {
+    if (removal && !h.revive(c, p.full ? c[F.maxHp] : c[F.hp])) addRaw(h, c, type, 1, p.keepPower ? eff.power : 0, 1)
+  },
+
   // ---------------------------------------------------------------- first transcribed from CotAB
 
   /** 3 [7] fighting snakes (0x2742C): the snakes take the attacks left; the turn ends */
@@ -450,10 +609,11 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     addRaw(h, t, 0x34, 0, 0xff, 0)
     say(h, t, 'is paralyzed')
   },
-  /** 123 [2] (0x298ED): count d sides of the damage type to the target */
+  /** 123 [2] (0x298ED): count d sides of the damage type to the target; with `active` (PoR 79, 80: 1a19, 1a4c) only to an active one, the type set only then */
   hitDamage(h, _e, c, _r, p) {
-    fx.dmgType = num(p, 'dmgType')
     const t = h.targetOf(c)
+    if (p.active && !(t && t[F.inPlay])) return
+    fx.dmgType = num(p, 'dmgType')
     if (t) h.damage(t, h.roll(num(p, 'count'), num(p, 'sides')), 0, false)
   },
   /** 126 [14] gaze (0x4A214): a new target; it saves vs petrification or is held (0x34) for `minutes` */
@@ -505,8 +665,8 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   rangerVsGiants(h, _e, c, _r, p) {
     if (flags(h.targetOf(c)) & num(p, 'flag')) fx.dmg = (fx.dmg + c[F.levels + 4]) & 0xff
   },
-  /** 136 [7] (0x29B1C): no movement this turn */
-  noMove(h, _e, c) { h.setRec(c, 6, 0) },
+  /** 136 [7] (0x29B1C): no movement this turn; with `moveRate` (PoR 58 [18], 1452) the movement rate 0 too */
+  noMove(h, _e, c, _r, p) { h.setRec(c, 6, 0); if (p.moveRate && fx.rateIsMove) fx.rate = 0 },
   /** 138 [22] (0x29C20): invisible (25) from the start of combat */
   startInvisible(h, _e, c) { addRaw(h, c, 0x19, 0xff, 0xff, 0) },
   /**

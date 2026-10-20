@@ -231,7 +231,7 @@ export function rearm(h: FxHost, c: Uint8Array, type: number, duration: number, 
 }
 
 /** Missile deflection (FUN_3723_0fac). */
-function deflect(h: FxHost, c: Uint8Array, pct: number) {
+export function deflect(h: FxHost, c: Uint8Array, pct: number) {
   const a = h.current()
   if (!a || !weaponOf(h, a) || h.distance(a, c) <= 1) return
   if (h.roll(1, 100) <= pct) {
@@ -243,25 +243,6 @@ function deflect(h: FxHost, c: Uint8Array, pct: number) {
 }
 
 const weaponOf = (h: FxHost, c: Uint8Array) => h.weapon(c)
-
-const nameIs = (c: Uint8Array, names: string[]) => names.includes(String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name])))
-
-async function poisonOnHit(h: FxHost, bonus: number) {
-  const t = h.targetOf(h.current()!)
-  if (!t || !t[F.inPlay]) return
-  if (!h.save(t, 0, bonus)) {
-    await addEffect(h, t, 55, 0, 0xff, 0)
-    h.setStatus(t, 6, `${h.name(t)} is Poisoned`)
-  }
-}
-async function paralyse(h: FxHost, duration: number) {
-  const t = h.targetOf(h.current()!)
-  if (!t || !t[F.inPlay]) return
-  if (!h.save(t, 0, 0)) {
-    if (h.announce) h.announce(t, 'is Paralyzed'); else h.print(`${h.name(t)} is Paralyzed`)
-    await addEffect(h, t, 52, duration, 0x0c, 0)
-  }
-}
 
 /**
  * The class a drain takes a level from, and the experience that level starts at (FUN_3723_2002): the
@@ -345,85 +326,6 @@ const POR_WAITS = new Set([22, 28, 34, 64, 65, 66, 67, 68, 69, 70, 73, 74, 75, 8
 async function porHandle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event: number, removal: boolean) {
   if (removal && R.paladin && type === R.paladin.cureDisease.effect) return refillUses(c) // the game's weekly refill
   switch (type) {
-    case 41: { const a = h.current(); const w = a ? weaponOf(h, a) : null; if (w && w.raw[0x32] === 0) deflect(h, c, 100); break }
-    case 42: fx.rate = Math.floor(fx.rate / 2); break
-    case 43: if (removal || event === -1) {
-      if (removal && !rearm(h, c, 43, 60, eff.power)) break
-      if (c[F.stat[0]] > 3) { h.print(`${h.name(c)} is weakened`); c[F.stat[0]]-- } else addRaw(h, c, 31, 0, 0xff, 0)
-    } break
-    case 44: if (removal || event === -1) {
-      if (removal && !rearm(h, c, 44, 10, eff.power)) break
-      if (c[F.hp] < 2) { if (!has(h, c, 31)) addRaw(h, c, 31, 0, 0xff, 0) } else h.damage(c, 1, 0, false)
-    } break
-    case 47: { const a = h.current(); if (a && a[F.monsterType] === 1 && (a[F.sizeFlags] & 0x7f) === 2 && nameIs(a, ['OGRE', 'OGRE LEADER', 'TROLL', 'FIRE GIANT', 'HILL GIANT', 'FROST GIANT', 'STONE GIANT'])) fx.roll -= 4; break }
-    case 48: { const a = h.current(); if (a && a[F.monsterType] === 1 && nameIs(a, ['BUGBEAR', 'GNOLL'])) fx.roll -= 4; break }
-    case 49: { // Prayer: allies of the caster +1/+1, enemies −1/−1
-      const side = (eff.power & 0x10) >> 4
-      if (c[F.side] === side) { if (event === 12) fx.save += 1; else fx.roll += 1 } else if (event === 12) fx.save -= 1; else fx.roll -= 1
-      break
-    }
-    case 50: if (removal && rearm(h, c, 50, 14400, eff.power) && h.heal(c, 1, true)) healedLine(h, c); break
-    case 56: addRaw(h, c, 25, 1, 0x0c, 0); break
-    case 57: if (removal && !fx.noRearm) {
-      h.print(`${h.name(c)} Rots...`)
-      c[F.stat[5]] = Math.max(3, c[F.stat[5]] - 2)
-      if (eff.power >> 4 > 1) addRaw(h, c, 57, 43200, eff.power - 0x10, 1)
-      else h.setStatus(c, 6, `${h.name(c)} Dies rots away`)
-    } break
-    case 58: h.setRec(c, 6, 0); if (fx.rateIsMove) fx.rate = 0; break
-    case 59: if (removal) addRaw(h, c, 98, 0, 0xff, 0); break
-    case 61: if (event === 6 && fx.dmgType & 1) { fx.dmg = Math.max(fx.dice, fx.dmg - 2 * fx.dice); if (!(fx.dmgType & 8)) fx.dmg = 0 } else if (event === 12) fx.save += 4; break
-    case 62: if (removal && rearm(h, c, 62, 60, eff.power) && h.heal(c, 1, false)) healedLine(h, c); break
-    case 64: await poisonOnHit(h, 0); break
-    case 65: await poisonOnHit(h, 4); break
-    case 66: await poisonOnHit(h, 2); break
-    case 67: await paralyse(h, h.roll(2, 8)); break
-    case 68: { const t = h.targetOf(c); if (t && t[F.race] !== 2) await paralyse(h, 63); break }
-    case 69: await paralyse(h, h.roll(1, 9) + 10); break
-    case 70: await poisonOnHit(h, -2); break
-    case 71: if (event === 1) fx.untargetable = true; else fx.roll -= 4; break
-    case 72: if (h.roll(1, 100) < 96) addRaw(h, c, 25, 1, 0x0c, 0); break
-    case 73: { // rake
-      const t = h.targetOf(c)
-      if (fx.hits[1] === 2 && t && t[F.inPlay]) {
-        c[F.attacksLeft + 1] = 2; c[F.dice + 1] = 2; c[F.sides + 1] = 4; c[F.attacksLeft] = 0
-        h.setRec(c, 4, 2) // the follow-up attack loop starts at hand 2
-        h.print(`${h.name(c)} Rakes...`)
-        await h.attack(c, t)
-        h.endTurn(c)
-      }
-      break
-    }
-    case 74: case 75: { // grab / blood drain
-      const v = h.byIndex(eff.power & 0x3f)
-      if (event === 15 && v && v[F.inPlay] && c[F.inPlay]) {
-        if (type === 74) {
-          // crush: one 3d4 attack with hand 1 (FUN_3aae_3a86); the hold ends if the victim goes down
-          c[F.attacksLeft] = 1; c[F.dice] = 3; c[F.sides] = 4
-          h.setRec(c, 4, 1)
-          await h.attack(c, v)
-          if (!v[F.inPlay]) { await removeType(h, v, 58); await removeEffect(h, c, eff) }
-        }
-        else {
-          h.print(`${h.name(c)} Sucks some Blood`)
-          const d = h.roll(1, 4)
-          fx.dmgType = 0
-          h.damage(v, d, 0, false)
-          eff.duration = Math.max(0, eff.duration - d * 16)
-          if (eff.duration >> 4 <= d) await removeEffect(h, c, eff)
-        }
-        h.endTurn(c)
-      } else {
-        if (v) await removeType(h, v, 58)
-        await removeEffect(h, c, eff)
-      }
-      break
-    }
-    case 76: { const t = h.targetOf(c); if (t && t[F.inPlay]) { addRaw(h, c, 75, 0xcf, h.indexOf(t), 1); addRaw(h, t, 58, 0, 0, 0); h.setRec(t, 6, 0) } break }
-    case 77: { const t = h.targetOf(c); if (t && t[F.inPlay] && t[F.stat[0]] < 19) { addRaw(h, c, 74, 0, h.indexOf(t), 1); addRaw(h, t, 58, 0, 0, 0); h.print(`${h.name(t)} is held fast`) } break }
-    case 78: if (removal && !h.revive(c, c[F.hp])) addRaw(h, c, 78, 1, eff.power, 1); break
-    case 79: { const t = h.targetOf(c); if (t && t[F.inPlay]) { fx.dmgType = 9; h.damage(t, h.roll(2, 10), 0, false) } break }
-    case 80: { const t = h.targetOf(c); if (t && t[F.inPlay]) { fx.dmgType = 0x10; h.damage(t, h.roll(1, 4), 0, false) } break }
     case 81: { // fear aura
       for (const e of h.enemiesNear(c, 255)) {
         if (!e[F.inPlay] || h.save(e, 4, 0)) continue
