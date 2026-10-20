@@ -237,6 +237,7 @@ dialog.panel form.jump input { width: 4.5rem; }
 .startmenu .actions button { min-width: 7rem; }
 .startmenu .actions button u { text-decoration: none; font-weight: 700; }
 .startmenu .actions button:not(.primary) u { color: var(--accent); }
+.font-original .startmenu h1 { font-size: 32px; }
 
 /* party screen */
 .partyscreen {
@@ -297,7 +298,7 @@ table.modify button { min-height: 36px; width: 2.4rem; padding: 0; }
 .ending-panel .ending-text p { margin: 0.1em 0; }
 
 /* the game's own 8 × 8 font (IMP-038): sizes in whole multiples of 8 px keep it sharp */
-.font-original .game, .font-original .partyscreen, .font-original dialog.panel, .font-original .title {
+.font-original .game, .font-original .partyscreen, .font-original dialog.panel, .font-original .title, .font-original .startmenu {
   font-family: 'Pool of Radiance', ui-monospace, monospace; font-size: 16px; line-height: 1.5;
   -webkit-font-smoothing: none; font-smooth: never; letter-spacing: 0;
 }
