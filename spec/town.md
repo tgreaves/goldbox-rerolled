@@ -141,15 +141,15 @@ Entry and menu as in the shop: mode 1, pool cleared, "Heal View Take Pool Share 
 |---|---|---|---|
 | Cure Blindness | 1000 | has effect 33 ("is not blind.") | remove effect 33 |
 | Cure Disease | 1000 | has any of effects 31, 34, 43, 44, 50, 57 (DS:0114) ("is not Diseased.") | remove all six, silently (DS:681F = 1) |
-| Cure Light Wounds | 100 | none | heal 1d8 |
-| Cure Serious Wounds | 350 | none | heal 2d8+1 |
-| Cure Critical Wounds | 600 | none | heal 3d8+3 |
+| Cure Light Wounds | 100 | none | heal 1d8 through the heal routine `FUN_5216_175d` (force 0, `FUN_2d14_0401`): nothing for the Dead, Stoned, Running or anyone with mummy rot, though the fee is paid; Dying → Unconscious → revived (O) |
+| Cure Serious Wounds | 350 | none | heal 2d8+1, the same way |
+| Cure Critical Wounds | 600 | none | heal 3d8+3, the same way |
 | Neutralize Poison | 1000 | has effect 55 ("is not poisoned.") | remove effects 55, 22, 15 |
 | Raise Dead | 5500 | status Dead (6) or Animated (1) ("is not dead.") | see below |
 | Remove Curse | 3500 | a cursed item (item[0x36]) or effect 36 ("is not cursed.") | runs the Remove Curse spell |
-| Stone to Flesh | 2000 | status Stoned (7) ("is not stoned.") | status 0, HP 1 |
+| Stone to Flesh | 2000 | status Stoned (7) ("is not stoned.") | status 0, in play, HP 1 (0x1DAD7) |
 
-**Raise Dead** (`FUN_2d14_0510`): remove effects 32 (Animate Dead) and 55 (poison); HP 1, status 0, in play; if CON > 0, CON −1 (the guide names effect 31 instead of 32; the code passes 0x20). Then, with b = maxHP − char[0xB1] (0 if negative) and the new CON:
+**Raise Dead** (`FUN_2d14_0510`): remove effects 32 (Animate Dead) and 55 (poison); HP 1, status 0, in play (0x1D725–0x1D739); if CON > 0, CON −1 (the guide names effect 31 instead of 32; the code passes 0x20). Then, with b = maxHP − char[0xB1] (0 if negative) and the new CON:
 1. If CON < 14: max HP is unchanged.
 2. Else t = Σ over class levels L > 0 of (fighter: L × (CON − 14); other classes: 2L if CON > 15, else L).
 3. loss = b div t if t > 0, else b.

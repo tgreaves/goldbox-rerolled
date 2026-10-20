@@ -219,7 +219,7 @@ export function heal(c: Uint8Array, fx: Effect[], amount: number, force: boolean
   if (![0, 1, 4, 5].includes(c[F.status])) return false
   const block = game().effects.healBlock
   if (!force && fx.some((f) => block.includes(f.type))) return false
-  c[F.hp] = Math.min(c[F.maxHp], c[F.hp] + amount)
+  c[F.hp] = Math.min(c[F.maxHp], (c[F.hp] + amount) & 0xff) // the sum stored as a byte, then capped (0x4392F, 0x4CEDD)
   if (c[F.inPlay] === 0) {
     if (c[F.status] === 5) c[F.status] = 4
     if (c[F.status] === 4 && !inCombat) {

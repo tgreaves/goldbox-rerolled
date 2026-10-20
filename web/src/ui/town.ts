@@ -9,6 +9,7 @@ import { F } from '../games/fields'
 import type { Item } from '../data/items'
 import { canTakeItem, recalc } from '../rules/equip'
 import { castOutside } from '../rules/magic'
+import { heal as healChar } from '../rules/camp'
 
 const memorisedReady = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
 import { appraiseGem, appraiseJewel, COINS, coinValue, keepAsItem, moneyOf, pay, poolAll, receive, share, take, takeOne } from '../rules/money'
@@ -197,23 +198,26 @@ async function heal(ui: TownUi) {
   if (reason && !await yes(ui, `${name} ${reason} cast cure anyway:`)) return
   if (!await yes(ui, `${s.name} will only cost ${s.gp} gold pieces. pay for cure?`)) return
   if (!pay(c, e.money, s.gp, t, items)) { ui.print('Not enough money.', false); return }
-  const hp = (n: number) => { c[F.hp] = Math.min(c[F.maxHp], c[F.hp] + n) }
+  // the cures go through the heal routine (PoR FUN_2d14_0401 → FUN_5216_175d, CotAB 0x1CB35 → 0x4CE85):
+  // nothing for the dead, the stoned or (PoR) mummy rot, though the fee is paid; someone unconscious is revived
+  const hp = (n: number) => { healChar(c, fx, n, false) }
   switch (kind) {
     case 'blind': remove([33]); break
     case 'disease': remove(DISEASES); break
-    case 'clw': if (!reason) hp(e.roll(1, 8)); break
+    case 'clw': hp(e.roll(1, 8)); break
     case 'csw': hp(e.roll(2, 8) + 1); break
     case 'ccw': hp(e.roll(3, 8) + 3); break
-    case 'heal': // CotAB (image 0x1CBF6): all but 1d4 hit points; blindness, the diseases, ghoul paralysis go;
+    case 'heal': // CotAB (image 0x1CBF6): max HP − HP − 1d4 as a byte (0x1CC34), so, with the heal routine's
+      // byte sum, HP becomes max − 1d4 even from nearly full; blindness, the diseases, ghoul paralysis go;
       // INT and WIS are worked out again from the base values (feeblemind; I: items and effects not re-added)
-      hp(Math.max(0, c[F.maxHp] - c[F.hp] - e.roll(1, 4)))
+      hp((c[F.maxHp] - c[F.hp] - e.roll(1, 4)) & 0xff)
       remove([33, ...DISEASES, 68])
       c[F.stat[1]] = c[F.baseStat[1]]; c[F.stat[2]] = c[F.baseStat[2]]
       break
     case 'poison': remove([55, 22, 15]); break
     case 'raise': if (!reason) raiseDead(e, c); break
     case 'curse': remove([36]); for (const x of items) x.raw[0x36] = 0; break
-    case 'stone': if (!reason) { c[F.status] = 0; c[F.hp] = 1 } break
+    case 'stone': if (!reason) { c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = 1 } break // PoR 0x1DAD7: Okay, in play, 1 HP
   }
   recalc(c, items, t)
   ui.print(`${name} is cured.`, false)
@@ -226,6 +230,7 @@ function raiseDead(e: Engine, c: Uint8Array) {
   for (let i = fx.length - 1; i >= 0; i--) if (fx[i].type === 32 || fx[i].type === 55) fx.splice(i, 1)
   c[F.hp] = 1
   c[F.status] = 0
+  c[F.inPlay] = 1 // back in play (PoR 0x1D739, CotAB 0x1CDCF)
   if (c[F.stat[4]] > 0) { c[F.stat[4]]--; c[F.baseStat[4]] = c[F.stat[4]] }
   const con = c[F.stat[4]]
   if (con < 14) return
