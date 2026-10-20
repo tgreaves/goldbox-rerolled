@@ -283,7 +283,7 @@ n = operand count passed to the reader in the handler (O for every row). Status:
 | 2B | HMENU | HMENU | 2+N | 0x19904 / 10B4 | 10D1 | = | count = val 2 |
 | 2C | PARLAY | PARLAY | 6 | 0x1B007 / 27B7 | 25CB | = | |
 | 2D | CALL | CALL | 1 | 0x1B773 / 2F23 | 2CCF | Δ | target = make_word(lo,hi) − 0x7FFF; new target table below |
-| 2E | DAMAGE | DAMAGE | 5 | 0x1B1A8 / 2958 | 2775 | Δ | as PoR plus **flags bit 4 (0x10): a successful save still takes the damage** (0x1B2C0, 0x1B329, 0x1B398); in the save modes the damage is rolled once (0x1B217) for all victims; attack mode rerolls after each attack (0x1B436). Per-victim helper 0x21BD0 (skips status 6, prints, applies 0x4F425). Party wiped → DS:4FE0 = 1, message, 3 s delay |
+| 2E | DAMAGE | DAMAGE | 5 | 0x1B1A8 / 2958 | 2775 | Δ | as PoR (one roll for all victims of a save mode is PoR's too) plus **flags bit 4 (0x10): a successful save still takes the damage** (0x1B22A, 0x1B2C0, 0x1B329, 0x1B398; the bit is also part of the save bonus); on a wipe no "The END!" (the frame is redrawn, 0x01330), then "The entire party is killed!" and a 3 s delay. Used with bit 4 in ECL5 at 0x8251, 0x83C2, 0x8D55, 0x8E31 |
 | 2F | AND | AND | 3 | 0x19620 / 0DD0 | 0DEF | = | |
 | 30 | OR | OR | 3 | 0x19620 | 0DEF | = | |
 | 31 | REDRAW | REDRAW | 0 | 0x1B506 / 2CB6 | 2AA2 | = | (+ DS:759A = 1) |

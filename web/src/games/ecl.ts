@@ -25,6 +25,11 @@ export interface EclMap {
   /** when CALL refresh draws the view again over pictures: PoR when the view changed (FUN_29c3 2C90);
    *  CotAB also after a PICTURE, once the area's walls are loaded (0x1B7B2: flags DS:8B7C … 8B84, DS:47FB) */
   refreshAfterPicture: boolean
+  /** DAMAGE: flag bits that make a successful save still take the damage (CotAB 0x10, which is also
+   *  part of the save bonus; 0x1B22A) */
+  damageDespiteSave: number
+  /** shown before "The entire party is killed!" when DAMAGE kills everyone (PoR "The END!", 0x1C667) */
+  wipeBanner: string | null
   /** where a new game's scripts start: ECL block and record */
   start: { block: number; area: number }
   /** a save whose area is 0 starts here, with that area's script loaded (CotAB 1; PoR has an area 0) */
@@ -44,6 +49,8 @@ export const POR_ECL: EclMap = {
   calls: { refresh: 0x2c90, sound: 0xba03, frame: -1 },
   callSounds: { by: { 8: 10, 10: 11 }, other: null },
   refreshAfterPicture: false,
+  damageDespiteSave: 0,
+  wipeBanner: 'The END!',
   start: { block: 3, area: 0 },
   areaZero: null,
   twoSlotSkipsFF: false,
@@ -69,6 +76,8 @@ export const COAB_ECL: EclMap = {
   calls: { refresh: 0x2e10, sound: 0xb200, frame: 0x6803 },
   callSounds: { by: { 8: 10, 10: 11 }, other: 10 }, // 0x069B0: DS:25C2 = 10, DS:25C4 = 11
   refreshAfterPicture: true, // PICTURE sets DS:8B7C (0x190EA)
+  damageDespiteSave: 0x10,
+  wipeBanner: null,
   // the start-up code sets block 2 for a real game (spec/coab/assets.md); record 1 is block 2's first (I)
   start: { block: 2, area: 1 },
   // image 0x1C001–0x1C050: area 0 → record 1 (82 when DS:4FD5 is set, ?), loaded rather than restored

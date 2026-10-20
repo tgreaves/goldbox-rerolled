@@ -21,6 +21,8 @@ import { randomTreasure } from '../rules/randitem'
 import { advanceClock, HOUR, MINUTE } from '../rules/camp'
 import { F } from '../games/fields'
 import { recalc } from '../rules/equip'
+import { WorldHost } from '../rules/worldfx'
+import { fire, fx } from '../rules/effects'
 
 export const A0 = 0x4900
 export const B0 = 0x6b00
@@ -1124,59 +1126,83 @@ export class Engine {
     }
   }
 
+  /**
+   * DAMAGE (PoR 0x1C3A5, CotAB 0x1B1A8, spec/ecl.md row 2E): one damage roll for every victim of a
+   * save mode, rolled again after each attack in attack mode; the dead are skipped; "dies." when the
+   * damage exceeds HP + 10; the press-Enter prompt always. CotAB's flag 0x10 hurts despite a save.
+   */
   private async damage() {
     this.readops(5)
     const [flags, count, sides, bonus, save] = [1, 2, 3, 4, 5].map((i) => this.val(i) & 0xff)
-    const party = this.nodes.slice(0, this.B[PARTY_SIZE - B0] || this.nodes.length)
-    const dmg = () => bonus + this.roll(count, sides)
+    const size = this.B[PARTY_SIZE - B0] & 0xff
+    const roll = () => (this.roll(count, sides) & 0xff) + bonus // the dice sum is a byte
+    let dmg = roll()
+    const despite = (flags & game().ecl.damageDespiteSave) !== 0
+    const host = new WorldHost(this)
+    const s8 = (v: number) => (v << 24) >> 24
+    // the save (0x42EC3 / 0x4BDA1): 1 fails, 20 succeeds, else the effects' event 12, byte compare
     const saved = (c: Uint8Array, kind: number, b: number) => {
       const r = this.roll(1, 20)
       if (r === 1) return false
       if (r === 20) return true
-      return c[F.saves + kind] <= r + ((c[F.saveBonus] << 24) >> 24) + b
+      fx.save = r + s8(c[F.saveBonus]) + b
+      fx.saveType = kind
+      void fire(host, c, 12)
+      return c[F.saves + kind] <= (fx.save & 0xff)
     }
+    // the attack (0x42DAF / 0x4BC8D): 1 misses, 20 counts 100, the effects' event 16, against AC
     const hit = (c: Uint8Array) => {
       let r = this.roll(1, 20)
-      if (r === 1) return false
+      if (r <= 1) return false
       if (r === 20) r = 100
-      return c[F.ac] < r + save
+      fx.roll = r
+      void fire(host, c, 16)
+      if (fx.roll < 0) return false
+      return s8(fx.roll) + save > c[F.ac]
     }
-    // FUN_2fea_20cc: "is hit FOR n points of Damage." or "dies.", the status set as FUN_10ba_2228 does
+    // the victim (0x21F6C / 0x21BD0): the message decided first, then the damage (a byte) applied
     const said: string[] = []
-    const hurt = (c: Uint8Array, d: number) => {
+    const hurt = (c: Uint8Array) => {
+      if (c[F.status] === 6) return
       const name = String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name]))
-      const left = c[F.hp] - d, over = left < 0 ? -left : 0
-      if (over > 9 || (left <= 0 && c[F.status] === 1)) c[F.status] = 6
+      said.push(c[F.hp] + 10 < dmg ? `${name} dies.` : `${name} is hit FOR ${dmg} points of Damage.`)
+      const d = dmg & 0xff
+      const left = Math.max(c[F.hp] - d, 0), over = Math.max(d - c[F.hp], 0)
+      if (over > 9 || (left === 0 && c[F.status] === 1)) c[F.status] = 6
       else if (over > 0) c[F.status] = 5
       else if (left === 0) c[F.status] = 4
       if (c[F.status] !== 0 && c[F.status] !== 1) { c[F.hp] = 0; c[F.inPlay] = 0 } else c[F.hp] = left
-      said.push(c[F.status] === 6 ? `${name} dies.` : `${name} is hit FOR ${d} points of Damage.`)
     }
+    const member = (k: number) => this.nodes[Math.max(0, k - 1)] // the k-th from the list head
+    const pick = flags & 0x40 ? 0 : this.roll(1, size || 1) // rolled even when it is not used
     if (!(flags & 0x80)) {
       for (let i = 0; i < flags; i++) {
-        const c = party[this.rand(party.length)]
-        if (hit(c)) hurt(c, dmg())
+        const c = member(this.roll(1, size || 1))
+        if (c && hit(c)) hurt(c)
+        dmg = roll()
       }
     } else {
       const b = flags & 0x1f, kind = save & 7
-      if (!(flags & 0x40)) {
-        if (!(save & 0x80)) {
-          const c = party[this.rand(party.length)]
-          if (!saved(c, kind, b)) hurt(c, dmg())
-        } else if (!(kind && saved(this.cur, kind - 1, b))) hurt(this.cur, dmg())
+      const fate = (c: Uint8Array, k: number) => { if (!saved(c, k, b) || despite) hurt(c) }
+      if (flags & 0x40) {
+        for (const c of [...this.nodes]) { if (flags & 0x20) hurt(c); else fate(c, kind) } // the whole list
+      } else if (save & 0x80) {
+        if (kind === 0) hurt(this.cur)
+        else fate(this.cur, kind - 1)
       } else {
-        for (const c of party) if (flags & 0x20 || !saved(c, kind, b)) hurt(c, dmg())
+        const c = member(pick)
+        if (c) fate(c, kind)
       }
     }
-    if (said.length) {
-      for (const t of said) this.io.print(t, false)
-      if (said.some((t) => t.endsWith('dies.')) || party.some((c) => c[F.status] >= 4)) this.io.sound(5)
-      await this.io.menu(['PRESS ENTER'], {})
-    }
-    if (party.every((c) => c[F.hp] === 0)) {
+    for (const t of said) this.io.print(t, false)
+    if (!this.nodes.some((c) => c[F.inPlay] !== 0)) {
+      const banner = game().ecl.wipeBanner
+      if (banner) this.io.print(banner, false)
       await this.io.engine('party dead')
       this.quit = true
+      return
     }
+    await this.io.menu(['PRESS ENTER'], {})
   }
 
   /** Opcodes a game handles its own way (games/ecl.ts; CotAB: spec/coab/ecl.md, "Opcodes"). */
