@@ -68,6 +68,23 @@ export type WildPass =
  *  blank ground (image slot 0x16 in T.battleCells), the ones the passes may change */
 export interface WildFieldSpec { fill: number; blank: number[]; passes: WildPass[] }
 
+/**
+ * How a map-area battlefield is built (rules/battlefield.ts mapBattlefield; PoR FUN_34c7_0810, CotAB
+ * 0x2555D, one procedure: 13 × 5 squares around the party, each a sheared block of cells by its walls
+ * and doors). `cornerWallEnd`: the north-east corner's top-right cell where the square's north and east
+ * are open, the edge north of the corner a wall and the east square's north open (PoR 0x04, the
+ * 0x03 + 1 at image 0x25373; CotAB 0x08, the 0x07 + 1 at 0x25467). `finishing`: PoR's finishing pass
+ * (FUN_34c7_0000) over the field afterwards. `furnish`: after each square (CotAB 0x24D63), in a room (a
+ * wall on some side, not two opposite walls alone, no door) whose map byte (GEO plane 2) has `flag`,
+ * each `blank` interior cell takes a `table` cell on d`die` ≤ `atMost`, then each blank neighbour
+ * (T.furnishDx/Dy) a `chair` the same way; null: no furnishing (PoR)
+ */
+export interface MapFieldSpec {
+  cornerWallEnd: number
+  finishing: boolean
+  furnish: { flag: number; blank: number[]; table: [cell: number, die: number, atMost: number]; chair: [cell: number, die: number, atMost: number] } | null
+}
+
 export interface GameRules {
   spells: SpellRules
   /** how spell slots are worked out (PoR FUN_51cf_0000, CotAB FUN 0x50480, spec/coab/tables.md §3.5):
@@ -163,6 +180,8 @@ export interface GameRules {
   wildBattle: { kind: 'overlandTile' } | { kind: 'placeFlags'; mapFlag: number; place: number }
   /** how a wilderness battlefield is built from its terrain flags (rules/battlefield.ts wildField) */
   wildField: WildFieldSpec
+  /** how a map-area battlefield is built from the GEO map around the party (rules/battlefield.ts mapBattlefield) */
+  mapField: MapFieldSpec
   /**
    * The cloud occupant check, one procedure (PoR FUN_5216_0ae7; CotAB 0x4B8F7, which takes a flag: 1 when
    * moving or from a cast, 0 at round end). `gas`: a creature on a `cell` square, not under any of
@@ -235,6 +254,8 @@ export const POR_RULES: GameRules = {
       { pass: 'finishing' },
     ],
   },
+  // FUN_34c7_0810, then the finishing pass FUN_34c7_0000
+  mapField: { cornerWallEnd: 0x04, finishing: true, furnish: null },
   clouds: { gas: { cell: 0x1e, immune: [0x1e, 0x1f, 0x20, 0x6f, 0x7d], roundEnd: true, apply: false }, kill: null }, // FUN_5216_0ae7
   thief: { dualClass: false, bonus: 0, clampWithBonus: false, gloves: null, gauntlets: null },
   saveCon: null,
@@ -299,6 +320,9 @@ export const COAB_RULES: GameRules = {
         cells: [[0x39, 2], [0x2f, 2], [0x2b, 4], [0x36, 3], [0x31, 4]] },
     ],
   },
+  // 0x2555D: PoR's squares (one corner cell differs), no finishing pass; rooms furnished by 0x24D63 with
+  // tables (RandCom 0) on d10 ≤ 5 and chairs (RandCom 1) beside them on d10 ≤ 9 (spec/coab/combat.md)
+  mapField: { cornerWallEnd: 0x08, finishing: false, furnish: { flag: 0x40, blank: [0x17, 0x36], table: [0x1a, 10, 5], chair: [0x1b, 10, 9] } },
   // 0x4B8F7: no 0x1E immunity; HD 0–4 die, 5 save at −4, 6 save, 7 and up (and below 0) unaffected
   clouds: { gas: { cell: 0x1e, immune: [0x1f, 0x20, 0x6f, 0x7d], roundEnd: false, apply: true }, kill: { cell: 0x1c, save: 0, bands: [[0, 4, null], [5, 5, -4], [6, 6, 0]], poison: 0x37 } },
   // 0x50F5A: Gloves of Thievery (effect 0x0B), Gauntlets of Dexterity (effect 0x02)

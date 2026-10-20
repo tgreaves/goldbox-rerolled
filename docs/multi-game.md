@@ -148,8 +148,11 @@ watch, because each is an alternative path in code:
   named by what they do: one `river` for both games (PoR FUN_34c7_0bde, CotAB 0x25690: the cells, the
   ford's cells, fords in pairs, the crossing and the edge as data), CotAB's `treesOrLogs`, `scatterOdds`
   (0x2579B, 0x25ADA; no finishing pass) and PoR's `treesBySize`, `scatterTerrain`, `finishing`; both
-  games' fields are tested against transcriptions of the originals. CotAB's map-area
-  generator (0x2555D, which furnishes rooms) is not transcribed: CotAB map fields use PoR's.
+  games' fields are tested against transcriptions of the originals.
+- `R.mapField` (2026-10-20): one map-area generator (PoR FUN_34c7_0810, CotAB 0x2555D, the same
+  squares → cells procedure): the one corner cell that differs, the finishing pass (PoR) and the room
+  furnishing (CotAB 0x24D63: flag, cells, dice; the chair offsets from START.EXE, `T.furnishDx/Dy`) are
+  profile data.
 - Optional content modules switched by data: the PoR commissions panel, the tile wilderness.
 
 **Still hard-coded game knowledge in shared code (the gaps).**

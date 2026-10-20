@@ -122,6 +122,10 @@ export interface TableMap {
    */
   gasCloud: TableRef
   killCloud: TableRef
+  /** CotAB's room furnishing 0x24D63: s8 column and row offsets of the four cells beside a table where
+   *  chairs go, entries 1–4 (DS:034C, DS:0350: up, right, down, left; PoR furnishes no rooms) */
+  furnishDx: TableRef
+  furnishDy: TableRef
 }
 
 export const POR_TABLES: TableMap = {
@@ -140,7 +144,7 @@ export const POR_TABLES: TableMap = {
   conHp: t(0x408e), xp: { at: 0x409b, row: 0x38, levels: 14 }, clericSlots: t(0x40bc, 3), muSlots: t(0x41d4, 3), paladinSlots: absent, rangerSlots: absent,
   startGold: t(0x4263, 2), saves: t(0x426e, 0x2d),
   fanDx1: absent, fanDy1: absent, fanDx2: absent, fanDy2: absent,
-  gasCloud: t(0x290d), killCloud: absent,
+  gasCloud: t(0x290d), killCloud: absent, furnishDx: absent, furnishDy: absent,
 }
 
 export const COAB_TABLES: TableMap = {
@@ -159,7 +163,7 @@ export const COAB_TABLES: TableMap = {
   conHp: t(0x4281), xp: { at: 0x4293, row: 0x63, levels: 13 }, clericSlots: t(0x42bc, 5), muSlots: t(0x44ab, 5), paladinSlots: t(0x43e5, 5), rangerSlots: t(0x4448, 5),
   startGold: t(0x45b3, 2), saves: t(0x45be, 0x3c),
   fanDx1: t(0x0a22), fanDy1: t(0x0a2a), fanDx2: t(0x0a12), fanDy2: t(0x0a1a),
-  gasCloud: t(0x27d9), killCloud: t(0x27dd),
+  gasCloud: t(0x27d9), killCloud: t(0x27dd), furnishDx: t(0x034b), furnishDy: t(0x034f),
 }
 
 /** The active game's tables; start-up (setGame) switches them. */

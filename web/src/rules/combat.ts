@@ -2339,7 +2339,7 @@ export async function fight(e: Engine, ui: CombatUi, onReady?: (b: Battle) => vo
     bf = wildBattlefield(e.wild.map[gy * 44 + gx], e.read(0x4ab3), roll)
   } else if (wb.kind === 'placeFlags' && e.read(wb.mapFlag) === 0) {
     bf = wildField(img[T.ds + T.placeTerrain.at + (e.read(wb.place) & 0xff)], roll)
-  } else if (e.geo) bf = mapBattlefield(e.geo, e.x, e.y, roll, e.area)
+  } else if (e.geo) bf = mapBattlefield(e.geo, e.x, e.y, roll, e.area, R.mapField, img)
   else bf = wildBattlefield(1, 0, roll)
   const b = new Battle(e, ui, bf, cellTable(img))
   const partySize = e.party().length

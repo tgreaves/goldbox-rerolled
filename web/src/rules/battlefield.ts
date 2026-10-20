@@ -1,7 +1,8 @@
 // Combat battlefield (spec/combat.md, "Battlefield"): a 25 x 50 grid of cell values, the cell table
 // from START.EXE, and the terrain generators.
 import { T } from '../games/tables'
-import { R, type CellDie, type FlagValue, type RiverCourse, type WildFieldSpec, type WildPass } from '../games/rules'
+import { R, type CellDie, type FlagValue, type MapFieldSpec, type RiverCourse, type WildFieldSpec, type WildPass } from '../games/rules'
+import type { GeoMap } from '../data/geo'
 
 export const ROWS = 25
 export const COLS = 50
@@ -248,10 +249,29 @@ export function finishingPass(bf: Battlefield, roll: Roll, area: number) {
 }
 
 /**
- * Map-area battlefield (FUN_34c7_0810): 13 × 5 map squares around the party, each a sheared 6 × 5
- * block of cells, north up. Edge classes: 0 open, 1 wall, 3 door.
+ * A map square's byte in GEO plane 2 (CotAB 0x53E45; PoR's map lookups do the same, spec/maps.md):
+ * outside 0–15, 0 in areas 0 and 10, else the coordinate is moved to the far edge (above 15 → 0,
+ * below 0 → 15).
  */
-export function mapBattlefield(geo: import('../data/geo').GeoMap, X: number, Y: number, roll: Roll, area: number): Battlefield {
+function squareByte(geo: GeoMap, x: number, y: number, area: number): number {
+  if (x < 0 || x > 15 || y < 0 || y > 15) {
+    if (area === 0 || area === 10) return 0
+    x = x > 15 ? 0 : x < 0 ? 15 : x
+    y = y > 15 ? 0 : y < 0 ? 15 : y
+  }
+  return geo.event(x, y)
+}
+
+/**
+ * Map-area battlefield (PoR FUN_34c7_0810, CotAB 0x2555D; one procedure, R.mapField): 13 × 5 map squares
+ * around the party, rows of squares outer, each a sheared 6 × 5 block of cells, north up. Edge classes:
+ * 0 open, 1 wall, 3 door. Per square: floor and west edge, north edge, north-west and north-east
+ * corners (PoR 0x24F2A, 0x24FE7, 0x2507F, 0x25285; CotAB 0x2508C, 0x25131, 0x251AE, 0x25386), then the
+ * furnishing (CotAB 0x24D63); after all squares the finishing pass (PoR). spec/combat.md "Map-area
+ * battlefields", spec/coab/combat.md "Map-area generator".
+ */
+export function mapBattlefield(geo: GeoMap, X: number, Y: number, roll: Roll, area: number,
+  spec: MapFieldSpec = R.mapField, img: Uint8Array | null = null): Battlefield {
   const bf = new Battlefield(false)
   const DX = [0, 1, 1, 1, 0, -1, -1, -1], DY = [-1, -1, 0, 1, 1, 1, 0, -1]
   const edge = (x: number, y: number, d: number): number => {
@@ -263,6 +283,10 @@ export function mapBattlefield(geo: import('../data/geo').GeoMap, X: number, Y: 
     return y === Y && (d === 2 || d === 6) ? 0 : 1
   }
   const classify = (x: number, y: number, d: number) => edge(x, y, d) | edge(x + DX[d], y + DY[d], (d + 4) % 8)
+  const fu = spec.furnish
+  if (fu && !img) throw new Error('furnishing a map battlefield needs START.EXE')
+  const s8 = (v: number) => (v << 24) >> 24
+  const around = fu ? [1, 2, 3, 4].map((k) => [s8(img![T.ds + T.furnishDx.at + k]), s8(img![T.ds + T.furnishDy.at + k])]) : []
   for (let dy = -2; dy <= 2; dy++) for (let dx = -6; dx <= 6; dx++) {
     const x = X + dx, y = Y + dy
     const plot = (c: number, r: number, cell: number) => bf.set(dy * 5 + 10 + r, dx * 6 + dy * 5 + 21 + c, cell)
@@ -284,11 +308,29 @@ export function mapBattlefield(geo: import('../data/geo').GeoMap, X: number, Y: 
     const g7 = classify(x, y - 1, 2), g8 = classify(x + 1, y, 0)
     plot(5, 0, N === 0 ? (g7 === 1 ? 0x05 : 0x17) : N === 3 ? 0x10 : 0x06)
     plot(6, 0, N === 0
-      ? (g7 === 0 ? 0x17 : g7 === 3 ? (E === 0 && g8 !== 0 ? 0x19 : 0x02) : (E === 0 && g8 !== 0 ? 0x0c : 0x04))
+      ? (g7 === 0 ? 0x17 : g7 === 3 ? (E === 0 && g8 !== 0 ? 0x19 : 0x02) : E !== 0 ? 0x04 : g8 !== 0 ? 0x0c : spec.cornerWallEnd)
       : E !== 0 ? 0x0a : g8 !== 0 ? 0x06 : g7 === 0 ? 0x12 : 0x14)
     plot(5, 1, N === 0 ? 0x17 : N === 3 ? 0x11 : 0x0b)
     plot(6, 1, N === 0 ? (g7 === 0 ? 0x17 : E !== 0 ? 0x05 : g8 === 0 ? 0x09 : 0x0d) : E !== 0 ? 0x0f : g8 === 0 ? 0x18 : 0x0b)
+    if (!fu) continue
+    // furnishing (CotAB 0x24D63): a room has a wall, not just two opposite ones, and no door
+    const S = classify(x, y, 4), sides = [N, E, S, W]
+    const room = sides.includes(1) && !(N === 1 && S === 1 && !(E === 1 && W === 1))
+      && !(E === 1 && W === 1 && !(N === 1 && S === 1)) && !sides.includes(3)
+    const flagged = (squareByte(geo, x, y, area) & fu.flag) !== 0
+    const blank = (row: number, col: number) => fu.blank.includes(bf.get(row, col))
+    const inside = (row: number, col: number) => row >= 0 && row < ROWS && col >= 0 && col < COLS
+    for (let i = 2; i <= 3; i++) for (let j = 2; j <= 4; j++) {
+      const row = dy * 5 + 10 + j, col = dx * 6 + dy * 5 + 21 + i + j
+      if (!inside(row, col) || !blank(row, col) || !flagged || !room) continue
+      if (roll(fu.table[1]) > fu.table[2]) continue
+      bf.set(row, col, fu.table[0])
+      for (const [dc, dr] of around) {
+        const r2 = row + dr, c2 = col + dc
+        if (inside(r2, c2) && blank(r2, c2) && roll(fu.chair[1]) <= fu.chair[2]) bf.set(r2, c2, fu.chair[0])
+      }
+    }
   }
-  finishingPass(bf, roll, area)
+  if (spec.finishing) finishingPass(bf, roll, area)
   return bf
 }

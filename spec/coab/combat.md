@@ -21,10 +21,65 @@ potted flowers on open ground) has no CotAB counterpart here. In CotAB's `RandCo
 0x1B are a **table** and a **chair** (images R0, R1), so running PoR's finishing pass on a CotAB field
 puts furniture outdoors (the bug this section was written to fix).
 
-The map generator 0x2555D is a different procedure from PoR's `FUN_34c7_0810` (per square 0x24D63;
-it furnishes rooms itself with tables 0x1A and chairs 0x1B: 0x24EA5, d10 ≤ 5, then a chair beside on
-d10 ≤ 9 for each of four neighbours from DS:034B/DS:034F). **Not transcribed (?)**: the port still
-builds CotAB map fields with PoR's generator and finishing pass.
+The map generator 0x2555D is PoR's `FUN_34c7_0810` with one corner cell changed and a furnishing step
+per square (tables 0x1A and chairs 0x1B in rooms), below.
+
+### Map-area generator (O, 0x2555D)
+
+PoR's squares → cells procedure ([[spec/combat]], "Map areas: squares → cells"), statement for
+statement, except where marked **new**. The parent's locals are globals here: dx DS:4A24, dy DS:4A25,
+edge classes N DS:4A26, W DS:4A27, E DS:4A28, S DS:4A29; party x, y DS:7229, DS:722A.
+
+```
+for dy in -2..2: for dx in -6..6:              // 0x2555D
+  x, y = DS:7229 + dx, DS:722A + dy
+  W = classify(x, y, 6); N = classify(x, y, 0); E = classify(x, y, 2)
+  S = classify(x, y, 4)                         // new: read only by the furnishing
+  floor_west(); north(); nw(); ne()             // 0x2508C, 0x25131, 0x251AE, 0x25386
+  DS:4A2D = mapbyte(x, y) & 0x40                // new: 0x116:0x34 → 0x53E45
+  furnish()                                     // new: 0x24D63
+// no finishing pass
+```
+
+- `classify` 0x25018 and `edge` 0x24F96: as PoR's `FUN_34c7_01ad` / `012b`, the neighbour from
+  DS:2696 / DS:269F (`T.wallDx` / `T.wallDy`, the same vectors); passage 0x116:0x2F → 0x53C13, wall
+  type 0x116:0x2A → 0x53D42 (GEO planes 0 and 1 for the wall types, plane 3 for the passages, as PoR).
+- `plot(c, r, piece)` 0x24CD6: as PoR's `FUN_34c7_0221` (`piece + 1` at row dy·5 + 10 + r, column
+  dx·6 + dy·5 + 21 + c, nothing outside the grid).
+- Floor and west edge, north edge, north-west corner: as PoR, cell for cell.
+- North-east corner 0x25386: as PoR except cell (0, 6) with N = 0 and g7 = 1: E = 0 and g8 ≠ 0 → 0x0C
+  (as PoR), **E = 0 and g8 = 0 → 0x08** (0x25467: piece 7; PoR 0x04, its piece 3 at PoR image
+  0x25373), E ≠ 0 → 0x04 (as PoR). The case: open north and east, a wall running north from the
+  square's north-east corner and ending there, the east square's north open. In the port:
+  `R.mapField.cornerWallEnd`.
+- `mapbyte(x, y)` 0x53E45: the square's byte in GEO plane 2 (`DS:7220` + 0x200 + y·16 + x). Outside
+  0–15 it is 0 in areas 0 and 10 (DS:8B78, the current area), else the coordinate moves to the far edge
+  (above 15 → 0, below 0 → 15); the wall routines 0x53C13 and 0x53D42 start with the same rule. Bit 0x40
+  marks the squares that may be furnished (**I**: rooms the map maker meant to furnish; GEO2 #1, #4,
+  GEO3 #21, GEO4 #32, #37 and GEO5 #53 have such squares).
+
+#### Furnishing (O, 0x24D63)
+
+```
+room = (N = 1 or E = 1 or S = 1 or W = 1)       // a wall somewhere
+       and not (N = 1 and S = 1 and not (E = 1 and W = 1))   // not two walls facing alone:
+       and not (E = 1 and W = 1 and not (N = 1 and S = 1))   //   a corridor
+       and none of N, E, S, W is 3              // no door
+for i in 2..3: for j in 2..4:                   // outer i, inner j
+  row = dy·5 + 10 + j; col = dx·6 + dy·5 + 21 + i + j        // block cell (r = j, c = i + j)
+  if row, col on the grid and blank(row, col) and DS:4A2D ≠ 0 and room:
+    if d10 ≤ 5:
+      (row, col) = 0x1A                          // table
+      for k in 1..4:                             // up, right, down, left
+        r2 = row + DS:034F[k]; c2 = col + DS:034B[k]   // s8: DS:034C.. = 0, 1, 0, −1; DS:0350.. = −1, 0, 1, 0
+        if (r2, c2) on the grid and blank(r2, c2) and d10 ≤ 9: (r2, c2) = 0x1B   // chair
+```
+
+`blank` is the image-slot test (`DS:26A7[cell·4]` = 0x16: cells 0x17 and 0x36). The d10s are rolled
+only for cells that pass every test, so a field with no flagged room uses no dice at all. The six cells
+are the interior of the square's block, right of where its west wall would stand; chairs beside them
+can land in a block drawn later, which then overwrites them, and an interior cell already given a
+chair is no longer blank, so it gets no table.
 
 ### Dice (O, 0xE3:0x4D → 0x4BE31)
 
@@ -159,8 +214,13 @@ Cells 0x00–0x19 are the map-area set (DungCom), as PoR's.
 
 ### Port
 
-The map-area generator (0x2555D) is not transcribed: CotAB map fields are still PoR's map generator and
-finishing pass (**?** how far they differ).
+`rules/battlefield.ts` `mapBattlefield(geo, x, y, roll, area, spec, img)`: one map-area generator for
+both games, `R.mapField` naming the differences as data: `cornerWallEnd` (PoR 0x04, CotAB 0x08),
+`finishing` (PoR's pass afterwards, not CotAB) and `furnish` (CotAB: flag 0x40, blank cells, table
+0x1A on d10 ≤ 5, chair 0x1B on d10 ≤ 9, the chair offsets read from START.EXE as `T.furnishDx` /
+`T.furnishDy`; PoR null). Tested cell for cell, and die for die, against a statement-by-statement
+transcription of 0x2555D and the routines it calls on real GEO maps (`test/mapfield.test.ts`); PoR's
+map fields are unchanged (`test/battlefield.test.ts`).
 
 `rules/battlefield.ts` `wildField(flags, roll, spec)`: one driver (fill, then the passes the profile
 lists, `R.wildField`), the passes named by what they do; CotAB: `river`, `treesOrLogs`,
