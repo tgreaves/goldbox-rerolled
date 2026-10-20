@@ -45,7 +45,8 @@ export function convert(imp: CharacterImport, raw: Uint8Array, effects: Uint8Arr
   keepBase(c)
   if (imp.hpLevelFromHitDice && F.hpLevel >= 0) c[F.hpLevel] = c[F.hitDice]
   // money: what a new character of this game gets (CotAB 300 platinum); no items
-  if (R.startMoney === 'platinum300') { c[F.money + 8] = 300 & 0xff; c[F.money + 9] = 300 >> 8 }
+  const m = R.startMoney
+  if (m.fixed !== null) { c[F.money + 2 * m.coin] = m.fixed & 0xff; c[F.money + 2 * m.coin + 1] = m.fixed >> 8 }
   c[F.itemCount] = 0
   // the class mask (5047:03c6) and the derived statistics: THAC0, attacks, slots, saves, thief skills
   let mask = 0

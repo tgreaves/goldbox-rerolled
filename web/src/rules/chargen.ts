@@ -139,11 +139,9 @@ export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
       for (const id of R.startSpells) c[F.known + id] = 1
     }
   }
-  if (R.startMoney === 'gold') {
-    const g = Math.floor((gold * 10) / classes)
-    c[F.money + 6] = g & 0xff
-    c[F.money + 7] = g >> 8
-  } else { c[F.money + 8] = 300 & 0xff; c[F.money + 9] = 300 >> 8 } // CotAB: 300 platinum, the dice roll dropped
+  const m = R.startMoney, g = m.fixed ?? Math.floor((gold * 10) / classes)
+  c[F.money + 2 * m.coin] = g & 0xff
+  c[F.money + 2 * m.coin + 1] = g >> 8
   // hit points (FUN_417f_4235, FUN_417f_3f31)
   const hpRoll = hitDice(t, rng, c)
   c[F.hpRolled] = hpRoll & 0xff
@@ -164,32 +162,26 @@ export function startEffects(c: Uint8Array): Effect[] {
 }
 
 export function hitDice(t: Tables, rng: Rng, c: Uint8Array): number {
-  if (R.hpModel === 'coab') return coabHitDice(t, rng, c, [0, 1, 2, 3, 4, 5, 6, 7].filter((k) => c[F.levels + k] > 0)) & 0xff
-  let sum = 0
-  for (let k = 0; k < 8; k++) {
-    if (!c[F.levels + k]) continue
-    const sides = t.b(T.hitDiceSides.at + k)
-    let r = roll(rng, t.b(T.hitDiceCount.at + k), sides)
-    if (c[F.levels + k] === 1 && r < Math.floor((sides * 2) / 3)) r = Math.floor((sides * 2) / 3)
-    sum += r
-  }
-  return sum & 0xff
+  return rollHitDice(t, rng, c, [0, 1, 2, 3, 4, 5, 6, 7].filter((k) => c[F.levels + k] > 0)) & 0xff
 }
 
 /**
- * CotAB's hit-point roll (FUN 0x3b230) for the classes given, at their current levels: below the
- * class's stop level (DS:3EBB) the dice (the full count at level 1, one die after) rolled twice,
- * the higher kept; from the stop level the class's fixed hit points, which replace the sum so far
- * rather than add to it (the original's quirk, spec/coab/tables.md §3.4).
+ * The hit dice of the classes given, at their current levels, by the game's rules (R.hitPoints): the
+ * class's dice (`laterDice` dice after level 1 where set), the best of `rolls` rolls, at least the
+ * level-1 minimum; from the class's stop level (T.hitDiceStop) the fixed amount, replacing the sum so
+ * far (CotAB's quirk, spec/coab/tables.md §3.4). PoR FUN_417f_4235 / training; CotAB FUN 0x3b230.
  */
-export function coabHitDice(t: Tables, rng: Rng, c: Uint8Array, classes: number[]): number {
+export function rollHitDice(t: Tables, rng: Rng, c: Uint8Array, classes: number[]): number {
+  const hp = R.hitPoints
   let sum = 0
   for (const k of classes) {
     const L = c[F.levels + k]
-    if (L < t.b(T.hitDiceStop.at + k)) {
-      const n = L > 1 ? 1 : t.b(T.hitDiceCount.at + k), sides = t.b(T.hitDiceSides.at + k)
-      sum += Math.max(roll(rng, n, sides), roll(rng, n, sides))
-    } else sum = R.fixedHp[k] ?? 2
+    if (hp.fixed && T.hitDiceStop.at >= 0 && L >= t.b(T.hitDiceStop.at + k)) { sum = hp.fixed[k] ?? 2; continue }
+    const n = L > 1 && hp.laterDice !== null ? hp.laterDice : t.b(T.hitDiceCount.at + k), sides = t.b(T.hitDiceSides.at + k)
+    let r = roll(rng, n, sides)
+    for (let i = 1; i < hp.rolls; i++) r = Math.max(r, roll(rng, n, sides))
+    if (hp.firstLevelMin && L === 1) r = Math.max(r, Math.floor((sides * hp.firstLevelMin[0]) / hp.firstLevelMin[1]))
+    sum += r
   }
   return sum
 }

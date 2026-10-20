@@ -19,22 +19,31 @@ export interface SpellRules {
 
 export interface GameRules {
   spells: SpellRules
-  /** how spell slots are worked out: absolute per-level tables (PoR FUN_51cf_0000) or summed
-   *  increments with paladin and ranger rows (CotAB FUN 0x50480, spec/coab/tables.md §3.5) */
-  slotModel: 'absolute' | 'increments'
+  /** how spell slots are worked out (PoR FUN_51cf_0000, CotAB FUN 0x50480, spec/coab/tables.md §3.5):
+   *  optionally clear every slot first; then per source, if the class has a level: one first-level slot
+   *  (`first`), and the table's rows from level `from` either set (the class's own level's row) or added
+   *  (rows from..level), each column into a pool and spell level; the WIS bonus after the cleric source
+   *  or always; then the spells learnt (those of a class with slots, or all of a class) */
+  slots: {
+    clear: boolean
+    sources: { cls: number; table: 'clericSlots' | 'muSlots' | 'paladinSlots' | 'rangerSlots'; from: number; first: boolean; add: boolean; columns: { pool: 'cleric' | 'druid' | 'mu'; level: number }[] }[]
+    wisdom: 'afterCleric' | 'always'
+    learn: { classes: number[]; spellClass: 'cleric' | 'druid'; all: boolean }[]
+    /** a readied item with this effect byte (+0x3E) doubles the magic-user slots of levels 1..levels */
+    doubler: { effect: number; levels: number } | null
+  }
   /** base class → the level above which it gets 3 attacks per 2 rounds */
   extraAttacks: Record<number, number>
-  /** how a level's hit points are rolled: PoR (every level's dice, 2/3 minimum at level 1) or CotAB
-   *  (FUN 0x3b230: full dice at level 1, one die after, best of two rolls, fixed from DS:3EBB) */
-  hpModel: 'por' | 'coab'
-  /** CotAB: the fixed hit points per level from the stop level, by base class */
-  fixedHp: number[]
+  /** how a level's hit points are rolled, per class (PoR: the class's dice every level, at least 2/3 of
+   *  a die at level 1; CotAB FUN 0x3b230: the dice at level 1 and `laterDice` after, the best of `rolls`
+   *  rolls, and from the stop level (T.hitDiceStop) a fixed amount that replaces the sum so far) */
+  hitPoints: { laterDice: number | null; rolls: number; firstLevelMin: [number, number] | null; fixed: number[] | null }
   /** demi-human level limits: race, base class, the ability that sets the band, and the limit with
    *  that ability below 17, at 17 and at 18 or more (18/xx counts as 18) */
   levelLimits: { race: number; cls: number; by: 0 | 1; limits: [number, number, number] }[]
-  /** starting money: PoR's gold dice × 10 shared over the classes, or CotAB's 300 platinum (the
-   *  dice are still rolled, and the sum dropped) */
-  startMoney: 'gold' | 'platinum300'
+  /** starting money in one coin (index into the money words): the class dice × 10 shared over the
+   *  classes (PoR, gold), or a fixed amount (CotAB 300 platinum; the dice are still rolled, then dropped) */
+  startMoney: { coin: number; fixed: number | null }
   /** the temple's healing services in the order of the game's name table (T.templeNames), with
    *  their prices (immediates in the game's code, not a table) */
   temple: { kind: TempleService; gp: number }[]
@@ -104,17 +113,25 @@ const SHARED = {
 export const POR_RULES: GameRules = {
   ...SHARED,
   spells: { records: 67, named: 56, book: 55, levels: 3, cleric: 0, druid: -1, magicUser: 1, item: 2 },
-  slotModel: 'absolute',
+  slots: {
+    clear: false,
+    sources: [
+      { cls: 0, table: 'clericSlots', from: 2, first: false, add: false, columns: [{ pool: 'cleric', level: 1 }, { pool: 'cleric', level: 2 }, { pool: 'cleric', level: 3 }] },
+      { cls: 5, table: 'muSlots', from: 2, first: false, add: false, columns: [{ pool: 'mu', level: 1 }, { pool: 'mu', level: 2 }, { pool: 'mu', level: 3 }] },
+    ],
+    wisdom: 'afterCleric',
+    learn: [{ classes: [0], spellClass: 'cleric', all: false }],
+    doubler: null,
+  },
   extraAttacks: { 2: 6 },
-  hpModel: 'por',
-  fixedHp: [],
+  hitPoints: { laterDice: null, rolls: 1, firstLevelMin: [2, 3], fixed: null },
   // spec/progression.md; races 1 dwarf, 2 elf, 3 gnome, 4 half-elf, 5 halfling; classes 0 cleric, 2 fighter
   levelLimits: [
     { race: 1, cls: 2, by: 0, limits: [7, 8, 9] }, { race: 2, cls: 2, by: 0, limits: [5, 6, 7] },
     { race: 3, cls: 2, by: 0, limits: [5, 5, 6] }, { race: 4, cls: 2, by: 0, limits: [6, 7, 8] },
     { race: 5, cls: 2, by: 0, limits: [4, 5, 6] }, { race: 4, cls: 0, by: 0, limits: [5, 5, 5] },
   ],
-  startMoney: 'gold',
+  startMoney: { coin: 3, fixed: null },
   casterTerms: { 0: [{ cls: 0, minus: 0 }], 1: [{ cls: 5, minus: 0 }] },
   casterGate: null,
   dualClass: false,
@@ -131,11 +148,21 @@ export const COAB_RULES: GameRules = {
   ...SHARED,
   // 100 spells, five levels; class byte 0 cleric, 1 druid, 2 magic-user, 3 item/monster (§3.7)
   spells: { records: 100, named: 100, book: 100, levels: 5, cleric: 0, druid: 1, magicUser: 2, item: 3 },
-  slotModel: 'increments',
+  slots: {
+    clear: true,
+    sources: [
+      { cls: 0, table: 'clericSlots', from: 2, first: true, add: true, columns: [{ pool: 'cleric', level: 1 }, { pool: 'cleric', level: 2 }, { pool: 'cleric', level: 3 }, { pool: 'cleric', level: 4 }, { pool: 'cleric', level: 5 }] },
+      { cls: 3, table: 'paladinSlots', from: 9, first: false, add: true, columns: [{ pool: 'cleric', level: 1 }, { pool: 'cleric', level: 2 }, { pool: 'cleric', level: 3 }, { pool: 'cleric', level: 4 }, { pool: 'cleric', level: 5 }] },
+      { cls: 4, table: 'rangerSlots', from: 8, first: false, add: true, columns: [{ pool: 'druid', level: 1 }, { pool: 'druid', level: 2 }, { pool: 'druid', level: 3 }, { pool: 'mu', level: 1 }, { pool: 'mu', level: 2 }] },
+      { cls: 5, table: 'muSlots', from: 2, first: true, add: true, columns: [{ pool: 'mu', level: 1 }, { pool: 'mu', level: 2 }, { pool: 'mu', level: 3 }, { pool: 'mu', level: 4 }, { pool: 'mu', level: 5 }] },
+    ],
+    wisdom: 'always',
+    learn: [{ classes: [0, 3], spellClass: 'cleric', all: false }, { classes: [4], spellClass: 'druid', all: true }],
+    doubler: { effect: 0x81, levels: 3 }, // Ring of Wizardry (0x507C3)
+  },
   extraAttacks: { 2: 6, 3: 6, 4: 7 }, // fighter > 6, paladin > 6, ranger > 7 (§3.3)
-  hpModel: 'coab',
-  // §3.4: fighter and paladin 3, cleric, ranger and thief 2, magic-user 1 (druid and monk are not playable: 2, I)
-  fixedHp: [2, 2, 3, 3, 2, 1, 2, 2],
+  // §3.4: fixed from the stop level: fighter and paladin 3, cleric, ranger and thief 2, magic-user 1 (druid, monk: 2, I)
+  hitPoints: { laterDice: 1, rolls: 2, firstLevelMin: null, fixed: [2, 2, 3, 3, 2, 1, 2, 2] },
   // §3.2: PoR's, plus elf and half-elf magic-users by INT and half-elf rangers as fighters (classes 4 ranger, 5 MU)
   levelLimits: [
     { race: 1, cls: 2, by: 0, limits: [7, 8, 9] }, { race: 2, cls: 2, by: 0, limits: [5, 6, 7] },
@@ -144,7 +171,7 @@ export const COAB_RULES: GameRules = {
     { race: 2, cls: 5, by: 1, limits: [9, 10, 11] }, { race: 4, cls: 4, by: 0, limits: [6, 7, 8] },
     { race: 4, cls: 5, by: 1, limits: [6, 7, 8] },
   ],
-  startMoney: 'platinum300',
+  startMoney: { coin: 4, fixed: 300 },
   // DS:00E6: Heal added after Cure Critical Wounds (§3.11)
   // cleric: cleric, or paladin − 8; druid: ranger − 7; magic-user: magic-user, or ranger − 8
   casterTerms: { 0: [{ cls: 0, minus: 0 }, { cls: 3, minus: 8 }], 1: [{ cls: 4, minus: 7 }], 2: [{ cls: 5, minus: 0 }, { cls: 4, minus: 8 }] },

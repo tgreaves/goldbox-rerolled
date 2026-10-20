@@ -10,7 +10,7 @@ import { F } from '../src/games/fields'
 import { unexepack } from '../src/data/exepack'
 import { Tables } from '../src/rules/chargen'
 import { derive, levelLimit } from '../src/rules/training'
-import { alignmentsFor, begin, classesFor, coabHitDice, rollAbilities, saves, thiefSkills } from '../src/rules/chargen'
+import { alignmentsFor, begin, classesFor, rollHitDice, rollAbilities, saves, thiefSkills } from '../src/rules/chargen'
 import { T } from '../src/games/tables'
 
 const tables = (dir: string) => SpellTables.load(new Uint8Array(readFileSync(join(dir, 'START.EXE'))))!
@@ -72,14 +72,14 @@ describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds spell book
     const rolls: number[] = []
     const rng = (n: number) => { rolls.push(n); return rolls.length % 2 ? 2 : 6 } // dice show 3, then 7
     c[F.levels + 2] = 1
-    expect(coabHitDice(t, rng, c, [2])).toBe(7) // fighter level 1: 1d10 twice, the higher
+    expect(rollHitDice(t, rng, c, [2])).toBe(7) // fighter level 1: 1d10 twice, the higher
     expect(rolls).toEqual([10, 10])
     c[F.levels + 2] = 5
-    expect(coabHitDice(t, rng, c, [2])).toBe(7) // one die after level 1
+    expect(rollHitDice(t, rng, c, [2])).toBe(7) // one die after level 1
     c[F.levels + 2] = 10
-    expect(coabHitDice(t, rng, c, [2])).toBe(3) // fighter from level 10: 3 hit points
+    expect(rollHitDice(t, rng, c, [2])).toBe(3) // fighter from level 10: 3 hit points
     c[F.levels + 5] = 4
-    expect(coabHitDice(t, rng, c, [5, 2])).toBe(3) // the fixed value replaces the magic-user's roll (quirk)
+    expect(rollHitDice(t, rng, c, [5, 2])).toBe(3) // the fixed value replaces the magic-user's roll (quirk)
   })
 
   it('creates a human paladin with 300 platinum and base stats (§3.1, §3.10, §2.1)', () => {

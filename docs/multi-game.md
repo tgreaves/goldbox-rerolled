@@ -105,9 +105,10 @@ code (checked by grep).
 
 **Procedure choices, named in the profile.** These are allowed by the design but are the places to
 watch, because each is an alternative path in code:
-- `R.slotModel` ('absolute' | 'increments'), `R.hpModel`, `R.startMoney`: two implementations each.
-  Each pair could become one parametric procedure (slot rows from a start level, hit dice rolled N
-  times keep best with a level-1 minimum and a stop table, starting coins as dice or a fixed amount).
+- ~~`R.slotModel`, `R.hpModel`, `R.startMoney`~~: done 2026-10-20, each is now one parametric
+  procedure with per-game data (`R.slots`: slot sources set or added from a start level into pools;
+  `R.hitPoints`: dice after level 1, rolls kept best, level-1 minimum, fixed amounts from the stop
+  level; `R.startMoney`: a coin and a fixed amount or the dice).
 - `game().effects.handlers` and `items`: CotAB's changed effect types run named behaviours; PoR's
   run its switch by default. The PoR set should be an explicit map too, so that no game is the default.
 - `ending.por` (PoR's own ending procedure) next to the generic ending steps.
