@@ -5,7 +5,7 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { GameFiles } from '../src/store/gamefiles'
 import { Engine, type Io } from '../src/vm/engine'
-import { COAB, POR, setGame } from '../src/games/profile'
+import { COAB, POR, setGame, wants } from '../src/games/profile'
 import { parseSave, saveArea, saveBlock } from '../src/data/save'
 import { parseCharacter } from '../src/data/character'
 
@@ -18,7 +18,7 @@ function load(): GameFiles {
     for (const n of readdirSync(d)) {
       const p = join(d, n)
       if (statSync(p).isDirectory()) walk(p)
-      else if (COAB.wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(p)))
+      else if (wants(COAB, n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(p)))
     }
   }
   walk(dir)

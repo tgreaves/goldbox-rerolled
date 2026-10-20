@@ -17,6 +17,12 @@ export const GAMES: GameProfile[] = [POR, COAB]
 
 const LAST_KEY = 'goldbox.game'
 
+/** Whether game g keeps a file of this name from an imported folder. */
+export function wants(g: GameProfile, name: string): boolean {
+  const n = name.toUpperCase()
+  return g.keep.some((r) => r.test(n))
+}
+
 /** Which game a set of files belongs to: by its configuration file, else by files only it has. */
 export function detect(names: Iterable<string>): GameProfile | undefined {
   const has = new Set([...names].map((n) => n.toUpperCase()))

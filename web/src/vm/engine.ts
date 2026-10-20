@@ -4,7 +4,7 @@
 
 import { R, classLevel } from '../games/rules'
 import { installNames } from '../data/character'
-import { canonical, native, type EclVariant } from '../games/ecl'
+import { canonical, native, viewRead, type EclVariant } from '../games/ecl'
 import { game } from '../games/profile'
 import { T } from '../games/tables'
 import { parseSave } from '../data/save'
@@ -377,7 +377,7 @@ export class Engine {
     const u16 = (o: number) => c[o] | (c[o + 1] << 8)
     const s8 = (o: number) => ((c[o] << 24) >> 24) & 0xffff
     const extra = game().ecl.viewReads[k]
-    if (extra) return extra(c)
+    if (extra) return viewRead(extra, c)
     if (k === 0x18) return c[F.stat[4]]
     if (k === 0x9b) return c[F.saves + 1]
     if (k === 0xa0) return s8(F.hitDice)

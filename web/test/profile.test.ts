@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest'
 import { readdirSync, existsSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { detect, COAB, POR } from '../src/games/profile'
+import { detect, COAB, POR, wants } from '../src/games/profile'
 import { GameFiles } from '../src/store/gamefiles'
 
 /** every file name under a folder, subfolders flattened as the folder picker gives them */
@@ -43,7 +43,7 @@ describe.skipIf(!por || !existsSync(por))('Pool of Radiance folder', () => {
   it('is detected and complete', () => {
     const list = names(por)
     expect(detect(list)).toBe(POR)
-    const kept = list.filter((n) => POR.wanted(n))
+    const kept = list.filter((n) => wants(POR, n))
     expect(new GameFiles(new Map(kept.map((n) => [n.toUpperCase(), new Uint8Array(0)]))).complete()).toBe(true)
   })
 })
@@ -52,7 +52,7 @@ describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds folder', (
   it('is detected and complete, with the pre-made party from SAVE/', () => {
     const list = names(coab)
     expect(detect(list)).toBe(COAB)
-    const kept = list.filter((n) => COAB.wanted(n)).map((n) => n.toUpperCase())
+    const kept = list.filter((n) => wants(COAB, n)).map((n) => n.toUpperCase())
     const f = new GameFiles(new Map(kept.map((n) => [n, new Uint8Array(0)])))
     expect(f.game).toBe(COAB)
     expect(f.complete()).toBe(true)

@@ -27,8 +27,8 @@ export interface GameProfile {
   markers: string[]
   /** the minimum set for the port to start */
   required: string[]
-  /** files the port keeps from an imported folder */
-  wanted(name: string): boolean
+  /** files the port keeps from an imported folder: names matching any of these (upper case) */
+  keep: RegExp[]
   /** IndexedDB databases: the imported game files, and the player's roster and saves */
   stores: { files: string; user: string }
   /** image families the asset viewer shows, in order */

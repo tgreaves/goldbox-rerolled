@@ -120,8 +120,8 @@ watch, because each is an alternative path in code:
    handlers. This is the largest gap: spell handlers need a per-game map like the effects'.
 2. Effect type numbers named in shared code (the temple's blindness, poison, paralysis; combat's
    hold and sleep types): the same in both games so far, but they belong in data as named ids.
-3. A few functions inside profiles (the script character view's readers, `wanted()`): they should
-   become declarative data, so a profile can be a pure data file.
+3. ~~Functions inside profiles~~: done 2026-10-20 (the character view's reads are declarative entries,
+   the kept files a list of patterns); profiles now hold only data.
 4. Procedure keys named after games ('por', 'coab') should describe the procedure instead.
 
 **Plan, in order:** spell handlers per game (CotAB's spells read from its binary); PoR's effect

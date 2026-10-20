@@ -22,10 +22,7 @@ export const POR: GameProfile = {
   config: 'POOL.CFG',
   markers: ['GEO1.DAX', 'SQRPACI.DAX', 'BACPAC.DAX'],
   required: ['ECL1.DAX', 'GEO1.DAX', '8X8D1.DAX', 'WALLDEF1.DAX'],
-  wanted(name) {
-    const n = name.toUpperCase()
-    return n.endsWith('.DAX') || n === 'ITEMS' || n === 'START.EXE' || n === 'GAME.OVR' || n === 'POOL.CFG' || /^CHRDAT.+\.(SAV|ITM|SPC)$/.test(n) || /^SAVGAM.\.DAT$/.test(n)
-  },
+  keep: [/\.DAX$/, /^ITEMS$/, /^START\.EXE$/, /^GAME\.OVR$/, /^POOL\.CFG$/, /^CHRDAT.+\.(SAV|ITM|SPC)$/, /^SAVGAM.\.DAT$/],
   // the names used before there was more than one game, so existing imports and saves stay where they are
   stores: { files: 'poolrad', user: 'poolrad-user' },
   imageFamilies: ['TITLE', 'PIC', 'FINAL', 'SPRIT', 'HEAD', 'BODY', 'CHEAD', 'CBODY', 'CPIC',

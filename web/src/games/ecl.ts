@@ -2,7 +2,7 @@
 // Radiance's addresses internally; a game whose regions sit elsewhere has the addresses its scripts
 // use translated on the way in. Offsets inside each region are the same in both games
 // (spec/coab/ecl.md, "Memory map").
-import { F } from './fields'
+import { F, type CharFields } from './fields'
 import { classLevel } from './rules'
 
 export interface EclMap {
@@ -14,7 +14,7 @@ export interface EclMap {
   /** B-view writes to B + 0x20…0x70 land at memorised + (offset − 0x20) + this (PoR 0, CotAB 1: 1-based) */
   memorisedView: number
   /** B-view reads this game adds to the shared ones (offset from B → value) */
-  viewReads: Record<number, (c: Uint8Array) => number>
+  viewReads: Record<number, ViewRead>
   /** opcodes this game handles its own way (opcode → variant the engine implements) */
   ops: Record<number, EclVariant>
   /** IF-skip operand counts that differ from PoR's table */
@@ -43,10 +43,15 @@ export interface EclMap {
   twoSlotSkipsFF: boolean
 }
 
+/** One B-view read: a character field (element `index` of an array field; `signed` sign-extends a byte;
+ *  `mask` keeps those bits), a raw record byte, or a class's level with its dual-class part. */
+export type ViewRead =
+  | { field: keyof CharFields; index?: number; signed?: boolean; mask?: number }
+  | { raw: number; mask?: number }
+  | { classLevel: number }
+
 export type EclVariant = 'passTime' | 'findSpell' | 'protection' | 'redrawScreen' | 'dropCharacter' | 'findEffect' |
   'destroyItems' | 'returnOrExit' | 'divideRemainder'
-
-const s8 = (v: number) => ((v << 24) >> 24) & 0xffff
 
 export const POR_ECL: EclMap = {
   a: 0x4900, b: 0x6b00, c: 0x9700, code: 0x9900, memorisedView: 0, viewReads: {}, ops: {}, skip: {},
@@ -66,12 +71,12 @@ export const POR_ECL: EclMap = {
 export const COAB_ECL: EclMap = {
   a: 0x4b00, b: 0x7c00, c: 0x7a00, code: 0x8000, memorisedView: 1,
   viewReads: {
-    0x15: (c) => c[F.stat[1]],
-    0x72: (c) => s8(c[F.race]),
-    0x73: (c) => s8(c[F.cls]),
-    0xd6: (c) => s8(c[F.gender]),
-    0xe4: (c) => c[0x192] & 1, // CotAB record byte 0x192 (set by the Hillsfar import), no field yet
-    0xc9: (c) => classLevel(c, 5) & 0xff, // the magic-user level with its dual-class part (FUN 0x51841)
+    0x15: { field: 'stat', index: 1 }, // INT
+    0x72: { field: 'race', signed: true },
+    0x73: { field: 'cls', signed: true },
+    0xd6: { field: 'gender', signed: true },
+    0xe4: { raw: 0x192, mask: 1 }, // CotAB record byte 0x192 (set by the Hillsfar import), no field yet
+    0xc9: { classLevel: 5 }, // the magic-user level with its dual-class part (FUN 0x51841)
   },
   // spec/coab/ecl.md, "Opcodes"
   ops: {
@@ -105,6 +110,15 @@ export function canonical(g: EclMap, a: number): number {
 }
 
 /** The engine's address back in game g's numbering (for logs and tools). */
+/** Read a B-view entry for character c. */
+export function viewRead(r: ViewRead, c: Uint8Array): number {
+  if ('classLevel' in r) return classLevel(c, r.classLevel) & 0xff
+  if ('raw' in r) return c[r.raw] & (r.mask ?? 0xff)
+  const at = r.field === 'stat' ? F.stat[r.index ?? 0] : (F[r.field] as number) + (r.index ?? 0)
+  const v = c[at] & (r.mask ?? 0xff)
+  return r.signed ? ((v << 24) >> 24) & 0xffff : v
+}
+
 export function native(g: EclMap, a: number): number {
   if (g === POR_ECL) return a
   for (const [k, n] of SIZES) if (a >= POR_ECL[k] && a < POR_ECL[k] + n) return g[k] + (a - POR_ECL[k])

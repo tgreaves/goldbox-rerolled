@@ -4,7 +4,7 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { GameFiles } from '../src/store/gamefiles'
 import { Engine, type Io } from '../src/vm/engine'
-import { COAB, POR, setGame, type GameProfile } from '../src/games/profile'
+import { COAB, POR, setGame, type GameProfile, wants } from '../src/games/profile'
 import { F } from '../src/games/fields'
 
 const io = { print: () => {}, menu: async () => 0, inputNumber: async () => 0, inputText: async () => '', picture: () => {},
@@ -13,7 +13,7 @@ const io = { print: () => {}, menu: async () => 0, inputNumber: async () => 0, i
 function engine(dir: string, g: GameProfile, stems: string[]) {
   setGame(g)
   const m = new Map<string, Uint8Array>()
-  const walk = (d: string) => { for (const n of readdirSync(d)) { const p = join(d, n); if (statSync(p).isDirectory()) walk(p); else if (g.wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(p))) } }
+  const walk = (d: string) => { for (const n of readdirSync(d)) { const p = join(d, n); if (statSync(p).isDirectory()) walk(p); else if (wants(g, n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(p))) } }
   walk(dir)
   const files = new GameFiles(m, g)
   const e = new Engine(files, io, 7)

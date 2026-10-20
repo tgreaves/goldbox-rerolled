@@ -3,7 +3,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { COAB, POR, setGame } from '../src/games/profile'
+import { COAB, POR, setGame, wants } from '../src/games/profile'
 import { F } from '../src/games/fields'
 import { T } from '../src/games/tables'
 import { GameFiles } from '../src/store/gamefiles'
@@ -118,7 +118,7 @@ describe.skipIf(!have)('CotAB effect handlers', () => {
   beforeAll(() => {
     setGame(COAB)
     const m = new Map<string, Uint8Array>()
-    const walk = (d: string) => { for (const n of readdirSync(d)) { const p = join(d, n); if (statSync(p).isDirectory()) walk(p); else if (COAB.wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(p))) } }
+    const walk = (d: string) => { for (const n of readdirSync(d)) { const p = join(d, n); if (statSync(p).isDirectory()) walk(p); else if (wants(COAB, n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(p))) } }
     walk(dir)
     files = new GameFiles(m, COAB)
     tb = new Tables(unexepack(files.get('START.EXE')!).image)

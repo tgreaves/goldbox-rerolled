@@ -4,7 +4,7 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { GameFiles } from '../src/store/gamefiles'
 import { Engine, type Io } from '../src/vm/engine'
-import { COAB, POR, setGame } from '../src/games/profile'
+import { COAB, POR, setGame, wants } from '../src/games/profile'
 import { F } from '../src/games/fields'
 import { WorldHost } from '../src/rules/worldfx'
 import { abilities, useAbility } from '../src/rules/abilities'
@@ -20,7 +20,7 @@ describe.skipIf(!dir || !existsSync(dir))('CotAB paladin abilities', () => {
   const engine = () => {
     setGame(COAB)
     const m = new Map<string, Uint8Array>()
-    const walk = (d: string) => { for (const n of readdirSync(d)) { const p = join(d, n); if (statSync(p).isDirectory()) walk(p); else if (COAB.wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(p))) } }
+    const walk = (d: string) => { for (const n of readdirSync(d)) { const p = join(d, n); if (statSync(p).isDirectory()) walk(p); else if (wants(COAB, n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(p))) } }
     walk(dir)
     const files = new GameFiles(m, COAB)
     const e = new Engine(files, io, 3)

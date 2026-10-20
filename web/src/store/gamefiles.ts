@@ -1,13 +1,13 @@
 // The player's own game files, kept in IndexedDB so the app works offline after one import.
 // Each game has its own database (GameProfile.stores.files).
 import { readDax, daxRecord, type Dax } from '../data/dax'
-import { detect, GAMES, POR, type GameProfile } from '../games/profile'
+import { detect, GAMES, POR, wants, type GameProfile } from '../games/profile'
 
 const STORE = 'files'
 
 /** Files some game needs; anything else in the folder is ignored. */
 export function wanted(name: string): boolean {
-  return GAMES.some((g) => g.wanted(name))
+  return GAMES.some((g) => wants(g, name))
 }
 
 function openDb(game: GameProfile): Promise<IDBDatabase> {
@@ -117,7 +117,7 @@ export async function readPicked(list: Iterable<File>): Promise<{ game?: GamePro
   const game = detect(all.map((f) => f.name))
   const out = new Map<string, Uint8Array>()
   if (game) for (const f of all) {
-    if (game.wanted(f.name)) out.set(f.name.toUpperCase(), new Uint8Array(await f.arrayBuffer()))
+    if (wants(game, f.name)) out.set(f.name.toUpperCase(), new Uint8Array(await f.arrayBuffer()))
   }
   return { game, files: out }
 }
