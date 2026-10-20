@@ -22,6 +22,9 @@ import { Tables } from '../src/rules/chargen'
 import { checkTraining, newSpellChoices, train, xpFor } from '../src/rules/training'
 import { readyItem, recalc, unreadyItem } from '../src/rules/equip'
 import { WorldHost } from '../src/rules/worldfx'
+import { drop, halve, join as joinStacks, trade } from '../src/rules/inventory'
+import { castOutside, itemSpells, spendUse, targetKind } from '../src/rules/magic'
+import { isScroll } from '../src/rules/camp'
 
 export interface PlayOptions {
   game: GameProfile
@@ -208,18 +211,41 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     stopper: () => { const stop = chance(0.1); return { stopped: () => stop, done: () => {} } },
     pause: async () => {},
   })
-  /** the character sheet's item commands: ready or unready something, as a player trying things does */
+  /**
+   * The character sheet's item commands as the sheet runs them (explore.ts): ready or put away, Use
+   * (the item's spell outside combat), Trade to another member, Halve, Join, now and then Drop
+   */
   const fiddle = async () => {
-    const t = e.items
+    const t = e.items, st = e.spells
     const party = e.party()
     if (!t || !party.length) return
     const c = party[pick(party.length)], items = e.itemsOf(c)
     if (!items.length || c[F.status] !== 0) return
     const it = items[pick(items.length)]
     const host = new WorldHost(e, (m) => say(m))
-    const was = it.ready
-    const m = was ? await unreadyItem(host, c, items, it, t) : await readyItem(host, c, items, it, t)
-    say(`  ${nameOf(c)} ${was ? 'puts away' : 'readies'} ${t.name(it)}${m ? `: ${m}` : ''}`)
+    const r = rnd(), what = `${nameOf(c)}, ${t.name(it)}:`
+    if (r < 0.5) {
+      const was = it.ready
+      const m = was ? await unreadyItem(host, c, items, it, t) : await readyItem(host, c, items, it, t)
+      say(`  ${what} ${was ? 'put away' : 'readied'}${m ? ` (${m})` : ''}`)
+    } else if (r < 0.7 && st && it.ready) {
+      const scroll = isScroll(it, t)
+      const ids = itemSpells(it, scroll)
+      const s = ids.length ? st.get(ids[pick(ids.length)]) : undefined
+      if (!s || s.side === 0) return
+      const kind = targetKind(s)
+      const targets = kind === 'party' ? party : kind === 'one' ? [party[pick(party.length)]] : [c]
+      const out = await castOutside(e, c, s, targets, true)
+      spendUse(items, it, scroll, s.id)
+      for (const m of out) checkText(m, 'an item used')
+      say(`  ${what} used: ${out.join(' ')}`)
+    } else if (r < 0.8 && party.length > 1) {
+      const to = party.filter((x) => x !== c)[pick(party.length - 1)]
+      const m = trade({ c, items }, { c: to, items: e.itemsOf(to) }, it, t)
+      say(`  ${what} traded to ${nameOf(to)}${m ? ` (${m})` : ''}`)
+    } else if (r < 0.88) { const m = halve(c, items, it, t); say(`  ${what} halved${m ? ` (${m})` : ''}`) }
+    else if (r < 0.96) say(`  ${what} joined with ${joinStacks(c, items, it, t)} others`)
+    else { const m = drop(c, items, it, t); say(`  ${what} dropped${m ? ` (${m})` : ''}`) }
   }
 
   let ending = false
