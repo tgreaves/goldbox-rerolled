@@ -11,6 +11,8 @@ import { installGameFont } from './ui/gamefont'
 import { installFrames } from './ui/frames'
 import { applyPartyLayout, applyTextSize } from './ui/settings'
 import { applyGfxClass } from './render/upscale'
+import { onSettingsPulled, startAccount } from './store/account'
+import { setSoundDevice, soundDevice } from './audio/sfx'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
@@ -18,6 +20,14 @@ async function start() {
   applyTextSize()
   applyPartyLayout()
   applyGfxClass()
+  // settings that came with the account (IMP-072): apply what can change without a reload
+  onSettingsPulled(() => {
+    applyTextSize()
+    applyPartyLayout()
+    let v: string | null = null
+    try { v = localStorage.getItem('poolrad.sound') } catch { /* storage unavailable */ }
+    setSoundDevice(v === 'tandy' || v === 'off' ? v : v === 'pc' ? 'pc' : soundDevice())
+  })
   // the game played last, else the first one with files stored
   for (const g of new Set([lastGame(), ...GAMES].filter((x): x is GameProfile => !!x))) {
     if (await GameFiles.stored(g)) return open(await GameFiles.load(g))
@@ -27,6 +37,7 @@ async function start() {
 
 async function open(files: GameFiles) {
   setGame(files.game)
+  void startAccount(files.game) // sync this game's saves and roster when signed in (IMP-072)
   document.title = `GoldBox Rerolled: ${files.game.name}`
   const exe = files.get('START.EXE')
   if (exe) try { installNames(unexepack(exe).image) } catch { /* names show as #n */ }

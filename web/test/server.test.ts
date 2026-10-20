@@ -229,6 +229,7 @@ describe('server: sign-in, sessions and passwords', () => {
     expect(r.status).toBe(200)
     expect((await a.me()).data.user).toBe('carol')
     expect((await b.me()).data.user).toBeNull()
+    expect(readdirSync(app.accounts.sessionsDir)).toHaveLength(1) // only the new one
     expect((await new Client(base).login('carol')).status).toBe(401)
     expect((await new Client(base).login('carol', 'another long one')).status).toBe(200)
   })
@@ -386,6 +387,7 @@ describe('server: data', () => {
     expect((await a.req('POST', '/api/v1/delete-account', { password: 'a long password' })).status).toBe(200)
     expect(existsSync(join(app.accounts.usersDir, 'nina'))).toBe(false)
     expect(readdirSync(app.accounts.usersDir)).toEqual([])
+    expect(readdirSync(app.accounts.sessionsDir)).toEqual([]) // its sessions too
     expect((await a.me()).data.user).toBeNull()
     const again = new Client(base)
     expect((await again.signup('nina')).status).toBe(200) // the name is free again

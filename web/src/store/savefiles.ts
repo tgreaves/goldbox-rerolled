@@ -23,7 +23,7 @@ export function sidecar(g: SavedGame): NamedFile | null {
   return { name: `SAVGAM${g.slot}.GBR`, data: new TextEncoder().encode(json) }
 }
 
-function readSidecar(d: Uint8Array | undefined): string[] | undefined {
+export function readSidecar(d: Uint8Array | undefined): string[] | undefined {
   if (!d) return undefined
   try {
     const v = JSON.parse(new TextDecoder().decode(d)) as { format?: string; known?: unknown }

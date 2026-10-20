@@ -217,7 +217,9 @@ export class Accounts {
   /** New password; every session of the account ends. */
   async setPassword(name: string, password: string): Promise<boolean> {
     const pw = await hashPassword(password, this.opts.scryptN)
-    return (await this.update(name, (a) => { a.pw = pw; a.gen++ })) !== null
+    const ok = (await this.update(name, (a) => { a.pw = pw; a.gen++ })) !== null
+    await this.dropSessions(name)
+    return ok
   }
 
   /** A new recovery code (the old one stops working). */
@@ -227,9 +229,11 @@ export class Accounts {
   }
 
   async setDisabled(name: string, disabled: boolean): Promise<boolean> {
-    return (await this.update(name, (a) => {
+    const ok = (await this.update(name, (a) => {
       if (disabled) { a.disabled = true; a.gen++ } else delete a.disabled
     })) !== null
+    if (ok && disabled) await this.dropSessions(name)
+    return ok
   }
 
   /** Remove the account and all its data: renamed away at once, then deleted. */
@@ -239,8 +243,8 @@ export class Accounts {
       const gone = join(this.usersDir, `.deleted-${randomBytes(6).toString('hex')}`)
       await rename(this.userDir(name), gone)
       this.cache.delete(name)
-      for (const [h, s] of this.sessions) if (s.user === name) this.sessions.delete(h)
       await rm(gone, { recursive: true, force: true })
+      await this.dropSessions(name)
       return true
     })
   }
@@ -282,6 +286,17 @@ export class Accounts {
       await writeAtomic(this.sessionFile(h), JSON.stringify(s)).catch(() => {})
     }
     return acc
+  }
+
+  /** Delete every stored session of an account (it is gone, locked, or its password changed). */
+  async dropSessions(name: string) {
+    for (const [h, s] of this.sessions) if (s.user === name) this.sessions.delete(h)
+    for (const n of await listDir(this.sessionsDir)) {
+      if (!n.endsWith('.json')) continue
+      const f = join(this.sessionsDir, n)
+      const s = await readJson<Session>(f).catch(() => null)
+      if (s?.user === name) await unlink(f).catch(() => {})
+    }
   }
 
   async endSession(token: string | undefined) {

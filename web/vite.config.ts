@@ -24,7 +24,8 @@ export default defineConfig(({ mode }) => ({
               display: 'standalone',
               icons: [{ src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
             },
-            workbox: { globPatterns: ['**/*.{js,css,html,svg}', 'journal/*.png'] },
+            // the server's API (docs/server.md) is never answered from the cache: the data export is a navigation
+            workbox: { globPatterns: ['**/*.{js,css,html,svg}', 'journal/*.png'], navigateFallbackDenylist: [/\/api\//] },
           }),
         ],
   test: { include: ['test/**/*.test.ts'] },
