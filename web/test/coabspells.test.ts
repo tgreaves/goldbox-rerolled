@@ -236,6 +236,17 @@ describe.skipIf(!haveCoab)('CotAB changed handlers', () => {
     await cast(mage, 55, 3, [o, t]) // only the enemy side
     expect([has(o, 0x2a).length, has(t, 0x2a).length, o.c[F.attacksLeft]]).toEqual([1, 0, 7])
   })
+
+  it('Haste (48) on a slowed ally: "is Cured", its first Slow record gone, no Haste (0x4C0FD)', async () => {
+    const { b, add, cast, has, printed } = cotab()
+    const mage = add(5, 5, 0, 'MAGE')
+    const t = add(6, 5, 0, 'T')
+    const u = add(7, 5, 0, 'U')
+    addRaw(b, t.c, 0x2a, 5, 0, 0); addRaw(b, t.c, 0x2a, 9, 0, 0)
+    await cast(mage, 48, 2, [t, u])
+    expect([has(t, 0x2a).map((x) => x.duration), has(t, 0x27).length, has(u, 0x27).length]).toEqual([[9], 0, 1])
+    expect(printed).toEqual(['T is Cured', 'U is Hasted'])
+  })
 })
 
 describe.skipIf(!haveCoab)('CotAB clouds and Dispel Magic', () => {
@@ -615,6 +626,23 @@ describe.skipIf(!por || !existsSync(por))('PoR keeps its own rules', () => {
     expect(b.effectsOf(t.c).map((x) => x.duration)).toEqual([10, 2])
     await addEffect(b, t.c, 0x07, 20, 3, 0)
     expect(b.effectsOf(t.c).map((x) => x.duration)).toEqual([2, 20])
+  })
+  it('Haste (48) and Slow (55): the opposite effect "is Cured" (FUN_5216_1081), Apply on the rest, then event 18', async () => {
+    setGame(POR)
+    const { b, add, cast, has, printed } = field(files!)
+    const mage = add(5, 5, 0, 'MAGE')
+    const t = add(6, 5, 0, 'T'), u = add(7, 5, 0, 'U'), v = add(8, 5, 0, 'V')
+    addRaw(b, t.c, 0x2a, 5, 0, 0); addRaw(b, t.c, 0x2a, 9, 0, 0)
+    u.c[F.attacksBase] = 2; u.c[F.attacksLeft] = 7
+    await cast(mage, 48, 2, [t, u, v]) // L 2: T uses a slot, V gets none
+    expect([has(t, 0x2a).map((x) => x.duration), has(t, 0x27).length, has(u, 0x27).length, has(v, 0x27).length]).toEqual([[9], 0, 1, 0])
+    expect(printed).toEqual(['T is Cured', 'U is Hasted', 'U ages']) // the event-18 pass ages U after every Apply
+    expect(u.c[F.attacksLeft]).toBe(7) // the doubled rate is not kept
+    const o = add(9, 5, 1, 'ORC')
+    printed.length = 0
+    await cast(mage, 55, 3, [u, o])
+    expect([has(u, 0x27).length, has(o, 0x2a).length]).toEqual([1, 1])
+    expect(printed).toEqual(['ORC is Slowed'])
   })
   it('keeps the dice count (DS:681C) where the handler rolls through FUN_5216_0e2e: 4, 15, 20, 47/64, 65', async () => {
     setGame(POR)

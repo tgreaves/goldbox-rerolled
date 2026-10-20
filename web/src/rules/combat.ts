@@ -6,7 +6,7 @@ import type { Spell } from '../data/spells'
 import type { Effect } from '../data/effects'
 import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, type Battlefield, type CellInfo } from './battlefield'
 import { dexMissile, recalc } from './equip'
-import { fx, fire, damageText, healedLine, addEffect, addRaw, removeEffect, removeFirst, removeType, runEffect, type FxHost } from './effects'
+import { fx, fire, damageText, healedLine, addEffect, addRaw, removeEffect, removeFirst, removeOne, removeType, runEffect, type FxHost } from './effects'
 import { heal as healChar } from './camp'
 import { amount, castShared, line, spellSpec, term } from './spellkinds'
 import type { Amount, SpellSpec } from '../games/spellrules'
@@ -1777,16 +1777,18 @@ export class Battle implements FxHost {
       this.ui.redraw()
     },
     /**
-     * Haste / Slow (2764): up to L targets of the caster's side (`ally`) or the enemy's; one with the
-     * `opposite` effect only loses it; with `attacksAfter`, event 18 recounts the attacks
+     * Haste / Slow (PoR 2764, CotAB 0x477EB): up to L targets of the caster's side (`ally`) or the
+     * enemy's, in list order; one holding the `opposite` effect loses its first record with "is Cured"
+     * (FUN_5216_1081, CotAB 0x4C0FD) and is dropped, but uses a slot. Apply then runs over the rest, and
+     * with `attacksAfter` (PoR only) event 18 fires on each of them afterwards: Haste's first call ages
+     * the target there, and the rate it doubles is not kept
      */
     async hasteSlow({ f, s, L, dur, targets }, p) {
       const mine = targets.filter((t) => (p.side === 'ally' ? this.side(t) === this.side(f) : this.side(t) !== this.side(f))).slice(0, L)
-      for (const t of mine) {
-        if (this.e.effectsOf(t.c).some((x) => x.type === (p.opposite as number))) { await removeType(this, t.c, p.opposite as number); continue }
-        await this.addSpellEffect(t, s, p, false, dur, L)
-        if (p.attacksAfter) await this.attacks(t, false)
-      }
+      const kept: Fighter[] = []
+      for (const t of mine) if (!(await removeOne(this, t.c, p.opposite as number))) kept.push(t)
+      for (const t of kept) await this.addSpellEffect(t, s, p, false, dur, L)
+      if (p.attacksAfter) for (const t of kept) await fire(this, t.c, 18)
     },
     /**
      * A gas cloud (PoR Stinking Cloud FUN_4e53_1b11; CotAB Stinking Cloud 0x4675B, Cloudkill 0x48F05): a

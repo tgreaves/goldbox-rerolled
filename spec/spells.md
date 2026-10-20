@@ -186,7 +186,7 @@ L = caster level; "1st" = only the first target is used.
 | 43 | Remove Curse | 2540 | removes 0x24 if present ("is Cured", then "is un-cursed"), else clears the cursed flag of the **first** cursed item ("'s item is un-cursed") | | 1st | |
 | 44 / 45 | Bestow Curse / Blink | 2604 / 263d | effect 0x24 (touch, negates) / 0x25 | | | |
 | 47 / 64 | Fireball / Necklace of Missiles | 266b | n = L (id 64: 1d3×2 + 1) d6, type 9, one roll; outdoors (ECL 0x49E6 = 0) radius 2 | half | area | |
-| 48 / 55 | Haste / Slow | 2892 / 2c09 → 2764 | effect 0x27 / 0x2A on up to L targets of the caster's / the enemy side; a target with the opposite effect only loses it; then event 18 | — | | the L cap applies to both |
+| 48 / 55 | Haste / Slow | 2892 / 2c09 → 2764 | effect 0x27 / 0x2A on up to L targets of the caster's / the enemy side; a target with the opposite effect only loses it ("is Cured", `FUN_5216_1081`); Apply on the rest, then event 18 on each | — | | the L cap applies to both |
 | 51 | Lightning Bolt | 2bb7 | L d6, type 0x0C, save vs spell for half per creature hit; path in [[spec/combat]] | half | line | |
 | 56 | Restoration | 2c43 | if drained levels [0x74] > 0: hp = [0x75] / [0x74] added to max, current and [0xB1]; one level back to the class with the cheapest next level; XP raised to that level's minimum | | 1st | |
 | 57 | Potion of Speed | 2e02 | removes Slow if present, else Haste for 5d4 | | | |

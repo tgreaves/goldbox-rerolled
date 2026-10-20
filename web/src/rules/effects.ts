@@ -658,10 +658,12 @@ export async function removeFirst(h: FxHost, c: Uint8Array, type: number): Promi
   await removeEffect(h, c, e)
   return true
 }
-/** FUN_5216_1081: remove the first record of a type and say "<name> is Cured". */
+/** FUN_5216_1081 (CotAB 0x4C0FD): say "<name> is Cured", then remove the first record of a type. */
 export async function removeOne(h: FxHost, c: Uint8Array, type: number): Promise<boolean> {
-  if (!(await removeFirst(h, c, type))) return false
+  const e = h.effectsOf(c).find((x) => x.type === type)
+  if (!e) return false
   h.print(`${h.name(c)} is Cured`)
+  await removeEffect(h, c, e)
   return true
 }
 
