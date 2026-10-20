@@ -5,8 +5,9 @@ import { Item, ITEM_SIZE } from '../data/items'
 import { F } from '../games/fields'
 import { R } from '../games/rules'
 import { game } from '../games/profile'
+import type { ItemProcedure } from '../games/effectrules'
 import { refillUses } from './abilities'
-import { behave, effectiveStat, itemKind } from './coabeffects'
+import { behave, effectiveStat, itemKind } from './effectkinds'
 import { breathBolt } from './specials'
 import type { Tables } from './chargen'
 import { derive, xpFor } from './training'
@@ -154,13 +155,8 @@ export async function removeEffect(h: FxHost, c: Uint8Array, eff: Effect) {
   const j = list.indexOf(eff)
   if (j >= 0) list.splice(j, 1)
   // CotAB 0x4ABBA: some removals recompute a stat (PoR's handlers restore it themselves)
-  for (const stat of game().effects.removalStat[eff.type] ?? []) await STAT[game().effects.items]?.(h, c, stat)
-}
-
-/** The game's current-stat routine (CotAB 0x4C389); PoR has none, its effects write the stat. */
-const STAT: Record<'por' | 'coab', ((h: FxHost, c: Uint8Array, stat: number) => void | Promise<void>) | null> = {
-  por: null,
-  coab: effectiveStat,
+  // (the current-stat routine, CotAB 0x4C389: a game whose handlers restore the stat themselves lists none)
+  for (const stat of game().effects.removalStat[eff.type] ?? []) await effectiveStat(h, c, stat)
 }
 
 export async function removeType(h: FxHost, c: Uint8Array, type: number, silent = false) {
@@ -692,13 +688,14 @@ export async function itemHandler(h: FxHost, c: Uint8Array, it: Item, arg: 0 | 1
   await ITEMS[game().effects.items](h, c, it, arg)
 }
 
-/** The game's item procedure: PoR's handlers 128–139 below, or CotAB's item kinds (0x3F034). */
-const ITEMS: Record<'por' | 'coab', (h: FxHost, c: Uint8Array, it: Item, arg: 0 | 1) => Promise<void>> = {
-  por: porItem,
-  coab: (h, c, it, arg) => itemKind(h, c, it, arg === 0),
+/** The item procedures a profile can name (games/effectrules.ts `items`). */
+const ITEMS: Record<ItemProcedure, (h: FxHost, c: Uint8Array, it: Item, arg: 0 | 1) => Promise<void>> = {
+  handlers: itemHandlers,
+  kinds: (h, c, it, arg) => itemKind(h, c, it, arg === 0),
 }
 
-async function porItem(h: FxHost, c: Uint8Array, it: Item, arg: 0 | 1) {
+/** Item handlers 128–139 by item +0x3E (PoR FUN_5216_0000). */
+async function itemHandlers(h: FxHost, c: Uint8Array, it: Item, arg: 0 | 1) {
   const p = it.raw[0x3d]
   switch (it.raw[0x3e]) {
     case 131: { // Gauntlets of Ogre Power (FUN_3723_2f57): STR 18/00 as effect 38

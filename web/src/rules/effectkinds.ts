@@ -1,8 +1,8 @@
-// Curse of the Azure Bonds' effect handlers where they differ from Pool of Radiance's (spec/coab/effects.md
-// §2), its current-stat routine (0x4C389) and its item kinds (0x3F034). The game profile names which
-// behaviour an effect type runs (games/effectrules.ts `handlers`, with the parameters); rules/effects.ts
-// dispatches to them. CotAB handlers get (arg, effect, character): arg 1 is a removal, and they do not
-// know the event, so these behaviours ignore it as the original does. Addresses are image offsets.
+// Effect behaviours a game profile can name (games/effectrules.ts `handlers`, with their parameters),
+// the current-stat routine and the item kinds. First transcribed from Curse of the Azure Bonds
+// (spec/coab/effects.md §2; its stat routine 0x4C389, item kinds 0x3F034), named by what they do so later
+// games reuse them. These handlers get (arg, effect, character): arg 1 is a removal, and they do not know
+// the event, so the behaviours ignore it as CotAB's do. Addresses are CotAB image offsets.
 import type { Effect } from '../data/effects'
 import type { Item } from '../data/items'
 import type { HandlerSpec } from '../games/effectrules'

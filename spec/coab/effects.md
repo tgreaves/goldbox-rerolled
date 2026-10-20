@@ -145,8 +145,8 @@ out the current combatant (DS:6520). Three spell handlers call it too (0x48A8C, 
 
 ## Port status (2026-10-20)
 
-Done (`web/src/games/effectrules.ts` names a behaviour per type with its parameters, `web/src/rules/coabeffects.ts`
-holds them; `test/coabeffects.test.ts`):
+Done (`web/src/games/effectrules.ts` names a behaviour per type with its parameters, `web/src/rules/effectkinds.ts`
+holds them; `test/effectkinds.test.ts`):
 
 - Event lists and area set (profile data). Events 20 (the combat and world damage routines, after event
   6 when not saved), 21 (turn start, after event 15 when not casting) and 22 (combat start, after event 8

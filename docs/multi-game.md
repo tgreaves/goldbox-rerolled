@@ -104,9 +104,9 @@ The engine is meant for **every** Gold Box game, not only these two (Tristan, 20
 - the values come from the game's own files wherever they are there (START.EXE tables, DAX records,
   GAME.OVR strings), found by the same research method (CLAUDE.md, "Method for a new game").
 
-Still to rename to that rule (they name games): the effect system's stat routine and item handlers
-(`effects.ts` STAT / ITEMS keyed 'por' | 'coab', `effectrules.ts` items), the lightning bolt
-procedure (`rules.ts` bolt.proc).
+Procedure keys follow that rule (2026-10-20): the item procedure is `handlers` (a handler per item
++0x3E value) or `kinds` (the item's kind), the effect behaviours live in `rules/effectkinds.ts`, and
+the bolt routines are one procedure whose differences are flags (`R.bolt`).
 
 ## Tracking to the goal (assessed 2026-10-20)
 
@@ -139,7 +139,8 @@ watch, because each is an alternative path in code:
    hold and sleep types): the same in both games so far, but they belong in data as named ids.
 3. ~~Functions inside profiles~~: done 2026-10-20 (the character view's reads are declarative entries,
    the kept files a list of patterns); profiles now hold only data.
-4. Procedure keys named after games ('por', 'coab') should describe the procedure instead.
+4. ~~Procedure keys named after games~~: done 2026-10-20 (`items: 'handlers' | 'kinds'`, `R.bolt` flags,
+   the stat routine runs for the types the profile lists).
 
 **Plan, in order:** spell handlers per game (CotAB's spells read from its binary); PoR's effect
 handler map made explicit; profile functions replaced by data; the paired procedures made parametric
@@ -224,7 +225,7 @@ need only its profile modules and any procedure the earlier games do not have.
    PoR content in shared code, for step 7: the Rules reference text, the City Council commissions,
    the ending, the title sequence, and messages written into the port.
    **Effects (2026-10-20)**: each game's event lists, and for CotAB a behaviour per changed effect
-   type (`games/effectrules.ts` `handlers`, `rules/coabeffects.ts`), the monster-class flags (+0x14B),
+   type (`games/effectrules.ts` `handlers`, `rules/effectkinds.ts`), the monster-class flags (+0x14B),
    the new events 20–22, the current-stat routine on removal, and readied items by CotAB's item kinds
    (Gauntlets of Ogre Power, girdles, Ring of Wizardry, Gloves of Thievery…). Not yet: event 14 (monster
    specials, unfired in PoR too) and the area breaths and eye rays (spec/coab/effects.md, "Port status").

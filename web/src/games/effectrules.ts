@@ -9,21 +9,24 @@ export interface EffectRules {
   area: number[]
   areaRadius: Record<number, number>
   /**
-   * Handlers that differ from PoR's: effect type → a behaviour named in rules/coabeffects.ts, with its
+   * Handlers that differ from PoR's: effect type → a behaviour named in rules/effectkinds.ts, with its
    * parameters. Types not listed run PoR's handler (rules/effects.ts).
    */
   handlers: Record<number, HandlerSpec>
   /** effect types whose removal recomputes a stat (0 STR … 5 CHA) through the game's stat routine */
   removalStat: Record<number, number[]>
-  /**
-   * The current-stat routine (CotAB 0x4C389: base + readied items + effects) and what readying an item
-   * with item +0x3E ≥ 0x80 does: PoR's item handlers 128–139 (FUN_4894_14d0 → FUN_5216_0000), or
-   * CotAB's item kinds (0x3F034, with the generic handler 147 for kind 0)
-   */
-  items: 'por' | 'coab'
+  /** what readying an item with item +0x3E ≥ 0x80 does (ItemProcedure) */
+  items: ItemProcedure
 }
 
-/** A behaviour key (rules/coabeffects.ts) and its parameters. */
+/**
+ * Readying an item with item +0x3E ≥ 0x80: `handlers`, a handler per +0x3E value 128–139 (PoR
+ * FUN_4894_14d0 → FUN_5216_0000); `kinds`, the item's kind runs the stat routine and its own
+ * procedure (CotAB 0x3F034, with the generic handler 147 for kind 0).
+ */
+export type ItemProcedure = 'handlers' | 'kinds'
+
+/** A behaviour key (rules/effectkinds.ts) and its parameters. */
 export interface HandlerSpec {
   b: string
   [param: string]: string | number | number[]
@@ -45,7 +48,7 @@ export const POR_EFFECTS: EffectRules = {
   areaRadius: { 49: 6 },
   handlers: {},
   removalStat: {},
-  items: 'por',
+  items: 'handlers',
 }
 
 export const COAB_EFFECTS: EffectRules = {
@@ -126,9 +129,9 @@ export const COAB_EFFECTS: EffectRules = {
     143: { b: 'zap' }, // 0x29CC5
     144: { b: 'heldVictim', marker: 0x90, attacks: 1, also: 0 }, // 0x2EC4C
     145: { b: 'dispelEvil', flag: 1 }, // 0x29D69
-    // 147 (0x29A23, also DS:720C), the generic item handler, runs for items only: rules/coabeffects.ts itemKind
+    // 147 (0x29A23, also DS:720C), the generic item handler, runs for items only: rules/effectkinds.ts itemKind
   },
   // remove 0x4ABBA: CHA after 0x0E, STR after 0x0C, 0x26, 0x92
   removalStat: { 0x0e: [5], 0x0c: [0], 0x26: [0], 0x92: [0] },
-  items: 'coab',
+  items: 'kinds',
 }

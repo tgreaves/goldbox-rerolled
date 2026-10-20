@@ -128,7 +128,7 @@ describe.skipIf(!have)('CotAB effect handlers', () => {
 
   it('PoR has no handler overrides; CotAB names a behaviour for each changed type', () => {
     expect(POR.effects.handlers).toEqual({})
-    expect(POR.effects.items).toBe('por')
+    expect(POR.effects.items).toBe('handlers')
     expect(COAB.effects.handlers[134]).toEqual({ b: 'rangerVsGiants', flag: 8 })
   })
 
