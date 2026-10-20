@@ -113,6 +113,53 @@ const POR_HANDLERS: Record<number, HandlerSpec> = {
   78: { b: 'revive', full: 0, keepPower: 1 }, // 19d9
   79: { b: 'hitDamage', count: 2, sides: 10, dmgType: 9, active: 1 }, // 1a19 fire on hit
   80: { b: 'hitDamage', count: 1, sides: 4, dmgType: 0x10, active: 1 }, // 1a4c acid on hit
+  81: { b: 'fearAura', saveType: 4, hdUpTo: [3, 5], effects: [52, 2], power: 0x0c, msgs: ['is paralyzed with fear', 'is weakened by fear'] }, // 0x38CDA
+  82: { b: 'paralysingAura', bonus: 1, raceBonus: [7, 2], effect: 52, roll: [1, 4], power: 0x0c, msg: 'is Paralyzed' }, // 0x38DD8
+  83: { b: 'stoneGaze', reflectable: 127, word: 0x76, save: 1, status: 7, msg: 'is Stoned' }, // 0x38EDD (word 0x76 "Mirror")
+  84: { b: 'charmGaze', spell: 10, save: 4, bonus: -2, effect: 11, power: 0x0c }, // 0x390A7
+  85: { b: 'drainOnHit', levels: 1 }, // 23a4
+  86: { b: 'drainOnHit', levels: 2 }, // 23c2
+  87: { b: 'diseaseOnHit', heal: 50, healFor: 14400, rot: 57, rotFor: 43200, msg: 'is Diseased' }, // 0x3961C mummy rot
+  88: { b: 'breathBolt', pct: 50, spell: 51, len: 10, save: 3 }, // FUN_4e53_30d9 (image 0x41609)
+  89: { b: 'displaced', bit: 0x10 }, // 2490
+  90: { b: 'conSave', saveTypes: [0], bands: [[4, 1], [7, 2], [11, 3], [14, 4], [18, 5]] }, // 24d9
+  91: { b: 'immuneSpell', spell: 15, mask: 4 }, // 0x39786: Magic Missile and electricity
+  92: { b: 'none' }, // 319b
+  93: { b: 'halveType', mask: 1 }, // 25a2
+  94: { b: 'halveByWeaponKind', kinds: [0x80, 1] }, // 25bc blunt or piercing
+  95: { b: 'diesAtEnd', msg: 'Falls dead' }, // 0x39840
+  96: { b: 'needsMagicOrWord', word: 0xb1 }, // 264b (0xB1 "Silver")
+  97: { b: 'conSave', saveTypes: [2, 4], bands: [[4, 1], [7, 2], [11, 3], [14, 4], [18, 5]] }, // 268a
+  98: { b: 'healEachRound', hp: 3 }, // 2700
+  99: { b: 'rally', full: 6, after: 95 }, // 2730
+  100: { b: 'unlessKilledBy', mask: 0x11, effect: 102, roll: [3, 6] }, // 27d9 troll death
+  101: { b: 'startUnless', unless: [98, 59], effect: 59, duration: 3 }, // 2814
+  102: { b: 'revive', full: 1, keepPower: 0 }, // 2866
+  103: { b: 'escapes', msg: 'Turns gaseous and escapes', status: 3 }, // 0x39AEF
+  104: { b: 'deflect', pct: 60 }, // 2901
+  105: { b: 'magicResist', base: 50, classes: [0, 5] }, // 2976
+  106: { b: 'magicResist', base: 15, classes: [0, 5] }, // 2984
+  107: { b: 'blocks', types: [53, 11], pct: 90 }, // 2992 elves: Sleep, Charm
+  108: { b: 'blocks', types: [11, 53] }, // 29b6
+  109: { b: 'blocks', types: [52] }, // 29cb Hold
+  110: { b: 'immuneType', mask: 2 }, // 29d9
+  111: { b: 'immunities', types: [55, 52], saveType: 0 }, // 29f0 poison, paralysis
+  112: { b: 'immuneType', mask: 1 }, // 2a11
+  113: { b: 'lessPerDie', mask: 1 }, // 2a28
+  114: { b: 'halveType', mask: 4 }, // 2a6d
+  115: { b: 'halveByWeaponKind', kinds: [0, 1], unarmed: 1 }, // 2a87
+  116: { b: 'halveByPlus' }, // 2ae6
+  117: { b: 'vulnerableTo', item: 0x55, roll: [1, 6, 1] }, // 2b20 holy water
+  118: { b: 'halveType', mask: 2 }, // 2b63
+  119: { b: 'needsEnchantment', hd: 4 }, // 2b7d
+  120: { b: 'deflect', pct: 50, items: [0x57, 0x58] }, // 2bc8 hurled boulders
+  121: { b: 'spitOnce', pct: 25, range: 4, roll: [8, 4], dmgType: 0x10, save: 3, also: 80 }, // 0x39E4C
+  122: { b: 'vulnerableTo', item: 0x56, roll: [3, 8, 0], diceOn: 9 }, // 2d38 oil
+  123: { b: 'halfForWord', word: 0xb1 }, // 2d88 Silver
+  124: { b: 'blocks', types: [11, 53], pct: 30 }, // 2de4 half-elves
+  125: { b: 'immunities', types: [11, 53, 52, 55], saveType: 0 }, // 2e08 undead
+  126: { b: 'warded', words: [0x76], pairs: [[0x98, 0xfc]] }, // 2e37 Mirror, Holy Symbol
+  127: { b: 'none' }, // 319b: read by 83
 }
 
 export const POR_EFFECTS: EffectRules = {
@@ -217,6 +264,8 @@ export const COAB_EFFECTS: EffectRules = {
     143: { b: 'zap' }, // 0x29CC5
     144: { b: 'heldVictim', marker: 0x90, attacks: 1, also: 0 }, // 0x2EC4C
     145: { b: 'dispelEvil', flag: 1 }, // 0x29D69
+    140: { b: 'none' }, // 0x29E21: Lay on Hands' wait (R.paladin)
+    141: { b: 'refillUses' }, // 0x29C3F: Cure Disease's week (R.paladin)
     // 147 (0x29A23, also DS:720C), the generic item handler, runs for items only: rules/effectkinds.ts itemKind
   },
   // remove 0x4ABBA: CHA after 0x0E, STR after 0x0C, 0x26, 0x92

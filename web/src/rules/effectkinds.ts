@@ -1,8 +1,9 @@
-// Effect behaviours a game profile can name (games/effectrules.ts `handlers`, with their parameters),
-// the current-stat routine and the item kinds. First transcribed from Curse of the Azure Bonds
-// (spec/coab/effects.md §2; its stat routine 0x4C389, item kinds 0x3F034), named by what they do so later
-// games reuse them. These handlers get (arg, effect, character): arg 1 is a removal, and they do not know
-// the event, so the behaviours ignore it as CotAB's do. Addresses are CotAB image offsets.
+// Effect behaviours a game profile names for each effect type (games/effectrules.ts `handlers`, with their
+// parameters), the current-stat routine and the item kinds. Named by what they do so later games reuse
+// them; first transcribed from Pool of Radiance (spec/effects.md §2, segment 3723) or from Curse of the
+// Azure Bonds (spec/coab/effects.md §2, image offsets; its stat routine 0x4C389, item kinds 0x3F034).
+// The handlers get (arg, effect, character): arg 1 is a removal. The originals do not know the event;
+// the PoR behaviours apply each part on the event it means something for, as the port always has.
 import type { Effect } from '../data/effects'
 import type { Item } from '../data/items'
 import type { HandlerSpec } from '../games/effectrules'
@@ -10,7 +11,8 @@ import { F } from '../games/fields'
 import { R, formerLevelsCount } from '../games/rules'
 import { T } from '../games/tables'
 import { Item as ItemRecord, ITEM_SIZE } from '../data/items'
-import { addEffect, addRaw, deflect, fire, fx, handle, has, healedLine, negate, rearm, removeEffect, removeFirst, removeType, restoreStr, runEffect, type FxHost } from './effects'
+import { addEffect, addRaw, deflect, drain, fire, fx, handle, has, healedLine, negate, rearm, removeEffect, removeFirst, removeType, restoreStr, runEffect, type FxHost } from './effects'
+import { refillUses } from './abilities'
 import { strDamageBonus } from './equip'
 import { thiefSkills } from './chargen'
 import { forget } from './magic'
@@ -393,6 +395,193 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (removal && !h.revive(c, p.full ? c[F.maxHp] : c[F.hp])) addRaw(h, c, type, 1, p.keepPower ? eff.power : 0, 1)
   },
 
+  /**
+   * 81 fear aura [8] (0x38CDA): each active enemy in sight that fails a save vs `saveType`, by hit dice:
+   * up to `hdUpTo[i]` gets `effects[i]` (power `power`) with `msgs[i]` (Hold, then Curse)
+   */
+  fearAura(h, _e, c, _r, p) {
+    const upTo = list(p, 'hdUpTo'), effects = list(p, 'effects'), msgs = p.msgs as string[]
+    for (const e of h.enemiesNear(c, 255)) {
+      if (!e[F.inPlay] || h.save(e, num(p, 'saveType'), 0)) continue
+      const i = upTo.findIndex((m) => e[F.hitDice] <= m)
+      if (i >= 0) { say(h, e, msgs[i]); addRaw(h, e, effects[i], 0, num(p, 'power'), 0) }
+    }
+  },
+  /**
+   * 82 paralysing aura [8] (0x38DD8): everyone else's records of the type go; then each active enemy saves
+   * vs 0 at `bonus` (+`raceBonus` [race, n]) or, `msg`, gets `effect` for `roll` [n, d] rounds (power `power`)
+   */
+  paralysingAura(h, _e, c, _r, p, _ev, type) {
+    for (const o of h.all()) for (const e of h.effectsOf(o).filter((x) => x.type === type && o !== c)) h.effectsOf(o).splice(h.effectsOf(o).indexOf(e), 1)
+    const [race, more] = list(p, 'raceBonus'), [n, d] = list(p, 'roll')
+    for (const e of h.enemiesNear(c, 255)) {
+      if (!e[F.inPlay]) continue
+      const bonus = num(p, 'bonus') + (e[F.race] === race ? more : 0)
+      if (!h.save(e, 0, bonus)) { say(h, e, p.msg as string); addRaw(h, e, num(p, 'effect'), h.roll(n, d), num(p, 'power'), 0) }
+    }
+  },
+  /**
+   * 83 petrifying gaze [14] (0x38EDD): at an active target, "gazes..."; a gazer with `reflectable` meets
+   * a readied item of name word `word` (Mirror): "reflects it!", the gazer the victim; the victim saves vs
+   * `save` or takes status `status` with `msg`
+   */
+  stoneGaze(h, _e, c, _r, p) {
+    const t = h.targetOf(c)
+    if (!t || !t[F.inPlay]) return
+    say(h, c, 'gazes...')
+    h.fly?.(c, t, 'gaze')
+    let victim = t
+    if (has(h, c, num(p, 'reflectable')) && h.itemsOf(t).some((it) => it.ready && it.raw[0x31] === num(p, 'word'))) { say(h, t, 'reflects it!'); h.fly?.(t, c, 'gaze'); victim = c }
+    if (!h.save(victim, num(p, 'save'), 0)) h.setStatus(victim, num(p, 'status'), `${h.name(victim)} ${p.msg as string}`)
+  },
+  /**
+   * 84 charm gaze [14] (0x390A7): at an active target, "Gazes..." with spell `spell` resolving; a failed
+   * save vs `save` at `bonus` adds `effect` (power side << 7 | `power`, flag 1, the save negating) and runs it
+   */
+  async charmGaze(h, _e, c, _r, p) {
+    const t = h.targetOf(c)
+    if (!t || !t[F.inPlay]) return
+    say(h, c, 'Gazes...')
+    h.fly?.(c, t, 'gaze')
+    fx.spell = num(p, 'spell')
+    if (!h.save(t, num(p, 'save'), num(p, 'bonus'))) await addEffect(h, t, num(p, 'effect'), 0, (c[F.side] << 7) | num(p, 'power'), 1, 1, false, true)
+    fx.spell = 0
+  },
+  /** 85, 86 energy drain [2, 3] (23a4, 23c2): an active target loses `levels` levels (FUN_3723_2122) */
+  drainOnHit(h, _e, c, _r, p) { const t = h.targetOf(c); if (t && t[F.inPlay]) drain(h, t, num(p, 'levels')) },
+  /**
+   * 87 mummy rot on hit [2, 3] (0x3961C): a target without `heal` gets it (`healFor`, flag 1) and `rot`
+   * (`rotFor`, power 1d6 uses << 4 | 0x0F, flag 1), `msg`
+   */
+  diseaseOnHit(h, _e, c, _r, p) {
+    const t = h.targetOf(c)
+    if (!t || has(h, t, num(p, 'heal'))) return
+    addRaw(h, t, num(p, 'heal'), num(p, 'healFor'), 0, 1)
+    addRaw(h, t, num(p, 'rot'), num(p, 'rotFor'), (h.roll(1, 6) << 4) + 0x0f, 1)
+    say(h, t, p.msg as string)
+  },
+  /** 89 displacement [8, 16] (2490): combat start (8) clears the power bit `bit`; the first attack roll after (16) misses and sets it */
+  displaced(_h, eff, _c, _r, p, event) {
+    const bit = num(p, 'bit')
+    if (event === 8) eff.power &= ~bit
+    else if (event === 16 && !(eff.power & bit)) { fx.roll = -1; eff.power |= bit }
+  },
+  /** 90, 97 [12] (24d9, 268a): a save of a type in `saveTypes` better by CON: the bonus of the highest `bands` [CON, n] reached (none below) */
+  conSave(_h, _e, c, _r, p) {
+    if (!list(p, 'saveTypes').includes(fx.saveType)) return
+    let b = 0
+    for (const [con, n] of p.bands as number[][]) if (c[F.stat[4]] >= con) b = n
+    fx.save += b
+  },
+  /** 91 [6] (0x39786): the spell `spell` (Magic Missile) does nothing, "is unaffected"; else damage of `mask` none */
+  immuneSpell(h, _e, c, _r, p) {
+    if (fx.spell === num(p, 'spell')) { fx.dmg = 0; say(h, c, 'is unaffected') } else if (fx.dmgType & num(p, 'mask')) fx.dmg = 0
+  },
+  /** 93, 114, 118 [6] (25a2, 2a6d, 2b63): damage of `mask` halved */
+  halveType(_h, _e, _c, _r, p) { if (fx.dmgType & num(p, 'mask')) fx.dmg = Math.floor(fx.dmg / 2) },
+  /** 94, 115 [5] (25bc, 2a87): an attacker's weapon of a kind in `kinds` (ITEMS byte 7), or with `unarmed` none, does half */
+  halveByWeaponKind(h, _e, _c, _r, p) {
+    const a = h.current(), w = a ? h.weapon(a) : null
+    if (w ? list(p, 'kinds').includes(h.weaponKind(w.raw[0x2e])) : !!p.unarmed) fx.dmg = Math.floor(fx.dmg / 2)
+  },
+  /** 95 delayed death (removal, 0x39840): still active, status 6 with `msg` */
+  diesAtEnd(h, _e, c, removal, p) { if (removal && c[F.inPlay]) h.setStatus(c, 6, `${h.name(c)} ${p.msg as string}`) },
+  /** 96 [5] (264b): no weapon, or one of plus 0 not named `word` (Silver), does nothing */
+  needsMagicOrWord(h, _e, _c, _r, p) {
+    const a = h.current(), w = a ? h.weapon(a) : null
+    if (!w || (w.raw[0x32] <= 0 && w.raw[0x31] !== num(p, 'word'))) fx.dmg = 0
+  },
+  /** 98 [19] (2700): `hp` back each round, up to the maximum */
+  healEachRound(_h, _e, c, _r, p) { c[F.hp] = Math.min(c[F.maxHp], c[F.hp] + num(p, 'hp')) },
+  /**
+   * 99 rally [8, 13] (2730): Dying, up `full` − combat record +0x0E; Unconscious, up `full`; back up with
+   * that many HP: `after` for 1d4 + 1 (flag 1), and this record goes
+   */
+  async rally(h, eff, c, _r, p) {
+    const full = num(p, 'full')
+    const n = c[F.status] === 5 ? full - h.rec(c, 0xe) : c[F.status] === 4 ? full : 0
+    if (n > 0 && h.revive(c, n)) { addRaw(h, c, num(p, 'after'), h.roll(1, 4) + 1, 0, 1); await removeEffect(h, c, eff) }
+  },
+  /** 100 troll death [13] (27d9): unless the killing damage was of `mask` (fire, acid), `effect` for `roll` [n, d] (flag 1) */
+  unlessKilledBy(h, _e, c, _r, p) {
+    const [n, d] = list(p, 'roll')
+    if (!(fx.dmgType & num(p, 'mask'))) addRaw(h, c, num(p, 'effect'), h.roll(n, d), 0, 1)
+  },
+  /** 101 [5, 6] (2814): with none of `unless`, `effect` for `duration` (flag 1) */
+  startUnless(h, _e, c, _r, p) {
+    if (!list(p, 'unless').some((t) => has(h, c, t))) addRaw(h, c, num(p, 'effect'), num(p, 'duration'), 0, 1)
+  },
+  /** 103 vampire escape [13] (0x39AEF): no removal callback, `msg`, status `status` (fled), out of play */
+  escapes(h, eff, c, _r, p) { eff.flag = 0; say(h, c, p.msg as string); c[F.status] = num(p, 'status'); c[F.inPlay] = 0 },
+  /**
+   * 105, 106 [6, 9] (2976, 2984 → FUN_3723_2915): an effect being added or magic damage is negated when
+   * d100 ≤ `base` − 5 × (11 − the current character's best level of `classes`, at least 1)
+   */
+  magicResist(h, _e, _c, _r, p) {
+    const a = h.current()
+    const lvl = a ? Math.max(...list(p, 'classes').map((k) => a[F.levels + k]), 1) : 1
+    const pct = num(p, 'base') - 5 * (11 - lvl)
+    if ((fx.adding !== 0 || fx.dmgType & 8) && h.roll(1, 100) <= pct) negate(0)
+  },
+  /** 110, 112 [6, 9] (29d9, 2a11): damage of `mask` none (6); otherwise the effect being added is blocked (9) */
+  immuneType(_h, _e, _c, _r, p, event) {
+    if (!(fx.dmgType & num(p, 'mask'))) return
+    if (event === 6) fx.dmg = 0; else negate(fx.adding)
+  },
+  /** 111, 125 [9, 12] (29f0, 2e08): the effects `types` blocked (9); a save of type `saveType` always made (12) */
+  immunities(_h, _e, _c, _r, p, event) {
+    if (event === 9) { for (const t of list(p, 'types')) negate(t) } else if (fx.saveType === num(p, 'saveType')) fx.save = 100
+  },
+  /** 113 [6] (2a28): damage of `mask` less one a die, never below the dice count (DS:681C) */
+  lessPerDie(_h, _e, _c, _r, p) { if (fx.dmgType & num(p, 'mask')) fx.dmg = Math.max(fx.dice, fx.dmg - fx.dice) },
+  /** 116 [5] (2ae6): an attacker's magic weapon (plus above 0) does half */
+  halveByPlus(h) { const a = h.current(), w = a ? h.weapon(a) : null; if (w && s8(w.raw[0x32]) > 0) fx.dmg = Math.floor(fx.dmg / 2) },
+  /**
+   * 117, 122 [5, 6] (2b20, 2d38): an attacker with a readied item of type `item` (holy water, oil) does
+   * `roll` [n, d, add]; with `diceOn`, damage of that type gains the dice count
+   */
+  vulnerableTo(h, _e, _c, _r, p) {
+    const a = h.current(), [n, d, add] = list(p, 'roll')
+    if (a && h.itemsOf(a).some((it) => it.ready && it.raw[0x2e] === num(p, 'item'))) fx.dmg = h.roll(n, d) + add
+    if (p.diceOn !== undefined && fx.dmgType & num(p, 'diceOn')) fx.dmg += fx.dice
+  },
+  /** 119 [5] (2b7d): no weapon or one of plus 0 does nothing, unless the attacker is race 0 with `hd` hit dice or more */
+  needsEnchantment(h, _e, _c, _r, p) {
+    const a = h.current(), w = a ? h.weapon(a) : null
+    if ((!w || w.raw[0x32] === 0) && a && (a[F.race] > 0 || a[F.hitDice] < num(p, 'hd'))) fx.dmg = 0
+  },
+  /**
+   * 121 acid spit [14] (0x39E4C): an active target closer than `range`, d100 ≤ `pct`: the turn ends, "Spits
+   * Acid", `roll` [n, d] of `dmgType`, a save vs `save` halving; then this record and `also` go
+   */
+  async spitOnce(h, eff, c, _r, p) {
+    const t = h.targetOf(c)
+    if (t && t[F.inPlay] && h.roll(1, 100) <= num(p, 'pct') && h.distance(c, t) < num(p, 'range')) {
+      const [n, d] = list(p, 'roll')
+      h.endTurn(c)
+      say(h, c, 'Spits Acid')
+      h.fly?.(c, t, 'spit')
+      fx.dmgType = num(p, 'dmgType')
+      h.damage(t, h.roll(n, d), 2, h.save(t, num(p, 'save'), 0))
+      await removeEffect(h, c, eff)
+      await removeType(h, c, num(p, 'also'))
+    }
+  },
+  /** 123 [5] (2d88): no weapon nothing; a weapon of plus 0 half when named `word` (Silver), else nothing */
+  halfForWord(h, _e, _c, _r, p) {
+    const a = h.current(), w = a ? h.weapon(a) : null
+    if (!w) fx.dmg = 0
+    else if (w.raw[0x32] === 0) fx.dmg = w.raw[0x31] === num(p, 'word') ? Math.floor(fx.dmg / 2) : 0
+  },
+  /** 126 [0] (2e37): a target with a readied item named `words` (Mirror), or of `pairs` [word 0x30, word 0x31] (Holy Symbol), cannot be attacked */
+  warded(h, _e, c, _r, p) {
+    const t = h.targetOf(c)
+    const named = (it: { raw: Uint8Array }) => list(p, 'words').includes(it.raw[0x31]) || (p.pairs as number[][]).some(([a, b]) => it.raw[0x30] === a && it.raw[0x31] === b)
+    if (t && h.itemsOf(t).some((it) => it.ready && named(it))) fx.untargetable = true
+  },
+  /** CotAB 141 (removal, 0x29C3F): the paladin's weekly Cure Disease uses back (rules/abilities.ts) */
+  refillUses(_h, _e, c, removal) { if (removal) refillUses(c) },
+
   // ---------------------------------------------------------------- first transcribed from CotAB
 
   /** 3 [7] fighting snakes (0x2742C): the snakes take the attacks left; the turn ends */
@@ -656,10 +845,14 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   breathArea(h, e, c, _r, p) { return breathArea(h, e, c, p) },
   /** 132 [14] thrown lightning (0x4A121) */
   throwLightning(h, e, c, _r, p) { return throwLightning(h, e, c, p) },
-  /** 133 [6] (0x29AA0): blocks some effects, and damage of a type */
-  blocks(_h, _e, _c, _r, p) {
+  /**
+   * 133 [6] (0x29AA0), PoR 107–109, 124 [9] (2992, 29b6, 29cb, 2de4): the effects `types` blocked, with
+   * `pct` only when d100 ≤ it; with `mask`, damage of that type negated too
+   */
+  blocks(h, _e, _c, _r, p) {
+    if (p.pct !== undefined && h.roll(1, 100) > num(p, 'pct')) return
     for (const t of list(p, 'types')) negate(t)
-    if (fx.dmgType & num(p, 'mask')) negate(0)
+    if (p.mask !== undefined && fx.dmgType & num(p, 'mask')) negate(0)
   },
   /** 134 [4] (0x29ACC): against a target of the flagged class (giants), + the holder's ranger level */
   rangerVsGiants(h, _e, c, _r, p) {

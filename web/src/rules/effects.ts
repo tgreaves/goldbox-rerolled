@@ -1,14 +1,13 @@
-// Effects ("affects", spec/effects.md): per-event dispatch of effect handlers (FUN_5216_02fa) and the
-// handlers themselves. Globals of the original (DS:6816..6826) live in the Fx context.
+// Effects ("affects", spec/effects.md): per-event dispatch of effect handlers (FUN_5216_02fa), adding and
+// removing effects, and the helpers the handlers share. Each game's handlers are named in its profile
+// (games/effectrules.ts) and run as behaviours (rules/effectkinds.ts). Globals of the original
+// (DS:6816..6826) live in the Fx context.
 import type { Effect } from '../data/effects'
 import type { Item } from '../data/items'
 import { F } from '../games/fields'
-import { R } from '../games/rules'
 import { game } from '../games/profile'
 import type { ItemProcedure } from '../games/effectrules'
-import { refillUses } from './abilities'
 import { behave, effectiveStat, itemKind } from './effectkinds'
-import { breathBolt } from './specials'
 import type { Tables } from './chargen'
 import { derive, xpFor } from './training'
 
@@ -312,129 +311,7 @@ export function drain(h: FxHost, t: Uint8Array, n: number) {
 export function handle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event: number, removal: boolean): void | Promise<void> {
   const spec = game().effects.handlers[type]
   if (spec) return behave(h, spec, eff, c, removal, event, type)
-  // PoR's handler is async, but it runs to the end synchronously unless its type waits for something
-  // (an attack, a removal, an effect added through its event): the rest of the event's chain must then
-  // follow at once, as the original's does, so the save, damage and attack routines see every handler
-  const p = porHandle(h, type, eff, c, event, removal)
-  return POR_WAITS.has(type) || removal ? p : undefined
 }
-
-/** PoR handler types that wait (await) inside their case of porHandle. */
-const POR_WAITS = new Set([22, 28, 34, 64, 65, 66, 67, 68, 69, 70, 73, 74, 75, 84, 88, 99, 121])
-
-/** PoR's handlers (spec/effects.md), by type. */
-async function porHandle(h: FxHost, type: number, eff: Effect, c: Uint8Array, event: number, removal: boolean) {
-  if (removal && R.paladin && type === R.paladin.cureDisease.effect) return refillUses(c) // the game's weekly refill
-  switch (type) {
-    case 81: { // fear aura
-      for (const e of h.enemiesNear(c, 255)) {
-        if (!e[F.inPlay] || h.save(e, 4, 0)) continue
-        if (e[F.hitDice] <= 3) { h.print(`${h.name(e)} is paralyzed with fear`); addRaw(h, e, 52, 0, 0x0c, 0) }
-        else if (e[F.hitDice] <= 5) { h.print(`${h.name(e)} is weakened by fear`); addRaw(h, e, 2, 0, 0x0c, 0) }
-      }
-      break
-    }
-    case 82: { // paralysing aura
-      for (const o of h.all()) for (const e of h.effectsOf(o).filter((x) => x.type === 82 && o !== c)) h.effectsOf(o).splice(h.effectsOf(o).indexOf(e), 1)
-      for (const e of h.enemiesNear(c, 255)) {
-        if (!e[F.inPlay]) continue
-        const bonus = 1 + (e[F.race] === 7 ? 2 : 0)
-        if (!h.save(e, 0, bonus)) { h.print(`${h.name(e)} is Paralyzed`); addRaw(h, e, 52, h.roll(1, 4), 0x0c, 0) }
-      }
-      break
-    }
-    case 83: { // petrifying gaze
-      const t = h.targetOf(c)
-      if (!t || !t[F.inPlay]) break
-      h.print(`${h.name(c)} gazes...`)
-      h.fly?.(c, t, 'gaze')
-      let victim = t
-      if (has(h, c, 127) && h.itemsOf(t).some((it) => it.ready && it.raw[0x31] === 0x76)) { h.print(`${h.name(t)} reflects it!`); h.fly?.(t, c, 'gaze'); victim = c }
-      if (!h.save(victim, 1, 0)) h.setStatus(victim, 7, `${h.name(victim)} is Stoned`)
-      break
-    }
-    case 84: { // charm gaze
-      const t = h.targetOf(c)
-      if (!t || !t[F.inPlay]) break
-      h.print(`${h.name(c)} Gazes...`)
-      h.fly?.(c, t, 'gaze')
-      fx.spell = 10
-      if (!h.save(t, 4, -2)) await addEffect(h, t, 11, 0, (c[F.side] << 7) | 0x0c, 1, 1, false, true)
-      fx.spell = 0
-      break
-    }
-    case 85: case 86: { const t = h.targetOf(c); if (t && t[F.inPlay]) drain(h, t, type - 84); break }
-    case 87: {
-      const t = h.targetOf(c)
-      if (t && !has(h, t, 50)) { addRaw(h, t, 50, 14400, 0, 1); addRaw(h, t, 57, 43200, (h.roll(1, 6) << 4) + 0x0f, 1); h.print(`${h.name(t)} is Diseased`) }
-      break
-    }
-    case 88: await breathBolt(h, eff, c, { b: 'breathBolt', pct: 50, spell: 51, len: 10, save: 3 }); break // FUN_4e53_30d9 (image 0x41609)
-    case 89: // displacement
-      if (event === 8) eff.power &= ~0x10
-      else if (event === 16 && !(eff.power & 0x10)) { fx.roll = -1; eff.power |= 0x10 }
-      break
-    case 90: if (fx.saveType === 0) fx.save += conSave(c[F.stat[4]]); break
-    case 91: if (fx.spell === 15) { fx.dmg = 0; h.print(`${h.name(c)} is unaffected`) } else if (fx.dmgType & 4) fx.dmg = 0; break
-    case 93: if (fx.dmgType & 1) fx.dmg = Math.floor(fx.dmg / 2); break
-    case 94: { const a = h.current(); const w = a ? weaponOf(h, a) : null; if (w && [0x80, 1].includes(h.weaponKind(w.raw[0x2e]))) fx.dmg = Math.floor(fx.dmg / 2); break }
-    case 95: if (removal && c[F.inPlay]) h.setStatus(c, 6, `${h.name(c)} Falls dead`); break
-    case 96: { const a = h.current(); const w = a ? weaponOf(h, a) : null; if (!w || (w.raw[0x32] <= 0 && w.raw[0x31] !== 0xb1)) fx.dmg = 0; break }
-    case 97: if (fx.saveType === 2 || fx.saveType === 4) fx.save += conSave(c[F.stat[4]]); break
-    case 98: c[F.hp] = Math.min(c[F.maxHp], c[F.hp] + 3); break
-    case 99: {
-      const n = c[F.status] === 5 ? 6 - h.rec(c, 0xe) : c[F.status] === 4 ? 6 : 0
-      if (n > 0 && h.revive(c, n)) { addRaw(h, c, 95, h.roll(1, 4) + 1, 0, 1); await removeEffect(h, c, eff) }
-      break
-    }
-    case 100: if (!(fx.dmgType & 0x11)) addRaw(h, c, 102, h.roll(3, 6), 0, 1); break
-    case 101: if (!has(h, c, 98) && !has(h, c, 59)) addRaw(h, c, 59, 3, 0, 1); break
-    case 102: if (removal && !h.revive(c, c[F.maxHp])) addRaw(h, c, 102, 1, 0, 1); break
-    case 103: eff.flag = 0; h.print(`${h.name(c)} Turns gaseous and escapes`); c[F.status] = 3; c[F.inPlay] = 0; break
-    case 104: deflect(h, c, 60); break
-    case 105: case 106: { // magic resistance 50 % / 15 %
-      const a = h.current()
-      const lvl = a ? Math.max(a[F.levels], a[F.levels + 5], 1) : 1
-      const pct = (type === 105 ? 50 : 15) - 5 * (11 - lvl)
-      if ((fx.adding !== 0 || fx.dmgType & 8) && h.roll(1, 100) <= pct) negate(0)
-      break
-    }
-    case 107: if (h.roll(1, 100) <= 90) { negate(53); negate(11) } break
-    case 108: negate(11); negate(53); break
-    case 109: negate(52); break
-    case 110: if (fx.dmgType & 2) negate(fx.adding); break
-    case 111: if (event === 9) { negate(55); negate(52) } else if (fx.saveType === 0) fx.save = 100; break
-    case 112: if (fx.dmgType & 1) { if (event === 6) fx.dmg = 0; else negate(fx.adding) } break
-    case 113: if (fx.dmgType & 1) fx.dmg = Math.max(fx.dice, fx.dmg - fx.dice); break
-    case 114: if (fx.dmgType & 4) fx.dmg = Math.floor(fx.dmg / 2); break
-    case 115: { const a = h.current(); const w = a ? weaponOf(h, a) : null; if (!w || [0, 1].includes(h.weaponKind(w.raw[0x2e]))) fx.dmg = Math.floor(fx.dmg / 2); break }
-    case 116: { const a = h.current(); const w = a ? weaponOf(h, a) : null; if (w && (w.raw[0x32] << 24 >> 24) > 0) fx.dmg = Math.floor(fx.dmg / 2); break }
-    case 117: { const a = h.current(); if (a && h.itemsOf(a).some((it) => it.ready && it.raw[0x2e] === 0x55)) fx.dmg = h.roll(1, 6) + 1; break }
-    case 118: if (fx.dmgType & 2) fx.dmg = Math.floor(fx.dmg / 2); break
-    case 119: { const a = h.current(); const w = a ? weaponOf(h, a) : null; if ((!w || w.raw[0x32] === 0) && a && (a[F.race] > 0 || a[F.hitDice] < 4)) fx.dmg = 0; break }
-    case 120: { const a = h.current(); if (a && h.itemsOf(a).some((it) => it.ready && (it.raw[0x2e] === 0x57 || it.raw[0x2e] === 0x58))) deflect(h, c, 50); break }
-    case 121: {
-      const t = h.targetOf(c)
-      if (t && t[F.inPlay] && h.roll(1, 100) <= 25 && h.distance(c, t) < 4) {
-        h.endTurn(c)
-        h.print(`${h.name(c)} Spits Acid`)
-        h.fly?.(c, t, 'spit')
-        fx.dmgType = 0x10
-        h.damage(t, h.roll(8, 4), 2, h.save(t, 3, 0))
-        await removeEffect(h, c, eff)
-        await removeType(h, c, 80)
-      }
-      break
-    }
-    case 122: { const a = h.current(); if (a && h.itemsOf(a).some((it) => it.ready && it.raw[0x2e] === 0x56)) fx.dmg = h.roll(3, 8); if (fx.dmgType & 9) fx.dmg += fx.dice; break }
-    case 123: { const a = h.current(); const w = a ? weaponOf(h, a) : null; if (!w) fx.dmg = 0; else if (w.raw[0x32] === 0) fx.dmg = w.raw[0x31] === 0xb1 ? Math.floor(fx.dmg / 2) : 0; break }
-    case 124: if (h.roll(1, 100) <= 30) { negate(11); negate(53) } break
-    case 125: if (event === 9) { negate(11); negate(53); negate(52); negate(55) } else if (fx.saveType === 0) fx.save = 100; break
-    case 126: { const t = h.targetOf(c); if (t && h.itemsOf(t).some((it) => it.ready && (it.raw[0x31] === 0x76 || (it.raw[0x30] === 0x98 && it.raw[0x31] === 0xfc)))) fx.untargetable = true; break }
-  }
-}
-
-const conSave = (con: number) => con >= 18 ? 5 : con >= 14 ? 4 : con >= 11 ? 3 : con >= 7 ? 2 : con >= 4 ? 1 : 0
 
 // ---------------------------------------------------------------- Strength effects (12 Enlarge, 38 Strength)
 /** STR in an effect's power (FUN_5216_10e4 / 110d): 18/p is p + 1, other STR is STR + 100; bit 7 marks a dormant record. */
