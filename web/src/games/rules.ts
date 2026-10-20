@@ -60,6 +60,9 @@ export interface GameRules {
   }
   /** CotAB: a CON bonus added to one saving throw (0 death/poison) for some races or a readied item
    *  effect, and for everyone at CON 19+; bands are [highest CON, bonus] (0x50C6B) */
+  /** who may join the party (CotAB Add, 0x36848+0x3815): player characters and members at most, and
+   *  CotAB's paladin and ranger rules (null: none) */
+  join: { pcs: number; members: number; maxRangers: number | null; evil: number[]; paladins: boolean }
   saveCon: { save: number; races: number[]; itemEffect: number; from: number; bands: [number, number][]; all: [number, number][] } | null
   /** races offered at creation, in menu order (code, not a table: PoR FUN_417f_056c, CotAB 3708f) */
   raceMenu: number[]
@@ -111,6 +114,7 @@ export const POR_RULES: GameRules = {
   dualClass: false,
   thief: { dualClass: false, bonus: 0, clampWithBonus: false, gloves: null, gauntlets: null },
   saveCon: null,
+  join: { pcs: 6, members: 8, maxRangers: null, evil: [], paladins: false },
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
     { kind: 'ccw', gp: 600 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 }, { kind: 'curse', gp: 3500 }, { kind: 'stone', gp: 2000 }],
 }
@@ -143,6 +147,8 @@ export const COAB_RULES: GameRules = {
   thief: { dualClass: true, bonus: 7, clampWithBonus: true, gloves: { effect: 0x0b, raise: { 1: 5, 2: 7 }, bonus: 5 }, gauntlets: { effect: 0x02, minLevel: 4, bonus: 10 } },
   // 0x50C6B: dwarves, halflings or the Girdle of the Dwarves (effect 6): CON 4–6 +1 … 18 +5; everyone CON 19+ +1 … +4.
   // Added to the stored save number, which makes the save harder (the shipped TRAVIS: 12 + 4 = 16; I: a bug)
+  // a paladin joins no party with an evil member, nor an evil character a party with a paladin; three rangers at most
+  join: { pcs: 6, members: 8, maxRangers: 3, evil: [2, 5, 8], paladins: true },
   saveCon: { save: 0, races: [1, 5], itemEffect: 6, from: 4, bands: [[6, 1], [10, 2], [13, 3], [17, 4], [18, 5]], all: [[20, 1], [22, 2], [24, 3], [25, 4]] },
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
     { kind: 'ccw', gp: 600 }, { kind: 'heal', gp: 5000 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 },

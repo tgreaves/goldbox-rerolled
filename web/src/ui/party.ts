@@ -1,5 +1,6 @@
 // Party screen ("Choose a function", FUN_417f_0161; spec/architecture.md, Party screen).
 import type { GameFiles } from '../store/gamefiles'
+import { joinRefusal } from '../rules/joining'
 import { parseCharacter } from '../data/character'
 import { F } from '../games/fields'
 import { deleteCharacter, getParty, listCharacters, seedRoster, setParty } from '../store/user'
@@ -144,6 +145,8 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
         break
       case 'A': {
         const c = await chooseFrom('Add character', roster.filter((r) => !party.includes(r.stem)))
+        const refused = c ? joinRefusal(party.map((s) => byStem(s).sav), c.sav) : null
+        if (refused !== null) { if (refused) say(refused); break }
         if (c) {
           party.push(c.stem)
           current = party.length - 1

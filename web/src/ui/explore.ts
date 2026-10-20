@@ -2,6 +2,7 @@
 // "Screen layout"): 3D view top left, party roster to its right, text window below,
 // command line at the bottom. Area scripts run through the ECL engine (src/vm/engine.ts).
 import { R, slots, bookSpell, casterClasses } from '../games/rules'
+import { joinRefusal } from '../rules/joining'
 import { game } from '../games/profile'
 import { F } from '../games/fields'
 import type { GameFiles } from '../store/gamefiles'
@@ -1063,10 +1064,12 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           print(`${nameOf(made)} has been created. Use Add to put them in the party.`, false)
         }
       } else if (o === 'ADD') {
-        if (party.length >= 8 || party.filter((m) => m[F.morale] < 0x80).length >= 6) { print('The party is full.', false); continue }
+        if (party.length >= R.join.members || party.filter((m) => m[F.morale] < 0x80).length >= R.join.pcs) { print('The party is full.', false); continue }
         const inParty = new Set(party.map(nameOf))
         const roster = (await listCharacters()).filter((r) => !inParty.has(nameOf(r.sav)))
         const pick = await tools.chooseFrom('Add character', roster)
+        const refused = pick ? joinRefusal(party, pick.sav) : null
+        if (refused !== null) { if (refused) print(refused, false); continue }
         if (pick) {
           const added = engine.addMember(pick.sav, pick.itm, pick.spc)
           if (engine.items) recalc(added, engine.itemsOf(added), engine.items)

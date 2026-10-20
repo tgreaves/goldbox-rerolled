@@ -314,3 +314,10 @@ Same procedure as PoR's (`FUN_4c2d_1010`, [[spec/records]] "Random items"), diff
 - **Magic records**: 0x3F, 0x43 → 0x29; 0x4E, 0x4F → 0x21; 0x54, 0x5C → 0x09; 0x47 d8 1–5 → 0x11, 6–8 → 0x01; anything else blank. Records at DS:0830 + 16k (word m = 1 + 8k from DS:082E), 7 of them: Potion Extra Healing, Giant Strength, Healing, Speed (unreachable), Wand of Magic Missiles, Gauntlets of Ogre Power, Javelin of Lightning; plus and save bonus always 1. Their +0x3D are CotAB spell ids (3, 59, 3, 48, 15, 38, 51).
 - So TREASURE can only make types 0x47, 0x54, 0x4F from the magic group.
 
+## 8. Joining the party (O, Add at image 0x36848 + 0x3648..0x3A24)
+Strings at 0x36848 + 0x35AE: "Add from where? ", "Curse Pool Hillsfar Exit", "Add a character: ", "paladins do not join with evil scum", "too many rangers in party", " will tolerate no evil!".
+- An empty party takes the first character with no checks.
+- Otherwise the party is scanned: player characters (morale < 0x80), rangers (+0x10D > 0), whether anyone is evil (alignment 2/5/8, i.e. (a + 1) mod 3 = 0) and the last paladin (+0x10C > 0) in list order. Same name and same id (+0x126) → already in the party (no message).
+- Refused, in this order of messages: a paladin when anyone is evil ("paladins do not join with evil scum", with a double pause); a ranger when there are 3 already ("too many rangers in party"); an evil character when a paladin is present ("<paladin> will tolerate no evil!"). Party full (6 player characters, or 8 members for an NPC) → no message.
+- The port: `web/src/rules/joining.ts` with the profile's `join` rules, used by both Add commands. PoR has only the size limits.
+
