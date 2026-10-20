@@ -23,9 +23,9 @@ describe.skipIf(!have)('Pool of Radiance played headless', () => {
     const files = loadFiles(POR, dir)
     const failures: string[] = []
     for (let seed = first; seed < first + seeds; seed++) {
-      const r = await play({ game: POR, files, seed, steps, jump: seed % 2 === 0, jumpArtifacts: JUMPED, trace: process.env.POR_PLAY_TRACE === '1' })
+      const r = await play({ game: POR, files, seed, steps, jump: seed % 2 === 0, fresh: seed % 4 === 3, jumpArtifacts: JUMPED, trace: process.env.POR_PLAY_TRACE === '1' })
       const st = r.stats
-      console.log(`seed ${seed}${seed % 2 === 0 ? ' (jumped)' : ''}: ${r.steps} steps, ${st.areas.size} areas (${[...st.areas].join(' ')}), ${st.battles} battles (${st.won} won, ${st.fled} fled, ${st.lost} lost, ${st.rounds} rounds), ${st.saves} saves, ${st.menus} menus, screens ${[...st.screens].map(([k, v]) => `${k}×${v}`).join(' ')}; ${st.ended}${r.stuck.length ? `; stuck ${r.stuck.length}: ${r.stuck[0]}` : ''}`)
+      console.log(`seed ${seed}${seed % 2 === 0 ? ' (jumped)' : seed % 4 === 3 ? ' (new game)' : ''}: ${r.steps} steps, ${st.areas.size} areas (${[...st.areas].join(' ')}), ${st.battles} battles (${st.won} won, ${st.fled} fled, ${st.lost} lost, ${st.rounds} rounds), ${st.saves} saves, ${st.menus} menus, screens ${[...st.screens].map(([k, v]) => `${k}×${v}`).join(' ')}; ${st.ended}${r.stuck.length ? `; stuck ${r.stuck.length}: ${r.stuck[0]}` : ''}`)
       failures.push(...r.failures)
     }
     expect(failures).toEqual([])

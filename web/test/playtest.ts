@@ -35,6 +35,8 @@ export interface PlayOptions {
    * random block, so that one run reaches what a party fresh from the start would take hours to
    */
   jump?: boolean
+  /** start as the app's New Game does with the pre-made party (Engine.newGame), not from the save */
+  fresh?: boolean
   /**
    * exceptions that only a jumped start can raise, because the area expects what the areas before it
    * set (the sweep tests allow the same ones); listed with the run's stuck notes, not failed
@@ -432,7 +434,11 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   if (!dat) throw new Error('no SAVGAMA.DAT')
   const stems = parseSave(dat).party
   lastSave = { dat, chars: stems.map((st) => ({ sav: files.get(`${st}.SAV`)!, itm: files.get(`${st}.${L.items}`), spc: files.get(`${st}.${L.effects}`) })) }
-  e = load(lastSave.dat, lastSave.chars, o.seed)
+  if (o.fresh) {
+    e = new Engine(files, io, o.seed)
+    e.newGame(lastSave.chars.map((c) => c.sav))
+    lastSave.chars.forEach((c, i) => e.attachFiles(i, c.itm, c.spc))
+  } else e = load(lastSave.dat, lastSave.chars, o.seed)
   watchEngine()
   /** someone standing has less than half their HP, or someone is down */
   const hurt = () => e.party().some((c) => (c[F.status] === 0 && c[F.hp] * 2 < c[F.maxHp]) || c[F.status] === 4 || c[F.status] === 5)
@@ -478,6 +484,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     return true
   }
   let ok = await act('start', () => e.start())
+  if (ok && o.fresh && !e.quit) await roundTrip(false) // the save to come back to: the new game's start
   if (ok && o.jump) {
     // a random area with a script, at a random square (the debug jump, IMP-025)
     const areas: [number, number][] = []

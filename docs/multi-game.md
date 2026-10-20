@@ -284,7 +284,8 @@ with the party on Quick or a member's commands chosen at random (aim, cast, use,
 temples and treasure through `ui/town.ts`, camp through `ui/camp.ts`, the training hall's Train;
 items readied and put away; a hurt party camps to heal; saves (the game's writer) loaded back, and
 after a lost battle the last save loaded again. Every other seed starts with a debug jump to a
-random area. After each step: no exception; no script looping without asking; HP within max,
+random area (that party has its next level's experience and the training fee), and every fourth
+as the app's New Game with the pre-made party. After each step: no exception; no script looping without asking; HP within max,
 statuses, in-play and side bytes valid, no NaN, undefined or fraction written into a party record
 or an ECL variable (the records are watched), item and effect lists sane, money whole and not
 negative, the party in an area with a script and on the map; no text with `undefined`/`NaN`; a save
