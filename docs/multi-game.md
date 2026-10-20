@@ -65,6 +65,70 @@ deep inside shared code (`if (coab) …`); it is a choice made in the profile.
 The standing rule (2026-10-19): nothing is hard-coded that can be read from the game's files or held
 as data in its profile ([`../CLAUDE.md`](../CLAUDE.md)).
 
+## Where a game is described (the configuration)
+
+Everything that differs between games lives in **`web/src/games/`**, one module per concern, each
+exporting one value per game (`POR_…`, `COAB_…`). `por.ts` and `coab.ts` assemble them into the game's
+**profile** (`GameProfile`, `types.ts`); `profile.ts` lists the games, detects which one a folder is
+and makes one active (`setGame`), switching the live objects the rest of the code reads.
+
+| Module | What it holds | Read as |
+|---|---|---|
+| `profile.ts`, `types.ts` | the game list, detection (config file, marker files), the active game | `game()` |
+| `fields.ts` | the character record: size and the offset of every named field | `F.hp`, `F.levels + k` |
+| `tables.ts` | START.EXE tables: data segment, address and row size of each (rules, names, frames, temple …) | `T.thac0.at` |
+| `ecl.ts` | the script VM: memory regions, character view, opcode variants, CALL targets, start area | `game().ecl` |
+| `files.ts` | character and save files: extensions, save size, where the party list and wall sets are | `game().saves` |
+| `rules.ts` | rules values and procedure choices: spells, slots, hit points, caster level, thief skills, level limits, money, temple, joining, creation effects, paladin abilities | `R` |
+| `effectrules.ts` | the effect system: event lists in the original's order, area effects, per-type handler map, item kinds | `game().effects` |
+| `treasure.ts` | random treasure: the type choice (nested dice bands), plus roll, scrolls, magic records | `game().treasure` |
+| `view.ts` | the 3D view and screens: floor and ground, BIGPIC, overland kind, frames, sun and clouds | `game().view` |
+| `title.ts`, `ending.ts`, `sound.ts` | title script and credits; ending script (captions read from GAME.OVR); sound driver location | `game().title` … |
+| `rulestext.ts`, `spellnotes.ts`, `journal.ts` | text written for the port: Rules reference, spell notes, the printed journal | `game().rulesText` … |
+| `imports.ts` | characters taken from another game (CotAB's "Pool" import) | `game().imports` |
+
+The profile is applied once at start-up and whenever the player switches game (the ⇄ Games button).
+Values come first from the player's own files (START.EXE tables through `T`, DAX records, GAME.OVR
+strings); what is code rather than a table in the original is profile data; only where a game's
+*procedure* differs does the profile name one of several implementations in `rules/`.
+
+## Tracking to the goal (assessed 2026-10-20)
+
+The goal (Tristan, 2026-10-20): **one engine for every Gold Box game, fully data-driven, with no
+hard-coded alternative paths.** Where things stand:
+
+**Done as data.** Record layouts, START.EXE tables, the script VM's memory map and opcode variants,
+save layouts, rules values (spells, caps, limits, money, temple, joining, creation effects), effect
+event lists, random treasure, title, ending, view dressing, sound driver, character import, and the
+names of races, classes, alignments, statuses and coins. Nothing branches on the game's id in shared
+code (checked by grep).
+
+**Procedure choices, named in the profile.** These are allowed by the design but are the places to
+watch, because each is an alternative path in code:
+- `R.slotModel` ('absolute' | 'increments'), `R.hpModel`, `R.startMoney`: two implementations each.
+  Each pair could become one parametric procedure (slot rows from a start level, hit dice rolled N
+  times keep best with a level-1 minimum and a stop table, starting coins as dice or a fixed amount).
+- `game().effects.handlers` and `items`: CotAB's changed effect types run named behaviours; PoR's
+  run its switch by default. The PoR set should be an explicit map too, so that no game is the default.
+- `ending.por` (PoR's own ending procedure) next to the generic ending steps.
+- Optional content modules switched by data: the PoR commissions panel, the tile wilderness.
+
+**Still hard-coded game knowledge in shared code (the gaps).**
+1. **Spell handlers are keyed by PoR's spell ids** (`rules/combat.ts` cast switch, `rules/spellfx.ts`,
+   spell durations in `rules/magic.ts`). Ids 1–56 mean the same spells in CotAB, but 57+ do not (CotAB
+   58 is Cure Serious Wounds; PoR's 58 is Keoghtum's Ointment), and CotAB's spells 58–100 have no
+   handlers. This is the largest gap: spell handlers need a per-game map like the effects'.
+2. Effect type numbers named in shared code (the temple's blindness, poison, paralysis; combat's
+   hold and sleep types): the same in both games so far, but they belong in data as named ids.
+3. A few functions inside profiles (the script character view's readers, `wanted()`): they should
+   become declarative data, so a profile can be a pure data file.
+4. Procedure keys named after games ('por', 'coab') should describe the procedure instead.
+
+**Plan, in order:** spell handlers per game (CotAB's spells read from its binary); PoR's effect
+handler map made explicit; profile functions replaced by data; the paired procedures made parametric
+where the originals allow it; named ids for effect types. When those are done, a third game should
+need only its profile modules and any procedure the earlier games do not have.
+
 ## Order of work
 
 1. **Profiles and detection.** The profile type, PoR's profile (today's constants moved into it),

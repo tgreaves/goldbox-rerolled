@@ -19,6 +19,11 @@ came first and is playable; Curse of the Azure Bonds (CotAB) is being added. The
      save layout, rules values;
    - only where a game's *procedure* differs, write both procedures in `rules/` and let the profile
      name which one applies. Never branch on the game deep in shared code (`if (coab) …`).
+   - Standing goal (Tristan, 2026-10-20): **one engine for every Gold Box game, fully data-driven,
+     no hard-coded alternative paths.** Every change should move towards it: prefer one parametric
+     procedure over per-game implementations, keep profiles as data (no functions in them where data
+     will do), and keep `docs/multi-game.md` ("Where a game is described", "Tracking to the goal")
+     current: it says where each game's configuration lives and what is still hard-coded.
 2. **Faithful to the original.** Rules and scripts behave as the original's code does, including its
    quirks. Before "fixing" anything that looks odd, check the original binary: often it is what the
    game does. Every deliberate departure goes in [`IMPROVEMENTS.md`](IMPROVEMENTS.md) (next IMP
