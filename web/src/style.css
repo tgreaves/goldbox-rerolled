@@ -245,7 +245,7 @@ dialog.panel form.jump input { width: 4.5rem; }
 .partyscreen .members tr.current td { color: #fff; background: #ffffff14; }
 .partyscreen .members tr.current td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .partyscreen .info { color: var(--ega-green); min-height: 1.5em; }
-.partyscreen .functions { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: 0.4rem; align-content: start; }
+.partyscreen .functions { display: grid; grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr)); gap: 0.4rem; align-content: start; }
 .partyscreen .functions button { text-align: left; }
 .partyscreen .functions button u { color: var(--accent); text-decoration: none; font-weight: 700; }
 .partyscreen .functions button:disabled { opacity: 0.4; cursor: default; }

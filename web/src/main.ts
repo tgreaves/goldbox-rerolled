@@ -27,6 +27,7 @@ async function start() {
 
 async function open(files: GameFiles) {
   setGame(files.game)
+  document.title = `GoldBox Rerolled: ${files.game.name}`
   const exe = files.get('START.EXE')
   if (exe) try { installNames(unexepack(exe).image) } catch { /* names show as #n */ }
   await installGameFont(files)
@@ -52,6 +53,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`
 
 /** The games screen: every game the port knows, with Play, Import and Remove; also the first-run import. */
 async function showImport() {
+  document.title = 'GoldBox Rerolled'
   const stored = new Map<string, boolean>()
   for (const g of GAMES) stored.set(g.id, await GameFiles.stored(g).catch(() => false))
   const any = [...stored.values()].some(Boolean)
