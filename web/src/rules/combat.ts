@@ -11,7 +11,7 @@ import { heal as healChar } from './camp'
 import { amount, castShared, line, spellSpec, term } from './spellkinds'
 import type { Amount, SpellSpec } from '../games/spellrules'
 import { spellText } from './spelltext'
-import { casterLevel, duration as spellDuration, forget } from './magic'
+import { casterLevel, duration as spellDuration, forget, itemSpellId } from './magic'
 import { F } from '../games/fields'
 import { R, formerLevelsCount } from '../games/rules'
 import { T } from '../games/tables'
@@ -1007,7 +1007,7 @@ export class Battle implements FxHost {
       id = spells[k]
       for (let j = 0; j < 3; j++) if ((it.raw[0x3c + j] & 0x7f) === id) { it.raw[0x3c + j] = 0; break }
     } else {
-      id = it.props[1] > 0x38 ? it.props[1] - 0x17 : it.props[1]
+      id = itemSpellId(it.props[1]) // FUN_4894_1a8a, CotAB 0x3F9F1 (`spells.itemSpell`)
       if (it.count > 1) it.count--
       else if (it.props[0] > 0 && --it.raw[0x3c] === 0) this.e.itemsOf(f.c).splice(this.e.itemsOf(f.c).indexOf(it), 1)
     }

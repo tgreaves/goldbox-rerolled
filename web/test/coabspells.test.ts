@@ -15,6 +15,7 @@ import { COAB, POR, setGame, wants, type GameProfile } from '../src/games/profil
 import { F } from '../src/games/fields'
 import { spellSpec } from '../src/rules/spellkinds'
 import { removeEffect } from '../src/rules/effects'
+import { itemSpells } from '../src/rules/magic'
 
 const OPEN = 1, WALL = 2
 const cells: CellInfo[] = Array.from({ length: 0x42 }, (_, i) => ({ move: i === WALL ? 0xff : 1, sight: i === WALL ? 2 : 0, image: 0 }))
@@ -164,6 +165,22 @@ describe.skipIf(!haveCoab)('CotAB spells done as parameters (6da4862)', () => {
     setGame(POR)
     c[F.hp] = 5
     expect(heal(c, [{ type: 0x32, duration: 5, power: 0, flag: 0 }], 4, false, true)).toBe(false) // PoR's mummy rot
+  })
+
+  it('an item casts the spell its +0x3D names: PoR shifts its item spells (0x3A468), CotAB does not (0x3FA0D)', () => {
+    const it = new Item(new Uint8Array(ITEM_SIZE))
+    it.raw[0x3c] = 1; it.raw[0x3e] = 0x10
+    setGame(POR)
+    it.raw[0x3d] = 0x50 // a PoR wand's Lightning Bolt item spell, record 0x39
+    expect(itemSpells(it, false)).toEqual([0x39])
+    it.raw[0x3d] = 15
+    expect(itemSpells(it, false)).toEqual([15])
+    setGame(COAB)
+    it.raw[0x3d] = 59 // the Potion of Giant Strength from CotAB's treasure (spec/coab/records.md)
+    expect(itemSpells(it, false)).toEqual([59])
+    it.raw[0x3d] = 0x83
+    expect(itemSpells(it, false)).toEqual([3])
+    setGame(POR)
   })
 
   it('healing someone unconscious outside combat brings them back into play (FUN_5216_175d → 1869, CotAB 0x4CF05 → 0x4CFB6)', () => {

@@ -85,14 +85,21 @@ export async function castOutside(e: Engine, caster: Uint8Array, s: Spell, targe
   return out
 }
 
+/** The spell id an item's +0x3D names (PoR FUN_4894_1a8a 0x3A468, CotAB 0x3FA0D; `spells.itemSpell`). */
+export function itemSpellId(v: number): number {
+  const { mask, above, minus } = R.spells.itemSpell
+  const id = v & mask
+  return id > above ? id - minus : id
+}
+
 /**
- * Spells an item can cast with Use (FUN_4894_1a8a): a scroll lists its spells; another item casts
- * item[0x3D] (ids above 0x38 lose 0x17) when item[0x3E] < 0x80. Empty if the item casts nothing.
+ * Spells an item can cast with Use (FUN_4894_1a8a, CotAB 0x3F9F1): a scroll lists its spells; another
+ * item casts item[0x3D] (`itemSpellId`) when item[0x3E] < 0x80. Empty if the item casts nothing.
  */
 export function itemSpells(it: import('../data/items').Item, scroll: boolean): number[] {
   if (scroll) return it.props.filter((p) => p > 0).map((p) => p & 0x7f)
   const [, id, flags] = it.props
-  if (id > 0 && flags < 0x80) return [id > 0x38 ? id - 0x17 : id]
+  if (id > 0 && flags < 0x80) return [itemSpellId(id)]
   return []
 }
 

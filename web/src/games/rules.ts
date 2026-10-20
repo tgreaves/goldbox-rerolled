@@ -15,6 +15,12 @@ export interface SpellRules {
   druid: number
   magicUser: number
   item: number
+  /**
+   * The spell an item casts with Use (PoR FUN_4894_1a8a, CotAB 0x3F9F1): item[0x3D] & `mask`, and an
+   * id above `above` loses `minus` (PoR: its item spells are records 0x39–0x43, stored as 0x50–0x5A).
+   * PoR 0x3A468: above 0x38 less 0x17; CotAB 0x3FA0D: & 0x7F, no shift (its items hold spell ids)
+   */
+  itemSpell: { mask: number; above: number; minus: number }
 }
 
 export interface GameRules {
@@ -137,7 +143,7 @@ const SHARED = {
 
 export const POR_RULES: GameRules = {
   ...SHARED,
-  spells: { records: 67, named: 56, book: 55, levels: 3, cleric: 0, druid: -1, magicUser: 1, item: 2 },
+  spells: { records: 67, named: 56, book: 55, levels: 3, cleric: 0, druid: -1, magicUser: 1, item: 2, itemSpell: { mask: 0xff, above: 0x38, minus: 0x17 } },
   slots: {
     clear: false,
     sources: [
@@ -174,7 +180,7 @@ export const POR_RULES: GameRules = {
 export const COAB_RULES: GameRules = {
   ...SHARED,
   // 100 spells, five levels; class byte 0 cleric, 1 druid, 2 magic-user, 3 item/monster (§3.7)
-  spells: { records: 100, named: 100, book: 100, levels: 5, cleric: 0, druid: 1, magicUser: 2, item: 3 },
+  spells: { records: 100, named: 100, book: 100, levels: 5, cleric: 0, druid: 1, magicUser: 2, item: 3, itemSpell: { mask: 0x7f, above: 0xff, minus: 0 } },
   slots: {
     clear: true,
     sources: [
