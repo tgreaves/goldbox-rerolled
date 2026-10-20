@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { SpellTables } from '../src/data/spells'
 import { COAB, POR, setGame } from '../src/games/profile'
 import { R, bookSpell, casterClasses } from '../src/games/rules'
+import { casterLevel } from '../src/rules/magic'
 import { F } from '../src/games/fields'
 import { unexepack } from '../src/data/exepack'
 import { Tables } from '../src/rules/chargen'
@@ -102,5 +103,25 @@ describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds spell book
     const he = new Uint8Array(F.size)
     he[F.race] = 4; he[F.stat[0]] = 18; he[F.stat[1]] = 17
     expect([levelLimit(he, 4), levelLimit(he, 5), levelLimit(he, 2)]).toEqual([8, 7, 8]) // half-elf ranger, MU by INT, fighter
+  })
+
+  it('works out the caster level as CotAB does (0x4F8BF)', () => {
+    setGame(COAB)
+    const st = tables(coab)
+    const who = (levels: Record<number, number>, race = 7) => {
+      const c = new Uint8Array(F.size)
+      c[F.race] = race
+      for (const [k, v] of Object.entries(levels)) c[F.levels + Number(k)] = v
+      return c
+    }
+    const bless = st.get(1)!, mm = st.get(15)!, entangle = st.get(78)!, item = st.spells.find((s) => s.cls === R.spells.item)!
+    expect(casterLevel(who({ 3: 9 }), bless)).toBe(1) // paladin 9: level − 8
+    expect(casterLevel(who({ 0: 5, 3: 9 }), bless)).toBe(5) // the better of cleric and paladin − 8
+    expect(casterLevel(who({ 4: 8 }), entangle)).toBe(1) // ranger 8: druid spells at level − 7
+    expect(casterLevel(who({ 4: 9 }), mm)).toBe(1) // ranger 9: magic-user spells at level − 8
+    expect(casterLevel(who({ 5: 5 }), mm)).toBe(5)
+    expect(casterLevel(who({ 2: 7 }), item)).toBe(6) // a fighter: no caster level, everything at 6
+    expect(casterLevel(who({ 5: 5 }), item)).toBe(12)
+    expect(casterLevel(who({ 5: 5 }), mm, true)).toBe(6) // from an item
   })
 })

@@ -38,6 +38,14 @@ export interface GameRules {
   /** the temple's healing services in the order of the game's name table (T.templeNames), with
    *  their prices (immediates in the game's code, not a table) */
   temple: { kind: TempleService; gp: number }[]
+  /** caster level by spell class: the best of its terms (a class's level, plus its former dual-class
+   *  level when that counts, minus `minus`; never below 0); item-only spells cast at 12 and anything
+   *  cast from an item at 6 (PoR FUN_10ba_26c2; CotAB 0x4F8BF, spec/coab/tables.md §3.7) */
+  casterTerms: Record<number, { cls: number; minus: number }[]>
+  /** CotAB: characters with none of these levels high enough cast everything at 6 (0x4F8C5) */
+  casterGate: { atLeast: Record<number, number>; level: number } | null
+  /** former dual-class levels count once the new class's level has passed them (CotAB FUN 0x51841) */
+  dualClass: boolean
   /** races offered at creation, in menu order (code, not a table: PoR FUN_417f_056c, CotAB 3708f) */
   raceMenu: number[]
   /** base classes of each class id 0–16 (single classes, then the multi-classes) */
@@ -83,6 +91,9 @@ export const POR_RULES: GameRules = {
     { race: 5, cls: 2, by: 0, limits: [4, 5, 6] }, { race: 4, cls: 0, by: 0, limits: [5, 5, 5] },
   ],
   startMoney: 'gold',
+  casterTerms: { 0: [{ cls: 0, minus: 0 }], 1: [{ cls: 5, minus: 0 }] },
+  casterGate: null,
+  dualClass: false,
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
     { kind: 'ccw', gp: 600 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 }, { kind: 'curse', gp: 3500 }, { kind: 'stone', gp: 2000 }],
 }
@@ -106,6 +117,11 @@ export const COAB_RULES: GameRules = {
   ],
   startMoney: 'platinum300',
   // DS:00E6: Heal added after Cure Critical Wounds (§3.11)
+  // cleric: cleric, or paladin − 8; druid: ranger − 7; magic-user: magic-user, or ranger − 8
+  casterTerms: { 0: [{ cls: 0, minus: 0 }, { cls: 3, minus: 8 }], 1: [{ cls: 4, minus: 7 }], 2: [{ cls: 5, minus: 0 }, { cls: 4, minus: 8 }] },
+  // no cleric or magic-user level, paladin below 9 and ranger below 8
+  casterGate: { atLeast: { 0: 1, 5: 1, 3: 9, 4: 8 }, level: 6 },
+  dualClass: true,
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
     { kind: 'ccw', gp: 600 }, { kind: 'heal', gp: 5000 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 },
     { kind: 'curse', gp: 3500 }, { kind: 'stone', gp: 2000 }],
@@ -146,8 +162,19 @@ export function bookSpell(s: { id: number; cls: number; level: number }): boolea
   return s.id <= R.spells.book && s.cls !== R.spells.item && s.level >= 1 && s.level <= R.spells.levels
 }
 
-/** The base class whose level casts a spell class: cleric, ranger for druid spells (I), magic-user. */
-export function castingClass(cls: number): number {
-  const s = R.spells
-  return cls === s.cleric ? 0 : cls === s.magicUser ? 5 : cls === s.druid ? 4 : -1
+/**
+ * Whether a character's former dual-class levels count (CotAB FUN 0x51841): a human whose first
+ * class with a level has passed the level they had when they changed class (+0xE6).
+ */
+export function formerLevelsCount(c: Uint8Array): boolean {
+  if (!R.dualClass || F.prevLevels < 0 || F.hpLevel < 0 || c[F.race] !== 7) return false
+  let cur = c[F.levels + 7]
+  for (let k = 0; k < 7; k++) if (c[F.levels + k] !== 0) { cur = c[F.levels + k]; break }
+  return ((cur << 24) >> 24) > ((c[F.hpLevel] << 24) >> 24)
+}
+
+/** A class's level for casting, with its former dual-class level when that counts. */
+export function classLevel(c: Uint8Array, k: number): number {
+  const s8 = (v: number) => (v << 24) >> 24
+  return s8(c[F.levels + k]) + (formerLevelsCount(c) && F.prevLevels >= 0 ? s8(c[F.prevLevels + k]) : 0)
 }

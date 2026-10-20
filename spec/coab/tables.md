@@ -164,6 +164,13 @@ Levels 1–6 equal PoR's absolute tables.
 - Castable totals by class and level: cleric 8/7/8/6/6 (+ Restoration, class 0 level 7), druid 4, MU 13/7/11/10/4.
 - Full record dump: `tables_out.txt`, section "Spells".
 
+### 3.7a Caster level (O, 0x4F8BF, thunk `ed:ca`; PoR FUN_10ba_26c2)
+Argument: spell id; caster DS:6520. Levels read signed; f = FUN 0x51841 (a human whose first class with a level has passed char+0xE6, the level at the class change: then former levels char+0x111+k count, added to the current ones).
+1. Gate (0x4F8C5): no cleric and no magic-user level, paladin < 9 and ranger < 8 → **6** for every spell (current levels only).
+2. By the spell's class byte (DS:37DC + 16·id): cleric → max(cleric, paladin − 8); druid → max(ranger − 7, 0) (the druid level is never read); magic-user → max(magic-user, ranger − 8); item/monster (3) → 12.
+3. From an item (DS:757D set by the item-use routine 0x3F9A9, for scrolls and wands) and class ≠ 3 → 6.
+Slots are pooled by spell class (0x300A0: char+0x12C + class·5 + level − memorised of that class and level), so a paladin's cleric spells use the cleric slots and a ranger's the druid/magic-user ones. A readied item with effect 0x81 adds slots (0x507C3; I: Ring of Wizardry, not yet in the port).
+
 ### 3.8 Thief skills (O, FUN at 50f5a)
 - Base table now runs to **level 12**: L10 80 67 65 78 63 30 99 50 · L11 90 72 70 86 70 35 99 60 · L12 100 77 75 94 77 35 99 65. Levels 1–9 are as PoR.
 - Race and DEX tables are unchanged. DEX rows 3–8 alias the race rows, in both games. Effective level = thief level + (dual-class former thief level × flag from 51841) (I).

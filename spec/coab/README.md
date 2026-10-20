@@ -34,7 +34,6 @@ no licence, so nothing from it is copied and every fact here is checked in the C
 
 ## Open questions (from implementing the port, 2026-10-19)
 
-- The casting level of druid spells (rangers cast them): the port uses the ranger level (I); the caster-level routine is not yet read.
 - DS:4FD5, which makes a new game start at area 82 instead of 1 ([[spec/coab/ecl]], "Loading").
 - The B-view entries B+0xC9 (a class level including the dual-class part, FUN 0x51841) and the load-past-end flag read through B+0x100.
 - The paladin and ranger party checks in the Add menu (`3685:35ae..3647`).

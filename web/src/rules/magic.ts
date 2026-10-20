@@ -1,5 +1,5 @@
 // Casting outside combat (spec/spells.md, "Casting outside combat" and "Spell effects").
-import { castingClass } from '../games/rules'
+import { R, classLevel } from '../games/rules'
 import type { Engine } from '../vm/engine'
 import type { Spell } from '../data/spells'
 import { recalc } from './equip'
@@ -24,11 +24,15 @@ export const SPELL_MSG: Record<number, string> = {
   57: 'is Speedy', 67: 'is Reading',
 }
 
-/** Caster level (FUN_10ba_26c2): the casting class's level, 12 for item-only spells; 6 from an item. */
+/** Caster level (PoR FUN_10ba_26c2, CotAB 0x4F8BF): the game's terms for the spell class (R.casterTerms),
+ *  12 for item-only spells, 6 when nothing qualifies under the game's gate, 6 from an item. */
 export function casterLevel(c: Uint8Array, s: Spell, fromItem = false): number {
-  const k = castingClass(s.cls)
-  if (fromItem && k >= 0) return 6
-  return k >= 0 ? c[F.levels + k] : 12
+  const gate = R.casterGate
+  const gated = gate !== null && Object.entries(gate.atLeast).every(([k, min]) => ((c[F.levels + Number(k)] << 24) >> 24) < min)
+  const terms = R.casterTerms[s.cls]
+  let L = gated ? gate.level : terms ? Math.max(0, ...terms.map((t) => classLevel(c, t.cls) - t.minus)) : 12
+  if (fromItem && s.cls !== R.spells.item) L = 6
+  return L
 }
 
 /** Duration in minutes (FUN_4e53_07d6). */
