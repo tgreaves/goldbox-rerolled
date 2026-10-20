@@ -1,5 +1,7 @@
 // Pool of Radiance (1988), the port's first game.
 import type { GameProfile } from './types'
+import { POR_RULES_TEXT } from './rulestext'
+import { POR_ENDING } from './ending'
 import { POR_EFFECTS } from './effectrules'
 import { POR_TREASURE } from './treasure'
 import { POR_SOUND } from './sound'
@@ -22,7 +24,7 @@ export const POR: GameProfile = {
   required: ['ECL1.DAX', 'GEO1.DAX', '8X8D1.DAX', 'WALLDEF1.DAX'],
   wanted(name) {
     const n = name.toUpperCase()
-    return n.endsWith('.DAX') || n === 'ITEMS' || n === 'START.EXE' || n === 'POOL.CFG' || /^CHRDAT.+\.(SAV|ITM|SPC)$/.test(n) || /^SAVGAM.\.DAT$/.test(n)
+    return n.endsWith('.DAX') || n === 'ITEMS' || n === 'START.EXE' || n === 'GAME.OVR' || n === 'POOL.CFG' || /^CHRDAT.+\.(SAV|ITM|SPC)$/.test(n) || /^SAVGAM.\.DAT$/.test(n)
   },
   // the names used before there was more than one game, so existing imports and saves stay where they are
   stores: { files: 'poolrad', user: 'poolrad-user' },
@@ -41,6 +43,8 @@ export const POR: GameProfile = {
   commissions: true,
   treasure: POR_TREASURE,
   effects: POR_EFFECTS,
+  ending: POR_ENDING,
+  rulesText: POR_RULES_TEXT,
   playable: true,
   note: null,
 }
