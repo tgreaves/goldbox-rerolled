@@ -17,6 +17,15 @@ export interface EffectRules {
   removalStat: Record<number, number[]>
   /** what readying an item with item +0x3E ≥ 0x80 does (ItemProcedure) */
   items: ItemProcedure
+  /**
+   * When adding an effect (with its message, event 9 first) takes out a record of the same type already
+   * there: `longerOrPermanent` (PoR FUN_5216_1656) a timed old record when the new one lasts longer, any
+   * old record when the new one is permanent, else both stay; `anyTimed` (CotAB 0x4CD91) any old record
+   * with a duration left, whatever the new one's, while a permanent old record stays beside the new one
+   */
+  replaces: 'longerOrPermanent' | 'anyTimed'
+  /** effect types whose presence stops unforced healing (PoR FUN_5216_175d: mummy rot 0x32; CotAB 0x4CE85: none) */
+  healBlock: number[]
 }
 
 /**
@@ -49,6 +58,8 @@ export const POR_EFFECTS: EffectRules = {
   handlers: {},
   removalStat: {},
   items: 'handlers',
+  replaces: 'longerOrPermanent',
+  healBlock: [0x32],
 }
 
 export const COAB_EFFECTS: EffectRules = {
@@ -134,4 +145,6 @@ export const COAB_EFFECTS: EffectRules = {
   // remove 0x4ABBA: CHA after 0x0E, STR after 0x0C, 0x26, 0x92
   removalStat: { 0x0e: [5], 0x0c: [0], 0x26: [0], 0x92: [0] },
   items: 'kinds',
+  replaces: 'anyTimed', // 0x4CE0A: found, and its duration word > 0
+  healBlock: [], // 0x4CE85: the 0x32 test is gone (0x32 is the Hot Fire Shield in CotAB)
 }

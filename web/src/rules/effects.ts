@@ -176,8 +176,8 @@ export function addRaw(h: FxHost, c: Uint8Array, type: number, duration: number,
 }
 
 /**
- * Add an effect through event 9 (FUN_5216_1656): blocked by immunities or a negating save
- * ("is Unaffected"); replaces one of the same type when the new duration is longer or 0.
+ * Add an effect through event 9 (FUN_5216_1656, CotAB 0x4CD91): blocked by immunities or a negating save
+ * ("is Unaffected"); an old record of the same type goes by the game's rule (`effects.replaces`).
  */
 export async function addEffect(h: FxHost, c: Uint8Array, type: number, duration: number, power: number, flag: number,
   saveKind = 0, saved = false, runNow = false, msg = ''): Promise<boolean> {
@@ -190,7 +190,8 @@ export async function addEffect(h: FxHost, c: Uint8Array, type: number, duration
   }
   fx.adding = 0
   const old = h.effectsOf(c).find((e) => e.type === type)
-  if (old && ((old.duration > 0 && duration > old.duration) || duration === 0)) await removeEffect(h, c, old)
+  const replace = game().effects.replaces === 'anyTimed' ? old && old.duration > 0 : old && ((old.duration > 0 && duration > old.duration) || duration === 0)
+  if (old && replace) await removeEffect(h, c, old)
   const e = addRaw(h, c, type, duration, power, flag)
   // FUN_5216_1656: a non-empty message is shown with the sparkle (sound 4) in combat; none, nothing
   if (msg) { if (h.announce) h.announce(c, msg); else h.print(`${h.name(c)} ${msg}`) }

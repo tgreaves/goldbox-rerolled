@@ -7,6 +7,7 @@ import type { Effect } from '../data/effects'
 import { removeEffect, type FxHost } from './effects'
 import { WorldHost } from './worldfx'
 import { F } from '../games/fields'
+import { game } from '../games/profile'
 
 // ------------------------------------------------------------------ clock
 /** Clock words in ECL array A: segment, minute, ten-minutes, hour, day, month, year. */
@@ -207,10 +208,12 @@ export async function restStep(e: Engine, r: RestState, camp: { heal: number }):
   return { messages, interrupted: false }
 }
 
-/** Heal (FUN_5216_175d): statuses Okay, Animated, Unconscious, Dying; mummy rot blocks unless forced. */
+/** Heal (FUN_5216_175d, CotAB 0x4CE85): statuses Okay, Animated, Unconscious, Dying; the game's blocking
+ *  effects (`effects.healBlock`: PoR's mummy rot) stop it unless forced. */
 export function heal(c: Uint8Array, fx: Effect[], amount: number, force: boolean, inCombat = false): boolean {
   if (![0, 1, 4, 5].includes(c[F.status])) return false
-  if (!force && fx.some((f) => f.type === 0x32)) return false
+  const block = game().effects.healBlock
+  if (!force && fx.some((f) => block.includes(f.type))) return false
   c[F.hp] = Math.min(c[F.maxHp], c[F.hp] + amount)
   if (c[F.status] === 5) c[F.status] = 4
   if (c[F.status] === 4 && !inCombat && c[F.hp] > 0) c[F.status] = 0

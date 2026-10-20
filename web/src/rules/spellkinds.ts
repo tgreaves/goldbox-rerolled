@@ -8,7 +8,8 @@ import type { Amount, SpellSpec, Term } from '../games/spellrules'
 import { game } from '../games/profile'
 import { Tables } from './chargen'
 import { derive, levelLimit, xpFor } from './training'
-import { addEffect, addRaw, fx, removeEffect, removeFirst, removeOne, setStr, type FxHost } from './effects'
+import { addEffect, addRaw, fx, removeEffect, removeFirst, removeOne, setStr, strEnc, type FxHost } from './effects'
+import { effectiveStat } from './effectkinds'
 import { F } from '../games/fields'
 
 const u32 = (c: Uint8Array, o: number) => (c[o] | (c[o + 1] << 8) | (c[o + 2] << 16) | (c[o + 3] << 24)) >>> 0
@@ -65,8 +66,31 @@ export async function cureDisease(h: FxHost, t: Uint8Array): Promise<boolean> {
 /** Dispel chance for an effect of level lv against caster level L (FUN_4e53_2385). */
 const dispelChance = (L: number, lv: number) => (L > lv ? 50 + 5 * (L - lv) : L < lv ? 50 - 2 * (lv - L) : 50)
 
-/** STR set to str/pct as an effect (Enlarge, Strength, Giant Strength): the line when it rose. */
-function strengthEffect(h: FxHost, t: Uint8Array, str: number, pct: number, effect: number, dur: number, msg: string) {
+/**
+ * CotAB 0x4C1D8: the new STR beats the **base** STR (+0x10), or is 18 with a higher % than the base %
+ * (+0x1D) whatever the base STR (O: 0x4C1EA); the power is then the encoded STR (0x4C160: str + 100, or
+ * % + 1 at 18).
+ */
+export function overBase(t: Uint8Array, str: number, pct: number): number | null {
+  return str > t[F.baseStat[0]] || (str === 18 && pct > t[F.baseStrPct]) ? strEnc(str, pct) : null
+}
+
+/**
+ * STR set to str/pct as an effect (Enlarge, Strength, Giant Strength), by the game's rule
+ * (`spells.strength`). `setCurrent` (PoR FUN_5216_115c): the current STR is set when that raises it
+ * (the line), the effect is added either way with the STR to restore. `overBase` (CotAB 0x4C1D8): only
+ * a STR above the base one adds the effect (the line, power the new STR, flag 1) and the current STR
+ * is worked out again (0x4C389); otherwise `unaffected` is said, if given, and nothing is added.
+ */
+async function strengthEffect(h: FxHost, t: Uint8Array, str: number, pct: number, effect: number, dur: number, msg: string, unaffected?: string) {
+  if (game().spells.strength === 'overBase') {
+    const pw = overBase(t, str, pct)
+    if (pw === null) { if (unaffected) say(h, t, unaffected); return }
+    say(h, t, msg)
+    addRaw(h, t, effect, dur, pw, 1)
+    await effectiveStat(h, t, 0)
+    return
+  }
   const { ok, pw } = setStr(h, t, str, pct)
   if (ok) say(h, t, msg)
   addRaw(h, t, effect, dur, pw, 1)
@@ -75,14 +99,23 @@ function strengthEffect(h: FxHost, t: Uint8Array, str: number, pct: number, effe
 
 /** The kinds shared by the battle and the camp. */
 export const SHARED_KINDS: Record<string, SpellKind> = {
-  /** Enlarge (PoR 12a5): STR 18 with a % by level; past the table the original keeps a stale % (taken as the last) */
+  /**
+   * Enlarge (PoR 12a5, CotAB 0x45F75): the first target's STR and % by caster level (`levels`[L] =
+   * [STR, %]); past the table `beyond` (CotAB 18/00, from its reset globals DS:4CCD/4CCE), or without
+   * it the last entry (PoR keeps a stale %, taken as the last); the game's STR rule decides
+   */
   async enlarge({ h, L, dur, targets: [t] }, p) {
-    const pct = p.pct as number[]
-    if (t) strengthEffect(h, t, 18, pct[Math.min(L, pct.length - 1)], num(p, 'effect'), dur, msgOf(p))
+    const levels = p.levels as number[][]
+    const [str, pct] = L < levels.length ? levels[L] : ((p.beyond as number[] | undefined) ?? levels[levels.length - 1])
+    if (t) await strengthEffect(h, t, str, pct, num(p, 'effect'), dur, msgOf(p), p.unaffected as string | undefined)
   },
-  /** Reduce (136e): on a failed save, ends one of the effect */
+  /**
+   * Reduce (PoR 136e, CotAB 0x460AA): on a failed save, ends one of the effect ("is Cured", or with
+   * `silent` without it, CotAB, whose removal works out the STR again)
+   */
   async reduce({ h, targets: [t] }, p) {
-    if (t && !h.save(t, num(p, 'saveType'), 0) && (await removeOne(h, t, num(p, 'effect')))) say(h, t, msgOf(p))
+    if (!t || h.save(t, num(p, 'saveType'), 0)) return
+    if (p.silent ? await removeFirst(h, t, num(p, 'effect')) : await removeOne(h, t, num(p, 'effect'))) say(h, t, msgOf(p))
   },
   /** Friends (13d8): CHA + the amount (capped); the effect holds the old CHA */
   async friends({ h, L, dur, targets: [t] }, p) {
@@ -101,14 +134,18 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
   },
   /**
    * The spell's effect (or `effect`) on the caster or the first target (`to`), with power L (or `power`,
-   * or L plus the caster's side shifted by `sideShift`), `flag`, a fixed `duration`, run at once with
-   * `runNow` (Spiritual Hammer 19c3, Prayer 24d6, the Manual of Bodily Health)
+   * a number or a rolled amount, or L plus the caster's side shifted by `sideShift`), `flag`, a fixed
+   * `duration`, run at once with `runNow`; `stat` is worked out again on the caster afterwards (Spiritual
+   * Hammer 19c3, Prayer 24d6, the Manual of Bodily Health; CotAB Friends 0x4614A)
    */
   async applyTo({ h, caster, s, L, dur, targets }, p) {
     const t = p.to === 'caster' ? caster : targets[0]
     if (!t) return
-    const power = p.power !== undefined ? num(p, 'power') : p.sideShift !== undefined ? (L + (caster[F.side] << num(p, 'sideShift'))) & 0xff : L
+    const power = typeof p.power === 'object' ? amount(p.power as Amount, L, h.roll.bind(h)).total & 0xff
+      : p.power !== undefined ? num(p, 'power') : p.sideShift !== undefined ? (L + (caster[F.side] << num(p, 'sideShift'))) & 0xff : L
     await addEffect(h, t, num(p, 'effect', s.effect), p.duration !== undefined ? num(p, 'duration') : dur, power, num(p, 'flag'), 0, false, !!p.runNow, msgOf(p))
+    // CotAB Friends (0x4614A): the caster's (DS:6520) stat `stat` worked out again (0x4C389)
+    if (p.stat !== undefined) await effectiveStat(h, caster, num(p, 'stat'))
   },
   /**
    * Strength (1f41): every class bonus is rolled (`bonus`, in order: the classes and the die), and the
@@ -121,7 +158,7 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
     for (const b of rolled) if (b.cls.some((k) => t[F.levels + k] > 0)) bonus = b.r
     let n = t[F.stat[0]] + bonus, pct = 0
     if (n > 18) { if ((p.pctClasses as number[]).some((k) => t[F.levels + k] > 0)) pct = Math.min(100, t[F.strPct] + 10 * (n - 18)); n = 18 }
-    strengthEffect(h, t, n, pct, num(p, 'effect'), dur, msgOf(p))
+    await strengthEffect(h, t, n, pct, num(p, 'effect'), dur, msgOf(p), p.unaffected as string | undefined)
   },
   /** Animate Dead (206f): ignores targeting; every dead creature of type 0, while L lasts */
   async animateDead({ h, caster, L }, p) {
@@ -205,14 +242,20 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
   },
   /** Potion of Giant Strength (2ee5): STR str/pct as the effect */
   async setStrength({ h, dur, targets: [t] }, p) {
-    if (t) strengthEffect(h, t, num(p, 'str'), num(p, 'pct'), num(p, 'effect'), dur, msgOf(p))
+    if (t) await strengthEffect(h, t, num(p, 'str'), num(p, 'pct'), num(p, 'effect'), dur, msgOf(p), p.unaffected as string | undefined)
   },
-  /** Mirror Image (1a8a): the effect with the amount (the images) as its power; with `levelShift`, shifted up and L below */
-  async images({ h, L, dur, targets: [t] }, p) {
+  /**
+   * Mirror Image (PoR 1a8a, CotAB 0x466B8): the effect with the amount (the images) as its power; with
+   * `levelShift` shifted up with L below (CotAB (1d4 << 4) | L); with `msg` added as Apply adds it (event
+   * 9, the old record by the game's rule, the line: CotAB), else raw (PoR)
+   */
+  async images({ h, s, L, dur, targets: [t] }, p) {
     if (!t) return
     const n = amount(p.amount as Amount, L, h.roll.bind(h)).total
     const shift = num(p, 'levelShift')
-    addRaw(h, t, num(p, 'effect', 0x1c), dur, shift ? ((n << shift) | L) & 0xff : n, 0)
+    const power = shift ? ((n << shift) | L) & 0xff : n
+    if (p.msg !== undefined) await addEffect(h, t, num(p, 'effect', s.effect), dur, power, 0, s.save, false, false, msgOf(p))
+    else addRaw(h, t, num(p, 'effect', 0x1c), dur, power, 0)
   },
 }
 

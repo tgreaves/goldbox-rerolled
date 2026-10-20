@@ -29,6 +29,12 @@ export interface SpellSpec {
 
 export interface SpellRules {
   handlers: Record<number, SpellSpec>
+  /**
+   * How the STR spells (Enlarge, Strength, Giant Strength) take: `setCurrent` (PoR FUN_5216_115c) sets
+   * the current STR when that raises it and adds the effect either way; `overBase` (CotAB 0x4C1D8) adds
+   * it only when the new STR beats the base STR, and the current STR is worked out again (0x4C389)
+   */
+  strength: 'setCurrent' | 'overBase'
   /** FUN_4e53_07d6's special cases by id (else record bytes 4 + 5 × L); `outside` when it differs out of combat */
   durations: Record<number, Rolled & { outside?: Rolled }>
 }
@@ -50,6 +56,7 @@ const SLEEP = { k: 'sleep', pool: { n: 4, d: 4 }, effect: 0x35, msg: 'falls asle
 
 export const POR_SPELLS: SpellRules = {
   durations: DURATIONS,
+  strength: 'setCurrent',
   handlers: {
     1: { k: 'applySide', side: 'ally', notEngaged: 1, msg: 'is Blessed' }, // 100f → 0f4f
     2: { k: 'applySide', side: 'enemy', msg: 'is Cursed' }, // 1040 → 0f4f
@@ -60,7 +67,7 @@ export const POR_SPELLS: SpellRules = {
     8: { k: 'apply', msg: 'is cold-resistant' }, // 1162
     9: { k: 'damage', amount: { n: 0, d: 0, plus: 'L' }, dmgType: 9 }, // 1190
     10: { k: 'charm', sideMul: 128, msg: 'is charmed' }, // 11dd
-    12: { k: 'enlarge', pct: [0, 0, 1, 51, 76, 91, 100], effect: 0x0c, msg: 'is stronger' }, // 12a5
+    12: { k: 'enlarge', levels: [[18, 0], [18, 0], [18, 1], [18, 51], [18, 76], [18, 91], [18, 100]], effect: 0x0c, msg: 'is stronger' }, // 12a5
     13: { k: 'reduce', effect: 0x0c, saveType: 4, msg: 'has been reduced' }, // 136e
     14: { k: 'friends', amount: { n: 2, d: 4 }, cap: 25, effect: 0x0e, msg: 'is friendly' }, // 13d8
     15: { k: 'damage', amount: { n: 'L/2', d: 4, plus: 'L/2' }, dmgType: 8 }, // 1439
@@ -112,19 +119,26 @@ export const POR_SPELLS: SpellRules = {
 /**
  * CotAB's table (DS:72BA): ids 1–56 are PoR's spells, most with the same handler (spec/coab/spells.md
  * §2, "same"); 57–67 keep PoR's item spells where the record matches; 58 and 66–100 are its own.
- * Not yet transcribed (spec/coab/spells.md §2, port status): the changed handlers 12–15, 32, 34, 35,
- * 41/46, 43/89, 48/55, 59, and the new 67, 68, 70, 73, 75, 76, 78, 79, 81–86, 91–93, 98; until they are,
+ * Not yet transcribed (spec/coab/spells.md §2, port status): the changed handlers 34, 35,
+ * 41/46, 43/89, 48/55, and the new 67, 68, 70, 73, 75, 76, 78, 79, 81–86, 91–93, 98; until they are,
  * they run PoR's handler for the same id or, for new ids, Apply ('apply').
  */
 const POR_HANDLERS_1_57 = Object.fromEntries(Object.entries(POR_SPELLS.handlers).filter(([id]) => Number(id) <= 57 || [60, 61, 62, 63, 64, 65].includes(Number(id))))
 
 export const COAB_SPELLS: SpellRules = {
   durations: DURATIONS,
+  strength: 'overBase',
   handlers: {
     ...POR_HANDLERS_1_57,
+    // 45f75 Enlarge: 18/00 … 18/100 by level as PoR to 6, then 19–22; past 11 the reset 18/00 (DS:4CCD/4CCE)
+    12: { k: 'enlarge', levels: [[18, 0], [18, 0], [18, 1], [18, 51], [18, 76], [18, 91], [18, 100], [19, 0], [20, 0], [21, 0], [22, 0], [22, 0]], beyond: [18, 0], effect: 0x0c, msg: 'is stronger', unaffected: 'is unaffected' },
+    13: { ...POR_SPELLS.handlers[13], silent: 1 }, // 460aa: no "is Cured"; STR worked out again (0x4C389)
+    14: { k: 'applyTo', to: 'first', power: { n: 2, d: 4 }, flag: 1, stat: 5, msg: 'is friendly' }, // 4614a: no CHA write, no cap
+    15: { k: 'damage', amount: { n: '(L+1)/2', d: 4, plus: 'n' }, dmgType: 8, recordDice: 1 }, // 46191: (L+1) div 2 missiles
+    32: { k: 'images', amount: { n: 1, d: 4 }, levelShift: 4, msg: 'is duplicated' }, // 466b8: Apply, power (1d4 << 4) | L
     51: { ...POR_SPELLS.handlers[51] }, // 47c49: the bolt routines' differences are R.bolt
     58: { k: 'heal', amount: { n: 2, d: 8, plus: 1 } }, // 47edd Cure Serious Wounds
-    59: { k: 'setStrength', str: 21, pct: 0, effect: 0x92, msg: 'is stronger' }, // 47f27 (its base-STR rule not yet)
+    59: { k: 'setStrength', str: 21, pct: 0, effect: 0x92, msg: 'is stronger' }, // 47f27, by the base-STR rule (strength)
     66: { k: 'damage', amount: { n: 2, d: 8, plus: 1 }, dmgType: 8 }, // 480f5 Cause Serious Wounds
     ...each([67, 68, 70, 73, 75, 76, 78, 79, 81, 82, 83, 84, 85, 86, 91, 92, 93, 98], { k: 'apply' }),
     69: { k: 'apply', msg: 'is protected' }, // 45de4
