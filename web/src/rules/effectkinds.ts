@@ -67,13 +67,12 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   },
   /**
    * 91 removal (0x28E09): the owner's zone of `cell` squares numbered power >> 4 lifts, "The air clears
-   * a little..." when there was one (the old cells back, a body's cell where one lies, the other zones of
-   * the list drawn again); outside combat there are no zones (freed when combat ends)
+   * a little..." first when there is one (the old cells back, a body's cell where one lies, the other
+   * zones of the list drawn again); outside combat there are no zones (freed when combat ends)
    */
   liftZone(h, eff, c, removal, p) {
     if (!removal || !h.inCombat()) return
-    const z = h.clearCloud?.(c, eff.power, num(p, 'cell'))
-    if (z) h.print('The air clears a little...')
+    h.clearCloud?.(c, eff.power, num(p, 'cell'), 'The air clears a little...')
   },
   /** 13 [15] (0x276C9): the count runs out, then death */
   suffocate(h, eff, c) {

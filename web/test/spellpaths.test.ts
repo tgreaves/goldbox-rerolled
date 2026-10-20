@@ -6,7 +6,7 @@ import { GameFiles, wanted } from '../src/store/gamefiles'
 import { Engine, type Io } from '../src/vm/engine'
 import { Battle, Line, type CombatUi, type Fighter } from '../src/rules/combat'
 import { Battlefield, ROWS, COLS, type CellInfo } from '../src/rules/battlefield'
-import { removeType } from '../src/rules/effects'
+import { removeEffect, removeType } from '../src/rules/effects'
 
 describe('line walker', () => {
   it('steps Bresenham with 2 per straight and 3 per diagonal step', () => {
@@ -79,10 +79,36 @@ describe.skipIf(!have)('spell paths', () => {
     expect([bf.get(5, 5), bf.get(5, 6), bf.get(6, 6), bf.get(6, 5)]).toEqual([WALL, 0x1e, 0x1e, 0x1e])
     const zone = e.effectsOf(caster.c).find((x) => x.type === 0x28)!
     expect(zone.duration).toBe(4)
-    expect(zone.power).toBe(0x14)
+    expect(zone.power).toBe(0x04) // zone 0: the caster's zones counted, the list's last not counted (1b61)
     expect(e.effectsOf(orc.c).some((x) => x.type === 0x1f)).toBe(true) // never saves: helpless
     await removeType(b, caster.c, 0x28)
     expect(printed).toContain('The air clears a little...')
     expect([bf.get(5, 6), bf.get(6, 6), bf.get(6, 5)]).toEqual([OPEN, OPEN, OPEN])
+  })
+
+  it('numbers a caster\'s clouds as the original counts them, and an overlapping cloud keeps the cell under the other (1b11, FUN_3723_0cc3)', async () => {
+    const { e, b, bf, add, printed } = setup()
+    const caster = add(2, 5, 0, 'MAGE')
+    const other = add(2, 9, 0, 'OTHER')
+    const pw = (c: typeof caster) => e.effectsOf(c.c).filter((x) => x.type === 0x28).map((x) => x.power)
+    const cast = async (f: typeof caster, x: number, y: number) => { b.aimed = { x, y }; await b.applySpell(f, e.spells!.get(34)!, 3, []) }
+    await cast(caster, 10, 10) // A
+    await cast(caster, 11, 10) // B: A is the list's last, not counted
+    await cast(other, 20, 10)
+    await cast(caster, 30, 10) // A counted, B counted, the other's last
+    expect(pw(caster)).toEqual([0x03, 0x03, 0x23])
+    // B's squares (11, 10) and (11, 11) were A's: B keeps the open cell A found there
+    expect([bf.get(10, 11), bf.get(11, 11), bf.get(10, 12)]).toEqual([0x1e, 0x1e, 0x1e])
+    printed.length = 0
+    // B's record ends first: the first zone of the caster numbered 0 is A, which lifts
+    await removeEffect(b, caster.c, e.effectsOf(caster.c).filter((x) => x.type === 0x28)[1])
+    expect(printed).toEqual(['The air clears a little...'])
+    // A's squares back to open, B's drawn again over them
+    expect([bf.get(10, 10), bf.get(11, 10), bf.get(10, 11), bf.get(11, 11), bf.get(10, 12)]).toEqual([OPEN, OPEN, 0x1e, 0x1e, 0x1e])
+    await removeType(b, caster.c, 0x28)
+    expect([bf.get(10, 11), bf.get(11, 11), bf.get(10, 12), bf.get(10, 30)]).toEqual([OPEN, OPEN, OPEN, OPEN])
+    printed.length = 0
+    await removeType(b, caster.c, 0x28) // nothing left: no line
+    expect(printed).toEqual([])
   })
 })

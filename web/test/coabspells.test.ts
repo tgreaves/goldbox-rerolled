@@ -271,7 +271,7 @@ describe.skipIf(!haveCoab)('CotAB clouds and Dispel Magic', () => {
     expect(has(ogre, 0x1f).map((x) => x.duration)).toEqual([2])
     expect(printed.filter((t) => t.startsWith('OGRE'))).toEqual(['OGRE chokes and gags from nausea'])
     expect(ogre.r[3]).toBe(0) // handler 0x1F (0x273C1) ends the turn at once
-    expect(has(mage, 0x28).map((x) => [x.duration, x.power, x.flag])).toEqual([[5, 0x15, 1]])
+    expect(has(mage, 0x28).map((x) => [x.duration, x.power, x.flag])).toEqual([[5, 0x05, 1]]) // zone 0
     // at round end (flag 0) the gas does nothing; a step into it does
     const orc = add(11, 11, 1, 'ORC')
     printed.length = 0
@@ -300,11 +300,28 @@ describe.skipIf(!haveCoab)('CotAB clouds and Dispel Magic', () => {
     await b.cloudCheck(ogre, false)
     expect(ogre.c[F.status]).toBe(6)
     const owner = has(mage, 0x5b)
-    expect(owner.map((x) => [x.duration, x.power])).toEqual([[9, 0x19]])
+    expect(owner.map((x) => [x.duration, x.power])).toEqual([[9, 0x09]])
     printed.length = 0
     await removeEffect(b, mage.c, owner[0])
     expect(printed).toEqual(['The air clears a little...'])
     expect([bf.get(9, 10), bf.get(9, 9)]).toEqual([1, 0x1f])
+  })
+
+  it('overlapping clouds: Cloudkill takes the cell under a Stinking Cloud; each lift redraws only its own list (0x48F05, 0x28E09)', async () => {
+    const { b, bf, add, cast, has } = cotab()
+    const mage = add(2, 2, 0, 'MAGE')
+    await cast(mage, 34, 5, [], { x: 10, y: 10 }) // (10,10) (11,10) (11,11) (10,11)
+    await cast(mage, 91, 5, [], { x: 10, y: 10 }) // the 3×3 round (10,10)
+    expect([bf.get(10, 10), bf.get(11, 11), bf.get(9, 9)]).toEqual([KILL, KILL, KILL])
+    await removeEffect(b, mage.c, has(mage, 0x5b)[0])
+    // the Cloudkill squares go back to what was under the Stinking Cloud; the Stinking Cloud is not drawn again
+    expect([bf.get(10, 10), bf.get(11, 11), bf.get(9, 9)]).toEqual([1, 1, 1])
+    expect(b.clouds.map((z) => z.cell)).toEqual([GAS])
+    // a Stinking Cloud laid over a Cloudkill square keeps 0x1C as the cell under it (no 0x1C lookup)
+    await cast(mage, 91, 5, [], { x: 20, y: 10 })
+    await cast(mage, 34, 5, [], { x: 20, y: 10 })
+    for (const e of has(mage, 0x28)) await removeEffect(b, mage.c, e)
+    expect([bf.get(10, 20), bf.get(11, 21)]).toEqual([KILL, KILL])
   })
 
   it('Dispel Magic (41): the zones round the aimed square against the owner\'s magic-user level; a failure is final', async () => {
@@ -319,10 +336,14 @@ describe.skipIf(!haveCoab)('CotAB clouds and Dispel Magic', () => {
     expect(bf.get(10, 11)).toBe(GAS)
     await cast(cleric, 41, 9, [], { x: 12, y: 10 }) // resisted: no roll again
     expect(bf.get(10, 11)).toBe(GAS)
-    await cast(enemy, 34, 5, [], { x: 10, y: 14 })
-    dice.push(70)
+    await cast(enemy, 34, 5, [], { x: 10, y: 14 }) // numbered 0 too: the first zone was the list's last
+    dice.push(70, 99)
     await cast(cleric, 41, 9, [], { x: 10, y: 14 })
-    expect([bf.get(14, 10), bf.get(15, 11)]).toEqual([1, 1])
+    // the dispelled zone's number takes the first 0x28 record numbered 0, and its removal lifts the
+    // first zone numbered 0: the resisted one (the numbering quirk, 0x46776 and 0x27F6D); the zone
+    // dispelled is still there, so its next square rolls again (99: resisted)
+    expect(dice).toEqual([])
+    expect([bf.get(14, 10), bf.get(15, 11), bf.get(10, 10), bf.get(10, 11)]).toEqual([GAS, GAS, 1, 1])
     expect(has(enemy, 0x28).length).toBe(1)
   })
 

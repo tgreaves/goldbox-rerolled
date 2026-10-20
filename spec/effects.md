@@ -117,7 +117,7 @@ Ev = hook events; R = removal/expiry callback (eff[4]=1); D = invoked directly b
 | 36 / 0x24 | Bestow Curse | 10, 12 | roll −4, save −4 | O | 3723_0c15 |
 | 37 / 0x25 | Blink | 1, 16 | if combat-rec[3] > 0 (not yet acted): 681E=1, roll := −1 (auto-miss) | O | 3723_0c26 |
 | 39 / 0x27 | Haste | 18 | first call (pw bit 0x10 clear): sets the bit, "ages", age word +0x30 +1. Every call: 681A ×2 (half-attacks or movement) | O (disasm) | 0x37E7B |
-| 40 / 0x28 | cloud zone | R | finds the DS:6DBB zone entry owned by char with id = pw>>4: "The air clears a little..."; restores 4 map tiles (or 0x1F if occupied), frees the 0x13-byte entry, redraws the other zones' tiles as 0x1E | O (disasm) | 0x37EF3 |
+| 40 / 0x28 | cloud zone | R | finds the first DS:6DBB zone entry owned by char with number (+0x12) = pw>>4; none, nothing. "The air clears a little...", then each laid square (+0xC + i) back to the cell it found (+8 + i), or 0x1F where a body record in use (DS:66D6 + 7n, pointer set) lies; the 0x13-byte entry unlinked and freed; the other zones' laid squares drawn again as 0x1E. Two zones can share a number (the cast counts the caster's zones but the list's last), so this can lift an older zone than the record's | O (disasm, FUN_3723_0cc3) | 0x37EF3 |
 | 41 / 0x29 | Protection from Normal Missiles | 5 | if the attacker's missile/weapon has plus 0: `0fac(100)` (ranged only) | O | 3723_1086 |
 | 42 / 0x2A | Slow | 18 | 681A /2 | O | 3723_10c1 |
 | 43 / 0x2B | disease: STR | R/D | re-arms (dur 60). If STR > 3: "is weakened", STR −1. Else adds 31 (perm, pw FF) | O (disasm) | 0x3830E |

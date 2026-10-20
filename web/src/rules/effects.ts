@@ -60,9 +60,8 @@ export interface FxHost {
   announce?(c: Uint8Array, msg: string): void
   /** a gaze (the spell bolt, 45 ms) or acid spit (COMSPR 10, 30 ms) flies from one to the other (combat only) */
   fly?(from: Uint8Array, to: Uint8Array, kind: 'gaze' | 'spit'): void
-  /** effect 0x28 expired: lift that Stinking Cloud (combat only) */
-  /** the owner's cloud zone numbered power >> 4 of the cells `cell` (default 0x1E) lifts; true if there was one */
-  clearCloud?(c: Uint8Array, power: number, cell?: number): boolean
+  /** the owner's cloud zone numbered power >> 4 of the cells `cell` (default 0x1E) lifts, `say` first; true if there was one (combat only) */
+  clearCloud?(c: Uint8Array, power: number, cell?: number, say?: string): boolean
   /** make t the combatant's target (combat record +0xA; combat only) */
   setTarget?(c: Uint8Array, t: Uint8Array): void
   // the battlefield, for the monster specials of event 14 (rules/specials.ts; combat only)
@@ -419,7 +418,7 @@ async function porHandle(h: FxHost, type: number, eff: Effect, c: Uint8Array, ev
       if (!(eff.power & 0x10)) { eff.power |= 0x10; h.print(`${h.name(c)} ages`); const a = (c[F.age] | (c[F.age + 1] << 8)) + 1; c[F.age] = a & 0xff; c[F.age + 1] = a >> 8 }
       fx.rate *= 2
       break
-    case 40: if (removal && h.inCombat()) { h.print('The air clears a little...'); h.clearCloud?.(c, eff.power) } break // zones are freed at the end of combat (FUN_320c_0000)
+    case 40: if (removal && h.inCombat()) h.clearCloud?.(c, eff.power, 0x1e, 'The air clears a little...'); break // FUN_3723_0cc3; zones are freed at the end of combat (FUN_320c_0000)
     case 41: { const a = h.current(); const w = a ? weaponOf(h, a) : null; if (w && w.raw[0x32] === 0) deflect(h, c, 100); break }
     case 42: fx.rate = Math.floor(fx.rate / 2); break
     case 43: if (removal || event === -1) {

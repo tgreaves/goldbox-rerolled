@@ -89,7 +89,8 @@ export const POR_SPELLS: SpellRules = {
     31: { k: 'apply' }, // 1a4f: Knock does nothing here (no effect type)
     32: { k: 'images', amount: { n: 1, d: 4 }, effect: 0x1c }, // 1a8a
     33: { k: 'apply', msg: 'is weakened' }, // 1acc
-    34: { k: 'cloud', dirs: 'gasCloud', count: 4, cell: 0x1e, owner: 0x28, msg: 'Creates a noxious cloud' }, // 1b11, DS:290D
+    // 1b11, DS:290D: a square already gassed takes the cell another Stinking Cloud found there
+    34: { k: 'cloud', dirs: 'gasCloud', count: 4, cell: 0x1e, owner: 0x28, replaced: [{ cell: 0x1e, zones: 0x1e, not: [0x1e] }], msg: 'Creates a noxious cloud' },
     35: { k: 'strengthByClass', bonus: [{ cls: [5], d: 4 }, { cls: [0, 6], d: 6 }, { cls: [2], d: 8 }], pctClasses: [2], effect: 0x26, msg: 'is stronger' }, // 1f41
     36: { k: 'animateDead', effect: 0x20, msg: 'is animated' }, // 206f
     37: { k: 'cure', effect: 0x21, msg: 'can see' }, // 2217
@@ -189,7 +190,10 @@ export const COAB_SPELLS: SpellRules = {
     80: { k: 'apply', msg: 'is invisible' }, // 48714 Invisibility to Animals (touch)
     87: { k: 'damage', amount: { n: 3, d: 10 }, dmgType: 0x0a, recordDice: 1 }, // 48e7b Ice Storm
     88: { k: 'apply', msg: 'is protected' }, // 48ebe Minor Globe
-    91: { k: 'cloud', dirs: 'killCloud', count: 9, cell: 0x1c, owner: 0x5b, msg: 'Creates a poisonous cloud' }, // 48f05 Cloudkill (DS:7579, DS:27DD)
+    // 48f05 Cloudkill (DS:7579, DS:27DD): a gassed square takes the cell from the first Stinking Cloud that
+    // found one there, a Cloudkill square from the first other Cloudkill, neither 0x1E nor 0x1C
+    91: { k: 'cloud', dirs: 'killCloud', count: 9, cell: 0x1c, owner: 0x5b, firstZone: 1, msg: 'Creates a poisonous cloud',
+      replaced: [{ cell: 0x1e, zones: 0x1e, not: [0x1e, 0x1c] }, { cell: 0x1c, zones: 0x1c, not: [0x1e, 0x1c] }] },
     89: { k: 'removeCurse', effect: 0x24, item: 'unready', itemMsg: 'has an item un-cursed' }, // 47575 Remove Curse
     90: POR_SPELLS.handlers[36], // 46d89 Animate Dead
     94: { k: 'hold', bonus: [-3, -1, 0], effect: 0x34, sizeImmune: 0, msg: 'is held' }, // 463b4 → 45a94 (I: the magic-user bonus)
