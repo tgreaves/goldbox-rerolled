@@ -13,11 +13,12 @@ import { heal as healChar } from '../rules/camp'
 
 const memorisedReady = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
 import { appraiseGem, appraiseJewel, COINS, coinValue, keepAsItem, moneyOf, pay, poolAll, receive, share, take, takeOne } from '../rules/money'
-import { msg } from '../games/strings'
+import { msg, menu, ask, type MenuOpts } from '../games/strings'
+import { yes, list } from './camp'
 
 export interface TownUi {
   engine: Engine
-  menu(items: string[], opts?: { prompt?: string; vertical?: boolean }): Promise<number>
+  menu(items: string[], opts?: MenuOpts): Promise<number>
   print(text: string, clear?: boolean): void
   inputNumber(): Promise<number>
   /** the shop's Buy as one panel (IMP-042); without it Buy is the original's list */
@@ -29,7 +30,6 @@ export interface TownUi {
   refresh(): void
 }
 
-const yes = async (ui: TownUi, prompt: string) => (await ui.menu(['YES', 'NO'], { prompt })) === 0
 
 function party(e: Engine) {
   return e.party().map((c) => ({ c, items: e.itemsOf(c) }))
@@ -49,7 +49,7 @@ async function takeMoney(ui: TownUi) {
   for (;;) {
     const kinds = [6, 5, 4, 3, 2, 1, 0].filter((i) => e.money[i] > 0)
     if (!kinds.length) return
-    const k = await ui.menu([...kinds.map((i) => `${e.money[i]} ${COINS[i].toUpperCase()}`), 'EXIT'], { prompt: 'Take which?', vertical: true })
+    const k = await list(ui, kinds.map((i) => `${e.money[i]} ${COINS[i].toUpperCase()}`), { prompt: 'Take which?' })
     if (k >= kinds.length) return
     ui.print(`${msg('howMuch')}${COINS[kinds[k]]}?`, false)
     const n = await ui.inputNumber()
@@ -67,16 +67,17 @@ async function appraise(ui: TownUi) {
   const m = moneyOf(c)
   if (!m[5] && !m[6]) { ui.print(msg('noGems'), false); return }
   ui.print(`${msg('fineCollection')} ${m[5]}${msg(m[5] === 1 ? 'gemOne' : 'gemsCount')}, ${m[6]}${msg(m[6] === 1 ? 'pieceOfJewelry' : 'piecesOfJewelry')}`, true)
-  const opts = [...(m[5] ? ['GEMS'] : []), ...(m[6] ? ['JEWELRY'] : []), 'EXIT']
-  const pick = opts[await ui.menu(opts)]
-  if (pick === 'EXIT') return
-  const kind = pick === 'GEMS' ? 5 : 6
+  // the game's "  Gems", "  Jewelry" (each when there is one) and " Exit"
+  const pick = await ask((l, o) => ui.menu(l, o), [...(m[5] ? menu('appraiseGems') : []), ...(m[6] ? menu('appraiseJewelry') : []), ...menu('appraiseExit')])
+  if (pick !== 'G' && pick !== 'J') return
+  const kind = pick === 'G' ? 5 : 6
   takeOne(c, kind)
   const value = kind === 5 ? appraiseGem(e.roll(1, 100)) : appraiseJewel(e.roll(1, 100), (n) => e.rand(n))
   ui.print(`${msg(kind === 5 ? 'gemValued' : 'jewelValued')}${value}${msg('gp')}`, false)
   const canKeep = items.length < 16 && canTakeItem(c, items, keepProbe()) === ''
-  const choice = await ui.menu(canKeep ? ['SELL', 'KEEP'] : ['SELL'], { prompt: msg('youCan').trimEnd() })
-  if (canKeep && choice === 1) {
+  // "Sell Keep", or "Sell" when it cannot be kept
+  const choice = await ask((l, o) => ui.menu(l, o), menu(canKeep ? 'sellKeep' : 'sell'), { prompt: msg('youCan').trimEnd() })
+  if (canKeep && choice === 'K') {
     keepAsItem(items, kind, value)
     recalc(c, items, t)
   } else {
@@ -107,15 +108,14 @@ export async function shop(ui: TownUi) {
   e.money = [0, 0, 0, 0, 0, 0, 0]
   for (;;) {
     const has = e.money.some((v) => v > 0)
-    const opts = has ? ['BUY', 'VIEW', 'TAKE', 'POOL', 'SHARE', 'APPRAISE', 'EXIT'] : ['BUY', 'VIEW', 'POOL', 'APPRAISE', 'EXIT']
     const { name, c } = cur(e)
     ui.print(`${name} has ${coinValue(moneyOf(c))} gp in coins.`, true)
-    const o = opts[await ui.menu(opts)]
-    if (o === 'BUY' && ui.buy) await ui.buy()
-    else if (o === 'BUY') {
+    const o = await ask((l, op) => ui.menu(l, op), menu(has ? 'shop' : 'shopNoPool'))
+    if (o === 'B' && ui.buy) await ui.buy()
+    else if (o === 'B') {
       for (;;) {
         const stock = e.treasure
-        const i = await ui.menu([...stock.map((it) => `${t.name(it)} — ${it.value} gp`), 'EXIT'], { prompt: `${cur(e).name} buys:`, vertical: true })
+        const i = await list(ui, stock.map((it) => `${t.name(it)} — ${it.value} gp`), { prompt: `${cur(e).name} buys:` })
         if (i >= stock.length) break
         const it = stock[i], buyer = cur(e)
         const why = canTakeItem(buyer.c, buyer.items, it)
@@ -127,10 +127,10 @@ export async function shop(ui: TownUi) {
         ui.print(`${buyer.name} buys ${t.name(copy)}.`, false)
         ui.refresh()
       }
-    } else if (o === 'VIEW') await ui.view('shop')
-    else if (o === 'TAKE') await takeMoney(ui)
-    else if (o === 'POOL' || o === 'SHARE') await pooling(ui, o === 'POOL' ? 'pool' : 'share')
-    else if (o === 'APPRAISE') await appraise(ui)
+    } else if (o === 'V') await ui.view('shop')
+    else if (o === 'T') await takeMoney(ui)
+    else if (o === 'P' || o === 'S') await pooling(ui, o === 'P' ? 'pool' : 'share')
+    else if (o === 'A') await appraise(ui)
     else {
       if (e.money.some((v) => v > 0) && await yes(ui, `${msg('shopLeave').trim()} ${msg('shopGoBack')}`)) continue
       e.money = [0, 0, 0, 0, 0, 0, 0]
@@ -157,15 +157,14 @@ export async function temple(ui: TownUi) {
   e.money = [0, 0, 0, 0, 0, 0, 0]
   for (;;) {
     const has = e.money.some((v) => v > 0)
-    const opts = has ? ['HEAL', 'VIEW', 'TAKE', 'POOL', 'SHARE', 'APPRAISE', 'EXIT'] : ['HEAL', 'VIEW', 'POOL', 'APPRAISE', 'EXIT']
     const { name, c } = cur(e)
     ui.print(`${name} has ${coinValue(moneyOf(c))} gp in coins.`, true)
-    const o = opts[await ui.menu(opts)]
-    if (o === 'HEAL') await heal(ui)
-    else if (o === 'VIEW') await ui.view('temple')
-    else if (o === 'TAKE') await takeMoney(ui)
-    else if (o === 'POOL' || o === 'SHARE') await pooling(ui, o === 'POOL' ? 'pool' : 'share')
-    else if (o === 'APPRAISE') await appraise(ui)
+    const o = await ask((l, op) => ui.menu(l, op), menu(has ? 'temple' : 'templeNoPool'))
+    if (o === 'H') await heal(ui)
+    else if (o === 'V') await ui.view('temple')
+    else if (o === 'T') await takeMoney(ui)
+    else if (o === 'P' || o === 'S') await pooling(ui, o === 'P' ? 'pool' : 'share')
+    else if (o === 'A') await appraise(ui)
     else {
       if (e.money.some((v) => v > 0) && await yes(ui, `${msg('templeLeave').trim()} ${msg('templeGoBack')}`)) continue
       e.money = [0, 0, 0, 0, 0, 0, 0]
@@ -182,10 +181,12 @@ async function heal(ui: TownUi) {
   const fx = e.effectsOf(c)
   const has = (types: number[]) => fx.some((f) => types.includes(f.type))
   const remove = (types: number[]) => { for (let i = fx.length - 1; i >= 0; i--) if (types.includes(fx[i].type)) fx.splice(i, 1) }
-  const list = services(e.startImage!), DISEASES = diseases(e.startImage!)
-  const i = await ui.menu([...list.map((x) => x.name.toUpperCase()), 'EXIT'], { prompt: `Healing for ${name}:`, vertical: true })
-  if (i >= list.length) return
-  const s = list[i], kind = s.kind
+  const cures = services(e.startImage!), DISEASES = diseases(e.startImage!)
+  // the list's line is the game's "Heal Exit": a cure is chosen from the list (Heal or Enter), or Exit
+  const ex = menu('templeHeal').find((w) => w.key === 'E') ?? { text: 'Exit', key: 'E' }
+  const i = await ui.menu([...cures.map((x) => x.name.toUpperCase()), ex.text.toUpperCase()], { prompt: `Healing for ${name}:`, vertical: true, keys: [...cures.map(() => ''), ex.key] })
+  if (i >= cures.length) return
+  const s = cures[i], kind = s.kind
   const status = c[F.status]
   const reason = {
     blind: has([33]) ? '' : msg('notBlind'),
@@ -263,24 +264,26 @@ export async function treasure(ui: TownUi) {
     }
     // FUN_2e08_0ecd: " Detect" when there are items and the current character has Detect Magic ready (5 or 11)
     const detect = items ? memorisedReady(e.cur).find((id) => id === 5 || id === 11) : undefined
-    const opts = [...(money ? ['VIEW', 'TAKE', 'POOL', 'SHARE'] : items ? ['VIEW', 'TAKE', 'POOL'] : ['VIEW', 'POOL']), ...(detect ? ['DETECT'] : []), 'EXIT']
-    const o = opts[await ui.menu(opts)]
-    if (o === 'DETECT' && detect && e.spells) {
+    // the game's pieces: "View Take Pool Share" (money), "View Take Pool" (items), else "View Pool Exit";
+    // then " Detect Exit" or " Exit"
+    const words = money || items ? [...menu(money ? 'treasureMoney' : 'treasureItems'), ...menu(detect ? 'treasureDetect' : 'treasureExit')] : menu('treasureNone')
+    const o = await ask((l, op) => ui.menu(l, op), words)
+    if (o === 'D' && detect && e.spells) {
       // cast without the "casts" line; the memorised copy is used up (4e53:0EA7)
       const out = await castOutside(e, e.cur, e.spells.get(detect)!, [e.cur])
       for (const m of out.slice(1)) ui.print(m, false)
       ui.refresh()
       continue
     }
-    if (o === 'VIEW') await ui.view('treasure')
-    else if (o === 'TAKE') {
-      const kinds = [...(money ? ['MONEY'] : []), ...(items ? ['ITEMS'] : [])]
-      const k = kinds.length === 1 ? kinds[0] : kinds[await ui.menu([...kinds, 'EXIT'], { prompt: msg('take').trimEnd() })]
-      if (k === 'MONEY') await takeMoney(ui)
-      else if (k === 'ITEMS' && t) {
+    if (o === 'V') await ui.view('treasure')
+    else if (o === 'T') {
+      // Take (FUN_2e08_0d38, CotAB 0x1E60E): "Money Items Exit", or straight to the one there is
+      const k = money && items ? await ask((l, op) => ui.menu(l, op), menu('take'), { prompt: msg('take').trimEnd() }) : money ? 'M' : 'I'
+      if (k === 'M') await takeMoney(ui)
+      else if (k === 'I' && t) {
         for (;;) {
           if (!e.treasure.length) break
-          const i = await ui.menu([...e.treasure.map((it) => t.name(it)), 'EXIT'], { prompt: `${cur(e).name} takes:`, vertical: true })
+          const i = await list(ui, e.treasure.map((it) => t.name(it)), { prompt: `${cur(e).name} takes:` })
           if (i >= e.treasure.length) break
           const it = e.treasure[i], who = cur(e)
           const why = canTakeItem(who.c, who.items, it)
@@ -291,7 +294,7 @@ export async function treasure(ui: TownUi) {
           ui.refresh()
         }
       }
-    } else if (o === 'POOL' || o === 'SHARE') { if (t) await pooling(ui, o === 'POOL' ? 'pool' : 'share') }
+    } else if (o === 'P' || o === 'S') { if (t) await pooling(ui, o === 'P' ? 'pool' : 'share') }
     else {
       if ((e.money.some((v) => v > 0) || e.treasure.length) && await yes(ui, `${msg('treasureLeft').trim()} ${msg('treasureGoBack')}`)) continue
       e.treasure = []

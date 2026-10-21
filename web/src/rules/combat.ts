@@ -16,7 +16,7 @@ import { F } from '../games/fields'
 import { R, formerLevelsCount } from '../games/rules'
 import { T } from '../games/tables'
 import type { SoundMode } from '../games/sound'
-import { hasMsg, msg } from '../games/strings'
+import { hasMsg, msg, menu, ask, type MenuOpts, type MenuWord } from '../games/strings'
 import { Tables } from './chargen'
 
 const DX = [0, 1, 1, 1, 0, -1, -1, -1], DY = [-1, -1, 0, 1, 1, 1, 0, -1]
@@ -85,14 +85,14 @@ export interface CombatUi {
   /** queued: centre the view on a cell (Fireball, FUN_4e53_266b) */
   look?(at: { x: number; y: number }): void
   pause(ms?: number): Promise<void>
-  menu(items: string[], opts?: { prompt?: string }): Promise<number>
+  menu(items: string[], opts?: MenuOpts): Promise<number>
   /** a step direction 0–7, 'end' (done moving) or 'undo' (Escape) */
   step(f: Fighter, left: number): Promise<number | 'end' | 'undo'>
   /**
    * The command menu with movement live at the same time (IMP-053): a step direction, 'undo'
    * (Escape), 'end', or the menu choice. Without it the player chooses MOVE first, as in the original.
    */
-  command?(f: Fighter, items: string[], prompt: string, left: number): Promise<number | 'end' | 'undo' | { choice: number }>
+  command?(f: Fighter, items: string[], prompt: string, left: number, keys?: string[]): Promise<number | 'end' | 'undo' | { choice: number }>
   /** pick a target among entries (nearest first); −1 = exit */
   /** `area`: for an area spell, the squares it would cover if centred there (a preview) */
   aim(f: Fighter, entries: AimEntry[], prompt: string, allowCell: boolean, area?: (x: number, y: number) => { x: number; y: number }[]): Promise<AimEntry | null>
@@ -813,19 +813,24 @@ export class Battle implements FxHost {
       const st = this.e.spells
       const canCast = !!st && f.r[1] === 1 && this.e.read(0x49e5) === 0 && Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).some((v) => v > 0 && v < 0x80)
       const flat = !!this.ui.command
-      const doneRow = (): [string, string][] => {
+      // the game's words (FUN_320c_0666, CotAB 0x224B8): "Move ", "View Aim ", "Use ", "Cast ", "Turn ",
+      // "Quick Done", each piece when it applies; a choice is [label, what, hot key]
+      type Opt = [string, string, string]
+      const of = (w: MenuWord[], what: Record<string, string>): Opt[] => w.filter((x) => what[x.key[0]]).map((x) => [x.text.toUpperCase(), what[x.key[0]], x.key])
+      const doneRow = (): Opt[] => {
         const { canGuard, dying } = this.doneChoices(f)
         const stepped = f.x !== moved.x || f.y !== moved.y
-        return [...(canGuard ? [['GUARD', 'g'] as [string, string]] : []), ['DELAY', 'l'], ...(dying ? [['BANDAGE', 'b'] as [string, string]] : []),
-          ...(stepped ? [['UNDO', 'z'] as [string, string]] : []), ['QUICK', 'q'], ['END TURN', 'e'], ['SPEED', 's']]
+        // the Done submenu's words (FUN_320c_0e45) beside the commands; UNDO and END TURN (Done → Quit) are the port's
+        return [...(canGuard ? of(menu('doneGuard'), { G: 'g' }) : []), ...of(menu('doneDelayQuit'), { D: 'l' }), ...(dying ? of(menu('doneBandage'), { B: 'b' }) : []),
+          ...(stepped ? [['UNDO', 'z', 'N'] as Opt] : []), ...of(menu('battleQuickDone'), { Q: 'q' }), ['END TURN', 'e', 'E'] as Opt, ...of(menu('doneSpeedExit'), { S: 's' })]
       }
-      const opts: [string, string][] = [
-        ...(f.r[6] > 1 && !flat ? [['MOVE', 'm'] as [string, string]] : []), ['VIEW', 'v'], ['AIM', 'a'],
-        ...(this.e.itemsOf(c).length ? [['USE', 'u'] as [string, string]] : []),
-        ...(canCast ? [['CAST', 'c'] as [string, string]] : []),
-        ...(c[F.levels] > 0 && !f.r[0x11] ? [['TURN', 't'] as [string, string]] : []),
+      const opts: Opt[] = [
+        ...(f.r[6] > 1 && !flat ? of(menu('battleMove'), { M: 'm' }) : []), ...of(menu('battleViewAim'), { V: 'v', A: 'a' }),
+        ...(this.e.itemsOf(c).length ? of(menu('battleUse'), { U: 'u' }) : []),
+        ...(canCast ? of(menu('battleCast'), { C: 'c' }) : []),
+        ...(c[F.levels] > 0 && !f.r[0x11] ? of(menu('battleTurn'), { T: 't' }) : []),
         // IMP-054: with the live command prompt the Done choices sit in the same row
-        ...(flat ? doneRow() : [['QUICK', 'q'], ['DONE', 'd']] as [string, string][]),
+        ...(flat ? doneRow() : of(menu('battleQuickDone'), { Q: 'q', D: 'd' })),
       ]
       this.ui.redraw(f)
       await this.settle()
@@ -833,12 +838,12 @@ export class Battle implements FxHost {
       if (this.ui.command && f.r[6] > 1) {
         // IMP-053: no MOVE to choose; a step is taken straight from the command prompt
         const cmds = opts.filter((o) => o[1] !== 'm')
-        const r = await this.ui.command(f, cmds.map((o) => o[0]), `${name(c)}: Move Left = ${f.r[6] >> 1}`, f.r[6] >> 1)
+        const r = await this.ui.command(f, cmds.map((o) => o[0]), `${name(c)}: Move Left = ${f.r[6] >> 1}`, f.r[6] >> 1, cmds.map((o) => o[2]))
         if (r === 'end') continue
         if (r === 'undo') { undo(); continue }
         if (typeof r === 'number') { if (await this.moveStep(f, r)) moved = { x: f.x, y: f.y, m: f.r[6], face: f.r[9] }; continue }
         k = cmds[r.choice]?.[1]
-      } else k = opts[await this.ui.menu(opts.map((o) => o[0]), { prompt: `${name(c)}:` })]?.[1]
+      } else k = opts[await this.ui.menu(opts.map((o) => o[0]), { prompt: `${name(c)}:`, keys: opts.map((o) => o[2]) })]?.[1]
       if (k === 'z') { undo(); continue }
       moved = { x: f.x, y: f.y, m: f.r[6], face: f.r[9] }
       if (k === 'm') await this.playerMove(f)
@@ -876,17 +881,21 @@ export class Battle implements FxHost {
 
   async done(f: Fighter): Promise<boolean> {
     const { canGuard, dying } = this.doneChoices(f)
-    const opts = [...(canGuard ? ['GUARD'] : []), 'DELAY', 'QUIT', ...(dying ? ['BANDAGE'] : []), 'SPEED', 'EXIT']
-    return this.doneAction(f, opts[await this.ui.menu(opts, { prompt: 'Done:' })])
+    // FUN_320c_0e45 (CotAB 0x22D33): "Guard " (when it applies), "Delay Quit ", "Bandage " (someone Dying), "Speed Exit"
+    const w = [...(canGuard ? menu('doneGuard') : []), ...menu('doneDelayQuit'), ...(dying ? menu('doneBandage') : []), ...menu('doneSpeedExit')]
+    const k = await ask((l, o) => this.ui.menu(l, o), w, { prompt: 'Done:' })
+    return this.doneAction(f, ({ G: 'GUARD', D: 'DELAY', Q: 'QUIT', B: 'BANDAGE', S: 'SPEED' } as Record<string, string>)[k])
   }
 
   /** A Done choice: GUARD, DELAY, QUIT, BANDAGE or SPEED. True when the turn is over for now (Delay). */
   async doneAction(f: Fighter, o: string | undefined): Promise<boolean> {
     if (o === 'SPEED') { // FUN_320c_10f6: S(lower) +1, F(aster) −1, 0–9
       for (;;) {
-        const k = await this.ui.menu(['SLOWER', 'FASTER', 'EXIT'], { prompt: `${msg('gameSpeed')}${this.e.speed}${msg('speedRange')}` })
-        if (k === 0) this.e.speed = Math.min(9, this.e.speed + 1)
-        else if (k === 1) this.e.speed = Math.max(0, this.e.speed - 1)
+        // "Slower " while below 9, "Faster " while above 0, "Exit"
+        const w = [...(this.e.speed < 9 ? menu('battleSlower') : []), ...(this.e.speed > 0 ? menu('battleFaster') : []), ...menu('battleSpeedExit')]
+        const k = await ask((l, o) => this.ui.menu(l, o), w, { prompt: `${msg('gameSpeed')}${this.e.speed}${msg('speedRange')}` })
+        if (k === 'S') this.e.speed = Math.min(9, this.e.speed + 1)
+        else if (k === 'F') this.e.speed = Math.max(0, this.e.speed - 1)
         else break
       }
       return false

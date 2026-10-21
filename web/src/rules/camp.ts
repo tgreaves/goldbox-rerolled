@@ -230,3 +230,70 @@ export function heal(c: Uint8Array, fx: Effect[], amount: number, force: boolean
   }
   return true
 }
+
+// ------------------------------------------------------------------ fix
+/** the party's wounds (CotAB 0x31E2F): Σ max HP − HP over every member, as a 16-bit word */
+export function wounds(e: Engine): number {
+  let w = 0
+  for (const c of e.party()) w = (w + ((c[F.maxHp] - c[F.hp]) & 0xffff)) & 0xffff
+  return w
+}
+
+/**
+ * Fix (CotAB 0x320D8; spec/A-games/coab/camp.md §1), the cures as `R.fix` gives them. Nothing when the
+ * party has no wounds. Otherwise the healing pool is rolled for every cure memorised by an Okay member
+ * (0x31CC2: the spells stay memorised); the rest the cleric slots need to be learnt again is worked
+ * out (0x31E8D) and rested at once, silently, through the ordinary rest steps (encounters, natural
+ * healing, effects and pending spells as in any rest; 0x41B8F with no prompt); if it is not
+ * interrupted, one cure per cleric slot of each cure's level is rolled into the pool (0x31D7D), and
+ * the pool is shared out in party order, each member healed by what they lack, as far as it goes
+ * (0x32020). Prints nothing of its own. Returns the rest's messages and whether it was interrupted.
+ */
+export async function fix(e: Engine, camp: { heal: number }): Promise<{ messages: string[]; interrupted: boolean }> {
+  const { cures, start } = R.fix
+  const messages: string[] = []
+  if (wounds(e) === 0) return { messages, interrupted: false }
+  const okay = (c: Uint8Array) => c[F.status] === 0 // 0x31CA2
+  const cureRoll = (k: (typeof cures)[number]) => e.roll(k.dice, k.sides) + k.bonus
+  // 0x31CC2: the memorised cures, member by member, slot by slot
+  let pool = 0
+  for (const c of e.party()) {
+    if (!okay(c)) continue
+    for (const v of memorised(c)) { const k = cures.find((x) => x.spell === v); if (k) pool = (pool + cureRoll(k)) & 0xffff }
+  }
+  // 0x31E8D: the slots to learn again, the longest member's rest, and the estimate it is shortened by.
+  // The per-level minutes are kept from the last Okay member: a member who is not Okay counts them again
+  let estimate = start, time = 0
+  const count = cures.map(() => 0), last = cures.map(() => 0)
+  for (const c of e.party()) {
+    if (okay(c)) cures.forEach((k, i) => { const n = c[F.clericSlots + k.level - 1]; count[i] += n; last[i] = (n * k.minutes) & 0xffff })
+    let t = 0
+    const groups = new Map<number, number>()
+    cures.forEach((k, i) => { if (last[i] > 0) { t = Math.max(t, k.base); groups.set(k.group, Math.max(groups.get(k.group) ?? 0, k.weight)) } })
+    for (const g of groups.values()) estimate = (estimate + g) & 0xffff
+    t = (t + last.reduce((a, b) => a + b, 0)) & 0xffff
+    time = Math.max(time, t)
+  }
+  const w = wounds(e)
+  if (w < estimate) {
+    // 0x31FD3: the quotient is kept as a byte; the original divides by zero when it is a multiple of 256 (Bug: the port skips the division)
+    const k = Math.floor(estimate / w) & 0xff
+    if (k) time = Math.floor(time / k)
+  }
+  // 0x41B8F with no prompt: rest that long
+  const r = startRest(e, time)
+  while (r.minutes > 0) {
+    const res = await restStep(e, r, camp)
+    messages.push(...res.messages)
+    if (res.interrupted) return { messages, interrupted: true }
+  }
+  // 0x31D7D: one cure per cleric slot of its level, all of the first cure, then the next
+  cures.forEach((k, i) => { for (let n = 0; n < count[i]; n++) pool = (pool + cureRoll(k)) & 0xffff })
+  // 0x32020: shared out in party order; the amount reaches the heal routine as a byte (0x32096)
+  for (const c of e.party()) {
+    let need = (c[F.maxHp] - c[F.hp]) & 0xffff
+    if (need > pool) need = pool
+    if (need >= 1 && heal(c, e.effectsOf(c), need & 0xff, false) && need <= pool) pool -= need
+  }
+  return { messages, interrupted: false }
+}

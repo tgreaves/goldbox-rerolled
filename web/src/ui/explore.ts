@@ -47,7 +47,9 @@ import { clockText, freeSlots, isScroll, knows, memorise, memorised, preparation
 import { castOutside, itemSpells, spendUse, targetKind } from '../rules/magic'
 import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
 import { creatorTools } from './creator'
-import { msg } from '../games/strings'
+import { msg, entry, word, ask, type MenuOpts } from '../games/strings'
+import { wordButton, yesNo, listExit } from './sheet'
+import { yes } from './camp'
 import { playEnding } from './ending'
 import { onClose } from './sheet'
 import { openSettings, reducedMotion, viewMode } from './settings'
@@ -392,10 +394,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
 
   // ---------------------------------------------------------------- menus
-  let pending: { resolve: (n: number) => void; items: string[] } | null = null
+  let pending: { resolve: (n: number) => void; items: string[]; keys?: string[] } | null = null
   /** a click, tap or key skips the current script pause */
   let skipPause: (() => void) | null = null
-  function menu(items: string[], opts: { prompt?: string; vertical?: boolean; notes?: string[] } = {}): Promise<number> {
+  function menu(items: string[], opts: MenuOpts = {}): Promise<number> {
     return new Promise((resolve) => {
       if (opts.prompt) print(opts.prompt, false)
       const single = items.length === 1
@@ -418,12 +420,14 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         menuBar.innerHTML = ''
       } else {
         const label = (t: string) => (single && CONTINUE_PROMPTS.includes(t) ? 'Continue' : t)
-        menuBar.innerHTML = items.map((t, i) =>
-          `<button class="${single ? 'primary' : ''}" data-i="${i}"><u>${escape(label(t)[0])}</u>${escape(label(t).slice(1))}</button>`).join('')
+        // the hot key underlined: the choice's own (the game's capital, spec/D-appendices/strings.md §4.1), else its first letter
+        const at = (t: string, i: number) => { const k = opts.keys?.[i]?.[0]; const j = k ? label(t).toUpperCase().indexOf(k) : 0; return j < 0 ? 0 : j }
+        menuBar.innerHTML = items.map((t, i) => { const l = label(t), j = at(t, i)
+          return `<button class="${single ? 'primary' : ''}" data-i="${i}">${escape(l.slice(0, j))}<u>${escape(l[j] ?? '')}</u>${escape(l.slice(j + 1))}</button>` }).join('')
         menuBar.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => choose(Number(b.dataset.i))))
         menuBar.querySelector<HTMLButtonElement>('button')?.focus()
       }
-      pending = { resolve, items }
+      pending = { resolve, items, keys: opts.keys }
       pad.classList.add('disabled')
     })
   }
@@ -1187,19 +1191,21 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const party = engine.party()
       drawRoster()
       print(`${nameOf(engine.cur)} is selected (choose from the party list).`, true)
-      const opts = ['CREATE', 'DROP', 'MODIFY', 'TRAIN', 'VIEW', 'ADD', 'REMOVE', 'SAVE', 'BEGIN']
-      const o = opts[await menu(opts, { prompt: 'Choose a function:' })]
+      // the party screen's functions as the game names them (its table, PoR DS:0619, CotAB DS:0553;
+      // FUN_417f_0161, CotAB 0x36A1C), the key each one's first letter
+      const fns = (['partyCreate', 'partyDrop', 'partyModify', 'partyTrain', 'partyView', 'partyAdd', 'partyRemove', 'partySave', 'partyBegin'] as const).map(entry)
+      const o = await ask(menu, fns, { prompt: 'Choose a function:' })
       const c = engine.cur
-      if (o === 'BEGIN') return
-      if (o === 'VIEW') await campUi.view()
-      else if (o === 'SAVE') await saveGame()
-      else if (o === 'CREATE') {
+      if (o === 'B' || o === '') return
+      if (o === 'V') await campUi.view()
+      else if (o === 'S') await saveGame()
+      else if (o === 'C') {
         const made = await tools.create(t)
         if (made) {
           await saveCharacter({ stem: fileStem(nameOf(made)), sav: made, spc: effectsFile(startEffects(made)) })
           print(`${nameOf(made)} has been created. Use Add to put them in the party.`, false)
         }
-      } else if (o === 'ADD') {
+      } else if (o === 'A') {
         if (party.length >= R.join.members || party.filter((m) => m[F.morale] < 0x80).length >= R.join.pcs) { print('The party is full.', false); continue }
         const inParty = new Set(party.map(nameOf))
         const roster = (await listCharacters()).filter((r) => !inParty.has(nameOf(r.sav)))
@@ -1211,27 +1217,27 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           if (engine.items) recalc(added, engine.itemsOf(added), engine.items)
           print(`${nameOf(added)} joins the party.`, false)
         }
-      } else if (o === 'REMOVE') {
+      } else if (o === 'R') {
         if (party.length <= 1) { print('The party needs at least one character.', false); continue }
         await saveCharacter({ stem: fileStem(nameOf(c)), sav: c.slice(), itm: itemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })
         engine.dropMember(c)
         print(`${nameOf(c)} leaves the party (still available to Add).`, false)
-      } else if (o === 'DROP') {
+      } else if (o === 'D') {
         if (party.length <= 1) { print('The party needs at least one character.', false); continue }
         if (await tools.confirm(`${nameOf(c)} will be gone forever. Drop this character?`)) {
           engine.dropMember(c)
           print(`${nameOf(c)} has been dropped.`, false)
         }
-      } else if (o === 'MODIFY') {
+      } else if (o === 'M') {
         if ((c[F.xp] | c[F.xp + 1] | c[F.xp + 2] | c[F.xp + 3]) !== 0) print(`${nameOf(c)}${msg('cantModify')}`, false)
         else if (await tools.modify(c)) { if (engine.items) recalc(c, engine.itemsOf(c), engine.items); print(`${nameOf(c)} has been modified.`, false) }
-      } else if (o === 'TRAIN') {
+      } else if (o === 'T') {
         const chk = checkTraining(t, c, engine.read(0x6da8))
         drawRoster()
         if (!chk.ok) { print(chk.message, false); continue }
         print(`${nameOf(c)}${msg('willBecome')}`, true)
         for (const line of willBecome(c, chk.train)) print(line, false)
-        if ((await menu(['YES', 'NO'], { prompt: msg('wishToTrain').trimEnd() })) !== 0) continue
+        if (!(await yes({ menu }, msg('wishToTrain').trimEnd()))) continue
         print(msg('congratulations'), false)
         if (train(t, engine, c, chk.train)) {
           const choices = newSpellChoices(t, c)
@@ -1302,27 +1308,32 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     if (it && t) {
       const store = opts.mode === 'shop' || opts.mode === 'temple'
       if (opts.confirm === 'drop') actions = `<p>Your ${escape(t.name(it))} will be gone forever. ${escape(msg('dropIt').trimEnd())}</p>
-        <button data-a="drop-yes">Yes</button><button data-a="cancel">No</button>`
+        ${yesNo('data-a="drop-yes"')}`
       else if (opts.confirm === 'sell') actions = `<p>${escape(msg('illGiveYou'))}${sellOffer(it)}${escape(msg('goldForYour'))}${escape(t.name(it))} ${escape(msg('isItADeal').trimEnd())}</p>
-        <button data-a="sell-yes">Yes</button><button data-a="cancel">No</button>`
+        ${yesNo('data-a="sell-yes"')}`
       else if (opts.confirm === 'id') actions = `<p>${escape(msg('identifyFor'))}${escape(t.name(it))} ${escape(msg('identifyDeal').trimEnd())}</p>
-        <button data-a="id-yes">Yes</button><button data-a="cancel">No</button>`
+        ${yesNo('data-a="id-yes"')}`
       else if (opts.confirm === 'use' && opts.use) {
         const u = opts.use, st = engine.spells
         if (u.spell === undefined) actions = '<p>Cast which spell?</p>' + u.ids.map((id, k) =>
-          `<button data-a="use-spell-${k}">${escape(st?.get(id)?.name ?? `#${id}`)}</button>`).join('') + '<button data-a="cancel">Exit</button>'
-        else if (u.combatOnly) actions = '<p>That Item is a combat-only item... Use it?</p><button data-a="use-waste">Yes</button><button data-a="cancel">No</button>'
+          `<button data-a="use-spell-${k}">${escape(st?.get(id)?.name ?? `#${id}`)}</button>`).join('') + listExit('data-a="cancel"')
+        else if (u.combatOnly) actions = '<p>That Item is a combat-only item... Use it?</p>' + yesNo('data-a="use-waste"')
         else actions = `<p>Cast ${escape(st?.get(u.spell)?.name ?? '')} on:</p>` + engine.party().map((n, k) =>
-          `<button data-a="use-on-${k}">${escape(parseCharacter(n).name)}</button>`).join('') + '<button data-a="cancel">Exit</button>'
+          `<button data-a="use-on-${k}">${escape(parseCharacter(n).name)}</button>`).join('') + listExit('data-a="cancel"')
       }
       else if (opts.confirm === 'scribe') actions = `<p>${escape(c.name)} was going to scribe from that scroll</p><p>${escape(msg('okayToLose').trimEnd())}</p>
-        <button data-a="scribe-yes">Yes</button><button data-a="cancel">No</button>`
+        ${yesNo('data-a="scribe-yes"')}`
       else if (opts.confirm === 'trade') actions = `<p>${escape(msg('tradeWithWhom'))}</p>` + others.map((n, k) =>
-        `<button data-a="trade-${k}">${escape(parseCharacter(n).name)}</button>`).join('') + '<button data-a="cancel">Exit</button>'
-      else actions = `<button data-a="ready">${it.ready ? 'Un' : ''}<u>R</u>eady</button><button data-a="use"><u>U</u>se</button>` +
-        (others.length ? '<button data-a="trade"><u>T</u>rade</button>' : '') +
-        '<button data-a="drop"><u>D</u>rop</button><button data-a="halve"><u>H</u>alve</button><button data-a="join"><u>J</u>oin</button>' +
-        (store ? '<button data-a="sell"><u>S</u>ell</button><button data-a="id"><u>I</u>d</button>' : '')
+        `<button data-a="trade-${k}">${escape(parseCharacter(n).name)}</button>`).join('') + listExit('data-a="cancel"')
+      // the items menu's words (FUN_4894_0ef8, CotAB 0x3EAB3): "Ready", " Use", " Trade", " Drop", " Halve", " Join", " Sell", " Id";
+      // "Un" before Ready on a readied item is the port's
+      else {
+        const ready = word('itemReady', 'R')
+        actions = wordButton('data-a="ready"', it.ready ? { ...ready, text: ready.text.toLowerCase() } : ready, it.ready ? 'Un' : '') + wordButton('data-a="use"', word('itemUse', 'U')) +
+          (others.length ? wordButton('data-a="trade"', word('itemTrade', 'T')) : '') +
+          wordButton('data-a="drop"', word('itemDrop', 'D')) + wordButton('data-a="halve"', word('itemHalve', 'H')) + wordButton('data-a="join"', word('itemJoin', 'J')) +
+          (store ? wordButton('data-a="sell"', word('itemSell', 'S')) + wordButton('data-a="id"', word('itemId', 'I')) : '')
+      }
     }
     const enc = node[F.load] | (node[F.load + 1] << 8), cap = capacity(node)
     const tb = getTables(), xpNext = tb ? xpProgress(tb, node) : null
@@ -1409,11 +1420,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       if (!m) return `<div class="money-actions">${canTrade ? '<button data-m="trade">Trade money</button>' : ''}<button data-m="drop">Drop money</button></div>`
       const party = engine.party()
       if (m.op === 'trade' && m.to === undefined) return `<div class="money-actions"><p>${escape(msg('tradeTo'))}</p>${party.map((n, k) =>
-        `<button data-m="to-${k}">${escape(parseCharacter(n).name)}</button>`).join('')}<button data-m="exit">Exit</button></div>`
+        `<button data-m="to-${k}">${escape(parseCharacter(n).name)}</button>`).join('')}${listExit('data-m="exit"')}</div>`
       if (m.type === undefined) return `<div class="money-actions"><p>${escape(msg('selectCoin').trimEnd())}</p>${coins.map((x) =>
-        `<button data-m="type-${x.i}">${MONEY[x.i]} ${x.v}</button>`).join('')}<button data-m="exit">Exit</button></div>`
+        `<button data-m="type-${x.i}">${MONEY[x.i]} ${x.v}</button>`).join('')}${listExit('data-m="exit"')}</div>`
       return `<div class="money-actions"><form class="money-amount"><label>How much ${escape(COIN_PROMPT[m.type])}will you ${m.op}? <input type="number" min="0" max="${c.money[m.type]}" value="${c.money[m.type]}"></label>
-        <button>OK</button><button type="button" data-m="exit">Exit</button></form></div>`
+        <button>OK</button>${listExit('type="button" data-m="exit"')}</form></div>`
     }
     const again = (o: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use' | 'scribe'; use?: UseStep; after?: 'drop' | 'trade' | 'sell'; money?: MoneyStep; combat?: boolean; castOn?: number; abilityOn?: Ability }) => {
       drawRoster()
@@ -1902,8 +1913,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     pad.classList.remove('disabled')
     // View and Area are left out (IMP-061): a party card opens the sheet, the map is on screen; the
     // keys V and A still work, and Area shows where the map is hidden (phones held sideways)
-    menuBar.innerHTML = ['Area', 'Encamp', 'Search', 'Look']
-      .map((c) => `<button data-cmd="${c[0]}" class="${c === 'Area' ? 'area-only' : ''}${c === 'Search' && engine.B[0x6dca - 0x6b00] & 1 ? ' on' : ''}"><u>${c[0]}</u>${c.slice(1)}</button>`).join('') +
+    // the game's words (its main menu, PoR FUN_3e76_0989, CotAB 0x2F7EF: "Area Cast View Encamp Search Look")
+    menuBar.innerHTML = ['A', 'E', 'S', 'L'].map((k) => word('main', k))
+      .map(({ text: c, key: k }) => { const j = Math.max(0, c.toUpperCase().indexOf(k))
+        return `<button data-cmd="${k}" class="${k === 'A' ? 'area-only' : ''}${k === 'S' && engine.B[0x6dca - 0x6b00] & 1 ? ' on' : ''}">${escape(c.slice(0, j))}<u>${escape(c[j] ?? '')}</u>${escape(c.slice(j + 1))}</button>` }).join('') +
       // everything that is not a game command sits behind ☰ (IMP-057)
       `<button class="menu-btn" data-cmd="menu" title="Journal, commissions, save, settings, rules, quit (Esc)">☰ Menu${commissionsDue() ? ' <span class="due">•</span>' : ''}</button>`
     menuBar.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => command(b.dataset.cmd!)))
@@ -1998,7 +2011,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     if (pending) {
       const items = pending.items
       if ((e.key === 'Enter' || e.key === ' ') && items.length === 1) { e.preventDefault(); choose(0); return }
-      const i = items.findIndex((t) => t[0]?.toUpperCase() === e.key.toUpperCase())
+      // a key chooses the choice it is a hot key of (the last one, as FUN_53aa_03bd's scan), else the first letter
+      const K = e.key.toUpperCase(), keys = pending.keys
+      const hot = (j: number) => keys?.[j] || (items[j][0]?.toUpperCase() ?? '')
+      const i = K.length !== 1 ? -1 : keys ? items.reduce((f, _, j) => (hot(j).includes(K) ? j : f), -1) : items.findIndex((_, j) => hot(j) === K)
       if (i >= 0) { e.preventDefault(); choose(i) }
       else if (/^[1-9]$/.test(e.key) && Number(e.key) <= items.length) { e.preventDefault(); choose(Number(e.key) - 1) }
       return

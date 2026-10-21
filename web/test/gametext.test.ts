@@ -8,6 +8,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { GameText, mergedImage, text } from '../src/data/gametext'
 import { COAB, POR, type GameProfile } from '../src/games/profile'
+import { menuWords } from '../src/games/strings'
 
 const TOOLS = join(__dirname, '..', '..', 'tools')
 const games = [['por', process.env.POOLRAD ?? ''], ['coab', process.env.COAB ?? '']] as const
@@ -59,6 +60,7 @@ export function addressed(g: GameProfile): [string, number][] {
   g.title.credits.lines.forEach(([, , , a], i) => out.push([`credits.${i}`, a]))
   if (g.ecl.wipeBanner !== null) out.push(['ecl.wipeBanner', g.ecl.wipeBanner])
   for (const [t, h] of Object.entries(g.spells.handlers)) walk(`spells.${t}`, h, false)
+  for (const [id, a] of Object.entries(g.menus)) out.push([`menus.${id}`, a as number])
   return out
 }
 
@@ -83,6 +85,55 @@ describe('game text by address', () => {
       const none = new GameText(null)
       expect(none.read(0x1000)).toBeNull()
       expect(text(0x1e8ec)).toMatch(/^#1E8EC$|./)
+    })
+  }
+})
+
+/**
+ * The hot keys of every menu as the original's rule splits it (games/strings.ts menuWords): one string of
+ * each word's keys, in order. The keys are what the routines compare the key pressed with (the code acts
+ * on them); the menus' text is checked by hash above.
+ */
+const KEYS: Record<string, Record<string, string>> = {
+  por: {
+    main: 'ACVESL', camp: 'SVMRAE', magic: 'CMSDRE', alter: 'ODSIPE', orderSelect: 'SE', orderPlace: 'PE',
+    campFaster: 'F', campSlower: 'S', campSpeedExit: 'E', rest: 'RYHMIDE', yesNo: 'YN', listExit: 'E',
+    shop: 'BVTPSAE', shopNoPool: 'BVPAE', temple: 'HVTPSAE', templeNoPool: 'HVPAE', templeHeal: 'HE',
+    treasureMoney: 'VTPS', treasureItems: 'VTP', treasureNone: 'VPE', treasureDetect: 'DE', treasureExit: 'E', take: 'MIE',
+    appraiseGems: 'G', appraiseJewelry: 'J', appraiseExit: 'E', sell: 'S', sellKeep: 'SK',
+    battleMove: 'M', battleViewAim: 'VA', battleUse: 'U', battleCast: 'C', battleTurn: 'T', battleQuickDone: 'QD',
+    doneGuard: 'G', doneDelayQuit: 'DQ', doneBandage: 'B', doneSpeedExit: 'SE', battleSlower: 'S', battleFaster: 'F', battleSpeedExit: 'E', aim: 'CE',
+    encounterParlay: 'CWFP', encounterAdvance: 'CWFA', parlay: 'HSNMA', doorBash: 'B', doorPick: 'P', doorKnock: 'K', doorExit: 'E',
+    itemReady: 'R', itemUse: 'U', itemTrade: 'T', itemDrop: 'D', itemHalve: 'H', itemJoin: 'J', itemSell: 'S', itemId: 'I',
+    viewTrade: 'T', viewDrop: 'D', viewExit: 'E', modify: 'KE',
+    iconMain: 'P12SE', iconHeadWeapon: 'HWE', iconParts: 'WBSALE', iconEdit: 'NPKE', iconSmall: 'S', iconLarge: 'L', iconHair: 'H', iconFace: 'F',
+  },
+}
+KEYS.coab = { ...KEYS.por, camp: 'SVMRAFE', rest: 'RDHMASE' }
+/** the party screen's functions: one string each, its first letter the key */
+const ENTRIES: Record<string, string> = { partyCreate: 'C', partyDrop: 'D', partyModify: 'M', partyTrain: 'T', partyView: 'V', partyAdd: 'A',
+  partyRemove: 'R', partyLoad: 'L', partySave: 'S', partyBegin: 'B', partyExit: 'E' }
+
+describe('menus by address', () => {
+  it('the splitting rule: words begin at capitals and digits; the ECL rule for ~', () => {
+    expect(menuWords('Rest   daYs Hours Mins').map((w) => [w.text, w.key])).toEqual([['Rest', 'R'], ['daYs', 'Y'], ['Hours', 'H'], ['Mins', 'M']])
+    expect(menuWords(' Detect Exit').map((w) => w.text)).toEqual(['Detect', 'Exit'])
+    expect(menuWords('~ONE ~TWO').map((w) => [w.text, w.key])).toEqual([['One', 'O'], ['Two', 'T']])
+    expect(menuWords('Weapon xxxx Leg').map((w) => w.text)).toEqual(['Weapon', 'Leg'])
+  })
+  for (const [g, dir] of [[POR, process.env.POOLRAD ?? ''], [COAB, process.env.COAB ?? '']] as const) {
+    const have = dir !== '' && existsSync(join(dir, 'START.EXE')) && existsSync(join(dir, 'GAME.OVR'))
+    it.skipIf(!have)(`${g.id}: every menu decodes to the words the code acts on`, () => {
+      const t = new GameText(mergedImage(new Uint8Array(readFileSync(join(dir, 'START.EXE'))), new Uint8Array(readFileSync(join(dir, 'GAME.OVR')))))
+      const got: Record<string, string> = {}, entries: Record<string, string> = {}
+      for (const [id, a] of Object.entries(g.menus)) {
+        const s = t.read(a as number)
+        expect(s, `${id} at ${(a as number).toString(16)}`).not.toBeNull()
+        if (id in ENTRIES) entries[id] = s!.trim()[0]
+        else got[id] = menuWords(s!).map((w) => w.key).join('')
+      }
+      expect(got).toEqual(KEYS[g.id])
+      expect(entries).toEqual(ENTRIES)
     })
   }
 })

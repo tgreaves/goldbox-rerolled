@@ -8,13 +8,14 @@ import { CombatView, type Figure, type Sprite } from '../render/combatview'
 import { F } from '../games/fields'
 import type { SoundMode } from '../games/sound'
 import { Line, cycle, fight, footprint, type AimEntry, type Battle, type CombatUi, type Fighter, type Flight, type SpriteFrame } from '../rules/combat'
-import { msg } from '../games/strings'
+import { msg, word, type MenuOpts } from '../games/strings'
+import { yes, list } from './camp'
 
 export interface BattleScreen {
   engine: Engine
   files: GameFiles
   canvas: HTMLCanvasElement
-  menu(items: string[], opts?: { prompt?: string; vertical?: boolean; notes?: string[] }): Promise<number>
+  menu(items: string[], opts?: MenuOpts): Promise<number>
   print(text: string, clear?: boolean): void
   /** a skippable wait (a click, tap or key ends it early) */
   pause(ms: number): Promise<void>
@@ -221,7 +222,7 @@ export async function runBattle(s: BattleScreen) {
    * A step by key, tap or planned walk (IMP-044). With `menu` the commands stay up at the same time
    * (IMP-053): a choice resolves as { choice }, Enter is left to the menu.
    */
-  const awaitStep = (f: Fighter, left: number, menu: { items: string[]; prompt: string } | null) => new Promise<StepResult>((resolve) => {
+  const awaitStep = (f: Fighter, left: number, menu: { items: string[]; prompt: string; keys?: string[] } | null) => new Promise<StepResult>((resolve) => {
       // carrying on along a planned walk, unless something stopped the combatant on the way
       if (walking && walking.dirs.length && walking.at.x === f.x && walking.at.y === f.y && f.r[6] > 1) {
         const d = walking.dirs.shift()!
@@ -283,7 +284,7 @@ export async function runBattle(s: BattleScreen) {
           draw()
         },
       })
-      if (menu) void s.menu(menu.items, { prompt: menu.prompt }).then((i) => done({ choice: i }, true))
+      if (menu) void s.menu(menu.items, { prompt: menu.prompt, keys: menu.keys }).then((i) => done({ choice: i }, true))
       else void s.menu(['END MOVE', 'UNDO'], { prompt: `${msg('moveLeft')}${left}` }).then((i) => done(i === 0 ? 'end' : 'undo', true))
     })
 
@@ -333,7 +334,7 @@ export async function runBattle(s: BattleScreen) {
     pause: (ms = 120) => s.pause(ms),
     menu: (items, opts) => s.menu(items, opts),
     step: (f, left) => awaitStep(f, left, null) as Promise<number | 'end' | 'undo'>,
-    command: (f, items, prompt, left) => awaitStep(f, left, { items, prompt }),
+    command: (f, items, prompt, left, keys) => awaitStep(f, left, { items, prompt, keys }),
     aim: (f, entries, prompt, allowCell, area) => new Promise<AimEntry | null>((resolve) => {
       const ok = entries.filter((x) => x.ok)
       const base = ok.map((x) => ({ row: x.y, col: x.x, colour: '#e05050' }))
@@ -378,15 +379,17 @@ export async function runBattle(s: BattleScreen) {
         },
       })
       const labels = ok.map((x) => `${x.f ? String.fromCharCode(...x.f.c.subarray(F.name + 1, F.name + 1 + x.f.c[F.name])) : 'there'} (range ${x.cost >> 1}${x.note ? `, ${x.note}` : ''})`)
-      void s.menu([...labels, 'EXIT'], { prompt: ok.length ? prompt : `${prompt} nobody in range`, vertical: true })
+      // the list replaces the original's Next/Prev/Manual/Center; its Exit is the aim menu's (FUN_3aae_2aa0, CotAB 0x2D577)
+      const ex = word('aim', 'E')
+      void s.menu([...labels, ex.text.toUpperCase()], { prompt: ok.length ? prompt : `${prompt} nobody in range`, vertical: true, keys: [...labels.map(() => ''), ex.key] })
         .then((i) => finish(i < ok.length ? ok[i] : null, true))
     }),
-    confirm: async (prompt) => (await s.menu(['YES', 'NO'], { prompt })) === 0,
+    confirm: (prompt) => yes(s, prompt),
     view: (c) => s.view(c),
     sound: (n, mode) => s.sound(n, mode),
     pick: async (prompt, items, notes) => {
       if (!items.length) return -1
-      const i = await s.menu([...items, 'EXIT'], { prompt, vertical: true, notes })
+      const i = await list(s, items, { prompt, notes })
       return i < items.length ? i : -1
     },
   }
@@ -401,7 +404,7 @@ export async function runBattle(s: BattleScreen) {
   ui.confirm = (prompt) => raced(confirm0(prompt), false)
   ui.pick = (prompt, items, notes) => raced(pick0(prompt, items, notes), -1)
   const command0 = ui.command!.bind(ui)
-  ui.command = (f, items, prompt, left) => raced(command0(f, items, prompt, left), { choice: Math.max(0, items.indexOf('END TURN')) })
+  ui.command = (f, items, prompt, left, keys) => raced(command0(f, items, prompt, left, keys), { choice: Math.max(0, items.indexOf('END TURN')) })
   s.onSkip?.(() => { if (battle) { battle.debugWin(); skipNow() } })
   s.canvas.hidden = false
   // the hidden "Magic On/Off" key (DS:6E30): Alt-M, or '2' during a computer-run turn; whether

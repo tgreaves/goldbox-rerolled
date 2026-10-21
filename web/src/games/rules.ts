@@ -141,6 +141,16 @@ export interface GameRules {
   /** innate effects a new character gets, permanent, power 0xFF, in this order: by race, then by class id
    *  (PoR spec/A-games/engine/chargen-and-progression.md; CotAB 0x371F6, 0x37647) */
   startEffects: { race: Record<number, number[]>; cls: Record<number, number[]> }
+  /**
+   * The camp's Fix (CotAB 0x320D8, spec/A-games/coab/camp.md), one procedure (rules/camp.ts `fix`): the
+   * healing the party's cures can give. `cures`: each counted spell (its memorised copies in Okay members,
+   * then, after the rest, one per cleric slot of its `level`), the dice it rolls, the rest minutes per slot
+   * (`minutes`), the rest's base when any slot of it is counted (`base`, the larger wins), and the weight it
+   * adds to the estimate the rest is shortened by (per `group`, the largest present); `start`: that
+   * estimate's first value (CotAB: 14, an uninitialised variable, I). Pool of Radiance has no Fix: its
+   * profile gives CotAB's procedure its own cure (IMP-048).
+   */
+  fix: { cures: { spell: number; level: number; dice: number; sides: number; bonus: number; minutes: number; base: number; group: number; weight: number }[]; start: number }
   /** CotAB's paladin abilities from the View menu (0x3D530 + 0x35F0 …): Lay on Hands heals 2 × level once a
    *  day (effect 0x8C), Cure Disease has uses that a weekly effect 0x8D refills to (level − 1) div 5 + 1 */
   paladin: { layOnHands: { perLevel: number; effect: number; minutes: number }; cureDisease: { effect: number; minutes: number; levelsPerUse: number; initial: number } } | null
@@ -288,6 +298,8 @@ export const POR_RULES: GameRules = {
   saveCon: null,
   startEffects: { race: { 1: [0x5a, 0x61, 0x1a, 0x2f], 2: [0x6b], 3: [0x61, 0x12, 0x2f, 0x30], 4: [0x7c], 5: [0x5a, 0x61] }, cls: {} },
   paladin: null,
+  // no Fix in PoR: CotAB's procedure (0x320D8) with PoR's one cure, Cure Light Wounds (IMP-048)
+  fix: { cures: [{ spell: 3, level: 1, dice: 1, sides: 8, bonus: 0, minutes: 15, base: 240, group: 0, weight: 27 }], start: 14 },
   join: { pcs: 6, members: 8, maxRangers: null, evil: [], paladins: false },
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
     { kind: 'ccw', gp: 600 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 }, { kind: 'curse', gp: 3500 }, { kind: 'stone', gp: 2000 }],
@@ -362,6 +374,11 @@ export const COAB_RULES: GameRules = {
   join: { pcs: 6, members: 8, maxRangers: 3, evil: [2, 5, 8], paladins: true },
   startEffects: { race: { 1: [0x61, 0x1a, 0x2f], 2: [0x6b], 3: [0x61, 0x12, 0x2f, 0x30], 4: [0x7c], 5: [0x61] }, cls: { 3: [8], 4: [0x86], 10: [0x86] } },
   paladin: { layOnHands: { perLevel: 2, effect: 0x8c, minutes: 1440 }, cureDisease: { effect: 0x8d, minutes: 10080, levelsPerUse: 5, initial: 1 } },
+  // 0x31CC2 / 0x31D7D: Cure Light 1d8, Serious 2d8+1, Critical 3d8+3; 0x31E8D: minutes 15/60/75 per cleric
+  // slot of levels 1/4/5, base 4 h (level 1) or 6 h (4 or 5), weights 0x1B, 0x22, 0x4E
+  fix: { cures: [{ spell: 3, level: 1, dice: 1, sides: 8, bonus: 0, minutes: 15, base: 240, group: 0, weight: 27 },
+    { spell: 58, level: 4, dice: 2, sides: 8, bonus: 1, minutes: 60, base: 360, group: 1, weight: 34 },
+    { spell: 71, level: 5, dice: 3, sides: 8, bonus: 3, minutes: 75, base: 360, group: 1, weight: 78 }], start: 14 },
   // 0x50C6B: dwarves, halflings or the Girdle of the Dwarves (effect 6): CON 4–6 +1 … 18 +5; everyone CON 19+ +1 … +4.
   // Added to the stored save number, which makes the save harder (the shipped TRAVIS: 12 + 4 = 16; I: a bug)
   saveCon: { save: 0, races: [1, 5], itemEffect: 6, from: 4, bands: [[6, 1], [10, 2], [13, 3], [17, 4], [18, 5]], all: [[20, 1], [22, 2], [24, 3], [25, 4]] },

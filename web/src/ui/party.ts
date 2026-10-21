@@ -24,7 +24,7 @@ import { exportName, importsFrom, rosterFrom, saveFiles, savesFrom, unzip, zip, 
 import { parseSave, saveArea, saveBlock } from '../data/save'
 import type { Start } from './explore'
 import type { Dice } from '../rules/dice'
-import { msg } from '../games/strings'
+import { msg, entry } from '../games/strings'
 
 const MAX_PARTY = 6
 
@@ -100,24 +100,25 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
       if (p) blit(ic, toImageData(p), 0, 0)
     })
     const has = party.length > 0
-    // the original's functions and hot keys, grouped by what they are for (IMP-073); Train and Save,
-    // which this screen never offers, are left out
+    // the original's functions, named as its table names them (PoR DS:0619, CotAB DS:0553; strings.md
+    // §4.1), and hot keys, grouped by what they are for (IMP-073); Train and Save, which this screen
+    // never offers, are left out; Continue, the demo, Export, Import and Exit (to the title) are the port's
     const canAdd = party.length < MAX_PARTY && roster.some((c) => !party.includes(c.stem))
     type Fn = { k: string; label: string; on: boolean; hint: string; off?: string; main?: boolean }
     const groups: { title: string; fns: Fn[] }[] = [
       { title: 'Play', fns: [
         ...(auto ? [{ k: 'O', label: 'Continue', on: true, main: true, hint: `the autosave of ${new Date(auto.savedAt).toLocaleString()}` }] : []),
-        { k: 'B', label: 'Begin adventuring', on: has, main: !auto && has, hint: 'with this party', off: 'add or create a character first' },
-        { k: 'L', label: 'Load saved game', on: true, hint: 'slots A–J' },
+        { k: 'B', label: entry('partyBegin').text, on: has, main: !auto && has, hint: 'with this party', off: 'add or create a character first' },
+        { k: 'L', label: entry('partyLoad').text, on: true, hint: 'slots A–J' },
         ...(nav.demo ? [{ k: 'W', label: 'Watch the demo', on: true, hint: "the game's own demo" }] : []),
       ] },
       { title: 'Party', fns: [
-        { k: 'A', label: 'Add character', on: canAdd, hint: 'from your roster', off: party.length >= MAX_PARTY ? 'the party is full' : 'no one else in the roster' },
-        { k: 'C', label: 'Create character', on: tables !== null, hint: 'roll a new one', off: 'needs START.EXE: re-import the game' },
-        { k: 'R', label: 'Remove character', on: has, hint: 'back to the roster', off: 'no one in the party' },
-        { k: 'V', label: 'View character', on: has, hint: 'the selected one', off: 'no one in the party' },
-        { k: 'M', label: 'Modify character', on: has && tables !== null, hint: 'abilities and hit points', off: 'no one in the party' },
-        { k: 'D', label: 'Drop character', on: has, hint: 'delete for good', off: 'no one in the party' },
+        { k: 'A', label: entry('partyAdd').text, on: canAdd, hint: 'from your roster', off: party.length >= MAX_PARTY ? 'the party is full' : 'no one else in the roster' },
+        { k: 'C', label: entry('partyCreate').text, on: tables !== null, hint: 'roll a new one', off: 'needs START.EXE: re-import the game' },
+        { k: 'R', label: entry('partyRemove').text, on: has, hint: 'back to the roster', off: 'no one in the party' },
+        { k: 'V', label: entry('partyView').text, on: has, hint: 'the selected one', off: 'no one in the party' },
+        { k: 'M', label: entry('partyModify').text, on: has && tables !== null, hint: 'abilities and hit points', off: 'no one in the party' },
+        { k: 'D', label: entry('partyDrop').text, on: has, hint: 'delete for good', off: 'no one in the party' },
       ] },
       { title: 'Files', fns: [
         { k: 'X', label: 'Export saved game', on: true, hint: 'as the original\'s files' },
@@ -128,7 +129,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
     const button = (f: Fn) => {
       const at = Math.max(0, f.label.toUpperCase().indexOf(f.k))
       return `<button data-k="${f.k}" class="${f.main ? 'primary' : ''}" ${f.on ? '' : 'disabled'} title="${escape(f.on ? f.hint : f.off ?? '')}">
-        <span>${f.label.slice(0, at)}<u>${f.label[at]}</u>${f.label.slice(at + 1)}</span><small>${escape(f.on ? f.hint : f.off ?? f.hint)}</small></button>`
+        <span>${escape(f.label.slice(0, at))}<u>${escape(f.label[at] ?? '')}</u>${escape(f.label.slice(at + 1))}</span><small>${escape(f.on ? f.hint : f.off ?? f.hint)}</small></button>`
     }
     nav2.innerHTML = groups.map((g) => `<section class="fgroup"><h2>${g.title}</h2><div class="fbtns">${g.fns.map(button).join('')}</div></section>`).join('')
   }

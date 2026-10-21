@@ -172,6 +172,7 @@ set of differences** throughout; how the port realises them is in parts B and C.
 | [spells.md](A-games/coab/spells.md) | spell handlers by id, the new spells, durations, quirks |
 | [effects.md](A-games/coab/effects.md) | event lists, changed and new handlers, item kinds, monster-class flags, the target hook |
 | [combat.md](A-games/coab/combat.md) | the battlefield generators, the cell table, casting |
+| [camp.md](A-games/coab/camp.md) | the camp's Fix, the rest prompt, the silent rest |
 | [assets.md](A-games/coab/assets.md) | DAX families, the 3D view's sky and ground, BIGPIC, title and start-up, sound |
 
 ## Part B: the engine model ([B-model/](B-model/))

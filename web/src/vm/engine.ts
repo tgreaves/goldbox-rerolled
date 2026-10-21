@@ -5,7 +5,7 @@
 import { R, classLevel } from '../games/rules'
 import { installNames } from '../data/character'
 import { installText, text } from '../data/gametext'
-import { msg } from '../games/strings'
+import { msg, menu as gameMenu, ask, items as menuItems, type MenuOpts } from '../games/strings'
 import { canonical, native, viewRead, type EclVariant } from '../games/ecl'
 import { game } from '../games/profile'
 import type { SoundMode } from '../games/sound'
@@ -65,7 +65,7 @@ export interface Io {
   /** Text for the text window; clear = PRINT_CLEAR / new screen of text. */
   print(text: string, clear: boolean): void
   /** A menu; resolves to the 0-based choice. `enter` = a one-item "press Enter" prompt. */
-  menu(items: string[], opts?: { prompt?: string; vertical?: boolean }): Promise<number>
+  menu(items: string[], opts?: MenuOpts): Promise<number>
   inputNumber(): Promise<number>
   inputText(): Promise<string>
   /** Show a picture (null clears). */
@@ -814,7 +814,9 @@ export class Engine {
       }
       case 0x2c: {
         this.readops(6)
-        const c = await this.io.menu(['HAUGHTY', 'SLY', 'NICE', 'MEEK', 'ABUSIVE'])
+        // the game's "~HAUGHTY ~SLY ~NICE ~MEEK ~ABUSIVE" (FUN_29c3_25cb, CotAB 0x1B007), by the ECL menu rule
+        const w = menuItems(gameMenu('parlay'))
+        const c = await this.io.menu(w.labels, { keys: w.keys })
         this.store(this.addr(6), this.val(c + 1) & 0xff)
         break
       }
@@ -995,13 +997,11 @@ export class Engine {
     const s8 = (v: number) => (v << 24) >> 24
     const hasClass = (k: number) => list.some((c) => s8(c[F.levels + k]) > 0)
     const knockCaster = () => list.find((c) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).includes(0x1f))
-    const opts: [string, string][] = []
-    if (this.doorTries.bash) opts.push(['BASH', 'b'])
-    if (this.doorTries.pick && hasClass(6)) opts.push(['PICK', 'p'])
-    if (this.doorTries.knock && (kind === 2 ? !!knockCaster() : hasClass(5))) opts.push(['KNOCK', 'k'])
-    if (!opts.length) return false // FUN_3e76_0000: nothing left to try
-    opts.push(['EXIT', 'e'])
-    const k = opts[await this.io.menu(opts.map((o) => o[0]), { prompt: msg('locked').trimEnd() })]?.[1]
+    // the game's pieces, each when it applies: "Bash", " Pick", " Knock", then " Exit"
+    const words = [...(this.doorTries.bash ? gameMenu('doorBash') : []), ...(this.doorTries.pick && hasClass(6) ? gameMenu('doorPick') : []),
+      ...(this.doorTries.knock && (kind === 2 ? !!knockCaster() : hasClass(5)) ? gameMenu('doorKnock') : [])]
+    if (!words.length) return false // FUN_3e76_0000: nothing left to try
+    const k = (await ask((l, o) => this.io.menu(l, o), [...words, ...gameMenu('doorExit')], { prompt: msg('locked').trimEnd() })).toLowerCase()
     let ok = false
     if (k === 'b') ok = this.bashDoor(kind)
     else if (k === 'p') {
@@ -1180,7 +1180,9 @@ export class Engine {
       const t = [0, 1, 2].map((j) => texts[(dist + j) % 3]).find((s) => s)
       if (t) this.io.print(t, true)
       const close = dist === 0 || this.A[NO_OVERLAND - A0] === 0
-      let c = await this.io.menu(['COMBAT', 'WAIT', 'FLEE', close ? 'PARLAY' : 'ADVANCE'])
+      // the game's "~COMBAT ~WAIT ~FLEE ~PARLAY" or "… ~ADVANCE" (FUN_29c3_1ef8, CotAB 0x1A90D), by the ECL menu rule
+      const w = menuItems(gameMenu(close ? 'encounterParlay' : 'encounterAdvance'))
+      let c = await this.io.menu(w.labels, { keys: w.keys })
       if (c === 3 && close) c = 4
       if (r[c] >= 5) return
       const act = ENCOUNTER[r[c]][c]

@@ -193,8 +193,8 @@ game texts (§2).
 | "⇄ Games", "Switch game, import another, or remove one", "⚙ Settings", "Assets" | app-flow §5 |
 | the groups **Play**, **Party**, **Files** and every function's label and second line (Continue "the autosave of *date*", Begin adventuring "with this party" / "add or create a character first", …) | app-flow §5 (table) |
 | "*Name* has been created. Use Add to put them in the party.", "*Name* has been modified.", "*Name* joins the party.", "*Name* leaves the party (still available to Add).", "*Name* will be gone forever. Drop this character?", "*Name* has been dropped." | [screens.md §1](../C-port/screens.md#1-the-party-screens-functions) |
-| "Create a character", Race, Gender, Class, Alignment, "Not open to a *Race*", "Not allowed for a *Class*", "Changing race, gender or class rolls the character again, as the original rolls after those choices. Alignment does not.", "*Class* is not open to a *Race*: now *Class*.", "*Alignment* is not allowed for a *Class*: now *Alignment*.", Reroll, Name, "up to 15 letters", Head, Body, Weapon, Size, Small, Large, Body, Arm, Leg, Hair/Face, Shield, Weapon, "Colour 1", "Colour 2", Cancel, Create, "Give the character a name." | [screens.md §1.1](../C-port/screens.md#11-create-character) |
-| "Modify *Name*", Exit, Keep; "Combat icon", "old: ready, action", "new: ready, action" | screens §1.2, §1.6 |
+| "Create a character", Race, Gender, Class, Alignment, "Not open to a *Race*", "Not allowed for a *Class*", "Changing race, gender or class rolls the character again, as the original rolls after those choices. Alignment does not.", "*Class* is not open to a *Race*: now *Class*.", "*Alignment* is not allowed for a *Class*: now *Alignment*.", Reroll, Name, "up to 15 letters", Head, Body (the portrait), Cancel, Create (the icon's Head, Weapon, Size, Small, Large, parts and colours are the editor's words, §4.1), "Give the character a name." | [screens.md §1.1](../C-port/screens.md#11-create-character) |
+| "Modify *Name*" (its Keep and Exit are the game's, §4.1); "Combat icon", "old: ready, action", "new: ready, action" | screens §1.2, §1.6 |
 | "Add character", "*Race Class*, level *a*/*b*", Cancel | screens §1.3 |
 | "Load saved game", "Autosave: *label*", "*x*: *label*", "(conflict copy, this browser's | another device's)", "(game files): *Name*'s party", "block *b* area *a*", "There are no saved games." | [screens.md §1.7](../C-port/screens.md#17-load-saved-game) |
 | "Export saved game", "Slot *x* exported: unzip it into the game folder to play it in DOSBox.", "There are no saved games in this browser.", "Slot *x* already holds a saved game. Replace it?", "*Name* is already in the roster. Replace?", "Imported into slot *x*; use Load to play.", "Added to the roster: *names*.", " Skipped: missing *files*.", "Nothing imported.", "Nothing imported; missing *files*.", "Choose a SAVGAM file (A to J) with its CHRDAT files, characters (…), or a ZIP of them.", "Import failed: *message*" | [screens.md §1.8](../C-port/screens.md#18-export-and-import) |
@@ -220,7 +220,7 @@ game texts (§2).
 | the sheet: Equipped, Carried, "Nothing else.", the slot labels, "Ammunition", "Also readied", "not for this class", "Drag an item onto a name to give it:", "Encumbrance *n* of *m* coins", "Pick an item to ready, use, trade or drop it.", "Ready: …", "Unready: …", "no change to AC, THAC0, damage or movement", "Can't ready: …", "Traded to *Name*.", "That scroll is marked for scribing: use Trade to give it.", "Cast which spell?", "Cast *Spell* on:", "The item is used up.", Spells, "(combat)", "Only in combat.", Abilities, "*Ability*: heal whom?", "… cure whom?", "*Name* is not diseased. Cure anyway?", "Trade money", "Drop money", "How much *coin* will you *trade/drop*?", "On Quick: the computer plays *Name* in battle.", "Play by hand", "*Name* will be played by hand in battle.", "Space or Take control to play them yourself.", "Items need the ITEMS file and START.EXE: …" | [screens.md §3](../C-port/screens.md#3-the-character-sheet) |
 | treasure: "Treasure", "Coins go to the one selected", "Coins", "Each coin counts 1 towards the load. …", Take, " slows them", "Share evenly", "Pool the party's coins", "Detect Magic (*Name*): magic items get a *", "Take all…", "Items", "usable by *names*", "no one in the party can use it", "better for *Name*: …", "cannot take things now", "Nothing left.", "Done", "*Name* takes …", "Shared; what nobody could carry is still here.", "Shared.", "The party's coins are pooled here.", "Magic items now show a *.", "A suggested split (not in the original): …", "leave it", "shared evenly", Confirm, Cancel, "No room for: *items*.", "These will be left behind:", "Leave them", "Go back" | [screens.md §4](../C-port/screens.md#4-treasure) |
 | shops: "Buy", All, Weapons, Armour, Other, "Only what *Name* can use", Price, Weight, "If readied instead", "can't ready: …", "no change", "Not enough money", "Nothing here.", "*Name* buys *item*.", "*Name* has *n* gp in coins.", "Take which?", "How much *coin*?", "The pool holds *coins*.", "Healing for *Name*:" | [screens.md §5](../C-port/screens.md#5-shops-and-temples) |
-| camp: "The party makes camp...", "Magic:", "Spells in Memory:" and the other list prompts as the port words them, "Memorize", "Cleric spells", "Magic-User spells", "Level *L*", "*u* of *t* slots", "Pending: tap to clear", "No spells of this level in the book.", "*Name* cannot memorize any spells.", "*n* spells to learn: rest …", "Nothing pending.", "No free slot of that level.", "Clear pending", "Display: …", "The last character cannot leave the party here.", "Monster pictures and portraits are always shown here.", Fix and its messages | [screens.md §6](../C-port/screens.md#6-camp) |
+| camp: "The party makes camp...", "Magic:", "Spells in Memory:" and the other list prompts as the port words them, "Memorize", "Cleric spells", "Magic-User spells", "Level *L*", "*u* of *t* slots", "Pending: tap to clear", "No spells of this level in the book.", "*Name* cannot memorize any spells.", "*n* spells to learn: rest …", "Nothing pending.", "No free slot of that level.", "Clear pending", "Display: …", "The last character cannot leave the party here.", "Monster pictures and portraits are always shown here." | [screens.md §6](../C-port/screens.md#6-camp) |
 | training hall: "*Name* is selected (choose from the party list).", "Choose a function:", "The party is full.", "The party needs at least one character.", "*Name* will become:", "Spells to choose from:" | [screens.md §7.6](../C-port/screens.md#76-training-hall) |
 | journal, commissions, rules reference, debug, settings: every label and message given there | [screens.md](../C-port/screens.md) §8–§12, [ui-contract.md §9](../C-port/ui-contract.md#9-settings) |
 | the account section | [accounts-and-sync.md §6](../C-port/accounts-and-sync.md#6-the-account-section) |
@@ -229,7 +229,7 @@ game texts (§2).
 
 | Text | Where |
 |---|---|
-| VIEW, AIM, USE, CAST, TURN, GUARD, DELAY, BANDAGE, UNDO, QUICK, END TURN, SPEED (the original's words, the port's row), "*Name*: Move Left = *n*", SLOWER, FASTER, END MOVE | [combat-ui.md §4](../C-port/combat-ui.md#4-the-command-row) |
+| the command row (the game's words, §4.1, in the port's row) with the port's UNDO and END TURN, "*Name*: Move Left = *n*", SLOWER, FASTER, END MOVE | [combat-ui.md §4](../C-port/combat-ui.md#4-the-command-row) |
 | "Take control", "Magic: On", "Magic: Off", the two tooltips, "Debug" | combat-ui §4 |
 | "Path: *n* steps, *c* of *L* movement. Tap the green square again to go.", "Can't get there (Move Left = *L*)", "Tap the yellow square again to cast there.", "*Name* (range *d*, ≈*p*% to hit, *dice*)", "there (range *d*)", " nobody in range" | [combat-ui.md §5](../C-port/combat-ui.md#5-input), §6 |
 | the info box's words: "unhurt", "lightly wounded", "wounded", "badly wounded", "helpless", "coughing", "charmed", "animated", "running", "unconscious", "dying", "dead", "stoned", "gone"; "Round *n*" | [combat-ui.md §7](../C-port/combat-ui.md#7-information) |
@@ -460,6 +460,75 @@ by the gender byte (0 his), then `share`.
 | `notHere` | Area refused | 0x2F0DB | `FUN_3e76_0989` | 0x2F7E6 | 0x2F7EF |
 | `partyOrder` | Alter Order | 0x30F50 | `FUN_3f81_1780` | 0x315C4 | 0x31604 |
 
+### 4.1 Menus
+
+The original's menus are single strings of words handed to its menu routine; the port reads each one
+by address (the profile's `menus`, [B-model/profile.md](../B-model/profile.md)) and splits it as the
+original does (**O**, 2026-10-21):
+
+- **The menu routine's rule** (PoR `FUN_53aa_00cb` called by the horizontal menu `FUN_53aa_03bd`;
+  CotAB 0x5194A, menu 0x51C48): a word begins at every capital letter or digit (the set at
+  `53aa:00AB`) and ends two characters before the next word begins; the key pressed, upper-cased, is
+  compared with every character of the string and chooses the word that begins at the last match;
+  Space returns at once; the caller acts on the key. So a word's hot key is its capital ("daYs" is Y),
+  spaces only separate, and a run with no capital (CotAB's and PoR's "xxxx" in the icon editor, filled
+  in at run time) is no word.
+- **The ECL menu rule** (PoR `FUN_2fea_156d` called by `FUN_2fea_1684`; CotAB 0x21063, 0x2117A), for the
+  engine's menus written with `~`: every capital or digit is first lowered by 0x20, then each `~` is
+  dropped and the character after it raised and taken as that word's key ("~COMBAT ~WAIT" is shown
+  "Combat Wait", keys C and W); the routine returns the index of the key among those keys.
+- **In the port** each space-separated run with a capital or digit is one choice, labelled with the
+  run in capitals (as the game's font shows it, [rendering.md §5](../C-port/rendering.md#5-the-game-font))
+  on menus and in the game's own case on panels, its hot key that capital, underlined; a key chooses
+  the last choice it is the hot key of. The code acts on the key as the original's caller does (by
+  position for the rest prompt, whose keys differ between the games). A menu built from several
+  strings (the combat commands, the Done submenu, the treasure menu, the locked door, the speed
+  prompts) has one id per piece, joined as the routine joins them, each piece only where the routine
+  adds it. The party screen's functions are one string per entry (the table PoR `DS:0619`, CotAB
+  `DS:0553`, 0x2A bytes each), the key its first letter.
+- **Unreadable**: a menu that cannot be read shows one choice, `#` and its address, with no key
+  (choosing it does what Esc does); a single word the port asks for by its key shows `#` and the
+  address with that key; a menu a game has no address for has no words.
+
+| Id | What | PoR image | shown by | CotAB image | shown by |
+|---|---|---|---|---|---|
+| `main` | "Area Cast View Encamp Search Look" (the command bar's Area, Encamp, Search, Look) | 0x0CC76 | `FUN_3e76_0989` | 0x0AFB8 | 0x2F7EF |
+| `camp` | camp menu (CotAB with Fix) | 0x0CCC8 | `FUN_3f81_1e6f` | 0x0B00A | 0x321CB |
+| `magic` | Magic | 0x0CCF1 | `FUN_3f81_13f1` | 0x0B033 | 0x31275 |
+| `alter` | Alter | 0x0CD1A | `FUN_3f81_1c59` | 0x0B05C | 0x31AD8 |
+| `orderSelect`, `orderPlace` | Order: "Select Exit", "Place Exit" (`DS:0584`, CotAB `DS:04A6`, + 0x29·*k*) | 0x0CD44, 0x0CD6D | `FUN_3f81_1780` | 0x0B086, 0x0B0AF | 0x31604 |
+| `campFaster`, `campSlower`, `campSpeedExit` | camp speed: " Faster" (speed > 0), " Slower" (< 9), " Exit" | 0x31265, 0x3126D, 0x31275 | `FUN_3f81_1a97` | 0x318D9, 0x318E1, 0x318E9 | 0x3191B |
+| `rest` | duration prompt: start, days, hours, minutes, more, less, exit | 0x3BB39 | `FUN_4b46_0721` | 0x415AA | 0x415F1 |
+| `yesNo` | every Yes/No question | 0x44B4A | `FUN_53aa_10d1` | 0x52A2D | 0x52A54 |
+| `listExit` | a vertical list's " Exit" (every list the port ends with Exit) | 0x44834 | `FUN_53aa_0d9a` | 0x52709 | 0x5270F |
+| `shop`, `shopNoPool` | shop, with and without money in the pool | 0x1FB74, 0x1FB9B | `FUN_2f70_053e` | 0x1F67D, 0x1F6A4 | 0x1F747 |
+| `temple`, `templeNoPool` | temple, the same | 0x1DD7F, 0x1DDA7 | `FUN_2d14_0d09` | 0x1D3BF, 0x1D3E7 | 0x1D489 |
+| `templeHeal` | the cures list's "Heal Exit" | 0x1DB0D | `FUN_2d14_09d7` | 0x1D1B7 | 0x1D1C1 |
+| `treasureMoney`, `treasureItems`, `treasureNone`, `treasureDetect`, `treasureExit` | treasure: "View Take Pool Share" (money), "View Take Pool" (items only), "View Pool Exit" (neither); then " Detect Exit" (items, Detect Magic ready) or " Exit" | 0x1EED0, 0x1EEE5, 0x1EEAE, 0x1EEC3, 0x1EEBD | `FUN_2e08_0ecd` | 0x1E726, 0x1E73B, 0x1E704, 0x1E719, 0x1E713 | 0x1E7A3 |
+| `take` | treasure Take: "Money Items Exit" | 0x1EDA7 | `FUN_2e08_0d38` | 0x1E5FD | 0x1E60E |
+| `appraiseGems`, `appraiseJewelry`, `appraiseExit`, `sell`, `sellKeep` | appraise: "  Gems", "  Jewelry", " Exit"; "Sell" or "Sell Keep" | 0x3DC12, 0x3DC19, 0x3DC23, 0x3DC50, 0x3DC55 | `FUN_4c2d_19b2` | 0x43648, 0x4364F, 0x43659, 0x43686, 0x4368B | 0x436B8 |
+| `battleMove` … `battleQuickDone` | combat commands: "Move ", "View Aim ", "Use ", "Cast ", "Turn ", "Quick Done" | 0x226B9, 0x226BF, 0x226C9, 0x226CE, 0x226D4, 0x226DA | `FUN_320c_0666` | 0x2244B, 0x22451, 0x2245B, 0x22460, 0x22466, 0x2246C | 0x224B8 |
+| `doneGuard` … `doneSpeedExit` | Done: "Guard ", "Delay Quit ", "Bandage ", "Speed Exit" | 0x22EBE, 0x22EC5, 0x22ED1, 0x22EDA | `FUN_320c_0e45` | 0x22CEC, 0x22CF3, 0x22CFF, 0x22D08 | 0x22D33 |
+| `battleSlower`, `battleFaster`, `battleSpeedExit` | combat speed: "Slower " (< 9), "Faster " (> 0), "Exit" | 0x231A1, 0x231A9, 0x231B1 | `FUN_320c_10f6` | 0x22F15, 0x22F1D, 0x22F25 | 0x22F2A |
+| `aim` | "Center Exit" (after "Next Prev Manual "): the target list's Exit | 0x2D56F | `FUN_3aae_2aa0` | 0x2D566 | 0x2D577 |
+| `encounterParlay`, `encounterAdvance` | encounter: "~COMBAT ~WAIT ~FLEE ~PARLAY" / "… ~ADVANCE" | 0x1BACB, 0x1BAE7 | `FUN_29c3_1ef8` | 0x1A8B0, 0x1A8CC | 0x1A90D |
+| `parlay` | "~HAUGHTY ~SLY ~NICE ~MEEK ~ABUSIVE" | 0x1C1D8 | `FUN_29c3_25cb` | 0x1AFE4 | 0x1B007 |
+| `doorBash`, `doorPick`, `doorKnock`, `doorExit` | locked door: "Bash", " Pick", " Knock" (each when offered), " Exit" | 0x2F4AC, 0x2F4B1, 0x2F4B7, 0x2F4BE | `FUN_3e76_0d6d` | 0x2FA6F, 0x2FA74, 0x2FA7A, 0x2FA81 | 0x2FA90 |
+| `itemReady` … `itemId` | items menu: "Ready", " Use", " Trade", " Drop", " Halve", " Join", " Sell", " Id" | 0x397C3, 0x397C9, 0x397CE, 0x397D5, 0x397DB, 0x397E2, 0x397E8, 0x397EE | `FUN_4894_0ef8` | 0x3EA3E, 0x3EA44, 0x3EA49, 0x3EA50, 0x3EA56, 0x3EA5D, 0x3EA63, 0x3EA69 | 0x3EAB3 |
+| `viewTrade`, `viewDrop`, `viewExit` | the view menu's "Trade ", "Drop ", "Exit" | 0x393BB, 0x393C2, 0x393C8 | `FUN_4894_0ab3` | 0x3E062, 0x3E069, 0x3E07B | 0x3E0A0 |
+| `partyCreate` … `partyExit` | the party screen's functions (Create New Character … Exit to DOS; CotAB adds Human Change Classes, not used) | 0x0CDD9 + 0x2A·*i* | `FUN_417f_0161` | 0x0B133, 0x0B15D, 0x0B187, 0x0B1B1, then 0x0B205 + 0x2A·*i* | 0x36A1C |
+| `modify` | Modify: "Keep Exit" | 0x33885 | `FUN_417f_209f` | 0x39076 | 0x39080 |
+| `iconMain`, `iconHeadWeapon`, `iconParts`, `iconEdit` | icon editor levels 1, 2, 3, 5 (`DS:07BF`, CotAB `DS:0723`, + 0x29·level) | 0x0CFA8, 0x0CFD1, 0x0CFFA, 0x0D04C | `FUN_417f_382d` | 0x0B32C, 0x0B355, 0x0B37E, 0x0B3D0 | 0x3A716 |
+| `iconSmall`, `iconLarge`, `iconHair`, `iconFace` | the icon editor's "Small", "Large" (level 4), "Hair", "Face" (level 3's third word) | 0x34FD0, 0x34FD6, 0x34FDC, 0x34FE1 | `FUN_417f_382d` | 0x3A6BB, 0x3A6C1, 0x3A6DA, 0x3A6DF | 0x3A716 |
+
+The two games' menus differ in three places: CotAB's camp has Fix
+([A-games/coab/camp.md](../A-games/coab/camp.md)), its rest prompt reads "Rest Days Hours Mins Add
+Subtract Exit" (D days, A more, S less; PoR "Rest   daYs Hours Mins   Inc Dec   Exit", Y, I, D), and its
+icon editor's colours are "1st-color" and "2nd-color" (PoR "color-1", "color-2").
+
+Validation: `web/test/gametext.test.ts` reads every menu address of both games, checks each string's
+hash with the others (`text-hashes.json`) and that each splits into the hot keys the code acts on.
+
 ## 5. Texts in the profile data
 
 Texts that belong to a game's data rather than to a shared procedure are image addresses in that data
@@ -493,11 +562,15 @@ copies they replaced before those were removed).
 
 ## 6. Still worded by the port
 
-- The **menu words** (EXIT, YES, NO, SAVE, TAKE …): the port's menus are buttons (IMP-010) labelled
-  with the original's menu words in capitals; the original's menus are single strings (the camp's
-  "Save View Magic Rest Alter Exit", §2) that a later step can read and split.
+- **Menu words the games have no string for** (§4.1): FIX in Pool of Radiance's camp (IMP-048);
+  UP and DOWN for Alter → Order (IMP-030, the original moves the highlight with Home/End and places it);
+  the battle row's UNDO and END TURN (Done → Quit, IMP-054), END MOVE and Take control, Magic: On/Off;
+  CONTINUE and PRESS ENTER on a single-choice prompt; "Un" before Ready on a readied item; the sheet's
+  "Trade money" and "Drop money" and the amount's OK; the party screen's Continue, Watch the demo,
+  Export saved game, Import saved game and Exit (to the title, where the original's is "Exit to DOS");
+  the rest prompt's selected field in brackets.
 - The **list prompts the port rewords** ("Spells in Memory:", "Spells to be memorized: …"), the party
-  screen and its functions (IMP-073), the slot dialogs ("Save in which slot?"), the icon editor (IMP-017,
+  screen's groups and second lines (IMP-073), the slot dialogs ("Save in which slot?"), the icon editor (IMP-017,
   no "Is this icon ok?"), the sheet's own lines, and every text of §3.
 - Messages the original builds from pieces the port has not split ("*Name* has died", "Nothing to use",
   "Use:", "Cast from scroll:", "Target for", "*Name* reacts", "*Name* misses"): no string of their own

@@ -3,12 +3,13 @@
 import type { GameFiles } from '../store/gamefiles'
 import { parseCharacter } from '../data/character'
 import type { StoredCharacter } from '../store/user'
-import { escape, onClose } from './sheet'
+import { escape, onClose, wordButton, listExit } from './sheet'
+import { word } from '../games/strings'
 import { toImageData, EGA, COMBAT_EGA, type Picture } from '../data/image'
 import { blit, sizeCanvas } from '../render/upscale'
 import { Tables, abilityRange, combatStats, hpMax, hpMin, modifyStep } from '../rules/chargen'
 import { buildIcon } from '../render/icon'
-import { createCharacter } from './newchar'
+import { createCharacter, iconWords } from './newchar'
 import { F } from '../games/fields'
 import type { Dice } from '../rules/dice'
 
@@ -31,7 +32,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, dice: 
 
   function confirm(text: string): Promise<boolean> {
     return new Promise((resolve) => {
-      dialog.innerHTML = `<p>${escape(text)}</p><form method="dialog" class="yn"><button value="y" class="primary"><u>Y</u>es</button><button value="n"><u>N</u>o</button></form>`
+      dialog.innerHTML = `<p>${escape(text)}</p><form method="dialog" class="yn">${wordButton('value="y" class="primary"', word('yesNo', 'Y'))}${wordButton('value="n"', word('yesNo', 'N'))}</form>`
       onClose(dialog, () => resolve(dialog.returnValue === 'y'))
       dialog.showModal()
     })
@@ -42,7 +43,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, dice: 
     return new Promise((resolve) => {
       let done = false
       dialog.innerHTML = `<h2>${title}</h2><ol class="pick">${items.map((t, i) =>
-        `<li><button data-i="${i}">${escape(t)}</button></li>`).join('')}</ol><form method="dialog"><button>Exit</button></form>`
+        `<li><button data-i="${i}">${escape(t)}</button></li>`).join('')}</ol><form method="dialog">${listExit('')}</form>`
       const stop = onClose(dialog, () => { if (!done) resolve(null) })
       dialog.querySelectorAll<HTMLButtonElement>('ol button').forEach((b) => b.addEventListener('click', () => {
         done = true
@@ -72,7 +73,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, dice: 
   /** Combat icon editor (FUN_417f_382d), as one panel; returns false if cancelled. */
   function iconEditor(c: Uint8Array): Promise<boolean> {
     const kept = c.slice(F.iconHead, F.iconColours + 6)
-    const PARTS = ['Body', 'Arm', 'Leg', 'Hair/Face', 'Shield', 'Weapon']
+    const iw = iconWords(), PARTS = iw.parts
     let part = 0
     return new Promise((resolve) => {
       let done = false
@@ -82,14 +83,14 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, dice: 
           <figure><canvas class="pixel ic" width="24" height="24"></canvas><canvas class="pixel ic" width="24" height="24"></canvas><figcaption>new: ready, action</figcaption></figure>
         </div>
         <div class="iconctl">
-          <span>Head</span><button data-x="head-">◀</button><output data-o="head"></output><button data-x="head+">▶</button>
-          <span>Weapon</span><button data-x="weapon-">◀</button><output data-o="weapon"></output><button data-x="weapon+">▶</button>
-          <span>Size</span><button data-x="size" class="wide"></button>
+          <span>${escape(iw.head)}</span><button data-x="head-">◀</button><output data-o="head"></output><button data-x="head+">▶</button>
+          <span>${escape(iw.weapon)}</span><button data-x="weapon-">◀</button><output data-o="weapon"></output><button data-x="weapon+">▶</button>
+          <span>${escape(iw.size)}</span><button data-x="size" class="wide"></button>
         </div>
         <div class="parts">${PARTS.map((n, i) => `<button data-part="${i}">${n}</button>`).join('')}</div>
-        <div class="palette"><span>Colour 1</span>${EGA.map((rgb, i) => `<button class="sw" data-c1="${i}" style="background:rgb(${rgb})" aria-label="colour ${i}"></button>`).join('')}</div>
-        <div class="palette"><span>Colour 2</span>${EGA.map((rgb, i) => `<button class="sw" data-c2="${i}" style="background:rgb(${rgb})" aria-label="colour ${i}"></button>`).join('')}</div>
-        <form method="dialog" class="yn"><button value="e"><u>E</u>xit</button><button value="k" class="primary"><u>K</u>eep</button></form>`
+        <div class="palette"><span>${escape(iw.colour1)}</span>${EGA.map((rgb, i) => `<button class="sw" data-c1="${i}" style="background:rgb(${rgb})" aria-label="colour ${i}"></button>`).join('')}</div>
+        <div class="palette"><span>${escape(iw.colour2)}</span>${EGA.map((rgb, i) => `<button class="sw" data-c2="${i}" style="background:rgb(${rgb})" aria-label="colour ${i}"></button>`).join('')}</div>
+        <form method="dialog" class="yn">${wordButton('value="e"', word('iconEdit', 'E'))}${wordButton('value="k" class="primary"', word('iconEdit', 'K'))}</form>`
       const [o1, o2, n1, n2] = [...dialog.querySelectorAll<HTMLCanvasElement>('canvas.ic')]
       const old = c.slice()
       paintIcon(o1, buildIcon(files, old, false))
@@ -99,7 +100,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, dice: 
         paintIcon(n2, buildIcon(files, c, true))
         dialog.querySelector('[data-o="head"]')!.textContent = String(c[F.iconHead])
         dialog.querySelector('[data-o="weapon"]')!.textContent = String(c[F.iconBody])
-        dialog.querySelector('[data-x="size"]')!.textContent = c[F.iconSize] === 2 ? 'Large' : 'Small'
+        dialog.querySelector('[data-x="size"]')!.textContent = iw.sizeName(c[F.iconSize])
         dialog.querySelectorAll<HTMLButtonElement>('[data-part]').forEach((b) => b.classList.toggle('on', Number(b.dataset.part) === part))
         dialog.querySelectorAll<HTMLButtonElement>('[data-c1]').forEach((b) => b.classList.toggle('on', Number(b.dataset.c1) === (c[F.iconColours + part] & 0xf)))
         dialog.querySelectorAll<HTMLButtonElement>('[data-c2]').forEach((b) => b.classList.toggle('on', Number(b.dataset.c2) === c[F.iconColours + part] >> 4))
@@ -153,7 +154,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, dice: 
       }
       dialog.innerHTML = `<h2>Modify ${escape(parseCharacter(c).name)}</h2>
         <table class="modify"><tbody></tbody></table>
-        <form method="dialog" class="yn"><button value="e"><u>E</u>xit</button><button value="k" class="primary"><u>K</u>eep</button></form>`
+        <form method="dialog" class="yn">${wordButton('value="e"', word('modify', 'E'))}${wordButton('value="k" class="primary"', word('modify', 'K'))}</form>`
       dialog.querySelector('tbody')!.addEventListener('click', (e) => {
         const b = (e.target as HTMLElement).closest('button')
         const row = (e.target as HTMLElement).closest('tr')

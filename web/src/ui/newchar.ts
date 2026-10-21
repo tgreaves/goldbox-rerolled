@@ -15,12 +15,27 @@ import {
 } from '../rules/chargen'
 import type { Dice } from '../rules/dice'
 import { escape, onClose } from './sheet'
+import { word } from '../games/strings'
 import { F } from '../games/fields'
 
 const STATS = ['STR', 'INT', 'WIS', 'DEX', 'CON', 'CHA']
-const ICON_PARTS = ['Body', 'Arm', 'Leg', 'Hair/Face', 'Shield', 'Weapon']
+/**
+ * The combat icon editor's words (FUN_417f_382d, CotAB 0x3A716; spec/D-appendices/strings.md §4.1): the
+ * parts of its level-3 menu in colour-byte order (C1 … C6, Hair and Face as one part), Head and Weapon
+ * (level 2), Size and the two colours (level 1), Small and Large.
+ */
+export function iconWords() {
+  const p = (k: string) => word('iconParts', k).text
+  return {
+    parts: [p('B'), p('A'), p('L'), `${word('iconHair', 'H').text}/${word('iconFace', 'F').text}`, p('S'), p('W')],
+    head: word('iconHeadWeapon', 'H').text, weapon: word('iconHeadWeapon', 'W').text, size: word('iconMain', 'S').text,
+    colour1: word('iconMain', '1').text, colour2: word('iconMain', '2').text,
+    sizeName: (size: number) => (size === 2 ? word('iconLarge', 'L') : word('iconSmall', 'S')).text,
+  }
+}
 
 export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, dice: Dice, t: Tables): Promise<Uint8Array | null> {
+  const iw = iconWords()
   const picture = (family: string, id: number): Picture | null => {
     const raw = files.record(family, id)
     try { return raw ? parseRecord(raw).frames[0].picture : null } catch { return null }
@@ -100,13 +115,13 @@ export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, dic
           <div class="nc-icon">
             <canvas class="pixel ic" width="24" height="24"></canvas><canvas class="pixel ic" width="24" height="24"></canvas>
             <div class="iconctl">
-              <span>Head</span><button type="button" data-x="head-">◀</button><output>${c[F.iconHead]}</output><button type="button" data-x="head+">▶</button>
-              <span>Weapon</span><button type="button" data-x="weapon-">◀</button><output>${c[F.iconBody]}</output><button type="button" data-x="weapon+">▶</button>
-              <span>Size</span><button type="button" data-x="size" class="wide">${c[F.iconSize] === 2 ? 'Large' : 'Small'}</button>
+              <span>${escape(iw.head)}</span><button type="button" data-x="head-">◀</button><output>${c[F.iconHead]}</output><button type="button" data-x="head+">▶</button>
+              <span>${escape(iw.weapon)}</span><button type="button" data-x="weapon-">◀</button><output>${c[F.iconBody]}</output><button type="button" data-x="weapon+">▶</button>
+              <span>${escape(iw.size)}</span><button type="button" data-x="size" class="wide">${escape(iw.sizeName(c[F.iconSize]))}</button>
             </div>
-            <div class="parts">${ICON_PARTS.map((n, i) => `<button type="button" data-part="${i}" class="${i === part ? 'on' : ''}">${n}</button>`).join('')}</div>
-            <div class="palette"><span>Colour 1</span>${EGA.map((rgb, i) => `<button type="button" class="sw ${(c[F.iconColours + part] & 0xf) === i ? 'on' : ''}" data-c1="${i}" style="background:rgb(${rgb})" aria-label="colour ${i}"></button>`).join('')}</div>
-            <div class="palette"><span>Colour 2</span>${EGA.map((rgb, i) => `<button type="button" class="sw ${c[F.iconColours + part] >> 4 === i ? 'on' : ''}" data-c2="${i}" style="background:rgb(${rgb})" aria-label="colour ${i}"></button>`).join('')}</div>
+            <div class="parts">${iw.parts.map((n, i) => `<button type="button" data-part="${i}" class="${i === part ? 'on' : ''}">${n}</button>`).join('')}</div>
+            <div class="palette"><span>${escape(iw.colour1)}</span>${EGA.map((rgb, i) => `<button type="button" class="sw ${(c[F.iconColours + part] & 0xf) === i ? 'on' : ''}" data-c1="${i}" style="background:rgb(${rgb})" aria-label="colour ${i}"></button>`).join('')}</div>
+            <div class="palette"><span>${escape(iw.colour2)}</span>${EGA.map((rgb, i) => `<button type="button" class="sw ${c[F.iconColours + part] >> 4 === i ? 'on' : ''}" data-c2="${i}" style="background:rgb(${rgb})" aria-label="colour ${i}"></button>`).join('')}</div>
           </div>
         </section>
       </div>

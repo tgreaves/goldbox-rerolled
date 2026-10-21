@@ -21,6 +21,7 @@ B ([B-model/profile.md](../../B-model/profile.md), [procedures.md](../../B-model
 | [spells.md](spells.md) | spell handlers by id: which match PoR, which changed, the new spells 58–100, durations, quirks |
 | [effects.md](effects.md) | the effect system: event lists (0–23), changed and new handlers, item effects, monster-class flags |
 | [combat.md](combat.md) | the battlefield: grid builder 0x25CC0, the wilderness passes (river, trees and logs, scatter; no finishing pass), the cell table DS:26A4 |
+| [camp.md](camp.md) | the camp's Fix (0x320D8: the cures counted, the silent rest, the shared-out healing), the rest prompt's words, the silent rest loop |
 | [assets.md](assets.md) | DAX families (new SKY, BIGPIC, TILES; no SQRPACI/BACPAC/ICON/FINAL), the 3D view's sky, the BIGPIC overland, title and start-up, code wheel, sound |
 
 ## Working image

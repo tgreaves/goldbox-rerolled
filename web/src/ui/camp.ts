@@ -6,14 +6,14 @@ import { spellText } from '../rules/spelltext'
 import type { Engine } from '../vm/engine'
 import { parseCharacter } from '../data/character'
 import type { Spell } from '../data/spells'
-import { clearPending, freeSlots, knows, memorise, memorised, preparation, readableScrolls, restStep, startRest, isScroll } from '../rules/camp'
+import { clearPending, freeSlots, knows, memorise, memorised, preparation, readableScrolls, restStep, startRest, isScroll, fix as fixParty } from '../rules/camp'
 import { castOutside, targetKind, forget } from '../rules/magic'
-import { msg, type StringId } from '../games/strings'
+import { msg, menu, word, ask, type StringId, type MenuOpts, type MenuWord } from '../games/strings'
 import { text } from '../data/gametext'
 
 export interface CampUi {
   engine: Engine
-  menu(items: string[], opts?: { prompt?: string; vertical?: boolean; notes?: string[] }): Promise<number>
+  menu(items: string[], opts?: MenuOpts): Promise<number>
   print(text: string, clear?: boolean): void
   view(): Promise<void>
   save(): Promise<void>
@@ -28,7 +28,16 @@ export interface CampUi {
 }
 
 const nameOf = (c: Uint8Array) => parseCharacter(c).name
-const yes = async (ui: CampUi, prompt: string) => (await ui.menu(['YES', 'NO'], { prompt })) === 0
+/** the Yes/No question (PoR FUN_53aa_10d1, CotAB 0x52A54): the game's "Yes No" */
+export const yes = async (ui: Pick<CampUi, 'menu'>, prompt: string) => (await ask((l, o) => ui.menu(l, o), menu('yesNo'), { prompt })) === 'Y'
+/**
+ * A vertical list (PoR FUN_53aa_0d9a, CotAB 0x5270F) of `names` and the list's Exit, the game's word:
+ * the index chosen, `names.length` for Exit.
+ */
+export async function list(ui: Pick<CampUi, 'menu'>, names: string[], opts: MenuOpts = {}): Promise<number> {
+  const x = word('listExit', 'E')
+  return ui.menu([...names, x.text.toUpperCase()], { vertical: true, ...opts, keys: [...names.map(() => ''), x.key] })
+}
 
 /** the Display window's fixed names (PoR FUN_3f81_0fbc, CotAB 0x30DDA): the game's string for an effect type */
 const effectName = (type: number) => { const a = game().effects.names[type]; return a === undefined ? '' : text(a) }
@@ -45,18 +54,21 @@ export async function camp(ui: CampUi): Promise<boolean> {
   const state = { heal: 0 }
   for (const c of e.party()) clearPending(c, e.itemsOf(c), e.items)
   ui.print(msg('makesCamp'), true)
+  // the game's camp menu; Pool of Radiance has no Fix, the port adds the later games' (IMP-048)
+  const words: MenuWord[] = [...menu('camp')]
+  if (!words.some((w) => w.key === 'F')) words.splice(Math.max(0, words.length - 1), 0, { text: 'Fix', key: 'F' })
   for (;;) {
-    const o = await ui.menu(['SAVE', 'VIEW', 'MAGIC', 'REST', 'ALTER', 'FIX', 'EXIT'], { prompt: msg('camp').trimEnd() })
-    if (o === 0) {
+    const o = await ask((l, op) => ui.menu(l, op), words, { prompt: msg('camp').trimEnd() })
+    if (o === 'S') {
       // Save, then "Quit TO DOS" Yes/No, asked even after a cancelled save (PoR FUN_3f81_1e6f at
       // 0x31766, CotAB 0x322D0); Yes ends the game
       await ui.save()
       if (await yes(ui, msg('quitToDos').trimEnd())) { quit = true; break }
-    } else if (o === 1) await ui.view()
-    else if (o === 2) { if (await magic(ui, state)) break }
-    else if (o === 3) { if (await rest(ui, state)) break }
-    else if (o === 4) await alter(ui)
-    else if (o === 5) { if (await fix(ui, state)) break }
+    } else if (o === 'V') await ui.view()
+    else if (o === 'M') { if (await magic(ui, state)) break }
+    else if (o === 'R') { if (await rest(ui, state)) break }
+    else if (o === 'A') await alter(ui)
+    else if (o === 'F') { if (await fix(ui, state)) break }
     else break
   }
   for (const c of e.party()) clearPending(c, e.itemsOf(c), e.items)
@@ -67,12 +79,12 @@ export async function camp(ui: CampUi): Promise<boolean> {
 /** Magic menu; returns true when a rest was interrupted. */
 async function magic(ui: CampUi, state: { heal: number }): Promise<boolean> {
   for (;;) {
-    const o = await ui.menu(['CAST', 'MEMORIZE', 'SCRIBE', 'DISPLAY', 'REST', 'EXIT'], { prompt: 'Magic:' })
-    if (o === 0) await cast(ui)
-    else if (o === 1) await memorize(ui)
-    else if (o === 2) await scribe(ui)
-    else if (o === 3) display(ui)
-    else if (o === 4) { if (await rest(ui, state)) return true }
+    const o = await ask((l, op) => ui.menu(l, op), menu('magic'), { prompt: 'Magic:' })
+    if (o === 'C') await cast(ui)
+    else if (o === 'M') await memorize(ui)
+    else if (o === 'S') await scribe(ui)
+    else if (o === 'D') display(ui)
+    else if (o === 'R') { if (await rest(ui, state)) return true }
     else return false
   }
 }
@@ -93,10 +105,10 @@ export async function cast(ui: CampUi) {
     const c = e.cur
     const ready = memorised(c).filter((v) => v > 0 && v < 0x80)
     if (!ready.length) { ui.print(`${nameOf(c)} ${msg('noSpells')}`, false); return }
-    const list = ready.map((id) => st.get(id)!).filter(Boolean)
-    const i = await ui.menu([...list.map((s) => s.name.toUpperCase()), 'EXIT'], { prompt: 'Spells in Memory:', vertical: true, notes: list.map(spellText) })
-    if (i >= list.length) return
-    const s = list[i]
+    const spells = ready.map((id) => st.get(id)!).filter(Boolean)
+    const i = await list(ui, spells.map((s) => s.name.toUpperCase()), { prompt: 'Spells in Memory:', notes: spells.map(spellText) })
+    if (i >= spells.length) return
+    const s = spells[i]
     if (s.side === 0) {
       ui.print(`${s.name} ${msg('combatOnlySpell')}`, false)
       if (await yes(ui, msg('loseIt').trimEnd())) forget(c, s.id)
@@ -107,7 +119,7 @@ export async function cast(ui: CampUi) {
     if (kind === 'party') targets = e.party()
     else if (kind === 'one') {
       const party = e.party()
-      const k = await ui.menu([...party.map((m) => nameOf(m).toUpperCase()), 'EXIT'], { prompt: `Cast ${s.name} on:` })
+      const k = await list(ui, party.map((m) => nameOf(m).toUpperCase()), { prompt: `Cast ${s.name} on:`, vertical: false })
       if (k >= party.length) continue
       targets = [party[k]]
     }
@@ -137,7 +149,7 @@ async function memorize(ui: CampUi) {
     ui.print(`${nameOf(c)} can memorize:${has.map((k) => `  ${k.name} Spells: ${row(k.cls)}`).join('')}`, true)
     const book: Spell[] = st.spells.filter((s) => bookSpell(s) && knows(c, s.id))
     const short = (cls: number) => casterClasses().find((k) => k.cls === cls)?.short ?? ''
-    const i = await ui.menu([...book.map((s) => `${s.name.toUpperCase()} (${short(s.cls)} ${s.level})`), 'EXIT'], { prompt: 'Spells in Spell Book:', vertical: true, notes: book.map(spellText) })
+    const i = await list(ui, book.map((s) => `${s.name.toUpperCase()} (${short(s.cls)} ${s.level})`), { prompt: 'Spells in Spell Book:', notes: book.map(spellText) })
     if (i >= book.length) break
     if (memorise(c, book[i], st)) picked = true
   }
@@ -162,7 +174,7 @@ async function scribe(ui: CampUi) {
     const scrolls = readableScrolls(c, items, e.effectsOf(c), t)
     const entries = scrolls.flatMap((it) => it.props.map((p, j) => ({ it, j, id: p & 0x7f, mark: p > 0x80 })).filter((x) => x.id > 0))
     if (!entries.length) { ui.print(`${nameOf(c)} ${msg('noScrolls')}`, false); break }
-    const i = await ui.menu([...entries.map((x) => `${st.get(x.id)!.name.toUpperCase()}${x.mark ? ' (MARKED)' : ''}`), 'EXIT'], { prompt: 'Spells on Scrolls:', vertical: true })
+    const i = await list(ui, entries.map((x) => `${st.get(x.id)!.name.toUpperCase()}${x.mark ? ' (MARKED)' : ''}`), { prompt: 'Spells on Scrolls:' })
     if (i >= entries.length) break
     const x = entries[i], s = st.get(x.id)!
     if (knows(c, x.id)) ui.print(msg('knowSpell'), false)
@@ -204,14 +216,20 @@ export async function rest(ui: CampUi, state: { heal: number }): Promise<boolean
   const e = ui.engine, t = e.items!, st = e.spells!
   let minutes = 0
   for (const c of e.party()) minutes = Math.max(minutes, preparation(c, e.itemsOf(c), t, st))
-  // duration prompt: days capped at 99
+  // the duration prompt (PoR FUN_4b46_0721, CotAB 0x415F1): the game's seven words in its order, start,
+  // days, hours, minutes, more, less, exit (PoR "… daYs … Inc Dec …", CotAB "… Days … Add Subtract …");
+  // the selected field, Mins at first, changes by a step (5 minutes, an hour, a day); days capped at 99
+  const w = menu('rest')
+  let field = 3
   for (;;) {
     const d = Math.floor(minutes / 1440), h = Math.floor((minutes % 1440) / 60), m = minutes % 60
-    const label = `${msg('restTime')} ${String(d).padStart(2, '0')}:${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-    const o = await ui.menu(['REST', 'DAYS +', 'DAYS -', 'HOURS +', 'HOURS -', 'MINS +', 'MINS -', 'EXIT'], { prompt: label })
+    const two = (v: number, f: number) => (f === field ? `[${String(v).padStart(2, '0')}]` : String(v).padStart(2, '0'))
+    const label = `${msg('restTime')} ${two(d, 1)}:${two(h, 2)}:${two(m, 3)}`
+    const o = await ui.menu(w.map((x) => x.text.toUpperCase()), { prompt: label, keys: w.map((x) => x.key) })
+    if (w.length !== 7 || o === 6) return false
     if (o === 0) break
-    if (o === 7) return false
-    const delta = [0, 1440, -1440, 60, -60, 5, -5][o]
+    if (o <= 3) { field = o; continue }
+    const delta = (o === 4 ? 1 : -1) * [0, 1440, 60, 5][field]
     minutes = Math.max(0, Math.min(99 * 1440 + 1439, minutes + delta))
   }
   if (minutes <= 0) return false
@@ -237,70 +255,35 @@ export async function rest(ui: CampUi, state: { heal: number }): Promise<boolean
 }
 
 /**
- * Fix (IMP-048), the camp command of the later Gold Box games (Curse of the Azure Bonds on): the
- * clerics cast their Cure Light Wounds on the most wounded, memorise it again in the slots that
- * frees, and the party rests just long enough to learn it, until everyone is healed or nobody can
- * heal any more. Every step uses the original rules (casting, memorising, resting with its encounter
- * checks and natural healing). Returns true when a rest was interrupted.
+ * Fix (CotAB 0x320D8; spec/A-games/coab/camp.md §1; Pool of Radiance has none, the port offers CotAB's,
+ * IMP-048): rules/camp.ts `fix`. Returns true when its rest was interrupted.
  */
 async function fix(ui: CampUi, state: { heal: number }): Promise<boolean> {
-  const e = ui.engine, st = e.spells!, t = e.items!
-  const cure = st.get(3)
-  if (!cure) return false
-  if (e.read(0x49e5) !== 0) { ui.print(msg('noCastHere'), false); return false }
-  const party = () => e.party()
-  const healers = () => party().filter((c) => c[F.status] === 0 && c[F.levels] > 0 && knows(c, cure.id) && c[F.clericSlots] > 0)
-  const wounded = () => party().filter((c) => [0, 1, 4, 5].includes(c[F.status]) && c[F.hp] < c[F.maxHp])
-    .sort((a, b) => (b[F.maxHp] - b[F.hp]) - (a[F.maxHp] - a[F.hp]))
-  if (!wounded().length) { ui.print('The party is already healthy.', true); return false }
-  if (!healers().length) { ui.print('No one in the party can cast Cure Light Wounds.', true); return false }
-  ui.print('The party fixes its wounds...', true)
-  for (let round = 0; round < 200 && wounded().length; round++) {
-    // cast every ready Cure Light Wounds on whoever is worst hurt
-    for (const h of healers()) {
-      while (memorised(h).includes(cure.id) && wounded().length) {
-        const w = wounded()[0]
-        await castOutside(e, h, cure, [w])
-        ui.print(`${nameOf(h)} heals ${nameOf(w)} (${w[F.hp]}/${w[F.maxHp]})`, false)
-      }
-    }
-    ui.refresh()
-    if (!wounded().length) break
-    // memorise it again in every free level-1 cleric slot
-    let pending = false
-    for (const h of healers()) while (freeSlots(h, 0, 1, st) > 0 && memorise(h, cure, st)) pending = true
-    if (!pending) break // no slot will ever hold a cure: nothing more to do
-    // rest exactly as long as the slowest healer needs to learn them
-    let minutes = 0
-    for (const c of party()) minutes = Math.max(minutes, preparation(c, e.itemsOf(c), t, st))
-    if (minutes <= 0) break
-    const r = startRest(e, minutes)
-    while (r.minutes > 0) {
-      const res = await restStep(e, r, state)
-      for (const msg of res.messages) ui.print(msg, false)
-      if (res.interrupted) { ui.refresh(); e.campInterrupted = true; return true }
-    }
-    await ui.pause(25)
-  }
+  const e = ui.engine
+  const r = await fixParty(e, state)
+  for (const m of r.messages) ui.print(m, false)
   ui.refresh()
-  const left = wounded()
-  ui.print(left.length ? `Fix stops: ${left.map(nameOf).join(', ')} still hurt.` : 'The party is fully healed.', false)
-  return false
+  if (r.interrupted) e.campInterrupted = true
+  return r.interrupted
 }
 
 /** Alter (FUN_3f81_1c59, CotAB 0x31AD0): Order, Drop, Speed, Icon, Pics. */
 async function alter(ui: CampUi) {
   const e = ui.engine
   for (;;) {
-    const o = await ui.menu(['ORDER', 'DROP', 'SPEED', 'ICON', 'PICS', 'EXIT'], { prompt: msg('alter').trimEnd() })
-    if (o === 0) {
-      const party = e.party()
-      const i = await ui.menu([...party.map((c) => nameOf(c).toUpperCase()), 'EXIT'], { prompt: `${msg('partyOrder')}Select` })
+    const o = await ask((l, op) => ui.menu(l, op), menu('alter'), { prompt: msg('alter').trimEnd() })
+    if (o === 'O') {
+      // Order (FUN_3f81_1780, CotAB 0x31604): the game's "Select Exit", then "Place Exit"; the port
+      // picks from a list and moves the one picked a step at a time (UP, DOWN: the port's words)
+      const party = e.party(), sel = word('orderSelect', 'S'), ex = word('orderSelect', 'E')
+      const i = await ui.menu([...party.map((c) => nameOf(c).toUpperCase()), ex.text.toUpperCase()],
+        { prompt: `${msg('partyOrder')}${sel.text}`, keys: [...party.map(() => ''), ex.key] })
       if (i >= party.length) continue
-      const p = await ui.menu(['UP', 'DOWN', 'EXIT'], { prompt: `${nameOf(party[i])} ${msg('selected')}` })
+      const px = word('orderPlace', 'E')
+      const p = await ui.menu(['UP', 'DOWN', px.text.toUpperCase()], { prompt: `${nameOf(party[i])} ${msg('selected')}`, keys: ['U', 'D', px.key] })
       if (p < 2) e.moveMember(i, p === 0 ? -1 : 1)
       ui.refresh()
-    } else if (o === 1) {
+    } else if (o === 'D') {
       const c = e.cur
       if (e.party().length === 1) { ui.print('The last character cannot leave the party here.', false); continue }
       if (await yes(ui, msg('dropFromParty').trimEnd())) {
@@ -308,19 +291,21 @@ async function alter(ui: CampUi) {
         e.dropMember(c)
         ui.refresh()
       } else ui.print(msg('sighOfRelief'), false)
-    } else if (o === 2) {
+    } else if (o === 'S') {
+      // Speed (FUN_3f81_1a97, CotAB 0x3191B): " Faster" while above 0, " Slower" while below 9, " Exit"
       for (;;) {
-        const k = await ui.menu(['FASTER', 'SLOWER', 'EXIT'], { prompt: `${msg('gameSpeed')}${e.speed}${msg('speedRange')}` })
-        if (k === 0) e.speed = Math.max(0, e.speed - 1)
-        else if (k === 1) e.speed = Math.min(9, e.speed + 1)
+        const w = [...(e.speed > 0 ? menu('campFaster') : []), ...(e.speed < 9 ? menu('campSlower') : []), ...menu('campSpeedExit')]
+        const k = await ask((l, op) => ui.menu(l, op), w, { prompt: `${msg('gameSpeed')}${e.speed}${msg('speedRange')}` })
+        if (k === 'F') e.speed = Math.max(0, e.speed - 1)
+        else if (k === 'S') e.speed = Math.min(9, e.speed + 1)
         else break
       }
-    } else if (o === 3) {
+    } else if (o === 'I') {
       // Icon: the editor on the selected character, then the screen redrawn (PoR 0x314FE → FUN_417f_382d,
       // CotAB 0x31B6D → its editor in overlay 0x3685)
       if (ui.iconEditor && (await ui.iconEditor(e.cur))) ui.refresh()
     }
-    else if (o === 4) ui.print('Monster pictures and portraits are always shown here.', false)
+    else if (o === 'P') ui.print('Monster pictures and portraits are always shown here.', false)
     else return
   }
 }
