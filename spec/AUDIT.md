@@ -675,6 +675,36 @@ from the C and S series):
 | SY11 | `server/storage.ts` `put` | a write for an account deleted while the request ran answers 507 `too many records` | specified (accounts-and-sync.md §2.5) |
 | SY12 | `A-games/engine/savegame.md` "Files", last paragraph | a port statement (the `.GBR` sidecar on export) in part A; its contract is now storage.md §6 | for the step 5 clean-up of part A |
 
+**Work-plan step 2 (2026-10-21): part B, the engine model.** Every file of [B-model/](B-model/) is
+written from `web/src/games/`, `rules/`, `vm/engine.ts` and `store/gamefiles.ts`, checked against
+part A: [profile.md](B-model/profile.md), [records-and-tables.md](B-model/records-and-tables.md),
+[script-vm-map.md](B-model/script-vm-map.md), [procedures.md](B-model/procedures.md),
+[vocabularies.md](B-model/vocabularies.md) (with both games' handler maps, generated from the
+profiles), [host-contracts.md](B-model/host-contracts.md), [files-and-detection.md](B-model/files-and-detection.md),
+[adding-a-game.md](B-model/adding-a-game.md); the port-authored data in
+[D-appendices/port-data.md](D-appendices/port-data.md), part B's routines in
+[D-appendices/addresses.md](D-appendices/addresses.md). Moved out of part A into part B, each leaving
+a link: engine/effects.md "Port status", coab/effects.md "Port status", coab/spells.md "Port status"
+(→ vocabularies.md §8), the two "Port" sections of coab/combat.md (→ procedures.md §17),
+coab/tables.md §4 (→ records-and-tables.md §5), coab/assets.md §9 (→ profile.md §4.1). The design
+sections of `docs/multi-game.md` ("The game profile", "Records stay native", "Rules as data first",
+"Where a game is described", "Adding a game") are now in part B; that note can point there.
+
+Found while writing (numbered EM, engine model):
+
+| # | Where | What | Next |
+|---|---|---|---|
+| EM1 | `ui/party.ts` (character creation on the party screen) | uses `Math.random` for gameplay draws (abilities, gold, hit points), against D2; the training hall's creation uses the engine's generator | code task: creation takes its dice from the engine's source ([host-contracts.md §6.2](B-model/host-contracts.md#62-where-the-dice-are-rolled)) |
+| EM2 | `vm/engine.ts` `rand(n)` | RANDOM, a new NPC's id, appraisal's jewels and the debug editor draw from the generator directly, not through `roll`, so a tape recorded at `roll` misses them | code task: `rand(n)` as the request (1, n) − 1 |
+| EM3 | host-contracts.md §6.4, §8 | the dice-tape format and the headless transcript are specified; the reference implementation records and replays neither (its tests replace `roll` with scripted dice) | code and tools task, before the V3/V5 validations |
+| EM4 | `vm/engine.ts` `addNpc` vs [coab/ecl.md](A-games/coab/ecl.md#opcodes) ADD_NPC | the port puts monster id 0x18 on the enemy side and rolls the class pick for the random portrait in every game; CotAB's ADD_NPC has neither ("PoR's enemy side for id 0x18 is gone"), so CotAB's dice tape gains a draw | code task: both as profile data ([adding-a-game.md §4](B-model/adding-a-game.md#4-what-is-still-a-paired-procedure)) |
+| EM5 | `rules/combat.ts` movement vs [coab/combat.md, "Cell table"](A-games/coab/combat.md#cell-table-o-ds26a4-4-bytes-a-cell) | CotAB's battlefield cells cost 1, 2 or 4 to enter (byte 0); the port treats every cell other than 0xFF as an ordinary step in both games; coab/tables.md §3.12 left it to "the move code" | research (CotAB's move routine) and a code task: the cost as a procedure parameter |
+| EM6 | coab/tables.md §3.7a, §3.8 | stale port statements: the Ring of Wizardry "not yet in the port" (it is `rules.slots.doubler` and item kind 1) and the thief item hooks "need the items passed (later)" (they are the item behaviour `recomputeStats` with `thief`) | for the step 5 clean-up of part A |
+| EM7 | the moved coab/effects.md "Port status" | stale: "the three spell handlers that use the template are not ported" (they are 84, 92, 98: `scare`, `beam`) and "the ECL DAMAGE save does not set DS:6FC2" (it does); annotated where the notes now stand (vocabularies.md §8.2) | none further |
+| EM8 | `games/rules.ts` | the doc comment of `saveCon` stands above `join`, and the CotAB `saveCon` value's comment above `join`'s value | comment-only fix |
+| EM9 | `vm/engine.ts` DIVIDE | PoR's DIVIDE stops on a divisor of 0 (run-time error 200, as the original), CotAB's `divideRemainder` variant writes 0 and 0; no shipped script divides by 0 | none needed; stated in script-vm-map.md §5.1 |
+| EM10 | `games/fields.ts`, `tables.ts`, `rules.ts`, `effectrules.ts`, `spellrules.ts` | the JSDoc in these modules was the only description of the profile schema; it now duplicates part B | when code is next touched, the comments can cite part B sections instead of restating them |
+
 ---
 
 ## 7. Proposed target structure
