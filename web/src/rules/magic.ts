@@ -67,6 +67,9 @@ export async function castOutside(e: Engine, caster: Uint8Array, s: Spell, targe
   const h = new WorldHost(e, (m) => out.push(m))
   const name = (c: Uint8Array) => String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name]))
   const first = targets[0]
+  // CotAB 0x45373 (R.casting.miscast): a caster with the effect who rolls 1 miscasts; nothing else, the spell kept
+  const mis = R.casting.miscast
+  if (mis && e.effectsOf(caster).some((x) => x.type === mis.effect) && e.roll(1, mis.sides) === 1) return [`${name(caster)} miscasts ${s.name}.`]
   if (!fromItem) forget(caster, s.id)
   if (s.name) out.push(`${name(caster)} casts ${s.name}.`)
   const dur = duration(e, s, L)

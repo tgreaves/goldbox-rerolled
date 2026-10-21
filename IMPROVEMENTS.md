@@ -15,6 +15,7 @@ Only bugs that destroy the player's money, items or characters are fixed. Every 
 | IMP-028 | A magic-user level with no new spell to choose leaves max HP alone | Sets max HP to 1 ([`spec/progression.md`](spec/progression.md)) |
 | IMP-031 | Alter → Drop refuses to drop the last character | Offers to quit to DOS ([`spec/camp.md`](spec/camp.md), "Alter") |
 | IMP-049 | After ROB takes items, the victims' AC, THAC0 and damage are recomputed | A stolen readied item keeps counting until something else recomputes them (`FUN_2fea_1df0`, [`spec/ecl.md`](spec/ecl.md), ROB) |
+| IMP-075 | A computer-run caster whose random pick is a memorised slot holding a spell still to be learned (id + 0x80) turns it down and picks again | The pick's record is read past the end of the spell table (PoR DS:31FA, CotAB DS:37DC + 16·id) and the spell is begun or cast as those bytes say (`FUN_3334_0545`, CotAB 0x236CB; [`spec/combat.md`](spec/combat.md), "Spells and items") |
 
 A switch back to the original behaviour is planned for IMP-028.
 

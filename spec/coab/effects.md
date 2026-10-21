@@ -172,7 +172,7 @@ holds them; `test/effectkinds.test.ts`):
 Not yet, or approximated:
 
 - The hook's picker 0x2C56C and the finder 0x2E394 are taken to be PoR's (I); the eye rays' spells go
-  through the port's cast, which lacks 0x45251's own check (with effect 0x4A, 1 in 2 "miscasts", 0x45373). The template's
+  through the port's cast, which has 0x45251's own check since 2026-10-21 (with effect 0x4A, 1 in 2 "miscasts", 0x45373). The template's
   sight range and side-line direction where the original reads unset memory (§7, ?). The three spell
   handlers that use the template (0x48A8C, 0x49522, 0x496D1) are not ported. Berserk's
   nearest-combatant search (11c:3e) takes the first of equal distance (I).

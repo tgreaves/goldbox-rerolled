@@ -173,6 +173,12 @@ interface Cloud { owner: Uint8Array; n: number; cell: number; x: number; y: numb
 const BODY_CELL = 0x1f
 /** One cast in combat: the caster, the spell at level L with its duration, and its targets. */
 interface BattleCast { f: Fighter; s: Spell; L: number; dur: number; targets: Fighter[] }
+/**
+ * How FUN_4e53_0c20 is called: `fromItem` (DS:6DBF, CotAB DS:757D): the spell is not forgotten and not
+ * announced; `auto` (its second flag): the computer aims and an aim without targets gives up without
+ * asking; `announce` (its first flag, default true): "Casts a Spell" before the aim (item use passes 0).
+ */
+export interface CastHow { fromItem?: boolean; auto?: boolean; announce?: boolean }
 
 export class Battle implements FxHost {
   readonly fighters: Fighter[] = []
@@ -328,7 +334,7 @@ export class Battle implements FxHost {
   }
   async castAs(c: Uint8Array, id: number) {
     const f = this.of(c), s = this.e.spells?.get(id)
-    if (f && s) await this.castSpell(f, s, false, true)
+    if (f && s) await this.castSpell(f, s, { auto: true })
   }
   flyCells(from: { x: number; y: number }, to: { x: number; y: number }, slot: number, count: number, delay: number) {
     this.ui.flight?.(from, to, { frames: cycle(slot - 13).slice(0, count), delay })
@@ -794,7 +800,9 @@ export class Battle implements FxHost {
   async player(f: Fighter) {
     const c = f.c
     if (!c[F.inPlay]) { this.endTurnF(f); return }
-    if (f.r[0]) { await this.castSpell(f, this.e.spells!.get(f.r[0])!, false); this.endTurnF(f); return }
+    // the queued spell goes off, R[0] cleared first (FUN_320c_031a 0x22412, CotAB 0x22154), so damage
+    // the caster takes from it loses nothing; the targets are chosen now
+    if (f.r[0]) { const id = f.r[0]; f.r[0] = 0; await this.castSpell(f, this.e.spells!.get(id)!); this.endTurnF(f); return }
     /** where the steps since the last other action began (Escape undoes them) */
     let moved = { x: f.x, y: f.y, m: f.r[6], face: f.r[9] }
     const undo = () => { f.x = moved.x; f.y = moved.y; f.r[6] = moved.m; f.r[9] = moved.face; this.ui.redraw(f) }
@@ -1015,7 +1023,8 @@ export class Battle implements FxHost {
     const s = st.get(id)
     if (!s) return
     this.print(`${name(f.c)} uses an item`)
-    await this.castSpell(f, s, true)
+    // FUN_4894_1a8a (CotAB 0x3F9F1): no casting time, not announced, the computer aims for a Quick character
+    await this.castSpell(f, s, { fromItem: true, announce: false, auto: !!f.c[F.quick] })
     this.endTurnF(f)
   }
 
@@ -1027,14 +1036,21 @@ export class Battle implements FxHost {
     await this.beginCast(f, st.get(ready[i])!)
   }
 
-  /** Cast (FUN_3aae_2414): casting time delays the spell. */
-  async beginCast(f: Fighter, s: Spell) {
-    if (s.where === 0) { this.print('Camp Only Spell'); return }
+  /**
+   * Cast (FUN_3aae_2414, CotAB 0x2CCBD, the same): a camp-only spell is refused; casting time / 3 = 0
+   * casts now and ends the turn; otherwise "Begins Casting", the spell queued in R[0] and initiative
+   * lowered by that much (at least 1), so the caster is picked again later in the round and the spell
+   * goes off then (`player`, `ai`). `auto`: the computer's cast (FUN_3334_0545 passes 1, the menu 0).
+   * False when nothing was cast or begun (the camp-only refusal), so the computer's turn goes on.
+   */
+  async beginCast(f: Fighter, s: Spell, auto = false): Promise<boolean> {
+    if (s.where === 0) { this.print('Camp Only Spell'); return false }
     const t = Math.floor(s.castTime / 3)
-    if (t === 0) { await this.castSpell(f, s, false); this.endTurnF(f); return }
+    if (t === 0) { await this.castSpell(f, s, { auto }); this.endTurnF(f); return true }
     this.print(`${name(f.c)} Begins Casting`)
     f.r[0] = s.id
     f.r[3] = Math.max(1, s8(f.r[3]) - t)
+    return true
   }
 
   // ------------------------------------------------------------ attacks
@@ -1270,7 +1286,14 @@ export class Battle implements FxHost {
     else if (left === 0) c[F.status] = 4
     if (dmg > 0) {
       t.r[1] = 0
-      if (t.r[0]) { this.print(`${name(c)} lost a spell`); if (this.current_) forget(this.current_.c, t.r[0]); t.r[0] = 0 }
+      // "lost a spell": the queued spell is forgotten by the current character (PoR: the attacker during
+      // an attack, a bug) or by the caster (CotAB), as R.casting.lostFrom says
+      if (t.r[0]) {
+        this.print(`${name(c)} lost a spell`)
+        const who = R.casting.lostFrom === 'target' ? c : this.current_?.c
+        if (who) forget(who, t.r[0])
+        t.r[0] = 0
+      }
     }
     if (c[F.status] !== 0 && c[F.status] !== 1) {
       c[F.hp] = 0
@@ -1412,19 +1435,32 @@ export class Battle implements FxHost {
   }
 
   // ------------------------------------------------------------ spells
-  /** Cast a spell now (FUN_4e53_0c20): choose targets, then apply. */
-  async castSpell(f: Fighter, s: Spell, fromItem: boolean, ai = false) {
-    const c = f.c
+  /**
+   * Cast a spell now (FUN_4e53_0c20, CotAB 0x45251): announce it, choose targets, then apply. With
+   * R.casting.miscast a caster with that effect who rolls 1 miscasts first (0x45373): the line, nothing
+   * else, the spell kept. No target: the computer (`auto`) gives up, "Spell Aborted"; a player is asked
+   * "Abort Spell?", and No announces and aims again. The spell is forgotten when it goes off or is
+   * aborted, unless it comes from an item (DS:6DBF, CotAB DS:757D).
+   */
+  async castSpell(f: Fighter, s: Spell, how: CastHow = {}) {
+    const c = f.c, fromItem = !!how.fromItem, auto = !!how.auto, announce = how.announce ?? true
     const L = casterLevel(c, s, fromItem)
-    const targets = await this.spellTargets(f, s, spellRange(s, L), ai)
-    if (targets === null) {
-      if (!ai && !c[F.quick] && (await this.ui.confirm('Abort Spell?'))) { this.print('Spell Aborted'); if (!fromItem) forget(c, s.id) }
+    const mis = R.casting.miscast
+    if (mis && this.e.effectsOf(c).some((x) => x.type === mis.effect) && this.e.roll(1, mis.sides) === 1) {
+      this.announceCast(c, s) // "miscasts", which in combat reads "Casts a Spell" (0x4A3FD)
+      return
+    }
+    let targets: Fighter[] | null = null
+    for (;;) {
+      if (announce && !fromItem) this.announceCast(c, s)
+      targets = await this.spellTargets(f, s, spellRange(s, L), auto)
+      if (targets) break
+      if (!auto && !(await this.ui.confirm('Abort Spell?'))) continue
+      this.print('Spell Aborted')
+      if (!fromItem) forget(c, s.id)
       return
     }
     if (!fromItem) forget(c, s.id)
-    // FUN_4e53_331a in combat: "Casts a Spell" with the pause, then "Spell: name" on the status line
-    this.print(`${name(c)} Casts a Spell`)
-    this.print(`Spell: ${s.name}`, { ms: 0 })
     // FUN_4e53_0c20: the caster turns to the aim point in its action frame, the spell bolt flies there
     const aim = this.aimed
     const sound = spellSpec(s.id).sound ?? 2
@@ -1440,6 +1476,36 @@ export class Battle implements FxHost {
     await this.ui.pause(200)
   }
 
+  /** FUN_4e53_331a (CotAB 0x4A3FD) in combat: "Casts a Spell" with the pause, then "Spell: name" on the status line, whatever the verb */
+  announceCast(c: Uint8Array, s: Spell) {
+    this.print(`${name(c)} Casts a Spell`)
+    this.print(`Spell: ${s.name}`, { ms: 0 })
+  }
+
+  /**
+   * The patient finder (FUN_3aae_1bf8, CotAB 0x2C34E, the same): over the eight neighbouring squares and
+   * its own (T.wallDx / wallDy, 8 the square itself), the wounded ally (HP below maximum) with the
+   * fewest HP, the first found on a tie, the caster itself also when under half its HP; on a body
+   * square (0x1F) the body of a fallen character not dead, stoned or gone (status 6–8), the last listed.
+   * The ally if its HP is below 8 or there is no body, else the body. Null: nobody.
+   */
+  patient(f: Fighter): Fighter | null {
+    const t = this.tables()
+    let best: Fighter | null = null, bestHp = 0xff, body: Fighter | null = null
+    for (let d = 0; d <= 8; d++) {
+      const dx = t ? s8(t.b(T.wallDx.at + d)) : d < 8 ? DX[d] : 0, dy = t ? s8(t.b(T.wallDy.at + d)) : d < 8 ? DY[d] : 0
+      const x = f.x + dx, y = f.y + dy
+      const o = this.occupied(x, y, 1)
+      if (o) {
+        if (this.side(o) !== this.side(f) || o.c[F.hp] >= o.c[F.maxHp]) continue
+        if (o.c[F.hp] < bestHp || (o === f && o.c[F.hp] < o.c[F.maxHp] >> 1)) { best = o; bestHp = o.c[F.hp] }
+      } else if (this.bf.get(y, x) === BODY_CELL) {
+        for (const b of this.bodies) if (![6, 7, 8].includes(b.f.c[F.status]) && b.x === x && b.y === y) body = b.f
+      }
+    }
+    return bestHp < 8 || !body ? best : body
+  }
+
   /** Targets (FUN_3aae_20c3): self, one or several picks, or an area around the aimed square. */
   async spellTargets(f: Fighter, s: Spell, range: number, forceAi = false): Promise<Fighter[] | null> {
     const mode = s.target & 0xf
@@ -1449,11 +1515,10 @@ export class Battle implements FxHost {
     const pickOne = async (allowEmpty: boolean, area?: (x: number, y: number) => { x: number; y: number }[]): Promise<AimEntry | null> => {
       if (ai) {
         if (!s.aiHostile) {
+          // the patient (FUN_3aae_20c3 → 1bf8); none: no target, so the spell is aborted
           if (spellSpec(s.id).aiTarget === 'woundedNear') {
-            const near = this.fighters.filter((o) => this.inPlay(o) && this.side(o) === this.side(f) && this.dist(f, o) <= 1 && o.c[F.hp] < o.c[F.maxHp])
-            near.sort((a, b) => a.c[F.hp] - b.c[F.hp])
-            const p = near[0] ?? f
-            return { f: p, x: p.x, y: p.y, cost: 0, ok: true }
+            const p = this.patient(f)
+            return p ? { f: p, x: p.x, y: p.y, cost: 0, ok: true } : null
           }
           return { f, x: f.x, y: f.y, cost: 0, ok: true }
         }
@@ -1901,7 +1966,9 @@ export class Battle implements FxHost {
     f.r[0x15] = p
     if (await this.morale(f)) return
     if (f.r[0x14] && !f.r[0x10]) this.print(`${name(c)} flees in panic`)
-    if (f.r[0]) { await this.castSpell(f, this.e.spells!.get(f.r[0])!, false); this.endTurnF(f); return }
+    // the queued spell goes off with R[0] still set (FUN_3334_000f 0x2347C, CotAB 0x23238; the player's
+    // turn clears it first), so damage from its own spell costs the caster another copy
+    if (f.r[0]) { await this.castSpell(f, this.e.spells!.get(f.r[0])!, { auto: true }); this.endTurnF(f); return }
     if (c[F.levels] > 0 && !f.r[0x11] && this.enemiesWithin(f, 255).some((e) => e.c[F.undead] > 0 && !e.r[0x10])) { await this.turnUndead(f); return }
     if (await this.aiCast(f)) return
     this.chooseWeapon(f)
@@ -2016,33 +2083,54 @@ export class Battle implements FxHost {
     return false
   }
 
-  /** Spell choice for the AI (FUN_3334_0545 with FUN_3334_02eb). */
+  /**
+   * Spell choice for the AI (FUN_3334_0545, CotAB 0x236CB): R[1], a memorised spell, an NPC or monster
+   * or "Magic On" (DS:6E30), and enemies still in play (the area's no-magic flag 0x49E5 is not tested
+   * here, only by the player's Cast and AI item use); d7 passes at priority 7, 6, …, each up to 3
+   * random picks from the memorised slots from R.casting.aiFirstSlot, the first accepted
+   * (`aiAccepts`) begun (`beginCast`). False when nothing was cast or begun, so the turn goes on.
+   */
   async aiCast(f: Fighter): Promise<boolean> {
     const c = f.c, st = this.e.spells
-    // FUN_3334_0545: R[1], a ready spell, an NPC or monster or "Magic On" (DS:6E30), and enemies still in
-    // play; the area's no-magic flag 0x49E5 is not tested here (only the player's Cast and AI item use check it)
-    if (!st || !f.r[1]) return false
+    if (!st) return false
+    // every slot holding something, a spell still to learn (id + 0x80) too; such a pick is turned down
+    // (IMP-075: the original reads its record past the end of the spell table)
+    const first = R.casting.aiFirstSlot
+    const mem = f.r[1] ? Array.from({ length: F.memorisedCount - first }, (_, k) => c[F.memorised + first + k]).filter((v) => v > 0) : []
+    const passes = this.e.roll(1, 7) // rolled whatever follows (0x238E7)
+    if (!mem.length) return false
     if (c[F.morale] <= 0x7f && !this.magicOn) return false
     if (!this.enemies(f).length) return false
-    const mem = Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
-    if (!mem.length) return false
-    const passes = this.e.roll(1, 7)
-    for (let pass = 0; pass < passes; pass++) {
+    let chosen: Spell | null = null
+    for (let pass = 0; pass < passes && !chosen; pass++) {
       const pri = 7 - pass
-      for (let k = 0; k < 3; k++) {
+      for (let k = 0; k < 3 && !chosen; k++) {
         const s = st.get(mem[this.e.roll(1, mem.length) - 1])
-        if (!s || s.aiPriority < pri) continue
-        if (!s.aiHostile && s.id !== 3) { await this.beginCast(f, s); return true }
-        const L = casterLevel(c, s)
-        const range = s.range[0] === 0xff ? 1 : s.range[0] + s.range[1] * L
-        const enemies = this.enemiesWithin(f, range)
-        if (!enemies.length) continue
-        if (s.area > 0 && enemies.every((e) => this.fighters.some((o) => this.inPlay(o) && this.side(o) === this.side(f) && this.dist(e, o) <= s.area))) continue
-        await this.beginCast(f, s)
-        return true
+        if (s && this.aiAccepts(f, s, pri)) chosen = s
       }
     }
-    return false
+    return chosen ? this.beginCast(f, chosen, true) : false
+  }
+
+  /**
+   * Whether the computer takes a spell at a pass's priority (FUN_3334_02eb, CotAB 0x23471, the same):
+   * AI priority (byte 13) at least `pri`; a friendly spell (byte 14 = 0) at once, except one cast on
+   * a patient (spellrules `aiTarget: 'woundedNear'`, Cure Light Wounds), taken when `patient` finds one
+   * and otherwise tested as a hostile spell (so it is taken whenever an enemy is in reach, a bug, I);
+   * then an enemy within range (byte 2 + byte 3 · level, touch 1), and for an area spell (byte 15)
+   * none of those enemies with anyone of the caster's side within the area of it.
+   */
+  aiAccepts(f: Fighter, s: Spell, pri: number): boolean {
+    if (s.aiPriority < pri) return false
+    const onPatient = spellSpec(s.id).aiTarget === 'woundedNear'
+    if (!s.aiHostile && !onPatient) return true
+    if (onPatient && this.patient(f)) return true
+    const L = casterLevel(f.c, s)
+    const range = s.range[0] === 0xff ? 1 : s.range[0] + s.range[1] * L
+    const enemies = this.enemiesWithin(f, range)
+    if (!enemies.length) return false
+    if (s.area > 0 && enemies.some((e) => this.fighters.some((o) => this.inPlay(o) && this.side(o) === this.side(f) && this.dist(e, o) <= s.area))) return false
+    return true
   }
 
   /** Weapon score (FUN_3334_128d), in byte arithmetic. `otherHands` = hands in use apart from weapon and shield. */

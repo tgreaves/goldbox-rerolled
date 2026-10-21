@@ -294,7 +294,7 @@ Anything not taken is lost when the menu closes (items freed; G).
 
 ## Player turn (O, `FUN_320c_031a`)
 
-If the combatant cannot act (c[0x10D] = 0) the turn ends. If a spell is queued in R[0], it is cast now (`FUN_4e53_0c20`, targets chosen at this moment) and the turn ends. Otherwise the menu (`FUN_320c_0666`) repeats until an action ends the turn. Event 15 fires again each time the menu is built.
+If the combatant cannot act (c[0x10D] = 0) the turn ends. If a spell is queued in R[0], R[0] is cleared and the spell cast now (`FUN_4e53_0c20(spell, announce 1, auto 0)`, 0x22412, targets chosen at this moment), and the turn ends. R[0] is cleared **before** the cast, so damage the caster takes from its own spell (a bounced Lightning Bolt) loses nothing; the computer's turn does not clear it first ([[#Computer AI]]). Otherwise the menu (`FUN_320c_0666`) repeats until an action ends the turn. Event 15 fires again each time the menu is built.
 
 ### Main menu
 
@@ -456,15 +456,30 @@ r0 (8, bolt)  r1 (9)   r2 (10)    r3 (11)
   8. Every stop calls `28bc` on the cell reached, which hits whatever creature stands there (so a 2×2 creature can be hit again when the bolt stops on its second cell) and reports a bounce when the cell's movement byte is 0xFF. A cell value 0 (off the field) ends the bolt.
 - **Magic Missile** (`1439`): damage `roll(L >> 1, 4) + (L >> 1)`, type 8, so a level-1 caster does 0 (the guide says (L+1)/2 × (1d4+1); confirm in play).
 
-### Cast (`FUN_3aae_2414`)
+### Cast (O, `FUN_3aae_2414(var result, auto, spell)`)
+
+Called by the player's Cast (0x224F2: auto 0, spell 0) and the computer's spell choice (0x2399B: auto 1, [[#Spells and items]]); item Use does not come here, so items have no casting time.
 
 1. No spell given: choose from the memorised list (`FUN_4894_299c`).
-2. Spell byte 11 = 0 (camp only): "Camp Only Spell", nothing happens.
-3. `t` = casting time (byte 12) / 3. `t` = 0: cast now (`FUN_4e53_0c20`) and end the turn.
-4. Otherwise "Begins Casting", R[0] = spell, initiative −= `t` (at least 1). The turn ends but the combatant stays in the order; when it is picked again the queued spell goes off and its targets are chosen then.
-5. Any damage taken before that clears R[1] and the queued spell ("lost a spell", [[#Hit points and status]]).
+2. Spell byte 11 = 0 (camp only): "Camp Only Spell", nothing happens, result 0: the player's menu comes back, the computer's turn goes on to its weapons.
+3. auto = 0: the screen is redrawn for the caster (`FUN_10ba_2b88`, `FUN_43e0_007f`, `FUN_10ba_09e3`).
+4. `t` = casting time (byte 12) / 3. `t` = 0: cast now (`FUN_4e53_0c20(spell, 1, auto)`) and end the turn (`FUN_10ba_2637`).
+5. Otherwise "Begins Casting", R[0] = spell, initiative R[3] −= `t` if it is above `t` (signed), else 1. Result 1: the turn ends but the combatant stays in the order ([[#Turn order (`FUN_320c_0131`)]]), so it is picked again once its lowered initiative is the highest left, at once if it still is. Then the player's turn ([[#Player turn (O, `FUN_320c_031a`)]]) or the computer's ([[#Computer AI]]) casts the queued spell, its targets chosen then.
+6. What stops it on the way:
+   - Damage (weapon or spell, dmg > 0) clears R[1] and the queued spell: "lost a spell", and one copy is forgotten from the **current** character's list, not the caster's (**Bug**, [[#Hit points and status]]). Nothing is cast and the caster, still with initiative, gets a normal turn later in the round, without Cast (R[1] = 0).
+   - Anything that ends its turn through `FUN_10ba_2637` before it is picked again (Hold, Sleep, Snake Charm, effect 31 at event 7; going down, `FUN_577f_0e11`) clears R[0]: nothing is cast and the spell stays memorised.
+   - Round start clears R[0] for everyone, but a caster always comes up again in the same round (its initiative is at least 1), so only those clear it in practice.
+   - Fleeing, Delay and Guard cannot be chosen meanwhile: the next turn casts first.
 
-The spell leaves the memorised list only when it actually goes off (`FUN_4e53_0c20` → `FUN_10ba_148b`). Spell effects and targeting: [[spec/spells]].
+#### The spell going off (O, `FUN_4e53_0c20(var result, announce, auto, spell)`)
+
+In combat (DS:49F3 = 5):
+
+1. Loop: if announce ≠ 0 and the spell is not from an item (DS:6DBF = 0): "*name* Casts a Spell" and "Spell: *spell*" (`FUN_4e53_331a`, whose verb argument "casts" is not shown in combat). Then the target hook (`DS:6B84` entry 0, `FUN_3aae_20c3` in combat) with `auto`: 1 lets the computer choose (see "AI targets" below), 0 the player's Aim.
+2. Targets chosen: the caster turns and the bolt flies, `FUN_10b0_005c`, the spell is forgotten (`FUN_10ba_148b`, unless from an item), then its handler (`DS:6B84 + 4·id`, DS:681B = spell).
+3. No target: auto = 0: "Abort Spell?"; Yes: "Spell Aborted", forgotten (unless from an item); **No: back to 1**, announced and aimed again. auto ≠ 0: "Spell Aborted" and forgotten at once.
+
+The callers: the player's queued cast (announce 1, auto 0), Cast with `t` = 0 (1, the caller's auto), the computer's queued cast (1, 1), Use (`FUN_4894_1a8a`, 0x3A51D: announce 0, auto = the user's Quick flag c[0x10F], DS:6DBF = 1, so not forgotten either). AI targets for a friendly spell (byte 14 = 0, `FUN_3aae_20c3` 0x2C94B): the caster itself; for Cure Light Wounds (spell 3) the patient finder `FUN_3aae_1bf8` ([[#Spells and items]]), and none means no target, so the spell is aborted. The spell leaves the memorised list only when it actually goes off or is aborted. Spell effects and targeting: [[spec/spells]].
 
 ### Turn undead
 
@@ -765,7 +780,7 @@ if not done: done = morale()                       // FUN_3334_10d7; a surrender
 if R[0x14] and not R[0x10]: "flees in panic"
 if done: return
 if use_item():  end turn; return                   // FUN_3334_03e4 (before the queued spell)
-if R[0] > 0: cast queued spell (FUN_4e53_0c20); end turn; return
+if R[0] > 0: cast queued spell (FUN_4e53_0c20(spell, 1, 1), R[0] still set); end turn; return
 if turn_undead(): end turn; return                 // FUN_3334_0203: R[0x11] = 0, cleric level > 0, a target exists
 if cast_spell(): return                            // FUN_3334_0545
 choose_weapons()                                   // FUN_3334_13ca
@@ -810,13 +825,13 @@ A spell (or item power) is accepted when:
 
 1. AI priority (spell byte 13) ≥ `pri`.
 2. Byte 14 (hostile) = 0 and spell ≠ 3: accept at once (buffs; no target check).
-3. Spell 3 (Cure Light Wounds): accept if `FUN_3aae_1bf8` finds a patient: a wounded ally in the 8 neighbouring cells or its own cell (lowest HP; itself if under half HP), preferred if its HP < 8, else a body (cell 0x1F) of a fallen ally. If none, it **falls through** to the hostile test, so CLW is "accepted" whenever an enemy is adjacent (**Bug**, I).
+3. Spell 3 (Cure Light Wounds, the spell id is in the code): accept if `FUN_3aae_1bf8` finds a patient. The finder looks at the 9 cells `DS:2736`/`DS:273F` (the 8 neighbours, then its own): an occupant of the caster's side (c[0x10E]) with HP c[0x11B] < max c[0x32] is taken when its HP is below the best so far (start 0xFF, so the first on a tie) or when it is the caster itself under half its maximum; on a body cell (0x1F) with no occupant, the body (list `DS:66D6` + 7n, count `DS:6715`) lying there whose status is not 6–8 (any side; the last listed). The patient is the wounded combatant if its HP is below 8 or there is no body, else the body. If none, it **falls through** to the hostile test, so CLW is "accepted" whenever an enemy is in reach (touch: adjacent) (**Bug**, O), and then aborted when it goes off ("Spell Aborted", forgotten).
 4. Enemies within range `byte2 + byte3·caster level` (`FUN_4e53_0729`; touch counts as 1): none → reject.
-5. Area spell (byte 15 > 0): for each enemy in range, list the combatants within radius `area` of it (`FUN_56c1_0909`); if any of them is not an enemy (including the caster) → reject. So the AI never risks friendly fire, and there is no minimum enemy count (G's "3 enemies for Fireball" is not in the code).
+5. Area spell (byte 15 > 0): for each enemy in range, list the combatants within radius `area` of it (`FUN_3334_0255` → `FUN_56c1_0909`); if any of them is not an enemy (including the caster) → reject at once, whatever the other enemies. So the AI never risks friendly fire, and there is no minimum enemy count (G's "3 enemies for Fireball" is not in the code).
 
 Item use (`FUN_3334_03e4`): needs R[2], enemies left and ECL 0x49E5 = 0. Passes = d7, priority 7, 6, …; each pass takes the first readied item (not a scroll-type slot 11–13, item[0x3E] < 0x80) whose power item[0x3D] (minus 0x17 if > 0x38) is accepted; used via `FUN_4894_1a8a`.
 
-Spell casting (`FUN_3334_0545`): needs R[1], a memorised spell, and either an NPC/monster (c[0x84] > 0x7F) or "Magic On" (`DS:6E30`); passes = d7 with priority 7, 6, …, each pass 3 random picks from the memorised list; the first accepted is cast (`FUN_3aae_2414`).
+Spell casting (`FUN_3334_0545`): the list is every memorised slot c[0x17..0x2B] that is not 0, a spell still to be learned (id + 0x80) included (with R[1] = 0 the list is empty); passes = d7 is rolled whatever follows (0x238E7); then it needs a non-empty list, either an NPC/monster (c[0x84] > 0x7F) or "Magic On" (`DS:6E30`), and enemies in play; passes with priority 7, 6, …, each up to 3 random picks from the list; the first accepted is begun (`FUN_3aae_2414(auto 1)`) and its result returned, so a camp-only spell refused there lets the turn go on. A pick of a spell still to be learned reads its record past the end of the spell table (I: unpredictable; the port turns it down, IMP-075).
 
 ### Weapon choice (O, `FUN_3334_128d`, `FUN_3334_13ca`)
 
@@ -1141,7 +1156,8 @@ Reproduce these in an authentic port (O unless marked).
 | Experience divisor can be 0 (crash) when only Animated members remain (I) | `FUN_2e08_0000` |
 | NPC treasure share truncated to 8 bits; Share truncated to 16 bits; "takes and hides his share" shown even when nothing was taken | `FUN_2e08_12e8`, `FUN_4c2d_063a` |
 | Monsters drop their remembered party target every pass of the attack loop (side test inverted, I) | `FUN_3334_0b3c` |
-| AI Cure Light Wounds accepted whenever an enemy is adjacent, even with nobody wounded (I) | `FUN_3334_02eb` |
+| AI Cure Light Wounds accepted whenever an enemy is adjacent, even with nobody wounded; it is then begun and aborted ("Spell Aborted", forgotten) | `FUN_3334_02eb`, `FUN_3aae_20c3` |
+| The computer's queued spell goes off with R[0] still set, so damage from its own spell ("lost a spell") costs it a second copy; the player's turn clears R[0] first | `FUN_3334_000f` 0x2347C, `FUN_320c_031a` 0x22412 |
 | Script-placed treasure items give experience unless something was thrown in the battle (I) | `FUN_2e08_0000` |
 | Results loops read the next pointer of a record they just freed | `FUN_2e08_04c9` |
 | Bodies: `FUN_577f_10a7` restores the saved cell at the new position (I) | `FUN_577f_10a7` |

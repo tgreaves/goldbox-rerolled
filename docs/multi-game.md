@@ -79,7 +79,7 @@ and makes one active (`setGame`), switching the live objects the rest of the cod
 | `tables.ts` | START.EXE tables: data segment, address and row size of each (rules, names, frames, temple …) | `T.thac0.at` |
 | `ecl.ts` | the script VM: memory regions, character view, opcode variants, CALL targets, start area | `game().ecl` |
 | `files.ts` | character and save files: extensions, save size, where the party list and wall sets are | `game().saves` |
-| `rules.ts` | rules values and procedure choices: spells, slots, hit points, caster level, thief skills, level limits, money, temple, joining, creation effects, paladin abilities, when a battle is fought on a wilderness field and how that field is built (`wildBattle`, `wildField`: the passes in order with their numbers) | `R` |
+| `rules.ts` | rules values and procedure choices: spells, slots, hit points, caster level, thief skills, level limits, money, temple, joining, creation effects, paladin abilities, when a battle is fought on a wilderness field and how that field is built (`wildBattle`, `wildField`: the passes in order with their numbers), casting in combat (`casting`) | `R` |
 | `spellrules.ts` | spell handlers: every spell id's handler kind and parameters (as the original's handler table), the duration special cases | `game().spells` |
 | `landmarkrules.ts` | what the area map's landmarks look for in the script text (shopkeepers' lines, the temple's god, named places) | `game().landmarks` |
 | `effectrules.ts` | the effect system: event lists in the original's order, area effects, per-type handler map, item kinds | `game().effects` |
@@ -153,6 +153,11 @@ watch, because each is an alternative path in code:
   squares → cells procedure): the one corner cell that differs, the finishing pass (PoR) and the room
   furnishing (CotAB 0x24D63: flag, cells, dice; the chair offsets from START.EXE, `T.furnishDx/Dy`) are
   profile data.
+- `R.casting` (2026-10-21): casting in combat, one procedure for both games (PoR FUN_3aae_2414 /
+  FUN_4e53_0c20, CotAB 0x2CCBD / 0x45251): whose list loses a spell interrupted by damage (PoR the
+  current character, its bug; CotAB the caster), CotAB's miscast (effect 0x4A, 1d2) and the first
+  memorised slot the computer reads (CotAB 1). Cure Light Wounds' patient test is the spell map's
+  `aiTarget`, no longer a spell id in `aiCast`.
 - Optional content modules switched by data: the PoR commissions panel, the tile wilderness.
 
 **Still hard-coded game knowledge in shared code (the gaps).**
@@ -325,6 +330,9 @@ treasure split, Buy, Memorize), the town and overland menus beyond random play, 
 where random play gets (CotAB: Tilverton and the jumped-to areas).
 
 ## Backlog
+
+- The computer's item use in combat (PoR `FUN_3334_03e4`, CotAB 0x2356A, tried before its queued
+  spell and its spell choice) is not ported: computer-run combatants never use items.
 
 - ~~CotAB journal~~: done 2026-10-20, from the Gold Box Wiki's transcription (source from Tristan):
   entries 1–59, tavern tales 1–62 and the four background notes (`data/coab-journal.json`, built by

@@ -229,3 +229,32 @@ is one procedure for both games (the course, two cells a row, the d20 after them
 its cells as offsets): CotAB's numbers are the halves by d2, no pairs, no crossing and `edge: 'clip'`.
 Shared as data: the flag arithmetic (`FlagValue`: a base, then set or add per flag) and the river's
 course. Tested cell for cell against this transcription with scripted dice (`test/wildfield.test.ts`).
+
+## Casting (O)
+
+PoR's casting in combat ([[spec/combat]], "Cast"), routine for routine, with three changes.
+
+| PoR | CotAB | Same / changed |
+|---|---|---|
+| Cast `FUN_3aae_2414` | 0x2CCBD | same: "Camp Only Spell" (byte 11 = 0, DS:37E7 + 16·id), `t` = casting time (byte 12, DS:37E8) / 3, `t` = 0 casts at once (0xC2:0x39 = 0x45251) and ends the turn (0xED:0xC0), else "Begins Casting", rec[0] = spell, initiative −= `t` (at least 1); the redraw with auto = 0 also sets DS:7600 and DS:75FF |
+| player's queued cast (`FUN_320c_031a` 0x22412) | 0x2213E | same: rec[0] cleared, then 0x45251(spell, announce 1, auto 0) |
+| computer's queued cast (`FUN_3334_000f` 0x2347C) | 0x23238 | same: after item use (0x2356A), rec[0] still set, (spell, 1, 1) |
+| the spell going off `FUN_4e53_0c20` | 0x45251 | **changed**: the miscast first (below); then as PoR: announce (DS:757D = 0, from an item, as PoR's 6DBF), the target hook DS:72BA with auto, forget on going off or abort, "Abort Spell?" / "Spell Aborted" (0x4556B) |
+| forget `FUN_10ba_148b(spell)` (current character) | 0xED:0x66 = 0x4E570(character, spell), slots 0–0x53 | **changed**: takes the character |
+| damage `FUN_3aae_02f9` / `FUN_5216_1344` | 0x2AA62 / 0x4CC3C | **changed**: rec[1] = 0 and "lost a spell" as PoR, but the copy is forgotten from the **damaged caster** (0x2AAB4 and 0x4CC8A pass the target, [bp+0xE] / [bp+0xC]): PoR's bug is fixed |
+| spell choice `FUN_3334_0545` | 0x236CB | **changed**: the memorised list is slots **1**–0x53 (0x236E4 starts at 1, the loop ends after 0x53), so slot 0 is never chosen by the computer (I: an off-by-one when the 21 slots became 84); otherwise the same (d7 always rolled, morale byte +0xF7 > 0x7F or Magic On DS:75F4, the enemy side's count DS:6FAA, 3 picks a pass) |
+| acceptance `FUN_3334_02eb` | 0x23471 | same, spell 3 hard-coded (Cure Light Wounds), priority DS:37E9, hostile DS:37EA |
+| patient finder `FUN_3aae_1bf8` | 0x2C34E | same (directions DS:2696/269F, side +0x197, HP +0x1A4 against max +0x78, bodies DS:6E6C + 7n, count DS:6EAB, statuses 6–8 excluded, HP below 8) |
+
+- **Miscast** (0x45373, new): before the loop, a caster with effect 0x4A (has-effect 0xED:0x9D) who rolls 1 on 1d2 (0xE3:0x4D) "miscasts": `0x4A3FD`("miscasts", spell), which in combat shows "*name* Casts a Spell" and "Spell: *spell*" as for any cast (the verb is shown only outside combat), then nothing: no target, no effect, **not forgotten** (so the earlier note "loses the spell" in [[spec/coab/spells]] was wrong). Checked for every cast, from an item too, in and out of combat. Who carries 0x4A in CotAB is ? (its handler 0x28A5E is empty and nothing in the code adds it, [[spec/coab/effects]]); I: data (monster records or saves).
+- **Feeblemind** (effect 68, 0x288E5, the third "lost a spell" string at 0x288D9): INT +0x13 and WIS +0x15 := 7, "is stupid"; in combat (DS:4FD3 = 5) rec[1] = 0 and, with a spell queued, "lost a spell", the spell forgotten from the feebleminded character (0x2896F) and rec[0] = 0. So a caster feebleminded while casting loses the spell and the rest of its casting this round.
+- **Event 21** (0x2209E): fired at a turn's start only when rec[0] = 0, so not on the turn a queued spell goes off.
+
+### Port
+
+`rules/combat.ts`: `beginCast` (both casts), `castSpell(f, s, { fromItem, auto, announce })` (both
+0x45251 / `FUN_4e53_0c20`), `inflict` (lost spell), `aiCast` / `aiAccepts` / `patient`; the profile's
+`R.casting`: `lostFrom` (PoR 'current', CotAB 'target'), `miscast` (CotAB { effect 0x4A, 1d2 }, PoR
+null), `aiFirstSlot` (PoR 0, CotAB 1). Cure Light Wounds' patient test is the spell map's
+`aiTarget: 'woundedNear'` (games/spellrules.ts), not a spell id. Feeblemind is the effect kind
+`feeblemind` (rules/effectkinds.ts). Tests: `test/casting.test.ts`, both games.
