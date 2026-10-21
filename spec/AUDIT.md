@@ -673,7 +673,7 @@ from the C and S series):
 | SY9 | export vs records vs the original | the export always writes the item and effect files (empty when there are none), a server record leaves absent ones out, and the original's roster write deletes empty ones ([input-and-menus.md §2.2](A-games/engine/input-and-menus.md#22-character-files-o-fun_45c5_069e-fun_1802_0425)); every reader reads to the end of the file, so all three load the same | specified (storage.md §7.1, accounts-and-sync.md §1.3) |
 | SY10 | `web/src/store/savefiles.ts` vs `server/zip.ts` | the browser's ZIP writer sets no flags, the server's the UTF-8 flag `0x0800`; harmless, the names are ASCII | specified (storage.md §7.3) |
 | SY11 | `server/storage.ts` `put` | a write for an account deleted while the request ran answers 507 `too many records` | specified (accounts-and-sync.md §2.5) |
-| SY12 | `A-games/engine/savegame.md` "Files", last paragraph | a port statement (the `.GBR` sidecar on export) in part A; its contract is now storage.md §6 | for the step 5 clean-up of part A |
+| SY12 | `A-games/engine/savegame.md` "Files", last paragraph | a port statement (the `.GBR` sidecar on export) in part A; its contract is now storage.md §6 | for the step 5 clean-up of part A **Resolved 2026-10-21:** savegame.md points to storage.md §5 and §6; the write-back rule moved there (PA1) |
 
 **Work-plan step 2 (2026-10-21): part B, the engine model.** Every file of [B-model/](B-model/) is
 written from `web/src/games/`, `rules/`, `vm/engine.ts` and `store/gamefiles.ts`, checked against
@@ -699,7 +699,7 @@ Found while writing (numbered EM, engine model):
 | EM3 | host-contracts.md §6.4, §8 | the dice-tape format and the headless transcript are specified; the reference implementation records and replays neither (its tests replace `roll` with scripted dice) | code and tools task, before the V3/V5 validations **Resolved 2026-10-21:** `TapeRecorder`/`TapePlayer` (`rules/dice.ts`) and the headless runner `web/headless/` (plain Node, `npm run headless`), specified in [host-contracts.md §8](B-model/host-contracts.md#8-the-headless-harness) (script, commands, answers, the transcript's events); tests `headless.test.ts` (commit `3501e73`) |
 | EM4 | `vm/engine.ts` `addNpc` vs [coab/ecl.md](A-games/coab/ecl.md#opcodes) ADD_NPC | the port puts monster id 0x18 on the enemy side and rolls the class pick for the random portrait in every game; CotAB's ADD_NPC has neither ("PoR's enemy side for id 0x18 is gone"), so CotAB's dice tape gains a draw | code task: both as profile data ([adding-a-game.md §4](B-model/adding-a-game.md#4-what-is-still-a-paired-procedure)) **Resolved 2026-10-21:** `ecl.addNpc` (`enemyId`, `tag`, `loaderRolls`, `iconPicture`, [script-vm-map.md §5.4](B-model/script-vm-map.md#54-behaviour-flags-of-shared-opcodes)); the class pick only where the portrait tables exist. Checked in CotAB's binary: its ADD_NPC path makes no draws at all, tags the NPC with its monster id and loads its combat icon from CPIC; tests in `npc.test.ts` (commit `79dda56`) |
 | EM5 | `rules/combat.ts` movement vs [coab/combat.md, "Cell table"](A-games/coab/combat.md#cell-table-o-ds26a4-4-bytes-a-cell) | CotAB's battlefield cells cost 1, 2 or 4 to enter (byte 0); the port treats every cell other than 0xFF as an ordinary step in both games; coab/tables.md §3.12 left it to "the move code" | research (CotAB's move routine) and a code task: the cost as a procedure parameter **Resolved 2026-10-21:** one procedure, the cost = byte 0 × 3 diagonally, × 2 straight (CotAB 0x2AC98; PoR's bytes are all 1 or 0xFF, checked), and `R.battleMove` { `test`, `shortStep` } for what Move, the step routine and the computer's probe compare ([procedures.md §15.5](B-model/procedures.md#155-battlefield-movement)). Also fixed on the way, both games: the computer passes to its next direction when a step costs too much (it stopped moving), and the attacks of opportunity come before the step routine's cost test (PoR's order); tests `battlemove.test.ts` (commit `1e99373`) |
-| EM6 | coab/tables.md §3.7a, §3.8 | stale port statements: the Ring of Wizardry "not yet in the port" (it is `rules.slots.doubler` and item kind 1) and the thief item hooks "need the items passed (later)" (they are the item behaviour `recomputeStats` with `thief`) | for the step 5 clean-up of part A |
+| EM6 | coab/tables.md §3.7a, §3.8 | stale port statements: the Ring of Wizardry "not yet in the port" (it is `rules.slots.doubler` and item kind 1) and the thief item hooks "need the items passed (later)" (they are the item behaviour `recomputeStats` with `thief`) | for the step 5 clean-up of part A **Resolved 2026-10-21:** both sentences removed from coab/tables.md |
 | EM7 | the moved coab/effects.md "Port status" | stale: "the three spell handlers that use the template are not ported" (they are 84, 92, 98: `scare`, `beam`) and "the ECL DAMAGE save does not set DS:6FC2" (it does); annotated where the notes now stand (vocabularies.md §8.2) | none further |
 | EM8 | `games/rules.ts` | the doc comment of `saveCon` stands above `join`, and the CotAB `saveCon` value's comment above `join`'s value | comment-only fix **Resolved 2026-10-21:** both comments moved to `saveCon` (commit `0cd9264`) |
 | EM9 | `vm/engine.ts` DIVIDE | PoR's DIVIDE stops on a divisor of 0 (run-time error 200, as the original), CotAB's `divideRemainder` variant writes 0 and 0; no shipped script divides by 0 | none needed; stated in script-vm-map.md §5.1 |
@@ -741,6 +741,37 @@ Found while writing (numbered UI):
 | UI6 | several | departures without an IMP row: Ctrl-S not offered; EGA video only; camp Save does not ask "Quit TO DOS"; the battle's View keeps the normal palette | register rows ([departures.md §6](C-port/departures.md#6-departures-without-an-imp-row)) |
 | UI7 | `style.css` | dead rules: the party screen's member table (`.members table`, the 600-px rule) from before IMP-045's cards; the `.update-bar` block twice; the `.explore` rules of an older screen | code clean-up |
 | UI8 | `audio/sfx.ts` (C23) | checked against sound.md §7 and coab/assets §8: by effect number the reference plays PoR's script effect 11 (CALL sound, transient) in full, and cuts CotAB's 7, 9, 10 and 13, which CotAB plays to the end (no transient mode, **I**); all other cases agree | code task ([audio.md §3](C-port/audio.md#3-the-cut-off-rule)) |
+
+**Work-plan step 5 (2026-10-21): part A clean-up.** Every file of [A-games/](A-games/) now opens
+with a status line (part, game, which engine file a CotAB file differs from, where parts B and C
+take over), uses the README's evidence marks, and ends with an "Open" section. Statements about the
+port moved to parts B and C or became pointers; where the original leaves an item undefined (**I**,
+**?**) part A states the rule for a conforming build ("a conforming build reads 0 …"). Data the game
+files hold moved to [D-appendices/expected-values.md](D-appendices/expected-values.md) (D5): the
+`ITEMS` table, the random-item array, PoR's battlefield cells, PoR's creation and progression tables,
+CotAB's experience, THAC0, slot and save tables; the credits and code-wheel words as hashes, and the
+credits, code-wheel and ending texts by address (D1). [D-appendices/glossary.md](D-appendices/glossary.md)
+holds the terms part A uses; [addresses.md](D-appendices/addresses.md) lists every PoR routine part A
+cites (490) with the CotAB equivalent where one is named (78). Resolved from the binaries: the image
+header's `x, y` and `cga_map`, starting a new game, the effect record, effects §3 (effect 7's
+formula, the strength encoding, 82's bonus, the creature classes, 94/115), the Alt-X cheat, the
+roster colours, CotAB's miscast item; the rest is in each file's "Open" and
+[open-questions.md](open-questions.md).
+
+Found while doing it (numbered PA):
+
+| # | Where | What | Next |
+|---|---|---|---|
+| PA1 | old `engine/savegame.md` "Files" vs `web/src/data/items.ts`, `effects.ts`, `vm/engine.ts` | part A said the port writes the never-read bytes as 0: effect next pointers and the stem padding are 0, but item records keep their stale pointer bytes as read | specified as the code does it ([C-port/storage.md §5](C-port/storage.md#5-saved-games-and-the-autosave)); savegame.md points there (SY12) |
+| PA2 | [engine/effects.md](A-games/engine/effects.md) row 7 vs `games/effectrules.ts` 7 (`statUp`) | the port raises CON and adds effect 62 (power 0; the original FF) but never applies the CON 15–19 hit-point gain the original computes | code task |
+| PA3 | effects.md row 82 vs `rules/effectkinds.ts` `paralysingAura` | the port always gives the +1 save bonus; the original only when the saver's side has 6 or more combatants in play (`DS:6814`) | code task ([B-model/vocabularies.md, "Open"](B-model/vocabularies.md#open)) |
+| PA4 | effects.md row 47 | the giants' name list needs creature class 1, which only the ogres have (giants 2, trolls 10): a **Bug** of the original | stated in effects.md §3 |
+| PA5 | `engine/effects.md`, `sound.md` | bare five-digit addresses there are Ghidra linear addresses (image + 0x10000), a notation the README's table does not list | stated in both files and in [addresses.md, "Notations"](D-appendices/addresses.md#notations); the README's notation table could add the row |
+| PA6 | [coab/combat.md, "Casting"](A-games/coab/combat.md#casting-o) vs [coab/spells.md §1](A-games/coab/spells.md#1-dispatch-and-shared-helpers-o) | the damage routine is cited as 0x4CC3C in one and 0x4CA6A in the other: 0x4CC3C lies inside 0x4CA6A (the call that passes the target) | addresses.md gives 0x4CA6A; no behaviour differs |
+| PA7 | [coab/effects.md §1](A-games/coab/effects.md#1-dispatch-o) "Handler call" vs the found carrier | effect 0x4A (the miscast) is granted only by the cursed Robe of Vermin (ITEM6 #64), through item kind 0x80 | stated in coab/combat.md; the reference implementation has the miscast (`R.casting.miscast`) |
+| PA8 | [engine/ecl.md](A-games/engine/ecl.md) "Engine registers" vs `vm/engine.ts` | unmapped engine addresses read 0 in the reference; the original's value is undefined | stated as the conforming-build rule |
+| PA9 | `tools/coab/` and coab files | several CotAB files cited scratch scripts (`agents/…`) and a local game path that are not in the repository | removed; the repository's `tools/coab/` scripts are cited instead |
+
 
 ---
 
