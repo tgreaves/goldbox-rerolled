@@ -1,7 +1,7 @@
 # Expected values
 
 > **Status: partial** (work-plan steps 5 and 6, [AUDIT.md](../AUDIT.md) §8). Informative. Part D
-> of the [specification](../README.md). Written: the data dumps moved out of part A in step 5 (§1–§3).
+> of the [specification](../README.md). Written: the data dumps moved out of part A in step 5 (§1–§4).
 > To come: the creation tables, CotAB's tables (now in [coab/tables.md](../A-games/coab/tables.md)
 > beside their addresses), and decoded sizes and hashes for validation V1.
 
@@ -159,3 +159,36 @@ Words 0x2F 0x30 0x31, then weight, value, 0x3C 0x3D 0x3E; "reached by" is the ty
   `2958a597319c976ea4f156bebd0507fccaaae9564ae5a5008fc7f5d7952386d8`. Every word is 6 letters; the
   path strings are 9 characters, cycling solid, dash-dot, dotted with *r*; Dethek rune 2 is 0xFF
   (none) in every record except *r* = 0.
+
+## 4. Pool of Radiance battlefield cells (`DS:2744`)
+
+Source: 4 bytes per cell value at `DS:2744` + 4·cell (image 0xEF04); the byte meanings and the
+image-slot loading are normative in [battlefield.md, "Cell table"](../A-games/engine/battlefield.md#cell-table-o-ds2744-4-bytes-per-cell-value).
+"Image" names what the slot's picture shows (identification only).
+
+| Cells | Image | Move | Sight |
+|---|---|---|---|
+| 0x01–0x16, 0x19 | dungeon wall and door pieces (slots 0–0x15, 0x18) | doors and partial pieces 0x05, 0x09, 0x0B, 0x0D, 0x0F, 0x11 enterable; the rest blocked | blocked pieces block |
+| 0x17 | open ground (slot 0x16, blank) | yes | clear |
+| 0x18 | slot 0x17 | yes | clear |
+| 0x1A, 0x1B | rocks (RandCom 0, 1) | yes | clear |
+| 0x1C | bone (RandCom 2) | yes | clear |
+| 0x1D | potted flower (RandCom 3) | yes | clear |
+| 0x1E | cloud (RandCom 4) | yes | clear |
+| 0x1F | fallen body (RandCom 5) | yes | clear |
+| 0x20–0x23 | tree crowns (Wild 0–3) | no | blocks |
+| 0x24–0x27 | tree trunks, 0x27 = swamp tree (Wild 4–7) | yes | clear |
+| 0x28, 0x29 | fallen logs (Wild 8, 9) | no | clear |
+| 0x2A–0x2D | rocks and a boulder (Wild 10–13) | yes | clear |
+| 0x2E–0x30 | grass tufts (Wild 14–16) | yes | clear |
+| 0x31 | puddles (Wild 17) | yes | clear |
+| 0x32, 0x33 | river, left and right bank (Wild 18, 19) | no | clear |
+| 0x34, 0x35 | ford (Wild 20, 21) | yes | clear |
+| 0x36 | open ground (Wild 22) | yes | clear |
+| 0x37, 0x38 | shrubs (Wild 23, 24) | no | clear |
+| 0x39 | low grass (Wild 25) | yes | clear |
+| 0x3A, 0x3B | reeds (Wild 26, 27) | yes | clear |
+| 0x3C | marsh weed (Wild 28) | no | clear |
+| 0x3D–0x3F | cactus (Wild 29–31) | no | blocks |
+| 0x40 | tall cactus base (Wild 32) | yes | clear |
+| 0x41 | tall cactus top (Wild 33) | no | blocks |

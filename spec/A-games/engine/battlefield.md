@@ -5,7 +5,11 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Battlefield (O, `FUN_34c7_1e31`)
 
-Part of the [specification](../../README.md), part A. The battle grid and how it is built from a map area or a wilderness square. Conventions (evidence marks, `c[x]`, `R[x]`, distances, the combat record) are those of [combat-rules.md](combat-rules.md#conventions). Curse of the Azure Bonds: [coab/combat.md](../coab/combat.md).
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. The engine model states each generator once with each game's
+> parameters ([B-model/procedures.md §15.4](../../B-model/procedures.md#154-battlefields)).
+
+The battle grid and how it is built from a map area or a wilderness square. Conventions (evidence marks, `c[x]`, `R[x]`, distances, the combat record) are those of [combat-rules.md](combat-rules.md#conventions). Curse of the Azure Bonds: [coab/combat.md](../coab/combat.md).
 
 
 1. Load combat icon set: `DUNGCOM` when `DS:49FA` = 1 (map area), otherwise `WILDCOM`/`RANDCOM` (`FUN_34c7_1244`)
@@ -86,12 +90,8 @@ Runs if d100 ≤ 75 (flag 0x10) or ≤ 35 (flag 0x20); the d100 is rolled whatev
 The d20 is rolled in every row the river crosses, also when an odd count forces the ford. The ford
 procedure takes the row and column it is called with and writes through the flat grid too.
 
-Port: matches this since 2026-10-20 (`rules/battlefield.ts` `river`, the procedure CotAB's river uses
-too, with PoR's numbers in the profile: fixed banks, `pairs`, the crossing, `edge: 'spill'`); the tree,
-scatter and finishing passes scan columns outer. Before that the port rolled single-row fords before
-the banks, always added a two-cell crossing, skipped the d100 without a river flag, clipped the
-column-49 write and scanned rows outer. Tested whole field for field against a statement-by-statement
-transcription of `FUN_34c7_11b4` and its passes (`test/wildfield.test.ts`).
+*Informative:* the reference implementation's field is checked cell for cell against a
+statement-by-statement transcription of `FUN_34c7_11b4` and its passes (`web/test/wildfield.test.ts`).
 
 ### Tree pass (O, `FUN_34c7_0d13`)
 
@@ -117,39 +117,19 @@ Parameters: `a` = 0, `b` = 15, `c` = 0, `d` = 40. Flag 0x02 → b 45, d 10; 0x04
 
 | Byte | Meaning |
 |---|---|
-| 0 | movement: 1 = enterable, 0xFF = blocked (**I**: values fit the images; reader not yet traced) |
+| 0 | movement: 1 = enterable, 0xFF = blocked; read by Move `FUN_320c_09df` and the computer's probe `FUN_3334_0675` (O; [combat-rules.md, "Move"](combat-rules.md#move-fun_320c_09df), [B-model/procedures.md §15.5](../../B-model/procedures.md#155-battlefield-movement)) |
 | 1 | eye height used by line of sight (0 for every cell) |
 | 2 | sight block: 2 = blocks line of sight, 0 = see-through |
 | 3 | image slot to draw |
 
 Image slots are filled at battle start (`FUN_34c7_1244`): `DungCom` (25 images) or `WildCom` (34 images) into slots from 0, then `RandCom` (6 images) into slots 0x22–0x27. Cells 0x00–0x1F are the map-area set and cells 0x20–0x41 the wilderness set; cells 0x1A–0x1F are shared (RandCom).
 
-| Cells | Image | Move | Sight |
-|---|---|---|---|
-| 0x01–0x16, 0x19 | dungeon wall and door pieces (slots 0–0x15, 0x18) | doors and partial pieces 0x05, 0x09, 0x0B, 0x0D, 0x0F, 0x11 enterable; the rest blocked | blocked pieces block |
-| 0x17 | open ground (slot 0x16, blank) | yes | clear |
-| 0x18 | slot 0x17 | yes | clear |
-| 0x1A, 0x1B | rocks (RandCom 0, 1) | yes | clear |
-| 0x1C | bone (RandCom 2) | yes | clear |
-| 0x1D | potted flower (RandCom 3) | yes | clear |
-| 0x1E | cloud (RandCom 4) | yes | clear |
-| 0x1F | fallen body (RandCom 5) | yes | clear |
-| 0x20–0x23 | tree crowns (Wild 0–3) | no | blocks |
-| 0x24–0x27 | tree trunks, 0x27 = swamp tree (Wild 4–7) | yes | clear |
-| 0x28, 0x29 | fallen logs (Wild 8, 9) | no | clear |
-| 0x2A–0x2D | rocks and a boulder (Wild 10–13) | yes | clear |
-| 0x2E–0x30 | grass tufts (Wild 14–16) | yes | clear |
-| 0x31 | puddles (Wild 17) | yes | clear |
-| 0x32, 0x33 | river, left and right bank (Wild 18, 19) | no | clear |
-| 0x34, 0x35 | ford (Wild 20, 21) | yes | clear |
-| 0x36 | open ground (Wild 22) | yes | clear |
-| 0x37, 0x38 | shrubs (Wild 23, 24) | no | clear |
-| 0x39 | low grass (Wild 25) | yes | clear |
-| 0x3A, 0x3B | reeds (Wild 26, 27) | yes | clear |
-| 0x3C | marsh weed (Wild 28) | no | clear |
-| 0x3D–0x3F | cactus (Wild 29–31) | no | blocks |
-| 0x40 | tall cactus base (Wild 32) | yes | clear |
-| 0x41 | tall cactus top (Wild 33) | no | blocks |
+The four bytes of every cell value are informative: read from `DS:2744` (in the shipped data byte 0 is 1 or 0xFF,
+byte 1 is 0 and byte 2 is 0 or 2); the full table, with what each image shows, is
+in [expected-values.md §4](../../D-appendices/expected-values.md#4-pool-of-radiance-battlefield-cells-ds2744).
+The cells the code itself writes are normative: 0x17 open ground (the fill), 0x1A–0x1D (the
+finishing pass), 0x1E a cloud and 0x1F a fallen body (combat), and the river, tree and scatter
+cells named in the passes above.
 
 The two-cell objects (trees, tall cactus) put the obstacle in the upper cell and leave the lower cell walkable.
 
@@ -166,7 +146,7 @@ Returns true if the target was reached, with `range` set to the cost; otherwise 
 
 ## Map areas: squares → cells (`FUN_34c7_0810`)
 
-All of this subsection is **O**. Called from `FUN_34c7_1244` when `DS:49FA` = 1 (otherwise `FUN_34c7_11b4`), right after the grid is allocated with `GetMem(0x4E9)` (not cleared) and header bytes [4] = 0, [5] = 1, [6] = 0 are set. Reference implementation: `tools/battlefield.py`.
+All of this subsection is **O**. Called from `FUN_34c7_1244` when `DS:49FA` = 1 (otherwise `FUN_34c7_11b4`), right after the grid is allocated with `GetMem(0x4E9)` (not cleared) and header bytes [4] = 0, [5] = 1, [6] = 0 are set. *Informative:* reference implementation `tools/battlefield.py`.
 
 **Orientation.** The party's facing (`DS:6AAF`) is never read: the grid is always north-up, with columns running east and rows running south. Each map square is a parallelogram sheared one column right per row. Facing only matters later, for the combatants' facing and deployment zones.
 
@@ -253,6 +233,5 @@ Columns 0–49 outer, rows 0–24 inner. On each cell whose image slot `DS:2747[
 
 Wilderness battlefields also run this pass.
 
-Port: `rules/battlefield.ts` `mapBattlefield`, one procedure with CotAB's 0x2555D (coab/combat.md
-"Map-area generator"); PoR's profile (`R.mapField`) gives the corner cell 0x04, the finishing pass and
-no furnishing.
+The engine model's map-area procedure (one for both games, with PoR's corner cell 0x04, the
+finishing pass and no furnishing) is [B-model/procedures.md §15.4](../../B-model/procedures.md#154-battlefields).
