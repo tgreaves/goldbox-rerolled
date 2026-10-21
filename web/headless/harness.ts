@@ -127,7 +127,7 @@ export async function runScript(o: RunOptions): Promise<RunResult> {
       return a
     },
     view: async () => {},
-    sound: (n) => out({ event: 'sound', n }),
+    sound: (n, mode) => out({ event: 'sound', n, mode }),
     pick: async (prompt, items) => { const answer = index(items, prompt, true); out({ event: 'menu', items, prompt, answer }); return answer },
   }
 
@@ -153,7 +153,7 @@ export async function runScript(o: RunOptions): Promise<RunResult> {
     sprite: (sprite, picture, distance) => { shown = { sprite, picture, distance }; out({ event: 'sprite', sprite, picture, distance }) },
     clearView: () => { shown = null },
     refresh: async () => {},
-    sound: (n) => out({ event: 'sound', n }),
+    sound: (n, mode) => out({ event: 'sound', n, mode }),
     pause: async () => {},
     async engine(what, info) {
       out({ event: 'screen', what, info: info ?? null })

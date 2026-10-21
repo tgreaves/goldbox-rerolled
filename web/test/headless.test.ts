@@ -56,6 +56,10 @@ describe.skipIf(!have)('headless runner', () => {
     const kinds = new Set(a.events.map((e) => e.event))
     for (const k of ['area', 'command', 'write', 'sound', 'screen', 'menu', 'combat', 'end']) expect(kinds).toContain(k)
     expect(a.events.find((e) => e.event === 'screen' && e.what === 'combat')).toBeTruthy()
+    // each sound as its call site plays it (spec/C-port/audio.md §3.1): steps, hits and misses transient
+    const sounds = a.events.filter((e) => e.event === 'sound') as unknown as { n: number; mode: string }[]
+    expect(sounds.some((e) => e.n === 10)).toBe(true)
+    for (const e of sounds) if (e.n !== 11) expect([e.n, e.mode]).toEqual([e.n, [7, 9, 10].includes(e.n) ? 'transient' : 'full'])
     expect(a.tape.draws.length).toBeGreaterThan(50)
     const b = await run({ tape: a.tape })
     expect(b.lines).toEqual(a.lines)

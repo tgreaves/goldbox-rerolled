@@ -177,6 +177,7 @@ Each demo flag is read by the procedure it changes; a later game's demo is its p
 |---|---|---|---|
 | `segment` | image offset of the driver's code segment in START.EXE's load image | 0x8AE0 (segment 0x18AE) | 0x6990 (segment 0x0699) |
 | `shift` | added to every PoR driver offset (variables, tables, handlers, pointers inside tables) | 0 | −0xBD (**O**: 5 211 of 5 955 bytes equal at that shift) |
+| `transient` | whether `PlaySound` has a transient mode: outside the sections that play in full it stops the effect after `delay(10)` ([C-port/audio.md §3](../C-port/audio.md#3-the-cut-off-rule)) | true (`FUN_18ae_00dc`, `DS:5374`, **O**) | false (0x69B0 starts the effect and returns, **O**) |
 
 The driver and its effects are part A ([engine/sound.md](../A-games/engine/sound.md),
 [coab/assets.md §8](../A-games/coab/assets.md#8-config-video-palette-sound)); the port's playback is

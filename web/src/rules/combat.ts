@@ -15,6 +15,7 @@ import { casterLevel, duration as spellDuration, forget, itemSpellId } from './m
 import { F } from '../games/fields'
 import { R, formerLevelsCount } from '../games/rules'
 import { T } from '../games/tables'
+import type { SoundMode } from '../games/sound'
 import { Tables } from './chargen'
 
 const DX = [0, 1, 1, 1, 0, -1, -1, -1], DY = [-1, -1, 0, 1, 1, 1, 0, -1]
@@ -96,7 +97,8 @@ export interface CombatUi {
   aim(f: Fighter, entries: AimEntry[], prompt: string, allowCell: boolean, area?: (x: number, y: number) => { x: number; y: number }[]): Promise<AimEntry | null>
   confirm(prompt: string): Promise<boolean>
   view(c: Uint8Array): Promise<void>
-  sound(n: number): void
+  /** `mode` as the original's call site plays it (spec/C-port/audio.md §3) */
+  sound(n: number, mode: SoundMode): void
   /** a spell or item list; −1 = exit */
   pick(prompt: string, items: string[], notes?: string[]): Promise<number>
 }
@@ -1165,7 +1167,7 @@ export class Battle implements FxHost {
     a.r[8] = 1
     const ac = a.c, tc = t.c
     if (this.helpless(tc)) {
-      this.ui.sound(7)
+      this.ui.sound(7, 'transient') // FUN_3aae_1406: transient
       this.print(`${name(ac)} slays helpless ${name(tc)} with one cruel blow`)
       this.inflict(t, tc[F.hp] + 5)
       await removeType(this, ac, 25)
@@ -1206,7 +1208,7 @@ export class Battle implements FxHost {
           const n = fx.dmg
           // a hit: the line, sound 7 and the message pause; weapons have no flash (FUN_3aae_1406)
           this.print(`${name(ac)} ${verb} ${name(tc)}${kind === 1 ? ' (from behind)' : ''} Hitting for ${n} point${n === 1 ? '' : 's'} of damage`)
-          this.ui.sound(7)
+          this.ui.sound(7, 'transient') // FUN_3aae_1406: transient
           await this.settle() // the target falls after its hit display
           this.inflict(t, n)
           if (this.inPlay(t)) await fire(this, ac, h + 1)
@@ -1214,7 +1216,7 @@ export class Battle implements FxHost {
       }
     }
     // all missed: the line, sound 9 and the pause
-    if (!hit) { this.print(`${name(ac)} Attacks ${name(tc)} and Misses`); this.ui.sound(9) }
+    if (!hit) { this.print(`${name(ac)} Attacks ${name(tc)} and Misses`); this.ui.sound(9, 'transient') }
     a.r[5] = 0
     this.recalc(ac)
     await this.settle()
@@ -1427,7 +1429,7 @@ export class Battle implements FxHost {
     await this.cloudCheck(f)
     if (!this.inPlay(f) || this.helpless(f.c)) f.r[6] = 0
     // each step plays the footstep (sound 10) in transient mode, which holds the game for delay(10 cs)
-    this.ui.sound(10)
+    this.ui.sound(10, 'transient')
     this.ui.redraw(f)
     await this.settle()
     await this.ui.pause(100)
@@ -1525,7 +1527,7 @@ export class Battle implements FxHost {
       this.ui.pose?.(f, true)
       this.ui.flight?.({ x: f.x, y: f.y }, aim, { frames: cycle(5), delay: 30, sounds: [sound, 0] })
       this.ui.pose?.(f, false)
-    } else this.ui.sound(sound)
+    } else this.ui.sound(sound, 'full') // FUN_4e53_0c20: inside SetResident(0)
     fx.spell = s.id
     fx.area = (s.target & 0xf) >= 8 && (s.target & 0xf) <= 14
     try { await this.applySpell(f, s, L, targets) } finally { fx.spell = 0; fx.area = false }

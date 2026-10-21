@@ -38,7 +38,7 @@ the engine then does nothing for that call.
 | `sprite(sprite, picture, distance)` | the encounter sprite (APPROACH, LOAD_MONSTER) | draw sprite record `sprite` at distance 0 (nearest) to 2, or the picture once it is at distance 0 |
 | `clearView()` (optional) | after every move, turn and area entry, and on CALL refresh when the view changed | drop whatever scripts put over the view (picture, its animation, the sprite) |
 | `refresh()` → done | CALL refresh, area entry, after moves and turns, REDRAW_SCREEN | bring the view up to date with the position, facing, map and wall sets (the engine's state, §3.2), then resolve |
-| `sound(n)` | a sound effect of the original's number | play it ([C-port/audio.md](../C-port/audio.md)); 10 footstep, 7 bump, 11 the script effect |
+| `sound(n, mode)` | a sound effect of the original's number; `mode` `full` or `transient`, as the original's call site plays it | play it, cut off when `mode` is `transient` and the game has a transient mode ([C-port/audio.md §3](../C-port/audio.md#3-the-cut-off-rule)); 10 footstep, 7 bump, 11 the script effect, all transient |
 | `clearTop(on)` (optional) | CLEAR_TOP | blank the view (true) until the script exits (false) |
 | `glyphs(codes, at)` (optional) | PRINT_LIST | draw raw font glyphs at a text cell of the cleared view, or inline in the text (`at` null) |
 | `river()` → done (optional) | the river cleansing, on entering the cleansed overland area | play the cleansing ([engine/overland.md, "River cleansing"](../A-games/engine/overland.md#river-cleansing-o-fun_4804_06b3)) |
@@ -133,7 +133,7 @@ depend on the queue.
 | `aim(f, entries, prompt, allowCell, area?)` → entry or null | wait | pick a target among entries (nearest first; each `{ f, x, y, cost, ok, note? }`), or a cell when `allowCell`; `area(x, y)` previews an area spell's squares; null = exit |
 | `confirm(prompt)` → boolean | wait | a yes/no question ("Continue Battle:", "Abort spell?") |
 | `view(c)` | wait | the character sheet for a combatant (View), returning when closed |
-| `sound(n)` | immediate | a sound effect |
+| `sound(n, mode)` | immediate | a sound effect, `mode` as for the script host (§2) |
 | `pick(prompt, items, notes?)` → index | wait | a spell or item list; −1 = exit |
 
 The pacing of part A ([engine/combat-rules.md, "Pacing"](../A-games/engine/combat-rules.md#pacing-o))
@@ -299,7 +299,7 @@ the order listed.
 | `input` | `kind`, then: `number`, `text`: `answer`; `step`: `left` (movement left), `answer`; `aim`: `prompt`, `targets` (each `name`, `x`, `y`, `ok`), `answer`; `confirm`: `prompt`, `answer` |
 | `picture` | `picture`: the `picture` argument (`{pic}`, `{big}`, `{head, body}` or null) |
 | `sprite` | `sprite`, `picture`, `distance` |
-| `sound` | `n` (the script host's and the combat host's `sound`; the sounds of presentation calls are not transcribed) |
+| `sound` | `n`, `mode` (the script host's and the combat host's `sound`; the sounds of presentation calls are not transcribed) |
 | `area` | `block`, `area`, `x`, `y`, `facing2`: once when play has started, and after each area entry (§3.2 `enter`) |
 | `write` | `address` (canonical), `value`: every store an opcode makes to an ECL variable, in order (writes by the rules, such as combat's outcome or the clock, are not transcribed) |
 | `command` | `command`: each script command, before it runs |

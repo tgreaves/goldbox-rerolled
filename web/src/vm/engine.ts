@@ -6,6 +6,7 @@ import { R, classLevel } from '../games/rules'
 import { installNames } from '../data/character'
 import { canonical, native, viewRead, type EclVariant } from '../games/ecl'
 import { game } from '../games/profile'
+import type { SoundMode } from '../games/sound'
 import { T } from '../games/tables'
 import { parseSave } from '../data/save'
 import type { GameFiles } from '../store/gamefiles'
@@ -77,8 +78,9 @@ export interface Io {
   clearView?(): void
   /** Bring the view up to date with position, map and wall sets (CALL 0x2C90, area entry). */
   refresh(): Promise<void>
-  /** A sound effect by the original's number (FUN_18ae_00dc): 10 footstep, 7 bump, 11 script effect. */
-  sound(n: number): void
+  /** A sound effect by the original's number (FUN_18ae_00dc): 10 footstep, 7 bump, 11 script effect;
+   *  `mode` as the original's call site plays it (spec/C-port/audio.md §3) */
+  sound(n: number, mode: SoundMode): void
   /** CLEAR_TOP (FUN_29c3_2b14): blank the view (true) until the script exits (false). */
   clearTop?(on: boolean): void
   /** PRINT_LIST (FUN_29c3_2e7d): raw font glyphs, in the cleared view at a text cell, or inline in the text. */
@@ -629,7 +631,7 @@ export class Engine {
         this.readops(0)
         if (this.B[SPRITE_DIST - B0]) {
           this.B[SPRITE_DIST - B0]--
-          this.io.sound(10) // not in the original: a footstep as the sprite approaches (IMP-014)
+          this.io.sound(10, 'transient') // not in the original: a footstep as the sprite approaches (IMP-014), cut as PoR's footsteps
           if (this.spriteNow) this.io.sprite(this.spriteNow.sprite, this.spriteNow.picture, this.B[SPRITE_DIST - B0])
         }
         break
@@ -1357,7 +1359,7 @@ export class Engine {
     else if (a === calls.sound) {
       const { by, other } = game().ecl.callSounds
       const n = by[this.regs.get(0x3de) ?? -1] ?? other
-      if (n !== null) this.io.sound(n)
+      if (n !== null) this.io.sound(n, 'transient') // FUN_29c3_2ccf: outside any SetResident(0) section
     }
     else if (a === 0xc01e) {
       const [dx, dy] = STEP[this.facing]
@@ -1606,7 +1608,7 @@ export class Engine {
   async command(c: string) {
     if (c === 'l' || c === 'r' || c === 'b') {
       this.facing2 = (this.facing2 + ({ l: 6, r: 2, b: 4 } as Record<string, number>)[c]) % 8
-      if (c !== 'b') this.io.sound(10) // FUN_3e76_0989: quarter turns step, turning round is silent
+      if (c !== 'b') this.io.sound(10, 'transient') // FUN_3e76_0989: quarter turns step, turning round is silent
       this.clearPictures() // the view is drawn for the new facing
       await this.io.refresh()
       return
@@ -1650,10 +1652,10 @@ export class Engine {
         this.x = (this.x + dx) & 15
         this.y = (this.y + dy) & 15
         await advanceClock(this, this.B[SEARCH_LOOK - B0] & 1 ? 10 : 1, MINUTE) // FUN_3e76_073b
-        this.io.sound(10) // main loop: footstep when the position changed
+        this.io.sound(10, 'transient') // main loop: footstep when the position changed
       } else {
         blocked = p === 0 ? 1 : 2
-        this.io.sound(7) // FUN_3e76_0d6d: bump, or the door held
+        this.io.sound(7, 'transient') // FUN_3e76_0d6d: bump, or the door held
       }
     }
     this.clearPictures() // FUN_3e76_0d6d: after the move, the picture and the encounter sprite go

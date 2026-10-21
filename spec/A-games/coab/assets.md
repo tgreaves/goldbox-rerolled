@@ -172,7 +172,7 @@ There are no other palette writes and no port 3C0h access (O).
   - **0xFF → start(0) on both, uninstall the INT 08h hook, `DS:5C06` := 0**;
   - 2–14 → start effect n−1 on the PC (mode 0) or Tandy (mode 1);
   - **15 → watchdog `0699:011E` := 5000** ticks, about 21 s to the fake "Run-time Error 209". No caller pushes 15 (?).
-  - **There is no PoR-style 10-cs "transient" cut-off** (no `DS:5374` logic). Reinstall = `0x6A64` (`DS:5C06` := 1). The main program brackets its overlay calls with PlaySound(0xFF) and `0x6A64` when `DS:5C06` says so (O; I: keeps the timer hook out of disk and overlay loads). Effects otherwise play to the end (I).
+  - **There is no PoR-style 10-cs "transient" cut-off** (no `DS:5374` logic). Reinstall = `0x6A64` (`DS:5C06` := 1). The main program brackets its overlay calls with PlaySound(0xFF) and `0x6A64` when `DS:5C06` says so (O; I: keeps the timer hook out of disk and overlay loads). Effects otherwise play to the end (O: 0x69B0 starts the effect and returns, with no delay and no stop).
 - Constant table `DS:25AC` = 0xFF, `25AE` = 0, `25B0` = 1, …, `25CC` = 15. Call counts: 0×4, 1×5, 2×2, 3×1, 4×1, 5×3, 6×2, 7×2, 8×1, 9×3, 10×7, 11×2, 12×2, 13×1 (title).
 
 ## 9. Summary of differences

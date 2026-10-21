@@ -109,7 +109,7 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
       e.preventDefault()
       const d = b.dataset
       if (d.speed && host.speed) host.speed.set(Math.max(0, Math.min(9, host.speed.get() + Number(d.speed))))
-      else if (d.sound) { setSoundDevice(d.sound as Device); unlockAudio(); if (d.sound !== 'off') play(10) }
+      else if (d.sound) { setSoundDevice(d.sound as Device); unlockAudio(); if (d.sound !== 'off') play(10, 'transient') }
       else if (d.font) setFontChoice(d.font as 'original' | 'modern')
       else if (d.borders) setFrameChoice(d.borders as FrameChoice)
       else if (d.textsize) setTextSize(d.textsize as TextSize)

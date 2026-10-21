@@ -6,6 +6,7 @@ import { parseRecord, type Picture } from '../data/image'
 import { buildIcon } from '../render/icon'
 import { CombatView, type Figure, type Sprite } from '../render/combatview'
 import { F } from '../games/fields'
+import type { SoundMode } from '../games/sound'
 import { Line, cycle, fight, footprint, type AimEntry, type Battle, type CombatUi, type Fighter, type Flight, type SpriteFrame } from '../rules/combat'
 
 export interface BattleScreen {
@@ -17,7 +18,7 @@ export interface BattleScreen {
   /** a skippable wait (a click, tap or key ends it early) */
   pause(ms: number): Promise<void>
   view(c: Uint8Array): Promise<void>
-  sound(n: number): void
+  sound(n: number, mode: SoundMode): void
   /** set while a step or aim waits for a tap or key; the screen routes input here */
   input: { key?: (e: KeyboardEvent) => boolean; tap?: (e: MouseEvent) => void; hover?: (e: MouseEvent) => void }
   refreshRoster(): void
@@ -302,19 +303,20 @@ export async function runBattle(s: BattleScreen) {
         if (who) falling.delete(who)
         sprites = cells.map((c) => ({ x: c.col * 24, y: c.row * 24, rec: 11 }))
         draw()
-        s.sound(5)
+        s.sound(5, 'full') // FUN_577f_0e11: inside SetResident(0)
         try { await s.pause(ms) } finally { sprites = []; draw() }
       })
     },
     pose: (f, on) => later(async () => { if (on) poses.add(f); else poses.delete(f); draw() }),
     flight: (from, to, how) => later(async () => {
-      if (how.sounds?.[0]) s.sound(how.sounds[0])
+      // the missile and spell sounds are made inside SetResident(0) sections (FUN_3aae_26b0, FUN_4e53_0c20)
+      if (how.sounds?.[0]) s.sound(how.sounds[0], 'full')
       await fly(from, to, how)
-      if (how.sounds?.[1]) s.sound(how.sounds[1])
+      if (how.sounds?.[1]) s.sound(how.sounds[1], 'full')
     }),
     // FUN_10ba_1feb: sparkle (COMSPR 9, sound 4) or starburst (COMSPR 10, sound 3) at the top-left cell
     effect: (f, kind, cycles, holdAfter) => later(async () => {
-      s.sound(kind === 'sparkle' ? 4 : 3)
+      s.sound(kind === 'sparkle' ? 4 : 3, 'full') // inside SetResident(0)
       await flicker([{ row: f.y, col: f.x }], cycle(kind === 'sparkle' ? 9 : 10), cycles)
       if (holdAfter > 0) await s.pause(holdAfter)
     }),
@@ -380,7 +382,7 @@ export async function runBattle(s: BattleScreen) {
     }),
     confirm: async (prompt) => (await s.menu(['YES', 'NO'], { prompt })) === 0,
     view: (c) => s.view(c),
-    sound: (n) => s.sound(n),
+    sound: (n, mode) => s.sound(n, mode),
     pick: async (prompt, items, notes) => {
       if (!items.length) return -1
       const i = await s.menu([...items, 'EXIT'], { prompt, vertical: true, notes })

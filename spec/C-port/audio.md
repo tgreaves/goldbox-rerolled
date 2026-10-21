@@ -88,27 +88,29 @@ Ruling C23 ([AUDIT.md §6.8](../AUDIT.md#68-decisions-taken-2026-10-21)): the po
   the clock's phase (**I**); the port picks a length in 14 … 26 at random for each play (presentation
   only, any generator, D2).
 - **Curse of the Azure Bonds** ([coab/assets.md §8](../A-games/coab/assets.md#8-config-video-palette-sound)):
-  `PlaySound` has no transient mode: every effect plays to its end (**I**: no cut-off code was found).
+  `PlaySound` (0x69B0) has no transient mode: it starts the effect and returns, with no delay and no
+  stop, so every effect plays to its end (**O**). Its only stops are `PlaySound(0)` at start-up and in
+  the resident code, and `PlaySound(0xFF)` around the main program's overlay calls (0x1A073 …), which
+  a conforming build need not model (presentation only).
 
-So a conforming build plays effect *n* to its end exactly when the game has no cut-off, or the
-original's call site for that play is a full one; otherwise it stops the effect at the cut tick. The
-call site travels with the request: the engine's and the battle's `sound(n)` calls are made at the
-places the table names ([B-model/host-contracts.md §2](../B-model/host-contracts.md#2-the-script-host-io),
-§4.2), so the host knows which length each call has.
+So a conforming build plays effect *n* to its end exactly when the game has no transient mode
+(profile `sound.transient`, [B-model/profile.md §3.4](../B-model/profile.md#34-the-sound-driver-sounddriver)),
+or the original's call site for that play is a full one; otherwise it stops the effect at the cut tick.
+The call site travels with the request: the engine's and the battle's `sound(n, mode)` calls are made
+at the places the table names, each with its mode `full` or `transient`
+([B-model/host-contracts.md §2](../B-model/host-contracts.md#2-the-script-host-io), §4.2), and the
+host cuts a `transient` effect only in a game with a transient mode. The call sites are the engine's
+(they are the same routines in every game); whether they cut is the game's.
 
-### 3.2 The reference implementation (known deviation)
+### 3.2 The reference implementation
 
-The reference decides **by effect number**: effects 2, 3, 4, 5, 6, 8, 11 and 12 play in full,
-every other effect is cut, in both games (`sfx.ts`, `FULL`). Against §3.1 this differs in:
-
-| Game | Case | Original | Reference |
-|---|---|---|---|
-| PoR | effect 11 from the script's CALL sound | cut | full |
-| CotAB | effects 7, 9, 10 (hits, misses, footsteps, the bump, IMP-014's footstep) and 13 (the title's) | full | cut |
-
-Everything else agrees. This is a code task ([AUDIT.md](../AUDIT.md) §6.9, C23 and UI8): the call
-sites pass the length (or the profile states the game's cut-off and each call site its kind), and the
-`FULL` list goes.
+`audio/sfx.ts` `play(n, mode)` and `cutTick` decide as §3.1 says, from the call site's mode and the
+profile's `sound.transient`. The modes at the call sites: the footsteps, the bump, the script's CALL
+sound (effects 10 and 11), hits and misses (7, 9), IMP-014's footstep, the title's effect and the
+Sound setting's sample are `transient`; the skull, the starburst and the sparkle, spell casts and the
+missile and spell flights are `full`. So PoR's script effect 11 is cut and its spell effect 11 is not,
+and in CotAB every effect plays to its end. (Until 2026-10-21 the reference decided by effect number,
+playing PoR's script effect 11 in full and cutting CotAB's 7, 9, 10 and 13: C23, UI8, resolved.)
 
 ## 4. Where the port plays effects
 
@@ -136,12 +138,11 @@ sites pass the length (or the profile states the game's cut-off and each call si
 
 - `web/test/sound.test.ts`: every effect, both devices, against `tools/sound.py` sample for sample;
   `web/test/coabsound.test.ts`: CotAB's driver gives the same effects where the data match.
-- The cut-off by call site: to be tested when the code task is done (a test that plays each call
-  site's effect and checks its length).
+- The cut-off by call site: `web/test/soundcut.test.ts` (the profile's `transient`, the cut tick per
+  mode and game, the script's CALL sound transient for effects 10 and 11); `headless.test.ts` checks
+  the mode of every sound of a scripted walk and battle.
 
 ## Open
 
-- C23/UI8: §3.2.
-- Whether CotAB really never cuts an effect off is **I** ([coab/assets.md §8](../A-games/coab/assets.md#8-config-video-palette-sound)).
 - IMP-014's "*In progress*" marker: the footstep on APPROACH is done; nothing else is planned
   ([departures.md](departures.md)).

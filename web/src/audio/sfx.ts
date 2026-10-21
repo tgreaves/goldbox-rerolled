@@ -3,6 +3,8 @@
 
 import { renderEffect, renderTandy } from './driver'
 import { unexepack } from '../data/exepack'
+import { game } from '../games/profile'
+import type { SoundMode } from '../games/sound'
 
 const KEY = 'poolrad.sound'
 let ctx: AudioContext | null = null
@@ -51,16 +53,18 @@ export function unlockAudio() {
   if (ctx.state === 'suspended') ctx.resume()
 }
 
-/**
- * Play effect n. By default the game stops an effect after about 0.1 s: PlaySound waits
- * 10 centiseconds of BIOS time, which is 14-26 driver ticks depending on the clock phase.
- * full: play to the end (the game does this only in some sections, spec/A-games/engine/sound.md).
- */
-/** effects the original plays with SetResident(0), i.e. to the end (spec/A-games/engine/sound.md §6–7) */
-const FULL = new Set([2, 3, 4, 5, 6, 8, 11, 12])
-export function play(n: number, full = FULL.has(n)) {
+/** The driver ticks after which a transient effect stops, or undefined when it plays to its end. */
+export function cutTick(mode: SoundMode, transient = game().sound.transient, rand = () => Math.random()): number | undefined {
+  // PoR's PlaySound in transient mode waits delay(10) (10 cs of BIOS time), then stops the effect: the
+  // second BIOS tick after the call, 14–26 driver ticks depending on the clock's phase (I); the phase
+  // is presentation only, any generator (spec/C-port/audio.md §3.1)
+  return mode === 'transient' && transient ? 14 + Math.floor(rand() * 13) : undefined
+}
+
+/** Play effect n as its call site does (`mode`, spec/C-port/audio.md §3). */
+export function play(n: number, mode: SoundMode) {
   if (device === 'off' || !ctx || !image) return
-  const cut = full ? undefined : 14 + Math.floor(Math.random() * 13)
+  const cut = cutTick(mode)
   const key = `${device}/${n}/${cut ?? 'full'}`
   let buf = cache.get(key)
   if (!buf) {

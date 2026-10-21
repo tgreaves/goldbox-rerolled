@@ -118,7 +118,7 @@ Related: IMP-034 brought the Lightning Bolt path and bounce, Stinking Cloud squa
 
 | ID | Change | Original |
 |---|---|---|
-| IMP-013 | Effects from the original driver data in the player's `START.EXE`, emulated tick by tick, played without pausing the game; each is cut off, or played to its end, as the original's call site does ([`spec/C-port/audio.md`](spec/C-port/audio.md) §3; the code still decides by effect number, AUDIT C23) | `PlaySound` busy-waits about 0.1 s ([`spec/A-games/engine/sound.md`](spec/A-games/engine/sound.md)) |
+| IMP-013 | Effects from the original driver data in the player's `START.EXE`, emulated tick by tick, played without pausing the game; each is cut off, or played to its end, as the original's call site does, and to its end in a game without a cut-off ([`spec/C-port/audio.md`](spec/C-port/audio.md) §3) | `PlaySound` busy-waits about 0.1 s ([`spec/A-games/engine/sound.md`](spec/A-games/engine/sound.md)) |
 | IMP-015 | The sound device (PC speaker, Tandy/PCjr, off) can be changed at any time in Settings; the Tandy chip is emulated (noise approximate). **Setting** | Chosen once in the installer (`POOL.CFG`); Ctrl-S mutes |
 | IMP-014 | A footstep each time an encounter sprite approaches (APPROACH) | `APPROACH` is silent |
 

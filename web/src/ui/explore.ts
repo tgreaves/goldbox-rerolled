@@ -1937,7 +1937,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         setSoundDevice(next)
         unlockAudio()
         commandBar()
-        if (next !== 'off') play(10)
+        if (next !== 'off') play(10, 'transient')
         break
       }
       case 'settings':

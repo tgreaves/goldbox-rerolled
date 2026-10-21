@@ -102,7 +102,7 @@ export function showTitle(app: HTMLElement, files: GameFiles, next: () => void) 
   const screens: { show: () => void; ms: number }[] = []
   const add = (s: TitleScreen) => {
     const pics = s.pictures.flatMap((p) => { const pic = rec(p.record); return pic ? [{ pic, x: p.x, y: p.y }] : [] })
-    if (pics.length) screens.push({ show: () => { screen(pics); if (s.lightning) lightning(pics); if (s.sound) play(s.sound) }, ms: s.ms })
+    if (pics.length) screens.push({ show: () => { screen(pics); if (s.lightning) lightning(pics); if (s.sound) play(s.sound, 'transient') }, ms: s.ms })
   }
   script.first.forEach(add)
   if (longIntro(files)) {

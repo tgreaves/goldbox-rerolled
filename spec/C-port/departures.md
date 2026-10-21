@@ -109,7 +109,7 @@ implementation's: *done*, or what remains.
 
 | Id | Subject | Specified in | Level | Setting | Status |
 |---|---|---|---|---|---|
-| IMP-013 | effects from the driver, without pausing | [audio.md §1](audio.md#1-how-an-effect-is-produced) | required | — | done; the cut-off follows the effect number, not the call site (C23, [audio.md §3.2](audio.md#32-the-reference-implementation-known-deviation)) |
+| IMP-013 | effects from the driver, without pausing | [audio.md §1](audio.md#1-how-an-effect-is-produced) | required | — | done; the cut-off by call site (C23 resolved, [audio.md §3](audio.md#3-the-cut-off-rule)) |
 | IMP-014 | footstep on APPROACH | [audio.md §5](audio.md#5-additions) | required | — | done |
 | IMP-015 | device switch, Tandy emulated | [audio.md §2](audio.md#2-device-choice), [§1](audio.md#1-how-an-effect-is-produced) | setting | Sound: PC speaker / Tandy / Off | done |
 | IMP-002 | save anywhere | [storage.md §5](storage.md#5-saved-games-and-the-autosave), [app-flow.md §7](app-flow.md#7-play-new-game-load-continue) | required | — | done; a quicksave (with a setting) is planned |
