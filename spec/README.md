@@ -37,6 +37,8 @@ Formal description of the DOS *Pool of Radiance* engine (GOG release 1.3) and it
 | [[spec/combat]] | Dice, attack, to-hit, damage, backstab, ranges, saves | v0.3 |
 | [[spec/open-questions]] | What remains, in priority order | living |
 
+The coverage audit that scopes restructuring this spec into one a builder can implement from alone (Phase 1, not normative): [AUDIT.md](AUDIT.md).
+
 ## External references
 
 - Stephen S. Lee, *Pool of Radiance: Exhaustive Game Information*, v1.50 (2021), [GameFAQs](https://gamefaqs.gamespot.com/pc/564785-pool-of-radiance/faqs/73869). Written for PC 1.3 (the GOG version). Player-side facts to cross-check against: area maps and walkthrough (section 6), mechanics (sections 7–10), interface and combat commands (2.6), cheat mode (2.9.3). Version 2.00 (April 2026) adds a technical analysis (section 12: script opcodes and flag list, save format, annotated executable and overlay code, data segment) and a bug list (section 13). A local copy lives outside the repo at `/home/tmg/poolrad-reference/gamefaqs-lee-v2.00.md` (freely distributable with credit, but kept out of git with the other third-party material). Facts confirmed against it so far: the Area map (walls only, no doors, everything shown, refused in some areas, [[spec/maps]]); diagonal moves cost 1½ squares ([[spec/combat]]); the harbour's wilderness destinations (New Phlan script `ECL3` #0: local positions (7,29), (13,27) in area 26 and (9,29) in area 27 are its global (20,29), (26,27), (35,29), i.e. 13 columns per region); the `STING` cheat parameter.
