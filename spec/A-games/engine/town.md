@@ -24,7 +24,7 @@ There is no dedicated opcode. Scripts load the stock or treasure with `TREASURE`
 
 ### Where they are (O, `tools/ecl.py` listings)
 
-Every shop and temple script refuses service (jumps to a City Watch fight) while ECL 0x4AC0 > 0 (the party has attacked the watch). A shop runs `CLEAR_MONSTERS`, `TREASURE 0,0,0,0,0,0,0,<record>`, `SAVE 1 → 0x6E6C`, `SAVE 1 → 0x6EF6`, `SAVE 16 → 0x6E6D` (meaning of the last two **?**), `COMBAT`. A temple runs `CLEAR_MONSTERS`, `SAVE 1 → 0x6DE2`, `COMBAT`.
+Every shop and temple script refuses service (jumps to a City Watch fight) while ECL 0x4AC0 > 0 (the party has attacked the watch). A shop runs `CLEAR_MONSTERS`, `TREASURE 0,0,0,0,0,0,0,<record>`, `SAVE 1 → 0x6E6C`, `SAVE 1 → 0x6EF6`, `SAVE 16 → 0x6E6D` (the last two are script-private, **I**: no engine code refers to B offsets 0x7EC or 0x6DA), `COMBAT`. A temple runs `CLEAR_MONSTERS`, `SAVE 1 → 0x6DE2`, `COMBAT`.
 
 | Script, entry | Place | Opening text | Content |
 |---|---|---|---|

@@ -133,4 +133,4 @@ Missile users never shoot with an enemy adjacent; they switch to melee. A cursed
 
 ## Keyboard during AI turns (O, `FUN_3334_0fc1`)
 
-'2' or Alt-M toggles "Magic On/Off"; Space returns control (c[0x10F] = 0 for every non-NPC, non-Animated member; the current one gets initiative 20 and its turn continues manually); '−' or Alt-X runs the STING cheat.
+'2' or Alt-M toggles "Magic On/Off"; Space returns control (c[0x10F] = 0 for every non-NPC, non-Animated member; the current one gets initiative 20 and its turn continues manually); '−' or Alt-X runs the STING cheat `FUN_3aae_3b93` ([input-and-menus.md, "Cheat keys"](input-and-menus.md#cheat-keys)).
