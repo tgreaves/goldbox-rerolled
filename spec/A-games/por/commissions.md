@@ -5,6 +5,10 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Commissions and proclamations
 
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): Pool of
+> Radiance. Evidence marks as in the README. How GoldBox Rerolled shows them (the Commissions panel,
+> IMP-023) is part C ([C-port/screens.md](../../C-port/screens.md)).
+
 The engine has no quest system. Commissions, rewards and the proclamations are kept in ordinary ECL variables in the A array (global and saved with the game, [engine/savegame.md](../engine/savegame.md)), and the scripts set and test them. The City Hall clerk is `ECL3` record 8; the proclamation walls outside City Hall are in `ECL3` record 0. All of this is observed from the scripts (O).
 
 ## Commission table (ECL 0x4AA6–0x4ABF)

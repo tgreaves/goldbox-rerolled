@@ -5,8 +5,9 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Pool of Radiance
 
-Part of the [specification](../../README.md), part A. *Pool of Radiance* (SSI, 1988), DOS 1.3 as
-sold by GOG, is the game that defines the engine: [the engine files](../../README.md#part-a-the-original-games)
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): Pool of Radiance.
+
+*Pool of Radiance* (SSI, 1988), DOS 1.3 as sold by GOG, is the game that defines the engine: [the engine files](../../README.md#part-a-the-original-games)
 describe it, and the files here hold what belongs to this game alone.
 
 ## Identity
@@ -16,7 +17,7 @@ describe it, and the files here hold what belongs to this game alone.
 | `START.EXE` SHA-256 | `d825df2b174675c9088ba1489488bdeebe66ad2a22943f17d3a198e60b6a07bd` |
 | `GAME.OVR` SHA-256 | `872964a32cef0fc32bbf83bab68b15e04ad36d59076f37b00a179dfee7928614` |
 | Compiler | Borland Turbo Pascal (runtime "1983,91", likely 6.0) with FBOV overlays |
-| Addresses in this spec | `seg:off` as Ghidra names them in the merged image (`POOL_MERGED.EXE`, load segment 0x1000) |
+| Addresses in this spec | `seg:off` as Ghidra names them in the merged image (load segment 0x1000; [addresses.md, "Notations"](../../D-appendices/addresses.md#notations)) |
 
 Function references use Ghidra's `FUN_seg_off` names from the merged image produced by
 `tools/mergeovr.py` ([containers.md](../engine/containers.md)), so they can be re-found.
@@ -33,9 +34,26 @@ The tile wilderness ([overland.md](../engine/overland.md)) is engine code but on
 Radiance uses it; Curse of the Azure Bonds replaces it with a picture
 ([coab/assets.md](../coab/assets.md) §4).
 
-To be written: the scenario variables the engine and the port read by name (the commission and
-journal variables are in [commissions.md](commissions.md); the rest are spread over the engine
-files, [engine/ecl.md, "Engine-visible variables"](../engine/ecl.md#engine-visible-variables-o-unless-marked)).
+## Scenario variables
+
+Script variables of Pool of Radiance whose meaning the engine, or a reader of the game's state,
+depends on (all in ECL array A, saved with the game; O from the scripts and the engine code). The
+engine's own variables are [engine/ecl.md, "Engine-visible variables"](../engine/ecl.md#engine-visible-variables-o-unless-marked).
+
+| ECL | Meaning | Where |
+|---|---|---|
+| 0x4AA6–0x4ABF | the commission table: one byte per commission or reward | [commissions.md](commissions.md#commission-table-ecl-0x4aa60x4abf) |
+| 0x4AC1 | the city progress counter (which proclamations are posted, the graveyard offer) | [commissions.md](commissions.md) |
+| 0x4AB3 | the river-pollution commission (entry 13): 0xFE when the pyramid's sorcerer is beaten, > 253 finished; 0xFF also changes arid wilderness terrain | [overland.md](../engine/overland.md), [battlefield.md](../engine/battlefield.md#terrain-flags-o-fun_34c7_08a4) |
+| 0x4AA2 | 255 once the river is cleansed (river tiles passable and recoloured) | [overland.md](../engine/overland.md) |
+| 0x4A9E | 255 while the party is in a wilderness lair (areas 25–27 load a GEO map) | [overland.md](../engine/overland.md) |
+| 0x4AC5 | 1 once New Phlan's opening tour has run | [main-loop.md](../engine/main-loop.md#starting-a-new-game-o) |
+| 0x4AE0 | 1 after the final battle (set before `PROGRAM 8`, the ending) | [ending.md](ending.md) |
+
+## Open
+
+- What re-runs the tower's `on_enter` after the ending in the original (the walk back to New Phlan):
+  [open-questions.md](../../open-questions.md), "Smaller loose ends".
 
 ## External reference
 
