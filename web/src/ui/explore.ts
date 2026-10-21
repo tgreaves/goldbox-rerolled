@@ -54,7 +54,7 @@ import { playEnding } from './ending'
 import { onClose } from './sheet'
 import { openSettings, reducedMotion, viewMode } from './settings'
 import { accountLabel, openAccount } from './account'
-import { accountStatus } from '../store/account'
+import { accountStatus, onSettingsPulled } from '../store/account'
 import { unexepack } from '../data/exepack'
 import { checkTraining, levelLimit, newSpellChoices, train, willBecome, xpFor } from '../rules/training'
 import { changeClass, changeClassChoices, className, offersChangeClass } from '../rules/dualclass'
@@ -2043,6 +2043,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     }
   }
   window.addEventListener('keydown', onKey)
+  // a View setting that comes with the account applies at once, as the settings panel's does
+  const stopSettings = onSettingsPulled(() => applyView())
   pad.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => move(b.dataset.c!)))
   app.addEventListener('pointerdown', unlockAudio)
   // a tap on the view: left third turns left, right third right, the middle steps forward
@@ -2109,6 +2111,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     running = false
     observer.disconnect()
     window.removeEventListener('keydown', onKey)
+    stopSettings()
     world?.renderer.dispose()
     back()
   }
