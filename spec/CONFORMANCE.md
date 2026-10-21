@@ -84,7 +84,7 @@ Items marked **⚠** are details that are easy to get plausibly wrong.
       a split that can be changed; leaving with treasure left asks first.
 - [ ] **E4** Buy: filters, "If readied instead", Buy greyed with the reason.
 - [ ] **E5** Memorize: ready, pending and empty slots per level; the rest needed is shown.
-- [ ] **E6** ⚠ Camp Alter → Icon opens the combat-icon editor (the reference does not yet, UI2).
+- [ ] **E6** Camp Alter → Icon opens the combat-icon editor on the selected character (UI2 resolved).
 - [ ] **E7** The Journal reveals entries only when the game's text names them; "Show everything"
       shows all.
 - [ ] **E8** PoR: the Commissions panel lists offered commissions with their state; ☰ shows a dot

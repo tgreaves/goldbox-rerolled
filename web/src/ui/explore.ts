@@ -1145,6 +1145,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     }),
     save: () => saveGame(),
     memorizePanel: () => memorizePanel(),
+    iconEditor: (c) => creatorTools(dialog, files, engine, getTables()).iconEditor(c),
     refresh: () => { drawRoster(); showWhere() },
     stopper: () => {
       let stopped = false

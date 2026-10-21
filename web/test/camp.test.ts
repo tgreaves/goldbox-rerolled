@@ -75,3 +75,32 @@ describe.skipIf(!have)('camp Fix (IMP-048)', () => {
     expect(lines).toContain('The party is fully healed.')
   })
 })
+
+describe.skipIf(!have)('camp Alter', () => {
+  it('Icon opens the combat icon editor on the selected character, as the original (FUN_3f81_1c59)', async () => {
+    const { camp } = await import('../src/ui/camp')
+    const m = new Map<string, Uint8Array>()
+    for (const n of readdirSync(dir)) if (wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(join(dir, n))))
+    const files = new GameFiles(m)
+    const io = { print: () => {}, menu: async () => 0, refresh: async () => {}, pause: async () => {}, sound: () => {},
+      picture: () => {}, sprite: () => {}, engine: async () => {}, inputNumber: async () => 0, inputText: async () => '' } as unknown as Io
+    const dat = files.get('SAVGAMA.DAT')!
+    const stems = parseSave(dat).party
+    const e = new Engine(files, io, 2)
+    e.loadSave(dat, stems.map((s) => files.get(`${s}.SAV`)!))
+    stems.forEach((s, i) => e.attachFiles(i, files.get(`${s}.ITM`), files.get(`${s}.SPC`)))
+    e.cur = e.party()[1]
+    const answers = ['ALTER', 'ICON', 'EXIT', 'EXIT']
+    const edited: Uint8Array[] = []
+    let refreshed = 0
+    const ui = {
+      engine: e, print: () => {}, refresh: () => { refreshed++ }, pause: async () => {},
+      menu: async (items: string[]) => items.indexOf(answers.shift()!),
+      view: async () => {}, save: async () => {}, stopper: () => ({ stopped: () => false, done: () => {} }),
+      iconEditor: async (c: Uint8Array) => { edited.push(c); return true },
+    }
+    await camp(ui as never)
+    expect(edited).toEqual([e.party()[1]])
+    expect(refreshed).toBeGreaterThan(1) // after the editor, and on leaving camp
+  })
+})

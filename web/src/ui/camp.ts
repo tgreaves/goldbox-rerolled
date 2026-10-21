@@ -21,6 +21,8 @@ export interface CampUi {
   pause(ms: number): Promise<void>
   /** Memorize as one panel (IMP-043); without it the original's lists */
   memorizePanel?(): Promise<void>
+  /** the combat icon editor (FUN_417f_382d, IMP-017) on a character; true when the new icon is kept */
+  iconEditor?(c: Uint8Array): Promise<boolean>
 }
 
 const nameOf = (c: Uint8Array) => parseCharacter(c).name
@@ -278,7 +280,7 @@ async function fix(ui: CampUi, state: { heal: number }): Promise<boolean> {
   return false
 }
 
-/** Alter (FUN_3f81_1c59): Order, Drop, Speed. */
+/** Alter (FUN_3f81_1c59, CotAB 0x31AD0): Order, Drop, Speed, Icon, Pics. */
 async function alter(ui: CampUi) {
   const e = ui.engine
   for (;;) {
@@ -305,7 +307,11 @@ async function alter(ui: CampUi) {
         else if (k === 1) e.speed = Math.min(9, e.speed + 1)
         else break
       }
-    } else if (o === 3) ui.print('The combat icon editor is on the party screen (Modify, Icon).', false)
+    } else if (o === 3) {
+      // Icon: the editor on the selected character, then the screen redrawn (PoR 0x314FE → FUN_417f_382d,
+      // CotAB 0x31B6D → its editor in overlay 0x3685)
+      if (ui.iconEditor && (await ui.iconEditor(e.cur))) ui.refresh()
+    }
     else if (o === 4) ui.print('Monster pictures and portraits are always shown here.', false)
     else return
   }

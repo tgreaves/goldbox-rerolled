@@ -104,11 +104,9 @@ as one panel "Combat icon" (IMP-017): the old and new icons, each in the ready a
 the six parts and the Colour 1 / Colour 2 swatches for the selected part; **Exit** (E) restores,
 **Keep** (K, main) keeps.
 
-**Known deviation**: in the reference this panel exists but no screen opens it. Creation has the same
-controls inline, so an existing character's icon cannot be changed; camp Alter → Icon prints "The
-combat icon editor is on the party screen (Modify, Icon)." although the party screen has no such
-function ([AUDIT.md](../AUDIT.md) §6.9, UI2). A conforming build opens this panel from Alter → Icon,
-as the original.
+It opens from camp **Alter → Icon** on the selected character, as in both originals (PoR
+`FUN_3f81_1c59` → `FUN_417f_382d`; CotAB's Alter 0x31B6D → its editor in the overlay at 0x36850, **O**);
+Keep redraws the party cards. Creation has the same controls inline (§1.1). (UI2, resolved 2026-10-21.)
 
 ### 1.7 Load saved game
 
@@ -422,7 +420,7 @@ leaves the camp (`campInterrupted`).
   "Drop from party?" Yes: "*Name* bids you farewell" or "*Name* is dumped in a ditch"; No: "Breathes A
   sigh of relief" (*game text*).
 - **SPEED**: "Game Speed = *n* (0=fastest 9=slowest)" with FASTER, SLOWER, EXIT.
-- **ICON**: the combat icon editor (§1.6; **known deviation**, see there).
+- **ICON**: the combat icon editor (§1.6) on the selected character.
 - **PICS**: "Monster pictures and portraits are always shown here." (IMP-031: the original's toggles
   are not offered).
 
@@ -581,7 +579,6 @@ original rules.
 
 ## Open
 
-- §1.6: the icon editor is unreachable for an existing character (UI2).
 - §6.9: CotAB's own Fix command is not yet described in part A; whether the port's Fix matches it is
   **?** (UI5).
 - The engine messages quoted as *game text* are still copied into the code; reading them by address

@@ -72,13 +72,13 @@ implementation's: *done*, or what remains.
 | Id | Subject | Specified in | Level | Status |
 |---|---|---|---|---|
 | IMP-016 | the roster in browser storage | [storage.md §3.1](storage.md#31-characters), [§4](storage.md#4-roster-seeding) | required | done |
-| IMP-017 | the icon editor panel | [screens.md §1.6](screens.md#16-the-combat-icon-editor) | required | the panel is unreachable for an existing character (UI2) |
+| IMP-017 | the icon editor panel | [screens.md §1.6](screens.md#16-the-combat-icon-editor) | required | done (from Alter → Icon, UI2 resolved) |
 | IMP-018 | Modify with −/+ | [screens.md §1.2](screens.md#12-modify-character) | required | done |
 | IMP-019 | Load always on the party screen | [screens.md §1.7](screens.md#17-load-saved-game) | required | done |
 | IMP-023 | the Commissions panel | [screens.md §9](screens.md#9-commissions), [port-data.md §5](../D-appendices/port-data.md#5-the-commissions-panel) | required (PoR) | done |
 | IMP-027 | the items menu as buttons | [screens.md §3.3](screens.md#33-item-actions) | required | done |
 | IMP-030 | quick rest with Stop, rest time ±, Order buttons | [screens.md §6.7](screens.md#67-rest), [§6.8](screens.md#68-alter) | required | done |
-| IMP-031 (Alter) | Icon and Pics | [screens.md §6.8](screens.md#68-alter) | required | Icon does not open the editor (UI2) |
+| IMP-031 (Alter) | Pics | [screens.md §6.8](screens.md#68-alter) | required | done |
 | IMP-032 | the training hall's party screen | [screens.md §7.6](screens.md#76-training-hall) | required | done |
 | IMP-039 | commission progress | [screens.md §9](screens.md#9-commissions), [port-data.md §5](../D-appendices/port-data.md#5-the-commissions-panel) | required (PoR) | done |
 | IMP-040 | creation on one screen | [screens.md §1.1](screens.md#11-create-character) | required | done |
