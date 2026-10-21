@@ -5,7 +5,10 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Graphics
 
-Part of the [specification](../../README.md), part A. Decoder: `tools/gfx.py` (writes PNGs).
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Evidence marks as in the README; addresses are PoR's (`FUN_seg_off`).
+> *Informative:* reference decoder `tools/gfx.py` (writes PNGs). Curse of the Azure Bonds:
+> [coab/assets.md](../coab/assets.md).
 
 ## Image block (O)
 
@@ -14,13 +17,28 @@ Engine reader `FUN_1464_0111`; validated against every graphics record (811 reco
 ```
 u16 height        // pixels
 u16 width         // in 8-pixel units
-u16 x, y          // screen placement hint (8-pixel units for x)
+u16 x, y          // placement, in 8 × 8 cells; read only for encounter sprites (below)
 u8  count         // number of sub-images of this size that follow
-u8  cga_map[8]    // 16 colours → pairs of CGA colours (all nibbles 0–3) (I)
+u8  cga_map[8]    // 16 nibbles: colour c → CGA colour 0–3 (CGA mode only, below)
 count × height × (width*4) bytes: 4 bits per pixel, high nibble = left pixel
 ```
 
 Colours are indices into the **default EGA 16-colour palette** (O: renders correctly with it).
+
+The reader copies `x`, `y` into the loaded image (+4, +6) and `cga_map` (+9..+0x10) (O,
+`1464:0230–025c`). What reads them:
+
+- **`x, y`** (O): only the encounter-sprite draw `FUN_5523_0708`, which places the frame at
+  cell (x + 2, y + 2) ([Encounter sprites](#encounter-sprites-o)); the draw routine `FUN_1464_0d71`
+  takes its position in 8 × 8 cells, clipped to the page. Every other image is drawn at a
+  position its caller passes, whatever its header says (no other reader of +4/+6 in the image).
+  In the shipped data only `SPRIT` frames (x 0–5, y 0–1) and the two `TITLE` records (x = 1,
+  drawn at (0, 0)) have values other than 0 (O, every record).
+- **`cga_map`** (O, `FUN_1464_02a5` with `DS:4A1E` = 0, helper `FUN_1464_007b`): in CGA mode each
+  pixel's colour c becomes CGA colour m = nibble c of the map (byte c ÷ 2; the **high** nibble for
+  even c, the low nibble for odd c), packed four pixels to a byte, leftmost pixel in the top two
+  bits (bit patterns `DS:25FA` + 4·m + position). EGA and Tandy modes ignore the map. Every map in
+  the shipped data holds only 0–3.
 
 ## Record shapes (O)
 
@@ -95,10 +113,12 @@ So the light-magenta areas of wall tiles (rooftops, gaps, the sky above walls) s
 - Colours used for text: 10 (light green) normal, 13 (light magenta) highlight/NPC, 14 (yellow) wounded, 15 (white) headings
 - Character sheet: name row 1, race/age row 3, alignment row 4, class row 5, stats rows 7–12, money from row 7 column 26, combat stats from row 17
 - Combat (O, `FUN_577f_03a0`, `FUN_577f_06e9`, icon draw `FUN_58af_04fc`): the battlefield window shows 7 × 7 cells (screen cell 0–6 on each axis, relative to the view origin at `DS:6716` +2/+3); a cell is 3 × 3 text cells (24 × 24 pixels), drawn at text column/row 3·x, 3·y, so the field covers 168 × 168 pixels at the left of the screen
-- Party roster (O, `FUN_10ba_0767`): starts at column 17 while exploring (column 1 on the party screen). Row 2: "Name" (column 17) and "AC  HP" (column 33) in white. From row 4, one row per party-list entry: name (the current character in white, others coloured by `FUN_10ba_1816`, **?** rule), AC right-aligned ending at column 34, HP right-aligned ending at column 38
+- Party roster (O, `FUN_10ba_0767`): starts at column 17 while exploring (column 1 on the party screen). Row 2: "Name" (column 17) and "AC  HP" (column 33) in white. From row 4, one row per party-list entry: name (the current character in white; any other name through `FUN_10ba_1816`: light red 12 when char[0x10D] = 0, not in play; yellow 14 when char[0x10E] = 1, the enemy side; else light cyan 11, O), AC right-aligned ending at column 34, HP right-aligned ending at column 38
 
-## Still to decode
+## Open
 
-- Exact use of `x, y` and `cga_map`
+- ~~Exact use of `x, y` and `cga_map`~~ answered above ("Image block").
+- ~~The roster's colour rule for members other than the current one~~ answered ("Screen layout",
+  `FUN_10ba_1816`).
 
 (How WALLDEF tables index 8X8D tiles is answered in [maps-and-view.md](maps-and-view.md), "Wall pieces" and "Tile bank".)

@@ -5,7 +5,11 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Containers and compression
 
-Part of the [specification](../../README.md), part A. Everything here is **observed** and implemented in `tools/`.
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Everything here is **O** (observed), checked against every file of
+> the release. *Informative:* reference decoders in `tools/` (`xar_extract.py`, `unexepack.py`,
+> `mergeovr.py`, `dax.py`). Curse of the Azure Bonds uses the same containers
+> ([coab/assets.md](../coab/assets.md) §1; its working image: [coab/README.md](../coab/README.md#working-image)).
 
 ## Distribution (GOG Mac package)
 

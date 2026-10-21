@@ -5,7 +5,10 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Save games
 
-Part of the [specification](../../README.md), part A.
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Evidence marks as in the README; addresses are PoR's. Curse of the
+> Azure Bonds: [coab/records.md](../coab/records.md). How GoldBox Rerolled stores, exports and
+> extends saves is part C ([storage.md](../../C-port/storage.md)).
 
 ## Files (O, save routine `FUN_45c5_1d58`)
 
@@ -22,7 +25,10 @@ A save slot is a letter `A`–`J` (`DS:537A` + letter). One slot = one `SAVGAM<x
 
 Loading (`FUN_45c5_0aec`) reads `.ITM` and `.SPC` as fixed-size records until end of file and relinks them in memory, clearing each record's stored next pointer (item +0x2A, effect +5), so those pointer bytes are never read back (O). Unused bytes of the stem table (after each Pascal string, and slots beyond the party count) are whatever was in memory.
 
-**The port** writes all four kinds of file in this layout: a loaded save written back is byte-for-byte the same except those never-read bytes, which it writes as 0 (tested against both shipped saves). Its own additions (the journal and commission discoveries) go in a separate `SAVGAM<x>.GBR` (JSON) beside them in an exported ZIP; the original never opens it, and a save without it loads as usual.
+Writing back a loaded save therefore reproduces every byte the original reads; the never-read
+bytes carry no meaning. The port's write-back rule and its sidecar file are part C
+([storage.md §5](../../C-port/storage.md#5-saved-games-and-the-autosave),
+[§6](../../C-port/storage.md#6-journal-finds-and-the-gbr-sidecar)).
 
 ## `SAVGAM<x>.DAT` layout (O)
 
@@ -71,4 +77,7 @@ Because the whole ECL VM (code + all three arrays) is saved, a reimplementation 
 
 ## Open
 
-- Meaning of `DS:49FA`, `DS:49F3` values
+- ~~Meaning of `DS:49FA`, `DS:49F3` values~~ answered: `DS:49FA` is the area kind (1 = map area,
+  2–4 = wilderness areas 25–27; [main-loop.md, "Re-entering after an area change"](main-loop.md#re-entering-after-an-area-change-o-fun_29c3_31b4));
+  `DS:49F3` is the game mode ([town.md, "Game modes"](town.md#game-modes-o-ds49f3)). The shipped
+  saves hold 2 (camp).

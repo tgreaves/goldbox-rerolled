@@ -3,9 +3,12 @@ created: 2026-10-15
 tags: [reverse-engineering, gold-box, spec]
 ---
 
-# Architecture: engine vs data
+# Engine and data, the main loop
 
-Part of the [specification](../../README.md), part A.
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Evidence marks as in the README; addresses are PoR's (`FUN_seg_off`).
+> Curse of the Azure Bonds: as here unless [coab/ecl.md](../coab/ecl.md) says otherwise (its
+> start-up menu and demo).
 
 ## The split
 
@@ -30,7 +33,7 @@ The engine contains no knowledge of specific places. Area identity, exits, encou
 
 - ECL addresses are a 16-bit address space where code is loaded at 0x9900 and variables live at 0x4900–0x4CFF and 0x6B00–0x6EFF, with engine registers at 0xC04B+
 - Text uses 6-bit codes that map onto Commodore screen codes
-- `CALL` dispatches on fixed addresses, consistent with the DOS port emulating C64 machine-code entry points
+- `CALL` dispatches on fixed addresses, consistent with the DOS version emulating C64 machine-code entry points
 - ECL records start with `88 13` before the code, skipped by the loader; possibly a vestigial C64 load address or marker
 
 ## Main adventure loop (O, `FUN_29c3_32f8`)
@@ -104,9 +107,26 @@ Repeated while scripts keep changing area:
 3. If ECL 0x49E6 = 0: area 25 → kind 2, area 26 → kind 3, area 27 → kind 4, all in mode 3 (overland). On entering area 26 with ECL 0x4AB3 = 0xFE and 0x4AA2 = 0, `FUN_4804_06b3(1)` also runs: the river cleansing ([overland.md](overland.md)).
 4. Run **`on_move`**, then, if the area did not change again, **`on_step`**. Restore the current character and redraw.
 
-## Starting a new game (I)
+## Starting a new game (O)
 
-"Begin adventuring" on the party screen switches to block 3 (O) and enters the main loop with fresh ECL variables, so the current area (ECL 0x49F2) is 0: New Phlan, `ECL3` record 0. Its `on_enter` loads GEO 0 and wall sets (`LOAD_WALLSETS 127,127,127` → WALLDEF3 #0, three sets) and, while script variable 0x4AC5 is 0, plays the opening tour: Rolf (sprite 12, portrait head 8 / body 9) greets the party, then the script walks it through a 34-step waypoint table (x, y, facing and a stop number at `0xB5B4`, `0xB5D6`, `0xB5F8`, `0xB592`), printing commentary at five stops, and sets 0x4AC5 = 1. The browser port's new game reproduces this and plays the same way (tested).
+There is no new-game routine: a new game is the main loop started on the state the start-up left.
+
+1. Start-up (`FUN_36c1_002d`, [input-and-menus.md](input-and-menus.md) §1 step 2) allocates the ECL
+   arrays and the code buffer and fills each with 0 (`36c1:0271–02b4`: A 0x800, B 0x800, C 0x400,
+   code 0x1E00 bytes), and clears the resume flag `DS:49F8` (`36c1:03A6`).
+2. The party screen sets block `DS:5376` = 3 on entry (`417f:0168`); **Begin** sets game mode 4 and
+   returns ([input-and-menus.md](input-and-menus.md) §2, "Actions").
+3. The main loop reads the current area from A (ECL 0x49F2, `29c3:3321`): 0. With `DS:49F8` = 0 it
+   loads `ECL3` record 0, resets the VM and runs `on_enter` (above, "Start").
+
+So a new game is New Phlan, `ECL3` record 0. Its `on_enter` loads GEO 0 and wall sets
+(`LOAD_WALLSETS 127,127,127` → WALLDEF3 #0, three sets) and, while script variable 0x4AC5 is 0, plays
+the opening tour: Rolf (sprite 12, portrait head 8 / body 9) greets the party, then the script walks
+it through a 34-step waypoint table (x, y, facing and a stop number at `0xB5B4`, `0xB5D6`, `0xB5F8`,
+`0xB592`), printing commentary at five stops, and sets 0x4AC5 = 1 (O, script).
+
+A load instead sets `DS:49F8` = 1 ([savegame.md](savegame.md), "Loading" step 7); the VM reset
+(`FUN_2fea_01b6`) clears it again after keeping the loaded buffer (`2fea:0319`).
 
 ## Built-in screens (O)
 
