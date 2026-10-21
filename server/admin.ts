@@ -1,4 +1,4 @@
-// Admin CLI (docs/server.md, "Admin CLI"). Works on DATA_DIR directly; safe while the server runs.
+// Admin CLI (spec/C-port/accounts-and-sync.md §9; docs/server.md for operators). Works on DATA_DIR directly; safe while the server runs.
 //   node server/admin.ts <command> [arguments]
 import { createInterface } from 'node:readline'
 import { loadConfig } from './config.ts'

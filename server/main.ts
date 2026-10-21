@@ -1,4 +1,4 @@
-// GoldBox Rerolled server: the built app plus accounts and players' data (docs/server.md).
+// GoldBox Rerolled server: the built app plus accounts and players' data (spec/C-port/accounts-and-sync.md; docs/server.md to run it).
 // Run with Node 24 or later: node server/main.ts
 import { loadConfig } from './config.ts'
 import { createApp } from './app.ts'

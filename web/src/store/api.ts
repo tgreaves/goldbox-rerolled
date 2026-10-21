@@ -1,4 +1,4 @@
-// The server's API (docs/server.md, "API") as seen from the browser. The fetch function is
+// The server's API (spec/C-port/accounts-and-sync.md §2) as seen from the browser. The fetch function is
 // injectable so tests can run it against a real server in Node.
 import { fromBase64, toBase64, type Kind, type Rec } from './records'
 

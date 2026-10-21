@@ -1,4 +1,4 @@
-// The HTTP server: the built app and the JSON API under /api/v1/ (docs/server.md, "API").
+// The HTTP server: the built app and the JSON API under /api/v1/ (spec/C-port/accounts-and-sync.md §2).
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { stat } from 'node:fs/promises'
 import type { Config } from './config.ts'
@@ -38,7 +38,7 @@ export async function createApp(config: Config): Promise<App> {
   const storage = new Storage(accounts.usersDir, config.quota)
   const cookieName = config.cookieSecure ? '__Host-gbr_session' : 'gbr_session'
 
-  // memory-only counters (docs/server.md, "Rate limits")
+  // memory-only counters (spec/C-port/accounts-and-sync.md §3.6)
   const limits = {
     loginIp: new Limiter(20, 15 * MINUTE),
     loginUser: new Limiter(10, 15 * MINUTE),
@@ -109,8 +109,9 @@ export async function createApp(config: Config): Promise<App> {
     setCookie(res, await accounts.createSession(acc))
   }
 
-  async function requireUser(req: IncomingMessage): Promise<Account> {
-    const acc = await accounts.session(cookieToken(req))
+  async function requireUser(req: IncomingMessage, res: ServerResponse): Promise<Account> {
+    const token = cookieToken(req)
+    const acc = await accounts.session(token, () => setCookie(res, token!)) // renewed: the cookie too
     if (!acc) throw new HttpError(401, 'signed out')
     return acc
   }
@@ -153,7 +154,8 @@ export async function createApp(config: Config): Promise<App> {
     }
     if (path === 'config' && method === 'GET') return send(res, 200, publicConfig())
     if (path === 'me' && method === 'GET') {
-      const acc = await accounts.session(cookieToken(req))
+      const token = cookieToken(req)
+      const acc = await accounts.session(token, () => setCookie(res, token!))
       return send(res, 200, { ...publicConfig(), user: acc?.name ?? null, used: acc ? await storage.used(acc.name) : undefined })
     }
     if (path === 'login' && method === 'POST') {
@@ -221,7 +223,7 @@ export async function createApp(config: Config): Promise<App> {
       return send(res, 200, { user: acc.name, recoveryCode: code })
     }
     if (path === 'password' && method === 'POST') {
-      const acc = await requireUser(req)
+      const acc = await requireUser(req, res)
       const body = await readBody(req, SMALL_BODY)
       const problem = passwordProblem(body.newPassword)
       if (problem) throw new HttpError(400, problem)
@@ -231,13 +233,13 @@ export async function createApp(config: Config): Promise<App> {
       return send(res, 200, { user: acc.name })
     }
     if (path === 'recovery-code' && method === 'POST') {
-      const acc = await requireUser(req)
+      const acc = await requireUser(req, res)
       const body = await readBody(req, SMALL_BODY)
       await reauth(acc, body.password)
       return send(res, 200, { recoveryCode: await accounts.newRecovery(acc.name) })
     }
     if (path === 'delete-account' && method === 'POST') {
-      const acc = await requireUser(req)
+      const acc = await requireUser(req, res)
       const body = await readBody(req, SMALL_BODY)
       await reauth(acc, body.password)
       await accounts.remove(acc.name)
@@ -246,7 +248,7 @@ export async function createApp(config: Config): Promise<App> {
       return send(res, 200, { user: null, deleted: true })
     }
     if (path === 'export' && method === 'GET') {
-      const acc = await requireUser(req)
+      const acc = await requireUser(req, res)
       const body = await exportZip(acc.name)
       const day = new Date().toISOString().slice(0, 10)
       res.writeHead(200, { 'Content-Type': 'application/zip', 'Cache-Control': 'no-store', 'Content-Length': body.length,
@@ -254,13 +256,13 @@ export async function createApp(config: Config): Promise<App> {
       return res.end(body)
     }
     if (seg[0] === 'games' && seg.length === 2 && method === 'GET') {
-      const acc = await requireUser(req)
+      const acc = await requireUser(req, res)
       const game = seg[1]
       if (!GAME_RE.test(game)) throw new HttpError(400, 'bad request')
       return send(res, 200, { records: await storage.list(acc.name, game) })
     }
     if (seg[0] === 'games' && seg.length === 4) {
-      const acc = await requireUser(req)
+      const acc = await requireUser(req, res)
       const [, game, kind] = seg
       let id: string
       try { id = decodeURIComponent(seg[3]) } catch { throw new HttpError(400, 'bad request') }

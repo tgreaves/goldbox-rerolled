@@ -1,4 +1,4 @@
-// Server configuration, from environment variables only (docs/server.md, "Configuration").
+// Server configuration, from environment variables only (spec/C-port/accounts-and-sync.md §8).
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 

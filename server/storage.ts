@@ -1,4 +1,4 @@
-// Players' data on disk (docs/server.md, "Data layout"). Nothing here knows a game: records are
+// Players' data on disk (spec/C-port/accounts-and-sync.md §4). Nothing here knows a game: records are
 // keyed by the game profile's id and hold the files the client names, in the game's own formats.
 //
 //   users/<name>/<game>/saves/<slot>.json            pointer: version, metadata, file names

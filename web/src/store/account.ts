@@ -1,4 +1,4 @@
-// The browser's side of accounts and automatic sync (IMP-072, docs/server.md). Hidden when no
+// The browser's side of accounts and automatic sync (IMP-072, spec/C-port/accounts-and-sync.md §5). Hidden when no
 // GoldBox Rerolled server answers beside the app (GitHub Pages, the single-file build, `vite dev`).
 // Every change goes to the browser's stores first; when signed in it is then sent to the server,
 // queued while offline. Signing in (and starting the app signed in) merges the server's records.

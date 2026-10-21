@@ -443,3 +443,33 @@ describe('admin CLI', () => {
     expect(run(d, ['bogus']).status).toBe(2)
   })
 })
+
+describe('session renewal (accounts-and-sync §3.3)', () => {
+  it('renews the session once a day of use has passed and says so, so the cookie can be sent again', async () => {
+    const { Accounts } = await import('../../server/accounts.ts')
+    const dir = mkdtempSync(join(tmpdir(), 'gbr-renew-'))
+    try {
+      const ttl = 30 * 24 * 3600 * 1000
+      const a = new Accounts(dir, { scryptN: 1 << 10, sessionTtl: ttl, maxUsers: 10 })
+      await a.init()
+      const made = await a.create('renewer', 'a long enough password')
+      expect(made.ok).toBe(true)
+      const token = await a.createSession((await a.get('renewer'))!)
+      let renewed = 0
+      expect(await a.session(token, () => renewed++)).not.toBeNull()
+      expect(renewed).toBe(0) // fresh: no renewal yet
+      const realNow = Date.now
+      Date.now = () => realNow() + 2 * 24 * 3600 * 1000 // two days of use later
+      try {
+        expect(await a.session(token, () => renewed++)).not.toBeNull()
+        expect(renewed).toBe(1)
+        expect(await a.session(token, () => renewed++)).not.toBeNull()
+        expect(renewed).toBe(1) // at most once a day
+      } finally {
+        Date.now = realNow
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})

@@ -286,8 +286,9 @@ must then match **`^[a-z0-9_-]{3,24}$`**. Names are compared and stored in that 
 - **The cookie**: name `__Host-gbr_session`, or `gbr_session` when `COOKIE_SECURE=0`;
   `Set-Cookie: <name>=<token>; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=<lifetime in s>`
   (without `Secure` when `COOKIE_SECURE=0`). Signing out and deleting the account send the same
-  attributes with an empty value and `Max-Age=0`. It is set only at sign-in, so the browser keeps it
-  for one lifetime from the sign-in ([AUDIT.md](../AUDIT.md) §6.9). It is the only cookie.
+  attributes with an empty value and `Max-Age=0`. It is set at sign-in and sent again whenever use
+  renews the session (at most once a day), so the browser keeps it as long as the server keeps the
+  session. It is the only cookie.
 
 ### 3.4 Recovery and invite codes
 

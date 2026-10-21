@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => ({
               display: 'standalone',
               icons: [{ src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
             },
-            // the server's API (docs/server.md) is never answered from the cache: the data export is a navigation
+            // the server's API (spec/C-port/accounts-and-sync.md) is never answered from the cache: the data export is a navigation
             workbox: { globPatterns: ['**/*.{js,css,html,svg}', 'journal/*.png'], navigateFallbackDenylist: [/\/api\//] },
           }),
         ],

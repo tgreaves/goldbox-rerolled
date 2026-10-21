@@ -1,4 +1,4 @@
-// Accounts, sessions, invites and recovery codes (docs/server.md, "Security model"). Shared by the
+// Accounts, sessions, invites and recovery codes (spec/C-port/accounts-and-sync.md §3). Shared by the
 // server and the admin CLI; everything is files under DATA_DIR:
 //   users/<name>/account.json   name, scrypt hash and salt, recovery-code hash, generation, disabled
 //   sessions/<sha256 of token>.json   user, generation, expiry (the token itself is never stored)
@@ -263,8 +263,12 @@ export class Accounts {
     return token
   }
 
-  /** The account a token belongs to, or null (unknown, expired, account gone, disabled or changed). */
-  async session(token: string | undefined): Promise<Account | null> {
+  /**
+   * The account a token belongs to, or null (unknown, expired, account gone, disabled or changed).
+   * When use renews the session (at most once a day), `renewed` is called so the caller can send the
+   * cookie again with a fresh Max-Age: the browser then keeps it as long as the server does.
+   */
+  async session(token: string | undefined, renewed?: () => void): Promise<Account | null> {
     if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null
     const h = sha256(token)
     let s = this.sessions.get(h)
@@ -284,6 +288,7 @@ export class Accounts {
     if (s.expires - now < this.opts.sessionTtl - 24 * 3600 * 1000) {
       s.expires = now + this.opts.sessionTtl
       await writeAtomic(this.sessionFile(h), JSON.stringify(s)).catch(() => {})
+      renewed?.()
     }
     return acc
   }
