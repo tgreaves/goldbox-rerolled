@@ -295,7 +295,7 @@ async function alter(ui: CampUi) {
     const o = await ui.menu(['ORDER', 'DROP', 'SPEED', 'ICON', 'PICS', 'EXIT'], { prompt: msg('alter').trimEnd() })
     if (o === 0) {
       const party = e.party()
-      const i = await ui.menu([...party.map((c) => nameOf(c).toUpperCase()), 'EXIT'], { prompt: 'Party Order: Select' })
+      const i = await ui.menu([...party.map((c) => nameOf(c).toUpperCase()), 'EXIT'], { prompt: `${msg('partyOrder')}Select` })
       if (i >= party.length) continue
       const p = await ui.menu(['UP', 'DOWN', 'EXIT'], { prompt: `${nameOf(party[i])} ${msg('selected')}` })
       if (p < 2) e.moveMember(i, p === 0 ? -1 : 1)

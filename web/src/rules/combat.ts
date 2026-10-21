@@ -891,7 +891,7 @@ export class Battle implements FxHost {
       }
       return false
     }
-    if (o === 'GUARD') { this.endTurnF(f); f.r[7] = 1; this.print(`${name(f.c)} is Guarding`) }
+    if (o === 'GUARD') { this.endTurnF(f); f.r[7] = 1; this.print(`${name(f.c)} is ${msg('guarding')}`) }
     else if (o === 'DELAY') { f.r[3] = 1; return true } // picked again after everyone with higher initiative
     else if (o === 'QUIT') this.endTurnF(f)
     else if (o === 'BANDAGE') {

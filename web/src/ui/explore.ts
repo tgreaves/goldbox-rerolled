@@ -1301,11 +1301,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     let actions = ''
     if (it && t) {
       const store = opts.mode === 'shop' || opts.mode === 'temple'
-      if (opts.confirm === 'drop') actions = `<p>Your ${escape(t.name(it))} will be gone forever. Drop It?</p>
+      if (opts.confirm === 'drop') actions = `<p>Your ${escape(t.name(it))} will be gone forever. ${escape(msg('dropIt').trimEnd())}</p>
         <button data-a="drop-yes">Yes</button><button data-a="cancel">No</button>`
-      else if (opts.confirm === 'sell') actions = `<p>${escape(msg('illGiveYou'))}${sellOffer(it)}${escape(msg('goldForYour'))}${escape(t.name(it))}. Is It a Deal?</p>
+      else if (opts.confirm === 'sell') actions = `<p>${escape(msg('illGiveYou'))}${sellOffer(it)}${escape(msg('goldForYour'))}${escape(t.name(it))} ${escape(msg('isItADeal').trimEnd())}</p>
         <button data-a="sell-yes">Yes</button><button data-a="cancel">No</button>`
-      else if (opts.confirm === 'id') actions = `<p>For 200 gold pieces I'll identify your ${escape(t.name(it))}. Is It a Deal?</p>
+      else if (opts.confirm === 'id') actions = `<p>${escape(msg('identifyFor'))}${escape(t.name(it))} ${escape(msg('identifyDeal').trimEnd())}</p>
         <button data-a="id-yes">Yes</button><button data-a="cancel">No</button>`
       else if (opts.confirm === 'use' && opts.use) {
         const u = opts.use, st = engine.spells
@@ -1315,9 +1315,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         else actions = `<p>Cast ${escape(st?.get(u.spell)?.name ?? '')} on:</p>` + engine.party().map((n, k) =>
           `<button data-a="use-on-${k}">${escape(parseCharacter(n).name)}</button>`).join('') + '<button data-a="cancel">Exit</button>'
       }
-      else if (opts.confirm === 'scribe') actions = `<p>${escape(c.name)} was going to scribe from that scroll</p><p>is it Okay to lose it?</p>
+      else if (opts.confirm === 'scribe') actions = `<p>${escape(c.name)} was going to scribe from that scroll</p><p>${escape(msg('okayToLose').trimEnd())}</p>
         <button data-a="scribe-yes">Yes</button><button data-a="cancel">No</button>`
-      else if (opts.confirm === 'trade') actions = `<p>Trade with Whom?</p>` + others.map((n, k) =>
+      else if (opts.confirm === 'trade') actions = `<p>${escape(msg('tradeWithWhom'))}</p>` + others.map((n, k) =>
         `<button data-a="trade-${k}">${escape(parseCharacter(n).name)}</button>`).join('') + '<button data-a="cancel">Exit</button>'
       else actions = `<button data-a="ready">${it.ready ? 'Un' : ''}<u>R</u>eady</button><button data-a="use"><u>U</u>se</button>` +
         (others.length ? '<button data-a="trade"><u>T</u>rade</button>' : '') +
@@ -1391,7 +1391,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         return `<div class="spell-actions"><p>Cast ${escape(s.name)} on:</p>${engine.party().map((n, k) =>
           `<button data-sp="on-${k}">${escape(parseCharacter(n).name)}</button>`).join('')}<button data-sp="cancel">Cancel</button></div>`
       }
-      const why = engine.read(0x49e5) !== 0 ? 'cannot cast spells in this area' : node[F.status] !== 0 ? `${c.name} is in no condition to cast any spells` : ''
+      const why = engine.read(0x49e5) !== 0 ? msg('noCastHere') : node[F.status] !== 0 ? `${c.name} ${msg('noCondition')}${msg('castAny')}` : ''
       const count = (id: number) => memorised(node).filter((v) => v === id).length
       return `<div class="spell-actions"><h3>Spells</h3>${why ? `<p class="muted">${escape(why)}</p>` : ''}${ready.map((s) => {
         const combatOnly = s.side === 0
@@ -1408,9 +1408,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const m = opts.money
       if (!m) return `<div class="money-actions">${canTrade ? '<button data-m="trade">Trade money</button>' : ''}<button data-m="drop">Drop money</button></div>`
       const party = engine.party()
-      if (m.op === 'trade' && m.to === undefined) return `<div class="money-actions"><p>Trade to?</p>${party.map((n, k) =>
+      if (m.op === 'trade' && m.to === undefined) return `<div class="money-actions"><p>${escape(msg('tradeTo'))}</p>${party.map((n, k) =>
         `<button data-m="to-${k}">${escape(parseCharacter(n).name)}</button>`).join('')}<button data-m="exit">Exit</button></div>`
-      if (m.type === undefined) return `<div class="money-actions"><p>Select type of coin</p>${coins.map((x) =>
+      if (m.type === undefined) return `<div class="money-actions"><p>${escape(msg('selectCoin').trimEnd())}</p>${coins.map((x) =>
         `<button data-m="type-${x.i}">${MONEY[x.i]} ${x.v}</button>`).join('')}<button data-m="exit">Exit</button></div>`
       return `<div class="money-actions"><form class="money-amount"><label>How much ${escape(COIN_PROMPT[m.type])}will you ${m.op}? <input type="number" min="0" max="${c.money[m.type]}" value="${c.money[m.type]}"></label>
         <button>OK</button><button type="button" data-m="exit">Exit</button></form></div>`
@@ -1541,12 +1541,12 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         const offer = sellOffer(it)
         items.splice(items.indexOf(it), 1)
         const m = receive(node, items, engine.money, offer, t)
-        again({ message: m || 'Sold!' })
+        again({ message: m || msg('sold') })
       } else if (a === 'id') again({ selected: keep, confirm: 'id' })
       else if (a === 'id-yes') {
-        if (!pay(node, engine.money, 200, t, items)) again({ selected: keep, message: 'Not Enough Money' })
-        else if (it.hidden === 0) again({ selected: keep, message: `I can't tell anything new about your ${t.name(it)}` })
-        else { it.hidden = 0; again({ selected: keep, message: `It looks like some sort of ${t.name(it)}` }) }
+        if (!pay(node, engine.money, 200, t, items)) again({ selected: keep, message: msg('idNoMoney') })
+        else if (it.hidden === 0) again({ selected: keep, message: `${msg('nothingNew')}${t.name(it)}` })
+        else { it.hidden = 0; again({ selected: keep, message: `${msg('looksLike')}${t.name(it)}` }) }
       } else if (a === 'halve') again({ selected: keep, message: halve(node, items, it, t) })
       else if (a === 'join') {
         const n = join(node, items, it, t)

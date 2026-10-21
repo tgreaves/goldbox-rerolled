@@ -187,6 +187,27 @@ export type StringId =
   | 'illGiveYou'
   | 'mustBeReadied'
   | 'moveLeft'
+  | 'shopLeave'
+  | 'shopGoBack'
+  | 'templeLeave'
+  | 'templeGoBack'
+  | 'treasureLeft'
+  | 'treasureGoBack'
+  | 'guarding'
+  | 'dropIt'
+  | 'isItADeal'
+  | 'sold'
+  | 'identifyFor'
+  | 'identifyDeal'
+  | 'idNoMoney'
+  | 'nothingNew'
+  | 'looksLike'
+  | 'tradeWithWhom'
+  | 'okayToLose'
+  | 'tradeTo'
+  | 'selectCoin'
+  | 'notHere'
+  | 'partyOrder'
 
 export type Strings = Partial<Record<StringId, number>>
 
@@ -361,6 +382,27 @@ export const POR_STRINGS: Strings = {
   illGiveYou: 0x3a5cb, // Sell; FUN_4894_1cee
   mustBeReadied: 0x39803, // Use; FUN_4894_0ef8
   moveLeft: 0x22a74, // battle step; FUN_320c_09df
+  shopLeave: 0x1fbc0, // shop Exit with money left; FUN_2f70_053e
+  shopGoBack: 0x1fc13, // shop Exit with money left; FUN_2f70_053e
+  templeLeave: 0x1ddce, // temple Exit with money left; FUN_2d14_0d09
+  templeGoBack: 0x1de19, // temple Exit with money left; FUN_2d14_0d09
+  treasureLeft: 0x1eefd, // treasure Exit; FUN_2e08_0ecd
+  treasureGoBack: 0x1ef1d, // treasure Exit; FUN_2e08_0ecd
+  guarding: 0x0321d, // Guard; FUN_10ba_2686
+  dropIt: 0x3982e, // items: Drop; FUN_4894_0ef8
+  isItADeal: 0x3a5f1, // items: Sell; FUN_4894_1cee
+  sold: 0x3a600, // items: Sell; FUN_4894_1cee
+  identifyFor: 0x3a808, // items: identify; FUN_4894_1f52
+  identifyDeal: 0x3a830, // items: identify; FUN_4894_1f52
+  idNoMoney: 0x3a83f, // items: identify; FUN_4894_1f52
+  nothingNew: 0x3a850, // items: identify; FUN_4894_1f52
+  looksLike: 0x3a876, // items: identify; FUN_4894_1f52
+  tradeWithWhom: 0x3a058, // items: Trade; FUN_4894_1734
+  okayToLose: 0x39698, // items: a marked scroll; FUN_4894_0d70
+  tradeTo: 0x3aa5a, // money: Trade; FUN_4894_2156
+  selectCoin: 0x3aa66, // money: Trade; FUN_4894_2156
+  notHere: 0x2f0db, // Area refused; FUN_3e76_0989
+  partyOrder: 0x30f50, // Alter Order; FUN_3f81_1780
 }
 
 export const COAB_STRINGS: Strings = {
@@ -536,4 +578,25 @@ export const COAB_STRINGS: Strings = {
   illGiveYou: 0x3fc8f, // Sell; 0x3fcf2
   mustBeReadied: 0x3ea7e, // Use; 0x3eab3
   moveLeft: 0x22824, // battle step; 0x22856
+  shopLeave: 0x1f6c9, // shop Exit with money left; 0x1f747
+  shopGoBack: 0x1f71c, // shop Exit with money left; 0x1f747
+  templeLeave: 0x1d40e, // temple Exit with money left; 0x1d489
+  templeGoBack: 0x1d459, // temple Exit with money left; 0x1d489
+  treasureLeft: 0x1e753, // treasure Exit; 0x1e7a3
+  treasureGoBack: 0x1e773, // treasure Exit; 0x1e7a3
+  guarding: 0x4f87a, // Guard; 0x4f883
+  dropIt: 0x3eaa9, // items: Drop; 0x3eab3
+  isItADeal: 0x3fcb5, // items: Sell; 0x3fcf2
+  sold: 0x3fcc4, // items: Sell; 0x3fcf2
+  identifyFor: 0x3fecf, // items: identify; 0x3ff59
+  identifyDeal: 0x3fef7, // items: identify; 0x3ff59
+  idNoMoney: 0x3ff06, // items: identify; 0x3ff59
+  nothingNew: 0x3ff17, // items: identify; 0x3ff59
+  looksLike: 0x3ff3d, // items: identify; 0x3ff59
+  tradeWithWhom: 0x3f630, // items: Trade; 0x3f64c
+  okayToLose: 0x3e3d9, // items: a marked scroll; 0x3e3f1
+  tradeTo: 0x4012a, // money: Trade; 0x4016e
+  selectCoin: 0x40136, // money: Trade; 0x4016e
+  notHere: 0x2f7e6, // Area refused; 0x2f7ef
+  partyOrder: 0x315c4, // Alter Order; 0x31604
 }

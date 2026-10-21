@@ -132,7 +132,7 @@ export async function shop(ui: TownUi) {
     else if (o === 'POOL' || o === 'SHARE') await pooling(ui, o === 'POOL' ? 'pool' : 'share')
     else if (o === 'APPRAISE') await appraise(ui)
     else {
-      if (e.money.some((v) => v > 0) && await yes(ui, 'As you Leave the Shopkeeper says, "Excuse me but you have Left Some Money here." Do you want to go back and get your Money?')) continue
+      if (e.money.some((v) => v > 0) && await yes(ui, `${msg('shopLeave').trim()} ${msg('shopGoBack')}`)) continue
       e.money = [0, 0, 0, 0, 0, 0, 0]
       ui.print('', true)
       return
@@ -167,7 +167,7 @@ export async function temple(ui: TownUi) {
     else if (o === 'POOL' || o === 'SHARE') await pooling(ui, o === 'POOL' ? 'pool' : 'share')
     else if (o === 'APPRAISE') await appraise(ui)
     else {
-      if (e.money.some((v) => v > 0) && await yes(ui, 'As you leave a priest says, "Excuse me but you have left some money here" Do you want to go back and retrieve your money?')) continue
+      if (e.money.some((v) => v > 0) && await yes(ui, `${msg('templeLeave').trim()} ${msg('templeGoBack')}`)) continue
       e.money = [0, 0, 0, 0, 0, 0, 0]
       ui.print('', true)
       return
@@ -293,7 +293,7 @@ export async function treasure(ui: TownUi) {
       }
     } else if (o === 'POOL' || o === 'SHARE') { if (t) await pooling(ui, o === 'POOL' ? 'pool' : 'share') }
     else {
-      if ((e.money.some((v) => v > 0) || e.treasure.length) && await yes(ui, 'There is still treasure left. Do you want to go back and claim your treasure?')) continue
+      if ((e.money.some((v) => v > 0) || e.treasure.length) && await yes(ui, `${msg('treasureLeft').trim()} ${msg('treasureGoBack')}`)) continue
       e.treasure = []
       ui.print('', true)
       return
