@@ -128,7 +128,7 @@ No entries: the message "There are no saved games." Choosing one starts play
 
 **Export saved game** (IMP-006, [storage.md §7](storage.md#7-export-and-import)): a list "Export saved
 game" of the browser's slots, "*x*: *label* — *date and time*"; the chosen slot is downloaded as
-`poolrad-save-<x>.zip`: "Slot *x* exported: unzip it into the game folder to play it in DOSBox." No
+`<saves.exportName>-<x>.zip` ([storage.md §7.1](storage.md#71-export)): "Slot *x* exported: unzip it into the game folder to play it in DOSBox." No
 saves: "There are no saved games in this browser."
 
 **Import saved game**: the browser's file chooser (several files; `.zip`, `.dat`, `.sav`, the game's
