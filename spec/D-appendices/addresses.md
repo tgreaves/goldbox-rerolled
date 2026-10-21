@@ -679,7 +679,7 @@ when its table column or sentence names CotAB.
 | 0x066DC | coab/ecl | coab/ecl: B as a view of the current character |  |
 | 0x06700 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x069B0 | coab/ecl, B/script-vm-map | coab/ecl: CALL targets |  |
-| 0x0B00A | C/screens | C/screens: 6.1 The camp menu |  |
+| 0x0B00A | coab/camp | coab/camp: 1. Fix |  |
 | 0x16310 | coab/tables | coab/tables: 1. Data segment |  |
 | 0x180D0 | coab/assets | coab/assets: 7. Start-up, title, copy protection |  |
 | 0x182AD | coab/assets, B/profile | coab/assets: 7. Start-up, title, copy protection | `FUN_290c_0206` |
@@ -1033,9 +1033,21 @@ when its table column or sentence names CotAB.
 | 0x30CAC | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x30DDA | B/vocabularies | B/vocabularies: 2. The effect system (`EffectRules`) |  |
 | 0x30FF3 | coab/ecl | coab/ecl: Engine entry points |  |
+| 0x3191B | C/screens | C/screens: 6.8 Alter |  |
 | 0x31B6D | C/screens | C/screens: 1.6 The combat icon editor |  |
+| 0x31CA2 | coab/camp | coab/camp: 1. Fix |  |
+| 0x31CC2 | coab/camp | coab/camp: 1. Fix |  |
 | 0x31D46 | coab/ecl | coab/ecl: Engine entry points |  |
-| 0x321CB | coab/ecl | coab/ecl: Vectors |  |
+| 0x31D7D | coab/camp | coab/camp: 1. Fix |  |
+| 0x31E2F | coab/camp | coab/camp: 1. Fix |  |
+| 0x31E8D | coab/camp | coab/camp: 1. Fix |  |
+| 0x31FD3 | coab/camp | coab/camp: 1. Fix |  |
+| 0x31FE7 | coab/camp | coab/camp: 1. Fix |  |
+| 0x32020 | coab/camp | coab/camp: 1. Fix |  |
+| 0x32096 | coab/camp | coab/camp: 1. Fix |  |
+| 0x320D8 | coab/README, coab/camp, B/procedures, C/screens | coab/README: Curse of the Azure Bonds (CotAB) |  |
+| 0x32118 | coab/camp | coab/camp: 1. Fix |  |
+| 0x321CB | coab/camp, coab/ecl | coab/camp: 1. Fix |  |
 | 0x322D0 | C/screens | C/screens: 6.1 The camp menu |  |
 | 0x3243B | coab/records | coab/records: 1. Files (diff vs engine/savegame.md "Files" and engine/input-and-menus.md "Character files") |  |
 | 0x3244B | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) |  |
@@ -1134,7 +1146,12 @@ when its table column or sentence names CotAB.
 | 0x4129A | coab/ecl | coab/ecl: Opcodes |  |
 | 0x412AD | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x41317 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x415AA | coab/camp | coab/camp: 2. Rest |  |
+| 0x415F1 | coab/camp | coab/camp: 2. Rest |  |
+| 0x41741 | coab/camp | coab/camp: 1. Fix |  |
 | 0x41ADE | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
+| 0x41B6A | coab/camp | coab/camp: 1. Fix |  |
+| 0x41B8F | coab/camp | coab/camp: 1. Fix |  |
 | 0x41CEA | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x4245A | coab/effects, B/vocabularies | coab/effects: Event → types, in the order called |  |
 | 0x42D5F | coab/records | coab/records: 8. Random treasure items |  |
@@ -1216,7 +1233,7 @@ when its table column or sentence names CotAB.
 | 0x4BCF5 | coab/spells | coab/spells: 1. Dispatch and shared helpers | `FUN_5216_0cb7` |
 | 0x4BD60 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x4BDA1 | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers | `FUN_5216_0d63` |
-| 0x4BE31 | coab/combat | coab/combat: Dice |  |
+| 0x4BE31 | coab/camp, coab/combat | coab/camp: 1. Fix |  |
 | 0x4BE7C | coab/spells, B/vocabularies | coab/spells: 2. Per spell id | `FUN_5216_0de3` |
 | 0x4C023 | coab/effects | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x4C0FD | coab/spells | coab/spells: 1. Dispatch and shared helpers |  |
@@ -1236,8 +1253,8 @@ when its table column or sentence names CotAB.
 | 0x4CC8A | coab/combat | coab/combat: Casting |  |
 | 0x4CD91 | coab/spells, B/procedures | coab/spells: 1. Dispatch and shared helpers | `FUN_5216_1656` |
 | 0x4CE0A | B/procedures | B/procedures: 12.1 Adding and removing effects |  |
-| 0x4CE85 | coab/spells, coab/tables, B/procedures | coab/spells: 1. Dispatch and shared helpers | `FUN_5216_175d` |
-| 0x4D7E8 | coab/ecl | coab/ecl: Start-up menu and demo |  |
+| 0x4CE85 | coab/camp, coab/spells, coab/tables, B/procedures | coab/camp: 1. Fix | `FUN_5216_175d` |
+| 0x4D7E8 | coab/camp, coab/ecl | coab/camp: 1. Fix |  |
 | 0x4DC70 | coab/ecl, coab/records | coab/ecl: Start-up menu and demo | `FUN_10ba_0bb8` |
 | 0x4DCA5 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x4DCEC | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
@@ -1257,7 +1274,7 @@ when its table column or sentence names CotAB.
 | 0x4F8BF | coab/spells, coab/tables, B/procedures | coab/spells: 3. Durations | `FUN_10ba_26c2` |
 | 0x4F8C5 | coab/tables, B/procedures | coab/tables: 3.7a Caster level |  |
 | 0x4FA79 | coab/ecl | coab/ecl: Opcodes |  |
-| 0x4FBB6 | coab/ecl | coab/ecl: Opcodes |  |
+| 0x4FBB6 | coab/camp, coab/ecl | coab/camp: 1. Fix |  |
 | 0x50480 | coab/effects, B/procedures | coab/effects: 6. Item kinds 0x3F034 |  |
 | 0x507C3 | coab/effects, coab/tables, B/procedures | coab/effects: 6. Item kinds 0x3F034 |  |
 | 0x50836 | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) |  |
