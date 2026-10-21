@@ -246,7 +246,7 @@ export class Battle implements FxHost {
     if (!f || this.occupied(f.x, f.y, f.size || 1, f)) return false
     c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = Math.min(hp, c[F.maxHp])
     f.size = (c[F.sizeFlags] & 7) || 1
-    this.print(`${name(c)} ${c[F.side] ? 'stands up and grins' : 'gets back up'}`) // FUN_5216_1869
+    this.print(`${name(c)} ${msg(c[F.side] ? 'reviveMonster' : 'reviveParty')}`) // FUN_5216_1869, CotAB 0x4CF77
     return true
   }
   recalc(c: Uint8Array) { if (this.e.items) recalc(c, this.e.itemsOf(c), this.e.items) }

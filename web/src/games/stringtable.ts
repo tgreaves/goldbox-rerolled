@@ -208,6 +208,23 @@ export type StringId =
   | 'selectCoin'
   | 'notHere'
   | 'partyOrder'
+  | 'reviveMonster'
+  | 'reviveParty'
+  | 'sellOverloaded'
+  | 'appraiseOverloaded'
+  | 'tradeHowMuch'
+  | 'tradeWillYou'
+  | 'dropHowMuch'
+  | 'dropWillYou'
+  | 'coinCopper'
+  | 'coinSilver'
+  | 'coinElectrum'
+  | 'coinGold'
+  | 'coinPlatinum'
+  | 'coinGems'
+  | 'coinJewelry'
+  | 'takeSelectCoin'
+  | 'takeWillYou'
   | 'pickNewClass'
   | 'doesntQualify'
   | 'nowFirstLevel'
@@ -407,6 +424,23 @@ export const POR_STRINGS: Strings = {
   selectCoin: 0x3aa66, // money: Trade; FUN_4894_2156
   notHere: 0x2f0db, // Area refused; FUN_3e76_0989
   partyOrder: 0x30f50, // Alter Order; FUN_3f81_1780
+  reviveMonster: 0x439a8, // revived, a monster; FUN_5216_1869
+  reviveParty: 0x439bc, // revived, a party member; FUN_5216_1869
+  sellOverloaded: 0x3a606, // items: Sell, the platinum does not fit; FUN_4894_1cee
+  appraiseOverloaded: 0x3c4ab, // appraisal sold, the platinum does not fit; FUN_4c2d_0203
+  tradeHowMuch: 0x3aa7b, // money Trade; FUN_4894_2156
+  tradeWillYou: 0x3aa85, // money Trade; FUN_4894_2156
+  dropHowMuch: 0x3adcd, // money Drop; FUN_4894_24a7
+  dropWillYou: 0x3add7, // money Drop; FUN_4894_24a7
+  coinCopper: 0x3ce52, // the money prompts' coin words; FUN_4c2d_0b93
+  coinSilver: 0x3ce4a, // FUN_4c2d_0b93
+  coinElectrum: 0x3ce40, // FUN_4c2d_0b93
+  coinGold: 0x3ce30, // FUN_4c2d_0b93
+  coinPlatinum: 0x3ce36, // FUN_4c2d_0b93
+  coinGems: 0x3ce2a, // FUN_4c2d_0b93
+  coinJewelry: 0x3ce5a, // FUN_4c2d_0b93
+  takeSelectCoin: 0x3cf8d, // money: take from the pool; FUN_4c2d_0ceb
+  takeWillYou: 0x3cfab, // money: take from the pool; FUN_4c2d_0ceb
 }
 
 export const COAB_STRINGS: Strings = {
@@ -608,6 +642,23 @@ export const COAB_STRINGS: Strings = {
   doesntQualify: 0x5132c, // Human Change Classes, no class allowed; 0x5135D
   nowFirstLevel: 0x51346, // Human Change Classes, done; 0x5135D
   nowFirstLevelEnd: 0x5135b, // its full stop; 0x5135D
+  reviveMonster: 0x4cf56, // revived, a monster; 0x4CF77
+  reviveParty: 0x4cf6a, // revived, a party member; 0x4CF77
+  sellOverloaded: 0x3fcca, // items: Sell, the platinum does not fit; 0x3fcf2
+  appraiseOverloaded: 0x41f84, // appraisal sold, the platinum does not fit; 0x41FAC
+  tradeHowMuch: 0x40153, // money Trade; 0x4016E
+  tradeWillYou: 0x4015d, // money Trade; 0x4016E
+  dropHowMuch: 0x404ad, // money Drop; 0x404C7
+  dropWillYou: 0x404b7, // money Drop; 0x404C7
+  coinCopper: 0x4292a, // the money prompts' coin words; 0x4293B
+  coinSilver: 0x42922, // 0x4293B
+  coinElectrum: 0x42918, // 0x4293B
+  coinGold: 0x42908, // 0x4293B
+  coinPlatinum: 0x4290e, // 0x4293B
+  coinGems: 0x42902, // 0x4293B
+  coinJewelry: 0x42932, // 0x4293B
+  takeSelectCoin: 0x42a64, // money: take from the pool; 0x42a9a
+  takeWillYou: 0x42a8a, // money: take from the pool; 0x42a9a
 }
 
 /**

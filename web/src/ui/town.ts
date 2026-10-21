@@ -12,7 +12,7 @@ import { castOutside } from '../rules/magic'
 import { heal as healChar } from '../rules/camp'
 
 const memorisedReady = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
-import { appraiseGem, appraiseJewel, COINS, coinValue, keepAsItem, moneyOf, pay, poolAll, receive, share, take, takeOne } from '../rules/money'
+import { appraiseGem, appraiseJewel, COINS, coinPrompt, coinValue, keepAsItem, moneyOf, pay, poolAll, receive, share, take, takeOne } from '../rules/money'
 import { msg, menu, ask, type MenuOpts } from '../games/strings'
 import { yes, list } from './camp'
 
@@ -49,9 +49,9 @@ async function takeMoney(ui: TownUi) {
   for (;;) {
     const kinds = [6, 5, 4, 3, 2, 1, 0].filter((i) => e.money[i] > 0)
     if (!kinds.length) return
-    const k = await list(ui, kinds.map((i) => `${e.money[i]} ${COINS[i].toUpperCase()}`), { prompt: 'Take which?' })
+    const k = await list(ui, kinds.map((i) => `${e.money[i]} ${COINS[i].toUpperCase()}`), { prompt: msg('takeSelectCoin').trimEnd() })
     if (k >= kinds.length) return
-    ui.print(`${msg('howMuch')}${COINS[kinds[k]]}?`, false)
+    ui.print(`${msg('howMuch')}${coinPrompt(kinds[k])}${msg('takeWillYou')}`.trimEnd(), false)
     const n = await ui.inputNumber()
     const t = e.items!
     const m = take(e.cur, e.itemsOf(e.cur), e.money, kinds[k], n, t)
@@ -82,7 +82,7 @@ async function appraise(ui: TownUi) {
     recalc(c, items, t)
   } else {
     // value div 5 platinum; value mod 5 gp is lost (original)
-    const msg = receive(c, items, e.money, value - (value % 5), t, false)
+    const msg = receive(c, items, e.money, value - (value % 5), t, false, 'appraiseOverloaded')
     if (msg) ui.print(msg, false)
   }
   ui.refresh()

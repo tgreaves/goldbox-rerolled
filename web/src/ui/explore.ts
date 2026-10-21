@@ -38,7 +38,7 @@ import { effectsFile } from '../data/effects'
 import { canTakeItem, capacity, ready, readyItem, recalc, unready, unreadyItem } from '../rules/equip'
 import { WorldHost } from '../rules/worldfx'
 import { drop, halve, join, scribing, trade, unavailable } from '../rules/inventory'
-import { COIN_PROMPT, COINS, coinValue, dropMoney, moneyOf, pay, poolAll, receive, sellOffer, share, take, tradeMoney } from '../rules/money'
+import { moneyPrompt, COINS, coinValue, dropMoney, moneyOf, pay, poolAll, receive, sellOffer, share, take, tradeMoney } from '../rules/money'
 import { shop, temple, treasure, type TownUi } from './town'
 import { proposeSplit } from '../rules/treasure'
 import { camp, effectNames, type CampUi } from './camp'
@@ -1437,7 +1437,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         `<button data-m="to-${k}">${escape(parseCharacter(n).name)}</button>`).join('')}${listExit('data-m="exit"')}</div>`
       if (m.type === undefined) return `<div class="money-actions"><p>${escape(msg('selectCoin').trimEnd())}</p>${coins.map((x) =>
         `<button data-m="type-${x.i}">${MONEY[x.i]} ${x.v}</button>`).join('')}${listExit('data-m="exit"')}</div>`
-      return `<div class="money-actions"><form class="money-amount"><label>How much ${escape(COIN_PROMPT[m.type])}will you ${m.op}? <input type="number" min="0" max="${c.money[m.type]}" value="${c.money[m.type]}"></label>
+      return `<div class="money-actions"><form class="money-amount"><label>${escape(moneyPrompt(m.op, m.type))}<input type="number" min="0" max="${c.money[m.type]}" value="${c.money[m.type]}"></label>
         <button>OK</button>${listExit('type="button" data-m="exit"')}</form></div>`
     }
     const again = (o: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use' | 'scribe'; use?: UseStep; after?: 'drop' | 'trade' | 'sell'; money?: MoneyStep; combat?: boolean; castOn?: number; abilityOn?: Ability }) => {

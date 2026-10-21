@@ -106,13 +106,13 @@ export function take(c: Uint8Array, items: Item[], pool: number[], i: number, am
 }
 
 /** Add platinum and gold for a sale or appraisal; platinum that does not fit goes to the pool. */
-export function receive(c: Uint8Array, items: Item[], pool: number[], gp: number, t: ItemTables, keepGold = true): string {
+export function receive(c: Uint8Array, items: Item[], pool: number[], gp: number, t: ItemTables, keepGold = true, overloaded: 'sellOverloaded' | 'appraiseOverloaded' = 'sellOverloaded'): string {
   const pp = Math.floor(gp / 5)
   const fit = Math.max(0, Math.min(pp, capacity(c) - encumbrance(c)))
   set(c, 4, get(c, 4) + fit)
   if (keepGold) set(c, 3, get(c, 3) + (gp % 5))
   recalc(c, items, t)
-  if (fit < pp) { pool[4] += pp - fit; return 'Overloaded. Money will be put in pool.' }
+  if (fit < pp) { pool[4] += pp - fit; return msg(overloaded) }
   return ''
 }
 
@@ -152,8 +152,11 @@ export function sellOffer(it: Item): number {
   return offer
 }
 
-/** The coin names in the money prompts ("How much <name>will you trade? "), as the original spells them (FUN_4c2d_0b93). */
-export const COIN_PROMPT = ['Copper ', 'silver ', 'electrum ', 'Gold ', 'Platinum ', 'Gems ', 'Jewelry ']
+/** The coin words of the money prompts ("How much <word>will you trade? "), the game's (FUN_4c2d_0b93, CotAB 0x4293B), by coin. */
+const COIN_WORDS = ['coinCopper', 'coinSilver', 'coinElectrum', 'coinGold', 'coinPlatinum', 'coinGems', 'coinJewelry'] as const
+export const coinPrompt = (i: number) => msg(COIN_WORDS[i])
+/** "How much <coin>will you trade? " / "… drop? ", from the game's pieces (FUN_4894_2156, FUN_4894_24a7) */
+export const moneyPrompt = (op: 'trade' | 'drop', i: number) => `${msg(op === 'trade' ? 'tradeHowMuch' : 'dropHowMuch')}${coinPrompt(i)}${msg(op === 'trade' ? 'tradeWillYou' : 'dropWillYou')}`
 
 /**
  * Trade money (FUN_4894_2156 → FUN_4c2d_044c): `n` coins of `type` (clamped to what the giver has) to

@@ -346,8 +346,8 @@ procedure is [town.md, "Temple"](../A-games/engine/town.md#temple-o-fun_2d14_0d0
 
 ### 5.4 Take, Pool, Share, Appraise
 
-- **TAKE**: "Take which?" lists the coin types in the pool (largest first) with EXIT; then "How much
-  *coin*?" and a number; the take rule's message.
+- **TAKE**: "Select type of coin" lists the coin types in the pool (largest first) with EXIT; then "How much
+  *coin* will you take?" and a number; the take rule's message (the game's words, strings.md §4).
 - **POOL**, **SHARE**: at once, then "The pool holds *coins*." (or "nothing").
 - **APPRAISE** ([town.md, "Appraise"](../A-games/engine/town.md#appraise-o-fun_4c2d_19b2)): "No Gems or
   Jewelry", or "You have a fine collection of: *g* Gems, *j* pieces of Jewelry" with GEMS (when there

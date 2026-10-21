@@ -219,7 +219,7 @@ game texts (§2).
 |---|---|
 | the sheet: Equipped, Carried, "Nothing else.", the slot labels, "Ammunition", "Also readied", "not for this class", "Drag an item onto a name to give it:", "Encumbrance *n* of *m* coins", "Pick an item to ready, use, trade or drop it.", "Ready: …", "Unready: …", "no change to AC, THAC0, damage or movement", "Can't ready: …", "Traded to *Name*.", "That scroll is marked for scribing: use Trade to give it.", "Cast which spell?", "Cast *Spell* on:", "The item is used up.", Spells, "(combat)", "Only in combat.", Abilities, "*Ability*: heal whom?", "… cure whom?", "*Name* is not diseased. Cure anyway?", "Trade money", "Drop money", "How much *coin* will you *trade/drop*?", "On Quick: the computer plays *Name* in battle.", "Play by hand", "*Name* will be played by hand in battle.", "Space or Take control to play them yourself.", "Items need the ITEMS file and START.EXE: …" | [screens.md §3](../C-port/screens.md#3-the-character-sheet) |
 | treasure: "Treasure", "Coins go to the one selected", "Coins", "Each coin counts 1 towards the load. …", Take, " slows them", "Share evenly", "Pool the party's coins", "Detect Magic (*Name*): magic items get a *", "Take all…", "Items", "usable by *names*", "no one in the party can use it", "better for *Name*: …", "cannot take things now", "Nothing left.", "Done", "*Name* takes …", "Shared; what nobody could carry is still here.", "Shared.", "The party's coins are pooled here.", "Magic items now show a *.", "A suggested split (not in the original): …", "leave it", "shared evenly", Confirm, Cancel, "No room for: *items*.", "These will be left behind:", "Leave them", "Go back" | [screens.md §4](../C-port/screens.md#4-treasure) |
-| shops: "Buy", All, Weapons, Armour, Other, "Only what *Name* can use", Price, Weight, "If readied instead", "can't ready: …", "no change", "Not enough money", "Nothing here.", "*Name* buys *item*.", "*Name* has *n* gp in coins.", "Take which?", "How much *coin*?", "The pool holds *coins*.", "Healing for *Name*:" | [screens.md §5](../C-port/screens.md#5-shops-and-temples) |
+| shops: "Buy", All, Weapons, Armour, Other, "Only what *Name* can use", Price, Weight, "If readied instead", "can't ready: …", "no change", "Not enough money", "Nothing here.", "*Name* buys *item*.", "*Name* has *n* gp in coins.", "The pool holds *coins*.", "Healing for *Name*:" | [screens.md §5](../C-port/screens.md#5-shops-and-temples) |
 | camp: "The party makes camp...", "Magic:", "Spells in Memory:" and the other list prompts as the port words them, "Memorize", "Cleric spells", "Magic-User spells", "Level *L*", "*u* of *t* slots", "Pending: tap to clear", "No spells of this level in the book.", "*Name* cannot memorize any spells.", "*n* spells to learn: rest …", "Nothing pending.", "No free slot of that level.", "Clear pending", "Display: …", "The last character cannot leave the party here.", "Monster pictures and portraits are always shown here." | [screens.md §6](../C-port/screens.md#6-camp) |
 | training hall: "*Name* is selected (choose from the party list).", "Choose a function:", "The party is full.", "The party needs at least one character.", "*Name* will become:", "Spells to choose from:" | [screens.md §7.6](../C-port/screens.md#76-training-hall) |
 | journal, commissions, rules reference, debug, settings: every label and message given there | [screens.md](../C-port/screens.md) §8–§12, [ui-contract.md §9](../C-port/ui-contract.md#9-settings) |
@@ -236,7 +236,7 @@ game texts (§2).
 | "*Name* is on Quick: the computer plays them. Space or TAKE CONTROL to play them yourself.", "Magic is On: …", "Magic is Off: …", "*names*: under your control again", "Nobody is on Quick", "Magic On: characters on Quick may cast spells", "Magic Off: characters on Quick will not cast spells" | [combat-ui.md §10](../C-port/combat-ui.md#10-quick-and-magic) |
 | "Press Enter to continue", "Win this battle", "every enemy falls; experience and treasure as for a won fight", "Debug: battle skipped as won." | [combat-ui.md §8](../C-port/combat-ui.md#8-the-end-of-a-battle), [screens.md §12](../C-port/screens.md#12-debug) |
 
-The original's prompts that the port rewords (for example "Healing for *Name*:", "Take which?",
+The original's prompts that the port rewords (for example "Healing for *Name*:",
 "Magic:", the training hall's "Choose a function:" with a colon, "Nothing happens." for the game's
 "Nothing Happens...") stay port texts (§6).
 
@@ -340,6 +340,13 @@ by the gender byte (0 his), then `share`.
 | `andALevel` | training | 0x34167 | `FUN_417f_29ae` | 0x3B520 | 0x3B557 |
 | `wishToTrain` | training | 0x34174 | `FUN_417f_29ae` | 0x3B52D | 0x3B557 |
 | `congratulations` | training | 0x3418B | `FUN_417f_29ae` | 0x3B544 | 0x3B557 |
+| `reviveMonster`, `reviveParty` | revived in place: a monster, a party member (after the name) | 0x439A8, 0x439BC | `FUN_5216_1869` | 0x4CF56, 0x4CF6A | 0x4CF77 |
+| `sellOverloaded` | items: Sell, the platinum does not fit | 0x3A606 | `FUN_4894_1cee` | 0x3FCCA | 0x3FCF2 |
+| `appraiseOverloaded` | appraisal sold, the platinum does not fit ("Pool" capitalised) | 0x3C4AB | `FUN_4c2d_0203` | 0x41F84 | 0x41FAC |
+| `tradeHowMuch`, `tradeWillYou` | money Trade: "How much ", the coin word, "will you trade? " | 0x3AA7B, 0x3AA85 | `FUN_4894_2156` | 0x40153, 0x4015D | 0x4016E |
+| `dropHowMuch`, `dropWillYou` | money Drop: "How much ", the coin word, "will you drop? " | 0x3ADCD, 0x3ADD7 | `FUN_4894_24a7` | 0x404AD, 0x404B7 | 0x404C7 |
+| `takeSelectCoin`, `takeWillYou` | taking from the pool: the list's prompt; "will you take? " after `howMuch` and the coin word | 0x3CF8D, 0x3CFAB | `FUN_4c2d_0ceb` | 0x42A64, 0x42A8A | 0x42A9A |
+| `coinCopper` … `coinJewelry` | the money prompts' coin words, by coin: "Copper ", "silver ", "electrum ", "Gold ", "Platinum ", "Gems ", "Jewelry " | 0x3CE52, 0x3CE4A, 0x3CE40, 0x3CE30, 0x3CE36, 0x3CE2A, 0x3CE5A | `FUN_4c2d_0b93` | 0x4292A, 0x42922, 0x42918, 0x42908, 0x4290E, 0x42902, 0x42932 | 0x4293B |
 | `pickNewClass` | dual-classing: the list's title | — |  | 0x5131D | 0x5135D |
 | `doesntQualify` | dual-classing: no class allowed, after the name | — |  | 0x5132C | 0x5135D |
 | `nowFirstLevel`, `nowFirstLevelEnd` | dual-classing done: name, this, the class name, the full stop | — |  | 0x51346, 0x5135B | 0x5135D |
