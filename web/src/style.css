@@ -205,7 +205,7 @@ dialog.panel form.jump input { width: 4.5rem; }
 /* the original's drawn view (D6): its 88 × 88 frame as a square, black around it, as the pictures over it */
 .game .drawnview {
   position: absolute; inset: 0; margin: auto; height: 100%; width: auto; aspect-ratio: 1;
-  max-width: 100%; image-rendering: pixelated; display: block; touch-action: manipulation;
+  max-width: 100%; object-fit: contain; image-rendering: pixelated; display: block; touch-action: manipulation;
 }
 .game .wildview[hidden], .game .view3d[hidden], .game .combatview[hidden], .game .drawnview[hidden] { display: none; }
 .game .skylayer {
