@@ -7,7 +7,7 @@ import { recalc } from './equip'
 import { heal as healChar } from './camp'
 import { F } from '../games/fields'
 import { Tables } from './chargen'
-import { msg } from '../games/strings'
+import { msg, ask, menu } from '../games/strings'
 
 export class WorldHost implements FxHost {
   private readonly e: Engine
@@ -75,5 +75,6 @@ export class WorldHost implements FxHost {
   weapon(c: Uint8Array) { const t = this.e.items; return this.e.itemsOf(c).find((it) => it.ready && t?.baseOf(it)?.slot === 0) ?? null }
   weaponKind(type: number) { return this.e.items?.base[type]?.kind ?? 0 }
   choose(prompt: string, items: string[]) { return this.e.io.menu(items, { prompt }) }
-  async ask(prompt: string) { return (await this.e.io.menu(['Yes', 'No'], { prompt })) === 0 }
+  /** a Yes/No question, the game's "Yes No" (PoR FUN_53aa_10d1, CotAB 0x52A54) */
+  async ask(prompt: string) { return (await ask((l, o) => this.e.io.menu(l, o), menu('yesNo'), { prompt })) === 'Y' }
 }
