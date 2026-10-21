@@ -10,7 +10,7 @@ import { appendFileSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { GameFiles } from '../src/store/gamefiles'
 import { Engine, type Io } from '../src/vm/engine'
-import { setGame, wants, type GameProfile } from '../src/games/profile'
+import { game, setGame, wants, type GameProfile } from '../src/games/profile'
 import { F } from '../src/games/fields'
 import { parseSave } from '../src/data/save'
 import { itemsFile } from '../src/data/items'
@@ -20,6 +20,7 @@ import { shop, temple, treasure, type TownUi } from '../src/ui/town'
 import { camp, type CampUi } from '../src/ui/camp'
 import { Tables } from '../src/rules/chargen'
 import { checkTraining, newSpellChoices, train, xpFor } from '../src/rules/training'
+import { changeClass, changeClassChoices, offersChangeClass } from '../src/rules/dualclass'
 import { readyItem, recalc, unreadyItem } from '../src/rules/equip'
 import { WorldHost } from '../src/rules/worldfx'
 import { drop, halve, join as joinStacks, trade } from '../src/rules/inventory'
@@ -314,6 +315,17 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     if (!t) return
     for (const c of e.party()) {
       if (chance(0.2)) continue
+      // now and then a human changes class where the game offers it (CotAB, rules/dualclass.ts)
+      if (game().menus.partyChangeClass !== undefined && offersChangeClass(c) && chance(0.15)) {
+        const to = changeClassChoices(t, c)
+        if (to.length) {
+          const k = to[pick(to.length)]
+          changeClass(t, c, k, e.itemsOf(c), e.items ?? undefined)
+          say(`  ${nameOf(c)} changes class to ${k}`)
+          if (e.items) recalc(c, e.itemsOf(c), e.items)
+          continue
+        }
+      }
       const chk = checkTraining(t, c, e.read(0x6da8))
       if (!chk.ok) { checkText(chk.message, 'training'); say(`  ${nameOf(c)}: ${chk.message}`); continue }
       say(`  ${nameOf(c)} trains`)
