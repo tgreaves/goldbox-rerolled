@@ -24,6 +24,7 @@ import { recalc } from '../rules/equip'
 import { WorldHost } from '../rules/worldfx'
 import { fire, fx } from '../rules/effects'
 import type { DemoMode } from '../games/startup'
+import { generator, random, type Dice } from '../rules/dice'
 
 export const A0 = 0x4900
 export const B0 = 0x6b00
@@ -147,30 +148,26 @@ export class Engine {
   private opstr = new Map<number, string>()
   private readonly files: GameFiles
   readonly io: Io
-  private rng: () => number
+  /** the injected dice source (spec/B-model/host-contracts.md §6): every draw of the rules goes through `roll` */
+  dice: Dice
 
-  constructor(files: GameFiles, io: Io, seed = Date.now()) {
+  /** `dice`: the host's dice source, or a seed for the reference generator (informative, §6.3) */
+  constructor(files: GameFiles, io: Io, dice: Dice | number = Date.now()) {
     this.files = files
     this.io = io
     this.walls = new WallSets(files, 1)
     void this.startImage // the game's name and coin tables (installNames)
-    let s = seed >>> 0 || 1
-    this.rng = () => {
-      s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0
-      return s / 4294967296
-    }
+    this.dice = typeof dice === 'number' ? generator(dice) : dice
   }
 
   // ---------------------------------------------------------------- state
   get facing() { return this.facing2 >> 1 }
 
-  rand(n: number) { return Math.floor(this.rng() * n) }
+  /** Turbo Pascal Random(n): the request (1, n) − 1 (host-contracts.md §6.1), so a tape sees it */
+  rand(n: number) { return random(this, n) }
 
-  roll(count: number, sides: number) {
-    let t = 0
-    for (let i = 0; i < count; i++) t += this.rand(sides) + 1
-    return sides ? t : 0
-  }
+  /** one request to the dice source: the sum of `count` dice of `sides` faces */
+  roll(count: number, sides: number) { return this.dice.roll(count, sides) }
 
   /** A new game: fresh variables, the given party, block 3 area 0 (New Phlan), as after "Begin". */
   newGame(party: Uint8Array[]) {

@@ -69,7 +69,7 @@ a host shows it and stays usable.
 
 | Entry point | Does |
 |---|---|
-| `new Engine(files, io, seed?)` | an engine over the game's files and a script host; `seed` seeds the reference generator (informative, §6) |
+| `new Engine(files, io, dice?)` | an engine over the game's files and a script host; `dice` is the host's dice source (§6), or a number that seeds the reference generator (informative, §6.3) |
 | `newGame(party)` | fresh variables (A, B, C zeroed), the party copied in, block and record `ecl.start`, the VM reset |
 | `loadSave(dat, party)` | a `SAVGAM<x>.DAT` image and its party: variables, code, position and facing, speed (ECL 0x49FC, at most 9), block (B 0x6E12), area (A 0x49F2), GEO (A 0x49C5), wall sets; a save of area 0 in a game with `ecl.areaZero` loads that record's script instead ([script-vm-map.md §6](script-vm-map.md#6-start-quit-and-other-flags)). The VM is reset when play starts, keeping the saved per-area variables |
 | `attachFiles(i, itm, spc)` | member *i*'s item and effect files |
@@ -198,7 +198,7 @@ creation.
 | Draw | Status |
 |---|---|
 | everything above, in the reference's `Engine.roll` | conforming (the reference's tests replace it with scripted dice) |
-| `Engine.rand(n)` (RANDOM, a new NPC's id, appraisal's jewels, the training hall's creation, the debug editor) | conforming in value, but the reference draws it from the generator directly instead of as the request `(1, n)` − 1, so a tape recorded at `roll` misses it ([AUDIT.md](../AUDIT.md) §6.9) |
+| `Engine.rand(n)` (RANDOM, a new NPC's id, appraisal's jewels, the training hall's creation, the debug editor) | conforming: `Random(n)` is the request `(1, n)` − 1 made through `Engine.roll` (`rules/dice.ts` `random`); `Random(0)` is the request `(1, 0)`, answered 0, and gives 0 |
 | character creation on the party screen (`ui/party.ts`) | **needs fixing**: the reference uses `Math.random` for gameplay draws (abilities, gold, hit points); a conforming build MUST use the dice source ([AUDIT.md](../AUDIT.md) §6.9) |
 | the title's lightning (`ui/title.ts`), the river cleansing's pixel choice (`ui/explore.ts`), the sound effects' cut-off phase (`audio/sfx.ts`) | presentation only: any generator (informative) |
 | the sync client's record ids (`store/sync.ts`) | not a dice draw (part C) |
@@ -206,10 +206,11 @@ creation.
 ### 6.3 The generator (informative)
 
 The original uses Turbo Pascal's `Random` (`FUN_1af8_11c0` in PoR). The reference implementation
-seeds a 32-bit xorshift per engine (`s ^= s << 13; s ^= s >>> 17; s ^= s << 5`, unsigned; seed 0
-becomes 1; the default seed is the clock), takes u = s / 2³², and answers `Random(n)` as ⌊u · n⌋ and
-a request `(count, sides)` as the sum of `count` such draws + 1. Neither is part of the contract: two
-conforming builds are compared by their tapes, not their generators.
+seeds a 32-bit xorshift (`s ^= s << 13; s ^= s >>> 17; s ^= s << 5`, unsigned; seed 0 becomes 1;
+the default seed is the clock), takes u = s / 2³², and answers a request `(count, sides)` as the sum
+of `count` values ⌊u · sides⌋ + 1 (`rules/dice.ts` `generator`); `Random(n)` is a request like any
+other (§6.1). Neither is part of the contract: two conforming builds are compared by their tapes, not
+their generators.
 
 ### 6.4 The tape format
 
