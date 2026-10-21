@@ -5,12 +5,16 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Sound driver
 
-Part of the [specification](../../README.md), part A. The driver lives in the resident part of `START.EXE` (it is not an overlay), so the browser port reads it from the player's own file.
-Driver code segment 0x18AE, linear base 0x18AE0. `CS:x` below means linear 0x18AE0+x.
-The code loads `DS = 0x08AE` (the unrelocated value of the same paragraph), so all
-driver variables are CS-relative. O = observed in code/data, I = inferred.
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Evidence marks as in the README. Curse of the Azure Bonds: [coab/assets.md](../coab/assets.md)
+> §8. How GoldBox Rerolled plays it is part C ([C-port/audio.md](../../C-port/audio.md)).
 
-Tools: `tools/sound.py` renders every effect to WAV (PC speaker exactly, Tandy approximately) from `START.EXE`; `tools/sounddis.py` lists every effect's bytecode. The browser port's `web/src/audio/driver.ts` is a port of `tools/sound.py` and is tested against it sample for sample.
+The driver lives in the resident part of `START.EXE` (it is not an overlay), so a reimplementation reads it from the player's own file.
+Driver code segment 0x18AE, linear base 0x18AE0 (Ghidra linear; image 0x8AE0). `CS:x` below means linear 0x18AE0+x.
+The code loads `DS = 0x08AE` (the unrelocated value of the same paragraph), so all
+driver variables are CS-relative.
+
+*Informative:* `tools/sound.py` renders every effect to WAV (PC speaker exactly, Tandy approximately) from `START.EXE`; `tools/sounddis.py` lists every effect's bytecode; the reference implementation's driver is tested against `tools/sound.py` sample for sample (validation V8).
 
 ## 1. Entry points
 

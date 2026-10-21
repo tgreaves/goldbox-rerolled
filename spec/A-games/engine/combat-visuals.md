@@ -5,10 +5,14 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Combat visuals
 
-Part of the [specification](../../README.md), part A. What the original draws during a battle: action poses, missiles and spell flights, sparkle and starburst, the skull, the side panel, the palette and the cursor. Conventions (evidence marks, `c[x]`, `R[x]`, distances, the combat record) are those of [combat-rules.md](combat-rules.md#conventions).
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Curse of the Azure Bonds: [coab/assets.md](../coab/assets.md). How GoldBox
+> Rerolled shows a battle is part C ([C-port/combat-ui.md](../../C-port/combat-ui.md)).
+
+What the original draws during a battle: action poses, missiles and spell flights, sparkle and starburst, the skull, the side panel, the palette and the cursor. Conventions (evidence marks, `c[x]`, `R[x]`, distances, the combat record) are those of [combat-rules.md](combat-rules.md#conventions).
 
 
-Marks: **O** observed in code, **I** inferred, **?** unknown. "speed" is the game speed `DS:49E2` (0–9). Sound numbers as in [sound.md](sound.md) §7.
+"speed" is the game speed `DS:49E2` (0–9). Sound numbers as in [sound.md](sound.md) §7.
 
 ## Building blocks
 

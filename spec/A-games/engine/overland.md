@@ -5,6 +5,10 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Overland travel (wilderness)
 
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Evidence marks as in the README. Curse of the Azure Bonds has no tile
+> wilderness ([coab/assets.md](../coab/assets.md) §4).
+
 Areas 25–27 are the western, central and eastern wilderness once their `on_enter` has cleared ECL 0x49E6 (see [main-loop.md](main-loop.md), re-entering). The same three areas also hold the lair maps: `on_enter` loads a GEO map instead when ECL 0x4A9E = 255 ("entered a lair"), and the lair's exit sets it back to 0. All of this page is observed (O) unless marked.
 
 ## Tables (data segment of `START.EXE`)

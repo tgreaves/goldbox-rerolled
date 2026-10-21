@@ -5,9 +5,14 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Input widgets, start-up and the party screen
 
-Part of the [specification](../../README.md), part A. The shared input widgets, the start-up sequence, the party screen, Modify and the combat-icon editor. Character creation (its flow, tables and the record bytes it sets) is in [chargen-and-progression.md](chargen-and-progression.md); Pool of Radiance's credits screen and code wheel are in [title-and-credits.md](../por/title-and-credits.md).
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Evidence marks as in the README; addresses are PoR's (`seg:off`, `FUN_seg_off`).
+> Curse of the Azure Bonds: its start-up menu is in [coab/ecl.md](../coab/ecl.md), its title in
+> [coab/assets.md](../coab/assets.md); the party screen is as here unless those say otherwise.
 
-O = observed in code/data (address given), I = inferred. Addresses are `seg:off` (linear = seg·16 + off). Colours are EGA indices; text grid 40 × 25. `print(text, colour, row, col)` = `FUN_1709_0626`.
+The shared input widgets, the start-up sequence, the party screen, Modify and the combat-icon editor. Character creation (its flow, tables and the record bytes it sets) is in [chargen-and-progression.md](chargen-and-progression.md); Pool of Radiance's credits screen and code wheel are in [title-and-credits.md](../por/title-and-credits.md).
+
+Addresses are `seg:off` (linear = seg·16 + off). Colours are EGA indices; text grid 40 × 25. `print(text, colour, row, col)` = `FUN_1709_0626`.
 
 ## 0. Shared input widgets (needed by every screen below)
 

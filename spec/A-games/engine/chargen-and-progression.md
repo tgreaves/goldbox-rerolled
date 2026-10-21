@@ -5,7 +5,12 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Character creation, experience and training
 
-Part of the [specification](../../README.md), part A. Creation is `FUN_417f_056c` (party screen "Create character"; the menus it uses are the widgets of [input-and-menus.md](input-and-menus.md) §0); training is `FUN_417f_29ae`; the level-derived statistics `FUN_51cf_0000`. This file merges the former `chargen.md`, the creation section of `menus.md` and `progression.md`.
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Evidence marks as in the README. Curse of the Azure Bonds:
+> [coab/tables.md](../coab/tables.md) (the rules tables and their differences), [coab/records.md](../coab/records.md)
+> (§10, creation effects); the engine model's procedures: [B-model/procedures.md](../../B-model/procedures.md) §1–§8.
+
+Creation is `FUN_417f_056c` (party screen "Create character"; the menus it uses are the widgets of [input-and-menus.md](input-and-menus.md) §0); training is `FUN_417f_29ae`; the level-derived statistics `FUN_51cf_0000`. This file merges the former `chargen.md`, the creation section of `menus.md` and `progression.md`.
 
 ## Character creation (`FUN_417f_056c`)
 

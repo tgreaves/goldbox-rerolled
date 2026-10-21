@@ -5,7 +5,11 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Computer-controlled combatants (O, `FUN_3334_000f`)
 
-Part of the [specification](../../README.md), part A. How monsters, NPCs and party members on Quick fight (`FUN_3334_000f`). Conventions (evidence marks, `c[x]`, `R[x]`, distances, the combat record) are those of [combat-rules.md](combat-rules.md#conventions).
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Curse of the Azure Bonds: as here unless [coab/combat.md](../coab/combat.md) or
+> [coab/spells.md](../coab/spells.md) says otherwise.
+
+How monsters, NPCs and party members on Quick fight (`FUN_3334_000f`). Conventions (evidence marks, `c[x]`, `R[x]`, distances, the combat record) are those of [combat-rules.md](combat-rules.md#conventions).
 
 Used for monsters, NPCs and party members in quick combat (c[0x10F] ≠ 0).
 

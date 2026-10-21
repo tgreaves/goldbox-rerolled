@@ -5,7 +5,12 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Camp, rest, memorisation and time
 
-Part of the [specification](../../README.md), part A. Status marks: **O** observed in code, **G** from the GameFAQs guide (not checked in code), **I** inferred, **?** unknown. Function names are Ghidra names in the merged image. The guide's section 12.6.3 lists the same functions under its own segment numbers (its "Segment 2F73" is our `3f81`, "3B38" is `4b46`); the offsets agree.
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Evidence marks as in the README (**G**: the GameFAQs guide, not
+> checked in code). Curse of the Azure Bonds: [coab/tables.md](../coab/tables.md),
+> [coab/spells.md](../coab/spells.md).
+
+Function names are Ghidra names in the merged image. The guide's section 12.6.3 lists the same functions under its own segment numbers (its "Segment 2F73" is our `3f81`, "3B38" is `4b46`); the offsets agree.
 
 Two variables share the number 0x49FB: ECL word **0x49FB** (array A, automap and coordinate display) and the engine global **`DS:49FB`** (rest-encounter step counter). They are unrelated.
 
@@ -28,7 +33,7 @@ Camp screen:
 
 ## Camp menu (O, `DS:0508`)
 
-Prompt "Camp: ", horizontal menu **"Save View Magic Rest Alter Exit"** (`FUN_53aa_03bd`, colours 13/10/15). Every option is always offered. There is no **Fix** command (the guide, 2.6, lists it as a later-game feature; the port adds one, IMP-048) and no Level option. Home/End change the current character (`FUN_4894_27df`) and redraw the roster, as on the party screen.
+Prompt "Camp: ", horizontal menu **"Save View Magic Rest Alter Exit"** (`FUN_53aa_03bd`, colours 13/10/15). Every option is always offered. There is no **Fix** command (the guide, 2.6, lists it as a later-game feature; GoldBox Rerolled adds one, IMP-048 in [C-port/departures.md](../../C-port/departures.md)) and no Level option. Home/End change the current character (`FUN_4894_27df`) and redraw the roster, as on the party screen.
 
 | Key | Action |
 |---|---|
@@ -248,7 +253,7 @@ Turning, menus, shops, temples, training and casting outside combat take no time
 
 Effect durations are therefore in **minutes** (1 combat round = 1 minute). An effect expires at the first chunk that reaches its remaining time, up to 9 minutes early on a long advance.
 
-The per-member flags `DS:471E + n` only let the camp skip members without timed effects; a port can process everyone every time.
+The per-member flags `DS:471E + n` only let the camp skip members without timed effects; a conforming build MAY process every member every time (the result is the same).
 
 ### Status line (O, `FUN_1000_34ab`)
 

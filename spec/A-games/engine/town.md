@@ -5,7 +5,11 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Shops, temples, items menu, treasure
 
-Part of the [specification](../../README.md), part A. Item records, readying and derived statistics are in [records.md](records.md). Status marks: O = seen in code, G = from the GameFAQs guide (not checked in code), I = inferred, ? = unknown.
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Evidence marks as in the README (**G**: the GameFAQs guide, not
+> checked in code). Curse of the Azure Bonds: [coab/tables.md](../coab/tables.md) (temple, money).
+
+Item records, readying and derived statistics are in [records.md](records.md).
 
 ## How scripts open them (O)
 
@@ -98,7 +102,7 @@ So 10 cp = 1 sp, 20 sp = 1 gp, 2 ep = 1 gp, 1 pp = 5 gp.
 2. Else if P ≤ G(pool): the same on the pool (`FUN_4c2d_0185`).
 3. Else "Not enough money." Character and pool are never combined.
 
-Buy and the temple read G(character) as u16 and both setters take a u16, so value above 65 535 gp is lost on any payment (the guide's 13 107-platinum bug). A port that wants the original behaviour must reproduce the wrap.
+Buy and the temple read G(character) as u16 and both setters take a u16, so value above 65 535 gp is lost on any payment (the guide's 13 107-platinum bug; **Bug**: a conforming build reproduces the wrap).
 
 **Pool** (`FUN_4c2d_0508`): every party member with char[0x84] = 0 (player character) or 0xB3 (NPC that handles money) adds all seven words to the pool and is zeroed.
 

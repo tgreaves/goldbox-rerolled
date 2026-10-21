@@ -5,7 +5,10 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Spells
 
-Part of the [specification](../../README.md), part A. Extractor: `tools/spells.py` (reads the unpacked `START.EXE`).
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Evidence marks as in the README. *Informative:* reference extractor
+> `tools/spells.py` (reads the unpacked `START.EXE`). Curse of the Azure Bonds:
+> [coab/spells.md](../coab/spells.md).
 
 ## Tables (O)
 
