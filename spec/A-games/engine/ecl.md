@@ -5,7 +5,11 @@ tags: [reverse-engineering, gold-box, spec]
 
 # ECL virtual machine
 
-Part of the [specification](../../README.md), part A. Disassembler: `tools/ecl.py`. Status markers: **O** observed in code, **I** inferred, **?** unknown.
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Evidence marks as in the README; addresses are PoR's (`FUN_seg_off`,
+> ECL addresses in PoR's numbering). How the engine model maps each game's script memory is part B
+> ([B-model/script-vm-map.md](../../B-model/script-vm-map.md)). *Informative:* reference disassembler
+> `tools/ecl.py`, interpreter `tools/eclvm.py`. Curse of the Azure Bonds: [coab/ecl.md](../coab/ecl.md).
 
 ## Loading (O)
 
@@ -116,7 +120,7 @@ The B array keeps the C64 layout of the character record at 0x6B00. Some address
 
 ### Engine-visible variables (O unless marked)
 
-Variables the engine itself reads or writes, so a port must give them meaning. Everything else in A, B and C is script-private.
+Variables the engine itself reads or writes, so a reimplementation must give them meaning. Everything else in A, B and C is script-private.
 
 | ECL address | Meaning | Spec |
 |---|---|---|
@@ -171,7 +175,7 @@ Variables the engine itself reads or writes, so a port must give them meaning. E
 | 0xC059, 0xC05F | — | the floor and horizon colour registers (`DS:6F68`, `DS:6F69`): [maps-and-view.md, "Background colours"](maps-and-view.md#drawing-order-painters-algorithm) |
 | 0x00B1, 0x00FB, 0x00FC | engine words `DS:6F6E`, `6F6A`, `6F6C` | ignored |
 | 0x033D | facing ×2 (0–7, so overland scripts can use 8 directions) | — |
-| anything else (e.g. 0x035F) | undefined (an uninitialised local) | ignored |
+| anything else (e.g. 0x035F) | undefined (an uninitialised local); a conforming build reads 0 | ignored |
 | 0x03DE, 0x00B8, 0x00B9 | — | engine words (**?**) |
 
 ## Flags and control flow (O)
@@ -259,7 +263,7 @@ All of these walk the party list `DS:5D96`, which **also holds loaded monsters**
 | 32 | FIND_ITEM | val 1 type | EQ if any member carries an item of that type (item[0x2E]), else NE; other flags cleared | O |
 | 36 | ADD_NPC | val 1 id, val 2 morale | add NPC id to the party; morale char[0x84] = (val 2 >> 1) \| 0x80; enemy-side flag char[0x10E] = 1 only for id 0x18. Handler `29c3:2B7E`, loader `FUN_45c5_1262`: nothing is added with 8 in the party, but morale and side are still written to the current character; the record, items and effects come from `MON<block>CHA/ITM/SPC` like `LOAD_MONSTER` (`FUN_45c5_0ec4`: icon size char[0xC0] 1 for races 1/3/5 and 2 for 2/4/6/7, icon colours char[0xC1..0xC3], [0xC5..0xC6] = (d6 + 8)·16 + d6, char[0xC4] = 0xC4); char[0xAB] = Random(256); a random class among its levels (none → 2) picks the portrait body char[0xBC] from `DS:08D7` (cleric), `08EB` (magic-user), `08F5` (thief) or `08E1` (others) at gender·5 + d5, and the head char[0xBB] from `DS:08C7` at gender·8 + d8; the NPC joins the end of the party and becomes current | O |
 | 3B | FIND_IN_CHAR_LIST | val 1, addr 2, addr 3 | meant to find a value in char bytes 0x18–0x69. **Broken**: it keeps both destinations as bytes, so the results go to engine addresses (`addr & 0xFF`) and are discarded; it only ever scans the first list entry. The one use (`#31, [0x6E7D], [0x6E7E]`) therefore leaves its variables unchanged | O |
-| 28 | ROB | val 1 target (0 = current, else everyone), val 2 percent p, (op 3 unused) | each money word = trunc(v·(100 − p)/100). Items: for each item in turn, p is first lowered **in place** (weight > 255: −90; weight > 24: −50; floor 0), then d100 ≤ p takes it; later items inherit the lowered p. A taken item is freed (whole stack, readied or not), not added to any treasure. No message, and the stats are not recomputed (the port does, IMP-049) | O |
+| 28 | ROB | val 1 target (0 = current, else everyone), val 2 percent p, (op 3 unused) | each money word = trunc(v·(100 − p)/100). Items: for each item in turn, p is first lowered **in place** (weight > 255: −90; weight > 24: −50; floor 0), then d100 ≤ p takes it; later items inherit the lowered p. A taken item is freed (whole stack, readied or not), not added to any treasure. No message, and the stats are not recomputed (**Bug**; GoldBox Rerolled recomputes them, IMP-049, [C-port/departures.md](../../C-port/departures.md)) | O |
 | 2E | DAMAGE | val 1 flags, val 2 dice count, val 3 dice sides, val 4 bonus, val 5 save/attack | damage = bonus + count d sides (the dice sum a byte), **rolled once** (0x1C414) for every victim of a save mode and again after each attack in attack mode (0x1C5E7), whether it hit or not; a d(party size) is rolled first unless flags bit 6 is set, used only by the one-random-member mode (handler 29c3:2775). A dead victim is skipped; the message is "dies." when damage > HP + 10 (decided before the damage), else "is hit FOR n points of Damage."; the damage applied is its low byte; the save sum is compared as a byte and runs effect event 12, the attack event 16. "All members" walks the whole list, not only the party size. If nobody is left in play: "The END!" then "The entire party is killed!" (0x1C667). A press-Enter prompt always ends it. Flags bit 7 clear: flags = number of attacks, each on a random member, hitting if d20 (1 misses, 20 → 100) + val 5 > char[0x111]. Bit 7 set: save bonus = flags & 0x1F, save type = val 5 & 7, and:<br>– bit 6 clear, val 5 bit 7 clear: one random member, damaged unless the save succeeds<br>– bit 6 clear, val 5 bit 7 set: the current character, save type (val 5 & 7) − 1, no save if that is 0<br>– bit 6 set: every member; with bit 5 set no save is allowed<br>If nobody can act afterwards, the game ends (`DS:49FF`) | O |
 
 ### Monsters, encounters and treasure
@@ -308,12 +312,12 @@ Stored values: **0** the monsters flee ("The monsters flee."), **1** combat, **2
 | 37 | LOAD_WALLSETS | val 1–3 | 0x7F: clear to set 0 in slot 1. If 0x49E7 and 0x49E8 are both set: load val 1 → slot 1, val 3 → slot 3, with no 0xFF test (image 0x1A96D–0x1A994; no shipped script passes 0xFF there). Else for each slot: 0xFF empties it, otherwise load that `WALLDEF<block>` record (one record may fill several slots) | O |
 | 2D | CALL | addr 1 | native routine, table below | O |
 | 31 | REDRAW | — | if an encounter sprite is showing, redraw the 3D view | O |
-| 34 | DELAY | val ? | **passes game time** (the rest-loop clock routine `FUN_4b46_03d5`), not a pause. Its operand is read with an uninitialised index, so the amount is undefined; used once in the data (`DELAY #1`, ECL7 record 17), where in practice it passes 0 minutes, so nothing happens (**I**); the port does nothing | O |
+| 34 | DELAY | val ? | **passes game time** (the rest-loop clock routine `FUN_4b46_03d5`), not a pause. Its operand is read with an uninitialised index, so the amount is undefined; used once in the data (`DELAY #1`, ECL7 record 17), where in practice it passes 0 minutes, so nothing happens (**I**); a conforming build passes no time | O |
 | 38 | PROGRAM | val 1 | 0 party/training-hall screen; 8 ending; 9 camp (runs `camp_menu`, the camp screen, then `camp_confirmed` if the camp was interrupted), then acts as EXIT | O |
 
 ## CALL targets (O, `FUN_29c3_2ccf`)
 
-The DOS port maps former C64 machine-code entry points to native routines:
+The DOS version maps former C64 machine-code entry points to native routines:
 
 | Address | Effect |
 |---|---|
@@ -322,14 +326,14 @@ The DOS port maps former C64 machine-code entry points to native routines:
 | 0x8001 | solo combat: as 0x8000 without the copy (`B[0x5CC]` = 0) |
 | 0xBA03 | play one of two sounds depending on engine register 0x3DE (8 or 10) |
 | 0xC018 | recompute "wall ahead" (`0xC04E`), map areas only |
-| 0xC01B | nothing in the DOS port. The overland scripts (areas 25–27) call it and then read engine address 0x035F as the destination tile; that address is unmapped and returns an undefined value, so this C64 tile check is dead code (**I**: overland legality is done natively by `FUN_3e76_0818`) |
+| 0xC01B | nothing in the DOS version. The overland scripts (areas 25–27) call it and then read engine address 0x035F as the destination tile; that address is unmapped and returns an undefined value, so this C64 tile check is dead code (**I**: overland legality is done natively by `FUN_3e76_0818`) |
 | 0xC01E | move the party one square forward (with wrap-around) and refresh square registers |
 
 After a 0x8000/0x8001 fight the aftermath awards `100 × char[0x73]` experience to the current character (see [chargen-and-progression.md](chargen-and-progression.md)).
 
 ## Validation
 
-`tools/eclvm.py` implements this file, quirks included, on top of a save game; `tools/eclsweep.py` runs it over every area of the shipped scripts:
+*Informative* (provenance; the record moves to [VALIDATION.md](../../VALIDATION.md)). `tools/eclvm.py` implements this file, quirks included, on top of a save game; `tools/eclsweep.py` runs it over every area of the shipped scripts:
 
 - all 29 ECL records in the 8 blocks: enter the area, then from every square and facing (1,024 starts per area) attempt a move, running `on_move` and `on_step`, with menus answered at random
 - 29,696 runs: no decode errors and no missing handlers. With every menu answered "first option", 101 runs loop forever; each one checked is a genuine in-game loop (for example, re-opening the same empty cabinet in area 14 of block 3)
