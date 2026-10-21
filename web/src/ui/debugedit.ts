@@ -159,7 +159,7 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
         const to = clamp(v(`l${k}`), 0, tables ? maxLevel(tables, k) : 1)
         if (tables && c[F.levels + k] > 0) while (c[F.levels + k] < to) {
           c[F.levels + k]++
-          levelHp(tables, (n) => e.rand(n), c, [k])
+          levelHp(tables, e, c, [k])
           gained++
           const min = xpFor(tables, k, c[F.levels + k])
           if (min !== 0xffffffff && u32(c, F.xp) < min) set32(c, F.xp, min)

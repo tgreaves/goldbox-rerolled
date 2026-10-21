@@ -12,6 +12,7 @@ import { Tables } from '../src/rules/chargen'
 import { derive, levelLimit } from '../src/rules/training'
 import { alignmentsFor, begin, classesFor, rollHitDice, rollAbilities, saves, thiefSkills } from '../src/rules/chargen'
 import { T } from '../src/games/tables'
+import { generator } from '../src/rules/dice'
 
 const tables = (dir: string) => SpellTables.load(new Uint8Array(readFileSync(join(dir, 'START.EXE'))))!
 const count = (st: SpellTables, cls: number) => Array.from({ length: R.spells.levels }, (_, l) => st.spells.filter((s) => bookSpell(s) && s.cls === cls && s.level === l + 1).length)
@@ -69,11 +70,11 @@ describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds spell book
     const t = new Tables(unexepack(new Uint8Array(readFileSync(join(coab, 'START.EXE')))).image)
     expect(Array.from({ length: 8 }, (_, k) => t.b(T.hitDiceStop.at + k))).toEqual([10, 15, 10, 10, 11, 12, 11, 19])
     const c = new Uint8Array(F.size)
-    const rolls: number[] = []
-    const rng = (n: number) => { rolls.push(n); return rolls.length % 2 ? 2 : 6 } // dice show 3, then 7
+    const rolls: [number, number][] = []
+    const rng = { roll: (n: number, s: number) => { rolls.push([n, s]); return rolls.length % 2 ? 3 : 7 } } // dice show 3, then 7
     c[F.levels + 2] = 1
     expect(rollHitDice(t, rng, c, [2])).toBe(7) // fighter level 1: 1d10 twice, the higher
-    expect(rolls).toEqual([10, 10])
+    expect(rolls).toEqual([[1, 10], [1, 10]])
     c[F.levels + 2] = 5
     expect(rollHitDice(t, rng, c, [2])).toBe(7) // one die after level 1
     c[F.levels + 2] = 10
@@ -89,8 +90,7 @@ describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds spell book
     expect(classesFor(t, 4)).toEqual(expect.arrayContaining([4, 10])) // half-elf: ranger, cleric/ranger
     expect(alignmentsFor(t, 3)).toEqual([0]) // paladin: lawful good only
     expect(alignmentsFor(t, 4)).toEqual([0, 3, 6]) // ranger: LG, NG, CG
-    let seed = 7
-    const rng = (n: number) => (seed = (seed * 1103515245 + 12345) >>> 0) % n
+    const rng = generator(7)
     const c = begin(t, rng, 7, 0, 3, 0)
     rollAbilities(t, rng, c)
     expect(c.length).toBe(F.size)

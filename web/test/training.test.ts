@@ -36,7 +36,7 @@ describe.skipIf(!have)('training', () => {
     const hp = c[0x32]
     const value = () => [1, 10, 100, 200, 1000].reduce((a, v, i) => a + v * (c[0x88 + 2 * i] | (c[0x89 + 2 * i] << 8)), 0)
     const before = value()
-    train(t, (n) => n - 1, c, chk.train)
+    train(t, { roll: (n: number, s: number) => n * s }, c, chk.train) // every die its highest face
     expect(c[0x98]).toBe(2)
     expect(60 - c[0x2d]).toBe(19) // fighter level 2 THAC0
     expect(c[0x32]).toBeGreaterThan(hp)

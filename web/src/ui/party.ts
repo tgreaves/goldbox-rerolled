@@ -23,10 +23,12 @@ import { onPulled } from '../store/account'
 import { importsFrom, rosterFrom, saveFiles, savesFrom, unzip, zip, type NamedFile } from '../store/savefiles'
 import { parseSave, saveArea, saveBlock } from '../data/save'
 import type { Start } from './explore'
+import type { Dice } from '../rules/dice'
 
 const MAX_PARTY = 6
 
-export async function showParty(app: HTMLElement, files: GameFiles, nav: {
+/** `dice`: the page's dice source, which creation draws from (spec/B-model/host-contracts.md §6.2) */
+export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, nav: {
   title: () => void
   assets: () => void
   /** the games screen: switch game, import another, remove one */
@@ -45,7 +47,6 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
     const exe = files.get('START.EXE')
     if (exe) tables = new Tables(unexepack(exe).image)
   } catch { /* START.EXE unreadable: Create stays disabled */ }
-  const rng = (n: number) => Math.floor(Math.random() * n)
 
   app.innerHTML = `
     <div class="partyscreen">
@@ -131,7 +132,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
     nav2.innerHTML = groups.map((g) => `<section class="fgroup"><h2>${g.title}</h2><div class="fbtns">${g.fns.map(button).join('')}</div></section>`).join('')
   }
 
-  const { chooseFrom, confirm, pick, create, modify } = creatorTools(dialog, files, rng, tables)
+  const { chooseFrom, confirm, pick, create, modify } = creatorTools(dialog, files, dice, tables)
 
   async function act(k: string) {
     if (dialog.open) return

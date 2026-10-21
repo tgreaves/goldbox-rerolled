@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { unexepack } from '../src/data/exepack'
 import { Tables, alignmentsFor, begin, classesFor, rollAbilities } from '../src/rules/chargen'
 import { parseCharacter } from '../src/data/character'
+import { generator } from '../src/rules/dice'
 
 const dir = process.env.POOLRAD ?? ''
 const have = dir !== '' && existsSync(join(dir, 'START.EXE'))
@@ -22,8 +23,7 @@ describe.skipIf(!have)('character creation', () => {
 
   it('rolls characters within racial and class limits', () => {
     const tb = t()
-    let seed = 7
-    const rng = (n: number) => ((seed = (seed * 1103515245 + 12345) >>> 0) >>> 8) % n
+    const rng = generator(7)
     for (let i = 0; i < 300; i++) {
       const race = [1, 2, 3, 4, 5, 7][i % 6]
       const classes = classesFor(tb, race)
@@ -42,12 +42,34 @@ describe.skipIf(!have)('character creation', () => {
   })
 })
 
+describe.skipIf(!have)('creation draws from the dice source', () => {
+  it('makes the original\'s requests in its order (host-contracts.md §6.2)', () => {
+    const tb = new Tables(unexepack(new Uint8Array(readFileSync(join(dir, 'START.EXE')))).image)
+    let eighteens = 0
+    for (let seed = 1; seed <= 80; seed++) {
+      const asked: [number, number][] = []
+      const g = generator(seed)
+      const dice = { roll: (n: number, s: number) => { asked.push([n, s]); return g.roll(n, s) } }
+      // human male fighter: the id tag Random(256), age 15 + 1d4, six abilities of six 3d6 each, STR
+      // 18/xx only on a STR of 18, gold 5d4, hit points 1d10 (PoR's tables)
+      const c = begin(tb, dice, 7, 0, 2, 0)
+      expect(asked).toEqual([[1, 256], [1, 4]])
+      asked.length = 0
+      rollAbilities(tb, dice, c)
+      const six = Array.from({ length: 6 }, () => [3, 6])
+      const str18 = c[0x10] === 18 ? [[1, 100]] : [] // straight after STR's rolls
+      if (str18.length) eighteens++
+      expect(asked).toEqual([...six, ...str18, ...six, ...six, ...six, ...six, ...six, [5, 4], [1, 10]])
+    }
+    expect(eighteens).toBeGreaterThan(0)
+  })
+})
+
 describe.skipIf(!have)('modify and icons', () => {
   it('keeps abilities inside racial limits and HP inside its range', async () => {
     const { hpMin, hpMax, modifyStep, abilityRange } = await import('../src/rules/chargen')
     const tb = new Tables(unexepack(new Uint8Array(readFileSync(join(dir, 'START.EXE')))).image)
-    let seed = 3
-    const rng = (n: number) => ((seed = (seed * 1103515245 + 12345) >>> 0) >>> 8) % n
+    const rng = generator(3)
     const c = begin(tb, rng, 7, 0, 2, 0) // human male fighter
     rollAbilities(tb, rng, c)
     for (let i = 0; i < 30; i++) modifyStep(tb, c, 0, 1)

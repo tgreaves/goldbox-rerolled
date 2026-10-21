@@ -7,6 +7,7 @@ import type { Item } from '../data/items'
 import type { Effect } from '../data/effects'
 import { T } from '../games/tables'
 import { F } from '../games/fields'
+import { random, type Dice } from './dice'
 
 export class Tables {
   private readonly img: Uint8Array
@@ -18,13 +19,9 @@ export class Tables {
   w(off: number) { return this.img[this.ds + off] | (this.img[this.ds + off + 1] << 8) }
 }
 
-
-export type Rng = (n: number) => number // 0..n-1
-const roll = (rng: Rng, count: number, sides: number) => {
-  let t = 0
-  for (let i = 0; i < count; i++) t += rng(sides) + 1
-  return t
-}
+// Every draw is a request to the dice source (spec/B-model/host-contracts.md §6): the original rolls
+// its NdS through the dice routine (PoR FUN_5216_0de3, CotAB 0x4BE31), one request (N, S) each, and
+// takes the identity tag and STR 18/xx from Random (FUN_1af8_11c0, CotAB 0x8F7:0x15EA): (1, n) − 1.
 
 /** Classes offered for a race (DS:3E17 + race·12: count, ids). */
 export function classesFor(t: Tables, race: number): number[] {
@@ -43,7 +40,7 @@ export const headRecord = (t: Tables, n: number) => t.b(T.headRecords.at + n)
 export const bodyRecord = (t: Tables, n: number) => t.b(T.bodyRecords.at + n)
 
 /** Start a character: steps 2-6 of spec/A-games/engine/chargen-and-progression.md, "Sequence" (race, gender, class, alignment, age). */
-export function begin(t: Tables, rng: Rng, race: number, gender: number, cls: number, alignment: number): Uint8Array {
+export function begin(t: Tables, dice: Dice, race: number, gender: number, cls: number, alignment: number): Uint8Array {
   const c = new Uint8Array(F.size)
   c[F.race] = race
   c[F.cls] = cls
@@ -54,7 +51,7 @@ export function begin(t: Tables, rng: Rng, race: number, gender: number, cls: nu
   c[F.sizeFlags] = 1
   c[F.hitDice] = 1
   c[F.acBase] = 50
-  c[F.id] = rng(256)
+  c[F.id] = random(dice, 256) // PoR 417f:0622, CotAB 0x37047
   c[F.head] = 1
   c[F.body] = 1
   ;[0x91, 0xa2, 0xb3, 0xc4, 0xe6, 0xf7].forEach((v, i) => (c[F.iconColours + i] = v))
@@ -74,7 +71,7 @@ export function begin(t: Tables, rng: Rng, race: number, gender: number, cls: nu
   let age: number
   if (cls < 8) {
     const o = T.startAge.at + race * T.startAge.row + cls * 4
-    age = t.w(o) + roll(rng, t.b(o + 2), t.b(o + 3))
+    age = t.w(o) + dice.roll(t.b(o + 2), t.b(o + 3))
   } else {
     const o = T.startAge.at + race * T.startAge.row + (R.ageColumns[cls] ?? 0) * 4
     age = t.w(o) + t.b(o + 2) * t.b(o + 3)
@@ -85,7 +82,7 @@ export function begin(t: Tables, rng: Rng, race: number, gender: number, cls: nu
 }
 
 /** Step 7: roll abilities, HP, gold and spells (repeated on "No" to "Keep this character?"). */
-export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
+export function rollAbilities(t: Tables, dice: Dice, c: Uint8Array) {
   const race = c[F.race], cls = c[F.cls], gender = c[F.gender]
   const age = c[F.age] | (c[F.age + 1] << 8)
   const thr = (i: number) => t.w(T.ageing.at + race * T.ageing.row + i * 2)
@@ -94,7 +91,7 @@ export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
   for (let a = 0; a < 6; a++) {
     // best of six 3d6 (the racial adjustments inside this loop are dead code in the original)
     c[F.stat[a]] = 0
-    for (let i = 0; i < 6; i++) c[F.stat[a]] = Math.max(c[F.stat[a]], roll(rng, 3, 6))
+    for (let i = 0; i < 6; i++) c[F.stat[a]] = Math.max(c[F.stat[a]], dice.roll(3, 6))
     let v = c[F.stat[a]]
     const older = (i: number) => age > thr(i)
     if (a === 0) {
@@ -116,7 +113,7 @@ export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
     if (a === 2 && v < 13 && R.clericMultis.includes(cls)) v = 13
     c[F.stat[a]] = v & 0xff
     if (a === 0 && v === 18 && c[F.levels + 2] > 0) {
-      c[F.strPct] = Math.min(rng(100) + 1, t.b(lim + 4 + gender))
+      c[F.strPct] = Math.min(random(dice, 100) + 1, t.b(lim + 4 + gender)) // PoR 417f:14f3, CotAB 0x38152
     }
   }
   c[F.attacksBase] = 2
@@ -130,7 +127,7 @@ export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
     if (!c[F.levels + k]) continue
     if (k === 0) c[F.clericSlots] = 1
     else if (k === 5) c[F.muSlots] = 1
-    gold += roll(rng, t.b(T.startGold.at + k * T.startGold.row), t.b(T.startGold.at + k * T.startGold.row + 1))
+    gold += dice.roll(t.b(T.startGold.at + k * T.startGold.row), t.b(T.startGold.at + k * T.startGold.row + 1))
     classes++
     if (k === 0) {
       wisdomBonus(c)
@@ -143,7 +140,7 @@ export function rollAbilities(t: Tables, rng: Rng, c: Uint8Array) {
   c[F.money + 2 * m.coin] = g & 0xff
   c[F.money + 2 * m.coin + 1] = g >> 8
   // hit points (FUN_417f_4235, FUN_417f_3f31)
-  const hpRoll = hitDice(t, rng, c)
+  const hpRoll = hitDice(t, dice, c)
   c[F.hpRolled] = hpRoll & 0xff
   c[F.maxHp] = hpRoll & 0xff
   const con = conBonus(t, c)
@@ -161,8 +158,8 @@ export function startEffects(c: Uint8Array): Effect[] {
   return types.map((type) => ({ type, duration: 0, power: 0xff, flag: 0 }))
 }
 
-export function hitDice(t: Tables, rng: Rng, c: Uint8Array): number {
-  return rollHitDice(t, rng, c, [0, 1, 2, 3, 4, 5, 6, 7].filter((k) => c[F.levels + k] > 0)) & 0xff
+export function hitDice(t: Tables, dice: Dice, c: Uint8Array): number {
+  return rollHitDice(t, dice, c, [0, 1, 2, 3, 4, 5, 6, 7].filter((k) => c[F.levels + k] > 0)) & 0xff
 }
 
 /**
@@ -171,15 +168,15 @@ export function hitDice(t: Tables, rng: Rng, c: Uint8Array): number {
  * level-1 minimum; from the class's stop level (T.hitDiceStop) the fixed amount, replacing the sum so
  * far (CotAB's quirk, spec/A-games/coab/tables.md §3.4). PoR FUN_417f_4235 / training; CotAB FUN 0x3b230.
  */
-export function rollHitDice(t: Tables, rng: Rng, c: Uint8Array, classes: number[]): number {
+export function rollHitDice(t: Tables, dice: Dice, c: Uint8Array, classes: number[]): number {
   const hp = R.hitPoints
   let sum = 0
   for (const k of classes) {
     const L = c[F.levels + k]
     if (hp.fixed && T.hitDiceStop.at >= 0 && L >= t.b(T.hitDiceStop.at + k)) { sum = hp.fixed[k] ?? 2; continue }
     const n = L > 1 && hp.laterDice !== null ? hp.laterDice : t.b(T.hitDiceCount.at + k), sides = t.b(T.hitDiceSides.at + k)
-    let r = roll(rng, n, sides)
-    for (let i = 1; i < hp.rolls; i++) r = Math.max(r, roll(rng, n, sides))
+    let r = dice.roll(n, sides)
+    for (let i = 1; i < hp.rolls; i++) r = Math.max(r, dice.roll(n, sides))
     if (hp.firstLevelMin && L === 1) r = Math.max(r, Math.floor((sides * hp.firstLevelMin[0]) / hp.firstLevelMin[1]))
     sum += r
   }

@@ -1,7 +1,8 @@
 // Training (spec/A-games/engine/chargen-and-progression.md, FUN_417f_29ae) and the derived statistics after a level (FUN_51cf_0000).
 import { R, slots } from '../games/rules'
 import { T } from '../games/tables'
-import { rollHitDice, conBonus, saves, thiefSkills, wisdomBonus, type Rng, type Tables } from './chargen'
+import { rollHitDice, conBonus, saves, thiefSkills, wisdomBonus, type Tables } from './chargen'
+import type { Dice } from './dice'
 import { CLASSES, COIN_VALUES } from '../data/character'
 import { F } from '../games/fields'
 import type { Item } from '../data/items'
@@ -95,7 +96,7 @@ export function willBecome(c: Uint8Array, train: number[]): string[] {
 }
 
 /** Steps 9–13: pay, gain levels, recompute, then hit points. Returns true if a new MU spell is due. */
-export function train(t: Tables, rng: Rng, c: Uint8Array, classes: number[], cheat = false): boolean {
+export function train(t: Tables, dice: Dice, c: Uint8Array, classes: number[], cheat = false): boolean {
   if (!cheat) payCoins(c, R.trainingCost)
   const k = [0, 1, 2, 3, 4, 5, 6, 7].filter((i) => c[F.levels + i] > 0).length
   const oldMU = c[F.levels + 5]
@@ -107,7 +108,7 @@ export function train(t: Tables, rng: Rng, c: Uint8Array, classes: number[], che
     }
   }
   derive(t, c)
-  levelHp(t, rng, c, classes, k)
+  levelHp(t, dice, c, classes, k)
   return c[F.levels + 5] > oldMU
 }
 
@@ -115,9 +116,9 @@ export function train(t: Tables, rng: Rng, c: Uint8Array, classes: number[], che
  * The hit points of one level gained (FUN_417f_29ae step 6): rolls for the classes that went up,
  * the CON bonus, both divided over the character's k classes; the wound is kept.
  */
-export function levelHp(t: Tables, rng: Rng, c: Uint8Array, classes: number[], k = [0, 1, 2, 3, 4, 5, 6, 7].filter((i) => c[F.levels + i] > 0).length) {
+export function levelHp(t: Tables, dice: Dice, c: Uint8Array, classes: number[], k = [0, 1, 2, 3, 4, 5, 6, 7].filter((i) => c[F.levels + i] > 0).length) {
   let rolled = 0
-  rolled = rollHitDice(t, rng, c, classes)
+  rolled = rollHitDice(t, dice, c, classes)
   c[F.hpRolled] = (c[F.hpRolled] + Math.max(1, Math.trunc(rolled / Math.max(1, k)))) & 0xff
   const C = conBonus(t, c)
   const gain = Math.max(1, Math.trunc((rolled + C) / Math.max(1, k)))

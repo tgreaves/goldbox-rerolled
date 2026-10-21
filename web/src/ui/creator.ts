@@ -10,8 +10,9 @@ import { Tables, abilityRange, combatStats, hpMax, hpMin, modifyStep } from '../
 import { buildIcon } from '../render/icon'
 import { createCharacter } from './newchar'
 import { F } from '../games/fields'
+import type { Dice } from '../rules/dice'
 
-export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (n: number) => number, tables: Tables | null) {
+export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, dice: Dice, tables: Tables | null) {
   function chooseFrom(title: string, list: StoredCharacter[]): Promise<StoredCharacter | null> {
     return new Promise((resolve) => {
       dialog.innerHTML = `<h2>${title}</h2><ol class="pick">${list.map((c, i) => {
@@ -56,7 +57,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
 
   /** Character creation (FUN_417f_056c; spec/A-games/engine/chargen-and-progression.md) on one screen (IMP-040). */
   function create(t: Tables): Promise<Uint8Array | null> {
-    return createCharacter(dialog, files, rng, t)
+    return createCharacter(dialog, files, dice, t)
   }
 
   function paintIcon(canvas: HTMLCanvasElement, p: Picture | null) {

@@ -317,7 +317,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       const chk = checkTraining(t, c, e.read(0x6da8))
       if (!chk.ok) { checkText(chk.message, 'training'); say(`  ${nameOf(c)}: ${chk.message}`); continue }
       say(`  ${nameOf(c)} trains`)
-      if (train(t, (k) => e.rand(k), c, chk.train)) {
+      if (train(t, e, c, chk.train)) {
         const choices = newSpellChoices(t, c)
         if (choices.length) c[F.known + choices[pick(choices.length)]] = 1
       }

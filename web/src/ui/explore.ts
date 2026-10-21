@@ -20,6 +20,7 @@ import { editCharacters } from './debugedit'
 import { enhancePanel } from './panel'
 import { rulesReference } from './rulesref'
 import { Engine, A0, type Io } from '../vm/engine'
+import type { Dice } from '../rules/dice'
 import { drawMap, landmarkAt } from './areamap'
 import type { GeoMap } from '../data/geo'
 import { listCharacters, listSaves, saveCharacter, writeAutosave, writeSave } from '../store/user'
@@ -88,7 +89,7 @@ const TIPS: Record<string, string> = {
   Load: 'Everything carried, weighed in coins (each coin counts 1). Heavier loads lower movement.',
 }
 
-export function showExplore(app: HTMLElement, files: GameFiles, start: Start, back: () => void) {
+export function showExplore(app: HTMLElement, files: GameFiles, start: Start, back: () => void, dice?: Dice) {
 
   app.innerHTML = `
     <div class="game">
@@ -538,7 +539,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
 
   initSound(files.get('START.EXE'))
-  const engine = new Engine(files, io)
+  const engine = new Engine(files, io, dice)
   if (start.kind === 'demo') engine.newDemo(start.demo)
   else {
     if (start.kind === 'new') engine.newGame(start.party.map((c) => c.sav))
@@ -1117,8 +1118,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     }
     if (!tables) { note(`The party screen needs START.EXE: re-import the ${game().folder} folder.`); return }
     const t = tables
-    const rng = (n: number) => engine.rand(n)
-    const tools = creatorTools(dialog, files, rng, t)
+    const tools = creatorTools(dialog, files, engine, t)
     const nameOf = (c: Uint8Array) => parseCharacter(c).name
     for (;;) {
       const party = engine.party()
@@ -1170,7 +1170,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         for (const line of willBecome(c, chk.train)) print(line, false)
         if ((await menu(['YES', 'NO'], { prompt: 'Do you wish to train?' })) !== 0) continue
         print('Congratulations...', false)
-        if (train(t, rng, c, chk.train)) {
+        if (train(t, engine, c, chk.train)) {
           const choices = newSpellChoices(t, c)
           // the original's empty list writes char[0x32] = 1 (max HP 1); skipped here (IMP-028)
           if (choices.length) {

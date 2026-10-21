@@ -29,6 +29,15 @@ Part of the [specification](../../README.md), part A. Creation is `FUN_417f_056c
 
 Esc/Exit in any of the four lists abandons creation: the code jumps to `417f:1ECE`, past the FreeMem, so the record leaks (O).
 
+**Dice (O).** Every NdS above is one call of the dice routine `FUN_5216_0de3(N, S)` (age at `417f:0f26`,
+each 3d6 at `417f:122e`, gold at `417f:1c83`, hit points in `FUN_417f_4235`); the identity tag char[0xAB] is
+`Random(256)` (`417f:0622`) and STR 18/xx is `Random(100) + 1` (`417f:14f3`). As dice requests
+([B-model/host-contracts.md §6.1](../../B-model/host-contracts.md#61-the-rule-d2)), in order: (1, 256),
+the age (N, S) for a single class (none for a multi-class), then per roll of step 7 six (3, 6) for each
+ability in turn, with (1, 100) straight after STR's six when it came out 18 with a Fighter level, (N, S) of the starting gold per class
+and (N, S) of the hit dice per class (CotAB: twice, the better kept). CotAB is the same at 0x37047
+(tag), 0x37AC3 (age), 0x37E51 (3d6), 0x38152 (STR), 0x3894E (gold), 0x3B2B8/0x3B2CF (hit dice).
+
 ### Innate racial effects (O)
 
 | Race | Innate effects ([effects.md](effects.md)) |

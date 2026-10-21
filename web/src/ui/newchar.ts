@@ -11,15 +11,16 @@ import { blit, sizeCanvas } from '../render/upscale'
 import { buildIcon } from '../render/icon'
 import {
   Tables, abilityRange, alignmentsFor, begin, bodyRecord, classesFor, combatStats, headRecord, hpMax, hpMin,
-  modifyStep, rollAbilities, setName, type Rng,
+  modifyStep, rollAbilities, setName,
 } from '../rules/chargen'
+import type { Dice } from '../rules/dice'
 import { escape, onClose } from './sheet'
 import { F } from '../games/fields'
 
 const STATS = ['STR', 'INT', 'WIS', 'DEX', 'CON', 'CHA']
 const ICON_PARTS = ['Body', 'Arm', 'Leg', 'Hair/Face', 'Shield', 'Weapon']
 
-export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, rng: Rng, t: Tables): Promise<Uint8Array | null> {
+export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, dice: Dice, t: Tables): Promise<Uint8Array | null> {
   const picture = (family: string, id: number): Picture | null => {
     const raw = files.record(family, id)
     try { return raw ? parseRecord(raw).frames[0].picture : null } catch { return null }
@@ -27,8 +28,8 @@ export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, rng
   const allClasses = [...new Set(R.raceMenu.flatMap((r) => classesFor(t, r)))].sort((a, b) => a - b)
 
   let race = 7, gender = 0, cls = classesFor(t, 7)[0], align = alignmentsFor(t, cls)[0]
-  let c = begin(t, rng, race, gender, cls, align)
-  rollAbilities(t, rng, c)
+  let c = begin(t, dice, race, gender, cls, align)
+  rollAbilities(t, dice, c)
   let name = ''
   let sizeTouched = false
   let part = 0
@@ -38,8 +39,8 @@ export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, rng
   const restart = () => {
     const looks = c.slice(F.head, F.iconColours + 6)
     const size = c[F.iconSize]
-    c = begin(t, rng, race, gender, cls, align)
-    rollAbilities(t, rng, c)
+    c = begin(t, dice, race, gender, cls, align)
+    rollAbilities(t, dice, c)
     c.set(looks, F.head)
     if (sizeTouched) c[F.iconSize] = size
     else c[F.iconSize] = race === 1 || race === 3 || race === 5 ? 1 : 2
@@ -146,7 +147,7 @@ export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, rng
         if (!al.includes(align)) { notice = `${ALIGNMENTS[align]} is not allowed for a ${CLASSES[cls]}: now ${ALIGNMENTS[al[0]]}.`; align = al[0] }
         restart()
       } else if (d.align) { align = Number(d.align); c[F.alignment] = align }
-      else if (d.act === 'reroll') { rollAbilities(t, rng, c); c[F.npcShare] = 0 }
+      else if (d.act === 'reroll') { rollAbilities(t, dice, c); c[F.npcShare] = 0 }
       else if (d.mod) {
         modifyStep(t, c, Number(d.mod), Number(d.d) as 1 | -1)
         c[F.npcShare] = 1 // as Modify's Keep
@@ -170,7 +171,7 @@ export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, rng
     }
     const onKey = (e: KeyboardEvent) => {
       if (!dialog.open || document.activeElement instanceof HTMLInputElement) return
-      if (e.key.toLowerCase() === 'r') { e.preventDefault(); e.stopPropagation(); rollAbilities(t, rng, c); c[F.npcShare] = 0; render() }
+      if (e.key.toLowerCase() === 'r') { e.preventDefault(); e.stopPropagation(); rollAbilities(t, dice, c); c[F.npcShare] = 0; render() }
     }
     dialog.classList.add('wide')
     dialog.addEventListener('click', onClick)

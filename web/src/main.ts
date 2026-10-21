@@ -15,8 +15,14 @@ import { initAccount, onSettingsPulled, startAccount } from './store/account'
 import { mountAccount } from './ui/account'
 import { versionHtml } from './version'
 import { setSoundDevice, soundDevice } from './audio/sfx'
+import { generator } from './rules/dice'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
+/**
+ * The page's one dice source (spec/B-model/host-contracts.md §6): character creation on the party
+ * screen and every engine the page starts draw from it, seeded from the clock.
+ */
+const dice = generator()
 
 async function start() {
   applyTextSize()
@@ -58,12 +64,12 @@ function party(files: GameFiles) {
   // the game's demo (games/startup.ts), offered on the party screen instead of the original's start-up
   // menu (IMP-074); it comes back to the party screen
   const demo = files.game.startMenu?.demo
-  showParty(app, files, {
+  showParty(app, files, dice, {
     title: () => title(files),
     assets: () => showViewer(app, files, showImport, () => party(files)),
     games: showImport,
-    play: (start) => import('./ui/explore').then((m) => m.showExplore(app, files, start, () => party(files))),
-    demo: demo ? () => import('./ui/explore').then((m) => m.showExplore(app, files, { kind: 'demo', demo }, () => party(files))) : undefined,
+    play: (start) => import('./ui/explore').then((m) => m.showExplore(app, files, start, () => party(files), dice)),
+    demo: demo ? () => import('./ui/explore').then((m) => m.showExplore(app, files, { kind: 'demo', demo }, () => party(files), dice)) : undefined,
   })
 }
 

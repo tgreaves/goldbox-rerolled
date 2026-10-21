@@ -38,6 +38,32 @@ describe('dice source', () => {
   })
 })
 
+describe('no gameplay draw bypasses the source', () => {
+  // host-contracts.md §6.2: these Math.random calls only affect presentation or are not dice draws
+  const allowed: Record<string, number> = {
+    'ui/title.ts': 3, // the title's lightning
+    'ui/explore.ts': 1, // the river cleansing's pixel choice
+    'audio/sfx.ts': 1, // the sound effects' cut-off phase
+    'store/sync.ts': 1, // the sync client's record ids
+  }
+  it('lists every Math.random in web/src', () => {
+    const root = join(__dirname, '../src')
+    const found: Record<string, number> = {}
+    const walk = (d: string) => {
+      for (const n of readdirSync(d, { withFileTypes: true })) {
+        const p = join(d, n.name)
+        if (n.isDirectory()) walk(p)
+        else if (n.name.endsWith('.ts')) {
+          const k = (readFileSync(p, 'utf8').match(/Math\.random\(/g) ?? []).length
+          if (k) found[p.slice(root.length + 1)] = k
+        }
+      }
+    }
+    walk(root)
+    expect(found).toEqual(allowed)
+  })
+})
+
 describe.skipIf(!have)('the engine takes every draw from its source', () => {
   const files = () => {
     const m = new Map<string, Uint8Array>()

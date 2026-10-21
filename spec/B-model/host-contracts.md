@@ -199,9 +199,12 @@ creation.
 |---|---|
 | everything above, in the reference's `Engine.roll` | conforming (the reference's tests replace it with scripted dice) |
 | `Engine.rand(n)` (RANDOM, a new NPC's id, appraisal's jewels, the training hall's creation, the debug editor) | conforming: `Random(n)` is the request `(1, n)` − 1 made through `Engine.roll` (`rules/dice.ts` `random`); `Random(0)` is the request `(1, 0)`, answered 0, and gives 0 |
-| character creation on the party screen (`ui/party.ts`) | **needs fixing**: the reference uses `Math.random` for gameplay draws (abilities, gold, hit points); a conforming build MUST use the dice source ([AUDIT.md](../AUDIT.md) §6.9) |
-| the title's lightning (`ui/title.ts`), the river cleansing's pixel choice (`ui/explore.ts`), the sound effects' cut-off phase (`audio/sfx.ts`) | presentation only: any generator (informative) |
-| the sync client's record ids (`store/sync.ts`) | not a dice draw (part C) |
+| character creation on the party screen (`ui/party.ts`) and in a training hall | conforming: the page has one dice source (`main.ts`), which party-screen creation and every engine the page starts draw from; creation makes the original's requests ([engine/chargen-and-progression.md, "Dice"](../A-games/engine/chargen-and-progression.md#sequence-o)) |
+| the title's lightning (`ui/title.ts`), the river cleansing's pixel choice (`ui/explore.ts`), the sound effects' cut-off phase (`audio/sfx.ts`) | presentation only: `Math.random` (informative); the original's river pass is `Random(4)`, which the port leaves off the tape as presentation |
+| the sync client's record ids (`store/sync.ts`) | not a dice draw (part C), `Math.random` |
+
+These four are the only `Math.random` calls in the reference implementation (`web/test/dice.test.ts`
+checks that no other appears).
 
 ### 6.3 The generator (informative)
 
