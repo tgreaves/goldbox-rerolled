@@ -5,20 +5,18 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Combat rules
 
-Part of the [specification](../../README.md), part A. Everything needed to run a battle: start, rounds, player and computer actions, attack resolution, status, end of battle and rewards. Spell effects are in [spells.md](spells.md) and [effects.md](effects.md). Three companion files complete it: the battle grid and its generators in [battlefield.md](battlefield.md), the computer's side in [combat-ai.md](combat-ai.md), and what is drawn in [combat-visuals.md](combat-visuals.md); the conventions below apply to all four.
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Curse of the Azure Bonds: [coab/combat.md](../coab/combat.md); the
+> engine model's combat procedures: [B-model/procedures.md §15](../../B-model/procedures.md#15-combat-procedures).
+
+Everything needed to run a battle: start, rounds, player and computer actions, attack resolution, status, end of battle and rewards. Spell effects are in [spells.md](spells.md) and [effects.md](effects.md). Three companion files complete it: the battle grid and its generators in [battlefield.md](battlefield.md), the computer's side in [combat-ai.md](combat-ai.md), and what is drawn in [combat-visuals.md](combat-visuals.md); the conventions below apply to all four.
 
 ## Conventions
 
-Each rule carries a source marker:
-
-| Marker | Meaning |
-|---|---|
-| O | read in the engine code (address given) |
-| G | from Stephen Lee's GameFAQs guide v2.00 ([por/README.md, "External reference"](../por/README.md#external-reference)), not checked in code |
-| I | inferred from code and data, not proven |
-| ? | unknown |
-
-**Bug** marks behaviour of the original that looks unintended. An authentic port reproduces it; a port with fixes should log the change.
+Each rule carries an evidence mark as in the [README](../../README.md#evidence-marks): **O**, **I**,
+**?**, **G** (Stephen Lee's guide v2.00, [por/README.md, "External reference"](../por/README.md#external-reference),
+not checked in code) or **Bug**. A conforming build reproduces every **Bug** unless part C specifies a
+departure ([C-port/departures.md](../../C-port/departures.md)).
 
 - Addresses are Ghidra `seg_off` names in the merged image. The guide's IDA segments map to ours by overlay: 1DFA → 2e08, 21FE → 320c, 2326 → 3334, 24B9 → 34c7, 2715 → 3723, 2AA0 → 3aae, 3E45 → 4e53, 4208 → 5216, 46B3 → 56c1, 4771 → 577f, executable 00BA → 10ba. Offsets inside a segment are identical.
 - `c[x]` is a byte of the 0x11D-byte character/monster record ([records.md](records.md)); `R[x]` is a byte of its 22-byte combat record (pointer at c[0x108]).
@@ -58,7 +56,7 @@ Each rule carries a source marker:
 
 ## Dice (O, `FUN_5216_0de3`)
 
-`roll(count, sides) = Σ count × (Random(sides) + 1)` using the Turbo Pascal RNG (`FUN_1af8_11c0`). A port need not reproduce the Turbo Pascal sequence: every die comes from the injected dice source, and the order of the requests is the one this spec describes ([spec README, "Randomness: the dice tape"](../../README.md#randomness-the-dice-tape-d2)). `FUN_5216_0e2e` does the same and also stores the dice count in `DS:681C` (used by per-die damage reduction effects). The sum is a byte; there is no overflow check (G).
+`roll(count, sides) = Σ count × (Random(sides) + 1)` using the Turbo Pascal RNG (`FUN_1af8_11c0`). A conforming build need not reproduce the Turbo Pascal sequence: every die comes from the injected dice source, and the order of the requests is the one this spec describes ([spec README, "Randomness: the dice tape"](../../README.md#randomness-the-dice-tape-d2)). `FUN_5216_0e2e` does the same and also stores the dice count in `DS:681C` (used by per-die damage reduction effects). The sum is a byte; there is no overflow check (G).
 
 ## Starting a battle
 
@@ -746,7 +744,7 @@ T = value 1 (automatic turn), D = 0, D* = −1 (both automatic destroy), – = 9
 
 ## Known original bugs affecting combat
 
-Reproduce these in an authentic port (O unless marked).
+A conforming build reproduces these unless part C specifies a departure (O unless marked).
 
 | Bug | Where |
 |---|---|
