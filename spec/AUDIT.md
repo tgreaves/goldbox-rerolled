@@ -705,6 +705,42 @@ Found while writing (numbered EM, engine model):
 | EM9 | `vm/engine.ts` DIVIDE | PoR's DIVIDE stops on a divisor of 0 (run-time error 200, as the original), CotAB's `divideRemainder` variant writes 0 and 0; no shipped script divides by 0 | none needed; stated in script-vm-map.md §5.1 |
 | EM10 | `games/fields.ts`, `tables.ts`, `rules.ts`, `effectrules.ts`, `spellrules.ts` | the JSDoc in these modules was the only description of the profile schema; it now duplicates part B | when code is next touched, the comments can cite part B sections instead of restating them |
 
+**Work-plan step 4 (2026-10-21): part C, the user interface.** [C-port/app-flow.md](C-port/app-flow.md),
+[ui-contract.md](C-port/ui-contract.md), [screens.md](C-port/screens.md),
+[exploration-view.md](C-port/exploration-view.md), [combat-ui.md](C-port/combat-ui.md),
+[rendering.md](C-port/rendering.md), [audio.md](C-port/audio.md) and [departures.md](C-port/departures.md)
+are written from `web/src/ui/`, `render/`, `audio/`, `main.ts` and `style.css`, and checked in headless
+Chromium (PoR imported, the game files' save A loaded; every screen class). The screen classes come
+from the CSS breakpoints; D4 (behaviour contract), D6 (the drawn view normative, the WebGL view
+optional with what it must preserve) and D1 (game text by address) are applied throughout.
+[D-appendices/strings.md](D-appendices/strings.md) §2 gives the image addresses of about 100 game
+texts the screens show, both games, found by searching the merged images (**I** until confirmed at
+their readers, step 6); §3 indexes the port's own texts. [port-data.md](D-appendices/port-data.md)
+gains the sheet's tooltips (§9) and the landmark icons (§10). [CONFORMANCE.md](CONFORMANCE.md) has its
+user-interface checklist.
+
+IMPROVEMENTS.md corrections: IMP-073 (the version line is on the games screen and in Settings, SY7);
+IMP-008 ("Locked." is the original's prompt, not a port note); IMP-013 (the cut-off by call site, C23);
+IMP-072 (the contract is accounts-and-sync.md; a missing full stop); the "*In progress*" markers (S6)
+replaced by what remains (IMP-001: the drawn view; IMP-002: a quicksave; IMP-005: `.pkg` import) or
+dropped (IMP-003, 007, 008, 010, 011, 012, 014, 033, done as specified); the header points to
+departures.md and records that IMP-009 was never assigned. Already right since step 1: IMP-002 and
+IMP-055 against IMP-057 (C7), IMP-004 superseded (C8), IMP-007's colours (C9), IMP-046's list (C10),
+IMP-045's citation and IMP-034's row (C18).
+
+Found while writing (numbered UI):
+
+| # | Where | What | Next |
+|---|---|---|---|
+| UI1 | `render/world.ts`; D6 | the reference has only the WebGL view; the drawn view that D6 makes the conformance target, a View setting and the V9 harness do not exist | code task ([exploration-view.md §1](C-port/exploration-view.md#1-the-two-views)) |
+| UI2 | `ui/creator.ts` `iconEditor`, `ui/camp.ts` Alter | the combat-icon editor panel exists but nothing opens it: Alter → Icon prints "The combat icon editor is on the party screen (Modify, Icon)", and the party screen has no such function, so an existing character's icon cannot be changed; IMP-017 and IMP-031 describe it as reachable | code task: Alter → Icon opens the editor, as the original ([screens.md §1.6](C-port/screens.md#16-the-combat-icon-editor)) |
+| UI3 | `ui/title.ts`; [title-and-credits.md](A-games/por/title-and-credits.md) | PoR's translation-wheel screen is not shown (the binary accepts any word, the screen still appears); no IMP row (IMP-068 is CotAB's) | a register row, or show the screen |
+| UI4 | `ui/explore.ts` | stale texts from before the party screen: "The game has ended here. Go back to Assets to start again." and "…go back to Assets and re-import…" (wilderness, sound); the commands `sound` and `nosound` are unreachable | code task (wording) |
+| UI5 | `ui/camp.ts` Fix; CotAB image 0x0B00A | CotAB's own camp menu is "Save View Magic Rest Alter Fix Exit": Fix is the original's command there, not a port addition; its routine is not in part A, so whether IMP-048's procedure matches it is **?**; IMP-048 reads as a CotAB-era addition to both games | research (CotAB's Fix routine) and IMP-048's wording |
+| UI6 | several | departures without an IMP row: Ctrl-S not offered; EGA video only; camp Save does not ask "Quit TO DOS"; the battle's View keeps the normal palette | register rows ([departures.md §6](C-port/departures.md#6-departures-without-an-imp-row)) |
+| UI7 | `style.css` | dead rules: the party screen's member table (`.members table`, the 600-px rule) from before IMP-045's cards; the `.update-bar` block twice; the `.explore` rules of an older screen | code clean-up |
+| UI8 | `audio/sfx.ts` (C23) | checked against sound.md §7 and coab/assets §8: by effect number the reference plays PoR's script effect 11 (CALL sound, transient) in full, and cuts CotAB's 7, 9, 10 and 13, which CotAB plays to the end (no transient mode, **I**); all other cases agree | code task ([audio.md §3](C-port/audio.md#3-the-cut-off-rule)) |
+
 ---
 
 ## 7. Proposed target structure

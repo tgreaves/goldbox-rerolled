@@ -106,7 +106,7 @@ every other effect is cut, in both games (`sfx.ts`, `FULL`). Against §3.1 this 
 | PoR | effect 11 from the script's CALL sound | cut | full |
 | CotAB | effects 7, 9, 10 (hits, misses, footsteps, the bump, IMP-014's footstep) and 13 (the title's) | full | cut |
 
-Everything else agrees. This is a code task ([AUDIT.md](../AUDIT.md) §6.9, C23 and UI6): the call
+Everything else agrees. This is a code task ([AUDIT.md](../AUDIT.md) §6.9, C23 and UI8): the call
 sites pass the length (or the profile states the game's cut-off and each call site its kind), and the
 `FULL` list goes.
 
@@ -141,7 +141,7 @@ sites pass the length (or the profile states the game's cut-off and each call si
 
 ## Open
 
-- C23/UI6: §3.2.
+- C23/UI8: §3.2.
 - Whether CotAB really never cuts an effect off is **I** ([coab/assets.md §8](../A-games/coab/assets.md#8-config-video-palette-sound)).
 - IMP-014's "*In progress*" marker: the footstep on APPROACH is done; nothing else is planned
   ([departures.md](departures.md)).
