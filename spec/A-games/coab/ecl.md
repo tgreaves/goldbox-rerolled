@@ -5,11 +5,16 @@ tags: [reverse-engineering, gold-box, coab, spec]
 
 # CotAB ECL virtual machine: diff against PoR `engine/ecl.md`
 
-Scope: Curse of the Azure Bonds, GOG 1.0 (`START.EXE` + `GAME.OVR` merged). This file only lists what differs from `engine/ecl.md` (PoR) plus everything needed to implement the CotAB VM. Anything not mentioned behaves as in PoR.
+> **Status: complete as a set of differences.** Normative. Part A of the
+> [specification](../../README.md): Curse of the Azure Bonds, GOG 1.0 (`START.EXE` + `GAME.OVR`
+> merged). Read [engine/ecl.md](../engine/ecl.md) first: this file lists what differs from it, plus
+> everything needed to implement the CotAB VM; anything not mentioned behaves as in PoR. The engine
+> model's map of both games' script memory is [B-model/script-vm-map.md](../../B-model/script-vm-map.md).
+> Evidence marks as in the README.
 
-Evidence marks: **O** observed in code, **I** inferred, **?** unknown. Addresses are **image offsets** into `coab/img.bin` (overlay segment in brackets: `1885:xxxx` = image 0x18850 + xxxx; Ghidra segment = paragraph + 0x1000, so `1885:xxxx` is `FUN_2885_xxxx`). DS = image paragraph 0x0ABE (DS:x = image 0xABE0 + x; O: the clock-modulus table DS:3E2C sits at image 0xEA0C). PoR handler addresses are `29c3:xxxx` as in the PoR spec.
+Addresses are **image offsets** into `coab/img.bin` (overlay segment in brackets: `1885:xxxx` = image 0x18850 + xxxx; Ghidra segment = paragraph + 0x1000, so `1885:xxxx` is `FUN_2885_xxxx`). DS = image paragraph 0x0ABE (DS:x = image 0xABE0 + x; O: the clock-modulus table DS:3E2C sits at image 0xEA0C). PoR handler addresses are `29c3:xxxx` as in the PoR spec.
 
-Disassembler: `ecl_coab.py` (same directory). 25 records in ECL1–6, **0 decode errors**, 96.7% of code bytes reachable (see [Decoder status](#decoder-status)).
+*Informative:* disassembler `tools/coab/ecl_coab.py`. 25 records in ECL1–6, **0 decode errors**, 96.7% of code bytes reachable (see [Decoder status](#decoder-status)).
 
 ## Why `tools/ecl.py` fails on CotAB (O)
 
@@ -41,7 +46,7 @@ Disassembler: `ecl_coab.py` (same directory). 25 records in ECL1–6, **0 decode
 | adventure main loop | 0x1BFA8 | 1885:3758 | — |
 | camp (`camp_menu`, camp screen, `camp_confirmed`) | 0x1B8E4 | 1885:3094 | — |
 
-Calls into overlays go through VROOMM stubs that the merge already patched into `jmp far` (`EA off seg`); resolve `lcall stub:off` by reading the 5 bytes at the stub. `agents/d.py` does that and also fixes objdump's near-call targets in segments that cross a 64 KB boundary (segment 1f9d does).
+Calls into overlays go through VROOMM stubs that the merge already patched into `jmp far` (`EA off seg`); resolve `lcall stub:off` by reading the 5 bytes at the stub. A disassembly must also fix objdump's near-call targets in segments that cross a 64 KB boundary (segment 1f9d does).
 
 ## VM state (O)
 
@@ -71,7 +76,7 @@ Calls into overlays go through VROOMM stubs that the merge already patched into 
 
 ## Start-up menu and demo (O)
 
-The main program's loop (image 0x11F–0x352, main segment, CS = paragraph 0) and DS:4FD5, the demo flag. Port: `web/src/games/startup.ts` (`COAB_STARTUP`), `Engine.newDemo` / `runDemo`, `ui/startmenu.ts`; PoR has no menu and no demo (no "Demo" in its START.EXE or GAME.OVR); its DS:49F4 is the same flag's vestige: cleared at start-up (0x26FDB) and tested once, before "Continue Battle:" (0x22A3F), never set.
+The main program's loop (image 0x11F–0x352, main segment, CS = paragraph 0) and DS:4FD5, the demo flag. The engine model's demo flags are [B-model/procedures.md §16](../../B-model/procedures.md#16-demo-mode); PoR has no menu and no demo (no "Demo" in its START.EXE or GAME.OVR); its DS:49F4 is the same flag's vestige: cleared at start-up (0x26FDB) and tested once, before "Continue Battle:" (0x22A3F), never set.
 
 **The menu.** After the title sequence (0x18702, skipped when ParamStr(1) = `STING`, 0x169–0x17A) the menu routine **0x51C48** (`lcall 0x104:0x2A`) shows the Pascal strings at **CS:0006** "Curse of the Azure Bonds v1.3 " (title, colour 13) and **CS:0025** "Play Demo" (choices; the call's other colours are 10 and 15, I: plain and highlighted), image 0x06 and 0x25; the answer goes to DS:47F6.
 - Choices: 0x5194A splits the string into runs of the characters in its set at 0x51A39 (digits and letters); a key is matched against the string's capitals (0x51F18–0x51F9B), so **P** and **D**. Enter returns the highlighted choice's key (0x51E9D), Escape returns 0 (0x51E8B).
@@ -80,7 +85,7 @@ The main program's loop (image 0x11F–0x352, main segment, CS = paragraph 0) an
 
 **The loop (0x1F6–0x352).** Copy protection (0x1C378) unless ParamStr(2) equals the string at DS:8C94 (**?**) or the demo is on (0x1D9–0x1F1, and 0x32C–0x344). Demo: DS:5C08 = **1** (block) and DS:4FC2 = **9** (game speed, the slowest), else block 2 (0x1F6–0x20E). Then 0x36850 (screen and memory set-up); **the party screen 0x36A1C only when not the demo** (0x22F); 0x536A0, 0x53805, 0x18850, then the game 0x1BFA8, then 0x26A50, 0x27135. Not the demo: round again. Demo: the title sequence again (0x2C7), the keys flushed (0x6952), the menu with the 10 s timeout, round again.
 
-**DS:4FD5 sites** (each is a flag of the port's demo mode where it can be reached):
+**DS:4FD5 sites** (every test of the flag; those reachable in the demo are the behaviour a demo must reproduce):
 
 | Address | Routine | In the demo |
 |---|---|---|
@@ -90,13 +95,13 @@ The main program's loop (image 0x11F–0x352, main segment, CS = paragraph 0) an
 | 0x22F | main loop | no party screen: the demo starts with an empty party |
 | 0x2BD | main loop | after the game: title, menu again |
 | **0x1BFFA** | new game (0x1BFA8) | area 0 starts at record **0x52 = 82** (not 1), and the party recompute 0x4D7E8 is skipped |
-| **0x1C069** | new game | after `on_enter`: `0x3A275(1, 1)` (drop the current character) until the party list DS:6524 is empty, then return: **no main loop** (no moving, camping, saving); the demo is ECL1 #82's `on_enter` alone (port: `Engine.runDemo`) |
-| **0x6819** | key read 0x6812 | `KeyPressed ? ReadKey : 0`: **key reads never wait** (port: `keysWait: false`). Menus (0x51C48) poll KeyPressed themselves and still wait (I: the demo shows none) |
+| **0x1C069** | new game | after `on_enter`: `0x3A275(1, 1)` (drop the current character) until the party list DS:6524 is empty, then return: **no main loop** (no moving, camping, saving); the demo is ECL1 #82's `on_enter` alone |
+| **0x6819** | key read 0x6812 | `KeyPressed ? ReadKey : 0`: **key reads never wait**. Menus (0x51C48) poll KeyPressed themselves and still wait (I: the demo shows none) |
 | 0x5514 | text input 0x53F6 | stops after one key read (I: an empty answer); not reached by the demo |
-| **0x227EF** | round end (combat) | **"Continue Battle:" is not asked** when the enemy side is gone: the battle ends (port: `continueBattle: false`) |
+| **0x227EF** | round end (combat) | **"Continue Battle:" is not asked** when the enemy side is gone: the battle ends |
 | **0x1EE98** | after a battle 0x1EE82 | the outcome 0x1DC36 (who won, DS:4FE0 "party destroyed") is skipped |
 | **0x1EEAC** | after a battle | after the clean-up 0x1EAA7 (monsters and side-1 entries leave the list) everything to 0x1F04F is skipped: the members' recompute (0x4DC70), the destroyed-party path (0x1EFB6), freeing the item list at DS:6FA6, and the rest below |
-| 0x1EF4E | after a battle | (reached only outside the demo) NPC shares 0x1EBEE, the summary and experience 0x1E19C ("The party has won.", "Each character receives…", "press <enter>/<return> to continue"), treasure 0x1E7A3 (port: `aftermath: false`) |
+| 0x1EF4E | after a battle | (reached only outside the demo) NPC shares 0x1EBEE, the summary and experience 0x1E19C ("The party has won.", "Each character receives…", "press <enter>/<return> to continue"), treasure 0x1E7A3 |
 | 0x1DD2F | outcome 0x1DC36 | unreachable in the demo (its one caller, 0x1EEA0, is skipped) |
 | 0x36DD5 | party screen 0x36A1C, Begin | Begin with an empty party allowed; unreachable in the demo (0x22F) |
 | 0x26EE7 | start-up 0x26AA4 | cleared |
@@ -285,7 +290,7 @@ Found by sweeping `les DS:4FB2/4FB6; …es:[di+off]` in the full disassembly. "P
 
 ## Opcodes
 
-n = operand count passed to the reader in the handler (O for every row). Status: **=** instruction sequence identical to PoR modulo addresses (normalised diff, `agents/hd.py`); **≈** same algorithm with small changes; **Δ** changed semantics; **new**. Handlers are in overlay 1885.
+n = operand count passed to the reader in the handler (O for every row). Status: **=** instruction sequence identical to PoR modulo addresses (normalised diff); **≈** same algorithm with small changes; **Δ** changed semantics; **new**. Handlers are in overlay 1885.
 
 | Op | PoR | CotAB name | n | Handler (image / 1885:) | PoR handler | St | Notes |
 |---|---|---|---|---|---|---|---|
@@ -374,11 +379,11 @@ Per item: r1 = d100.
 - r1 1–60: r2 = d100: 1–47 and 50–59 → type r2, **except 45 → 0x3B**; 60–90 → d10: 1–4 0x24, 5–7 0x23, 8 0x22, 9 0x25, 10 0x26; 91–94 → 0x49; 95–97 → 0x5D; 98–100 → 0x4D; **48–49 → 0x3B** (PoR's "type unset" bug fixed)
 - r1 61–85 → 0x3D; 86–92 → 0x3E; 93–98 → d15: 1–9 0x47, 10 0x54, 11–15 0x4F; 99–100 → 0x3B
 
-Then 0x42D97(type, item) builds the 63-byte record, which is prepended to the treasure list (DS:6FA6). (Item-type meanings: see the items agent.)
+Then 0x42D97(type, item) builds the 63-byte record, which is prepended to the treasure list (DS:6FA6). (The builder and the item types: [records.md §8](records.md#8-random-treasure-items-o-builder-0x42d97-type-choice-0x1a5a30x1a6e2).)
 
 ## Decoder status
 
-`agents/ecl_coab.py`: `python3 ecl_coab.py ECLn.DAX [rec]` lists reachable code; `--stats` summarises. Listings for all blocks are in `agents/ecl1.lst` … `ecl6.lst`.
+*Informative:* `tools/coab/ecl_coab.py` (`python3 tools/coab/ecl_coab.py ECLn.DAX [rec]`) lists reachable code; `--stats` summarises.
 
 | Block | Records | Code bytes | Instructions | Reachable |
 |---|---|---|---|---|
@@ -396,7 +401,7 @@ Then 0x42D97(type, item) builds the 63-byte record, which is prepended to the tr
 - No IF is followed by an opcode whose skip count disagrees with its handler
 - Address operands: A 2266, B 3009, C 37, code 4081, engine registers 500
 
-## Open questions
+## Open
 
 - 0x7CC9 / PARTY_STRENGTH level formula: what FUN 0x51841 returns (**?**, I: dual-class multiplier)
 - ENCOUNTER_MENU's changed menu condition (0x1AA5C) (**?**)
