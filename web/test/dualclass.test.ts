@@ -138,7 +138,7 @@ describe.skipIf(!have)('dual-classing (CotAB 0x5135D)', () => {
 
   it('reads a scroll as a cleric or magic-user, current or former, or as a thief above 9 on d100 ≤ 75 (0x3FADB)', () => {
     const rolls: number[] = []
-    const d = (v: number) => (n: number, sd: number) => { rolls.push(sd); return v }
+    const d = (v: number) => (_n: number, sd: number) => { rolls.push(sd); return v }
     expect(readsScroll(human(5, 1, [10, 10, 10, 10, 10, 10]), d(100))).toBe(true)
     const f = human(2, 5, [16, 10, 17, 10, 10, 10])
     expect(readsScroll(f, d(1))).toBe(false) // a fighter: no roll
