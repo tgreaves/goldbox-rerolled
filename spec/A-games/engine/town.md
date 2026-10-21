@@ -157,7 +157,7 @@ Entry and menu as in the shop: mode 1, pool cleared, "Heal View Take Pool Share 
 1. If CON < 14: max HP is unchanged.
 2. Else t = Σ over class levels L > 0 of (fighter: L × (CON − 14); other classes: 2L if CON > 15, else L).
 3. loss = b div t if t > 0, else b.
-4. If CON < 17 or fighter level ≤ 0: maxHP −= loss.
+4. If CON < 17, or the fighter level is above 0: maxHP −= loss (a byte; with CON 17 or more only a fighter loses them; O, 0x1D84B–0x1D866; CotAB the same at 0x1CEF6).
 
 Raise Dead always succeeds, also on elves (G).
 

@@ -244,7 +244,8 @@ function raiseDead(e: Engine, c: Uint8Array) {
     t += k === 2 ? L * (con - 14) : con > 15 ? 2 * L : L
   }
   const loss = t > 0 ? Math.floor(b / t) : b
-  if (con < 17 || c[F.levels + 2] <= 0) c[F.maxHp] = Math.max(1, c[F.maxHp] - loss)
+  // PoR 0x1D84B, CotAB 0x1CEF6: with CON 17 or more only a fighter loses them (a byte subtraction)
+  if (con < 17 || c[F.levels + 2] > 0) c[F.maxHp] = (c[F.maxHp] - loss) & 0xff
 }
 
 /** Treasure screen (FUN_2e08_0ecd), after a fight or a scripted TREASURE without monsters. */

@@ -68,6 +68,20 @@ describe('temple cures go through the heal routine', () => {
     expect([down[F.status], down[F.inPlay], down[F.hp] > 0]).toEqual([0, 1, true])
     const raised = await cure(POR, process.env.POOLRAD!, 'RAISE DEAD', (c) => { c[F.status] = 6; c[F.hp] = 0; c[F.inPlay] = 0 })
     expect([raised[F.status], raised[F.inPlay], raised[F.hp]]).toEqual([0, 1, 1]) // FUN_2d14_0510 (0x1D739)
+    // the hit points lost (0x1D84B): with CON 17 or more after the raise, a fighter loses them, a magic-user not
+    const lost = (k: number, con: number) => async () => {
+      let before = 0
+      const c = await cure(POR, process.env.POOLRAD!, 'RAISE DEAD', (c) => {
+        c[F.status] = 6; c[F.hp] = 0; c[F.inPlay] = 0
+        for (let i = 0; i < 8; i++) c[F.levels + i] = 0
+        c[F.levels + k] = 4; c[F.stat[4]] = c[F.baseStat[4]] = con + 1; c[F.maxHp] = 40; c[F.hpRolled] = 20
+        before = c[F.maxHp]
+      })
+      return before - c[F.maxHp]
+    }
+    expect(await lost(2, 17)()).toBe(Math.floor(20 / (4 * 3))) // fighter: t = L × (CON − 14)
+    expect(await lost(5, 17)()).toBe(0)
+    expect(await lost(5, 16)()).toBe(Math.floor(20 / 8)) // CON 16: 2L
     const stone = await cure(POR, process.env.POOLRAD!, 'STONE TO FLESH', (c) => { c[F.status] = 7; c[F.hp] = 0; c[F.inPlay] = 0 })
     expect([stone[F.status], stone[F.inPlay], stone[F.hp]]).toEqual([0, 1, 1]) // 0x1DAD7
   })
