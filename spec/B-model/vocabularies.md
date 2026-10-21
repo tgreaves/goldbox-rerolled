@@ -758,9 +758,10 @@ Inferred or open in the port (I / ?): Strength's bonus when no class applies (0,
 
 ## Open
 
-- PoR 82's save bonus from DS:6814[side] and the creature classes behind PoR's +0x9F values 4, 9,
-  10, 12 are **?** in part A ([engine/effects.md §3](../A-games/engine/effects.md#3-undeciphered-odd-and-hasteslow));
-  the behaviours take the values as parameters.
+- ~~PoR 82's save bonus from DS:6814[side] and the creature classes behind PoR's +0x9F values 4, 9,
+  10, 12~~ answered in part A ([engine/effects.md §3](../A-games/engine/effects.md#3-formulas-creature-classes-odd-cases-and-hasteslow)):
+  the +1 applies only when the saver's side has 6 or more combatants in play, which `paralysingAura`
+  does not test (a code task, AUDIT §6.9 PA3); the class values are parameters already.
 - The three CotAB spell handlers that call the area template (0x48A8C, 0x49522, 0x496D1) are those of
   84 Fear, 92 Cone of Cold and 98, the kinds `scare` and `beam`; the template's unset-memory cases are
   the port's choices (§5).

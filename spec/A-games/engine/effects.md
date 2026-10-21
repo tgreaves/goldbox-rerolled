@@ -5,9 +5,18 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Effects ("affects")
 
-Part of the [specification](../../README.md), part A. Produced by a delegated analysis of all 117 handler routines (Ghidra pseudocode plus direct disassembly where Ghidra failed); the Haste/Slow finding was re-verified by hand at 0x31E9C/0x31EBF. O/I markers as elsewhere.
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Evidence marks as in the README. How GoldBox Rerolled maps each
+> type to a behaviour is part B ([B-model/vocabularies.md](../../B-model/vocabularies.md) §2–§3,
+> the maps in §6, the transcription notes in §8.1). Curse of the Azure Bonds:
+> [coab/effects.md](../coab/effects.md).
 
-Linear addresses throughout: linear = 0x10000 + img.bin offset, and seg:off = seg*16+off. Handler segment 3723 is linear 0x37230. DS = 0x1C7C, so DS-relative initialised data sits at img.bin offset 0xC7C0+x.
+**Addresses in this file.** Handlers are named `3723_xxxx` (segment 3723, Ghidra) or by a bare
+five-digit hex address: that is the Ghidra **linear** address (segment·16 + offset with the load
+segment 0x1000), so linear = image offset + 0x10000 (0x5245A = image 0x4245A = `FUN_5216_02fa`).
+`DS:x` is PoR's data segment (image 0xC7C0 + x). The table was produced by reading all 117 handler
+routines (Ghidra pseudocode plus direct disassembly where Ghidra failed); "O (disasm)" marks the
+rows re-read in the disassembly.
 
 ## 1. How handlers are invoked, and how they learn the event
 
@@ -81,16 +90,16 @@ Ev = hook events; R = removal/expiry callback (eff[4]=1); D = invoked directly b
 |---|---|---|---|---|---|
 | 1 / 0x01 | Bless | 10, 17 | roll +1; morale +5 | O | 3723_010d |
 | 2 / 0x02 | Curse | 10, 17 | roll −1; morale −5 (floor 0) | O | 3723_011d |
-| 3 / 0x03 | weapon bonus vs class 4 | 4, 10 | if attacker's target +0x9F = 4: roll +2, dmg +2 | O | 3723_013b |
+| 3 / 0x03 | weapon bonus vs undead | 4, 10 | if attacker's target +0x9F = 4 (undead, §3): roll +2, dmg +2 | O | 3723_013b |
 | 4 / 0x04 | training start | R | prints "starts to train"; adds type 7 (dur 43200, pw FF, flag 1) | O (disasm) | 0x373AF |
 | 5 / 0x05 | Detect Magic | – | marker, empty handler | O | 3723_319b |
-| 6 / 0x06 | flaming weapon | 4, 10 | target +0x9F: 10→+1, 9/12→+2, 4→+3 to roll and dmg; sets 6819=9 (Fire+Magic) | O | 3723_01c3 |
-| 7 / 0x07 | training complete | R | "is hardier"; CON +1. If CON ≥ 20, adds 62 (regen; dur 60, flag 1). Else, if CON ≥ 15, recomputes HP from class levels (+0x96..; fighter slot ×(CON−15), others ×1 or ×2) and adds it to max/cur HP (when CON ≥ 17 or fighter level > 0) | O/I (HP formula) | 0x37463 |
+| 6 / 0x06 | flaming weapon | 4, 10 | target +0x9F (§3): 10 (troll) → +1, 9 or 12 (stirge) → +2, 4 (undead) → +3 to roll and dmg; sets 6819=9 (Fire+Magic) | O | 3723_01c3 |
+| 7 / 0x07 | training complete | R | "is hardier"; CON +1. If CON ≥ 20: adds 62 (regen; dur 60, pw FF, flag 1), done. Else if CON ≥ 15: a = max HP − char[0xB1] (byte); b = Σ over classes with a level L > 0 of: fighter (class 2) L·(CON − 15), any other L·2 if CON > 15 else L·1 (byte sums); b = 1 if 0; a := a div b (signed); unless CON ≥ 17 with no fighter level, max HP += a and HP += a (§3) | O (disasm 0x37463–0x375A1) | 0x37463 |
 | 8 / 0x08, 45 / 0x2D | Protection from Evil (45 = 10' radius, area set) | 11, 12 | if current char (DS:5D92) alignment +0xA0 ∈ {2, 5, 8}: save +2, roll −2. **The roll −2 at ev 11 is overwritten**, because to-hit rerolls 6822 after ev 11 (0x3C077 → 0x3C1B3 → 0x52E32); only the save bonus works | O | 3723_0377 |
 | 9 / 0x09, 46 / 0x2E | Protection from Good | 11, 12 | same for alignment ∈ {0, 3, 6} | O | 3723_03ac |
 | 10 / 0x0A | Resist Cold | 6, 12 | if 6819&2: dmg/2, save +3 | O | 3723_03e1 |
 | 11 / 0x0B | Charm Person | 15, 17, 19 | arg 0, first time (pw bit 0x20 clear): pw += 0x20 + side·0x40 (bit 6 saves the old side); side +0x10E := pw>>7 (charmer); +0x10F=1; if +0x84 < 0x80 then +0x84 := 0xB3; clears the combat target. Every call: morale := 100. Arg 1: side := bit 6; if +0x84 = 0xB3, set it to 0 | O | 3723_0400 |
-| 12 / 0x0C, 38 / 0x26 | Enlarge, Strength | D/R | if pw < 0x80: STR/STR% := decode(pw) (`5216_110d`). Then among other 12/38 records, the one with the highest STR (and %) is made current: char STR := it, and its pw := encode(previous STR) (`5216_10e4`). Effect: the strongest active STR effect wins and the original STR is restored when all expire | O/I | 3723_04ba |
+| 12 / 0x0C, 38 / 0x26 | Enlarge, Strength | D/R | pw is an encoded strength (§3): bit 7 clear = the strength to restore, bit 7 set = dormant. If pw < 0x80: STR/STR% := decode(pw) (`5216_110d`). Then among the other 12/38 records (dormant ones included) the one with the highest STR (then %) is put in force: its pw := encode(the STR just restored) (`5216_10e4`, bit 7 clear) and char STR := its value. So the strongest active STR effect wins and the original STR comes back when all have ended | O (disasm 0x376EA–0x37803) | 3723_04ba |
 | 13 / 0x0D | Reduce | – | empty | O | 319b |
 | 14 / 0x0E | Friends | D/R | CHA (+0x15) := pw; presumably pw holds the CHA to restore | O/I | 3723_05d6 |
 | 15 / 0x0F | poison (slow) | R | re-arms (dur 10, flag 1) unless 681F; then, if HP > 1: 6819=0, 1 dmg (`1344`) | O | 3723_05eb |
@@ -153,10 +162,10 @@ Ev = hook events; R = removal/expiry callback (eff[4]=1); D = invoked directly b
 | 79 / 0x4F | fire on hit | 2, 3 | 2d10 to target, 6819=9 (Fire+Magic) | O | 3723_1a19 |
 | 80 / 0x50 | acid on hit | 2 | 1d4 to target, 6819=0x10 (Acid) | O | 3723_1a4c |
 | 81 / 0x51 | fear aura | 8 | each active enemy saves vs spell. Level/HD +0x73 of 0..3: Hold (pw 0x0C, dur 0) "is paralyzed with fear"; 4..5: Curse (type 2) "is weakened by fear"; a save negates | O (disasm) | 0x38CDA |
-| 82 / 0x52 | paralysing aura | 8 | removes all type-82 effects from everyone, then each active enemy saves vs type 0 at +1 (if DS:6814[side] ≥ 6) +2 (if race 7), or Hold for 1d4 | O (disasm) | 0x38DD8 |
+| 82 / 0x52 | paralysing aura | 8 | removes all type-82 effects from everyone, then each active enemy saves vs type 0 at +1 if its side has 6 or more combatants in play (DS:6814[side], below) and +2 more if race 7 (human), or Hold for 1d4 | O (disasm) | 0x38DD8 |
 | 83 / 0x53 | petrifying gaze | 14 | "gazes...". If the gazer has 127 and the target has a readied item with name word 0x76 (Mirror): "reflects it!" and the gazer becomes the victim. Victim saves vs petrification (+0) or "is Stoned" (status 7) | O (disasm) | 0x38EDD |
 | 84 / 0x54 | charm gaze | 14 | if the path is clear: "Gazes...", 681B=10. Target saves vs spell at −2; on failure adds 11 (pw = side<<7 \| 0x0C, flag 1, save negates) and runs it | O (disasm) | 0x390A7 |
-| 85 / 0x55, 86 / 0x56 | energy drain 1 / 2 levels | 2, 3 | `2122(n)`. Prints "is drained a level" / "is drained n levels". An Animated (status 1) target "is dead forever" (status 8), max HP 0, done. Else n times, skipping once status is 8: +0x74 += 1; loss = max HP ÷ total levels; loss times: max HP, +0xB1 and HP −1 each if > 0, +0x75 +1 (a byte: wraps, IMP-067 stops it at 255). If +0x73 (signed) < 2: "is dead forever" (8), max HP 0, and for n = 2 the picked class's level is set to 0. Else the picked class loses a level, HP 0 and not dead → "is killed" (6), `FUN_51cf_0000` (derived stats). Then the class is picked again: +0x73 = its level, XP = the XP that level needs; recalc `FUN_10ba_0bb8`. Pick (`3723_2002`): over classes 0–7, a level ≥ the best so far wins if its XP need (DS:409B, 0 below level 2) is ≥ the best need or 0xFFFFFFFF, so the highest level, ties to the later class | O (disasm 0x29350–0x295D1, strings `3723:20DF–2118`) | 3723_23a4 / 23c2 |
+| 85 / 0x55, 86 / 0x56 | energy drain 1 / 2 levels | 2, 3 | `2122(n)`. Prints "is drained a level" / "is drained n levels". An Animated (status 1) target "is dead forever" (status 8), max HP 0, done. Else n times, skipping once status is 8: +0x74 += 1; loss = max HP ÷ total levels; loss times: max HP, +0xB1 and HP −1 each if > 0, +0x75 +1 (a byte: wraps, **Bug**; GoldBox Rerolled's departure IMP-067 is in [C-port/departures.md](../../C-port/departures.md)). If +0x73 (signed) < 2: "is dead forever" (8), max HP 0, and for n = 2 the picked class's level is set to 0. Else the picked class loses a level, HP 0 and not dead → "is killed" (6), `FUN_51cf_0000` (derived stats). Then the class is picked again: +0x73 = its level, XP = the XP that level needs; recalc `FUN_10ba_0bb8`. Pick (`3723_2002`): over classes 0–7, a level ≥ the best so far wins if its XP need (DS:409B, 0 below level 2) is ≥ the best need or 0xFFFFFFFF, so the highest level, ties to the later class | O (disasm 0x29350–0x295D1, strings `3723:20DF–2118`) | 3723_23a4 / 23c2 |
 | 87 / 0x57 | mummy rot on hit | 2, 3 | if the target lacks 50: adds 50 (dur 14400) and 57 (dur 43200, pw = (1d6<<4)+0x0F); "is Diseased" | O (disasm) | 0x3961C |
 | 88 / 0x58 | breath bolt (`FUN_4e53_30d9`) | 14 | after round 0 (DS:6DE3 ≠ 0) only when d100 > 50. "Breathes!" with the pause; the AI's spell target pick for spell 51 (DS:6B84[0] = `FUN_3aae_20c3(51, 1, &DS:70C6)`, the ok flag unread) aims at DS:6DB9/6DBA (the breather's own square when it finds nobody). The bolt starts beside the breather towards the aim: x + sign(aim x − x), y likewise (`FUN_56c1_0000`), one further where that is x + 1 or y + 1 (past a 2×2 footprint). Invisibility (25) goes (`5216_0fd2`); frames `19de(19)`, flight breather → that square (4 frames, 50 ms); `28bc` hits that square, then `295b(10, maxHP, 3, 0)`: 10 squares, no first-bounce bonus; both do max HP (char+0x32) as damage type 0x0C, a save vs breath (3) halving. pw > 0xFD → pw − 1, else the record goes (`5216_0026`): 3 breaths from 0xFF. The turn ends. Carried by TYRANITHRAXUS (MON5 #66, pw 0xFF) | O (disasm 0x41609–0x4176A) | 0x41609 |
 | 89 / 0x59 | displacement | 8, 16 | at combat start (6DE3=0, 6822=0): clears pw bit 0x10. First attack roll against it in a combat: roll := −1 (miss) and sets the bit | O | 3723_2490 |
@@ -203,24 +212,37 @@ Ev = hook events; R = removal/expiry callback (eff[4]=1); D = invoked directly b
 | 135 / 0x87 | giant-strength item | item | ready with STR < 19: unreadies it (+0x34=0), "Must have Giant Strength" | O (disasm) | 0x3A364 |
 | 137 / 0x89 | Spiritual Hammer item | item | unready: removes effect 23 | O | 3723_317a |
 
-## Port status (2026-10-20)
+## 3. Formulas, creature classes, odd cases, and Haste/Slow
 
-Moved to part B: how the port maps every effect type to a behaviour with parameters is
-[B-model/vocabularies.md](../../B-model/vocabularies.md) (§2–§3, the maps in §6); the notes that
-stood here (the differences found and transcribed while the map was made) are its §8.1.
-
-## 3. Undeciphered, odd, and Haste/Slow
-
-**Partly undeciphered**
-- **7**: the exact HP recalculation (0x374B5–0x375A1) is a byte-arithmetic class-level loop; it is described above only approximately.
-- **12/38**: the meaning of power bit 7 and the 110d/10e4 encoding is inferred.
-- **82**: the role of the DS:6814[side] (≥ 6) save bonus is unknown.
-- **6/3**: the creature classes behind +0x9F values 4/9/10/12 are unknown.
-- **94/115**: reading item-type byte 9 as 0x80 = blunt, 1 = piercing, 0 = slashing is inferred from the ITEMS column. Mace, club, hammer and sling carry 0x80; dagger, spear, bows and quarrel carry 1; swords carry 0.
+**Resolved 2026-10-21** (each was listed here as undeciphered):
+- **7** (O, 0x374B5–0x375A1): the formula is the table row's. Two quirks follow from it: the
+  divisor b is the new per-level bonus summed over levels, the dividend a the maximum hit points
+  above char[0xB1], so the gain is usually 0 or 1 and not the AD&D bonus; and all sums are bytes.
+- **12/38** (O): encode(STR, %) (`FUN_5216_10e4`) = % + 1 for STR 18, else STR + 100; decode
+  (`FUN_5216_110d`) takes pw & 0x7F: ≤ 101 → 18/(v − 1), else STR v − 100 with % 0. Bit 7 marks a
+  dormant record. The strength rule `FUN_5216_115c(char, STR, %, &pw)`: if the new strength is not
+  above the current one (18 compared by %; an equal STR other than 18 counts as above), pw =
+  encode(new) + 0x80 and nothing changes; otherwise the first 12/38 record with pw < 0x80 (the one
+  holding the strength to restore) becomes dormant holding the current strength, STR := new,
+  `FUN_10ba_0bb8` runs, and pw = encode(that record's old value, or the current strength when there
+  was none), returned with "raised" = 1.
+- **82** (O): DS:6814 + side is the number of combatants in play (char[0x10D] ≠ 0) on side 0 (the
+  party) and side 1 (the enemy), counted by `FUN_10ba_23db` and lowered when one goes down; the
+  aura's save bonus is +1 when the saver's side has at least 6.
+- **3, 6, 18, 47, 48** (O for the values, from every monster record; the names are I, AD&D's): the
+  creature class byte +0x9F of a monster record groups the shipped monsters as 0 (characters and
+  humans, 90 records), 1 (humanoids: kobolds, goblins, orcs, gnolls, ogres …, 31), 2 (giants, 3),
+  3 (dragon, 1), 4 (undead, 16), 7 (extraplanar, 3), 10 (trolls, 3), 11 (reptiles and amphibians, 6),
+  12 (stirge, 1), 14 (snakes and scorpions, 4), 15 (animals, 6), 16 (insectoids, 3), 17 (other
+  monsters, 5); no record has 9. A quirk follows (**Bug**, O): effect 47 requires class 1, so of its
+  names only the ogres can match (the giants are class 2, the troll class 10).
+- **94/115** (O for the mechanism): they test `ITEMS` byte **7** of the attacker's weapon (DS:5589 +
+  16·type); 94 halves for 0x80 or 1, 115 for 0 or 1. The names (0x80 bashing, 1 piercing, 0 slashing)
+  are I: mace, club, hammer and sling carry 0x80; dagger, spear, bows and quarrel 1; swords 0.
 
 **Mismatch**
-- Type **88** is dispatched at event 14 and does have a handler (0x41609, the breath bolt; earlier thought missing). MON5 #66 carries it (found 2026-10-20); transcribed above and in the port (`web/src/rules/specials.ts`).
-- The dispatcher calls each event's types **in the order of its lists** (image 0x4245A), which is not numeric order; the port follows that order (`web/src/games/effectrules.ts`).
+- Type **88** is dispatched at event 14 and does have a handler (0x41609, the breath bolt; earlier thought missing). MON5 #66 carries it (found 2026-10-20); transcribed above.
+- The dispatcher calls each event's types **in the order of its lists** (image 0x4245A), which is not numeric order; a conforming build calls them in that order.
 
 **Engine quirks found**
 - PfE/PfG's −2 to the attack roll is lost: it is applied at event 11, before 6822 is rolled.
@@ -235,3 +257,8 @@ stood here (the differences found and transcribed while the map was made) are it
 - A second direct check at 0x31E9C agrees: 0x27 → movement `shl` at 0x31EB2; else 0x2A → `shr` at 0x31ED5.
 - So **Haste = 0x27 and Slow = 0x2A**, matching the spell table.
 - The character-sheet routine at 0x491AA has them reversed: 0x2A → `shl` at 0x491C0, 0x27 → `shr` at 0x491E1. That is a **display bug** in the original game: hasted characters show half movement and slowed ones double. It does not affect combat.
+
+## Open
+
+- None for the handlers. Every item once listed in §3 as undeciphered is answered there
+  (2026-10-21); what stays open about durations is in [camp-and-time.md](camp-and-time.md#open).
