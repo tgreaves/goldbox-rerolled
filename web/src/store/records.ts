@@ -1,4 +1,4 @@
-// The records the sync layer moves between the browser and the server (docs/server.md, "Records"):
+// The records the sync layer moves between the browser and the server (spec/C-port/accounts-and-sync.md, §1.2 "Records" and §1.3):
 // metadata plus files named and laid out as the original game writes them, using the active game's
 // own extensions (PoR .ITM/.SPC/.CHA, CotAB .SWG/.FX/.GUY), so the server stays game-neutral.
 import { game } from '../games/profile'

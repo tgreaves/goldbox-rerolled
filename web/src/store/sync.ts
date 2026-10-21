@@ -1,4 +1,4 @@
-// Automatic sync between the browser's stores and the server (docs/server.md, "Sync"). The browser
+// Automatic sync between the browser's stores and the server (spec/C-port/accounts-and-sync.md, §5 "Client sync"). The browser
 // copy is always written first and stays the offline cache; this engine keeps, per game:
 //   base[key]   the server version this browser last saw of each record
 //   dirty[key]  when the browser changed a record the server has not taken yet (the queue)
