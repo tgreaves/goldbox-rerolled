@@ -34,7 +34,7 @@ implementation's: *done*, or what remains.
 
 | Id | Subject | Specified in | Level | Setting | Status |
 |---|---|---|---|---|---|
-| IMP-001 | the 3D view | [exploration-view.md §1](exploration-view.md#1-the-two-views), [§3](exploration-view.md#3-the-webgl-view-optional) | optional (D6) | — | done; the required drawn view is not built yet (UI1) |
+| IMP-001 | the 3D view | [exploration-view.md §1](exploration-view.md#1-the-two-views), [§3](exploration-view.md#3-the-webgl-view-optional) | optional (D6) | View: Original (default, the required drawn view, §2) / Enhanced (3D) | done; the drawn view built and the default (UI1 resolved) |
 | IMP-003 | mouse and touch everywhere, pad, tap zones | [ui-contract.md §4.4](ui-contract.md#44-the-pad), [§8](ui-contract.md#8-input-map) | required | — | done |
 | IMP-004 | the original arrangement | superseded by IMP-064 and IMP-060: [ui-contract.md §3](ui-contract.md#3-screen-classes) (W column) | — | Party: Column | superseded |
 | IMP-007 | light, fog, colours, textures of the 3D view | [exploration-view.md §3.2](exploration-view.md#32-textures-and-colours) | optional (D6) | — | done |

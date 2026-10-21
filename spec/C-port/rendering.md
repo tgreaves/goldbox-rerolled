@@ -41,10 +41,12 @@ stretched by the layout to its region. The **Graphics** setting (IMP-047,
 | **Pixel** (default, `pixel`) | the canvas holds the picture at 1 × and is stretched with nearest-neighbour sampling (no smoothing). Each original pixel stays a hard-edged block; at a fractional stretch neighbouring blocks may differ by one screen pixel |
 | **Sharp** (`sharp`) | every picture is first enlarged **4 ×** by whole pixels (nearest neighbour: each source pixel becomes a 4 × 4 block, nothing invented), and only the last, small stretch to the screen is smoothed (bilinear). Each pixel is an even square with soft edges |
 
-- The mode applies to every picture: the title and credits, pictures, portraits, BIGPIC, the sky
-  layer, the wilderness tiles, the battlefield's tiles, icons and sprites, the cards' portraits and
+- The mode applies to every picture: the title and credits, the drawn 3D view's frame, pictures,
+  portraits, BIGPIC, the sky layer, the wilderness tiles, the battlefield's tiles, icons and sprites, the cards' portraits and
   icons, the creation and icon-editor canvases, the ending; and to the 3D view's textures (nearest
   filtering in Pixel; linear filtering of the 4 × texture in Sharp, no mipmaps).
+- The drawn view's frame (88 × 88, [exploration-view.md §2](exploration-view.md#2-the-drawn-view-normative))
+  is drawn whole at every refresh: in Pixel its canvas holds it at 1 ×, in Sharp at 4 ×.
 - It is read once per page load (the enlarged pictures are cached): a change applies after a reload
   ([ui-contract.md §9](ui-contract.md#9-settings)).
 - Not affected: the journal's scans (photographs of the printed book, always smoothed) and the area

@@ -191,6 +191,7 @@ Addresses are DS offsets; "/ n" is the row size (decimal). "absent" is `at` = �
 | `sky` | DS:0C26 | DS:0A8A | 16 bytes: sky colours (eight, twice) |
 | `itemWords` | DS:10BC / 21 | DS:1057 / 21 | Pascal strings, name word 1 at `at` (word *w* at `at` + (*w* − 1) · 21), 255 words |
 | `wallDx`, `wallDy` | DS:2736, DS:273F | DS:2696, DS:269F | 9 × s8: direction vectors 0 N … 7 NW, 8 the square itself |
+| `viewPieces` | DS:0C8C | DS:0ADA | the drawn view's piece tables, contiguous: 10 bytes first tile index, 10 widths, 10 heights (cells), 10 words base column, 10 words row, by kind 0–9 ([engine/maps-and-view.md, "Wall pieces"](../A-games/engine/maps-and-view.md#wall-pieces)) |
 | `battleCells` | DS:2744 / 4 | DS:26A4 / 4 | 0x42 cells × 4 bytes: move, ?, sight, image slot |
 | `headRecords`, `bodyRecords` | DS:286F, DS:287D | absent | byte per portrait number: HEAD3 / BODY3 record |
 | `spellNames` | DS:2912 / 41 | DS:27E8 / 41 | Pascal strings, spell 1 at `at` (spell *id* at `at` + (*id* − 1) · 41) |

@@ -92,7 +92,7 @@ and makes one active (`setGame`), switching the live objects the rest of the cod
 | `landmarkrules.ts` | what the area map's landmarks look for in the script text (shopkeepers' lines, the temple's god, named places) | `game().landmarks` |
 | `effectrules.ts` | the effect system: event lists in the original's order, area effects, per-type handler map, item kinds | `game().effects` |
 | `treasure.ts` | random treasure: the type choice (nested dice bands), plus roll, scrolls, magic records | `game().treasure` |
-| `view.ts` | the 3D view and screens: floor and ground, BIGPIC, overland kind, frames, sun and clouds | `game().view` |
+| `view.ts` | the 3D view and screens: the drawn view's bands and closed-edge areas, floor and ground, BIGPIC, overland kind, frames, sun and clouds | `game().view` |
 | `title.ts`, `ending.ts`, `sound.ts` | title script and credits; ending script (captions read from GAME.OVR); sound driver location | `game().title` … |
 | `startup.ts` | the menu after the title (its title and choices read from START.EXE by offset, the timeouts in hundredths of a second and the key they answer) and the demo it runs: block, record, game speed and the demo mode's flags (key reads that never wait, no "Continue Battle:", no battle aftermath); `null` for a game without one (PoR) | `game().startMenu` |
 | `rulestext.ts`, `spellnotes.ts`, `journal.ts` | text written for the port: Rules reference, spell notes, the printed journal | `game().rulesText` … |

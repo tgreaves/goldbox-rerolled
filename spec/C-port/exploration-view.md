@@ -14,8 +14,8 @@ the **conformance target**, pixel-exact for a given map, wall sets, position, fa
 port's WebGL view ([§3](#3-the-webgl-view-optional)) is an **optional enhancement**: a build MAY offer
 it, and when it does it MUST preserve what §3.6 lists, checked within the tolerance given there. The
 area map (§6) and the wilderness views (§4) are normative as written. Observed in the reference
-implementation (`web/src/render/world.ts`, `ui/explore.ts`, `ui/areamap.ts`, `rules/landmarks.ts`,
-`games/view.ts`, **O**) unless marked.
+implementation (`web/src/render/drawnview.ts`, `render/viewscene.ts`, `render/world.ts`,
+`ui/explore.ts`, `ui/areamap.ts`, `rules/landmarks.ts`, `games/view.ts`, **O**) unless marked.
 
 ## 1. The two views
 
@@ -26,57 +26,90 @@ implementation (`web/src/render/world.ts`, `ui/explore.ts`, `ui/areamap.ts`, `ru
 | moves and turns | the frame is redrawn in one go, as the original | slides (IMP-001, IMP-066) |
 | sprites | the original's frame per distance at its fixed place | the nearest frame standing in the scene (IMP-020, IMP-021) |
 | check | pixel-exact against the original (V9) | tolerance against the drawn view (§3.6) |
+| setting | View: **Original** (default) | View: **Enhanced (3D)** |
 
-A build that offers both MUST let the player choose (a setting "View", values Original and 3D;
-**?** the name and default are not yet decided) and MUST draw the same moments (every refresh, §7)
-in either.
-
-**Known deviation** ([AUDIT.md](../AUDIT.md) §6.9, UI1): the reference implementation has only the
-WebGL view. The drawn view, its setting and the V9 harness are a code task.
+A build that offers both MUST let the player choose with the setting **View**: **Original** (the
+drawn view) or **Enhanced (3D)** (the WebGL view), **Original by default**, because it is the
+original's own picture and the conformance target ([ui-contract.md §9](ui-contract.md#9-settings),
+key `poolrad.view`). A change applies at once, in play: the other view is drawn at the party's position
+with the sprite on show. Both views draw the same moments (every refresh, §7) and answer the same
+calls of the script host ([B-model/host-contracts.md](../B-model/host-contracts.md)): `refresh`,
+`clearView`, `sprite`, `picture`, `clearTop`; the picture layer (§5) lies over either.
 
 ## 2. The drawn view (normative)
 
 ### 2.1 What it draws
 
 The original's view, as [maps-and-view.md, "3D view renderer"](../A-games/engine/maps-and-view.md#3d-view-renderer-o-fun_55a0_05fd-fun_55a0_0211)
-specifies it (and CotAB's differences, [coab/assets.md §3](../A-games/coab/assets.md#3-3d-view)):
+specifies it (and CotAB's differences, [coab/assets.md §3](../A-games/coab/assets.md#3-3d-view)), in
+this order into an 88 × 88 frame of EGA indices:
 
-1. **Background bands** across the 88 × 88 frame: the sky colour (rows 0–42), the horizon line and
-   band, the floor (rows 46–87), from the sky table and the engine's floor and horizon registers
-   ([maps-and-view.md, "Background colours"](../A-games/engine/maps-and-view.md#3d-view-renderer-o-fun_55a0_05fd-fun_55a0_0211));
-   CotAB on EGA: sky rows 0–43, then the overlays below.
-2. **CotAB's overlays** (EGA): by day outdoors the sun (`SKY` #251) or the cloud strip (#250) at the
-   cells the hour and facing give; always the ground picture (`SKY` #252) at view rows 40–87; mask
-   colour 13 ([coab/assets.md §3](../A-games/coab/assets.md#background-the-main-change-o-0x53824--ovr0310184),
-   profile `view.skyArt`, `view.ground`).
-3. **Walls** by the painter's algorithm: depth 2, then 1, then 0, each with its front and side pieces
-   (kinds 0–9), tiles from the tile bank (the three wall-set slots, `8X8D1` #203 shared tiles), tile 0
-   cells skipped and colour 13 transparent so the background shows through.
+1. **Background bands** across the frame, view rows inclusive, from the profile's `view.bands`
+   ([B-model/profile.md §3.1](../B-model/profile.md#31-the-view-viewart)): PoR sky 0–42, horizon line
+   43, band 44–45, floor 46–87 ([maps-and-view.md, "Background colours"](../A-games/engine/maps-and-view.md#3d-view-renderer-o-fun_55a0_05fd-fun_55a0_0211));
+   CotAB (EGA) sky 0–43, colour 0 at 44–45, floor (8) 46–87. The colours are the engine's backdrop:
+   the sky from the sky table by ECL 0x49FD (0x49FE when the party's square has event bit 7), the line,
+   band and floor from registers 0xC05F and 0xC059, the profile's `view.floor` in their place where set.
+2. **Pictures over the bands** (CotAB): by day outdoors the sun (`SKY` #251) or the cloud strip (#250)
+   at the place the hour and facing give (`view.skyArt`), then always the ground picture (`SKY` #252)
+   at view (0, 40) (`view.ground.at`); colour 13 of each is left undrawn
+   ([coab/assets.md §3](../A-games/coab/assets.md#background-the-main-change-o-0x53824--ovr0310184)).
+3. **The walls**, depth 2, then 1, then 0, exactly in the order and at the cells of
+   [maps-and-view.md, "Drawing order"](../A-games/engine/maps-and-view.md#drawing-order-painters-algorithm):
+   the two front-wall walks at depth 2 with their edge pieces, the side walls, the half-walks of depths 1
+   and 0; the view's own wall lookup (wrapping by one map; nothing outside the map in the profile's
+   `view.closedEdges` areas, 0 and 10 in both games); each piece cell by cell, clipped to the 11 × 11
+   cells, tile 0 skipped and tile colour 13 leaving what is under it. The piece tables and direction
+   vectors are read from `START.EXE` (`T.viewPieces`, `T.wallDx`, `T.wallDy`,
+   [B-model/records-and-tables.md](../B-model/records-and-tables.md)); without it, part A's values.
+4. **The encounter sprite** on show, if any: frame *distance* + 1 of its `SPRIT<block>` record (the last
+   frame if the record has fewer), at its header (x, y) cells, colour 0 left undrawn, colour 13 drawn as
+   black ([graphics.md, "Encounter sprites"](../A-games/engine/graphics.md#encounter-sprites-o)).
 
-The inputs are the area's GEO record, the three loaded wall sets, the party's x, y and facing, the
-sky value (ECL 0x49FD, or 0x49FE when the party's square has event bit 7), the floor and horizon
-registers (0xC059, 0xC05F), and in CotAB the hour (ECL 0x4BC9). The output is 88 × 88 EGA indices.
+The inputs are the area's GEO record, the three loaded wall sets, the party's x, y and facing, the area
+number, the backdrop, in CotAB the hour (ECL 0x4BC9), and the sprite on show. The output is 88 × 88
+EGA indices.
 
 ### 2.2 Presentation
 
-- The frame fills the view region as a square, scaled by whole pixels or by the Graphics setting
-  ([rendering.md §2](rendering.md#2-scaling)); the region around it is black.
-- It is redrawn at every refresh (§7): after each move and turn, on area entry, on CALL refresh and
-  REDRAW_SCREEN. There are no slides: as the original, the new frame replaces the old.
-- **Encounter sprites** are drawn as the original draws them ([graphics.md, "Encounter sprites"](../A-games/engine/graphics.md#encounter-sprites-o)):
-  frame *distance* + 1 of the `SPRIT` record in map areas (frame 2 elsewhere) at its header position
-  offset by (+2, +2) cells, i.e. its place in the 88 × 88 frame; colour 0 transparent, colour 13 drawn
-  as opaque black. IMP-014's footstep (a sound) applies to both views.
+- The frame fills the view region as a square (as large as the region allows), scaled by the Graphics
+  setting ([rendering.md §2](rendering.md#2-scaling)): Pixel, the 88 × 88 canvas stretched with
+  nearest-neighbour sampling; Sharp, the frame enlarged 4 × by whole pixels and the last stretch
+  smoothed. The region around it is black. The palette is the EGA one
+  ([rendering.md §3](rendering.md#3-palettes)).
+- It is drawn again at every refresh (§7): after each move and turn, on area entry, on CALL refresh and
+  REDRAW_SCREEN, and when the sprite changes. There are no slides: as the original, the new frame
+  replaces the old, and a refresh resolves at once.
+- **Encounter sprites** are part of the frame (§2.1 step 4): APPROACH, the encounter menu's Advance and
+  LOAD_MONSTER redraw the frame with the new distance's frame of the record, so a nearer sprite replaces
+  the farther one (the original redraws the view first, `FUN_2fea_054e`). At distance 0 with a picture,
+  the picture replaces the view (§5). `clearView` and a picture remove the sprite. IMP-014's footstep (a
+  sound) applies to both views.
+- CotAB's sun, clouds and ground are drawn into the frame; the separate sky layer of §5 is the WebGL
+  view's.
+- A tap on the frame's left third turns left, the middle steps forward, the right third turns right,
+  as on the WebGL view ([ui-contract.md §4.4](ui-contract.md#44-the-pad)).
 - Pictures, portraits, BIGPIC and the cleared view are drawn over it (§5).
 - The original's **overhead map** (Area drawn in the view's place, [maps-and-view.md, "Overhead map"](../A-games/engine/maps-and-view.md#overhead-map-o-fun_55a0_0000))
   is replaced by the area map panel (IMP-022, §6).
 
 ### 2.3 Conformance
 
-For each (GEO, wall sets, x, y, facing, sky, registers, hour) the 88 × 88 index image MUST equal the
-original's, pixel for pixel (V9 of [AUDIT.md §8.1](../AUDIT.md#81-clean-room-validations-that-are-practical)):
-golden frames come from DOSBox screenshots of the original (the view at text cell (2, 2), pixels
-16–103) or from a render harness implementing part A.
+For each (GEO, wall sets, x, y, facing, area, backdrop, hour, sprite) the 88 × 88 index image MUST
+equal the original's, pixel for pixel (V9 of [AUDIT.md §8.1](../AUDIT.md#81-clean-room-validations-that-are-practical)).
+
+**The V9 harness.** The headless runner's frame option ([B-model/host-contracts.md §8.3](../B-model/host-contracts.md#83-the-view-frame-v9))
+renders the frame at the end of a run (a save, a debug jump, commands) and gives the SHA-256 of its
+7744 index bytes, or a PNG. Two builds fed the same files and script MUST give the same hash.
+
+**Reference frames.** The reference implementation's frames (its harness implementing part A) are
+recorded as hashes, never as pictures: `web/test/view-frames.json` holds, for each game's GOG release
+(identified by its `START.EXE` hash), the SHA-256 of the 1024 frames of an area (squares y 0–15, x 0–15
+in that order, facings N, E, S, W at each, the frames' index bytes concatenated) for eleven areas: the
+area of save A, and after a debug jump from it to (8, 8) facing north, PoR's areas 3/0 (New Phlan,
+closed edges), 1/18, 2/9, 6/1, 8/13 and CotAB's 3/16, 4/32, 5/50, 6/64. A clean-room build computes the
+same from the player's files. Frames of DOSBox screenshots of the original (the view at screen pixels
+16–103) would check the reference itself; none has been taken yet.
 
 ## 3. The WebGL view (optional)
 
@@ -156,6 +189,9 @@ IMP-020, IMP-021. The sprite stands in the scene instead of being pasted at a fi
   portrait of head ECL 0x6DE1 and that body.
 
 ### 3.6 What it must preserve (the tolerance)
+
+(In the reference the WebGL view is the View setting's **Enhanced (3D)**.)
+
 
 A WebGL (or other) 3D view conforms when, for every position, facing and time, it:
 
@@ -239,9 +275,9 @@ whole-pixel scaled, with black around them (a picture replaces the view, as in t
 - **clearView** (after moves, turns, area entry): the layer, its animation and the sprite go.
 - After a won battle the layer shows `PIC<block>` #1 (the chest) while the treasure panel is open;
   the camp shows #29 (the campfire) animated.
-- **The sky layer** (CotAB, profile `view.skyArt`): the sun or clouds by the rules of §2.1 step 2,
-  drawn over the view in the original's 88 × 88 coordinates with colour 13 transparent, hidden in a
-  tile wilderness and under a picture. In the WebGL view it is a flat layer over the 3D picture.
+- **The sky layer** (CotAB, profile `view.skyArt`), WebGL view only: the sun or clouds by the rules of
+  §2.1 step 2, a flat layer over the 3D picture in the original's 88 × 88 coordinates with colour 13
+  transparent, hidden in a tile wilderness and under a picture. The drawn view has them in its frame.
 
 ## 6. The area map
 
@@ -325,23 +361,27 @@ landmarks.
 
 A **refresh** (`Io.refresh`, after every move and turn, area entry, CALL refresh, REDRAW_SCREEN):
 
-1. a new map or new wall sets rebuild the scene (no slide);
-2. in a tile-wilderness area the wilderness view (§4.1) is shown and redrawn; otherwise the view's
-   colours are set from the engine's backdrop and the view goes to the party's position and facing
-   (§2.2, or §3.4's slide);
+1. a new map or new wall sets rebuild the WebGL scene (no slide);
+2. in a tile-wilderness area the wilderness view (§4.1) is shown and redrawn; otherwise the drawn view
+   draws its frame (§2.1), or the WebGL view's colours are set from the engine's backdrop and it goes to
+   the party's position and facing (§3.4's slide);
 3. the sky layer, the area map, the cards and the location line are redrawn;
 4. the refresh resolves when the view is at rest.
 
 ## Validation
 
-- V9 ([AUDIT.md §8.1](../AUDIT.md#81-clean-room-validations-that-are-practical)): the drawn view
-  pixel-exact against the original; the 3D view by §3.6's check. Neither harness exists yet.
+- V9 ([AUDIT.md §8.1](../AUDIT.md#81-clean-room-validations-that-are-practical)): the drawn view by
+  the harness and the reference frames (§2.3); `web/test/drawnview.test.ts` checks part A's placements
+  on made-up maps (each depth's front and side walls, the edge pieces, the facing, the one-map wrap and
+  closed edges, the composition and the sprite's colours), the piece tables read from both games'
+  `START.EXE`, the reference frames and the harness's frame. The browser's drawn frame equals the
+  harness's at the same position (checked in headless Chromium, PoR and CotAB, 2026-10-21). The 3D view
+  by §3.6's check: not automated (it needs WebGL); compared by eye at the same positions.
 - The landmark walk: `web/test/landmarks.test.ts` (PoR's New Phlan services, none in the slums,
   Tilverton's training hall, shops, temple and tavern); the picture clearing on moves:
   `web/test/view.test.ts`.
 
 ## Open
 
-- UI1: the drawn view is not implemented in the reference.
-- The View setting's name and default when a build has both views.
-- §3.6's tolerance numbers are provisional.
+- §3.6's tolerance numbers are provisional, and its check is not automated.
+- Reference frames from the original itself (DOSBox) to check the reference's own frames (§2.3).

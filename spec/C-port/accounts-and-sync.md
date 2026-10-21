@@ -564,14 +564,14 @@ synced).
 
 ### 5.9 Settings
 
-The synced settings are seven localStorage keys: `poolrad.sound`, `poolrad.font`, `poolrad.frames`,
-`poolrad.partylayout`, `poolrad.motion`, `poolrad.textsize`, `poolrad.gfx`
+The synced settings are eight localStorage keys: `poolrad.sound`, `poolrad.font`, `poolrad.frames`,
+`poolrad.partylayout`, `poolrad.view`, `poolrad.motion`, `poolrad.textsize`, `poolrad.gfx`
 ([storage.md §8](storage.md#8-localstorage-keys)). Every other key stays in the browser.
 
-- **Writing to the server**: `docs/settings` with `meta.values` = each of the seven that is set.
-- **Writing into the browser**: each of the seven is set from `meta.values` when its value there is a
+- **Writing to the server**: `docs/settings` with `meta.values` = each of the eight that is set.
+- **Writing into the browser**: each of the eight is set from `meta.values` when its value there is a
   string, and **removed** when it is absent. Then the text size, the party layout and the sound
-  device apply at once; the motion choice is read when next used; the font and window borders apply
+  device apply at once; the view when the play screen is next opened; the motion choice is read when next used; the font and window borders apply
   when a game is next opened; the graphics mode after the next page load.
 - **One set for every game (C22).** The server keeps a settings record per game
   (`users/<name>/<game>/settings.json`), but the browser has one set of these keys for every game.

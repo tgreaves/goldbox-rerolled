@@ -12,7 +12,11 @@ npm run build:single   # one self-contained HTML file → dist-single/index.html
 POOLRAD=/path/to/POOLRAD COAB=/path/to/CURSE npm test   # decoder tests against your game files and ../tools
 npm run headless -- --files /path/to/POOLRAD --script run.json [--tape tape.json | --seed 1] [--record tape.json]
                        # a script run headless: transcript and dice tape (spec/B-model/host-contracts.md §8)
+npm run headless -- --files /path/to/POOLRAD --script run.json --frame view.png --scale 4
+                       # and the original's drawn 3D view at the end of the run (V9, §8.3)
 ```
+
+The 3D view is the original's own drawn view, pixel for pixel, by default; Settings → View → Enhanced (3D) switches to the WebGL view (IMP-001).
 
 Current state: *Pool of Radiance* plays from start to finish in the browser (delivery steps 1–5 of [`../docs/requirements.md`](../docs/requirements.md), and of step 6 the area map, journal and speed controls; art packs are not started). *Curse of the Azure Bonds*: steps 1–7 of [`../docs/multi-game.md`](../docs/multi-game.md) are done (detection, record fields, rules tables, script VM, characters and saves, rules, presentation); it is playable at an early stage, not yet played through. Working rules are in [`../CLAUDE.md`](../CLAUDE.md).
 

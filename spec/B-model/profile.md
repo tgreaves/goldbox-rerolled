@@ -93,13 +93,16 @@ matter.
 ### 3.1 The view (`ViewArt`)
 
 What the 3D view and the screens take from the game's own pictures and colours. The drawn view
-itself is part A ([engine/maps-and-view.md](../A-games/engine/maps-and-view.md)); the port's WebGL view
-is part C ([C-port/exploration-view.md](../C-port/exploration-view.md)).
+itself is part A ([engine/maps-and-view.md](../A-games/engine/maps-and-view.md)) and part C
+([C-port/exploration-view.md §2](../C-port/exploration-view.md#2-the-drawn-view-normative)); the port's
+WebGL view is part C ([§3](../C-port/exploration-view.md#3-the-webgl-view-optional)).
 
 | Field | Meaning | Kind | PoR | CotAB |
 |---|---|---|---|---|
+| `bands` | the drawn view's background: view rows (inclusive) and a colour, `sky`, `line`, `band`, `floor` (the backdrop's) or a fixed EGA colour, top to bottom | C | 0–42 sky, 43 line, 44–45 band, 46–87 floor (`FUN_55a0_0174`) | 0–43 sky, 44–45 colour 0, 46–87 floor (0x53824, EGA: `DS:7226` is never written) |
+| `closedEdges` | areas where the view's wall lookup finds no wall outside the map (elsewhere it wraps by one map) | C | 0, 10 (`DS:84DC`, `FUN_55a0_047b`) | 0, 10 (`DS:8B78`, 0x53D42) |
 | `floor` | EGA colour of the floor, in place of the one the floor register (0xC059) gives; null: the register decides (0x0B → 8, 6 → 1, else 6) | C | null | 8 ([coab/assets.md §3](../A-games/coab/assets.md#3-3d-view)) |
-| `ground` | a ground picture laid on the floor: DAX family and record, the picture rows used and how often they repeat along one square; null: none | C (file, record), P (rows, repeat) | null | SKY #252, rows 32–48, repeat 2 |
+| `ground` | a ground picture: DAX family and record, `at` (the view pixel where the drawn view puts it, after the sky pictures, before the walls) and `mask` (the colour left undrawn); for the WebGL floor the picture rows used and how often they repeat along one square; null: none | C (file, record, at, mask), P (rows, repeat) | null | SKY #252 at (0, 40), mask 13; rows 32–48, repeat 2 |
 | `bigFrom` | script picture ids from this one are full-width `BIGPIC<block>` records; null: none | C | null | 0x78 |
 | `overlandPicture` | the BIGPIC that is the overland map, shown with the city cursor (`T.cursorX/Y` by place, canonical ECL 0x4AA1); null: none | C | null | 0x79 |
 | `tileOverland` | areas that are the tile wilderness ([engine/overland.md](../A-games/engine/overland.md)) | C | 25, 26, 27 | none |

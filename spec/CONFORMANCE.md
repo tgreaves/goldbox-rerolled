@@ -121,11 +121,18 @@ Items marked **⚠** are details that are easy to get plausibly wrong.
 
 ### H. The views ([exploration-view.md](C-port/exploration-view.md))
 
-- [ ] **H1** ⚠ The drawn view matches the original pixel for pixel at a few known positions (V9; not
-      in the reference yet, UI1).
+- [ ] **H1** ⚠ The drawn view matches the original pixel for pixel (V9): the build's frame hashes equal
+      the reference frames of `web/test/view-frames.json` (1024 frames each of eleven areas, both games),
+      and its frame at the end of a headless run equals the one its play screen shows at that position.
 - [ ] **H2** With the 3D view: the same walls as the drawn view, the walls' own art, the original's
       sky and floor colours, an encounter sprite in front of the first wall and nearer at each
       approach.
+- [ ] **H5** ⚠ Settings → View offers Original (the default in a new browser) and Enhanced (3D); a change
+      applies at once in play, at the same position, with the sprite on show; the drawn view has no
+      slides, shows CotAB's sun, clouds and ground in its frame, and an approaching sprite's smaller
+      frames at its fixed place.
+- [ ] **H6** The drawn view scales with Graphics (Pixel: hard blocks; Sharp: even soft squares), black
+      around it, and a tap on its thirds turns or steps as on the 3D view.
 - [ ] **H3** The area map shows the whole area, doors in their colours, the party's arrow, the
       landmarks; "Not here." where the original refuses Area.
 - [ ] **H4** PoR wilderness: the 5 × 5 tile view, compass pad, the party icon animating; CotAB

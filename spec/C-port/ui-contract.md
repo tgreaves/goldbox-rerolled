@@ -375,6 +375,7 @@ closes.
 | **Sound** | **PC speaker**, **Tandy / PCjr**, **Off**; without `START.EXE` the row says "needs START.EXE among the game files" | `poolrad.sound`: `pc`, `tandy`, `off` | the device ([audio.md §2](audio.md#2-device-choice)); choosing PC speaker or Tandy plays effect 10 as a sample |
 | **Font** (when the game font was built) | **Original 8×8**, **Modern** | `poolrad.font`: `original`, `modern` | IMP-038, [rendering.md §5](rendering.md#5-the-game-font) |
 | **Borders** (when the frame tiles were built) | **Original rope**, **Plain** | `poolrad.frames`: `original`, `modern` | IMP-051, [rendering.md §4](rendering.md#4-frames) |
+| **View** | **Original**, **Enhanced (3D)** | `poolrad.view`: `original`, `enhanced` | the original's drawn view, or the WebGL view (D6, IMP-001, [exploration-view.md §1](exploration-view.md#1-the-two-views)); applies at once, in play too |
 | **Party** | **Row across the top**, **Column beside the view** | `poolrad.partylayout`: `top`, `side` | IMP-064, §3 |
 | **Motion** | **Full**, **Reduced (no flashing)**; unset: the system's reduced-motion preference | `poolrad.motion`: `full`, `reduced` | §10 |
 | **Text size** | **Normal**, **Large** | `poolrad.textsize`: `normal`, `large` | text of the play screen, party screen, panels and title at 1.2 × (game font 16 → 24 px) |

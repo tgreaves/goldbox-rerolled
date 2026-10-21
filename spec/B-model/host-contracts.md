@@ -247,7 +247,7 @@ outcome MUST NOT depend on how long a wait lasted.
 ## 8. The headless harness
 
 A conforming build SHOULD offer a headless runner for the validations of [VALIDATION.md](../VALIDATION.md)
-(V3 script runs, V5 seeded battles): a script host and a combat host that answer from a list of
+(V3 script runs, V5 seeded battles, V9 view frames): a script host and a combat host that answer from a list of
 answers, a dice source fed from a tape, and a **transcript** of what the rules asked for. Two builds
 that are fed the same game files, script and tape MUST produce the same transcript, line for line.
 
@@ -260,6 +260,7 @@ A **script** is a JSON object:
 | `game` | the profile id (`por`, `coab`) |
 | `save` | the save slot letter: `SAVGAM<x>.DAT` and its party's files from the game folder (default `A`) |
 | `jump` | optional `[block, area, x, y, facing]`: the debug jump (§3.1) after play starts |
+| (option) `frame` | render the drawn view at the end of the run (V9, below) |
 | `commands` | what the player does, in order (below) |
 | `answers` | the answers, taken in order by every question either host is asked |
 
@@ -304,13 +305,25 @@ the order listed.
 | `command` | `command`: each script command, before it runs |
 | `screen` | `what`, `info` (null when none): each `engine(what)` hand-over |
 | `combat` | `text`, `round` (the battle's round counter, 0 in the first round), `current` (the current combatant's name, null before anyone acts): each combat message; at the end of the battle `outcome` (ECL 0x6DC7), `survived`, `round` |
+| `frame` | `block`, `area`, `x`, `y`, `facing2`, `sprite` (the sprite on show: `sprite`, `picture`, `distance`, or null), `sha256` (of the frame's indices; null where there is no 3D view): with the frame option, after the run, before `end` |
 | `end` | `reason`: `script` (the commands are done), `quit` (the game ended), `answers` (with `waiting`: the question unanswered, `kind` and its `items`, `prompt` or `left`), `divergence` or `error` (with `message`) |
 
 Presentation-only calls (`pose`, `flight`, `effect`, `fall`, holds) are not transcribed.
 
+### 8.3 The view frame (V9)
+
+With the frame option the run ends by drawing the original's view of the engine's state as
+[C-port/exploration-view.md §2](../C-port/exploration-view.md#2-the-drawn-view-normative) specifies
+it: 88 × 88 EGA indices, row-major, of the party's square and facing, with the encounter sprite the
+scripts left on show (the last `sprite` not followed by a `picture` or `clearView`, and not at
+distance 0 with a picture). The frame is compared by the SHA-256 of its 7744 index bytes; a PNG
+through the EGA palette is a convenience. A run that ends in a tile wilderness, or without a map, has
+no frame.
+
 *Informative:* the reference runner is `web/headless/` (`harness.ts`, and `run.ts`, the command line:
 `node --import ./headless/node-ts.mjs headless/run.ts --files <folder> --script <script.json>
-[--tape <tape.json> | --seed <n>] [--record <tape.json>] [--out <transcript.jsonl>]`, plain Node 24
+[--tape <tape.json> | --seed <n>] [--record <tape.json>] [--out <transcript.jsonl>] [--frame <view.png>
+[--scale <n>]]`, plain Node 24
 with its type stripping; `npm run headless -- …` in `web/`). Without a tape it rolls the reference
 generator (seed 1 unless given) and `--record` writes the tape it made. Transcripts and tapes contain
 game text and stay with the player's files. The play-test harness `web/test/playtest.ts` is a

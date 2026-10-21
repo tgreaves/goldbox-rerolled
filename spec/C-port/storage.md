@@ -327,6 +327,7 @@ first value listed). "Synced" keys travel with an account
 | `poolrad.font` | `original`, `modern` | the game's 8 × 8 font for the interface, or a modern font (IMP-038) | yes |
 | `poolrad.frames` | `original`, `modern` | window borders from the game's frame tiles, or plain ones (IMP-051) | yes |
 | `poolrad.partylayout` | `top`, `side` | party cards in a row across the top, or a column beside the view (IMP-064) | yes |
+| `poolrad.view` | `original`, `enhanced` | the 3D view: the original's drawn view, or the WebGL view (IMP-001, D6) | yes |
 | `poolrad.motion` | unset, `full`, `reduced` | reduced motion (IMP-057); unset follows the system's `prefers-reduced-motion` | yes |
 | `poolrad.textsize` | `normal`, `large` | text size | yes |
 | `poolrad.gfx` | `pixel`, `sharp` | picture scaling (IMP-047); read once per page load, so a change applies after a reload | yes |
