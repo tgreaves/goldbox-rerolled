@@ -8,7 +8,7 @@ import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, wildField, type
 import { dexMissile, recalc } from './equip'
 import { fx, fire, damageText, healedLine, addEffect, addRaw, removeEffect, removeFirst, removeOne, removeType, runEffect, type FxHost } from './effects'
 import { heal as healChar, isScroll } from './camp'
-import { amount, castShared, line, spellSpec, term } from './spellkinds'
+import { amount, castShared, line, msgOf, spellSpec, term, textOf } from './spellkinds'
 import type { Amount, SpellSpec } from '../games/spellrules'
 import { spellText } from './spelltext'
 import { casterLevel, duration as spellDuration, forget, itemSpellId } from './magic'
@@ -16,6 +16,7 @@ import { F } from '../games/fields'
 import { R, formerLevelsCount } from '../games/rules'
 import { T } from '../games/tables'
 import type { SoundMode } from '../games/sound'
+import { hasMsg, msg } from '../games/strings'
 import { Tables } from './chargen'
 
 const DX = [0, 1, 1, 1, 0, -1, -1, -1], DY = [-1, -1, 0, 1, 1, 1, 0, -1]
@@ -289,11 +290,11 @@ export class Battle implements FxHost {
         const z = this.clouds.find((o) => o.cell === rule.gas.cell && o.cells.some((q) => q.laid && q.x === t.x && q.y === t.y))
         const keep = this.current_
         if (z) this.current_ = this.of(z.owner) ?? keep
-        const [type, dur, msg] = saved ? [0x1e, 1, 'starts to cough'] : [0x1f, this.e.roll(1, 4) + 1, 'chokes and gags from nausea']
-        await addEffect(this, t.c, type, dur, 0xff, 0, 0, saved, true, msg) // I: runs the new record (the original the first of its type)
+        const [type, dur, said] = saved ? [0x1e, 1, msg('cough')] : [0x1f, this.e.roll(1, 4) + 1, msg('nausea')]
+        await addEffect(this, t.c, type, dur, 0xff, 0, 0, saved, true, said) // I: runs the new record (the original the first of its type)
         this.current_ = keep
-      } else if (saved) { this.print(`${name(t.c)} starts to cough`); addRaw(this, t.c, 0x1e, 1, 0xff, 0) }
-      else { this.print(`${name(t.c)} chokes and gags from nausea`); addRaw(this, t.c, 0x1f, this.e.roll(1, 4) + 1, 0xff, 0); this.endTurnF(t) }
+      } else if (saved) { this.print(`${name(t.c)} ${msg('cough')}`); addRaw(this, t.c, 0x1e, 1, 0xff, 0) }
+      else { this.print(`${name(t.c)} ${msg('nausea')}`); addRaw(this, t.c, 0x1f, this.e.roll(1, 4) + 1, 0xff, 0); this.endTurnF(t) }
     }
     const kill = rule.kill
     if (kill && on(kill.cell)) {
@@ -301,9 +302,9 @@ export class Battle implements FxHost {
       const hd = s8(t.c[F.hitDice])
       const band = kill.bands.find(([lo, hi]) => hd >= lo && hd <= hi)
       if (band && (band[2] === null || !this.saveSync(t.c, kill.save, band[2]))) {
-        this.print(`${name(t.c)} is Poisoned`)
+        this.print(`${name(t.c)} ${msg('cloudPoisoned')}`)
         addRaw(this, t.c, kill.poison, 0, 0xff, 0)
-        this.setStatus(t.c, 6, `${name(t.c)} is killed`)
+        this.setStatus(t.c, 6, `${name(t.c)} ${msg('cloudKilled')}`)
       }
     }
   }
@@ -654,7 +655,7 @@ export class Battle implements FxHost {
 
   // ------------------------------------------------------------ battle loop
   async run(surprise: number): Promise<Outcome> {
-    this.print('A battle begins...')
+    this.print(msg('battleBegins'))
     this.e.write(0x6e33, 0)
     // event 8, then (CotAB 0x26A1A) event 22, combat starts, for each character in turn
     for (const f of this.fighters) { fx.round = 0; fx.roll = 0; this.current_ = f; await fire(this, f.c, 8); await fire(this, f.c, 22) }
@@ -787,12 +788,12 @@ export class Battle implements FxHost {
         if (f.r[0xe] >= 10) { f.c[F.status] = 6; this.print(`${name(f.c)} has died`) }
       }
     }
-    if (this.fighters.some((f) => !f.monster && this.side(f) === 0 && f.c[F.status] === 5)) this.print('Your Teammate is Dying')
+    if (this.fighters.some((f) => !f.monster && this.side(f) === 0 && f.c[F.status] === 5)) this.print(msg('teammateDying'))
     this.ui.redraw()
     await this.settle()
     if (this.count(0) === 0 || this.count(1) === 0) {
       // not asked in a demo that says so (CotAB 0x227EF): the battle is over
-      if (this.count(0) > 0 && this.count(1) === 0 && (this.e.demo?.continueBattle ?? true)) return !(await this.ui.confirm('Continue Battle:'))
+      if (this.count(0) > 0 && this.count(1) === 0 && (this.e.demo?.continueBattle ?? true)) return !(await this.ui.confirm(msg('continueBattle')))
       return true
     }
     return false
@@ -883,7 +884,7 @@ export class Battle implements FxHost {
   async doneAction(f: Fighter, o: string | undefined): Promise<boolean> {
     if (o === 'SPEED') { // FUN_320c_10f6: S(lower) +1, F(aster) −1, 0–9
       for (;;) {
-        const k = await this.ui.menu(['SLOWER', 'FASTER', 'EXIT'], { prompt: `Game Speed = ${this.e.speed} (0=fastest 9=slowest)` })
+        const k = await this.ui.menu(['SLOWER', 'FASTER', 'EXIT'], { prompt: `${msg('gameSpeed')}${this.e.speed}${msg('speedRange')}` })
         if (k === 0) this.e.speed = Math.min(9, this.e.speed + 1)
         else if (k === 1) this.e.speed = Math.max(0, this.e.speed - 1)
         else break
@@ -895,7 +896,7 @@ export class Battle implements FxHost {
     else if (o === 'QUIT') this.endTurnF(f)
     else if (o === 'BANDAGE') {
       const d = this.fighters.find((x) => !x.monster && this.side(x) === 0 && x.c[F.status] === 5)
-      if (d) { d.c[F.status] = 4; d.r[0xe] = 0; this.print(`${name(d.c)} is bandaged`) }
+      if (d) { d.c[F.status] = 4; d.r[0xe] = 0; this.print(`${name(d.c)} ${msg('bandaged')}`) }
       this.endTurnF(f)
     }
     return false
@@ -921,11 +922,11 @@ export class Battle implements FxHost {
     const o = this.occupied(nx, ny, f.size, f)
     if (o) { await this.meleeByMoving(f, o); return true }
     if (this.bf.get(ny, nx) === 0) {
-      if (await this.ui.confirm('Flee:')) { await this.flee(f); return true }
+      if (await this.ui.confirm(msg('flee'))) { await this.flee(f); return true }
       return false
     }
     // FUN_320c_09df / CotAB 0x22B2C: the cell's byte, or the step's cost, more than the movement left
-    if (!this.passable(nx, ny, f.size) || this.moveTest(nx, ny, d) > f.r[6]) { this.print('Blocked'); return false }
+    if (!this.passable(nx, ny, f.size) || this.moveTest(nx, ny, d) > f.r[6]) { this.print(msg('blocked')); return false }
     await this.stepF(f, d)
     this.ui.redraw(f)
     if (f.r[6] < 2) f.r[6] = 0
@@ -935,7 +936,7 @@ export class Battle implements FxHost {
   async meleeByMoving(f: Fighter, o: Fighter) {
     const w = this.weaponOf(f.c)
     const b = w ? this.e.items?.baseOf(w) : undefined
-    if (b && b.range > 1 && !(b.flags & 0x10)) { this.print('Not with that weapon'); return }
+    if (b && b.range > 1 && !(b.flags & 0x10)) { this.print(msg('notWithWeapon')); return }
     if (this.side(o) === this.side(f) && !(await this.attackAlly(f))) return
     f.target = o
     if (await this.sweep(f, o)) return
@@ -944,7 +945,7 @@ export class Battle implements FxHost {
   }
 
   async attackAlly(f: Fighter): Promise<boolean> {
-    if (!(await this.ui.confirm('Attack Ally:'))) return false
+    if (!(await this.ui.confirm(msg('attackAlly').trimEnd()))) return false
     this.e.write(0x6e33, 1)
     for (const o of this.fighters) if (!o.monster && o.c[F.morale] >= 0x80 && o.c[F.status] === 0) { o.c[F.side] = 1; o.target = null }
     void f
@@ -968,7 +969,7 @@ export class Battle implements FxHost {
       const odds = ok && en.f ? this.hitOdds(f, en.f) : null
       return { ...en, ok, note: odds ? `≈${Math.round(odds.chance * 100)}% to hit, ${odds.damage}` : undefined }
     })
-    const pick = await this.ui.aim(f, entries, 'Aim:', false)
+    const pick = await this.ui.aim(f, entries, msg('aim'), false)
     if (!pick || !pick.f) return
     const t = pick.f
     if (this.side(t) === this.side(f) && !(await this.attackAlly(f))) return
@@ -1019,7 +1020,7 @@ export class Battle implements FxHost {
       for (let j = 0; j < 3; j++) if ((it.raw[0x3c + j] & 0x7f) === id) { it.raw[0x3c + j] = 0; break }
       const s = st.get(id)
       if (!s) return
-      this.print(`${name(f.c)} uses an item`)
+      this.print(`${name(f.c)} ${msg('usesItem')}`)
       await this.castSpell(f, s, { fromItem: true, announce: false, auto: !!f.c[F.quick] })
     } else if (!await this.useItem(f, it, !!f.c[F.quick])) return
     this.endTurnF(f)
@@ -1035,7 +1036,7 @@ export class Battle implements FxHost {
     if (it.count > 1) it.count--
     else if (it.props[0] > 0 && --it.raw[0x3c] === 0) this.e.itemsOf(f.c).splice(this.e.itemsOf(f.c).indexOf(it), 1)
     if (!s) return false
-    this.print(`${name(f.c)} uses an item`)
+    this.print(`${name(f.c)} ${msg('usesItem')}`)
     await this.castSpell(f, s, { fromItem: true, announce: false, auto })
     return true
   }
@@ -1082,10 +1083,10 @@ export class Battle implements FxHost {
    * False when nothing was cast or begun (the camp-only refusal), so the computer's turn goes on.
    */
   async beginCast(f: Fighter, s: Spell, auto = false): Promise<boolean> {
-    if (s.where === 0) { this.print('Camp Only Spell'); return false }
+    if (s.where === 0) { this.print(msg('campOnlySpell')); return false }
     const t = Math.floor(s.castTime / 3)
     if (t === 0) { await this.castSpell(f, s, { auto }); this.endTurnF(f); return true }
-    this.print(`${name(f.c)} Begins Casting`)
+    this.print(`${name(f.c)} ${msg('beginsCasting')}`)
     f.r[0] = s.id
     f.r[3] = Math.max(1, s8(f.r[3]) - t)
     return true
@@ -1107,7 +1108,7 @@ export class Battle implements FxHost {
     const near = this.enemiesWithin(f, 1).filter((o) => o.c[F.hitDice] === 0)
     if (near.length <= f.c[F.attacksLeft]) return false
     const n = Math.min(near.length, f.r[5])
-    this.print(`${name(f.c)} sweeps`)
+    this.print(`${name(f.c)} ${msg('sweeps')}`)
     const order = [t, ...near.filter((o) => o !== t)].slice(0, n)
     for (const o of order) {
       if (!this.inPlay(o)) continue
@@ -1168,7 +1169,7 @@ export class Battle implements FxHost {
     const ac = a.c, tc = t.c
     if (this.helpless(tc)) {
       this.ui.sound(7, 'transient') // FUN_3aae_1406: transient
-      this.print(`${name(ac)} slays helpless ${name(tc)} with one cruel blow`)
+      this.print(`${name(ac)} ${msg('slaysHelpless')} ${name(tc)} ${msg('cruelBlow')}`)
       this.inflict(t, tc[F.hp] + 5)
       await removeType(this, ac, 25)
       ac[F.attacksLeft] = ac[F.attacksLeft + 1] = 0
@@ -1204,10 +1205,11 @@ export class Battle implements FxHost {
           fx.dmg = dmg & 0xff; fx.dmgType = 0; fx.spell = 0
           await fire(this, ac, 4)
           await fire(this, tc, 5)
-          const verb = kind === 2 ? '-Backstabs-' : 'Attacks'
+          const verb = msg(kind === 2 ? 'backstabs' : 'attacks')
           const n = fx.dmg
           // a hit: the line, sound 7 and the message pause; weapons have no flash (FUN_3aae_1406)
-          this.print(`${name(ac)} ${verb} ${name(tc)}${kind === 1 ? ' (from behind)' : ''} Hitting for ${n} point${n === 1 ? '' : 's'} of damage`)
+          // FUN_3aae_02f9's pieces: "(from behind) ", "Hitting for ", n, " point " or " points ", "of damage"
+          this.print(`${name(ac)} ${verb} ${name(tc)} ${kind === 1 ? msg('fromBehind') : ''}${msg('hittingFor')}${n}${msg(n === 1 ? 'point' : 'points')}${msg('ofDamage')}`)
           this.ui.sound(7, 'transient') // FUN_3aae_1406: transient
           await this.settle() // the target falls after its hit display
           this.inflict(t, n)
@@ -1216,7 +1218,7 @@ export class Battle implements FxHost {
       }
     }
     // all missed: the line, sound 9 and the pause
-    if (!hit) { this.print(`${name(ac)} Attacks ${name(tc)} and Misses`); this.ui.sound(9, 'transient') }
+    if (!hit) { this.print(`${name(ac)} ${msg('attacks')} ${name(tc)} ${msg('andMisses')}`); this.ui.sound(9, 'transient') }
     a.r[5] = 0
     this.recalc(ac)
     await this.settle()
@@ -1327,7 +1329,7 @@ export class Battle implements FxHost {
       // "lost a spell": the queued spell is forgotten by the current character (PoR: the attacker during
       // an attack, a bug) or by the caster (CotAB), as R.casting.lostFrom says
       if (t.r[0]) {
-        this.print(`${name(c)} lost a spell`)
+        this.print(`${name(c)} ${msg('lostSpell')}`)
         const who = R.casting.lostFrom === 'target' ? c : this.current_?.c
         if (who) forget(who, t.r[0])
         t.r[0] = 0
@@ -1336,7 +1338,7 @@ export class Battle implements FxHost {
     if (c[F.status] !== 0 && c[F.status] !== 1) {
       c[F.hp] = 0
       c[F.inPlay] = 0
-      this.print(c[F.status] === 4 ? `${name(c)} goes down` : c[F.status] === 5 ? `${name(c)} goes down and is Dying` : `${name(c)} is killed`)
+      this.print(c[F.status] === 4 ? `${name(c)} ${msg('goesDown')}` : c[F.status] === 5 ? `${name(c)} ${msg('goesDown')} ${msg('andIsDying')}` : `${name(c)} ${msg('isKilled')}`)
       // FUN_5216_100a removes through FUN_5216_0026, so removal callbacks run (a grab frees its victim,
       // a charm ends); the callbacks' synchronous part runs here, the record goes at once
       const list = this.e.effectsOf(c)
@@ -1445,10 +1447,10 @@ export class Battle implements FxHost {
       ok = fast < own || (fast === own && this.e.roll(1, 2) === 1)
     }
     if (ok) {
-      this.print(`${name(f.c)} Got Away`)
+      this.print(`${name(f.c)} ${msg('gotAway')}`)
       f.c[F.status] = 3; f.c[F.inPlay] = 0
       f.size = 0
-    } else this.print('Escape is blocked')
+    } else this.print(msg('escapeBlocked'))
     this.endTurnF(f)
     this.ui.redraw()
   }
@@ -1463,7 +1465,7 @@ export class Battle implements FxHost {
 
   // ------------------------------------------------------------ turn undead
   async turnUndead(f: Fighter) {
-    this.print(`${name(f.c)} turns undead...`)
+    this.print(`${name(f.c)} ${msg('turnsUndead')}`)
     f.r[0x11] = 1
     let count = this.e.roll(1, 12), minimum = 6
     const r = this.e.roll(1, 20)
@@ -1482,13 +1484,13 @@ export class Battle implements FxHost {
       const v = TABLE[Math.min(t.c[F.undead], 10) - 1][col]
       if (r < Math.abs(v)) break
       any = true
-      if (v >= 1) { this.announce(t.c, 'is turned'); t.r[0x10] = 1 }
-      else { this.print(`${name(t.c)} Is destroyed`); t.c[F.status] = 8; t.c[F.inPlay] = 0; this.downF(t) }
+      if (v >= 1) { this.announce(t.c, msg('isTurned')); t.r[0x10] = 1 }
+      else { this.print(`${name(t.c)} ${msg('isDestroyed')}`); t.c[F.status] = 8; t.c[F.inPlay] = 0; this.downF(t) }
       if (minimum > 0) minimum--
       count--
       if (count === 0 && minimum > 0 && v < 0) count = 1
     }
-    if (!any) this.print('Nothing Happens...')
+    if (!any) this.print(msg('nothingHappens'))
     this.endTurnF(f)
   }
 
@@ -1513,8 +1515,8 @@ export class Battle implements FxHost {
       if (announce && !fromItem) this.announceCast(c, s)
       targets = await this.spellTargets(f, s, spellRange(s, L), auto)
       if (targets) break
-      if (!auto && !(await this.ui.confirm('Abort Spell?'))) continue
-      this.print('Spell Aborted')
+      if (!auto && !(await this.ui.confirm(msg('abortSpell').trimEnd()))) continue
+      this.print(msg('spellAborted'))
       if (!fromItem) forget(c, s.id)
       return
     }
@@ -1536,8 +1538,8 @@ export class Battle implements FxHost {
 
   /** FUN_4e53_331a (CotAB 0x4A3FD) in combat: "Casts a Spell" with the pause, then "Spell: name" on the status line, whatever the verb */
   announceCast(c: Uint8Array, s: Spell) {
-    this.print(`${name(c)} Casts a Spell`)
-    this.print(`Spell: ${s.name}`, { ms: 0 })
+    this.print(`${name(c)} ${msg('castsASpell')}`)
+    this.print(`${msg('spellName')} ${s.name}`, { ms: 0 })
   }
 
   /**
@@ -1632,7 +1634,7 @@ export class Battle implements FxHost {
       for (;;) {
         const p = await pickOne(false)
         if (!p?.f) break
-        if (out.includes(p.f)) { if (ai) left = (left - 1) & 0xff; else this.print('Already been targeted') }
+        if (out.includes(p.f)) { if (ai) left = (left - 1) & 0xff; else this.print(msg('alreadyTargeted')) }
         else {
           out.push(p.f)
           this.aimed = { x: p.x, y: p.y }
@@ -1648,7 +1650,7 @@ export class Battle implements FxHost {
     for (let i = 0; i < n; i++) {
       const p = await pickOne(false)
       if (!p?.f) continue
-      if (out.includes(p.f)) { if (!ai) { this.print('Already been targeted'); i-- } continue }
+      if (out.includes(p.f)) { if (!ai) { this.print(msg('alreadyTargeted')); i-- } continue }
       if (!out.length) this.aimed = { x: p.x, y: p.y }
       out.push(p.f)
     }
@@ -1674,7 +1676,7 @@ export class Battle implements FxHost {
   }
   /** Add the spell's effect (or `type`) at power L through FUN_5216_1656, with the spell's line. */
   private async addSpellEffect(t: Fighter, s: Spell, p: SpellSpec, saved: boolean, dur: number, L: number, type = s.effect, flag = 0) {
-    if (type) await addEffect(this, t.c, type, dur, L, flag, s.save, saved, false, p.msg ?? '')
+    if (type) await addEffect(this, t.c, type, dur, L, flag, s.save, saved, false, msgOf(p))
   }
   private spellSave(t: Fighter, s: Spell, bonus = 0) { return s.save ? this.saveSync(t.c, s.saveType, bonus) : false }
   /** a touch spell (range byte 0xFF) rolls to hit against the target's AC */
@@ -1692,7 +1694,7 @@ export class Battle implements FxHost {
      */
     async apply({ f, s, L, dur, targets }, p) {
       if (p.immuneHd !== undefined && targets[0] && s8(targets[0].c[F.hitDice]) >= (p.immuneHd as number)) {
-        this.print(line(name(targets[0].c), p.immuneMsg as string))
+        this.print(line(name(targets[0].c), textOf(p.immuneMsg)))
         return
       }
       if (p.casterEffect !== undefined) await addEffect(this, f.c, p.casterEffect as number, dur, 0, 0, 0, false, false, '')
@@ -1757,7 +1759,7 @@ export class Battle implements FxHost {
     async heal({ L, targets }, p) {
       const t = targets[0]
       if (t && healChar(t.c, this.e.effectsOf(t.c), amount(p.amount as Amount, L, (n, k) => this.e.roll(n, k)).total, false, true)) {
-        if (p.msg) this.announce(t.c, p.msg); else healedLine(this, t.c)
+        if (p.msg) this.announce(t.c, msgOf(p)); else healedLine(this, t.c)
       }
     },
     /**
@@ -1792,7 +1794,7 @@ export class Battle implements FxHost {
         const k = costOf(t.c)
         if (k > pool) continue
         pool -= k
-        await addEffect(this, t.c, p.effect as number, dur, L, 0, 0, false, false, p.msg ?? '')
+        await addEffect(this, t.c, p.effect as number, dur, L, 0, 0, false, false, msgOf(p))
       }
     },
     /**
@@ -1814,7 +1816,7 @@ export class Battle implements FxHost {
         if (t !== last) this.ui.flight?.({ x: f.x, y: f.y }, { x: t.x, y: t.y }, { frames: cycle(5), delay: 30, sounds: [2, 0] })
         let saved = p.lastSaves && t === last ? true : this.saveSync(t.c, s.saveType, bonus)
         if (p.sizeImmune && (t.c[F.monsterType] > 1 || t.c[F.sizeFlags] > 1)) saved = true
-        await addEffect(this, t.c, effect, dur, L, 0, 1, saved, false, p.msg ?? '')
+        await addEffect(this, t.c, effect, dur, L, 0, 1, saved, false, msgOf(p))
       }
       if (p.runAfter) await this.runAfter(targets, effect)
     },
@@ -1838,7 +1840,7 @@ export class Battle implements FxHost {
       const { x, y } = this.aimed
       if (this.passable(x, y, f.size || 1) && !this.occupied(x, y, f.size || 1, f)) { f.x = x; f.y = y }
       this.ui.redraw(f)
-      this.print(line(name(f.c), p.msg ?? ''))
+      this.print(line(name(f.c), msgOf(p)))
     },
     /**
      * Fear (CotAB 0x48A52): who stands in the area template (fan: `width`, `len`, towards the aimed
@@ -1848,8 +1850,8 @@ export class Battle implements FxHost {
      */
     async scare({ f, dur }, p) {
       for (const c of this.fan(f.c, this.aimed.x, this.aimed.y, p.width as number, p.len as number)) {
-        if (this.saveSync(c, p.saveType as number, 0)) { this.print(line(name(c), p.unaffected as string)); continue }
-        await addEffect(this, c, p.effect as number, dur, 0, 1, 1, false, false, p.msg ?? '')
+        if (this.saveSync(c, p.saveType as number, 0)) { this.print(line(name(c), textOf(p.unaffected))); continue }
+        await addEffect(this, c, p.effect as number, dur, 0, 1, 1, false, false, msgOf(p))
         this.setRec(c, 0x10, 1)
         c[F.quick] = 1
         if (c[F.morale] <= 0x7f) c[F.morale] = 0xb3
@@ -1866,8 +1868,8 @@ export class Battle implements FxHost {
       const t = x.targets[0]
       if (!t) return
       fx.dmgType = p.dmgType as number
-      const o = (this.saveSync(t.c, p.saveType as number, 0) ? p.pass : p.fail) as { effect: number; msg: string }
-      await addEffect(this, t.c, o.effect, x.dur, 0, 0, 0, false, false, o.msg)
+      const o = (this.saveSync(t.c, p.saveType as number, 0) ? p.pass : p.fail) as { effect: number; msg: number }
+      await addEffect(this, t.c, o.effect, x.dur, 0, 0, 0, false, false, textOf(o.msg))
       await this.runAfter([t], o.effect)
       fx.dmgType = 0 // Apply with no damage clears it (0x44F0E)
       await Battle.spellKinds.apply.call(this, x, p)
@@ -1883,15 +1885,15 @@ export class Battle implements FxHost {
       const n = p.upTo ? amount(p.upTo as Amount, L, (k, d) => this.e.roll(k, d)).total : targets.length
       for (const t of targets.slice(0, n)) {
         const saved = this.saveSync(t.c, p.saveType as number, 0)
-        await addEffect(this, t.c, p.effect as number, dur, 0, 0, 1, saved, false, p.msg ?? '')
+        await addEffect(this, t.c, p.effect as number, dur, 0, 0, 1, saved, false, msgOf(p))
       }
     },
     /** Charm Person (11dd): power L + the caster's side × `sideMul`, run at once; only man-sized or smaller */
     async charm({ f, s, L, dur, targets }, p) {
       const t = targets[0]
       if (!t) return
-      if (t.c[F.monsterType] > 1 || t.c[F.sizeFlags] > 1) { this.print(`${name(t.c)} is unaffected`); return } // as Hold Person (4e53:11f3)
-      await addEffect(this, t.c, s.effect, dur, (L + this.side(f) * (p.sideMul as number)) & 0xff, 1, 1, this.spellSave(t, s), true, p.msg ?? '')
+      if (t.c[F.monsterType] > 1 || t.c[F.sizeFlags] > 1) { this.print(`${name(t.c)} ${msg('charmUnaffected')}`); return } // as Hold Person (4e53:11f3)
+      await addEffect(this, t.c, s.effect, dur, (L + this.side(f) * (p.sideMul as number)) & 0xff, 1, 1, this.spellSave(t, s), true, msgOf(p))
     },
     /** Snake Charm (190f): ignores targeting; creatures of `monsterType` while the caster's HP lasts */
     async charmByHp({ f, L }, p) {
@@ -1899,7 +1901,7 @@ export class Battle implements FxHost {
       for (const t of this.fighters) {
         if (t.c[F.monsterType] !== (p.monsterType as number) || t.c[F.hp] > pool) continue
         pool -= t.c[F.hp]
-        await addEffect(this, t.c, p.effect as number, 0, L, 0, 0, false, false, p.msg ?? '')
+        await addEffect(this, t.c, p.effect as number, 0, L, 0, 0, false, false, msgOf(p))
       }
     },
     /** Lightning Bolt (PoR FUN_4e53_2bb7, CotAB 0x47C49): the aimed square, then the bolt (R.bolt) */
@@ -1966,7 +1968,7 @@ export class Battle implements FxHost {
         if (laid) this.bf.set(y, x, cell)
       }
       // the line without a pause, the redraw showing the cloud, then the pause
-      this.print(`${name(c)} ${p.msg ?? ''}`, { ms: 0 })
+      this.print(`${name(c)} ${msgOf(p)}`, { ms: 0 })
       this.ui.show?.()
       this.ui.hold?.(this.e.speed * 225)
       this.ui.redraw()
@@ -2023,7 +2025,7 @@ export class Battle implements FxHost {
     if (p === 0 || p > 4 || this.e.roll(1, 4) === 1) p = this.e.roll(1, 8) === 8 ? 4 + this.e.roll(1, 2) : this.e.roll(1, 4)
     f.r[0x15] = p
     if (await this.morale(f)) return
-    if (f.r[0x14] && !f.r[0x10]) this.print(`${name(c)} flees in panic`)
+    if (f.r[0x14] && !f.r[0x10]) this.print(`${name(c)} ${msg('fleesInPanic')}`)
     // the queued spell goes off with R[0] still set (FUN_3334_000f 0x2347C, CotAB 0x23238; the player's
     // turn clears it first), so damage from its own spell costs the caster another copy
     if (await this.aiUseItem(f)) { this.endTurnF(f); return }
@@ -2121,7 +2123,7 @@ export class Battle implements FxHost {
   async morale(f: Fighter): Promise<boolean> {
     const c = f.c
     f.r[0x14] = 0
-    if (f.r[0x10]) { f.r[0x14] = 1; this.print(`${name(c)} is forced to flee`); return false }
+    if (f.r[0x10]) { f.r[0x14] = 1; this.print(`${name(c)} ${msg('forcedToFlee')}`); return false }
     if (c[F.morale] < 0x80) return false
     let m = (c[F.morale] & 0x7f) * 2
     if (m > 102) m = 0
@@ -2136,7 +2138,7 @@ export class Battle implements FxHost {
     const fast = Math.max(0, ...this.enemies(f).map((e) => this.moveOf(e) >> 1))
     if (fast <= this.moveOf(f) >> 1) { f.r[0x14] = 1; return false }
     if (c[F.stat[1]] > 5) {
-      this.print(`${name(c)} Surrenders`)
+      this.print(`${name(c)} ${msg('surrenders')}`)
       c[F.status] = 4; c[F.hp] = 0; c[F.inPlay] = 0
       this.downF(f)
       return true
@@ -2375,10 +2377,10 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
     }
     // FUN_2e08_0916 for a duel
     if (won) {
-      msgs.push('You have won the duel.')
-      if (e.treasure.length || e.money.some((v) => v > 0)) msgs.push('The party has found Treasure!')
-      msgs.push(`The duelist receives ${share} experience points.`)
-    } else msgs.push('You have lost the duel.')
+      msgs.push(msg('wonDuel'))
+      if (e.treasure.length || e.money.some((v) => v > 0)) msgs.push(msg('foundTreasure'))
+      msgs.push(`${msg('duelistReceives')}${share} ${msg('experiencePoints')}`)
+    } else msgs.push(msg('lostDuel'))
   } else if (outcome === 'spared') {
     // not defeated, nobody standing: the same status changes as a win, but no experience or loot
     for (const f of party) {
@@ -2397,19 +2399,19 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
     }
     share = experience(noXP)
     award(share)
-    msgs.push('The party has won.')
-    if (e.treasure.length || e.money.some((v) => v > 0)) msgs.push('The party has found Treasure!')
-    msgs.push(`Each character receives ${share} experience points.`)
+    msgs.push(msg('partyWon'))
+    if (e.treasure.length || e.money.some((v) => v > 0)) msgs.push(msg('foundTreasure'))
+    msgs.push(`${msg('eachReceives')}${share} ${msg('experiencePoints')}`)
   } else if (outcome === 'fled') {
     e.write(0x6dc7, 0x81)
     for (const f of party) {
       if (f.c[F.status] === 3) { f.c[F.status] = 0; f.c[F.inPlay] = 1 }
       else { const i = e.nodes.indexOf(f.c); if (i >= 0) e.nodes.splice(i, 1); e.inventory.delete(f.c) }
     }
-    msgs.push('The party has fled.', 'Each character receives 0 experience points.')
+    msgs.push(msg('partyFled'), `${msg('eachReceives')}0 ${msg('experiencePoints')}`)
   } else {
     e.write(0x6dc7, 0x80)
-    msgs.push('The END!', 'The monsters rejoice for the party has been destroyed')
+    msgs.push(...(hasMsg('theEnd') ? [msg('theEnd')] : []), msg('monstersRejoice'))
     // every party entry leaves the list; party size 0 (spec/A-games/engine/combat-rules.md, Results)
     for (const f of party) { const i = e.nodes.indexOf(f.c); if (i >= 0) e.nodes.splice(i, 1); e.inventory.delete(f.c); e.effects.delete(f.c) }
     e.write(0x6e3e, 0)
@@ -2439,7 +2441,7 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
       const per = Math.floor(e.money[i] / totalShares) & 0xff
       e.money[i] = Math.max(0, e.money[i] - per * npcShares)
     }
-    for (const c of npcs) if (c[F.npcShare]) msgs.push(`${name(c)} takes and hides his share.`)
+    for (const c of npcs) if (c[F.npcShare]) msgs.push(`${name(c)}${msg('hidesShare')}${hasMsg('share') ? msg(c[F.gender] ? 'her' : 'his') + msg('share') : ''}`)
   }
   for (const a of [0x6e70, 0x6e71, 0x6e72, 0x6de3, 0x6de6]) e.write(a, 0)
   e.monstersCleared()

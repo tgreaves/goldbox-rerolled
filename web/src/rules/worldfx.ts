@@ -7,6 +7,7 @@ import { recalc } from './equip'
 import { heal as healChar } from './camp'
 import { F } from '../games/fields'
 import { Tables } from './chargen'
+import { msg } from '../games/strings'
 
 export class WorldHost implements FxHost {
   private readonly e: Engine
@@ -45,7 +46,7 @@ export class WorldHost implements FxHost {
     this.print(damageText(this.name(c), d, fx.dmgType)) // FUN_5216_1344 prints outside combat too
     const left = c[F.hp] - d
     if (left > 0) { c[F.hp] = left; return }
-    this.setStatus(c, left < -9 ? 6 : 4, left < -9 ? `${this.name(c)} is killed` : `${this.name(c)} goes down`)
+    this.setStatus(c, left < -9 ? 6 : 4, left < -9 ? `${this.name(c)} ${msg('fallKilled')}` : `${this.name(c)} ${msg('fallDown')}`)
   }
   save(c: Uint8Array, type: number, bonus: number) {
     fx.saved = true // CotAB DS:6FC2, as the combat save
@@ -62,7 +63,7 @@ export class WorldHost implements FxHost {
   }
   revive(c: Uint8Array, hp: number) {
     c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = Math.min(hp, c[F.maxHp])
-    this.print(`${this.name(c)} gets back up`)
+    this.print(`${this.name(c)} ${msg('getsBackUp')}`)
     return true
   }
   recalc(c: Uint8Array) { if (this.e.items) recalc(c, this.e.itemsOf(c), this.e.items) }

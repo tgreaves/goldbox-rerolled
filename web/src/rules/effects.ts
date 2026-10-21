@@ -9,6 +9,7 @@ import { game } from '../games/profile'
 import { behave, effectiveStat, itemBehave } from './effectkinds'
 import type { Tables } from './chargen'
 import { derive, xpFor } from './training'
+import { msg } from '../games/strings'
 
 /** What a handler can reach: the engine-wide globals and the battle helpers. */
 export interface FxHost {
@@ -181,11 +182,11 @@ export function addRaw(h: FxHost, c: Uint8Array, type: number, duration: number,
  * ("is Unaffected"); an old record of the same type goes by the game's rule (`effects.replaces`).
  */
 export async function addEffect(h: FxHost, c: Uint8Array, type: number, duration: number, power: number, flag: number,
-  saveKind = 0, saved = false, runNow = false, msg = ''): Promise<boolean> {
+  saveKind = 0, saved = false, runNow = false, said = ''): Promise<boolean> {
   fx.adding = type
   await fire(h, c, 9)
   if (fx.adding === 0 || (saved && saveKind === 1)) {
-    h.print(`${h.name(c)} is Unaffected`)
+    h.print(`${h.name(c)} ${msg('unaffected')}`)
     fx.adding = 0
     return false
   }
@@ -195,7 +196,7 @@ export async function addEffect(h: FxHost, c: Uint8Array, type: number, duration
   if (old && replace) await removeEffect(h, c, old)
   const e = addRaw(h, c, type, duration, power, flag)
   // FUN_5216_1656: a non-empty message is shown with the sparkle (sound 4) in combat; none, nothing
-  if (msg) { if (h.announce) h.announce(c, msg); else h.print(`${h.name(c)} ${msg}`) }
+  if (said) { if (h.announce) h.announce(c, said); else h.print(`${h.name(c)} ${said}`) }
   if (runNow) await handle(h, type, e, c, -1, false)
   return true
 }
@@ -206,9 +207,10 @@ export async function addEffect(h: FxHost, c: Uint8Array, type: number, duration
  */
 export function damageText(name: string, d: number, type: number): string {
   const k = type & 0xf7
-  const kind = k === 1 ? 'from Fire' : k === 2 ? 'from Cold' : k === 4 ? 'from Electricity' : k === 0x10 ? 'from Acid' : ''
-  const magic = (type & 8) === type ? 'from Magic' : ''
-  return `${name} takes ${d === 1 ? '1 point' : `${d} points`} of damage ${kind}${magic}`.trimEnd()
+  const kind = k === 1 ? msg('fromFire') : k === 2 ? msg('fromCold') : k === 4 ? msg('fromElectricity') : k === 0x10 ? msg('fromAcid') : ''
+  const magic = (type & 8) === type ? msg('fromMagic') : ''
+  // FUN_5216_1344's pieces: "takes 1 point of damage ", or "takes ", d, " points of damage "
+  return `${name} ${d === 1 ? msg('takesOnePoint') : `${msg('takes')}${d}${msg('pointsOfDamageLine')}`}${kind}${magic}`.trimEnd()
 }
 
 /** FUN_10ba_234a: "is fully healed" at full HP, else "is partially healed", with the pause. */
@@ -233,7 +235,7 @@ export function deflect(h: FxHost, c: Uint8Array, pct: number) {
   const a = h.current()
   if (!a || !weaponOf(h, a) || h.distance(a, c) <= 1) return
   if (h.roll(1, 100) <= pct) {
-    h.print(`${h.name(c)} Avoids it`)
+    h.print(`${h.name(c)} ${msg('avoidsIt')}`)
     fx.dmg = 0
     fx.roll = -1
     if (fx.hits[1] > 0) fx.hits[1]--
@@ -259,8 +261,8 @@ function drainPick(tb: Tables, t: Uint8Array): { best: number; xp: number } {
 
 /** Energy drain of n levels (FUN_3723_2122). */
 export function drain(h: FxHost, t: Uint8Array, n: number) {
-  h.print(`${h.name(t)} is drained ${n > 1 ? `${n} levels` : 'a level'}`)
-  if (t[F.status] === 1) { h.setStatus(t, 8, `${h.name(t)} is dead forever`); t[F.maxHp] = 0; return }
+  h.print(`${h.name(t)} ${msg('isDrained')}${n > 1 ? `${n}${msg('drainLevels')}` : msg('drainALevel')}`)
+  if (t[F.status] === 1) { h.setStatus(t, 8, `${h.name(t)} ${msg('deadForever')}`); t[F.maxHp] = 0; return }
   const tb = h.tables?.()
   for (let i = 0; i < n; i++) {
     if (t[F.status] === 8) continue
@@ -277,20 +279,20 @@ export function drain(h: FxHost, t: Uint8Array, n: number) {
     if (!tb) { // no START.EXE: the level comes off the highest class, as before
       let best = 0
       for (let k = 1; k < 8; k++) if (t[F.levels + k] > t[F.levels + best]) best = k
-      if (t[F.levels + best] <= 1) { h.setStatus(t, 8, `${h.name(t)} is dead forever`); t[F.maxHp] = 0; continue }
+      if (t[F.levels + best] <= 1) { h.setStatus(t, 8, `${h.name(t)} ${msg('deadForever')}`); t[F.maxHp] = 0; continue }
       t[F.levels + best]--
-      if (t[F.hp] === 0 && t[F.status] !== 6) h.setStatus(t, 6, `${h.name(t)} is killed`)
+      if (t[F.hp] === 0 && t[F.status] !== 6) h.setStatus(t, 6, `${h.name(t)} ${msg('drainKilled')}`)
       h.recalc(t)
       continue
     }
     if (((t[F.hitDice] << 24) >> 24) < 2) {
-      h.setStatus(t, 8, `${h.name(t)} is dead forever`)
+      h.setStatus(t, 8, `${h.name(t)} ${msg('deadForever')}`)
       t[F.maxHp] = 0
       const { best } = drainPick(tb, t)
       if (t[F.levels + best] > 0 && n === 2) t[F.levels + best] = 0
     } else {
       t[F.levels + drainPick(tb, t).best]--
-      if (t[F.hp] === 0 && t[F.status] !== 6) h.setStatus(t, 6, `${h.name(t)} is killed`)
+      if (t[F.hp] === 0 && t[F.status] !== 6) h.setStatus(t, 6, `${h.name(t)} ${msg('drainKilled')}`)
       derive(tb, t)
     }
     const { best, xp } = drainPick(tb, t)
@@ -368,7 +370,7 @@ export async function removeFirst(h: FxHost, c: Uint8Array, type: number): Promi
 export async function removeOne(h: FxHost, c: Uint8Array, type: number): Promise<boolean> {
   const e = h.effectsOf(c).find((x) => x.type === type)
   if (!e) return false
-  h.print(`${h.name(c)} is Cured`)
+  h.print(`${h.name(c)} ${msg('isCured')}`)
   await removeEffect(h, c, e)
   return true
 }

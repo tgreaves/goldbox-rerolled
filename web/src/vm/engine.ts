@@ -4,6 +4,8 @@
 
 import { R, classLevel } from '../games/rules'
 import { installNames } from '../data/character'
+import { installText } from '../data/gametext'
+import { msg } from '../games/strings'
 import { canonical, native, viewRead, type EclVariant } from '../games/ecl'
 import { game } from '../games/profile'
 import type { SoundMode } from '../games/sound'
@@ -161,6 +163,7 @@ export class Engine {
     this.io = io
     this.walls = new WallSets(files, 1)
     void this.startImage // the game's name and coin tables (installNames)
+    installText(files.get('START.EXE'), files.get('GAME.OVR')) // its messages, by address
     this.dice = typeof dice === 'number' ? generator(dice) : dice
   }
 
@@ -998,7 +1001,7 @@ export class Engine {
     if (this.doorTries.knock && (kind === 2 ? !!knockCaster() : hasClass(5))) opts.push(['KNOCK', 'k'])
     if (!opts.length) return false // FUN_3e76_0000: nothing left to try
     opts.push(['EXIT', 'e'])
-    const k = opts[await this.io.menu(opts.map((o) => o[0]), { prompt: 'Locked.' })]?.[1]
+    const k = opts[await this.io.menu(opts.map((o) => o[0]), { prompt: msg('locked').trimEnd() })]?.[1]
     let ok = false
     if (k === 'b') ok = this.bashDoor(kind)
     else if (k === 'p') {
@@ -1064,7 +1067,7 @@ export class Engine {
     const how = game().ecl.addNpc
     if (party.length <= 7) {
       const raw = this.files.record(`MON${this.block}CHA`, id)
-      if (!raw) { this.io.print('Unable to load monster', false); return }
+      if (!raw) { this.io.print(msg('noMonster'), false); return }
       const c = how.loaderRolls ? this.monsterRecord(raw) : this.storedRecord(raw)
       c[F.id] = how.tag === 'random' ? this.rand(256) : id
       const img = this.startImage
@@ -1182,9 +1185,9 @@ export class Engine {
       if (r[c] >= 5) return
       const act = ENCOUNTER[r[c]][c]
       let v: number
-      if (act === 'wait') { this.io.print('Both sides wait.', false); continue }
+      if (act === 'wait') { this.io.print(msg('bothWait'), false); continue }
       if (act === 'approach' || (act === 'parlay' && dist > 0)) {
-        if (dist === 0) this.io.print('Both sides wait.', false)
+        if (dist === 0) this.io.print(msg('bothWait'), false)
         else { dist--; this.B[SPRITE_DIST - B0] = dist }
         continue
       }
@@ -1192,7 +1195,7 @@ export class Engine {
       else if (act === 'flee') v = slow < f ? 1 : 2
       else if (act === 'pursue') v = fast < g ? 0 : 1
       else v = act
-      if (v === 0) this.io.print('The monsters flee.', false)
+      if (v === 0) this.io.print(msg('monstersFlee'), false)
       this.store(dest, v)
       return
     }
@@ -1238,7 +1241,7 @@ export class Engine {
     const hurt = (c: Uint8Array) => {
       if (c[F.status] === 6) return
       const name = String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name]))
-      said.push(c[F.hp] + 10 < dmg ? `${name} dies.` : `${name} is hit FOR ${dmg} points of Damage.`)
+      said.push(c[F.hp] + 10 < dmg ? `${name}${msg('dies').trimEnd()}` : `${name}${msg('isHitFor')}${dmg}${msg('pointsOfDamage')}`)
       const d = dmg & 0xff
       const left = Math.max(c[F.hp] - d, 0), over = Math.max(d - c[F.hp], 0)
       if (over > 9 || (left === 0 && c[F.status] === 1)) c[F.status] = 6
@@ -1508,7 +1511,7 @@ export class Engine {
       const x = Math.max(0, Math.min(15, this.A[0x49c3 - A0] + dx))
       const y = Math.max(0, Math.min(35, this.A[0x49c4 - A0] + dy))
       const t = w.map[y * 44 + w.column(this.area, x)]
-      if (Overland.river(t) && this.A[0x4aa2 - A0] === 0) this.io.print("The river's stench drives you back.", false)
+      if (Overland.river(t) && this.A[0x4aa2 - A0] === 0) this.io.print(msg('riverStench'), false)
       else if (!Overland.blocked(t)) {
         this.A[0x49c3 - A0] = x
         this.A[0x49c4 - A0] = y

@@ -8,6 +8,7 @@ import { removeEffect, type FxHost } from './effects'
 import { WorldHost } from './worldfx'
 import { F } from '../games/fields'
 import { game } from '../games/profile'
+import { msg } from '../games/strings'
 
 // ------------------------------------------------------------------ clock
 /** Clock words in ECL array A: segment, minute, ten-minutes, hour, day, month, year. */
@@ -148,13 +149,13 @@ function finishOne(c: Uint8Array, items: Item[], t: ItemTables, st: SpellTables)
       for (let k = 2; k >= 0; k--) if ((it.raw[0x3c + k] & 0x7f) === id) { it.raw[0x3c + k] = 0; break }
       it.raw[0x30]--
       if (it.raw[0x30] < 210) items.splice(items.indexOf(it), 1)
-      return `${name} has scribed ${st.get(id)?.name ?? id}`
+      return `${name} ${msg('hasScribed')} ${st.get(id)?.name ?? id}`
     }
   }
   for (let k = 0; k < F.memorisedCount; k++) {
     if (c[F.memorised + k] >= 0x80) {
       c[F.memorised + k] &= 0x7f
-      return `${name} has memorized ${st.get(c[F.memorised + k])?.name ?? c[F.memorised + k]}`
+      return `${name} ${msg('hasMemorized')} ${st.get(c[F.memorised + k])?.name ?? c[F.memorised + k]}`
     }
   }
   return ''
@@ -177,7 +178,7 @@ export async function restStep(e: Engine, r: RestState, camp: { heal: number }):
   if (++camp.heal >= 288) {
     camp.heal = 0
     for (const c of e.party()) heal(c, e.effectsOf(c), 1, false)
-    messages.push('The Whole Party Is Healed')
+    messages.push(msg('partyHealed'))
   }
   // learning countdowns
   e.party().forEach((c, n) => {
@@ -202,7 +203,7 @@ export async function restStep(e: Engine, r: RestState, camp: { heal: number }):
     e.restSteps++
     if (e.restSteps >= every) {
       e.restSteps = 0
-      if (e.roll(1, 100) <= e.read(0x6dd3)) return { messages: [...messages, 'The Party is rudely interrupted!'], interrupted: true }
+      if (e.roll(1, 100) <= e.read(0x6dd3)) return { messages: [...messages, msg('interrupted')], interrupted: true }
     }
   }
   return { messages, interrupted: false }

@@ -6,6 +6,8 @@ import { Tables } from '../src/rules/chargen'
 import { installNames } from '../src/data/character'
 import { unexepack } from '../src/data/exepack'
 import { checkTraining, derive, train, xpFor } from '../src/rules/training'
+import { installText } from '../src/data/gametext'
+import { msg } from '../src/games/strings'
 
 const dir = process.env.POOLRAD ?? ''
 const have = dir !== '' && existsSync(dir)
@@ -13,6 +15,7 @@ const have = dir !== '' && existsSync(dir)
 describe.skipIf(!have)('training', () => {
   const img = have ? unexepack(new Uint8Array(readFileSync(join(dir, 'START.EXE')))).image : null
   if (img) installNames(img) // names and coin values
+  if (have) installText(new Uint8Array(readFileSync(join(dir, 'START.EXE'))), new Uint8Array(readFileSync(join(dir, 'GAME.OVR'))))
   const t = img ? new Tables(img) : (null as unknown as Tables)
   const chars = () => readdirSync(dir).filter((n) => /^CHRDAT.+\.SAV$/.test(n)).map((f) => ({ f, c: new Uint8Array(readFileSync(join(dir, f))) }))
 
@@ -30,7 +33,7 @@ describe.skipIf(!have)('training', () => {
     const xp = xpFor(t, 2, 2)
     c[0xac] = xp & 0xff; c[0xad] = (xp >> 8) & 0xff; c[0xae] = 0; c[0xaf] = 0
     c[0x8e] = 1000 & 0xff; c[0x8f] = 1000 >> 8 // 1000 gp
-    expect(checkTraining(t, c, 114).message).toBe("We don't train that class here")
+    expect(checkTraining(t, c, 114).message).toBe(msg('notThatClass'))
     const chk = checkTraining(t, c, 120)
     expect(chk.ok).toBe(true)
     const hp = c[0x32]

@@ -6,11 +6,12 @@ import { recalc } from './equip'
 import { heal } from './camp'
 import { WorldHost } from './worldfx'
 import { addEffect as fxAdd } from './effects'
-import { amount, castShared, spellSpec } from './spellkinds'
+import { amount, castShared, msgOf, spellSpec } from './spellkinds'
 import { game } from '../games/profile'
 import type { Amount } from '../games/spellrules'
 import { F } from '../games/fields'
 import { T } from '../games/tables'
+import { msg } from '../games/strings'
 
 /** Caster level (PoR FUN_10ba_26c2, CotAB 0x4F8BF): the game's terms for the spell class (R.casterTerms),
  *  12 for item-only spells, 6 when nothing qualifies under the game's gate, 6 from an item. */
@@ -69,9 +70,9 @@ export async function castOutside(e: Engine, caster: Uint8Array, s: Spell, targe
   const first = targets[0]
   // CotAB 0x45373 (R.casting.miscast): a caster with the effect who rolls 1 miscasts; nothing else, the spell kept
   const mis = R.casting.miscast
-  if (mis && e.effectsOf(caster).some((x) => x.type === mis.effect) && e.roll(1, mis.sides) === 1) return [`${name(caster)} miscasts ${s.name}.`]
+  if (mis && e.effectsOf(caster).some((x) => x.type === mis.effect) && e.roll(1, mis.sides) === 1) return [`${name(caster)} ${msg('miscasts')} ${s.name}.`]
   if (!fromItem) forget(caster, s.id)
-  if (s.name) out.push(`${name(caster)} casts ${s.name}.`)
+  if (s.name) out.push(`${name(caster)} ${msg('casts')} ${s.name}.`)
   const dur = duration(e, s, L)
   const p = spellSpec(s.id)
   if (p.k === 'heal') {
@@ -82,7 +83,7 @@ export async function castOutside(e: Engine, caster: Uint8Array, s: Spell, targe
     }
   } else if (!(await castShared({ h, e, caster, s, L, dur, targets }, p))) {
     // the kinds that need the battlefield add the spell's effect at power L through FUN_5216_1656, as Apply does
-    if (s.effect) for (const c of targets) await fxAdd(h, c, s.effect, dur, L, 0, 0, false, false, p.msg ?? '')
+    if (s.effect) for (const c of targets) await fxAdd(h, c, s.effect, dur, L, 0, 0, false, false, msgOf(p))
   }
   for (const c of targets) recalc(c, e.itemsOf(c), t)
   return out

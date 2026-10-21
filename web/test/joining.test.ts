@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { COAB, POR, setGame } from '../src/games/profile'
 import { F } from '../src/games/fields'
 import { joinRefusal } from '../src/rules/joining'
+import { msg } from '../src/games/strings'
 
 const who = (nm: string, cls: Record<number, number>, alignment = 0, id = 0) => {
   const c = new Uint8Array(F.size)
@@ -20,9 +21,9 @@ describe('joining the party', () => {
     setGame(COAB)
     const pal = who('MATHEW', { 3: 5 }), thug = who('THUG', { 2: 3 }, 8), r = (n: string) => who(n, { 4: 2 })
     expect(joinRefusal([], thug)).toBeNull() // the first member: no checks
-    expect(joinRefusal([thug], pal)).toBe('paladins do not join with evil scum')
-    expect(joinRefusal([pal], thug)).toBe('MATHEW will tolerate no evil!')
-    expect(joinRefusal([r('A'), r('B'), r('C')], r('D'))).toBe('too many rangers in party')
+    expect(joinRefusal([thug], pal)).toBe(msg('noEvilScum'))
+    expect(joinRefusal([pal], thug)).toBe(`MATHEW${msg('toleratesNoEvil')}`)
+    expect(joinRefusal([r('A'), r('B'), r('C')], r('D'))).toBe(msg('tooManyRangers'))
     expect(joinRefusal([r('A'), r('B')], r('C'))).toBeNull()
     expect(joinRefusal([pal], who('MATHEW', { 3: 5 }))).toBe('') // already there (name and id)
   })

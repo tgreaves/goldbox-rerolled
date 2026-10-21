@@ -3,6 +3,7 @@
 import type { Item, ItemTables } from '../data/items'
 import { itemHandler, type FxHost } from './effects'
 import { F } from '../games/fields'
+import { msg } from '../games/strings'
 
 const ARROW = 73
 const QUARREL = 28
@@ -145,7 +146,7 @@ export function recalc(c: Uint8Array, items: Item[], t: ItemTables) {
 /** Ready an unreadied item (FUN_4894_14d0); returns the message to show, or '' when it worked. */
 export function ready(c: Uint8Array, items: Item[], it: Item, t: ItemTables): string {
   const b = t.baseOf(it)
-  if (!b) return 'Wrong Class'
+  if (!b) return msg('wrongClass')
   let err = 0
   let using: Item | undefined
   if (b.hands + c[F.hands] > 2) err = 3
@@ -162,9 +163,9 @@ export function ready(c: Uint8Array, items: Item[], it: Item, t: ItemTables): st
     if (other) { err = 2; using = other }
   }
   if ((b.classes & c[F.itemMask]) === 0) err = 1
-  if (err === 1) return 'Wrong Class'
-  if (err === 2) return `already using ${using ? t.name(using) : 'one'}`
-  if (err === 3) return 'Your hands are full!'
+  if (err === 1) return msg('wrongClass')
+  if (err === 2) return `${msg('alreadyUsing')}${using ? t.name(using) : 'one'}`
+  if (err === 3) return msg('handsFull')
   it.ready = true
   recalc(c, items, t)
   return ''
@@ -172,7 +173,7 @@ export function ready(c: Uint8Array, items: Item[], it: Item, t: ItemTables): st
 
 /** Unready a readied item; cursed items stay (returns the message, or ''). */
 export function unready(c: Uint8Array, items: Item[], it: Item, t: ItemTables): string {
-  if (it.cursed) return "It's Cursed"
+  if (it.cursed) return msg('cursed')
   it.ready = false
   recalc(c, items, t)
   return ''
@@ -185,7 +186,7 @@ export function canCarry(c: Uint8Array, weight: number): boolean {
 
 export function canTakeItem(c: Uint8Array, items: Item[], it: Item): string {
   if (items.length >= MAX_ITEMS) return 'You have too many items'
-  if (!canCarry(c, it.weight * Math.max(1, it.count))) return 'Overloaded'
+  if (!canCarry(c, it.weight * Math.max(1, it.count))) return msg('overloaded')
   return ''
 }
 

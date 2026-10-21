@@ -9,6 +9,7 @@ import { COAB_LANDMARKS } from './landmarkrules'
 import { COAB_DEBUG } from './debug'
 import { COAB_TREASURE } from './treasure'
 import { COAB_SOUND } from './sound'
+import { COAB_STRINGS } from './stringtable'
 import { COAB_TITLE } from './title'
 import { COAB_STARTUP } from './startup'
 import { COAB_VIEW } from './view'
@@ -45,6 +46,7 @@ export const COAB: GameProfile = {
   title: COAB_TITLE,
   startMenu: COAB_STARTUP,
   sound: COAB_SOUND,
+  strings: COAB_STRINGS,
   commissions: false,
   treasure: COAB_TREASURE,
   spells: COAB_SPELLS,

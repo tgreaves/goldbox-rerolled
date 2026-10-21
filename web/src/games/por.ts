@@ -8,6 +8,7 @@ import { POR_LANDMARKS } from './landmarkrules'
 import { POR_DEBUG } from './debug'
 import { POR_TREASURE } from './treasure'
 import { POR_SOUND } from './sound'
+import { POR_STRINGS } from './stringtable'
 import { POR_TITLE } from './title'
 import { POR_VIEW } from './view'
 import { POR_SPELL_NOTES } from './spellnotes'
@@ -41,6 +42,7 @@ export const POR: GameProfile = {
   title: POR_TITLE,
   startMenu: null, // no Demo in START.EXE or GAME.OVR: the title goes to the party screen
   sound: POR_SOUND,
+  strings: POR_STRINGS,
   commissions: true,
   treasure: POR_TREASURE,
   spells: POR_SPELLS,

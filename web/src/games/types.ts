@@ -11,6 +11,7 @@ import type { ViewArt } from './view'
 import type { TitleScript } from './title'
 import type { StartMenu } from './startup'
 import type { SoundDriver } from './sound'
+import type { Strings } from './stringtable'
 import type { TreasureRules } from './treasure'
 import type { EffectRules } from './effectrules'
 import type { SpellRules } from './spellrules'
@@ -60,6 +61,8 @@ export interface GameProfile {
   startMenu: StartMenu | null
   /** the sound driver in START.EXE */
   sound: SoundDriver
+  /** the engine's messages: id → the address of the game's string (games/strings.ts) */
+  strings: Strings
   /** the commissions panel (IMP-023): PoR's City Council quests, read from its script variables */
   commissions: boolean
   /** random treasure items */

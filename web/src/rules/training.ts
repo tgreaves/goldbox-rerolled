@@ -6,6 +6,7 @@ import type { Dice } from './dice'
 import { CLASSES, COIN_VALUES } from '../data/character'
 import { F } from '../games/fields'
 import type { Item } from '../data/items'
+import { msg } from '../games/strings'
 
 /** Trainer bit per base class (T.trainerBits): halls match it against their mask (ECL 0x6DA8). */
 const trainerBit = (t: Tables, k: number) => t.b(T.trainerBits.at + k)
@@ -64,8 +65,8 @@ export interface TrainCheck {
  * as the original does, even when training is then refused or declined.
  */
 export function checkTraining(t: Tables, c: Uint8Array, hallMask: number, cheat = false): TrainCheck {
-  if (c[F.status] !== 0 && !cheat) return { ok: false, message: 'we only train conscious people', train: [] }
-  if (coinsGp(c) < R.trainingCost && !cheat) return { ok: false, message: `Training costs ${R.trainingCost} gp.`, train: [] }
+  if (c[F.status] !== 0 && !cheat) return { ok: false, message: msg('consciousOnly'), train: [] }
+  if (coinsGp(c) < R.trainingCost && !cheat) return { ok: false, message: msg('trainingCosts'), train: [] }
   let all = 0, eligible = 0, cap = 0
   const xp = u32(c, F.xp)
   const eligibleClasses: number[] = []
@@ -84,15 +85,15 @@ export function checkTraining(t: Tables, c: Uint8Array, hallMask: number, cheat 
   }
   if (cap > 0) setU32(c, F.xp, cap)
   if (!cheat) {
-    if ((all & hallMask) === 0) return { ok: false, message: "We don't train that class here", train: [] }
-    if ((eligible & hallMask) === 0) return { ok: false, message: 'Not Enough Experience', train: [] }
+    if ((all & hallMask) === 0) return { ok: false, message: msg('notThatClass'), train: [] }
+    if ((eligible & hallMask) === 0) return { ok: false, message: msg('notEnoughXp'), train: [] }
   }
   const train = eligibleClasses.filter((k) => cheat || (trainerBit(t, k) & hallMask) !== 0)
-  return { ok: train.length > 0, message: train.length ? '' : 'Not Enough Experience', train }
+  return { ok: train.length > 0, message: train.length ? '' : msg('notEnoughXp'), train }
 }
 
 export function willBecome(c: Uint8Array, train: number[]): string[] {
-  return train.map((k, i) => `${i ? 'and' : '    '} a level ${c[F.levels + k] + 1} ${CLASSES[k]}`)
+  return train.map((k, i) => `${msg(i ? 'andALevel' : 'aLevel')}${c[F.levels + k] + 1} ${CLASSES[k]}`)
 }
 
 /** Steps 9–13: pay, gain levels, recompute, then hit points. Returns true if a new MU spell is due. */

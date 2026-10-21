@@ -47,6 +47,7 @@ import { clockText, freeSlots, isScroll, knows, memorise, memorised, preparation
 import { castOutside, itemSpells, spendUse, targetKind } from '../rules/magic'
 import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
 import { creatorTools } from './creator'
+import { msg } from '../games/strings'
 import { playEnding } from './ending'
 import { onClose } from './sheet'
 import { openSettings, reducedMotion, viewMode } from './settings'
@@ -1228,10 +1229,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         const chk = checkTraining(t, c, engine.read(0x6da8))
         drawRoster()
         if (!chk.ok) { print(chk.message, false); continue }
-        print(`${nameOf(c)} will become:`, true)
+        print(`${nameOf(c)}${msg('willBecome')}`, true)
         for (const line of willBecome(c, chk.train)) print(line, false)
-        if ((await menu(['YES', 'NO'], { prompt: 'Do you wish to train?' })) !== 0) continue
-        print('Congratulations...', false)
+        if ((await menu(['YES', 'NO'], { prompt: msg('wishToTrain').trimEnd() })) !== 0) continue
+        print(msg('congratulations'), false)
         if (train(t, engine, c, chk.train)) {
           const choices = newSpellChoices(t, c)
           // the original's empty list writes char[0x32] = 1 (max HP 1); skipped here (IMP-028)

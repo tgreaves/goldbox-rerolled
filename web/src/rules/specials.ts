@@ -4,12 +4,15 @@
 // with its parameters (PoR's type 88 and CotAB's specials).
 // PoR: spec/A-games/engine/effects.md; CotAB: spec/A-games/coab/effects.md §2 and §7. CotAB addresses are image offsets.
 import type { Effect } from '../data/effects'
+import { text } from '../data/gametext'
 import type { HandlerSpec } from '../games/effectrules'
 import { F } from '../games/fields'
 import { fx, has, removeEffect, removeType, type FxHost } from './effects'
 
 const num = (p: HandlerSpec, k: string) => p[k] as number
 const say = (h: FxHost, c: Uint8Array, msg: string) => h.print(`${h.name(c)} ${msg}`)
+/** a text parameter: the address of the game's string (spec/D-appendices/strings.md) */
+const txt = (p: HandlerSpec, k: string) => text(p[k] as number)
 /** CotAB `e3:52` (0x4BE7C): a roll that also records the dice count (DS:6FB2) */
 const dice = (h: FxHost, count: number, sides: number) => { fx.dice = count; return h.roll(count, sides) & 0xff }
 
@@ -42,7 +45,7 @@ export async function breathBolt(h: FxHost, eff: Effect, c: Uint8Array, p: Handl
   if (p.dmgType !== undefined) fx.dmgType = num(p, 'dmgType')
   const at = h.cellOf?.(c)
   if (!at || !h.aimed || !h.boltHit || !h.bolt) return
-  say(h, c, 'Breathes!')
+  say(h, c, txt(p, 'msg'))
   await h.aimSpell?.(c, num(p, 'spell'))
   let x = at.x + Math.sign(h.aimed.x - at.x), y = at.y + Math.sign(h.aimed.y - at.y)
   if (x === at.x + 1) x++
@@ -67,7 +70,7 @@ export async function throwLightning(h: FxHost, _e: Effect, c: Uint8Array, p: Ha
   if (fx.round >= num(p, 'rounds')) return
   const at = h.cellOf?.(c)
   if (!at || !h.aimed || !h.boltHit || !h.bolt) return
-  say(h, c, 'throws lightning')
+  say(h, c, txt(p, 'msg'))
   await h.aimSpell?.(c, num(p, 'spell'))
   await removeType(h, c, 25)
   h.flyCells?.(at, h.aimed, 19, 4, 50)
@@ -95,7 +98,7 @@ export async function breathArea(h: FxHost, eff: Effect, c: Uint8Array, p: Handl
   // 0x49D0C: every one listed must be on the side opposite the breather's (0x4F5B4)
   if (num(p, 'ownSide') && hit.some((t) => t[F.side] !== (c[F.side] === 0 ? 1 : 0))) ok = false
   if (!ok || !hit.length) return
-  h.print(`${h.name(c)} ${p.msg as string}`)
+  h.print(`${h.name(c)} ${txt(p, 'msg')}`)
   const first = h.cellOf?.(hit[0])
   if (first) h.flyCells?.(at, first, 18, 1, 30)
   for (const t of hit) h.damage(t, c[F.maxHp], 2, h.save(t, 3, 0))
@@ -117,8 +120,7 @@ export async function eyeRays(h: FxHost, _e: Effect, c: Uint8Array, p: HandlerSp
   const list = (k: string) => p[k] as number[]
   const ranges = list('ranges'), saves = list('saves'), statuses = list('statuses'), frames = list('frames')
   const wound = list('wound'), spells = list('spells')
-  const RAYS = ['fires a disintegrate ray', 'fires a stone to flesh ray', 'fires a death ray', 'wounds you'] // 2a55:427B…42E7
-  const GONE = ['is disintergrated', 'is Stoned', 'is killed']
+  const RAYS = list('rays').map(text), GONE = list('gone').map(text) // 2a55:427B…42E7
   let used = 0, left = num(p, 'shots')
   h.setRec(c, 0xa, 0)
   h.pickTarget?.(c, true)
@@ -153,17 +155,17 @@ export async function gazeStone(h: FxHost, _e: Effect, c: Uint8Array, p: Handler
   h.setRec(c, 0xa, 0)
   const t = await hookTarget(h, c, num(p, 'spell'))
   if (!t) return
-  say(h, c, 'gazes...')
+  say(h, c, txt(p, 'gazes'))
   const a = h.cellOf?.(c), b = h.cellOf?.(t)
   if (a && b) h.flyCells?.(a, b, 18, 4, 45)
   else h.fly?.(c, t, 'gaze')
   let victim = t
   const word = num(p, 'word')
   if (has(h, c, 0x7f) && h.itemsOf(t).some((it) => it.ready && [0x2f, 0x30, 0x31].some((k) => it.raw[k] === word))) {
-    say(h, t, 'reflects it!')
+    say(h, t, txt(p, 'reflects'))
     if (a && b) h.flyCells?.(b, a, 18, 4, 45)
     else h.fly?.(t, c, 'gaze')
     victim = c
   }
-  if (!h.save(victim, 1, 0)) h.setStatus(victim, 7, `${h.name(victim)} is Stoned`)
+  if (!h.save(victim, 1, 0)) h.setStatus(victim, 7, `${h.name(victim)} ${txt(p, 'msg')}`)
 }

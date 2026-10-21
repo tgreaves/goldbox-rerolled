@@ -67,7 +67,11 @@ describe('effect handler maps', () => {
   })
 
   it('CotAB names the same entries as PoR where its handler is the same', () => {
-    for (const t of [1, 2, 6, 8, 10, 11, 15, 17, 21, 22, 30, 34, 44, 64, 67, 79, 99, 105, 111, 125]) expect(COAB.effects.handlers[t], `type ${t}`).toBe(POR.effects.handlers[t])
+    for (const t of [1, 2, 6, 8, 10, 11, 15, 17, 21, 22, 30, 34, 44, 64, 67, 79, 99, 105, 111, 125]) {
+      // the same handler and parameters; a text parameter is the game's own copy of the line (CotAB's address)
+      const { msg: _c, ...c } = COAB.effects.handlers[t], { msg: _p, ...p } = POR.effects.handlers[t]
+      expect(c, `type ${t}`).toEqual(p)
+    }
   })
 
   it('PoR\'s handlers that wait for something are the async behaviours (the old POR_WAITS)', () => {

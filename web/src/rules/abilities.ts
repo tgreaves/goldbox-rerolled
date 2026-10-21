@@ -6,6 +6,7 @@ import { R, classLevel, formerLevelsCount } from '../games/rules'
 import { T } from '../games/tables'
 import type { Engine } from '../vm/engine'
 import { addRaw, type FxHost } from './effects'
+import { msg } from '../games/strings'
 
 export type Ability = 'layOnHands' | 'cureDisease'
 const name = (c: Uint8Array) => String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name]))
@@ -46,13 +47,13 @@ export function useAbility(h: FxHost, e: Engine, c: Uint8Array, a: Ability, t: U
     const before = t[F.hp]
     const ok = [0, 1, 4, 5].includes(t[F.status]) && t[F.hp] < t[F.maxHp] && h.heal(t, p.layOnHands.perLevel * level, false)
     addRaw(h, c, p.layOnHands.effect, p.layOnHands.minutes, 0, 0) // the day's wait, even when it did nothing
-    return [ok && t[F.hp] !== before ? `${name(t)} feels better` : `${name(t)} is unaffected`]
+    return [ok && t[F.hp] !== before ? `${name(t)}${msg('feelsBetter')}` : `${name(t)}${msg('handsUnaffected')}`]
   }
   const ds = diseases(e), list = e.effectsOf(t)
   for (const type of ds) { const i = list.findIndex((x) => x.type === type); if (i >= 0) list.splice(i, 1) } // one of each
   if (c[F.abilityUses] > 0) c[F.abilityUses]--
   if (!e.effectsOf(c).some((x) => x.type === p.cureDisease.effect)) addRaw(h, c, p.cureDisease.effect, p.cureDisease.minutes, 0, 1)
-  return [`${name(t)} is cured`]
+  return [`${name(t)}${msg('diseaseCured')}`]
 }
 
 /** The weekly effect's removal (0x27350 + 0x28EF): the uses back to (level − 1) div 5 + 1. */

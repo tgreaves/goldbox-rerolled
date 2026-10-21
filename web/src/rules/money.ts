@@ -4,6 +4,7 @@ import { COIN_VALUES } from '../data/character'
 import { Item, ITEM_SIZE, type ItemTables } from '../data/items'
 import { capacity, recalc } from './equip'
 import { F } from '../games/fields'
+import { msg } from '../games/strings'
 
 export const COINS = ['copper', 'silver', 'electrum', 'gold', 'platinum', 'gems', 'jewelry']
 const UNITS = COIN_VALUES // T.coinValues, read from START.EXE: gold is 200
@@ -97,7 +98,7 @@ export function share(party: { c: Uint8Array; items: Item[] }[], pool: number[],
 export function take(c: Uint8Array, items: Item[], pool: number[], i: number, amount: number, t: ItemTables): string {
   amount = Math.min(amount, pool[i])
   if (amount <= 0) return ''
-  if (encumbrance(c) + amount > capacity(c)) return 'Overloaded'
+  if (encumbrance(c) + amount > capacity(c)) return msg('moneyOverloaded')
   pool[i] -= amount
   set(c, i, get(c, i) + amount)
   recalc(c, items, t)
@@ -162,7 +163,7 @@ export const COIN_PROMPT = ['Copper ', 'silver ', 'electrum ', 'Gold ', 'Platinu
 export function tradeMoney(from: Uint8Array, fromItems: Item[], to: Uint8Array, toItems: Item[], type: number, n: number, t: ItemTables): string {
   n = Math.min(n, get(from, type))
   if (n <= 0) return ''
-  if (from !== to && encumbrance(to) + n > capacity(to)) return 'Overloaded'
+  if (from !== to && encumbrance(to) + n > capacity(to)) return msg('moneyOverloaded')
   set(from, type, get(from, type) - n)
   set(to, type, get(to, type) + n)
   recalc(from, fromItems, t)

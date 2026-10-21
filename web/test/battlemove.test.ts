@@ -9,6 +9,7 @@ import { Battlefield, ROWS, COLS, cellTable } from '../src/rules/battlefield'
 import { COAB, POR, setGame, type GameProfile } from '../src/games/profile'
 import { F } from '../src/games/fields'
 import { loadFolder } from '../headless/harness'
+import { msg } from '../src/games/strings'
 
 const por = process.env.POOLRAD ?? '', coab = process.env.COAB ?? ''
 const have = !!por && existsSync(por) && !!coab && existsSync(coab)
@@ -53,7 +54,7 @@ describe.skipIf(!have)('battlefield movement costs', () => {
     bf.set(10, 11, ROCK)
     me.r[6] = 3
     await b.moveStep(me, 2)
-    expect(printed).toContain('Blocked')
+    expect(printed).toContain(msg('blocked')) // CotAB's own words for it
     expect([me.x, me.y, me.r[6]]).toEqual([10, 10, 3])
   })
 
@@ -82,7 +83,7 @@ describe.skipIf(!have)('battlefield movement costs', () => {
     expect([b.stepCost(11, 10, 2), b.stepCost(11, 11, 3)]).toEqual([2, 3])
     me.r[6] = 2
     await b.moveStep(me, 3) // FUN_320c_09df compares the byte (1), FUN_3aae_0712 the cost (3)
-    expect(printed).not.toContain('Blocked')
+    expect(printed).not.toContain(msg('blocked'))
     expect([me.x, me.y, me.r[6]]).toEqual([10, 10, 0])
   })
 

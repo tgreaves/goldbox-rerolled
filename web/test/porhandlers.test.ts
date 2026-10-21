@@ -6,6 +6,7 @@ import { addRaw, fx, handle, type FxHost } from '../src/rules/effects'
 import { F } from '../src/games/fields'
 import { POR, setGame } from '../src/games/profile'
 import type { Effect } from '../src/data/effects'
+import { text } from '../src/data/gametext'
 
 const c = new Uint8Array(512)
 const eff = (type: number): Effect => ({ type, duration: 0, power: 0, flag: 0 })
@@ -96,7 +97,7 @@ describe('PoR effect handlers as the original', () => {
   it('75 drains from its pool, then lets go and the sated stirge flees (0x28AB5, 0x28A37)', async () => {
     const g = grip(75, 0x30) // a pool of 3
     await handle(g.h, 75, g.e, g.holder, 15, false) // 2 damage: 3 > 2, the pool goes down to 1
-    expect([g.victim[F.hp], g.e.duration, g.said]).toEqual([18, 0x10, ['X Sucks some Blood']])
+    expect([g.victim[F.hp], g.e.duration, g.said]).toEqual([18, 0x10, [`X ${text(POR.effects.handlers[75].msg as number)}`]])
     await handle(g.h, 75, g.e, g.holder, 15, false) // 2 more: 1 is not above 2, the record goes
     expect([g.victim[F.hp], g.fxs.get(g.holder)!.length, g.fxs.get(g.victim)!.length, g.recs.get(g.holder)![0x10]]).toEqual([16, 0, 0, 1])
   })
@@ -114,7 +115,7 @@ describe('PoR effect handlers as the original', () => {
 
   it('7 raises CON and gives the hit points the original computes (0x37463)', async () => {
     // fighter 5, CON 15 → 16: a = 60 − 50 = 10, b = 5·(16 − 15) = 5, + 2
-    expect(await trained({ 2: 5 }, 15, 60, 50)).toMatchObject({ con: 16, maxHp: 62, hp: 59, said: ['X is hardier'] })
+    expect(await trained({ 2: 5 }, 15, 60, 50)).toMatchObject({ con: 16, maxHp: 62, hp: 59, said: [`X ${text(POR.effects.handlers[7].msg as number)}`] })
     // magic-user 4, CON 15 → 16: b = 4·2 = 8, a = 9, + 1
     expect(await trained({ 5: 4 }, 15, 30, 21)).toMatchObject({ con: 16, maxHp: 31, hp: 28 })
     // CON 14 → 15: b = 4·1, a = 9, + 2

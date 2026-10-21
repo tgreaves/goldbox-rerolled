@@ -7,6 +7,9 @@ export interface Unpacked {
   image: Uint8Array
   /** relocations as [segment, offset] */
   relocs: [number, number][]
+  /** the program's real stack, SS:SP, from the EXEPACK header (where the overlays are placed after it) */
+  ss: number
+  sp: number
 }
 
 export function unexepack(b: Uint8Array): Unpacked {
@@ -20,6 +23,7 @@ export function unexepack(b: Uint8Array): Unpacked {
   const mv = new DataView(mod.buffer, mod.byteOffset, mod.byteLength)
   const eh = cs * 16
   const exsize = mv.getUint16(eh + 6, true)
+  const sp = mv.getUint16(eh + 8, true), ss = mv.getUint16(eh + 10, true)
   const destlen = mv.getUint16(eh + 12, true)
   const skip = mv.getUint16(eh + 14, true)
   if (mod[eh + 16] !== 0x52 || mod[eh + 17] !== 0x42) throw new Error('not EXEPACK-packed')
@@ -64,5 +68,5 @@ export function unexepack(b: Uint8Array): Unpacked {
     } else throw new Error(`EXEPACK: bad command ${cmd.toString(16)}`)
     if (cmd & 1) break
   }
-  return { image: buf.slice(0, destlen * 16), relocs }
+  return { image: buf.slice(0, destlen * 16), relocs, ss, sp }
 }

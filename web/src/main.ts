@@ -1,4 +1,5 @@
 import { installNames } from './data/character'
+import { installText } from './data/gametext'
 import { unexepack } from './data/exepack'
 import './style.css'
 import { GameFiles, readPicked } from './store/gamefiles'
@@ -55,6 +56,7 @@ async function open(files: GameFiles) {
   document.title = `GoldBox Rerolled: ${files.game.name}`
   const exe = files.get('START.EXE')
   if (exe) try { installNames(unexepack(exe).image) } catch { /* names show as #n */ }
+  installText(exe, files.get('GAME.OVR')) // the game's messages, read by address (spec/D-appendices/strings.md)
   await installGameFont(files)
   installFrames(files)
   if (files.game.playable) title(files)

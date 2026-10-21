@@ -1,10 +1,11 @@
 // Items menu actions (spec/A-games/engine/town.md, "Items menu", FUN_4894_0ef8): available test, trade, halve, join.
 import type { Item, ItemTables } from '../data/items'
 import { canTakeItem, recalc } from './equip'
+import { msg } from '../games/strings'
 
 /** Available test for Trade, Drop and Sell (FUN_4894_0d70): readied items must be unreadied first. */
 export function unavailable(it: Item): string {
-  return it.ready ? 'Must be unreadied' : ''
+  return it.ready ? msg('mustUnready') : ''
 }
 
 /** A scroll holding a spell flagged for scribing (bit 7 of a spell byte): ask before losing it. */
@@ -17,7 +18,7 @@ export function scribing(it: Item, t: ItemTables): boolean {
 export function trade(from: { c: Uint8Array; items: Item[] }, to: { c: Uint8Array; items: Item[] }, it: Item, t: ItemTables): string {
   const why = unavailable(it)
   if (why) return why
-  if (canTakeItem(to.c, to.items, it)) return 'Overloaded'
+  if (canTakeItem(to.c, to.items, it)) return msg('takeOverloaded')
   from.items.splice(from.items.indexOf(it), 1)
   to.items.push(it)
   recalc(from.c, from.items, t)
@@ -29,7 +30,7 @@ export function trade(from: { c: Uint8Array; items: Item[] }, to: { c: Uint8Arra
 export function halve(c: Uint8Array, items: Item[], it: Item, t: ItemTables): string {
   if (items.length >= 16) return 'You have too many items'
   const n = Math.floor(it.count / 2)
-  if (n === 0) return "Can't halve that"
+  if (n === 0) return msg('cantHalve')
   const half = it.copy()
   half.count = n
   half.ready = false

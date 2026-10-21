@@ -11,6 +11,8 @@ import { derive, levelLimit, xpFor } from './training'
 import { addEffect, addRaw, fire, fx, removeEffect, removeFirst, removeOne, setStr, strEnc, type FxHost } from './effects'
 import { effectiveStat } from './effectkinds'
 import { F } from '../games/fields'
+import { msg } from '../games/strings'
+import { text } from '../data/gametext'
 
 const u32 = (c: Uint8Array, o: number) => (c[o] | (c[o + 1] << 8) | (c[o + 2] << 16) | (c[o + 3] << 24)) >>> 0
 const setU32 = (c: Uint8Array, o: number, v: number) => { c[o] = v & 0xff; c[o + 1] = (v >> 8) & 0xff; c[o + 2] = (v >> 16) & 0xff; c[o + 3] = (v >>> 24) & 0xff }
@@ -51,7 +53,10 @@ export type SpellKind = (x: Cast, p: SpellSpec) => Promise<void>
 
 const s8 = (v: number) => (v << 24) >> 24
 const num = (p: SpellSpec, k: string, dflt = 0) => (p[k] as number | undefined) ?? dflt
-const msgOf = (p: SpellSpec) => p.msg ?? ''
+/** a spell's line (`msg`), read from the game's files; '' when it has none */
+export const msgOf = (p: SpellSpec) => (p.msg !== undefined ? text(p.msg) : '')
+/** another text parameter of a spell (an address; 0 or absent: none) */
+export const textOf = (a: unknown) => (typeof a === 'number' && a ? text(a) : '')
 
 /** FUN_4e53_228a, Cure Disease: each removal says "is Cured"; true if anything went. */
 export async function cureDisease(h: FxHost, t: Uint8Array): Promise<boolean> {
@@ -108,7 +113,7 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
   async enlarge({ h, L, dur, targets: [t] }, p) {
     const levels = p.levels as number[][]
     const [str, pct] = L < levels.length ? levels[L] : ((p.beyond as number[] | undefined) ?? levels[levels.length - 1])
-    if (t) await strengthEffect(h, t, str, pct, num(p, 'effect'), dur, msgOf(p), p.unaffected as string | undefined)
+    if (t) await strengthEffect(h, t, str, pct, num(p, 'effect'), dur, msgOf(p), textOf(p.unaffected) || undefined)
   },
   /**
    * Reduce (PoR 136e, CotAB 0x460AA): on a failed save, ends one of the effect ("is Cured", or with
@@ -169,7 +174,7 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
     let n = t[F.stat[0]] + bonus, pct = 0
     if (n > 18) { if ((p.pctClasses as number[]).some(counts)) pct = Math.min(100, t[F.strPct] + 10 * (n - 18)); n = 18 }
     const power = p.bonusPower !== undefined ? (bonus + num(p, 'bonusPower')) & 0xff : undefined
-    await strengthEffect(h, t, n, pct, num(p, 'effect'), dur, msgOf(p), p.unaffected as string | undefined, power)
+    await strengthEffect(h, t, n, pct, num(p, 'effect'), dur, msgOf(p), textOf(p.unaffected) || undefined, power)
   },
   /**
    * Neutralize Poison (CotAB 0x4814A): nothing on an Animated (status 1) first target; a poisoned one
@@ -178,7 +183,7 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
    */
   async curePoison({ h, targets: [t] }, p) {
     if (!t || t[F.status] === 1) return
-    if (!h.effectsOf(t).some((x) => x.type === num(p, 'effect'))) { say(h, t, p.unaffected as string); return }
+    if (!h.effectsOf(t).some((x) => x.type === num(p, 'effect'))) { say(h, t, textOf(p.unaffected)); return }
     if (t[F.hp] === 0) t[F.hp] = 1
     fx.noRearm = true
     for (const type of p.removes as number[]) await removeFirst(h, t, type)
@@ -212,7 +217,7 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
     if (!t) return
     fx.dmgType = num(p, 'probeType'); fx.dmg = num(p, 'probe')
     await fire(h, t, 9)
-    if (fx.dmg === 0) { say(h, t, p.unaffected as string); return }
+    if (fx.dmg === 0) { say(h, t, textOf(p.unaffected)); return }
     if (!h.save(t, num(p, 'saveType'), 0)) { h.setStatus(t, 6, line(h.name(t), msgOf(p))); return }
     fx.dmgType = num(p, 'dmgType')
     const { n, total } = amount(p.amount as Amount, L, h.roll.bind(h))
@@ -227,16 +232,16 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
    * (IMP-071: the web menus always return a choice, so a player cannot reach the question)
    */
   async flameShield({ h, caster, dur }, p) {
-    const opts = p.options as { name: string; effects: [number, string][] }[]
+    const opts = p.options as { name: string; effects: [number, number][] }[]
     const ai = p.aiPick as { d: number; above: number }
     for (;;) {
-      const k = caster[F.quick] || !h.choose ? (h.roll(1, ai.d) > ai.above ? 0 : 1) : await h.choose(p.prompt as string, opts.map((o) => o.name))
+      const k = caster[F.quick] || !h.choose ? (h.roll(1, ai.d) > ai.above ? 0 : 1) : await h.choose(textOf(p.prompt), opts.map((o) => o.name))
       const o = opts[k]
       if (o) {
-        for (const [type, msg] of o.effects) await addEffect(h, caster, type, dur, 0, 0, 0, false, false, msg)
+        for (const [type, said] of o.effects) await addEffect(h, caster, type, dur, 0, 0, 0, false, false, textOf(said))
         return
       }
-      if (!h.ask || (await h.ask(p.abort as string))) return
+      if (!h.ask || (await h.ask(textOf(p.abort).trimEnd()))) return
     }
   },
   /** Animate Dead (206f): ignores targeting; every dead creature of type 0, while L lasts */
@@ -288,7 +293,7 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
    */
   async removeCurse({ h, targets: [t] }, p) {
     if (!t) return
-    if (await removeOne(h, t, num(p, 'effect'))) { good(h, t, 'is un-cursed'); return }
+    if (await removeOne(h, t, num(p, 'effect'))) { good(h, t, msg('unCursed')); return }
     const it = h.itemsOf(t).find((x) => x.cursed)
     if (!it) return
     if (p.item === 'unready') {
@@ -298,7 +303,7 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
         for (let k = 0; k < 6; k++) await effectiveStat(h, t, k)
       }
     } else it.raw[0x36] = 0
-    good(h, t, (p.itemMsg as string | undefined) ?? "'s item is un-cursed")
+    good(h, t, p.itemMsg !== undefined ? text(p.itemMsg as number) : msg('itemUnCursed'))
   },
   /** Restoration (2c43): one drained level back, to the class whose next level is cheapest */
   async restore({ h, e, targets: [t] }, p) {
@@ -336,7 +341,7 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
   },
   /** Potion of Giant Strength (2ee5): STR str/pct as the effect */
   async setStrength({ h, dur, targets: [t] }, p) {
-    if (t) await strengthEffect(h, t, num(p, 'str'), num(p, 'pct'), num(p, 'effect'), dur, msgOf(p), p.unaffected as string | undefined)
+    if (t) await strengthEffect(h, t, num(p, 'str'), num(p, 'pct'), num(p, 'effect'), dur, msgOf(p), textOf(p.unaffected) || undefined)
   },
   /**
    * Mirror Image (PoR 1a8a, CotAB 0x466B8): the effect with the amount (the images) as its power; with

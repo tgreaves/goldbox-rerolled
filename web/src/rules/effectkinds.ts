@@ -5,6 +5,7 @@
 // The handlers get (arg, effect, character): arg 1 is a removal. The originals do not know the event;
 // the PoR behaviours apply each part on the event it means something for, as the port always has.
 import type { Effect } from '../data/effects'
+import { text, textOrNull } from '../data/gametext'
 import type { Item } from '../data/items'
 import type { HandlerSpec } from '../games/effectrules'
 import { F } from '../games/fields'
@@ -28,10 +29,13 @@ const s8 = (v: number) => (v << 24) >> 24
 const num = (p: HandlerSpec, k: string) => p[k] as number
 const list = (p: HandlerSpec, k: string) => p[k] as number[]
 const say = (h: FxHost, c: Uint8Array, msg: string) => h.print(`${h.name(c)} ${msg}`)
+/** a text parameter: the address of the game's string (spec/D-appendices/strings.md) */
+const txt = (p: HandlerSpec, k: string) => text(p[k] as number)
 /** a roll; with `keep`, through the dice routine that records the count (PoR FUN_5216_0e2e → DS:681C, CotAB 0x4BE7C) */
 const rollKeeping = (h: FxHost, n: number, d: number, keep: unknown) => { if (keep) fx.dice = n; return h.roll(n, d) }
 const flags = (c: Uint8Array | null) => (c && F.classFlags >= 0 ? c[F.classFlags] : 0)
-const nameIs = (c: Uint8Array, names: string[]) => names.includes(String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name])))
+/** the record's name equals one of the game's name strings at these addresses (Pascal string compare) */
+const nameIs = (c: Uint8Array, names: number[]) => { const n = String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name])); return names.some((a) => textOrNull(a) === n) }
 /** a spell record byte (DS:37DC + 16·id: +1 level, +8 save effect), when START.EXE is there */
 function spellByte(h: FxHost, id: number, k: number): number | null {
   const t = h.tables?.()
@@ -84,7 +88,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   /** 4, 59 (removal; 0x373AF, 1472): `msg`, then effect `type` added raw (`duration`, `power`, `flag`) */
   expireInto(h, _e, c, removal, p) {
     if (!removal) return
-    if (p.msg) say(h, c, p.msg as string)
+    if (p.msg) say(h, c, txt(p, 'msg'))
     addRaw(h, c, num(p, 'type'), num(p, 'duration'), num(p, 'power'), num(p, 'flag'))
   },
   /**
@@ -98,7 +102,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   statUp(h, _e, c, removal, p) {
     if (!removal) return
     const k = F.stat[num(p, 'stat')]
-    say(h, c, p.msg as string)
+    say(h, c, txt(p, 'msg'))
     c[k] = (c[k] + 1) & 0xff
     const v = c[k]
     if (v >= num(p, 'at')) { addRaw(h, c, num(p, 'effect'), num(p, 'duration'), num(p, 'power'), 1); return }
@@ -161,7 +165,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     const o = p.who === 'attacker' ? h.current() : h.targetOf(c)
     if (!o || o[F.monsterType] !== num(p, 'monsterType')) return
     if (p.size !== undefined && (o[F.sizeFlags] & ((p.sizeMask as number | undefined) ?? 0xff)) !== num(p, 'size')) return
-    if (nameIs(o, p.names as string[])) fx.roll += num(p, 'roll')
+    if (nameIs(o, list(p, 'names'))) fx.roll += num(p, 'roll')
   },
   /**
    * 21 Silence, 30 Stinking Cloud [11, 15] (0x3793F, 0x37C95): a spell being cast is lost, with `msg`
@@ -169,14 +173,14 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
    * `acFloor`) and the front AC the same
    */
   breakSpell(h, _e, c, _r, p, event) {
-    if ((p.sayOn === undefined || event === p.sayOn) && h.rec(c, 2)) say(h, c, p.msg as string)
+    if ((p.sayOn === undefined || event === p.sayOn) && h.rec(c, 2)) say(h, c, txt(p, 'msg'))
     h.setRec(c, 1, 0); h.setRec(c, 2, 0)
     if (p.acWorse !== undefined && event === 11) { c[F.acRear] = Math.max(num(p, 'acFloor'), c[F.acRear] - num(p, 'acWorse')); c[F.ac] = c[F.acRear] }
   },
   /** 22 Slow Poison (removal, 0x379A5): still poisoned (`poison`), `msg` and status 6; then `also` (the poison's damage) goes silently */
   async poisonEnds(h, _e, c, removal, p) {
     if (!removal) return
-    if (has(h, c, num(p, 'poison'))) h.setStatus(c, 6, `${h.name(c)} ${p.msg as string}`)
+    if (has(h, c, num(p, 'poison'))) h.setStatus(c, 6, `${h.name(c)} ${txt(p, 'msg')}`)
     await removeType(h, c, num(p, 'also'), true)
   },
   /**
@@ -194,7 +198,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
       const r = new Uint8Array(ITEM_SIZE)
       for (const [o, v] of bytes) r[o] = v
       items.push(new ItemRecord(r))
-      say(h, c, p.msg as string)
+      say(h, c, txt(p, 'msg'))
     }
     h.recalc(c)
   },
@@ -208,10 +212,10 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
    * 28 Mirror Image [5, 6] (0x37BF0): against a single-target spell (not area), 1d(power + 1) > 1 takes
    * the damage away, "lost an image", power − 1; at 0 the record goes
    */
-  async imageLost(h, eff, c, _r, _p, event) {
+  async imageLost(h, eff, c, _r, p, event) {
     if ((event === 5 || event === 6) && fx.spell !== 0 && !fx.area && h.roll(1, eff.power + 1) > 1) {
       fx.dmg = 0
-      say(h, c, 'lost an image')
+      say(h, c, txt(p, 'msg'))
       if (--eff.power <= 0) await removeEffect(h, c, eff)
     }
   },
@@ -224,7 +228,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
    */
   collapse(h, eff, c, removal, p) {
     if (!removal || fx.noRearm) return
-    h.setStatus(c, 6, `${h.name(c)} ${p.msg as string}`)
+    h.setStatus(c, 6, `${h.name(c)} ${txt(p, 'msg')}`)
     c[F.side] = eff.power >> 4; c[F.quick] = 1; c[F.undead] = 0; c[F.sweep] = c[F.levels + 2]; c[F.baseMove] = num(p, 'move')
     if (c[F.morale] === 0xb3) c[F.morale] = 0
     c[F.monsterType] = 0
@@ -248,7 +252,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   attackRate(h, eff, c, _r, p) {
     if (p.ages !== undefined && !(eff.power & num(p, 'ages'))) {
       eff.power |= num(p, 'ages')
-      say(h, c, p.msg as string)
+      say(h, c, txt(p, 'msg'))
       const a = (c[F.age] | (c[F.age + 1] << 8)) + 1
       c[F.age] = a & 0xff; c[F.age + 1] = a >> 8
     }
@@ -269,7 +273,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   loseStrength(h, eff, c, removal, p, event, type) {
     if (!removal && event !== -1) return
     if (removal && !rearm(h, c, type, num(p, 'duration'), eff.power)) return
-    if (c[F.stat[0]] > num(p, 'floor')) { say(h, c, p.msg as string); c[F.stat[0]]-- } else addRaw(h, c, num(p, 'helpless'), 0, 0xff, 0)
+    if (c[F.stat[0]] > num(p, 'floor')) { say(h, c, txt(p, 'msg')); c[F.stat[0]]-- } else addRaw(h, c, num(p, 'helpless'), 0, 0xff, 0)
   },
   /** 44 Cause Disease's HP (removal or a direct run, 1168): re-armed for `duration`; below 2 HP `helpless` (once), else 1 point */
   loseHp(h, eff, c, removal, p, event, type) {
@@ -299,10 +303,10 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   rot(h, eff, c, removal, p, _ev, type) {
     if (!removal || fx.noRearm) return
     const k = F.stat[num(p, 'stat')]
-    say(h, c, p.msg as string)
+    say(h, c, txt(p, 'msg'))
     c[k] = Math.max(num(p, 'floor'), c[k] - num(p, 'loss'))
     if (eff.power >> 4 > 1) addRaw(h, c, type, num(p, 'duration'), eff.power - 0x10, 1)
-    else h.setStatus(c, 6, `${h.name(c)} ${p.death as string}`)
+    else h.setStatus(c, 6, `${h.name(c)} ${txt(p, 'death')}`)
   },
   /**
    * 61, 113 (PoR 1490, 2a28): whatever the event, damage of `type` loses `per` for each die of the dice
@@ -326,7 +330,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (!t || !t[F.inPlay]) return
     if (!h.save(t, 0, num(p, 'bonus'))) {
       await addEffect(h, t, num(p, 'effect'), 0, 0xff, 0)
-      h.setStatus(t, 6, `${h.name(t)} ${p.msg as string}`)
+      h.setStatus(t, 6, `${h.name(t)} ${txt(p, 'msg')}`)
     }
   },
   /**
@@ -341,7 +345,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     const t = h.targetOf(h.current()!)
     if (!t || !t[F.inPlay]) return
     if (!h.save(t, 0, 0)) {
-      if (h.announce) h.announce(t, p.msg as string); else say(h, t, p.msg as string)
+      if (h.announce) h.announce(t, txt(p, 'msg')); else say(h, t, txt(p, 'msg'))
       await addEffect(h, t, num(p, 'effect'), duration, num(p, 'power'), 0)
     }
   },
@@ -356,7 +360,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (fx.hits[1] === 2 && t && t[F.inPlay]) {
       c[F.attacksLeft + 1] = num(p, 'attacks'); c[F.dice + 1] = num(p, 'dice'); c[F.sides + 1] = num(p, 'sides'); c[F.attacksLeft] = 0
       h.setRec(c, 4, 2) // the follow-up attack loop starts at hand 2
-      say(h, c, p.msg as string)
+      say(h, c, txt(p, 'msg'))
       await h.attack(c, t)
       h.endTurn(c)
     }
@@ -392,7 +396,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   async bloodDrain(h, eff, c, removal, p, event) {
     const v = h.byIndex(eff.power & 0x3f)
     if (!removal && event === 15 && v && v[F.inPlay] && c[F.inPlay]) {
-      say(h, c, p.msg as string)
+      say(h, c, txt(p, 'msg'))
       const d = rollKeeping(h, 1, num(p, 'sides'), p.keep)
       fx.dmgType = 0
       h.damage(v, d, 0, false)
@@ -419,7 +423,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (!t || !t[F.inPlay] || t[F.stat[0]] >= num(p, 'maxStr')) return
     addRaw(h, c, num(p, 'crush'), 0, h.indexOf(t), 1)
     addRaw(h, t, num(p, 'held'), 0, 0, 0)
-    say(h, t, p.msg as string)
+    say(h, t, txt(p, 'msg'))
   },
   /** 78, 102 (removal, 19d9, 2866): back up with the current HP (or `full`: the maximum); blocked, re-armed for 1 (the power kept with `keepPower`, else 0) */
   revive(h, eff, c, removal, p, _ev, type) {
@@ -431,7 +435,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
    * up to `hdUpTo[i]` gets `effects[i]` (power `power`) with `msgs[i]` (Hold, then Curse)
    */
   fearAura(h, _e, c, _r, p) {
-    const upTo = list(p, 'hdUpTo'), effects = list(p, 'effects'), msgs = p.msgs as string[]
+    const upTo = list(p, 'hdUpTo'), effects = list(p, 'effects'), msgs = list(p, 'msgs').map(text)
     for (const e of h.enemiesNear(c, 255)) {
       if (!e[F.inPlay] || h.save(e, num(p, 'saveType'), 0)) continue
       const i = upTo.findIndex((m) => e[F.hitDice] <= m)
@@ -450,7 +454,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
       if (!e[F.inPlay]) continue
       const side = h.all().filter((o) => o[F.inPlay] && o[F.side] === e[F.side]).length
       const bonus = (side >= num(p, 'crowd') ? num(p, 'bonus') : 0) + (e[F.race] === race ? more : 0)
-      if (!h.save(e, 0, bonus)) { say(h, e, p.msg as string); addRaw(h, e, num(p, 'effect'), h.roll(n, d), num(p, 'power'), 0) }
+      if (!h.save(e, 0, bonus)) { say(h, e, txt(p, 'msg')); addRaw(h, e, num(p, 'effect'), h.roll(n, d), num(p, 'power'), 0) }
     }
   },
   /**
@@ -461,11 +465,11 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   stoneGaze(h, _e, c, _r, p) {
     const t = h.targetOf(c)
     if (!t || !t[F.inPlay]) return
-    say(h, c, 'gazes...')
+    say(h, c, txt(p, 'gazes'))
     h.fly?.(c, t, 'gaze')
     let victim = t
-    if (has(h, c, num(p, 'reflectable')) && h.itemsOf(t).some((it) => it.ready && it.raw[0x31] === num(p, 'word'))) { say(h, t, 'reflects it!'); h.fly?.(t, c, 'gaze'); victim = c }
-    if (!h.save(victim, num(p, 'save'), 0)) h.setStatus(victim, num(p, 'status'), `${h.name(victim)} ${p.msg as string}`)
+    if (has(h, c, num(p, 'reflectable')) && h.itemsOf(t).some((it) => it.ready && it.raw[0x31] === num(p, 'word'))) { say(h, t, txt(p, 'reflects')); h.fly?.(t, c, 'gaze'); victim = c }
+    if (!h.save(victim, num(p, 'save'), 0)) h.setStatus(victim, num(p, 'status'), `${h.name(victim)} ${txt(p, 'msg')}`)
   },
   /**
    * 84 charm gaze [14] (0x390A7): at an active target, "Gazes..." with spell `spell` resolving; a failed
@@ -474,7 +478,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   async charmGaze(h, _e, c, _r, p) {
     const t = h.targetOf(c)
     if (!t || !t[F.inPlay]) return
-    say(h, c, 'Gazes...')
+    say(h, c, txt(p, 'gazes'))
     h.fly?.(c, t, 'gaze')
     fx.spell = num(p, 'spell')
     if (!h.save(t, num(p, 'save'), num(p, 'bonus'))) await addEffect(h, t, num(p, 'effect'), 0, (c[F.side] << 7) | num(p, 'power'), 1, 1, false, true)
@@ -491,7 +495,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (!t || has(h, t, num(p, 'heal'))) return
     addRaw(h, t, num(p, 'heal'), num(p, 'healFor'), 0, 1)
     addRaw(h, t, num(p, 'rot'), num(p, 'rotFor'), (h.roll(1, 6) << 4) + 0x0f, 1)
-    say(h, t, p.msg as string)
+    say(h, t, txt(p, 'msg'))
   },
   /** 89 displacement [8, 16] (2490): combat start (8) clears the power bit `bit`; the first attack roll after (16) misses and sets it */
   displaced(_h, eff, _c, _r, p, event) {
@@ -508,7 +512,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   },
   /** 91 [6] (0x39786): the spell `spell` (Magic Missile) does nothing, "is unaffected"; else damage of `mask` none */
   immuneSpell(h, _e, c, _r, p) {
-    if (fx.spell === num(p, 'spell')) { fx.dmg = 0; say(h, c, 'is unaffected') } else if (fx.dmgType & num(p, 'mask')) fx.dmg = 0
+    if (fx.spell === num(p, 'spell')) { fx.dmg = 0; say(h, c, txt(p, 'msg')) } else if (fx.dmgType & num(p, 'mask')) fx.dmg = 0
   },
   /** 93, 114, 118 [6] (25a2, 2a6d, 2b63): damage of `mask` halved */
   halveType(_h, _e, _c, _r, p) { if (fx.dmgType & num(p, 'mask')) fx.dmg = Math.floor(fx.dmg / 2) },
@@ -518,7 +522,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (w ? list(p, 'kinds').includes(h.weaponKind(w.raw[0x2e])) : !!p.unarmed) fx.dmg = Math.floor(fx.dmg / 2)
   },
   /** 95 delayed death (removal, 0x39840): still active, status 6 with `msg` */
-  diesAtEnd(h, _e, c, removal, p) { if (removal && c[F.inPlay]) h.setStatus(c, 6, `${h.name(c)} ${p.msg as string}`) },
+  diesAtEnd(h, _e, c, removal, p) { if (removal && c[F.inPlay]) h.setStatus(c, 6, `${h.name(c)} ${txt(p, 'msg')}`) },
   /** 96 [5] (264b): no weapon, or one of plus 0 not named `word` (Silver), does nothing */
   needsMagicOrWord(h, _e, _c, _r, p) {
     const a = h.current(), w = a ? h.weapon(a) : null
@@ -545,7 +549,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (!list(p, 'unless').some((t) => has(h, c, t))) addRaw(h, c, num(p, 'effect'), num(p, 'duration'), 0, 1)
   },
   /** 103 vampire escape [13] (0x39AEF): no removal callback, `msg`, status `status` (fled), out of play */
-  escapes(h, eff, c, _r, p) { eff.flag = 0; say(h, c, p.msg as string); c[F.status] = num(p, 'status'); c[F.inPlay] = 0 },
+  escapes(h, eff, c, _r, p) { eff.flag = 0; say(h, c, txt(p, 'msg')); c[F.status] = num(p, 'status'); c[F.inPlay] = 0 },
   /**
    * 105, 106 [6, 9] (2976, 2984 → FUN_3723_2915): an effect being added or magic damage is negated when
    * d100 ≤ `base` − 5 × (11 − the current character's best level of `classes`, at least 1)
@@ -591,7 +595,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (t && t[F.inPlay] && h.roll(1, 100) <= num(p, 'pct') && h.distance(c, t) < num(p, 'range')) {
       const [n, d] = list(p, 'roll')
       h.endTurn(c)
-      say(h, c, 'Spits Acid')
+      say(h, c, txt(p, 'msg'))
       h.fly?.(c, t, 'spit')
       fx.dmgType = num(p, 'dmgType')
       h.damage(t, rollKeeping(h, n, d, p.keep), 2, h.save(t, num(p, 'save'), 0))
@@ -617,9 +621,9 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   // ---------------------------------------------------------------- first transcribed from CotAB
 
   /** 3 [7] fighting snakes (0x2742C): the snakes take the attacks left; the turn ends */
-  snakes(h, eff, c, removal, _p, _ev, type) {
+  snakes(h, eff, c, removal, p, _ev, type) {
     if (removal) return // I: the original would remove itself again through its own callback
-    const end = () => { say(h, c, 'is fighting with snakes'); h.endTurn(c) }
+    const end = () => { say(h, c, txt(p, 'msg')); h.endTurn(c) }
     const left = (c[F.attacksLeft] + c[F.attacksLeft + 1]) & 0xff
     if (eff.power > left) { eff.power -= left; return end() }
     return removeFirst(h, c, type).then(end)
@@ -640,11 +644,11 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
    */
   liftZone(h, eff, c, removal, p) {
     if (!removal || !h.inCombat()) return
-    h.clearCloud?.(c, eff.power, num(p, 'cell'), 'The air clears a little...')
+    h.clearCloud?.(c, eff.power, num(p, 'cell'), txt(p, 'msg'))
   },
   /** 13 [15] (0x276C9): the count runs out, then death */
-  suffocate(h, eff, c) {
-    if (eff.power === 0) h.setStatus(c, 6, `${h.name(c)} Suffocates`)
+  suffocate(h, eff, c, _r, p) {
+    if (eff.power === 0) h.setStatus(c, 6, `${h.name(c)} ${txt(p, 'msg')}`)
     else eff.power--
   },
   /**
@@ -665,10 +669,10 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   /** CotAB 27 [7] (0x273C1, as 31, 51–53): ends the turn whenever it runs; with `event` (PoR 31, 51–53, 3723_133f) only on that event */
   endTurn(h, _e, c, _r, p, event) { if (p.event === undefined || event === p.event) h.endTurn(c) },
   /** 28 [5, 6] Mirror Image (0x27A8F): 1d((pw>>4)+1) > 1 against a single-target spell; pw − 1 per image */
-  mirrorImage(h, eff, c, _r, _p, _ev, type) {
+  mirrorImage(h, eff, c, _r, p, _ev, type) {
     if (!(h.roll(1, (eff.power >> 4) + 1) > 1 && fx.spell > 0 && !fx.area)) return
     negate(0)
-    say(h, c, 'lost an image')
+    say(h, c, txt(p, 'msg'))
     eff.power = (eff.power - 1) & 0xff
     if (eff.power === 0) return removeFirst(h, c, type).then(() => {})
   },
@@ -682,16 +686,16 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
       c[F.quick] = 1
       if (c[F.morale] <= 0x7f) c[F.morale] = 0xb3
       h.setRec(c, 0xa, 0)
-      await addEffect(h, c, flee, 10, 0, 1, 1, false, false, 'runs away')
+      await addEffect(h, c, flee, 10, 0, 1, 1, false, false, txt(p, 'fleeMsg'))
     } else if (d >= 11 && d <= 60) {
-      say(h, c, 'is confused')
+      say(h, c, txt(p, 'confused'))
       h.endTurn(c)
     } else if (d >= 61 && d <= 80) {
       // the berserk record holds the side to return to; it runs at once even if the add was blocked (no record then)
-      await addEffect(h, c, berserk, 1, c[F.side], 1, 1, false, false, 'goes berserk')
+      await addEffect(h, c, berserk, 1, c[F.side], 1, 1, false, false, txt(p, 'berserkMsg'))
       const e = h.effectsOf(c).find((x) => x.type === berserk) ?? { type: berserk, duration: 1, power: c[F.side], flag: 1 }
       await runEffect(h, berserk, e, c)
-    } else if (d >= 81 && d <= 100) say(h, c, 'is enraged')
+    } else if (d >= 81 && d <= 100) say(h, c, txt(p, 'enraged'))
     if (h.save(c, 4, -2)) await removeFirst(h, c, type)
   },
   /** 37 [1, 16] (0x27ED0): with no initiative left, untargetable and unhittable (PoR: with some) */
@@ -713,14 +717,14 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   engulf(h, _e, c, _r, p) {
     const t = h.targetOf(c), held = num(p, 'held'), choke = num(p, 'suffocate')
     if (fx.hits[1] !== 2 || !t || !t[F.inPlay] || has(h, t, held) || has(h, t, choke)) return
-    h.print(`${h.name(c)} engulfs ${h.name(t)}`)
+    h.print(`${h.name(c)} ${txt(p, 'msg')}${h.name(t)}`)
     return hold(h, c, t, held, num(p, 'marker'), () => { addRaw(h, t, choke, 0, h.roll(2, 4), 0) })
   },
   /** 96 [2] hug (0x2ED5C): a roll of 18 or more holds the target (`held`, 0x3A), the hugger gets `marker` (0x90) */
   hug(h, _e, c, _r, p) {
     const t = h.targetOf(c)
     if (s8(fx.roll) < 18 || !t) return
-    h.print(`${h.name(c)} hugs ${h.name(t)}`)
+    h.print(`${h.name(c)} ${txt(p, 'msg')}${h.name(t)}`)
     return hold(h, c, t, num(p, 'held'), num(p, 'marker'))
   },
   /** 60 [5] (0x28628): no weapon or plus 0 does nothing, a plus below `full` half */
@@ -736,14 +740,14 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (lvl !== null && s8(lvl) < num(p, 'below')) negate(0)
   },
   /** 68 (direct) Feeblemind (0x288E5): INT and WIS 7; in combat the spell being cast is lost */
-  feeblemind(h, _e, c) {
+  feeblemind(h, _e, c, _r, p) {
     c[F.stat[1]] = 7
     c[F.stat[2]] = 7
-    say(h, c, 'is stupid')
+    say(h, c, txt(p, 'msg'))
     if (!h.inCombat()) return
     h.setRec(c, 1, 0)
     const s = h.rec(c, 0)
-    if (s > 0) { say(h, c, 'lost a spell'); forget(c, s); h.setRec(c, 0, 0) }
+    if (s > 0) { say(h, c, txt(p, 'lost')); forget(c, s); h.setRec(c, 0, 0) }
   },
   /** 69 [1] (0x28986): an attacker of the type without `detect` (0x18) cannot target; its roll is worse either way */
   untargetableBy(h, _e, _c, _r, p) {
@@ -756,7 +760,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   immune(h, _e, c, _r, p) {
     if (!(fx.dmgType & num(p, 'mask'))) return
     negate(0)
-    if (num(p, 'say')) say(h, c, 'is unaffected')
+    if (num(p, 'say')) say(h, c, txt(p, 'msg'))
   },
   /** 75 [4, 10, 13] (0x28A6A): against the monster type 3·1d12 + 4 + the STR damage bonus (I), and +2 to hit */
   giantBane(h, _e, c, _r, p) {
@@ -790,7 +794,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (t) h.setTarget?.(c, t)
     if (num(p, 'say')) h.setRec(c, 1, 0)
     if (t) c[F.side] = t[F.side] ^ 1
-    if (num(p, 'say')) say(h, c, 'goes berzerk')
+    if (num(p, 'say')) say(h, c, txt(p, 'msg'))
   },
   /** 81 [5] (0x28CCF) */
   halve() { fx.dmg = (fx.dmg & 0xff) >> 1 },
@@ -817,8 +821,8 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     const t = await hookTarget(h, c, num(p, 'hook'))
     const d = h.roll(1, 100)
     if (!t || h.distance(c, t) >= num(p, 'range')) return
-    if (d > num(p, 'pct')) { say(h, c, 'Spits Acid and Misses'); return }
-    say(h, c, 'Spits Acid')
+    if (d > num(p, 'pct')) { say(h, c, txt(p, 'misses')); return }
+    say(h, c, txt(p, 'msg'))
     h.fly?.(c, t, 'spit')
     h.damage(t, c[F.maxHp], 2, h.save(t, 3, 0))
   },
@@ -832,7 +836,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     const t = h.targetOf(c)
     if (!t || h.save(t, num(p, 'save'), 0)) return
     addRaw(h, t, num(p, 'effect'), 0, 0xff, 0)
-    say(h, t, 'is paralyzed')
+    say(h, t, txt(p, 'msg'))
   },
   /** 123 [2] (0x298ED): count d sides of the damage type to the target; with `active` (PoR 79, 80: 1a19, 1a4c) only to an active one, the type set only then */
   hitDamage(h, _e, c, _r, p) {
@@ -846,11 +850,11 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     h.setRec(c, 0xa, 0)
     const t = await hookTarget(h, c, num(p, 'hook'))
     if (!t) return
-    say(h, c, 'gazes...')
+    say(h, c, txt(p, 'gazes'))
     h.fly?.(c, t, 'gaze')
     if (h.save(t, 1, 0)) return
     addRaw(h, t, num(p, 'effect'), num(p, 'minutes'), 0xff, 0)
-    say(h, t, 'is paralyzed')
+    say(h, t, txt(p, 'msg'))
   },
   /** 129 [6, 9] (0x29973): every effect added and all magic damage negated */
   magicResistance() { if (fx.adding !== 0 || fx.dmgType & 8) negate(0) },
@@ -867,7 +871,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (h.roll(1, 100) > num(p, 'pct') || !t || h.distance(c, t) >= 2) return
     fx.dmgType = 1
     h.endTurn(c)
-    say(h, c, 'Breathes Fire')
+    say(h, c, txt(p, 'msg'))
     h.fly?.(c, t, 'spit')
     h.damage(t, num(p, 'dmg'), 2, h.save(t, 3, 0))
   },
@@ -925,13 +929,13 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     h.setRec(c, 0x10, 0)
   },
   /** 143 [5] (0x29CC5): an adjacent attacker takes twice the damage as magic, "gets zapped" */
-  zap(h, _e, c) {
+  zap(h, _e, c, _r, p) {
     const a = h.current()
     if (!a || h.distance(a, c) >= 2) return
     const dmg = fx.dmg, type = fx.dmgType
     fx.dmg = (fx.dmg * 2) & 0xff
     fx.dmgType = 8
-    say(h, a, 'gets zapped')
+    say(h, a, txt(p, 'msg'))
     h.damage(a, fx.dmg, 0, false)
     fx.dmg = dmg
     fx.dmgType = type
@@ -940,8 +944,8 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   async dispelEvil(h, _e, c, _r, p) {
     const t = h.targetOf(c)
     if (!t) return
-    if (!(flags(t) & num(p, 'flag')) || h.save(t, 4, 0)) { say(h, t, 'resists dispel evil'); return }
-    h.setStatus(t, 8, `${h.name(t)} is dispelled`)
+    if (!(flags(t) & num(p, 'flag')) || h.save(t, 4, 0)) { say(h, t, txt(p, 'resists')); return }
+    h.setStatus(t, 8, `${h.name(t)} ${txt(p, 'msg')}`)
     const a = h.current() ?? c
     for (const t of list(p, 'removes')) await removeFirst(h, a, t)
   },
@@ -1108,7 +1112,7 @@ export const ITEM_BEHAVIOURS: Record<string, ItemBehaviour> = {
     const str = num(p, 'str'), pct = num(p, 'pct'), type = num(p, 'effect')
     if (ready) {
       const { ok, pw } = setStr(h, c, str, pct)
-      if (ok) say(h, c, p.msg as string)
+      if (ok) say(h, c, txt(p, 'msg'))
       addRaw(h, c, type, 0, pw, 1)
       return
     }
@@ -1126,7 +1130,7 @@ export const ITEM_BEHAVIOURS: Record<string, ItemBehaviour> = {
     if ((ready || p.alsoUnready) && (v & 0x0f) !== c[F.alignment]) { it.ready = false; fx.dmgType = 8; h.damage(c, v >> 4, 0, false) }
   },
   /** PoR 135 Boulder (0x3A364): readied with STR below `str`, it is put down with `msg` */
-  async needsStrength(h, c, it, ready, p) { if (ready && c[F.stat[0]] < num(p, 'str')) { it.ready = false; h.print(p.msg as string) } },
+  async needsStrength(h, c, it, ready, p) { if (ready && c[F.stat[0]] < num(p, 'str')) { it.ready = false; h.print(txt(p, 'msg')) } },
   /** PoR 137 (317a), CotAB kind 9: putting it away ends effect `type` (Spiritual Hammer), and with it the item */
   async unreadyEnds(h, c, _it, ready, p) { if (!ready) await removeFirst(h, c, num(p, 'type')) },
   /** CotAB kind 1 Ring of Wizardry: the magic-user slots of levels 1–`levels` doubled; put away, worked out again from the class (the other ring forgotten, I: as the original) */

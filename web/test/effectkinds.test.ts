@@ -14,6 +14,7 @@ import { Tables } from '../src/rules/chargen'
 import { addEffect, addRaw, fire, fx, removeEffect, type FxHost } from '../src/rules/effects'
 import { readyItem, recalc, unreadyItem } from '../src/rules/equip'
 import { BEHAVIOURS } from '../src/rules/effectkinds'
+import { installText } from '../src/data/gametext'
 
 const dir = process.env.COAB ?? ''
 const have = dir !== '' && existsSync(dir)
@@ -122,6 +123,7 @@ describe.skipIf(!have)('CotAB effect handlers', () => {
     const walk = (d: string) => { for (const n of readdirSync(d)) { const p = join(d, n); if (statSync(p).isDirectory()) walk(p); else if (wants(COAB, n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(p))) } }
     walk(dir)
     files = new GameFiles(m, COAB)
+    installText(files.get('START.EXE'), files.get('GAME.OVR'))
     tb = new Tables(unexepack(files.get('START.EXE')!).image)
     items = ItemTables.load(files.get('ITEMS'), files.get('START.EXE'))!
   })
