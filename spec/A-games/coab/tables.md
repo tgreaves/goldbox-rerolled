@@ -205,11 +205,5 @@ Services DS:00E6: Cure Blindness, Cure Disease, CLW, CSW, CCW, **Heal**, Neutral
 
 ## 4. What a game profile must hold
 
-1. DS base (or derive it from the TP startup, as `find_ds()` does) and the sound-driver segment plus offset delta (PoR 18AE/0, CotAB 0699/−0xBD).
-2. Every table address in §2 and its **stride**: THAC0 11 → 13, XP 0x38 → 0x63, saves 0x2D → 0x3C, race-classes 12 → 14, item words, spell names and records bases. Also the counts: spells 56/67 → 100, random-item records 19 → 7, temple services 10 → 11, top level 13 (loop bound).
-3. Spell-class encoding (PoR 0 cl / 1 MU / 2 item; CotAB 0 cl / 1 druid / 2 MU / 3 item) and slot layout (PoR 2 × 3 at char+0xB2; CotAB 3 × 5 at char+0x12D).
-4. The slot model: absolute per-level tables (PoR) or cumulative increments with per-class start levels (CotAB: cleric and MU from 2, paladin 9, ranger 8), plus the auto-learn rules (cleric skips id 36; ranger learns all druid spells; paladin learns cleric spells).
-5. Rules that live in code, not tables: demi-human limits (§3.2), extra-attack thresholds (F > 6, P > 6, R > 7), the HP rule (PoR: count × die, 2/3 minimum at L1; CotAB: count only at L1, best of two, HD-cap table plus fixed per-class HP with the replace quirk), starting money (PoR gold dice × 10 shared across classes; CotAB 300 pp, dice rolled and discarded), the race menu, temple prices and services, thief-skill item hooks.
-6. Values the PoR port hard-coded and CotAB changes: the class bits (ranger 0x40), trainer bits (P 0x10, R 0x20, monk 4), sky colours and temple list are now read through `T` (§2); the temple prices, the race menu (same), the components (same 17) and the cell-table semantics are in the profile's rules. Values that are the same: coins and cloud cells are read through `T`; filename characters, part colours, remap tables, wall pieces and banks are still shared in code.
-7. Tables that exist only in PoR: the overland map and plot squares (3648, 0C36, 3C76, 0900–095F), the NPC random icon tables (08C7–08F5) and the portrait record maps (286F/287D). The profile needs to mark them optional.
-8. The character record layout differs completely (0x11D-style PoR offsets vs CotAB 0x1A6 bytes). Every rules routine needs a field map from the profile, or a common internal model.
+Moved to part B, now that the profile holds each point:
+[B-model/records-and-tables.md §5](../../B-model/records-and-tables.md#5-from-the-cotab-research-what-a-profile-must-hold).

@@ -214,21 +214,8 @@ Cells 0x00–0x19 are the map-area set (DungCom), as PoR's.
 
 ### Port
 
-`rules/battlefield.ts` `mapBattlefield(geo, x, y, roll, area, spec, img)`: one map-area generator for
-both games, `R.mapField` naming the differences as data: `cornerWallEnd` (PoR 0x04, CotAB 0x08),
-`finishing` (PoR's pass afterwards, not CotAB) and `furnish` (CotAB: flag 0x40, blank cells, table
-0x1A on d10 ≤ 5, chair 0x1B on d10 ≤ 9, the chair offsets read from START.EXE as `T.furnishDx` /
-`T.furnishDy`; PoR null). Tested cell for cell, and die for die, against a statement-by-statement
-transcription of 0x2555D and the routines it calls on real GEO maps (`test/mapfield.test.ts`); PoR's
-map fields are unchanged (`test/battlefield.test.ts`).
-
-`rules/battlefield.ts` `wildField(flags, roll, spec)`: one driver (fill, then the passes the profile
-lists, `R.wildField`), the passes named by what they do; CotAB: `river`, `treesOrLogs`,
-`scatterOdds`, no finishing pass; PoR: `river`, `treesBySize`, `scatterTerrain`, `finishing`. The river
-is one procedure for both games (the course, two cells a row, the d20 after them, a ford procedure with
-its cells as offsets): CotAB's numbers are the halves by d2, no pairs, no crossing and `edge: 'clip'`.
-Shared as data: the flag arithmetic (`FlagValue`: a base, then set or add per flag) and the river's
-course. Tested cell for cell against this transcription with scripted dice (`test/wildfield.test.ts`).
+Moved to part B: the two generators as one parametric procedure each,
+[B-model/procedures.md §15.4](../../B-model/procedures.md#154-battlefields) (notes in its §17).
 
 ## Casting (O)
 
@@ -252,9 +239,5 @@ PoR's casting in combat ([engine/combat-rules.md, "Cast"](../engine/combat-rules
 
 ### Port
 
-`rules/combat.ts`: `beginCast` (both casts), `castSpell(f, s, { fromItem, auto, announce })` (both
-0x45251 / `FUN_4e53_0c20`), `inflict` (lost spell), `aiCast` / `aiAccepts` / `patient`; the profile's
-`R.casting`: `lostFrom` (PoR 'current', CotAB 'target'), `miscast` (CotAB { effect 0x4A, 1d2 }, PoR
-null), `aiFirstSlot` (PoR 0, CotAB 1). Cure Light Wounds' patient test is the spell map's
-`aiTarget: 'woundedNear'` (games/spellrules.ts), not a spell id. Feeblemind is the effect kind
-`feeblemind` (rules/effectkinds.ts). Tests: `test/casting.test.ts`, both games.
+Moved to part B: casting's parameters, [B-model/procedures.md §15.1](../../B-model/procedures.md#151-casting)
+(notes in its §17).

@@ -173,12 +173,9 @@ There are no other palette writes and no port 3C0h access (O).
 - Constant table `DS:25AC` = 0xFF, `25AE` = 0, `25B0` = 1, …, `25CC` = 15. Call counts: 0×4, 1×5, 2×2, 3×1, 4×1, 5×3, 6×2, 7×2, 8×1, 9×3, 10×7, 11×2, 12×2, 13×1 (title).
 
 ## 9. Port checklist (summary of differences)
-1. New families: SKY overlays and the 3-band EGA background; BIGPIC full-width pictures; TITLE #3/#4 overlays; TILES only for the code wheel.
-2. 8X8D1 #202 grows to 40 tiles (second frame style 0x11E+). Multi-set wall tiles are `r·10+k`, without PoR's `r or 10`.
-3. The overland is a bigpic plus a city cursor plus ECL menus. Drop the SQRPACI/ICON code path for CotAB.
-4. ECL area variables are word-sized at 0x4B00 (sky 0x4BFD/0x4BFE, hour 0x4BC9, mode 0x4BE6, city 0x4CA1, no-map 0x4BFB).
-5. Sky table entries 2 and 5 are dark colours. Sun/cloud placement as in §3.
-6. The font, CHEAD/CBODY/COMSPR, the sound driver and all effects are reusable as is. CFG sound codes are swapped and the CFG has 4 lines.
+
+Moved to part B, where each item is now profile data:
+[B-model/profile.md §4.1](../../B-model/profile.md#41-cotabs-presentation-differences).
 
 ## Open (?)
 - `DS:8B81` (CGA band recompute flag) and `DS:8B84` writers beyond the ECL hook; the `displayInput` timeout value for the demo prompt.

@@ -205,28 +205,9 @@ Ev = hook events; R = removal/expiry callback (eff[4]=1); D = invoked directly b
 
 ## Port status (2026-10-20)
 
-Each type's handler is a behaviour with parameters in the profile (`web/src/games/effectrules.ts`
-`handlers`, item handlers in `items` by +0x3E − 0x80; behaviours in `web/src/rules/effectkinds.ts`).
-The port runs each part of a handler on the event it means something for (the attack roll on 10, the
-save on 12…), where the original changes the globals whatever the event; that is harmless where nothing
-reads them, but not everywhere.
-
-**Port differences found** while making the map (checked in the binary) and since transcribed
-(2026-10-20, `web/test/porhandlers.test.ts`):
-- 10 / 20 Resist Cold / Fire (03e1, 06e4): whatever the event (removal included), damage of the type
-  is halved as a byte and the save +3, both only when 6819 has the type; the port had given the +3 at
-  every event-12 save. CotAB's 20 (`resist`, 0x277D0) is this procedure, except on removal.
-- 61 (1490): only against fire: per die of the count, the damage loses 2 as a byte and is put back up
-  to the count when below it (1 − 2 wraps to 255, which passes); then save +4, and fire without the
-  magic bit goes through `FUN_3723_0000(0)`. 113 (2a28) the same with 1 a die and no save.
-- 117 / 122 (2b20, 2d38): the holy water or oil is the current character's weapon (+0xCC), not any
-  readied item; their rolls go through `FUN_5216_0e2e`, so the count becomes 1 or 3; 122 then adds
-  the count to fire or magic damage.
-- The handlers rolling through `FUN_5216_0e2e` keep the dice count (DS:681C): 75 (1835), 79 (1a37),
-  80 (1a6a), 117 (2b52), 121 (2ce8), 122 (2d6a) (`keep` in the profile).
-- An item +0x3E past 139 has no handler in the original's table (its entries from 140 on are not
-  handlers: 140 → 0x3EFC1, 141 → 0x0470, I); the port's switch granted the effect, the map does
-  nothing (no item in the game's files has one).
+Moved to part B: how the port maps every effect type to a behaviour with parameters is
+[B-model/vocabularies.md](../../B-model/vocabularies.md) (§2–§3, the maps in §6); the notes that
+stood here (the differences found and transcribed while the map was made) are its §8.1.
 
 ## 3. Undeciphered, odd, and Haste/Slow
 

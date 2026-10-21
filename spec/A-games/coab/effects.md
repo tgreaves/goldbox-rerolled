@@ -145,37 +145,7 @@ out the current combatant (DS:6520). Three spell handlers call it too (0x48A8C, 
 
 ## Port status (2026-10-20)
 
-Done (`web/src/games/effectrules.ts` names a behaviour per type with its parameters, `web/src/rules/effectkinds.ts`
-holds them; `test/effectkinds.test.ts`):
-
-- Event lists and area set (profile data). Events 20 (the combat and world damage routines, after event
-  6 when not saved), 21 (turn start, after event 15 when not casting) and 22 (combat start, after event 8
-  for each character) are fired in both games; PoR lists nothing for them. DS:6FC2 is `fx.saved`, set by
-  the combat and world saves as 0x4BDA1 does (1 while event 12 runs).
-- Monster-class flags as the field `classFlags` (+0x14B; PoR −1).
-- Handlers 3, 4, 7, 12/14/38/146 (empty), 13, 18, 20, 25, 26, 27, 28, 35, 37, 47, 48, 50, 54, 57, 60, 63,
-  68, 69, 73, 75, 76, 77, 81, 82, 84, 85, 86, 91 (empty: no zone of its list exists), 96, 103, 110, 122,
-  123, 126, 129, 130, 131, 133, 134, 135, 136, 137, 138, 139, 142, 143, 144, 145; 140 (empty) and 141
-  (refills the paladin's uses). The rest name PoR's entries, the same behaviour with the same
-  parameters (the "same as PoR" list); every type 1–146 has an entry (`test/effectmap.test.ts`).
-- The monster specials of event 14 (`web/src/rules/specials.ts`, `test/specials.test.ts`): 83, 87, 88, 90,
-  128, 132, with PoR's 88; 83, 86, 126 and 131 take their target through the hook. The combat host gives
-  them the battlefield: the hook is the port's spell target pick for the computer, the bolt routines
-  (one procedure, the games' differences as `R.bolt` flags; Lightning Bolt uses it too, 7 squares in CotAB), the area
-  template (offsets `T.fanDx1`…), flights between cells, the finder and the computer's cast.
-- Removal recomputes CHA (0x0E) and STR (0x0C, 0x26, 0x92) through the current-stat routine (§5).
-- Readying and putting away items through the item kinds (§6), each kind an item behaviour in the
-  profile's `items` map, kind 0 the generic handler 147; the slot routine's Ring of Wizardry doubling
-  (training's `derive` takes the items when the caller has them).
-- 60 (0x28628) halves a weapon of plus 1 or 2: the profile's threshold had the wrong name (fixed 2026-10-20).
-
-Not yet, or approximated:
-
-- The hook's picker 0x2C56C and the finder 0x2E394 are taken to be PoR's (I); the eye rays' spells go
-  through the port's cast, which has 0x45251's own check since 2026-10-21 (with effect 0x4A, 1 in 2 "miscasts", 0x45373). The template's
-  sight range and side-line direction where the original reads unset memory (§7, ?). The three spell
-  handlers that use the template (0x48A8C, 0x49522, 0x496D1) are not ported. Berserk's
-  nearest-combatant search (11c:3e) takes the first of equal distance (I).
-- 130 takes the target out of play through the host's status call; CotAB's own death clean-up `e3:66`
-  is not transcribed.
-- The ECL DAMAGE save (engine.ts) does not set DS:6FC2.
+Moved to part B: the behaviours, the specials and the target hook are
+[B-model/vocabularies.md](../../B-model/vocabularies.md) (§3, §5, the map in §6); the current-stat
+routine is [B-model/procedures.md §11](../../B-model/procedures.md#11-the-current-stat-routine); the
+status notes that stood here are vocabularies.md §8.2.
