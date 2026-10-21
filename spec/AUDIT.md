@@ -645,6 +645,36 @@ Still open:
 | S11, S12 | `data/spells.ts` class-code comment (PoR only); default paths in `tools/coab/` | code tasks |
 | §6.6 | open questions that need research (effect 7's HP recalculation, DOSBox checks, the ECL loose ends, Alt-X during AI turns) | stay in [open-questions.md](open-questions.md) and the per-file "Open" blocks |
 
+**Work-plan step 3 (2026-10-21): part C storage, accounts and sync, offline app, overview.**
+[C-port/storage.md](C-port/storage.md), [accounts-and-sync.md](C-port/accounts-and-sync.md),
+[pwa-and-build.md](C-port/pwa-and-build.md) and [overview.md](C-port/overview.md) are written from
+the code. The contract text of `docs/server.md` (design, what syncs, sync rules, API, validation,
+data layout, security model, configuration) moved into accounts-and-sync.md, checked against
+`server/` and `web/src/store/`; `docs/server.md` is now the operator's guide and points to the spec.
+
+| # | Resolution |
+|---|---|
+| C17 (rest) | `web/src/store/records.ts` cites accounts-and-sync.md §1.2–1.3, `store/sync.ts` §5 (comment-only change) |
+| C22 | the behaviour is the specification: one set of `poolrad.*` keys for every game in the browser, one settings record per game on the server, and the settings merged last apply to every game ([storage.md §8](C-port/storage.md#8-localstorage-keys), [accounts-and-sync.md §5.9](C-port/accounts-and-sync.md#59-settings)) |
+
+Found while writing (code, `docs/server.md` and the spec compared; numbered SY to keep them apart
+from the C and S series):
+
+| # | Where | What | Next |
+|---|---|---|---|
+| SY1 | `server/app.ts`, `accounts.ts`, `web/src/store/api.ts`, `account.ts`, `web/vite.config.ts` | their comments cite `docs/server.md` sections now in the spec ("API", "Security model"; `app.ts` also "Rate limits", a heading that never existed). `storage.ts`, `config.ts`, `admin.ts`, the Dockerfile and the systemd unit cite sections that remain | comment-only fix: point them at accounts-and-sync.md §2, §3, §3.6 |
+| SY2 | `server/app.ts` `setCookie` vs old `docs/server.md` "30 days, renewed by use" | the server renews a session's expiry by use, but the cookie's `Max-Age` is sent only at sign-in, so the browser drops the cookie one lifetime after sign-in however active the player is | decide: send the cookie again on renewal, or call sessions fixed-length; specified as is (accounts-and-sync.md §3.3) |
+| SY3 | §2.9 `accounts.ts` row; the accounts-and-sync stub | "NFKC normalisation" was listed under the account-name rule: names are only trimmed and lower-cased; NFKC is applied to passwords before hashing | spec states the code (§3.1, §3.2) |
+| SY4 | old `docs/server.md` | recovery and invite codes were "stored as their SHA-256": it is the SHA-256 of `goldbox-code:` + the normalised code. The "16 KB of metadata" is 16 384 characters of `JSON.stringify` (UTF-16 units); the password minimum counts code points, the maximum (256) UTF-16 units | spec states the code |
+| SY5 | `server/storage.ts` vs the client | the `docs` id `journal` is accepted and listed but never written by the client (journal finds travel in each save's `.GBR`); the old data layout listed only `party.json` and `settings.json` | kept, marked unused (accounts-and-sync.md §1.3) |
+| SY6 | `web/src/store/user.ts` `writeAutosave` comment | "written on area changes and before battles": the code writes after actions, on an area change or after 30 s, not before battles (IMP-060 matches the code) | comment-only fix |
+| SY7 | IMP-073 vs `main.ts`, `ui/settings.ts` | IMP-073 (the party screen) says "the page foot shows the running version": it is at the foot of the games screen and in Settings, not on the party screen | IMPROVEMENTS.md wording |
+| SY8 | `ui/party.ts` export | the export ZIP is named `poolrad-save-<x>.zip` for every game, like PoR's database names | specified as is (storage.md §7.1); a per-game name would be a change |
+| SY9 | export vs records vs the original | the export always writes the item and effect files (empty when there are none), a server record leaves absent ones out, and the original's roster write deletes empty ones ([input-and-menus.md §2.2](A-games/engine/input-and-menus.md#22-character-files-o-fun_45c5_069e-fun_1802_0425)); every reader reads to the end of the file, so all three load the same | specified (storage.md §7.1, accounts-and-sync.md §1.3) |
+| SY10 | `web/src/store/savefiles.ts` vs `server/zip.ts` | the browser's ZIP writer sets no flags, the server's the UTF-8 flag `0x0800`; harmless, the names are ASCII | specified (storage.md §7.3) |
+| SY11 | `server/storage.ts` `put` | a write for an account deleted while the request ran answers 507 `too many records` | specified (accounts-and-sync.md §2.5) |
+| SY12 | `A-games/engine/savegame.md` "Files", last paragraph | a port statement (the `.GBR` sidecar on export) in part A; its contract is now storage.md §6 | for the step 5 clean-up of part A |
+
 ---
 
 ## 7. Proposed target structure
