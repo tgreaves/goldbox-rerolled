@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "build:single": "tsc && vite build --mode single",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "headless": "node --import ./headless/node-ts.mjs headless/run.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

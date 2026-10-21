@@ -227,9 +227,13 @@ is a JSON document:
 `draws` lists every request in order as `[count, sides, result]`. **Recording**: the source appends
 each request and its answer. **Replaying**: the source answers each request with the next entry's
 result; a request whose count or sides differ from the entry's is a **divergence**: the run MUST stop
-and report the entry's index and both requests. A tape that runs out is a divergence too.
-*Informative:* the reference implementation does not yet record or replay tapes; its tests feed
-scripted dice through the same injection point.
+and report the entry's index and both requests. A tape that runs out is a divergence too. A tape
+with an entry that no dice can give (a result outside `count`…`count · sides`, or not 0 for a count
+or sides of 0) is refused before the run. A request of the original that the port leaves out as
+presentation (§6.2) is not on the tape.
+*Informative:* the reference implementation's recorder and player are `TapeRecorder` and
+`TapePlayer` in `web/src/rules/dice.ts`; its unit tests also feed scripted dice through the same
+injection point (`Engine.roll`).
 
 ## 7. Timing
 
@@ -244,27 +248,74 @@ outcome MUST NOT depend on how long a wait lasted.
 
 A conforming build SHOULD offer a headless runner for the validations of [VALIDATION.md](../VALIDATION.md)
 (V3 script runs, V5 seeded battles): a script host and a combat host that answer from a list of
-answers, a dice source fed from a tape, and a **transcript** of what the rules asked for. The
-transcript is JSON lines, one event per line:
+answers, a dice source fed from a tape, and a **transcript** of what the rules asked for. Two builds
+that are fed the same game files, script and tape MUST produce the same transcript, line for line.
+
+### 8.1 The run
+
+A **script** is a JSON object:
+
+| Member | Meaning |
+|---|---|
+| `game` | the profile id (`por`, `coab`) |
+| `save` | the save slot letter: `SAVGAM<x>.DAT` and its party's files from the game folder (default `A`) |
+| `jump` | optional `[block, area, x, y, facing]`: the debug jump (§3.1) after play starts |
+| `commands` | what the player does, in order (below) |
+| `answers` | the answers, taken in order by every question either host is asked |
+
+The run loads the save (`loadSave`, the party's item and effect files attached), starts play
+(`start`), makes the jump if any, then does each command until the commands end or the game quits:
+
+| Command | Does |
+|---|---|
+| `f`, `l`, `r`, `b`, `s`, `L`, `e` | `command(c)` (§3.2) |
+| `travel d` | `travel(d)` on the tile wilderness |
+| `monsters id count picture` | loads `count` monsters of record `id` of `MON<block>CHA` as LOAD_MONSTER does |
+| `combat` | COMBAT, as a script makes it, with the monsters loaded (an error without any) |
+
+**Answers.** A menu (of either host, a spell or item list too) takes a 0-based index (−1 = exit in
+a spell or item list) or the text of an item (compared trimmed); INPUT_NUMBER a number 0–65 535;
+INPUT_STRING a string; a battle step a direction 0–7, `"end"` or `"undo"`; an aim the index of a
+target in the list offered (nearest first) or `null`; a yes/no question `true` or `false`. An
+answer of the wrong kind ends the run with an error; when the answers run out the run ends there.
+
+**The hosts.** Waits (`pause`, holds) take no time; `refresh` and the presentation calls do nothing.
+`engine("combat")` runs the battle (`fight`, §4.1) with the combat host answering from the list
+for each party member the player controls (the computer plays the monsters and those on Quick);
+nothing follows it (no treasure screen). Every other
+`engine(what)` hand-over (shops, temples, treasure, camp, the party screen, the ending) is
+transcribed and resolves at once.
+
+### 8.2 The transcript
+
+JSON lines, one event per line: an object whose `event` member names the event, then its fields in
+the order listed.
 
 | Event | Fields |
 |---|---|
-| `text` | `text`, `clear` |
-| `menu` | `items`, `prompt`, `answer` (the index given) |
-| `input` | `kind` (`number` or `text`), `answer` |
-| `picture` | the `picture` argument; `sprite`: `sprite`, `picture`, `distance` |
-| `sound` | `n` |
-| `area` | `block`, `area`, `x`, `y`, `facing2` (after each area entry) |
-| `write` | `address` (canonical), `value` (every ECL variable write the script makes) |
-| `screen` | `what`, `info` (each `engine(what)` hand-over) |
-| `combat` | each combat message, with the round and the current combatant; the outcome at the end |
+| `text` | `text`, `clear` (each `print`) |
+| `menu` | `items`, `prompt`, `answer` (the index given): script menus, combat menus, spell and item lists |
+| `input` | `kind`, then: `number`, `text`: `answer`; `step`: `left` (movement left), `answer`; `aim`: `prompt`, `targets` (each `name`, `x`, `y`, `ok`), `answer`; `confirm`: `prompt`, `answer` |
+| `picture` | `picture`: the `picture` argument (`{pic}`, `{big}`, `{head, body}` or null) |
+| `sprite` | `sprite`, `picture`, `distance` |
+| `sound` | `n` (the script host's and the combat host's `sound`; the sounds of presentation calls are not transcribed) |
+| `area` | `block`, `area`, `x`, `y`, `facing2`: once when play has started, and after each area entry (§3.2 `enter`) |
+| `write` | `address` (canonical), `value`: every store an opcode makes to an ECL variable, in order (writes by the rules, such as combat's outcome or the clock, are not transcribed) |
+| `command` | `command`: each script command, before it runs |
+| `screen` | `what`, `info` (null when none): each `engine(what)` hand-over |
+| `combat` | `text`, `round` (the battle's round counter, 0 in the first round), `current` (the current combatant's name, null before anyone acts): each combat message; at the end of the battle `outcome` (ECL 0x6DC7), `survived`, `round` |
+| `end` | `reason`: `script` (the commands are done), `quit` (the game ended), `answers` (with `waiting`: the question unanswered, `kind` and its `items`, `prompt` or `left`), `divergence` or `error` (with `message`) |
 
-Two builds that are fed the same game files, save, answers and tape MUST produce the same
-transcript, line for line (presentation-only calls such as `pose`, `flight` and holds are not
-transcribed). *Informative:* the reference implementation's play-test harness (`web/test/playtest.ts`)
-drives the engine this way but does not yet write this transcript ([AUDIT.md](../AUDIT.md) §6.9).
+Presentation-only calls (`pose`, `flight`, `effect`, `fall`, holds) are not transcribed.
+
+*Informative:* the reference runner is `web/headless/` (`harness.ts`, and `run.ts`, the command line:
+`node --import ./headless/node-ts.mjs headless/run.ts --files <folder> --script <script.json>
+[--tape <tape.json> | --seed <n>] [--record <tape.json>] [--out <transcript.jsonl>]`, plain Node 24
+with its type stripping; `npm run headless -- …` in `web/`). Without a tape it rolls the reference
+generator (seed 1 unless given) and `--record` writes the tape it made. Transcripts and tapes contain
+game text and stay with the player's files. The play-test harness `web/test/playtest.ts` is a
+different tool: it plays at random to look for broken states.
 
 ## Open
 
-- The tape recorder and the transcript writer are specified here but not yet in the reference
-  implementation (§6.4, §8).
+- None.

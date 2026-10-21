@@ -150,6 +150,8 @@ export class Engine {
   readonly io: Io
   /** the injected dice source (spec/B-model/host-contracts.md §6): every draw of the rules goes through `roll` */
   dice: Dice
+  /** observers for the headless transcript (host-contracts.md §8): opcode stores, and each area entry done */
+  trace: { store?(address: number, value: number): void; entered?(): void } = {}
 
   /** `dice`: the host's dice source, or a seed for the reference generator (informative, §6.3) */
   constructor(files: GameFiles, io: Io, dice: Dice | number = Date.now()) {
@@ -389,6 +391,12 @@ export class Engine {
     return this.regs.get(a) ?? 0 // undefined in the original
   }
 
+  /** An opcode's store to an ECL variable: the write, seen by `trace.store` (the headless transcript, host-contracts.md §8). */
+  private store(a: number, v: number) {
+    this.write(a, v)
+    this.trace.store?.(a, v & 0xffff)
+  }
+
   write(a: number, v: number) {
     v &= 0xffff
     if (a >= A0 && a < 0x4d00) this.A[a - A0] = v
@@ -482,8 +490,8 @@ export class Engine {
       for (let i = 0; i < n.length; i++) this.cur[F.name + 1 + i] = n.charCodeAt(i)
       return
     }
-    for (const ch of s) this.write(a++, ch.charCodeAt(0))
-    this.write(a, 0)
+    for (const ch of s) this.store(a++, ch.charCodeAt(0))
+    this.store(a, 0)
   }
 
   // ------------------------------------------------------------- operands
@@ -578,25 +586,25 @@ export class Engine {
         else this.setFlags(this.val(1), this.val(2))
         break
       }
-      case 0x04: this.readops(3); this.write(this.addr(3), this.val(1) + this.val(2)); break
-      case 0x05: this.readops(3); this.write(this.addr(3), this.val(2) - this.val(1)); break
+      case 0x04: this.readops(3); this.store(this.addr(3), this.val(1) + this.val(2)); break
+      case 0x05: this.readops(3); this.store(this.addr(3), this.val(2) - this.val(1)); break
       case 0x06: {
         this.readops(3)
         if (this.val(2) === 0) throw new Error('DIVIDE by 0 (runtime error 200 in the original)')
-        this.write(this.addr(3), Math.floor(this.val(1) / this.val(2)))
+        this.store(this.addr(3), Math.floor(this.val(1) / this.val(2)))
         break
       }
-      case 0x07: this.readops(3); this.write(this.addr(3), this.val(1) * this.val(2)); break
+      case 0x07: this.readops(3); this.store(this.addr(3), this.val(1) * this.val(2)); break
       case 0x08: {
         this.readops(2)
         let m = this.val(1) & 0xff
         if (m < 255) m++
-        this.write(this.addr(2), this.rand(m))
+        this.store(this.addr(2), this.rand(m))
         break
       }
       case 0x09: {
         this.readops(2)
-        if (this.kind[1] < 0x80) this.write(this.addr(2), this.val(1))
+        if (this.kind[1] < 0x80) this.store(this.addr(2), this.val(1))
         else this.storeString(this.addr(2), this.sbuf[1])
         break
       }
@@ -640,7 +648,7 @@ export class Engine {
         else this.io.picture({ head: this.B[PORTRAIT - B0], body: n })
         break
       }
-      case 0x0f: this.readops(2); this.write(this.addr(2), (await this.io.inputNumber()) & 0xffff); break
+      case 0x0f: this.readops(2); this.store(this.addr(2), (await this.io.inputNumber()) & 0xffff); break
       case 0x10: {
         this.readops(2)
         const s = (await this.io.inputText()).toUpperCase().slice(0, 40) || ' '
@@ -661,7 +669,7 @@ export class Engine {
         const { n, head } = this.variadic(3, 3)
         const items = Array.from({ length: n }, (_, i) => this.text(i + 1))
         if (head[1].str) this.io.print(head[1].str, true)
-        this.write(head[0].addr, await this.io.menu(items, { vertical: true }))
+        this.store(head[0].addr, await this.io.menu(items, { vertical: true }))
         break
       }
       case 0x16: case 0x17: case 0x18: case 0x19: case 0x1a: case 0x1b: {
@@ -689,7 +697,7 @@ export class Engine {
           t = (t + Math.floor((c[F.hp] + 5 * Math.max(c[F.ac] - 60, 0) + 5 * Math.max(c[F.thac0] - 39, 0)
             + 8 * (classLevel(c, 5) & 0xff) + 4 * (classLevel(c, 0) & 0xff)) / 10)) & 0xff // levels with any dual-class part (CotAB)
         }
-        this.write(this.addr(1), t)
+        this.store(this.addr(1), t)
         break
       }
       case 0x1e: {
@@ -704,7 +712,7 @@ export class Engine {
           const xs = this.nodes.map((c) => c[off])
           vals = [Math.min(...xs), Math.max(...xs), Math.floor(xs.reduce((a, b) => a + b, 0) / xs.length), 0]
         } else break
-        dest.forEach((d, i) => this.write(d, vals[i]))
+        dest.forEach((d, i) => this.store(d, vals[i]))
         break
       }
       case 0x20: {
@@ -730,8 +738,8 @@ export class Engine {
       }
       case 0x22: {
         this.readops(2)
-        this.write(this.addr(1), +this.nodes.some((c) => c[F.cls] === 4 || c[F.cls] === 10))
-        this.write(this.addr(2), 0)
+        this.store(this.addr(1), +this.nodes.some((c) => c[F.cls] === 4 || c[F.cls] === 10))
+        this.store(this.addr(2), 0)
         break
       }
       case 0x23: {
@@ -743,7 +751,7 @@ export class Engine {
         let res = 0
         if (r1 <= a) res = r2 <= b ? 3 : 1
         if (r2 <= b) res = 2
-        this.write(SURPRISE_RESULT, res)
+        this.store(SURPRISE_RESULT, res)
         break
       }
       case 0x24: await this.combat(); break
@@ -792,17 +800,17 @@ export class Engine {
         break
       }
       case 0x29: await this.encounterMenu(); break
-      case 0x2a: this.readops(3); this.write(this.addr(3), this.read(this.addr(1) + (this.val(2) & 0xff))); break
+      case 0x2a: this.readops(3); this.store(this.addr(3), this.read(this.addr(1) + (this.val(2) & 0xff))); break
       case 0x2b: {
         const { n, head } = this.variadic(2, 2)
         const items = Array.from({ length: n }, (_, i) => this.text(i + 1))
-        this.write(head[0].addr, (await this.io.menu(items)) & 0xff)
+        this.store(head[0].addr, (await this.io.menu(items)) & 0xff)
         break
       }
       case 0x2c: {
         this.readops(6)
         const c = await this.io.menu(['HAUGHTY', 'SLY', 'NICE', 'MEEK', 'ABUSIVE'])
-        this.write(this.addr(6), this.val(c + 1) & 0xff)
+        this.store(this.addr(6), this.val(c + 1) & 0xff)
         break
       }
       case 0x2d: await this.call(); break
@@ -811,7 +819,7 @@ export class Engine {
         this.readops(3)
         const r = (op === 0x2f ? this.val(1) & this.val(2) : this.val(1) | this.val(2)) & 0xff
         this.setFlags(0, r)
-        this.write(this.addr(3), r)
+        this.store(this.addr(3), r)
         break
       }
       case 0x31: // REDRAW (FUN_29c3_2aa2): the view again, if the encounter drawer drew over it
@@ -833,7 +841,7 @@ export class Engine {
         this.cursor = { col: 1, row: this.cursor.row + 1, open: false }
         break
       case 0x34: this.readops(1); break // DELAY: the one use (ECL7) waits 0 minutes
-      case 0x35: this.readops(3); this.write((this.addr(2) + this.val(3)) & 0xffff, this.val(1)); break
+      case 0x35: this.readops(3); this.store((this.addr(2) + this.val(3)) & 0xffff, this.val(1)); break
       case 0x36: this.readops(2); this.addNpc(this.val(1), this.val(2)); await this.io.refresh(); break
       case 0x37: this.loadWallsets(); break
       case 0x38: await this.program(); break
@@ -1108,6 +1116,9 @@ export class Engine {
     this.monstersLoaded = true
   }
 
+  /** COMBAT as a script makes it, outside a script (the headless runner's `combat`, host-contracts.md §8.1) */
+  async combatNow() { await this.combat() }
+
   private async combat() {
     this.readops(0)
     if (!this.monstersLoaded && !this.duel) {
@@ -1170,7 +1181,7 @@ export class Engine {
       else if (act === 'pursue') v = fast < g ? 0 : 1
       else v = act
       if (v === 0) this.io.print('The monsters flee.', false)
-      this.write(dest, v)
+      this.store(dest, v)
       return
     }
   }
@@ -1261,7 +1272,7 @@ export class Engine {
       case 'divideRemainder': { // DIVIDE, plus the remainder in B 0x6E3F (CotAB 0x7F3F)
         this.readops(3)
         const b = this.val(2)
-        this.write(this.addr(3), b ? Math.floor(this.val(1) / b) : 0)
+        this.store(this.addr(3), b ? Math.floor(this.val(1) / b) : 0)
         this.B[0x6e3f - B0] = b ? this.val(1) % b : 0
         break
       }
@@ -1282,8 +1293,8 @@ export class Engine {
         for (let m = 0; m < party.length && at === 0xff; m++) {
           for (let i = 1; i <= F.memorisedCount; i++) if (party[m][F.memorised + i - 1] === id) { at = i; who = m; break }
         }
-        this.write(this.addr(2), at)
-        this.write(this.addr(3), who)
+        this.store(this.addr(2), at)
+        this.store(this.addr(3), who)
         break
       }
       case 'protection': // the code-wheel check; the port asks nothing (IMP-068)
@@ -1519,7 +1530,7 @@ export class Engine {
       await this.run(this.vectors[0])
       if (!this.areaChanged && !this.quit) await this.run(this.vectors[1])
       await this.io.refresh()
-      if (!this.areaChanged || this.quit) return
+      if (!this.areaChanged || this.quit) { if (!this.quit) this.trace.entered?.(); return }
     }
   }
 
