@@ -1,6 +1,12 @@
 # CotAB effects: diff against PoR `engine/effects.md`
 
-Part of [README.md](README.md). Read from the CotAB image (2026-10-20); machine-readable lists in the port's `web/src/games/effectrules.ts`. Marks: O seen in code/data, I inferred, ? unknown. CotAB Ghidra-style `SSSS:OOOO` is the image paragraph itself (`4aab:0523` = image 0x4AFD3).
+> **Status: complete as a set of differences.** Normative. Part A of the
+> [specification](../../README.md): Curse of the Azure Bonds. Read [engine/effects.md](../engine/effects.md)
+> first; types not listed here behave as there. Evidence marks as in the README. The engine model's
+> behaviours, specials and CotAB's handler map are [B-model/vocabularies.md](../../B-model/vocabularies.md)
+> (§3, §5, §6), the current-stat routine [B-model/procedures.md §11](../../B-model/procedures.md#11-the-current-stat-routine).
+
+Read from the CotAB image (2026-10-20). CotAB Ghidra-style `SSSS:OOOO` is the image paragraph itself (`4aab:0523` = image 0x4AFD3).
 
 ## 1. Dispatch (O)
 
@@ -49,7 +55,7 @@ Part of [README.md](README.md). Read from the CotAB image (2026-10-20); machine-
 
 ## 3. Globals
 
-| PoR | CotAB | port `fx` |
+| PoR | CotAB | name in part B ([vocabularies.md §1.1](../../B-model/vocabularies.md#11-the-shared-globals)) |
 |---|---|---|
 | 6816 | 6FAC | save |
 | 6817 | 6FAD | adding |
@@ -135,17 +141,16 @@ Lightning (0x47FB0): 20 + 1d6 on the aim, then 0x479B4(3, 20, 4, 0).
 from DS:255A) runs from (x0, y0) to (x1, y1), keeping each step's direction; while its cost is below 2·len
 and (x1, y1) lies in 1..48 × 1..23, the end moves on by those directions in turn (DS:2696/269F; +2 straight,
 +3 diagonal). The end is clamped to 0..49 × 0..24 and brought back by the line-of-sight routine 11c:39
-(0x54EF1) to where sight stops; its range argument is an uninitialised word (bp−0x78, ?: the port sets no
+(0x54EF1) to where sight stops; its range argument is an uninitialised word (bp−0x78, ?; a conforming build sets no
 limit). The creatures met on that line (0x55BB5) are listed in order; once one is met a second time (a 2×2
 creature's second cell) a flag is set that is never cleared, and nobody further is listed (a quirk, 0x458F0).
 Width 2 adds those on the line to the end + (DS:0A22, DS:0A2A)[d], width 3 also to the end + (DS:0A12,
 DS:0A1A)[d], d the direction of the step onto the last creature listed on the first line (unset without
-one, ?: the port takes the last step's); these lines are not cut by sight. The list (DS:744E/744F) leaves
+one, ?; a conforming build takes the last step's); these lines are not cut by sight. The list (DS:744E/744F) leaves
 out the current combatant (DS:6520). Three spell handlers call it too (0x48A8C, 0x49522, 0x496D1).
 
-## Port status (2026-10-20)
+## Open
 
-Moved to part B: the behaviours, the specials and the target hook are
-[B-model/vocabularies.md](../../B-model/vocabularies.md) (§3, §5, the map in §6); the current-stat
-routine is [B-model/procedures.md §11](../../B-model/procedures.md#11-the-current-stat-routine); the
-status notes that stood here are vocabularies.md §8.2.
+- Damage type 0x20 (breath, **I**) and 0x40 (**?**), §3.
+- The area template's two uninitialised values (the range of the sight cut, the direction without a
+  creature on the first line), §7: **?** in the original, the build's choice stated there.

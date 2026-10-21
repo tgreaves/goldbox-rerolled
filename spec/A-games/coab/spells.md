@@ -1,6 +1,11 @@
 # CotAB spell handlers: diff against PoR `engine/spells.md`
 
-Part of [README.md](README.md). Read from the CotAB image (2026-10-20). Marks: O seen in code/data, I inferred, ? not checked. Addresses are CotAB image offsets; handlers are in code segment 0x43F7 (image 0x43F70).
+> **Status: complete as a set of differences.** Normative. Part A of the
+> [specification](../../README.md): Curse of the Azure Bonds. Read [engine/spells.md](../engine/spells.md)
+> first; ids marked "same" behave as there. Evidence marks as in the README. The engine model's spell
+> kinds and CotAB's spell map are [B-model/vocabularies.md](../../B-model/vocabularies.md) §4 and §7.
+
+Read from the CotAB image (2026-10-20). Addresses are CotAB image offsets; handlers are in code segment 0x43F7 (image 0x43F70).
 
 ## 1. Dispatch and shared helpers (O)
 
@@ -80,7 +85,7 @@ Dice: 0x4BE7C (roll, keeping the dice count in DS:6FB2 for the resistances) is u
 
 0x44E02 is byte-identical to PoR's: special cases 40 (1d6×10), 57 and 61 (5d4), 59 (1d4×10 + 40), 63 (2d10×10 in combat, else (1d10 + 10)×10), 67 (1440, dead in CotAB: Neutralize Poison never asks); otherwise record bytes 4 + 5·L (O for every new id, the records checked 2026-10-20). Entangle (78) asks for Duration(0x88), past the table: that record's bytes give 6 + 3·L (its class byte 6 leaves L uninitialised in 0x4F8BF unless the gate or an item gives 6; I: the port uses the cast's level). New: 69 10L, 70 2L, 73 L, 77 12, 79 4L, 80 10 + L, 82 2 + L, 84 L, 85 2 + L, 86 L, 88 L, 91 L, 94 L, 100 10L; 81, 93, 95–97 permanent.
 
-## 4. Quirks to decide on (O)
+## 4. Quirks of the original (O)
 
 - Cure Disease removes 0x32 and 0x39 as in PoR, but in CotAB 0x32 is the Hot Fire Shield.
 - Faerie Fire and Charm Monsters: the last listed target always saves.
@@ -92,10 +97,9 @@ Dice: 0x4BE7C (roll, keeping the dice count in DS:6FB2 for the resistances) is u
 - A gas cloud's zone number counts the caster's zones but the last one in the list (both games), so two zones can share a number and a lift (0x28, 0x5B) or a Dispel Magic can take the other one.
 - Cloudkill (0x48F05) takes the cell under a 0x1E square from the first Stinking Cloud that laid it and a 0x1C square from the first other Cloudkill (neither 0x1E nor 0x1C); Stinking Cloud (0x4675B) has no 0x1C case, so a Stinking Cloud over Cloudkill keeps 0x1C as the cell under it; each lift draws only its own list again.
 
-All are kept (rule 2), each said so in the code; the port's own simplifications are listed under port status.
+A conforming build reproduces all of them (they are the original's behaviour); the engine model's notes on them are [B-model/vocabularies.md §8.3](../../B-model/vocabularies.md#83-from-coabspellsmd-port-status).
 
-## Port status
+## Open
 
-Moved to part B: the spell kinds and CotAB's spell map are
-[B-model/vocabularies.md](../../B-model/vocabularies.md) (§4, the map in §7); the notes that stood
-here, with what the port infers, are its §8.3.
+- None known for the handlers; Entangle's level for Duration(0x88) is uninitialised in the original
+  (§3, §4), and the build's choice is part B's ([B-model/vocabularies.md §8.3](../../B-model/vocabularies.md#83-from-coabspellsmd-port-status)).
