@@ -222,7 +222,7 @@ Addresses are DS offsets; "/ n" is the row size (decimal). "absent" is `at` = �
 **O** for every row: each address is the table that the cited part A routine indexes, and the
 reference implementation's tests read every table of each game's own START.EXE through this map
 (`web/test/tables.test.ts`). *Informative:* the coin-name table's DS:0F95 is its first length byte;
-[coab/tables.md §2](../A-games/coab/tables.md#2-address-mapping-every-ds-table-the-port-reads-or-hard-codes-from-startexe)
+[coab/tables.md §2](../A-games/coab/tables.md#2-address-mapping-every-rules-table-in-the-data-segment)
 cites DS:0F96, the first character.
 
 ### 3.3 Tables a game lacks

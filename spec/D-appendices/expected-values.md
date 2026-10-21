@@ -1,9 +1,8 @@
 # Expected values
 
 > **Status: partial** (work-plan steps 5 and 6, [AUDIT.md](../AUDIT.md) §8). Informative. Part D
-> of the [specification](../README.md). Written: the data dumps moved out of part A in step 5 (§1–§4).
-> To come: the creation tables, CotAB's tables (now in [coab/tables.md](../A-games/coab/tables.md)
-> beside their addresses), and decoded sizes and hashes for validation V1.
+> of the [specification](../README.md). Written: the data dumps moved out of part A in step 5 (§1–§5).
+> To come: PoR's creation tables, and decoded sizes and hashes for validation V1.
 
 Per D5, values the game files hold are **informative** here: a builder reads them from the player's
 files at the addresses part A gives (those addresses and reading rules are normative) and can check
@@ -192,3 +191,70 @@ image-slot loading are normative in [battlefield.md, "Cell table"](../A-games/en
 | 0x3D–0x3F | cactus (Wild 29–31) | no | blocks |
 | 0x40 | tall cactus base (Wild 32) | yes | clear |
 | 0x41 | tall cactus top (Wild 33) | no | blocks |
+
+## 5. Curse of the Azure Bonds rules tables
+
+Source: CotAB's data segment (DS = image 0xABE0); the addresses, strides and reading rules are
+normative in [coab/tables.md](../A-games/coab/tables.md). Values the CotAB file still gives beside
+their address (class bits, trainer bits, sky colours, temple prices …) are not repeated here.
+
+### 5.1 Experience (`DS:4293`)
+
+u32 at DS:4293 + k·0x63 + L·4, the experience needed for level L; cap = the highest level with a
+value (PoR's cap in brackets).
+
+| Class | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | cap (PoR) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Cleric | 1501 | 3001 | 6001 | 13001 | 27501 | 55001 | 110001 | 225001 | 450001 | – | – | **10** (6) |
+| Fighter | 2001 | 4001 | 8001 | 18001 | 35001 | 70001 | 125001 | 250001 | 500001 | 750001 | 1000001 | **12** (8) |
+| Paladin | 2751 | 5501 | 12001 | 24001 | 45001 | 95001 | 175001 | 350001 | 700001 | 1050001 | – | **11** (1) |
+| Ranger | 2251 | 4501 | 10001 | 20001 | 40001 | 90001 | 150001 | 225001 | 325001 | 650001 | – | **11** (1) |
+| Magic-User | 2501 | 5001 | 10001 | 22501 | 40001 | 60001 | 90001 | 135001 | 250001 | 375001 | – | **11** (6) |
+| Thief | 1251 | 2501 | 5001 | 10001 | 20001 | 42501 | 70001 | 110001 | 160001 | 220001 | 440001 | **12** (9) |
+
+### 5.2 THAC0 (`DS:3E3A`)
+
+Byte 60 − THAC0 at DS:3E3A + k·13 + L, shown as THAC0; bold cells differ from PoR.
+
+| L | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Cleric, Druid, Monk | 20 | 20 | 20 | 18 | 18 | 18 | 16 | 16 | 16 | 14 | 14 | 14 |
+| Fighter, Paladin, Ranger | 20 | **20** | 18 | 17 | 16 | 15 | 14 | 13 | 12 | 11 | 10 | 9 |
+| Magic-User | **21** | **21** | **21** | **21** | **21** | 19 | 19 | 19 | 19 | 19 | 17 | 17 |
+| Thief | 20 | 20 | 20 | 20 | 19 | 19 | 19 | 19 | 16 | 16 | 16 | 16 |
+
+The bold cells differ from PoR (PoR fighter L2 = 19; PoR MU levels 1–5 = 20).
+
+The bold cells differ from PoR (PoR fighter L2 = 19; PoR MU levels 1–5 = 20).
+
+### 5.3 Spell slots (`DS:42BC`, `DS:43E5`, `DS:4448`, `DS:44AB`)
+
+The slot counts the increments of [coab/tables.md §3.5](../A-games/coab/tables.md#35-spell-slots-o-fun-at-50480)
+add up to, per class level.
+
+Spells of levels 1–5, per class level:
+
+| L | Cleric | MU | Paladin (cleric) | Ranger (druid / MU) |
+|---|---|---|---|---|
+| 1 | 1 0 0 0 0 | 1 0 0 0 0 | – | – |
+| 2 | 2 0 0 0 0 | 2 0 0 0 0 | | |
+| 3 | 2 1 0 0 0 | 2 1 0 0 0 | | |
+| 4 | 3 2 0 0 0 | 3 2 0 0 0 | | |
+| 5 | 3 3 1 0 0 | 4 2 1 0 0 | | |
+| 6 | 3 3 2 0 0 | 4 2 2 0 0 | | |
+| 7 | 3 3 2 1 0 | 4 3 2 1 0 | | |
+| 8 | 3 3 3 2 0 | 4 3 3 2 0 | | 1 / 0 |
+| 9 | 4 4 3 2 1 | 4 3 3 2 1 | 1 0 | 1 / 1 |
+| 10 | 4 4 3 3 2 | 4 4 3 2 2 | 2 0 | 2 / 1 |
+| 11 | – | 4 4 4 3 3 | 2 1 | 2 / 2 |
+
+### 5.4 Saving throws (`DS:45BE`)
+
+DS:45BE + k·0x3C + L·5 + i, in the order death, petrification, rod, breath, spell.
+
+- Cleric: L1–3 10 13 14 16 15 · L4–6 9 12 13 15 14 · L7–9 7 10 11 13 12 · L10–12 6 9 10 12 11
+- Fighter and Ranger: L1–2 14 15 16 17 17 · 3–4 13 14 15 16 16 · 5–6 11 12 13 13 14 · 7–8 10 11 12 12 13 · 9–10 8 9 10 9 11 · 11–12 7 8 9 8 10
+- Paladin (fighter − 2): L1–2 12 13 14 15 15 · 3–4 11 12 13 14 14 · 5–6 9 9 11 11 12 · L7 8 9 10 10 11 · **L8 9 9 10 10 11** (data quirk: death save worse than at L7) · 9–10 6 7 8 7 9 · 11–12 5 6 7 6 8
+- MU: L1–5 14 13 11 15 12 · 6–10 13 11 9 13 10 · 11–12 11 9 7 11 8
+- Thief: L1–4 13 12 14 16 15 · 5–8 12 11 12 15 13 · 9–12 11 10 10 14 11
+- 12 rows per class (levels 1–12). The unused L0 slot of class k+1 holds L12 of class k.
