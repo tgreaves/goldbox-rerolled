@@ -32,6 +32,8 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
   /** the games screen: switch game, import another, remove one */
   games: () => void
   play: (start: Start) => void
+  /** the game's demo, for a game that has one */
+  demo?: () => void
 }) {
   await seedRoster(files)
   let roster = await listCharacters()
@@ -105,6 +107,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
         ...(auto ? [{ k: 'O', label: 'Continue', on: true, main: true, hint: `the autosave of ${new Date(auto.savedAt).toLocaleString()}` }] : []),
         { k: 'B', label: 'Begin adventuring', on: has, main: !auto && has, hint: 'with this party', off: 'add or create a character first' },
         { k: 'L', label: 'Load saved game', on: true, hint: 'slots A–J' },
+        ...(nav.demo ? [{ k: 'W', label: 'Watch the demo', on: true, hint: "the game's own demo" }] : []),
       ] },
       { title: 'Party', fns: [
         { k: 'A', label: 'Add character', on: canAdd, hint: 'from your roster', off: party.length >= MAX_PARTY ? 'the party is full' : 'no one else in the roster' },
@@ -297,6 +300,10 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
       }
       case 'E':
         nav.title()
+        return
+      case 'W':
+        window.removeEventListener('keydown', onKey)
+        nav.demo?.()
         return
     }
     draw()

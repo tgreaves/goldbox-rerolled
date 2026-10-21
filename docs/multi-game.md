@@ -288,8 +288,9 @@ need only its profile modules and any procedure the earlier games do not have.
 (CotAB's "Curse of the Azure Bonds v1.3" / Play / Demo, read from START.EXE) shows it; Play goes to
 the party screen as before, the demo key runs the demo: `Engine.newDemo` (block, record and speed
 from the profile, no party) and `Engine.runDemo` (the record's on_enter, then the party disbanded),
-in the explore screen with nothing saved, then the title and the menu again, which answers Demo by
-itself after the profile's timeout. The demo mode's behaviours are flags read by the procedures
+in the explore screen with nothing saved. Since 2026-10-21 the port offers it as **Watch the demo** on
+the party screen instead of the original's menu after the title (IMP-074); the menu's text and
+timeouts stay in the profile as the original's data. The demo mode's behaviours are flags read by the procedures
 they change (key reads, "Continue Battle:", the battle aftermath), so a later game's demo is its
 profile entry. PoR's `startMenu` is null and its start-up is unchanged. spec/coab/ecl.md, "Start-up
 menu and demo"; tests `test/demo.test.ts`.

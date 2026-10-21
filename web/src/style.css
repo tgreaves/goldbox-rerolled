@@ -231,13 +231,6 @@ dialog.panel form.jump input { width: 4.5rem; }
 /* title */
 .title { flex: 1; min-height: 100dvh; display: grid; place-items: center; align-content: center; gap: 1rem; cursor: pointer; padding: 1rem; }
 .title canvas { width: min(96vw, 160dvh); height: auto; image-rendering: pixelated; border: none; }
-.startmenu { flex: 1; min-height: 100dvh; display: grid; place-items: center; align-content: center; gap: 1.25rem; padding: 1rem; text-align: center; }
-.startmenu h1 { margin: 0; color: var(--ega-magenta); font-size: 1.4rem; }
-.startmenu .actions { display: flex; gap: 0.75rem; justify-content: center; }
-.startmenu .actions button { min-width: 7rem; }
-.startmenu .actions button u { text-decoration: none; font-weight: 700; }
-.startmenu .actions button:not(.primary) u { color: var(--accent); }
-.font-original .startmenu h1 { font-size: 32px; }
 
 /* party screen */
 .partyscreen {
@@ -298,7 +291,7 @@ table.modify button { min-height: 36px; width: 2.4rem; padding: 0; }
 .ending-panel .ending-text p { margin: 0.1em 0; }
 
 /* the game's own 8 × 8 font (IMP-038): sizes in whole multiples of 8 px keep it sharp */
-.font-original .game, .font-original .partyscreen, .font-original dialog.panel, .font-original .title, .font-original .startmenu {
+.font-original .game, .font-original .partyscreen, .font-original dialog.panel, .font-original .title {
   font-family: 'Pool of Radiance', ui-monospace, monospace; font-size: 16px; line-height: 1.5;
   -webkit-font-smoothing: none; font-smooth: never; letter-spacing: 0;
 }

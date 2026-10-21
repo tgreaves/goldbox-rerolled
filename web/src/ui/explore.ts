@@ -64,7 +64,7 @@ type CharFiles = { sav: Uint8Array; itm?: Uint8Array; spc?: Uint8Array }
 export type Start =
   | { kind: 'new'; party: CharFiles[] }
   | { kind: 'load'; dat: Uint8Array; party: CharFiles[]; label: string; known?: string[] }
-  /** the start-up menu's demo (games/startup.ts): its script with its own NPCs; nothing is saved */
+  /** the game's demo (games/startup.ts), from the party screen: its script with its own NPCs; nothing is saved */
   | { kind: 'demo'; demo: DemoMode }
 
 const CLASS_NAMES = ['Cleric', 'Druid', 'Fighter', 'Paladin', 'Ranger', 'Magic-User', 'Thief', 'Monk']
@@ -1829,7 +1829,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   function commandBar() {
     if (engine.demo) { // the demo takes no commands; it can be left (IMP-074)
-      menuBar.innerHTML = '<button class="primary" data-cmd="leave" title="Escape: back to the start-up menu">Leave demo</button>'
+      menuBar.innerHTML = '<button class="primary" data-cmd="leave" title="Escape: back to the party screen">Leave demo</button>'
       menuBar.querySelector('button')!.addEventListener('click', () => leaveDemo())
       app.querySelector('.game')!.classList.add('demo') // no movement pad, no Debug
       return
@@ -2027,7 +2027,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   sync(0)
   if (start.kind === 'demo') {
     // the demo (CotAB 0x1C061): its on_enter, then back to the start-up loop; nothing is saved
-    note('The demo. Escape or Leave demo goes back to the start-up menu.')
+    note('The demo. Escape or Leave demo goes back to the party screen.')
     busy = true
     void (async () => {
       try { await engine.runDemo() } catch (err) {
