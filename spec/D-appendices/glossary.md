@@ -1,8 +1,8 @@
 # Glossary
 
-> **Status: partial** (work-plan steps 5 and 6, [AUDIT.md](../AUDIT.md) §8). Normative. Part D of
-> the [specification](../README.md). Written: the terms part A uses (step 5, 2026-10-21). To come:
-> the terms of parts B and C.
+> **Status: complete** (work-plan steps 5 and 6, [AUDIT.md](../AUDIT.md) §8). Normative. Part D of
+> the [specification](../README.md). The terms of part A (step 5), part B, part C and the companion
+> documents (step 6).
 
 One meaning for each term. Where the spec or the original's own texts use another word for the same
 thing, it is listed with the term. Terms are those of Pool of Radiance (PoR) unless marked CotAB
@@ -96,3 +96,64 @@ thing, it is listed with the term. Terms are those of Pool of Radiance (PoR) unl
 | **dice tape** | the sequence of (count, sides) requests and their results of a run (D2, [README](../README.md#randomness-the-dice-tape-d2)) |
 | **O**, **I**, **?**, **G**, **Bug** | the evidence marks ([README](../README.md#evidence-marks)) |
 | **informative** | text that explains, or lists values a builder reads elsewhere (the game files, another section); everything else is normative |
+
+## The engine model (part B)
+
+| Term | Meaning |
+|---|---|
+| **game profile** | everything one game needs that is not shared code: identity, files, field map, table map, script map, rules, handler maps, presentation data ([profile.md](../B-model/profile.md)); made active by `setGame` |
+| **F**, **C**, **P** (value kinds) | where a profile value comes from: read from the player's **f**iles at run time, a value of the original's **c**ode the profile holds, or written for the **p**ort ([profile.md §1.1](../B-model/profile.md#11-where-a-value-comes-from)); not the evidence marks |
+| **field map** (`F`) | the byte offset of each named character-record field in the game's layout; −1 where the game has no such field ([records-and-tables.md §2](../B-model/records-and-tables.md#2-the-field-map-charfields)) |
+| **table map** (`T`), **table ref** | the DS offset (`at`) and row size (`row`) of each named START.EXE table; `at` = −1 for a table the game lacks (an **absent table**) ([records-and-tables.md §3](../B-model/records-and-tables.md#3-the-table-map-tablemap)) |
+| **rules** (`R`) | the game's rules values and procedure choices ([procedures.md](../B-model/procedures.md)) |
+| **parametric procedure** | one procedure for every game, its differences as parameters in the profile ([procedures.md](../B-model/procedures.md)); a **paired procedure** is one written twice because the games' procedures differ in kind, the profile naming which runs ([adding-a-game.md §4](../B-model/adding-a-game.md#4-what-is-still-a-paired-procedure)) |
+| **records kept native** | records are held and written in the game's own layout; port-only data goes in sidecar files ([records-and-tables.md §1](../B-model/records-and-tables.md#1-records-stay-native)) |
+| **canonical numbering** | ECL addresses as PoR numbers them; a game's own addresses are translated by region to it ([script-vm-map.md §1](../B-model/script-vm-map.md#1-canonical-numbering)) |
+| **character view** | the B space read as the current character's record through the view map: shared entries, then per-game ones ([script-vm-map.md §4](../B-model/script-vm-map.md#4-the-character-view-b)) |
+| **opcode variant**, **behaviour flag** | an opcode whose encoding or meaning differs by game, named in the script map; a flag of a shared opcode that changes one detail ([script-vm-map.md §5](../B-model/script-vm-map.md#5-opcodes)) |
+| **behaviour**, **effect behaviour**, **item behaviour** | a build's procedure for an effect type or item kind, named in the handler maps with its parameters ([vocabularies.md §3](../B-model/vocabularies.md#3-effect-behaviours)) |
+| **spell kind** | a build's procedure for a spell id, with parameters, in the spell map ([vocabularies.md §4](../B-model/vocabularies.md#4-spell-kinds)) |
+| **handler map** | a game's map from effect type, item kind or spell id to a behaviour or kind and its parameters ([vocabularies.md §6](../B-model/vocabularies.md#6-the-effect-handler-maps), [§7](../B-model/vocabularies.md#7-the-spell-handler-maps)) |
+| **monster special** | a behaviour on event 14 that gives a monster its attack form (breath, gaze …) ([vocabularies.md §5](../B-model/vocabularies.md#5-monster-specials-and-the-target-hook)) |
+| **script host** (`Io`), **combat host** (`CombatUi`), **effect host** (`FxHost`) | the interfaces through which the rules ask a screen for text, menus, input, pictures, sound and waits ([host-contracts.md](../B-model/host-contracts.md)) |
+| **hand-over** | the script host's `engine(what)`: the rules give the screen a built-in screen to run (shop, temple, camp, combat …) and wait for it |
+| **dice source**, **request** | the one injected source of every game-changing random draw; a request `(count, sides)` is answered with the sum of the dice ([host-contracts.md §6](../B-model/host-contracts.md#6-randomness-the-dice-source)) |
+| **recording**, **replaying**, **divergence** | writing a run's dice tape; answering a run from a recorded tape; a request that differs from the tape's next draw, or a tape that runs out, which stops the run ([host-contracts.md §6.4](../B-model/host-contracts.md#64-the-tape-format)) |
+| **headless run**, **transcript**, **answers** | a run with no screen whose hosts answer from a list of answers and write a transcript of JSON events; two conforming builds give the same transcript for the same files, script and tape ([host-contracts.md §8](../B-model/host-contracts.md#8-the-headless-harness)) |
+| **required files**, **kept files**, **markers** | the files without which a game is not imported; the files the port keeps of a game; the files only that game has, by which it is recognised ([files-and-detection.md](../B-model/files-and-detection.md)) |
+| **store** | a browser database the port keeps per game: `files` (the game files) and `user` (the player's data) ([files-and-detection.md §3](../B-model/files-and-detection.md#3-per-game-stores)) |
+
+## The port (part C)
+
+| Term | Meaning |
+|---|---|
+| **games screen**, **party screen**, **play screen** | the list of games with Import; a game's start screen with Play, Party and Files; the screen of exploring and battles ([app-flow.md](../C-port/app-flow.md)) |
+| **behaviour contract** | the normative part of the interface: every screen, its states, controls, keys, texts and what each does, and its layout in words per screen class (D4, [ui-contract.md](../C-port/ui-contract.md)) |
+| **screen class** | the play screen's layout by window shape: wide (row or column), narrow, phone landscape ([ui-contract.md §3](../C-port/ui-contract.md#3-screen-classes)) |
+| **party card**, **sheet** | a party member's box on the play screen; the character panel a card opens ([ui-contract.md §4.1](../C-port/ui-contract.md#41-party-cards), [screens.md](../C-port/screens.md)) |
+| **panel** | a modal dialog of the play screen (sheet, shop, camp, treasure …), with a ✕ and Escape to close ([ui-contract.md §7](../C-port/ui-contract.md#7-dialogs)) |
+| **command bar**, **☰ menu**, **pad** | the row of commands under the view; the menu of everything else (Save, Journal, Settings …); the on-screen movement buttons ([ui-contract.md §4–§5](../C-port/ui-contract.md#5-the-command-bar)) |
+| **text log**, **block**, **port note** | the scrolling text of the play screen; the text of one game screen in it; a line the port adds, shown in the quiet colour ([ui-contract.md §6](../C-port/ui-contract.md#6-the-text-log)) |
+| **colour role** | a use of colour (game text, highlight, frame …) mapped to one EGA colour ([ui-contract.md §2](../C-port/ui-contract.md#2-colours-as-roles)) |
+| **drawn view**, **3D view** (Enhanced) | the original's 88 × 88 view drawn as it draws it (View = Original, the conformance target, D6); the port's WebGL view (View = Enhanced (3D)) ([exploration-view.md §1](../C-port/exploration-view.md#1-the-two-views)) |
+| **slide** | the 3D view's animated step or turn (IMP-001); the drawn view has none |
+| **area map**, **landmark** | the overhead map beside the view; a marked place on it, found by the landmark patterns ([exploration-view.md](../C-port/exploration-view.md), [port-data.md §3](port-data.md#3-landmark-patterns)) |
+| **journal**, **find** (`known`) | the port's Journal panel (IMP-055); an id the game's own text has revealed, kept with the save ([storage.md §6](../C-port/storage.md#6-journal-finds-and-the-gbr-sidecar)) |
+| **autosave** | the save the port writes after actions, its own record `auto`, never one of the slots A–J (IMP-060, [storage.md §5](../C-port/storage.md#5-saved-games-and-the-autosave)) |
+| **sidecar**, **`.GBR`** | a file beside a game's own save files holding port-only data (journal finds), so the original files stay byte-compatible ([storage.md §6](../C-port/storage.md#6-journal-finds-and-the-gbr-sidecar)) |
+| **export**, **import** (of saves) | the ZIP of a player's saves and roster in the games' own formats, and reading one back ([storage.md §7](../C-port/storage.md#7-export-and-import)); not the import of game files |
+| **account**, **record**, **version**, **conflict copy** | the optional server's user; its unit of storage (`<kind>/<id>`, `{ meta, files }`); the record's `updatedAt`; the copy kept when two devices changed the same save ([accounts-and-sync.md §1](../C-port/accounts-and-sync.md#1-model)) |
+| **sync**, **push**, **pull** | sending the local changes to the server and merging the server's into the browser ([accounts-and-sync.md §5](../C-port/accounts-and-sync.md#5-client-sync)) |
+| **offline app**, **single-file build**, **version line** | the installable web app with its service worker; the build as one HTML file; the running version shown on the games screen and in Settings ([pwa-and-build.md](../C-port/pwa-and-build.md)) |
+
+## Validation (companion documents)
+
+| Term | Meaning |
+|---|---|
+| **test vector**, **manifest** | an input and the output a conforming build gives for it; the committed file of them ([test-vectors.md](test-vectors.md)) |
+| **S**, **E**, **F** (vector kinds) | needs nothing; needs the game's executable, output in full; needs the player's files, output as a hash ([test-vectors.md §1](test-vectors.md#1-kinds)) |
+| **golden output** | the reference implementation's full output for an F vector, made locally from the player's files, never committed |
+| **clean-room run** | a build by a builder who has only the spec and the game files, compared with the reference ([CLEANROOM.md](../CLEANROOM.md)) |
+| **finding** | a point where a clean-room builder found the spec silent, ambiguous or wrong, logged with its section and tag |
+| **V1–V13** | the validations of a clean-room run ([CLEANROOM.md](../CLEANROOM.md)) |
+| **load-bearing detail** | a detail that still gives a working game when built wrong, so only a deliberate check finds it ([CONFORMANCE.md](../CONFORMANCE.md)) |
