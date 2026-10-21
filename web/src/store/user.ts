@@ -130,7 +130,10 @@ export async function writeSave(g: SavedGame) {
   localChanged(`saves/${g.slot}`)
 }
 
-/** The autosave (IMP-060): its own record, beside slots A–J; written on area changes and before battles. */
+/**
+ * The autosave (IMP-060): its own record, beside slots A–J. The play screen writes it after an action,
+ * never inside a script: on an area change, otherwise at most every 30 seconds (spec/C-port/storage.md §5).
+ */
 export async function writeAutosave(g: SavedGame) {
   await putSave('auto', g)
   localChanged('saves/AUTO')

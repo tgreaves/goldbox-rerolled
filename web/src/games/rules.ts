@@ -135,8 +135,6 @@ export interface GameRules {
     gloves: { effect: number; raise: Record<number, number>; bonus: number } | null
     gauntlets: { effect: number; minLevel: number; bonus: number } | null
   }
-  /** CotAB: a CON bonus added to one saving throw (0 death/poison) for some races or a readied item
-   *  effect, and for everyone at CON 19+; bands are [highest CON, bonus] (0x50C6B) */
   /** who may join the party (CotAB Add, 0x36848+0x3815): player characters and members at most, and
    *  CotAB's paladin and ranger rules (null: none) */
   join: { pcs: number; members: number; maxRangers: number | null; evil: number[]; paladins: boolean }
@@ -146,6 +144,8 @@ export interface GameRules {
   /** CotAB's paladin abilities from the View menu (0x3D530 + 0x35F0 …): Lay on Hands heals 2 × level once a
    *  day (effect 0x8C), Cure Disease has uses that a weekly effect 0x8D refills to (level − 1) div 5 + 1 */
   paladin: { layOnHands: { perLevel: number; effect: number; minutes: number }; cureDisease: { effect: number; minutes: number; levelsPerUse: number; initial: number } } | null
+  /** CotAB: a CON bonus added to one saving throw (0 death/poison) for some races or a readied item
+   *  effect, and for everyone at CON 19+; bands are [highest CON, bonus] (0x50C6B) */
   saveCon: { save: number; races: number[]; itemEffect: number; from: number; bands: [number, number][]; all: [number, number][] } | null
   /** races offered at creation, in menu order (code, not a table: PoR FUN_417f_056c, CotAB 3708f) */
   raceMenu: number[]
@@ -354,12 +354,12 @@ export const COAB_RULES: GameRules = {
   casting: { lostFrom: 'target', miscast: { effect: 0x4a, sides: 2 }, aiFirstSlot: 1 },
   // 0x50F5A: Gloves of Thievery (effect 0x0B), Gauntlets of Dexterity (effect 0x02)
   thief: { dualClass: true, bonus: 7, clampWithBonus: true, gloves: { effect: 0x0b, raise: { 1: 5, 2: 7 }, bonus: 5 }, gauntlets: { effect: 0x02, minLevel: 4, bonus: 10 } },
-  // 0x50C6B: dwarves, halflings or the Girdle of the Dwarves (effect 6): CON 4–6 +1 … 18 +5; everyone CON 19+ +1 … +4.
-  // Added to the stored save number, which makes the save harder (the shipped TRAVIS: 12 + 4 = 16; I: a bug)
   // a paladin joins no party with an evil member, nor an evil character a party with a paladin; three rangers at most
   join: { pcs: 6, members: 8, maxRangers: 3, evil: [2, 5, 8], paladins: true },
   startEffects: { race: { 1: [0x61, 0x1a, 0x2f], 2: [0x6b], 3: [0x61, 0x12, 0x2f, 0x30], 4: [0x7c], 5: [0x61] }, cls: { 3: [8], 4: [0x86], 10: [0x86] } },
   paladin: { layOnHands: { perLevel: 2, effect: 0x8c, minutes: 1440 }, cureDisease: { effect: 0x8d, minutes: 10080, levelsPerUse: 5, initial: 1 } },
+  // 0x50C6B: dwarves, halflings or the Girdle of the Dwarves (effect 6): CON 4–6 +1 … 18 +5; everyone CON 19+ +1 … +4.
+  // Added to the stored save number, which makes the save harder (the shipped TRAVIS: 12 + 4 = 16; I: a bug)
   saveCon: { save: 0, races: [1, 5], itemEffect: 6, from: 4, bands: [[6, 1], [10, 2], [13, 3], [17, 4], [18, 5]], all: [[20, 1], [22, 2], [24, 3], [25, 4]] },
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
     { kind: 'ccw', gp: 600 }, { kind: 'heal', gp: 5000 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 },
