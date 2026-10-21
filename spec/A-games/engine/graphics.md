@@ -100,4 +100,5 @@ So the light-magenta areas of wall tiles (rooftops, gaps, the sky above walls) s
 ## Still to decode
 
 - Exact use of `x, y` and `cga_map`
-- How WALLDEF tables index 8X8D tiles to build the 3D view
+
+(How WALLDEF tables index 8X8D tiles is answered in [maps-and-view.md](maps-and-view.md), "Wall pieces" and "Tile bank".)

@@ -38,6 +38,6 @@ no licence, so nothing from it is copied and every fact here is checked in the C
 ## Open questions (from implementing the port, 2026-10-19)
 
 - ~~DS:4FD5~~: the Demo choice of the start-up menu (block 1, record 82; [ecl.md, "Start-up menu and demo"](ecl.md#start-up-menu-and-demo-o): every site, the timeouts, the demo script; in the port since 2026-10-20).
-- The paladin and ranger party checks in the Add menu (`3685:35ae..3647`).
+- ~~The paladin and ranger party checks in the Add menu (`3685:35ae..3647`)~~: answered, [records.md](records.md) §9 "Joining the party" (in the port as the profile's `join` rules).
 - Implementation status of everything in this folder: [`docs/multi-game.md`](../../../docs/multi-game.md).
 

@@ -168,7 +168,7 @@ Variables the engine itself reads or writes, so a port must give them meaning. E
 | 0xC04D | facing 0–3 (N,E,S,W) | facing, 0–3 (stored ×2), reduced mod 4 |
 | 0xC04E | wall type ahead | — |
 | 0xC04F | current square's event byte (map plane 2) | — |
-| 0xC059, 0xC05F | — | two display parameters (**?**) |
+| 0xC059, 0xC05F | — | the floor and horizon colour registers (`DS:6F68`, `DS:6F69`): [maps-and-view.md, "Background colours"](maps-and-view.md#drawing-order-painters-algorithm) |
 | 0x00B1, 0x00FB, 0x00FC | engine words `DS:6F6E`, `6F6A`, `6F6C` | ignored |
 | 0x033D | facing ×2 (0–7, so overland scripts can use 8 directions) | — |
 | anything else (e.g. 0x035F) | undefined (an uninitialised local) | ignored |

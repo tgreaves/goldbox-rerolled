@@ -67,7 +67,7 @@ Because the whole ECL VM (code + all three arrays) is saved, a reimplementation 
 4. Block digit `DS:5376` = `B[byte 0x624]`
 5. Map areas (`DS:49FA` < 2): reload GEO record `A[byte 0x18A]` and the three wall sets from `A[0x4AFA..0x4AFF]`; wilderness: load the overland icon set
 6. If `A[byte 0x344]` (ECL 0x4AA2) ≠ 0 run `FUN_4804_06b3(0)`: the cleansed river's tile colours ([overland.md](overland.md))
-7. Back on the party screen, "Begin" sets `DS:49F8` = 1 so the VM reset keeps the saved ECL buffer and per-area variables instead of reloading the script from the DAX
+7. The party screen returns at once after a successful load (`DS:49F3` ≠ 0), with `DS:49F8` = 1: the game resumes without Begin, and the VM reset keeps the saved ECL buffer and per-area variables instead of reloading the script from the DAX ([input-and-menus.md](input-and-menus.md) §2, "Actions", Load)
 
 ## Open
 

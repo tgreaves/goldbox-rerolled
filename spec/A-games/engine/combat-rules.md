@@ -58,7 +58,7 @@ Each rule carries a source marker:
 
 ## Dice (O, `FUN_5216_0de3`)
 
-`roll(count, sides) = Σ count × (Random(sides) + 1)` using the Turbo Pascal RNG (`FUN_1af8_11c0`). A browser port needs its own RNG; exact sequence reproduction is not required. `FUN_5216_0e2e` does the same and also stores the dice count in `DS:681C` (used by per-die damage reduction effects). The sum is a byte; there is no overflow check (G).
+`roll(count, sides) = Σ count × (Random(sides) + 1)` using the Turbo Pascal RNG (`FUN_1af8_11c0`). A port need not reproduce the Turbo Pascal sequence: every die comes from the injected dice source, and the order of the requests is the one this spec describes ([spec README, "Randomness: the dice tape"](../../README.md#randomness-the-dice-tape-d2)). `FUN_5216_0e2e` does the same and also stores the dice count in `DS:681C` (used by per-die damage reduction effects). The sum is a byte; there is no overflow check (G).
 
 ## Starting a battle
 
@@ -768,9 +768,10 @@ Reproduce these in an authentic port (O unless marked).
 | Results loops read the next pointer of a record they just freed | `FUN_2e08_04c9` |
 | Bodies: `FUN_577f_10a7` restores the saved cell at the new position (I) | `FUN_577f_10a7` |
 
-## Still open
+## Open
 
-- Spell targeting and area templates (`FUN_3aae_1e16`, `FUN_3aae_20c3`, `FUN_56c1_0909`) and the per-spell immediate effects (damage, healing, target limits) in segment 4e53
 - Where the treasure money table `DS:67F4` is cleared; `DS:4A00` set after every battle
 - Whether elven chain counts as leather for backstabs; whether charm is undone before the post-battle cleanup
-- Overland tile meanings (which ids are roads, towns, water), to label the terrain flag table
+- Overland tile meanings (which ids are roads, towns, water), to label the terrain flag table ([battlefield.md](battlefield.md))
+
+Answered since the first draft: spell targeting and area templates ("Aim": the picker `FUN_3aae_1e16` and the scan `FUN_56c1_0909`; "Spell targets", `FUN_3aae_20c3`) and the per-spell effects in combat ("Spell handlers in combat"; [spells.md](spells.md), "Per spell").

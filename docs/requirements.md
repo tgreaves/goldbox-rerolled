@@ -14,15 +14,19 @@ The aim is a browser reimplementation of *Pool of Radiance*, and then of the oth
 | R6 | Responsive | Works from phone to desktop; layout adapts rather than scaling a fixed 320×200 screen |
 | R7 | Track improvements | Every departure from the original is logged in `IMPROVEMENTS.md`, with a toggle where it changes gameplay |
 
-Assumed unless changed: the full game is in scope (exploration, combat, character creation, ending); the AD&D rules and script behaviour follow the spec exactly, with a "fixed" option for the original's known bugs. Sound: the original's effects where it plays them, synthesised until the PC-speaker data is decoded, plus a few additions logged in `IMPROVEMENTS.md` (decided 2026-10-15).
+Assumed unless changed: the full game is in scope (exploration, combat, character creation, ending); the AD&D rules and script behaviour follow the spec exactly, with a "fixed" option for the original's known bugs. Sound: the original's effects where it plays them, plus a few additions logged in `IMPROVEMENTS.md` (decided 2026-10-15). The effects are emulated from the driver data in the player's `START.EXE` (IMP-013), the PC-speaker data having been decoded since.
 
 ## Constraints
 
-- **No game data in the repository or the build.** The player imports their own `POOLRAD` folder or GOG `.pkg`; the app decodes it in the browser and stores the original files locally. Nothing is uploaded.
+- **No game data in the repository or the build.** The player imports their own `POOLRAD` folder (or its files); the app decodes it in the browser and stores the original files locally. Importing the GOG `.pkg` itself is not implemented: it is unpacked first (`tools/xar_extract.py`). Nothing is uploaded.
 - **The original memory model is the game state**: ECL word arrays A, B, C, the script buffer and the party records, as in [`spec/A-games/engine/savegame.md`](../spec/A-games/engine/savegame.md). This keeps original saves loadable.
 - **No network at runtime.** Fonts, libraries and assets are bundled.
 
 ## Architecture
+
+The plan of 2026-10-15, kept as the record of intent (it is not a description of the code: there is no
+`engine/` directory; the exploration loop is in `vm/engine.ts`, the screens in `ui/`, the game profiles
+in `games/`, sound in `audio/`).
 
 ```
 web/
@@ -38,7 +42,7 @@ web/
 
 - Engine code never touches storage or the DOM directly: `store/` and `ui/` are behind small interfaces, so a desktop wrapper or a test harness can replace them.
 - Script input (menus, number and text entry) is `await`ed by the interpreter; the UI resolves it.
-- Random numbers come from one seedable generator; inputs can be recorded and replayed.
+- Random numbers: the specification defines one injected dice source, the dice tape ([`spec/README.md`](../spec/README.md), "Randomness"). Not there yet: the rules use the engine's seeded generator, but character creation on the party screen, the title and the sound use `Math.random`, and nothing records or replays a run.
 - Original bugs that a port could fix are switches in one settings object, defaulting to classic behaviour.
 
 ## Tooling

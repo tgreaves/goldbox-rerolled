@@ -296,15 +296,7 @@ Source 2: 0xBC-byte `*.hil`, name at +4, NPC test skipped. `323c:1f35` merges on
 
 ---
 
-## 8. Open
-
-- 0xF6, 0xF9, 0xFA, 0x14B, 0x192 meanings (copied, rarely read).
-- 0x191 exact use (I: once-per-period ability counter).
-- Exact effect of the base-STR bug in play (which events call `4aab:18d9` for an imported character before anything resets base STR) — trace `3d53:1c90..1e97` and the `43f7` callers.
-- Bit 0x80 added to ITEMS class masks.
-- Druid slots at 0x132 (no druid in play).
-
-## 7. Random treasure items (O, builder 0x42D97, type choice 0x1A5A3–0x1A6E2)
+## 8. Random treasure items (O, builder 0x42D97, type choice 0x1A5A3–0x1A6E2)
 
 Same procedure as PoR's (`FUN_4c2d_1010`, [engine/records.md, "Random items"](../engine/records.md#random-items)), different tables. The port holds both as data (`web/src/games/treasure.ts`).
 
@@ -316,16 +308,23 @@ Same procedure as PoR's (`FUN_4c2d_1010`, [engine/records.md, "Random items"](..
 - **Magic records**: 0x3F, 0x43 → 0x29; 0x4E, 0x4F → 0x21; 0x54, 0x5C → 0x09; 0x47 d8 1–5 → 0x11, 6–8 → 0x01; anything else blank. Records at DS:0830 + 16k (word m = 1 + 8k from DS:082E), 7 of them: Potion Extra Healing, Giant Strength, Healing, Speed (unreachable), Wand of Magic Missiles, Gauntlets of Ogre Power, Javelin of Lightning; plus and save bonus always 1. Their +0x3D are CotAB spell ids (3, 59, 3, 48, 15, 38, 51).
 - So TREASURE can only make types 0x47, 0x54, 0x4F from the magic group.
 
-## 8. Joining the party (O, Add at image 0x36848 + 0x3648..0x3A24)
+## 9. Joining the party (O, Add at image 0x36848 + 0x3648..0x3A24)
 Strings at 0x36848 + 0x35AE: "Add from where? ", "Curse Pool Hillsfar Exit", "Add a character: ", "paladins do not join with evil scum", "too many rangers in party", " will tolerate no evil!".
 - An empty party takes the first character with no checks.
 - Otherwise the party is scanned: player characters (morale < 0x80), rangers (+0x10D > 0), whether anyone is evil (alignment 2/5/8, i.e. (a + 1) mod 3 = 0) and the last paladin (+0x10C > 0) in list order. Same name and same id (+0x126) → already in the party (no message).
 - Refused, in this order of messages: a paladin when anyone is evil ("paladins do not join with evil scum", with a double pause); a ranger when there are 3 already ("too many rangers in party"); an evil character when a paladin is present ("<paladin> will tolerate no evil!"). Party full (6 player characters, or 8 members for an NPC) → no message.
 - The port: `web/src/rules/joining.ts` with the profile's `join` rules, used by both Add commands. PoR has only the size limits.
 
-## 9. Creation effects and paladin abilities (O)
+## 10. Creation effects and paladin abilities (O)
 - **Innate effects** at creation (0x371F6, 0x37647), permanent, power 0xFF: halfling 0x61; dwarf 0x61, 0x1A, 0x2F; gnome 0x61, 0x12, 0x2F, 0x30; elf 0x6B; half-elf 0x7C; then paladin 8 (protection from evil), ranger and cleric/ranger 0x86 (giant-class damage). PoR's dwarf and halfling 0x5A is gone (its CON save bonus moved into the saves routine, [tables.md](tables.md) §3.6a). A paladin starts with **+0x191 = 1**.
 - **Lay on Hands** (View menu "Heal", availability 0x3D530 + 0x35F0: class 3 or a counting former paladin, not in combat, status Okay, no effect 0x8C; use + 0x36D7): "Heal whom?", heals 2 × paladin level (status 0/1/4/5 and HP below max; dying → unconscious), "feels better" / "is unaffected", then effect 0x8C for 1440 minutes, even when nothing was healed.
 - **Cure Disease** (View menu "Cure", + 0x3655: as above but +0x191 > 0; use + 0x37EC): "Cure whom?"; not diseased → "is not diseased", "cure anyway:" (No spends nothing); removes one of each disease effect DS:082A (31, 34, 43, 44, 50, 57), +0x191 − 1, adds effect 0x8D for 10080 minutes with the removal call unless present, "is cured". The removal of 0x8D (0x27350 + 0x28EF) sets +0x191 = (paladin level − 1) div 5 + 1.
 - Paladins do not turn undead (the Turn command needs a cleric level).
 
+## 11. Open
+
+- 0xF6, 0xF9, 0xFA, 0x14B, 0x192 meanings (copied, rarely read).
+- 0x191 exact use (I: once-per-period ability counter).
+- Exact effect of the base-STR bug in play (which events call `4aab:18d9` for an imported character before anything resets base STR) — trace `3d53:1c90..1e97` and the `43f7` callers.
+- Bit 0x80 added to ITEMS class masks.
+- Druid slots at 0x132 (no druid in play).

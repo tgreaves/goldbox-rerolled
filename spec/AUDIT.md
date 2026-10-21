@@ -584,6 +584,67 @@ stated in the spec's front matter ([README.md](README.md), "How to read this spe
 | C23 | **Ruling**: sound effects follow the original, by call site as [sound.md](A-games/engine/sound.md) §6 says. To verify and fix in a later code task. |
 | C24 | **Ruling**: the copied engine messages, credits and monster-name lists are read from the game files by address (D1). A later code task. |
 
+### 6.9 State after work-plan step 1 (2026-10-21)
+
+**Where the files went** (all renames with `git mv`, so `git log --follow` works):
+
+| Was | Now |
+|---|---|
+| `spec/README.md` | rewritten as the front matter; PoR's identity and the guide reference → `A-games/por/README.md` |
+| `containers`, `graphics`, `records`, `savegame`, `ecl`, `sound`, `spells`, `effects`, `town`, `overland` | `A-games/engine/` (same names) |
+| `maps.md`, `camp.md` | `A-games/engine/maps-and-view.md`, `camp-and-time.md` |
+| `architecture.md` | `A-games/engine/main-loop.md`; its party-screen summary and cheat keys → `input-and-menus.md` §2; the ending → `A-games/por/ending.md` |
+| `menus.md` | `A-games/engine/input-and-menus.md` (§0–2; §4 is now §3); §3 creation → `chargen-and-progression.md`; credits and code wheel → `A-games/por/title-and-credits.md`; §5 dropped |
+| `chargen.md`, `progression.md` | `A-games/engine/chargen-and-progression.md` (one creation sequence) |
+| `combat.md` | `A-games/engine/combat-rules.md`, `battlefield.md`, `combat-ai.md`, `combat-visuals.md` |
+| `commissions.md` | `A-games/por/commissions.md` |
+| `coab/*.md` | `A-games/coab/*.md` |
+| `open-questions.md` | unchanged (the register; answered items struck with where) |
+
+Duplicates merged: `FUN_10ba_0bb8` (kept in records), `FUN_53aa_03bd` (kept in input-and-menus §0),
+creation (one sequence), the AI target finder `FUN_3aae_37e4` (kept in combat-ai).
+
+**Contradictions and stale statements (§6.4).** Fixed in the documents, each checked against the
+code or the spec's own observed sections:
+
+| # | Fix |
+|---|---|
+| C1 | chargen-and-progression "Combat experience" now points to combat-rules "Experience" and "Award" |
+| C2 | savegame "Loading" step 7: a successful Load returns from the party screen at once with `DS:49F8` = 1 |
+| C3 | maps-and-view: the view drawn while `DS:6AAC` is set is the overhead map |
+| C4 | ecl "Engine registers": 0xC059/0xC05F are the floor and horizon colour registers |
+| C5 | graphics and maps-and-view "Still to decode": answered items removed (maps-and-view now has an "Open" block) |
+| C6 | records no longer refers to combat's summary, which is gone |
+| C7 | IMP-002 and IMP-055: Save and Journal are in the ☰ menu (checked in `ui/explore.ts`) |
+| C8 | IMP-004 marked superseded by IMP-064 and IMP-060; the `ui/explore.ts` header describes IMP-064 |
+| C9 | IMP-007: the original's sky and floor colours, not "a sky colour, a grey floor" (checked in `render/world.ts`) |
+| C10 | IMP-046 lists every setting of `ui/settings.ts` (borders, party layout, motion, account added) |
+| C11 | requirements.md: `.pkg` import not implemented, the architecture sketch marked as the original plan, randomness per D2 with what is not yet there, the sound sentence |
+| C12 | combat-rules "Dice": the injected dice source and the order of requests (D2) |
+| C13 | open-questions: the name-word numbering, "type STING" and the scroll test struck as answered |
+| C14 | multi-game.md: the "Not yet" items since done are marked with where they are; coab/README's Add-check question struck |
+| C15 | coab/tables §2 and §4: tables now read through `T` are marked so; "hc" kept only where the code still hard-codes |
+| C16 | the per-file version column is gone with the new README |
+| C17 | `tools/coab/ecl_coab.py` and `records_coab.py` point to `spec/A-games/coab/` |
+| C18 | IMP-045 cites IMP-061 (not the undefined IMP-009); IMP-034's departure has its own row |
+| C19 | combat-rules "Open" and chargen-and-progression "Open": the answered items removed, with where they are answered |
+| C20 | menus §5 dropped (every item was applied) |
+| C21 | coab/records renumbered: §8 random treasure, §9 joining, §10 creation effects and paladin abilities, §11 Open (references updated); coab/tables §3.6a moved after §3.6 |
+| S1 | the guide is cited once, as v2.00 (`A-games/por/README.md`) |
+| S3 | open-questions' 2026-10-17 audit log marked as a record that moves to VALIDATION.md |
+
+Still open:
+
+| # | Why | Decision |
+|---|---|---|
+| C17 (part) | `web/src/store/records.ts` and `store/sync.ts` cite docs/server.md headings "Records" and "Sync" that do not exist ("What syncs", "Sync rules") | a code-comment fix, for a later code task |
+| C22 | docs/server.md now states the behaviour (settings per game on the server, one set of browser keys for every game); whether it is intended is not decided | for part C storage and sync (work-plan step 3) |
+| C23 | the port cuts effects off by effect number, the original by call site | ruling §6.8: follow the original; verify and fix in a code task |
+| C24 | credits, monster-name lists and about 190 engine messages copied into code | ruling §6.8 (D1): read by address; a code task, with [D-appendices/strings.md](D-appendices/strings.md) |
+| S2, S4, S6, S7 | project status (DOSBox comparison not set up, the multi-game plan, "In progress" markers without what remains, the repeated CotAB status sentence) | for the part C writing (step 4) and the project notes |
+| S11, S12 | `data/spells.ts` class-code comment (PoR only); default paths in `tools/coab/` | code tasks |
+| §6.6 | open questions that need research (effect 7's HP recalculation, DOSBox checks, the ECL loose ends, Alt-X during AI turns) | stay in [open-questions.md](open-questions.md) and the per-file "Open" blocks |
+
 ---
 
 ## 7. Proposed target structure

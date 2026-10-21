@@ -238,7 +238,9 @@ need only its profile modules and any procedure the earlier games do not have.
    LOAD_WALLSETS CotAB skips an operand of 0xFF while PoR loads it (both checked in the binaries,
    profile flag `twoSlotSkipsFF`). Not yet: B+0xC9 and the load-past-end flag in the character
    view, the CALL 0x6803 picture frame, CotAB's own PICTURE (BIGPIC), DAMAGE and ADD_NPC changes,
-   and its random-treasure table (step 5/6).
+   and its random-treasure table (step 5/6). *Since done* (checked 2026-10-21): B+0xC9 and the load-past-end
+   flag (`COAB_ECL.viewReads`, `loadPastEnd`), CALL 0x6803 (`calls.frame`), BIGPIC pictures, DAMAGE's
+   flag (`ecl.damageDespiteSave`), the random-treasure table (`COAB_TREASURE`).
 5. **CotAB data.** Characters (.SAV/.SWG/.FX), saves (13 149 bytes), the roster, the pre-made party,
    monsters.
    *Done 2026-10-19*: `web/src/games/files.ts`: each game's item/effect/roster extensions (PoR
@@ -263,7 +265,8 @@ need only its profile modules and any procedure the earlier games do not have.
    diseases read from START.EXE, with CotAB's Heal as its code does it. Classes and alignments
    offered come from the tables, so paladins and rangers are offered in CotAB. Not yet: the paladin
    and ranger party checks in the Add menu, thief-skill item hooks, CotAB's DAMAGE flag 0x10 and
-   random-treasure table, the casting level of druid spells (ranger level assumed, I).
+   random-treasure table, the casting level of druid spells (ranger level assumed, I). *Since done*: the
+   paladin and ranger Add checks (`R.join`, `rules/joining.ts`), DAMAGE's flag 0x10 and the treasure table.
    **Hard-coded audit (2026-10-19)**, applying the data-driven rule. Now read from START.EXE: race,
    class, alignment, status (with Gone, which the port's list lacked), gender and coin names, and the
    coin values (PoR DS:0D24, CotAB DS:0CA4). Now profile data, because each is code rather than a
@@ -279,6 +282,7 @@ need only its profile modules and any procedure the earlier games do not have.
    the new events 20–22, the current-stat routine on removal, and readied items by CotAB's item kinds
    (Gauntlets of Ogre Power, girdles, Ring of Wizardry, Gloves of Thievery…). Not yet: event 14 (monster
    specials, unfired in PoR too) and the area breaths and eye rays (spec/A-games/coab/effects.md, "Port status").
+   *Since done*: event 14's specials, the area breaths and the eye rays (`rules/specials.ts`).
 7. **CotAB presentation.** Sky and ground in the 3D view, the BIGPIC overland, title, code wheel.
    *Done 2026-10-19* (7a–7c), profile data in `games/view.ts`, `title.ts`, `sound.ts`: the floor
    colour and the cobbled ground (SKY #252) tiled on the WebGL floor (IMP-069); BIGPIC pictures from
@@ -289,6 +293,8 @@ need only its profile modules and any procedure the earlier games do not have.
    panels follow the profile: the journal and the commissions are hidden for CotAB. CotAB is now
    playable, marked early. Not yet: the sun and clouds, the code wheel (skipped, IMP-068), the
    Rules reference text and the ending for CotAB; nothing has been played through in a browser yet.
+   *Since done*: the sun and clouds (`COAB_VIEW.skyArt`), the Rules reference (`COAB_RULES_TEXT`) and
+   the ending (`COAB_ENDING`); the code wheel stays skipped (IMP-068).
 8. **Importing PoR characters**, by the game's own "Pool" import (spec/A-games/coab/records.md), with its
    STR bug fixed and logged.
    *Done 2026-10-20*: `games/imports.ts` holds the conversion as data (fields copied by name through

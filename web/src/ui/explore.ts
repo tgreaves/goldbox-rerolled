@@ -1,6 +1,8 @@
-// Exploration screen in the original's arrangement (spec/A-games/engine/main-loop.md, spec/A-games/engine/graphics.md
-// "Screen layout"): 3D view top left, party roster to its right, text window below,
-// command line at the bottom. Area scripts run through the ECL engine (src/vm/engine.ts).
+// Exploration screen (the original's commands: spec/A-games/engine/main-loop.md; its fixed layout:
+// spec/A-games/engine/graphics.md "Screen layout"). The port's layout is IMP-064: party cards in a
+// row across the top (or a column beside the view, a setting), the 3D view and the area map below,
+// then the text log and the command bar; phones get their own (IMP-060). Area scripts run through
+// the ECL engine (src/vm/engine.ts).
 import { R, slots, bookSpell, casterClasses } from '../games/rules'
 import { joinRefusal } from '../rules/joining'
 import { abilities, abilityName, diseased, useAbility, type Ability } from '../rules/abilities'

@@ -94,7 +94,7 @@ Let `L = (f+6)%8`, `R = (f+2)%8`, `B = (f+4)%8`; `wall(dir, x, y)` = [maps-and-v
 - Both registers are recomputed only after a write (`DS:84E5`); the VM reset (`FUN_2fea_01b6`) sets 0xC059 = 0x41 and 0xC05F = 9, the game start 0xDB and 0xE8. Only ECL8 writes them (0xC05F = 65 or 8, 0xC059 from a table).
 - The light-magenta parts of wall tiles show these bands ([graphics.md](graphics.md)).
 
-When `DS:6AAC` ≠ 0 a different view (`FUN_55a0_0000`) is used instead (**?**, possibly wilderness/dark).
+When `DS:6AAC` ≠ 0 the overhead map (`FUN_55a0_0000`, [below](#overhead-map-o-fun_55a0_0000)) is drawn instead.
 
 ### Tile bank (O, `FUN_5924_015d`, `FUN_5924_003b`, `FUN_55a0_0e08`)
 
@@ -127,7 +127,8 @@ The **A**rea command toggles `DS:6AAC`. While it is set, every redraw of the 3D 
 - **No fog of war.** Every wall inside the window is shown, explored or not. The engine keeps no record of visited squares, and the save file has none.
 - **Edges.** Squares outside 0–15 show no walls, unless `DS:84DC` is neither 0 nor 10. In that case coordinates wrap (**I**: which areas set it).
 
-## Still to decode
+## Open
 
-- Background drawing: `FUN_55a0_0174` paints four bands from the image at `DS:4A20` with colours `DS:6A60–6A63`; where those colours are set is not traced. Alternate view `FUN_55a0_0000`
-- `DS:84DC` is the current area id (ECL record number, saved as A word 0x49F2); areas 0, 10 and 25–27 are special-cased in code
+- Which areas make the overhead map wrap its coordinates ("Edges" above: `DS:84DC`, the current area id, neither 0 nor 10; **I**). `DS:84DC` is the ECL record number of the area, saved as A word 0x49F2; areas 0, 10 and 25–27 are special-cased in code.
+
+Answered since the first draft: the background (Background colours, above), the view drawn while `DS:6AAC` is set (Overhead map) and the tile bank loader (Tile bank).

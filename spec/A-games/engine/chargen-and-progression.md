@@ -14,7 +14,7 @@ Part of the [specification](../../README.md), part A. Creation is `FUN_417f_056c
 1. GetMem 0x11D, zero-fill, set the defaults in Record bytes, below.
 2. **Race** list "Pick Race": Dwarf, Elf, Gnome, Half-Elf, Halfling, Human (entry 6 → race 7; Half-Orc never offered). Entries are `"  " + name`. Size byte char[0xC0] = 1 (Dwarf, Gnome, Halfling) else 2; innate racial effects added with permanent duration via `FUN_5216_0e52` (table below).
 3. **Gender** list "Pick Gender": Male, Female (`DS:0FEC + 7i`) → char[0x9E] = 0/1.
-4. **Class** list "Pick Class": from `DS:3E17 + race·12` (count, ids) — **race only, no ability prerequisites** (table below). Levels: 1 in every component class (char[0x96 + c]); char[0x73] = 1; thief skills `FUN_51cf_0329` if thief (runs before abilities exist, so the DEX term uses DEX 0; recomputed on joining, I); char[0x2D] = max over classes of `DS:3C7C[c·11 + 1]`; char[0xB0] = Σ class bits `DS:05D6` (Cleric 2, Druid 16, Fighter 8, Paladin 64, Ranger 128, MU 1, Thief 4, Monk 32); saving throws `FUN_51cf_0255`.
+4. **Class** list "Pick Class": from `DS:3E17 + race·12` (count, ids) — **race only, no ability prerequisites** (table below). Levels: 1 in every component class (char[0x96 + c]); char[0x73] = 1; thief skills `FUN_51cf_0329` if thief (runs before abilities exist, so the DEX term uses DEX 0; they are recomputed with the real DEX when the character joins a party, whose join runs `FUN_51cf_0000` ([input-and-menus.md](input-and-menus.md) §2.1; Derived statistics, below), and at every training); char[0x2D] = max over classes of `DS:3C7C[c·11 + 1]`; char[0xB0] = Σ class bits `DS:05D6` (Cleric 2, Druid 16, Fighter 8, Paladin 64, Ranger 128, MU 1, Thief 4, Monk 32); saving throws `FUN_51cf_0255`.
 5. **Alignment** list "Pick Alignment": `DS:3FE7 + class·10` (table below) → char[0xA0].
 6. **Age**: single class `base + NdS` (`DS:3E5B + race·0x1C + class·4`: u16 base, u8 N, u8 S). Multi-class: maximum `base + N·S` of one column: C/F, C/F/MU, C/MU, C/T → Cleric; F/MU, F/MU/T, MU/T → Magic-User; F/T → Fighter. Age is **not** re-rolled with the abilities.
 7. Show the sheet (`FUN_4894_004a`, name blank). Roll loop:
@@ -139,7 +139,7 @@ Cleric 3d6, Druid 3d6, Fighter 5d4, Paladin 5d4, Ranger 5d4, Magic-User 2d4, Thi
 | 0xC1–0xC6 | icon colours (low nibble colour-1, high nibble colour-2) for Body, Arm, Leg, Hair/Face, Shield, Weapon. Default `c | (c+8)<<4` with c = 1, 2, 3, 4, 6, 7 → 0x91, 0xA2, 0xB3, 0xC4, 0xE6, 0xF7 (identity) |
 | 0x10C | 0 (Okay) |
 | 0x10D | 1 (I: conscious/alive flag; cleared when knocked out, set on revival) |
-| 0x110–0x11C | AC, THAC0, damage, movement, encumbrance from `FUN_10ba_0bb8` (spec/combat) |
+| 0x110–0x11C | AC, THAC0, damage, movement, encumbrance from `FUN_10ba_0bb8` ([records.md, "Derived statistics"](records.md#derived-statistics-o-fun_10ba_0bb8)) |
 
 Not set: experience 0, no items, char[0x84] = 0 (player character), char[0x10E] = 0.
 
@@ -205,7 +205,7 @@ For the current character. "Cheat" means `DS:470C` ≠ 0 (below).
 9. "Congratulations..."; unless cheat, take 1000 gp in coins (`FUN_417f_42ed`, below).
 10. *k* = number of classes the character has. Each class in *train* gains a level; for each such class, if drained levels char[0x74] > 0: char[0x75] (drained HP) −= char[0x75] div char[0x74], then char[0x74] −= 1. So retraining a drained level also clears its drain record (G: "acts as a Restoration spell that requires both experience and money").
 11. `FUN_51cf_0000`: slots, THAC0, attacks, saving throws, thief skills (sections below).
-12. If the magic-user level (char[0x9B]) rose: pick one new spell (`FUN_4894_299c` mode 4 "Spells to choose from", select type 4), repeated until a spell is picked. The list holds every id 1–56 not yet known whose class and level have a slot (char[0xB1 + class·3 + level] > 0); for a cleric/magic-user the cleric spells are already known, so in practice it lists magic-user spells of the levels just reached. The pick sets char[0x32 + id] = 1. **Bug**: if the list is empty the loop ends with id 0 and writes char[0x32] = 1, i.e. **max HP := 1**, before step 13 adds the gain. A port should reproduce this or record the fix in IMPROVEMENTS.md.
+12. If the magic-user level (char[0x9B]) rose: pick one new spell (`FUN_4894_299c` mode 4 "Spells to choose from", select type 4), repeated until a spell is picked. The list holds every id 1–56 not yet known whose class and level have a slot (char[0xB1 + class·3 + level] > 0); for a cleric/magic-user the cleric spells are already known, so in practice it lists magic-user spells of the levels just reached. The pick sets char[0x32 + id] = 1. **Bug**: if the list is empty the loop ends with id 0 and writes char[0x32] = 1, i.e. **max HP := 1**, before step 13 adds the gain. A port should reproduce this or record the fix in IMPROVEMENTS.md (GoldBox Rerolled fixes it: IMP-028).
 13. Hit points: R = `FUN_417f_4235(char, train)` (rolls for the trained classes only). char[0xB1] += max(1, R div *k*). C = `FUN_417f_3f31(char)` (CON bonus summed over **all** *k* classes). Gain = max(1, (R + C) div *k*), signed division truncating towards 0. Damage taken is kept: max HP += gain, current HP = max HP − (old max − old current). Both are bytes (wrap above 255).
 
 Training takes no game time. One session gains at most one level per class.
@@ -219,7 +219,7 @@ Coin values in copper (`DS:0D24`): cp 1, sp 10, ep 100, gp 200, pp 1000. The pri
 
 ### Free training cheat (O, `FUN_417f_0161` at `417f:04ad`)
 
-Pressing **J** on the party screen compares the first command-line parameter (`ParamStr(1)`) with "STING". If it matches: `DS:470C` = 1 and "I Understand, master...". Nothing is typed after J; [input-and-menus.md](input-and-menus.md) and [main-loop.md](main-loop.md) describe it as typing STING, which is wrong. `DS:470C` is reset to 0 every time the party screen is entered.
+Pressing **J** on the party screen compares the first command-line parameter (`ParamStr(1)`) with "STING". If it matches: `DS:470C` = 1 and "I Understand, master...". Nothing is typed after J. `DS:470C` is reset to 0 every time the party screen is entered.
 
 With the cheat, training skips the status, money, experience and hall checks and charges nothing; every class not at its game or demi-human cap gains a level at once. XP is still truncated as in step 4. The Train entry is enabled even outside a hall (G: guide 11.1 "J: train for free").
 
@@ -300,16 +300,4 @@ DEX adjustments (PP OL F/RT MS HS, `DS:3D4E + DEX·5`): 9: −15 −10 −10 −
 
 ## Combat experience (O, `FUN_2e08_0000`)
 
-Summed over monsters (side 1) that did not flee (status ≠ Running):
-
-- `xp += word[0xB8] + byte[0xBA] × byte[0xB1]` (base value + value per hit die/point, **I** on field names)
-- the monster's 7 money words go into the treasure table (`DS:67F4`)
-- its items go into the treasure list if they have a value (item[0x3A] ≠ 0), else with 30% chance (d10 < 4), at most 8 such drops
-- plus a share of the treasure money converted to experience (Turbo Pascal real arithmetic, **?** exact rates), plus **400 × plus** for each magic item in the treasure
-- Result distributed by `FUN_2e08_0355` (**?** split rule)
-- Special case (non-combat resolution `DS:84D4` with `B[0x5CC]` set): `100 × char[0x73]` of the current character
-
-## Open
-
-- Where thief skills are recomputed with the real DEX (creation computes them before abilities exist, so with DEX 0)
-- STR/DEX to-hit, damage and AC adjustments; where thief skills are rolled
+Experience from battles (the monsters' award values, money and magic items converted to experience, the division over the party and the class bonuses) is described with the aftermath of a battle: [combat-rules.md, "Experience"](combat-rules.md#experience-o-fun_2e08_0000) and ["Award"](combat-rules.md#award-o-fun_2e08_0355). Duels give `100 × char[0x73]` to the current character.

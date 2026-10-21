@@ -62,7 +62,7 @@ No other intro text exists in the executable.
 ### Layout (O)
 
 - Frame rows 1–22, cols 1–38 (`FUN_13f1_02e8("",0,0,22,38,1,1)`), redrawn after every action.
-- Roster (`FUN_10ba_0767`, only if a current character exists): row 2 headings "Name" / "AC  HP" (white), one row per member from row 4 (name, AC, HP; current character white). See spec/graphics. Rows 4–11 leave room for **8** members.
+- Roster (`FUN_10ba_0767`, only if a current character exists): row 2 headings "Name" / "AC  HP" (white), one row per member from row 4 (name, AC, HP; current character white). See [graphics.md](graphics.md), "Screen layout". Rows 4–11 leave room for **8** members.
 - Function list from row 12: each **enabled** entry on its own row (`12 + n`), first letter at col 2 in white (15), rest at col 3 in green (10).
 - Row 24: prompt "Choose a function " (colour 13) followed by the invisible hotkey menu "C D M T V A R L S B E J" (`DS:05F0`, colours 0).
 
@@ -98,18 +98,18 @@ No other intro text exists in the executable.
 | Create | [chargen-and-progression.md](chargen-and-progression.md). The new character is written to disk and **not** added to the party (O: `FUN_45c5_069e` at `417f:1EAD`, then FreeMem at `417f:1EC9`) |
 | Drop (`417f:1F37`) | Yes/No "Drop NAME forever? " then "Are you sure? ". Both Y: message "You dump NAME out back." if char[0x10D] = 0 (unconscious/dead, I) else "NAME bids you farewell."; remove from party, free combat-icon slot, free record. **No file is deleted or written**; its charlist entry was already removed when it joined (below). Otherwise "NAME breathes a sigh of relief." (O) |
 | Modify (`417f:209F`) | §3 |
-| Train (`417f:29AE`) | spec/progression |
+| Train (`417f:29AE`) | [chargen-and-progression.md, "Training"](chargen-and-progression.md#training-o-fun_417f_29ae) |
 | View | character sheet viewer `FUN_4894_0ab3` (O) |
 | Add (`417f:306D`) | §2.1 |
 | Remove | save the character to its own files and append it to `charlist.txt` (`FUN_45c5_069e("", char)`), then unlink and free it (`FUN_417f_3291(1,0)`): party count `B[0x67C]` − 1, combat-icon slot freed, current = previous member (or new head) (O) |
-| Load (`FUN_45c5_1602`) | spec/savegame. If a game was loaded (`DS:49F3` ≠ 0 afterwards) the party screen **returns immediately** with `DS:49F8` = 1 — the game resumes without pressing Begin (O; corrects spec/savegame step 7) |
+| Load (`FUN_45c5_1602`) | [savegame.md](savegame.md). If a game was loaded (`DS:49F3` ≠ 0 afterwards) the party screen **returns immediately** with `DS:49F8` = 1 — the game resumes without pressing Begin (O; [savegame.md](savegame.md), "Loading" step 7) |
 | Save (`FUN_45c5_1d58`) | needs a non-empty party. "Save Which Game: " menu "A B C D E F G H I J" (13/10/15); Esc cancels; writes `SAVGAM<x>.DAT` + `CHRDAT<x><n>.SAV/.ITM/.SPC` in the save path; sets `DS:557D` = 1 (O) |
 | Begin | needs a non-empty party: `DS:49F3` = 4 (map mode), return → main loop in block 3 (O). Nothing else is set here; area 0 comes from the cleared ECL arrays (I) |
 | Exit | Yes/No "Quit to DOS " (prompt yellow 14). Y: while the game is unsaved (`DS:557D` = 0) and the party is non-empty, run Save again (Esc just re-prompts), then exit to DOS (O) |
 
 ### Cheat keys
 
-Cheat mode (O for the keys below): when the first command-line parameter is `STING` (`START STING`), the shared key reader (load-image 0x89E9) also accepts **Ctrl-C** (quit to DOS at once, 0x8990) and **Ctrl-D** (toggle `DS:49F7`, hit-point debugging). **Ctrl-S** toggles sound in any mode. The GameFAQs guide ([por/README.md, "External reference"](../por/README.md#external-reference)) adds **Alt-X** to win a combat at once, and says the introduction and copy protection are skipped (**?** not yet traced).
+Cheat mode (O for the keys below): when the first command-line parameter is `STING` (`START STING`), the shared key reader (load-image 0x89E9) also accepts **Ctrl-C** (quit to DOS at once, 0x8990) and **Ctrl-D** (toggle `DS:49F7`, hit-point debugging). **Ctrl-S** toggles sound in any mode. The GameFAQs guide ([por/README.md, "External reference"](../por/README.md#external-reference)) adds **Alt-X** to win a combat at once, and says the introduction and copy protection are skipped. In the code: `STING` skips the title pictures and the credits (§1 step 3, O) but not the code wheel, which this binary accepts anything at anyway ([title-and-credits.md](../por/title-and-credits.md)); Alt-X and `−` are read during computer-controlled turns ([combat-ai.md, "Keyboard during AI turns"](combat-ai.md#keyboard-during-ai-turns-o-fun_3334_0fc1)); what the cheat does there is **?** (not yet traced).
 
 ### 2.1 Add Character (O)
 
@@ -126,7 +126,7 @@ Cheat mode (O for the keys below): when the first command-line parameter is `STI
 |---|---|
 | Roster index | `charlist.txt` (text, one name per line) |
 | Created / removed character | `<stem>.cha`, `<stem>.itm`, `<stem>.spc` (record 0x11D bytes; items 63 each; effects 9 each; empty .itm/.spc files are deleted rather than written) |
-| Party in a save slot | `CHRDAT<slot><n>.sav/.itm/.spc` (spec/savegame) |
+| Party in a save slot | `CHRDAT<slot><n>.sav/.itm/.spc` ([savegame.md](savegame.md)) |
 
 `stem` = character name with every ` . * , ? / \ : ;` and `|` removed (table `DS:0D1A`), first 8 characters. Two names with the same stem overwrite each other. On a write error: "Put save disk in X:" (X = drive letter of the save path) and retry.
 

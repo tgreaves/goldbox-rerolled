@@ -36,6 +36,10 @@ and everything works as it always has.
 
 The last game played and the imported game files stay per browser.
 
+Settings are kept per game on the server, but the browser has one set of keys for every game
+(`poolrad.sound` … in `web/src/store/account.ts`), so pulling one game's settings changes them for every
+game in that browser. Whether that is intended is open (spec/AUDIT.md, C22).
+
 ### Sync rules (`web/src/store/sync.ts`)
 
 Per game the browser keeps, in localStorage: the server version it last saw of each record (`base`), the

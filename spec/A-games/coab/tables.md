@@ -13,31 +13,31 @@ Evidence: **O** = seen in the CotAB binary (the code that indexes the table plus
 
 ## 2. Address mapping (every DS table the port reads, or hard-codes from START.EXE)
 
-"Ref" = an instruction that indexes the table (image offset). "hc" = the port hard-codes the values in TypeScript, so a game profile has to supply them.
+"Ref" = an instruction that indexes the table (image offset). "hc" = the port still hard-codes the values in TypeScript (checked 2026-10-21); `T.name` = read from START.EXE through the profile's table map (`web/src/games/tables.ts`, [B-model/records-and-tables.md](../../B-model/records-and-tables.md)).
 
 | PoR DS | Port use | CotAB DS | Format / stride | Ref PoR → CotAB | Ev | Notes |
 |---|---|---|---|---|---|---|
-| 05D6 | CLASS_BITS (hc) | **3EA2** | 8 bytes [k] | 32543 → 378d7, 50978 (summed into char+0x12B) | O | Ranger = 0x40, the same as paladin (PoR 0x80) |
-| 05DE | TRAINER_BITS (hc) | **3EAA** | 8 bytes [k] | 35a4f → 3b25d, 3b62a | O | 2,2,8,**0x10,0x20**,1,4,**4** (PoR 2,2,8,0A,0A,1,4,6) |
+| 05D6 | class bits (`T.classBits`) | **3EA2** | 8 bytes [k] | 32543 → 378d7, 50978 (summed into char+0x12B) | O | Ranger = 0x40, the same as paladin (PoR 0x80) |
+| 05DE | trainer bits (`T.trainerBits`) | **3EAA** | 8 bytes [k] | 35a4f → 3b25d, 3b62a | O | 2,2,8,**0x10,0x20**,1,4,**4** (PoR 2,2,8,0A,0A,1,4,6) |
 | 08B6 / 08BE | hit dice count/sides | **081A / 0822** | 8 + 8 bytes | 35a60 → 3b28d / 3b2b3 | O | values unchanged; the count is used only at level 1 (§3.4) |
 | — | — | **3EBB** (new) | 8 bytes [k] | 3b271, 3ae47 | O | level from which HD stop: 10,15,10,10,11,12,11,19 |
 | 08C7, 08D7/E1/EB/F5 | random NPC head/body icons | absent | — | 37053 → none | I | CotAB NPCs use CPIC pictures by monster id ("CPIC" strings at 0x18cb0 and others) |
 | 0970 | random-item 8-word records | **082E** | u16 words, record m = 8j+1 | 3daff → 4354b | O | only **7** records (PoR 19); contents differ |
-| 011A | temple names (hc prices) | **00E6** | 41-byte Pascal strings | 1db64 `add $0xF1` → 1d20e `add $0xBD` (index from 1) | O | 11 entries: **Heal** added after CCW; prices are code immediates (§3.11) |
-| 0C26 | SKY (hc) | **0A8A** | 16 bytes | 44ea3 → 52d55 | O | 0,15,**4**,11,13,**2**,9,14 ×2 (PoR 0,15,12,11,13,10,9,14) |
+| 011A | temple names (`T.templeNames`; prices in the profile's rules) | **00E6** | 41-byte Pascal strings | 1db64 `add $0xF1` → 1d20e `add $0xBD` (index from 1) | O | 11 entries: **Heal** added after CCW; prices are code immediates (§3.11) |
+| 0C26 | sky colours (`T.sky`) | **0A8A** | 16 bytes | 44ea3 → 52d55 | O | 0,15,**4**,11,13,**2**,9,14 ×2 (PoR 0,15,12,11,13,10,9,14) |
 | 0C36 | overland plot squares | absent | — | — | I | PoR wilderness only |
 | 0900–095F | overland cleansing frames (hc) | absent | — | — | I | PoR only |
 | 0C6C / 0C7C | colour remap (image.ts) | **0ABA / 0ACA** | 16 + 16 bytes | 45645/4564a → 532bb/532c0 | O | identical (identity; identity with 13→0). CotAB adds three more at 0B20/0B30/0B40 |
 | 0C8C/0C96/0CA0 | wall piece start/width/height | **0ADA/0AE4/0AEE** | 10 bytes each | 45c1e.. → 53ae1, 53af5, 53b0e | O | identical |
 | 0D1A | filename stem chars (hc) | **0C9A** | 10 chars `" .*,?/\:;|"` | 08485 (`0xD19`+i) → 0622a (`0xC99`+i) | O | identical |
-| 0D24 | coin values UNITS (hc) | **0CA4** | 5 × u32 | 35b24 → 3b377 | O | identical 1,10,100,200,1000 |
+| 0D24 | coin values (`T.coinValues`) | **0CA4** | 5 × u32 | 35b24 → 3b377 | O | identical 1,10,100,200,1000 |
 | 0D38 | class names (spec) | **0CB8** | 17 × 27 bytes | → 3750c etc. | O | same 17 names/order |
 | 10BC | item name words | **1057** (accessed as 1042 + i·21) | 255 × 21 | 011bc `add $0x10A7` → 4d690 `add $0x1042` | O | 255 words; 38 changed (dump) |
 | 2722 / 272C | wall-set banks / rebase | **2682 / 268C** | 5 words / 5 words | 468ca, 469d0 → 547c4, 548ca | O | identical values |
 | 2736 / 273F | dx / dy | **2696 / 269F** | 9 + 9 signed | 028d6.. → 2504b.. | O | identical |
 | 2744 | battlefield cell table | **26A4** | 0x42 × 4 bytes | 2619a → 25fc3, 2db53 | O | **values differ**: byte 0 is a move cost 1/2/4 or FF; byte 1 is now 1/2 (§3.12) |
 | 286F / 287D | portrait head/body → HEAD3/BODY3 record | absent | — | 45786 → none | I | chargen portraits are CHEAD/CBODY with the record = char field directly (32e9d char+0x141..0x143) |
-| 290D | Stinking Cloud cells (hc) | **27D9** | bytes (8,2,3,4 at +1) | 27fa2 → 2801c | O | identical; Cloudkill directions follow at 27DD |
+| 290D | Stinking Cloud cells (`T.gasCloud`) | **27D9** | bytes (8,2,3,4 at +1) | 27fa2 → 2801c | O | identical; Cloudkill directions follow at 27DD |
 | 2912 | spell names | **27E8** (accessed as 27BF + id·41) | **100** × 41 | 308fe `add $0x28E9` → 30f11 `add $0x27BF` | O | ids 1–100 (PoR 1–56 named) |
 | 31FA | spell records | **37DC** + id·16 | 16 bytes, **same field layout** | → 3008e, 5057f `add $0x37DC` | O | class byte meaning changed (§3.7) |
 | 3648 | overland map 44×36 | absent | — | — | I | PoR only |
@@ -150,6 +150,9 @@ Levels 1–6 equal PoR's absolute tables.
 - Thief: L1–4 13 12 14 16 15 · 5–8 12 11 12 15 13 · 9–12 11 10 10 14 11
 - 12 rows per class (levels 1–12). The unused L0 slot of class k+1 holds L12 of class k.
 
+### 3.6a Saves: the CON bonus (O, 0x50C6B)
+After the table minimum: dwarves, halflings, or anyone with a readied effect-6 item (Girdle of the Dwarves): save 0 += 1 (CON 4–6), 2 (7–10), 3 (11–13), 4 (14–17), 5 (18); everyone with CON 19–20 +1, 21–22 +2, 23–24 +3, 25 +4. This is **added to the stored save number**, so it makes the death/poison save harder (I: a bug; the intent was surely a bonus). Confirmed by TRAVIS: table 12, stored 16 (CON 16). All six shipped characters recompute exactly. A stray test after the class loop uses the former level of class 7 (monk), dead in practice.
+
 ### 3.7 Spells (O)
 - **100 ids** (PoR 56 named + 57–67 item-only). Names: DS:27BF + id·41. Records: DS:37DC + id·16, 16-byte layout unchanged (cls, lvl, range r0/r1, duration d0/d1, target, side, save, saveType, effect, where, castTime, aiPriority, aiHostile, area).
 - **The class byte changed meaning**: 0 cleric, **1 druid, 2 magic-user, 3 item/monster only** (PoR: 0 cleric, 1 MU, 2 item). Ids 1–56 keep their PoR names and ids. PoR's MU spells (9–21, 29–35, 45–55) change class 1 → 2. **Animate Dead (36)** becomes class 3, level 7. AI priority (byte 13) is retuned on many spells; Prayer side 1 → 4; Blink side 1 → 0.
@@ -180,9 +183,6 @@ Slots are pooled by spell class (0x300A0: char+0x12C + class·5 + level − memo
 - **The bonus variable is never initialised**: without gloves it holds what the saves routine left there, 7, so every skill gets **+7**. Confirmed by the shipped TRAVIS (dwarf thief 5, DEX 17): stored 62 69 62 52 43 27 87 27 = the formula + 7. The port adds it (profile `thief.bonus`).
 - Run by creation, the recalculation (also for a former thief when f = 1), dual-classing, and readying or removing those items. In the port: creation and training so far; the item hooks need the items passed (later, with CotAB's item effect handlers).
 
-### 3.6a Saves: the CON bonus (O, 0x50C6B)
-After the table minimum: dwarves, halflings, or anyone with a readied effect-6 item (Girdle of the Dwarves): save 0 += 1 (CON 4–6), 2 (7–10), 3 (11–13), 4 (14–17), 5 (18); everyone with CON 19–20 +1, 21–22 +2, 23–24 +3, 25 +4. This is **added to the stored save number**, so it makes the death/poison save harder (I: a bug; the intent was surely a bonus). Confirmed by TRAVIS: table 12, stored 16 (CON 16). All six shipped characters recompute exactly. A stray test after the class loop uses the former level of class 7 (monk), dead in practice.
-
 ### 3.9 Ability limits, ages, ageing
 Unchanged from PoR except the new Human paladin (17+1d4) and ranger (20+1d4) start ages (O). Race limits DS:3F88 and thresholds DS:4124 are byte-identical to PoR.
 
@@ -210,6 +210,6 @@ Services DS:00E6: Cure Blindness, Cure Disease, CLW, CSW, CCW, **Heal**, Neutral
 3. Spell-class encoding (PoR 0 cl / 1 MU / 2 item; CotAB 0 cl / 1 druid / 2 MU / 3 item) and slot layout (PoR 2 × 3 at char+0xB2; CotAB 3 × 5 at char+0x12D).
 4. The slot model: absolute per-level tables (PoR) or cumulative increments with per-class start levels (CotAB: cleric and MU from 2, paladin 9, ranger 8), plus the auto-learn rules (cleric skips id 36; ranger learns all druid spells; paladin learns cleric spells).
 5. Rules that live in code, not tables: demi-human limits (§3.2), extra-attack thresholds (F > 6, P > 6, R > 7), the HP rule (PoR: count × die, 2/3 minimum at L1; CotAB: count only at L1, best of two, HD-cap table plus fixed per-class HP with the replace quirk), starting money (PoR gold dice × 10 shared across classes; CotAB 300 pp, dice rolled and discarded), the race menu, temple prices and services, thief-skill item hooks.
-6. Values the PoR port hard-codes and CotAB changes: CLASS_BITS (ranger 0x40), TRAINER_BITS (P 0x10, R 0x20, monk 4), SKY colours, temple list and prices, RACE_MENU (same), COMPONENTS (same 17), cell-table semantics. Values that are the same and can stay shared: coins, filename characters, part colours, cloud cells, remap tables, wall pieces and banks.
+6. Values the PoR port hard-coded and CotAB changes: the class bits (ranger 0x40), trainer bits (P 0x10, R 0x20, monk 4), sky colours and temple list are now read through `T` (§2); the temple prices, the race menu (same), the components (same 17) and the cell-table semantics are in the profile's rules. Values that are the same: coins and cloud cells are read through `T`; filename characters, part colours, remap tables, wall pieces and banks are still shared in code.
 7. Tables that exist only in PoR: the overland map and plot squares (3648, 0C36, 3C76, 0900–095F), the NPC random icon tables (08C7–08F5) and the portrait record maps (286F/287D). The profile needs to mark them optional.
 8. The character record layout differs completely (0x11D-style PoR offsets vs CotAB 0x1A6 bytes). Every rules routine needs a field map from the profile, or a common internal model.
