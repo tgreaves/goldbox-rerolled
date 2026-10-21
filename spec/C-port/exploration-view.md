@@ -239,7 +239,7 @@ IMP-026) instead of the 3D view:
 - The pad and the arrows are compass directions ([ui-contract.md §4.4](ui-contract.md#44-the-pad));
   a tap on the view steps towards the tap. Each step is the original's 12 hours.
 - Without `START.EXE` (the overland tables): "Wilderness" and "The wilderness map needs START.EXE
-  from the game files: go back to Assets and re-import the *FOLDER* folder." in the view, and a move
+  from the game files: re-import the *FOLDER* folder." in the view, and a move
   answers "Wilderness travel needs START.EXE: re-import the *FOLDER* folder."
 
 ### 4.2 Curse of the Azure Bonds: the map picture

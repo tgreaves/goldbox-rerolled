@@ -301,7 +301,8 @@ Every panel is a modal dialog with the same conventions (IMP-057):
 
 Keys are `KeyboardEvent.key` values. A key with Ctrl, Meta or Alt held is ignored unless listed; a
 key typed into a text field belongs to the field. Every key, click and tap also unlocks the browser's
-audio (sound may start only after a gesture).
+audio (sound may start only after a gesture). **Ctrl-S** turns the sound off and on again on every
+screen, as the original ([audio.md §2](audio.md#2-device-choice)).
 
 ### 8.1 Exploring (nothing pending, no dialog, no script running)
 

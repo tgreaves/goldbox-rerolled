@@ -61,9 +61,25 @@ export function cutTick(mode: SoundMode, transient = game().sound.transient, ran
   return mode === 'transient' && transient ? 14 + Math.floor(rand() * 13) : undefined
 }
 
+/** Ctrl-S has turned the sound off (the original's mode 2 with the device kept in DS:5373) */
+let muted = false
+/** the effects still sounding, so that Ctrl-S can stop them (PlaySound(0xFF)) */
+const playing = new Set<AudioBufferSourceNode>()
+export const soundMuted = () => muted
+
+/**
+ * Ctrl-S (PoR linear 0x189FE, CotAB 0x6841): the first press stops whatever plays and turns the sound off,
+ * the next turns it back on with the device chosen; not kept between sessions (spec/C-port/audio.md §2).
+ */
+export function toggleMute(): boolean {
+  muted = !muted
+  if (muted) for (const s of [...playing]) { try { s.stop() } catch { /* already ended */ } }
+  return muted
+}
+
 /** Play effect n as its call site does (`mode`, spec/C-port/audio.md §3). */
 export function play(n: number, mode: SoundMode) {
-  if (device === 'off' || !ctx || !image) return
+  if (device === 'off' || muted || !ctx || !image) return
   const cut = cutTick(mode)
   const key = `${device}/${n}/${cut ?? 'full'}`
   let buf = cache.get(key)
@@ -77,5 +93,7 @@ export function play(n: number, mode: SoundMode) {
   const src = ctx.createBufferSource()
   src.buffer = buf
   src.connect(ctx.destination)
+  playing.add(src)
+  src.onended = () => playing.delete(src)
   src.start()
 }

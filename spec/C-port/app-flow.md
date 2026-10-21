@@ -244,9 +244,8 @@ handlers stop; the party screen opens.
 
 **Script and engine errors** are notes ("Script error: *message*", "Combat error: *message*"); play
 stays usable. When the engine has quit (a script's quit, `engine.quit`), the note "The game has
-ended here. Go back to Assets to start again." is shown and movement does nothing; ☰ still works
-(**known deviation**: the note names a screen that is no longer the way back; it should say "Quit to
-the party screen", [AUDIT.md](../AUDIT.md) §6.9, UI4).
+ended here: ☰ Menu, Quit to the party screen, to start again." is shown and movement does nothing; ☰
+still works.
 
 ## 8. The ending
 

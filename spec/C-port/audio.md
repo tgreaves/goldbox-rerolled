@@ -57,8 +57,11 @@ installer's configuration file (`POOL.CFG` line 2, [sound.md §2](../A-games/eng
   START.EXE among the game files".
 - Browsers allow sound only after a user gesture: the first key, click or tap unlocks it; an effect
   requested before that is dropped.
-- The original's **Ctrl-S** (mute and restore, [sound.md §2](../A-games/engine/sound.md#2-device-selection-ds5372))
-  is not offered; the setting replaces it.
+- **Ctrl-S**, as the original's key reader ([sound.md §2](../A-games/engine/sound.md#2-device-selection-ds5372);
+  CotAB 0x6841): on any screen, the first press stops every effect still sounding and turns the sound
+  off, the next turns it on again with the device the setting names. It shows nothing, as the
+  original, does not change the setting and is not kept (a reload starts with the sound on). The
+  browser's own Ctrl-S (save the page) is suppressed.
 - With an account the setting travels like the others ([accounts-and-sync.md §5.9](accounts-and-sync.md#59-settings)).
 
 ## 3. The cut-off rule

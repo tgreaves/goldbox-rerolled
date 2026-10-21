@@ -14,7 +14,7 @@ import { applyGfxClass } from './render/upscale'
 import { initAccount, onSettingsPulled, startAccount } from './store/account'
 import { mountAccount } from './ui/account'
 import { versionHtml } from './version'
-import { setSoundDevice, soundDevice } from './audio/sfx'
+import { setSoundDevice, soundDevice, toggleMute } from './audio/sfx'
 import { generator } from './rules/dice'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
@@ -23,6 +23,12 @@ const app = document.querySelector<HTMLDivElement>('#app')!
  * screen and every engine the page starts draw from it, seeded from the clock.
  */
 const dice = generator()
+
+// Ctrl-S turns the sound off and on again on every screen, as the original's key reader does
+// (spec/C-port/audio.md §2); it replaces the browser's "save page"
+window.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); toggleMute() }
+}, true)
 
 async function start() {
   applyTextSize()

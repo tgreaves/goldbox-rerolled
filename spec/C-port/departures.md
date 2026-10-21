@@ -128,7 +128,6 @@ port ([AUDIT.md](../AUDIT.md) §6.9):
 | Departure | Where | Finding |
 |---|---|---|
 | PoR's translation-wheel screen is not shown (the original shows it and, in this release, accepts any word) | [app-flow.md §4](app-flow.md#4-the-title) | UI3 |
-| Ctrl-S (mute) is not offered; the Sound setting replaces it | [audio.md §2](audio.md#2-device-choice) | UI6 |
 | only the EGA video mode is drawn (no CGA, no Tandy video) | [rendering.md §3](rendering.md#3-palettes) | UI6 |
 | camp Save does not ask "Quit TO DOS" afterwards; the party screen's Exit goes to the title, not DOS (there is no DOS) | [screens.md §6.1](screens.md#61-the-camp-menu), [app-flow.md §5](app-flow.md#5-the-party-screen) | UI6 |
 | the battle's View keeps the normal palette (the original swaps it as on the battlefield) | [combat-ui.md](combat-ui.md), Open | UI6 |

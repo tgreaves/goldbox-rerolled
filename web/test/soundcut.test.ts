@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { cutTick } from '../src/audio/sfx'
+import { cutTick, soundMuted, toggleMute } from '../src/audio/sfx'
 import { COAB, POR } from '../src/games/profile'
 import type { SoundMode } from '../src/games/sound'
 import { GameFiles, wanted } from '../src/store/gamefiles'
@@ -25,6 +25,13 @@ describe('sound cut-off', () => {
     expect(cutTick('full', true, () => 0)).toBeUndefined()
     expect(cutTick('transient', false, () => 0)).toBeUndefined()
     expect(cutTick('full', false, () => 0)).toBeUndefined()
+  })
+
+  it('Ctrl-S turns the sound off and on again (PoR linear 0x189FE, CotAB 0x6841)', () => {
+    expect(soundMuted()).toBe(false)
+    expect(toggleMute()).toBe(true)
+    expect(soundMuted()).toBe(true)
+    expect(toggleMute()).toBe(false)
   })
 })
 

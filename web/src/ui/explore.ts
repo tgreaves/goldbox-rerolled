@@ -54,7 +54,7 @@ import { accountLabel, openAccount } from './account'
 import { accountStatus } from '../store/account'
 import { unexepack } from '../data/exepack'
 import { checkTraining, levelLimit, newSpellChoices, train, willBecome, xpFor } from '../rules/training'
-import { initSound, play, setSoundDevice, soundDevice, unlockAudio } from '../audio/sfx'
+import { initSound, play, unlockAudio } from '../audio/sfx'
 import type { DemoMode } from '../games/startup'
 
 const FACING = ['North', 'East', 'South', 'West']
@@ -675,7 +675,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const [wx, wy] = engine.wildPosition
       where.textContent = `Wilderness · ${wx},${wy} · facing ${FACING[engine.facing]} · ${clockText(engine)}${searching ? ' · Searching' : ''}`
       wild.hidden = !!engine.wild
-      if (!engine.wild) wild.innerHTML = `<p><strong>Wilderness</strong></p><p>The wilderness map needs START.EXE from the game files: go back to Assets and re-import the ${game().folder} folder.</p>`
+      if (!engine.wild) wild.innerHTML = `<p><strong>Wilderness</strong></p><p>The wilderness map needs START.EXE from the game files: re-import the ${game().folder} folder.</p>`
       return
     }
     wild.hidden = true
@@ -1878,7 +1878,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       note(`Script error: ${(e as Error).message}`)
     } finally {
       busy = false
-      if (engine.quit) note('The game has ended here. Go back to Assets to start again.')
+      if (engine.quit) note('The game has ended here: ☰ Menu, Quit to the party screen, to start again.')
       commandBar()
       // autosave between actions, never inside a script: on every area change, else at most every 30 s
       const where = `${engine.block}:${engine.area}`
@@ -1933,18 +1933,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       case 'C': sheet(parseCharacter(engine.cur)); break // Cast is on the sheet (IMP-062)
       case 'E': act(() => engine.command('e')); break
       case 'L': act(() => engine.command('L')); break
-      case 'sound': {
-        const next = ({ pc: 'tandy', tandy: 'off', off: 'pc' } as const)[soundDevice()]
-        setSoundDevice(next)
-        unlockAudio()
-        commandBar()
-        if (next !== 'off') play(10, 'transient')
-        break
-      }
       case 'settings':
         void openSettings(dialog, { speed: { get: () => engine.speed, set: (v) => { engine.speed = v } }, changed: () => { commandBar(); applyView() } })
         break
-      case 'nosound': note(`Sound needs START.EXE: go back to Assets and re-import the ${game().folder} folder.`); break
       case 'commissions': commissions(); break
       case 'journal': journal(); break
       case 'save': act(() => saveGame()); break
