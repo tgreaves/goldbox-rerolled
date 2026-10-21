@@ -1,9 +1,9 @@
 # GoldBox Rerolled specification
 
-> **Status: parts A, B and C written; part D and the companion documents in progress.** Work-plan
-> steps 1–5 of [AUDIT.md](AUDIT.md) (the layout, part B, part C storage and sync, part C user
-> interface, the part A clean-up) are done; the appendices, the companion documents and the
-> clean-room runs remain. The audit is kept for provenance.
+> **Status: parts A–D and the companion documents written.** Work-plan steps 1–7 of
+> [AUDIT.md](AUDIT.md) (the layout, part B, part C storage and sync, part C user interface, the part A
+> clean-up, the appendices, the companion documents) are done; the clean-room runs (step 8) remain.
+> The audit is kept for provenance.
 
 This is the normative specification of **GoldBox Rerolled**, a reimplementation of SSI's Gold Box
 engine for the web browser. It is the **single source of truth**: a builder, human or AI, should be
@@ -46,7 +46,9 @@ while a part-C file is still a stub, the reference implementation stands in for 
      sidecar files (`.GBR`), never in the original records;
   3. reads game data and game text from the player's files (D1 below);
   4. takes every random draw that affects the game from the injected dice source (D2);
-  5. passes the checklist in [CONFORMANCE.md](CONFORMANCE.md).
+  5. gives the outputs of the test vectors ([D-appendices/test-vectors.md](D-appendices/test-vectors.md))
+     for the games and releases it supports;
+  6. passes the checklist in [CONFORMANCE.md](CONFORMANCE.md).
 
 ### Evidence marks
 
@@ -146,8 +148,8 @@ repository's Markdown files.
 | [sound.md](A-games/engine/sound.md) | the sound driver: bytecode, timer, PC speaker and Tandy, effects and call sites | complete |
 
 "Complete" means a builder can implement the subject from the file; open points are listed in
-it. Every part A file still gets the step 5 clean-up of [AUDIT.md](AUDIT.md) §8 (statements about
-the port move to part C, data dumps to appendices, game text to addresses).
+it. Every part A file has had the step 5 clean-up of [AUDIT.md](AUDIT.md) §8 (statements about the
+port moved to part C, data dumps to appendices, game text to addresses).
 
 ### Pool of Radiance ([A-games/por/](A-games/por/README.md))
 
@@ -172,6 +174,7 @@ set of differences** throughout; how the port realises them is in parts B and C.
 | [spells.md](A-games/coab/spells.md) | spell handlers by id, the new spells, durations, quirks |
 | [effects.md](A-games/coab/effects.md) | event lists, changed and new handlers, item kinds, monster-class flags, the target hook |
 | [combat.md](A-games/coab/combat.md) | the battlefield generators, the cell table, casting |
+| [camp.md](A-games/coab/camp.md) | the camp menus and Fix |
 | [camp.md](A-games/coab/camp.md) | the camp's Fix, the rest prompt, the silent rest |
 | [assets.md](A-games/coab/assets.md) | DAX families, the 3D view's sky and ground, BIGPIC, title and start-up, sound |
 
@@ -213,22 +216,24 @@ The port's own design (work-plan steps 3 and 4).
 
 | File | Covers | Status |
 |---|---|---|
-| [addresses.md](D-appendices/addresses.md) | index of routines and tables, both games (informative) | partial: every routine part A cites; tables to come |
-| [strings.md](D-appendices/strings.md) | game messages by id and address (D1) | partial: addresses being confirmed |
-| [port-data.md](D-appendices/port-data.md) | data the port authors (normative) | partial |
-| [expected-values.md](D-appendices/expected-values.md) | dumps of game-file values for checking (informative) | partial |
-| [glossary.md](D-appendices/glossary.md) | terms | partial: every term part A uses |
-| [test-vectors.md](D-appendices/test-vectors.md) | dice tapes and expected outputs | stub |
+| [addresses.md](D-appendices/addresses.md) | index of routines and tables, both games (informative) | complete |
+| [strings.md](D-appendices/strings.md) | game messages by id and address (D1) | complete (§6, what the port still words, shrinks as texts move to addresses) |
+| [port-data.md](D-appendices/port-data.md) | data the port authors (normative) | complete |
+| [expected-values.md](D-appendices/expected-values.md) | dumps of game-file values and V1 hashes for checking (informative) | complete |
+| [glossary.md](D-appendices/glossary.md) | terms | complete |
+| [test-vectors.md](D-appendices/test-vectors.md) | test vectors: dice tapes, inputs and expected outputs, with the manifest [test-vectors.json](D-appendices/test-vectors.json) (normative) | complete |
 
 ## Companion documents
 
-- [CONFORMANCE.md](CONFORMANCE.md): a self-audit for a finished build (partial: the user interface checklist).
+- [CONFORMANCE.md](CONFORMANCE.md): a self-audit for a finished build: the interface and the rules
+  and engine checklists (complete).
 - [CLEANROOM.md](CLEANROOM.md): how to run a build by a fresh builder who has only the spec and the
-  game files (stub).
+  game files: the file sets, the isolation rules, the validations V1–V13, the plan, the brief, the
+  findings (complete; kept out of clean-room file sets).
 - [VALIDATION.md](VALIDATION.md): the record of cross-checks, test suites and clean-room runs; kept
-  out of clean-room file sets (stub).
+  out of clean-room file sets (complete for the record so far; the runs are step 8).
 - [xref.md](xref.md): spec section → reference implementation; kept out of clean-room file sets
-  (stub).
+  (complete).
 - [open-questions.md](open-questions.md): the register of open questions (living).
 - [AUDIT.md](AUDIT.md): the Phase 1 audit, its decisions and work plan (provenance, not normative).
 
