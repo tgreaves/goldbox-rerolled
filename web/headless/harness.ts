@@ -61,6 +61,8 @@ export interface RunOptions {
   /** the dice source: a tape to replay, else the reference generator with this seed (default 1) */
   tape?: Tape
   seed?: number
+  /** a dice source to answer from instead (the test vectors' recorder or player, headless/vectors.ts) */
+  dice?: Dice
   /** each transcript event as it happens */
   out: (e: Event) => void
   /** render the drawn view at the end of the run (V9): `RunResult.frame` and a `frame` event */
@@ -99,7 +101,7 @@ export async function runScript(o: RunOptions): Promise<RunResult> {
     return a
   }
   const out = o.out
-  const source: Dice = o.tape ? new TapePlayer(o.tape) : generator(o.seed ?? 1)
+  const source: Dice = o.dice ?? (o.tape ? new TapePlayer(o.tape) : generator(o.seed ?? 1))
   const recorder = new TapeRecorder(source, g.id)
 
   let battle: Battle | null = null

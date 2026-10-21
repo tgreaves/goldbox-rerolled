@@ -9,7 +9,8 @@
     "build:single": "tsc && vite build --mode single",
     "preview": "vite preview",
     "test": "vitest run",
-    "headless": "node --import ./headless/node-ts.mjs headless/run.ts"
+    "headless": "node --import ./headless/node-ts.mjs headless/run.ts",
+    "vectors": "node --import ./headless/node-ts.mjs headless/vectors-run.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

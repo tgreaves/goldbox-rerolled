@@ -485,3 +485,22 @@ export function renderTandy(image: Uint8Array, n: number, rate: number, cut?: nu
   }
   return out
 }
+
+/**
+ * The driver's output for effect n as numbers, tick by tick (V8 in integer form: the test vectors of
+ * spec/D-appendices/test-vectors.md): for each timer tick until the effect ends, the cut-off tick or 2400
+ * ticks, the values written to port 0x42 then the value of port 0x61 (PC speaker), or the bytes written to
+ * the SN76489 (Tandy). The samples made from them are informative (spec/C-port/audio.md §1).
+ */
+export function driverTrace(image: Uint8Array, n: number, tandy = false, cut?: number): number[][] {
+  const d = new Driver(image)
+  d.start(n - 1, tandy)
+  const out: number[][] = []
+  for (let k = 0; k < 2400; k++) {
+    if (cut !== undefined && k >= cut) break
+    d.tick()
+    out.push(tandy ? [...d.snWrites] : [...d.out42, d.port61])
+    if (!d.active(tandy)) break
+  }
+  return out
+}

@@ -60,6 +60,88 @@
 | sky art (§3.1) | — | 0x53824 |
 | frames | `FUN_13f1_0000` | 0x1330, 0x1403 |
 
+## Tables
+
+Every table the table map names ([B-model/records-and-tables.md §3.2](../B-model/records-and-tables.md#32-the-maps),
+which gives each entry's format and meaning), both games: the DS offset of the table (of its entry 0, or
+of entry 1 where the entries say "from 1"), the image offset (the data segment's image offset + DS
+offset: PoR 0xC7C0, CotAB 0xABE0), the row size where the table is indexed by a first key, and the
+entries the procedures read. Generated from the reference's table map and the test-vector generator's
+table list (`web/headless/vector-cases.ts`, [test-vectors.md §6](test-vectors.md#6-the-generator-and-the-golden-outputs-informative));
+the SHA-256 of each table's bytes is in [expected-values.md §7](expected-values.md#7-decoded-files-and-tables-v1).
+
+<!-- generated:tables -->
+| Table | PoR DS | PoR image | CotAB DS | CotAB image | Row | PoR entries | CotAB entries |
+|---|---|---|---|---|---|---|---|
+| `classBits` | DS:05D6 | 0x0CD96 | DS:3EA2 | 0x0EA82 | – | 8 base classes | 8 base classes |
+| `trainerBits` | DS:05DE | 0x0CD9E | DS:3EAA | 0x0EA8A | – | 8 base classes | 8 base classes |
+| `hitDiceCount` | DS:08B6 | 0x0D076 | DS:081A | 0x0B3FA | – | 8 base classes | 8 base classes |
+| `hitDiceSides` | DS:08BE | 0x0D07E | DS:0822 | 0x0B402 | – | 8 base classes | 8 base classes |
+| `hitDiceStop` | absent | – | DS:3EBB | 0x0EA9B | – | – | 8 base classes |
+| `npcHeads` | DS:08C7 | 0x0D087 | absent | – | – | 2 genders × 8, from 1 | – |
+| `npcBodiesCleric` | DS:08D7 | 0x0D097 | absent | – | – | 2 genders × 5, from 1 | – |
+| `npcBodiesFighter` | DS:08E1 | 0x0D0A1 | absent | – | – | 2 genders × 5, from 1 | – |
+| `npcBodiesMagicUser` | DS:08EB | 0x0D0AB | absent | – | – | 2 genders × 5, from 1 | – |
+| `npcBodiesThief` | DS:08F5 | 0x0D0B5 | absent | – | – | 2 genders × 5, from 1 | – |
+| `raceNames` | DS:0F03 | 0x0D6C3 | DS:0E9E | 0x0BA7E | 10 | 8 races × 10 | 8 races × 10 |
+| `classNames` | DS:0D38 | 0x0D4F8 | DS:0CB8 | 0x0B898 | 27 | 17 class ids × 27 | 17 class ids × 27 |
+| `alignmentNames` | DS:0F53 | 0x0D713 | DS:0EEE | 0x0BACE | 17 | 9 × 17 | 9 × 17 |
+| `statusNames` | DS:1047 | 0x0D807 | DS:0FE2 | 0x0BBC2 | 13 | 9 × 13 | 9 × 13 |
+| `genderNames` | DS:0FEC | 0x0D7AC | DS:0F87 | 0x0BB67 | 7 | 2 × 7 | 2 × 7 |
+| `coinNames` | DS:0FFA | 0x0D7BA | DS:0F95 | 0x0BB75 | 11 | 7 × 11 | 7 × 11 |
+| `coinValues` | DS:0D24 | 0x0D4E4 | DS:0CA4 | 0x0B884 | 4 | 5 × u32 | 5 × u32 |
+| `frameTop` | absent | – | DS:0B50 | 0x0B730 | – | – | 40 columns |
+| `frameBottom` | absent | – | DS:0BA0 | 0x0B780 | – | – | 40 columns |
+| `frameLeft` | absent | – | DS:0BE2 | 0x0B7C2 | – | – | 24 rows |
+| `frameRight` | absent | – | DS:0C0B | 0x0B7EB | – | – | 24 rows |
+| `frameDivider` | absent | – | DS:0B78 | 0x0B758 | – | – | 40 columns |
+| `cursorX` | absent | – | DS:0A4A | 0x0B62A | – | – | 33 places |
+| `cursorY` | absent | – | DS:0A6A | 0x0B64A | – | – | 33 places |
+| `placeTerrain` | absent | – | DS:0354 | 0x0AF34 | – | – | 33 places (I) |
+| `templeNames` | DS:011A | 0x0C8DA | DS:00E6 | 0x0ACC6 | 41 | 10 × 41 (the services, then Exit) | 11 × 41 (the services, then Exit) |
+| `diseases` | DS:0113 | 0x0C8D3 | DS:00DF | 0x0ACBF | – | 6, from 1 | 6, from 1 |
+| `randomItems` | DS:0970 | 0x0D130 | DS:082E | 0x0B40E | – | 19 records × 8 u16, word m = 8j + 1 | 7 records × 8 u16, word m = 8j + 1 |
+| `sky` | DS:0C26 | 0x0D3E6 | DS:0A8A | 0x0B66A | – | 16 | 16 |
+| `itemWords` | DS:10BC | 0x0D87C | DS:1057 | 0x0BC37 | 21 | 255 words × 21, from word 1 | 255 words × 21, from word 1 |
+| `wallDx` | DS:2736 | 0x0EEF6 | DS:2696 | 0x0D276 | – | 9 directions | 9 directions |
+| `wallDy` | DS:273F | 0x0EEFF | DS:269F | 0x0D27F | – | 9 directions | 9 directions |
+| `battleCells` | DS:2744 | 0x0EF04 | DS:26A4 | 0x0D284 | 4 | 0x42 cells × 4 | 0x42 cells × 4 |
+| `headRecords` | DS:286F | 0x0F02F | absent | – | – | heads 1–14 | – |
+| `bodyRecords` | DS:287D | 0x0F03D | absent | – | – | bodies 1–12 | – |
+| `spellNames` | DS:2912 | 0x0F0D2 | DS:27E8 | 0x0D3C8 | 41 | 56 named spells × 41, from spell 1 | 100 named spells × 41, from spell 1 |
+| `spellRecords` | DS:31FA | 0x0F9BA | DS:37DC | 0x0E3BC | 16 | 67 spell records × 16, from spell 1 | 100 spell records × 16, from spell 1 |
+| `overlandMap` | DS:3648 | 0x0FE08 | absent | – | – | 44 × 36 tiles | – |
+| `overlandSpecials` | DS:0C36 | 0x0D3F6 | absent | – | 6 | 9 × 6 | – |
+| `overlandColumns` | DS:3C76 | 0x10436 | absent | – | – | 5 | – |
+| `thac0` | DS:3C7C | 0x1043C | DS:3E3A | 0x0EA1A | 11 / 13 | 8 classes × 11 (levels 1–10) | 8 classes × 13 (levels 1–12) |
+| `thiefBase` | DS:3CF3 | 0x104B3 | DS:3EC0 | 0x0EAA0 | 8 | levels 1–9 × 8 skills | levels 1–12 × 8 skills |
+| `thiefRace` | DS:3D3B | 0x104FB | DS:3F20 | 0x0EB00 | 8 | 8 races × 8 skills | 8 races × 8 skills |
+| `thiefDex` | DS:3D4E | 0x1050E | DS:3F33 | 0x0EB13 | 5 | DEX 0–25 × 5 skills | DEX 0–25 × 5 skills |
+| `raceLimits` | DS:3DA3 | 0x10563 | DS:3F88 | 0x0EB68 | 16 | 8 races × 16 | 8 races × 16 |
+| `raceClasses` | DS:3E17 | 0x105D7 | DS:3FFA | 0x0EBDA | 12 / 14 | 8 races × 12 | 8 races × 14 |
+| `startAge` | DS:3E5B | 0x1061B | DS:404E | 0x0EC2E | 28 | 8 races × 7 columns × 4 | 8 races × 7 columns × 4 |
+| `ageing` | DS:3F31 | 0x106F1 | DS:4124 | 0x0ED04 | 10 | 8 races × 5 u16 | 8 races × 5 u16 |
+| `classMins` | DS:3F81 | 0x10741 | DS:4174 | 0x0ED54 | 6 | 17 class ids × 6 | 17 class ids × 6 |
+| `alignments` | DS:3FE7 | 0x107A7 | DS:41DA | 0x0EDBA | 10 | 17 class ids × 10 | 17 class ids × 10 |
+| `conHp` | DS:408E | 0x1084E | DS:4281 | 0x0EE61 | – | CON 0–25 | CON 0–25 |
+| `xp` | DS:409B | 0x1085B | DS:4293 | 0x0EE73 | 56 / 99 | 8 classes × 14 levels × u32 | 8 classes × 0x63 (13 levels × u32 read) |
+| `clericSlots` | DS:40BC | 0x1087C | DS:42BC | 0x0EE9C | 3 / 5 | levels 1–9 × 3 | levels 1–11 × 5 |
+| `muSlots` | DS:41D4 | 0x10994 | DS:44AB | 0x0F08B | 3 / 5 | levels 1–9 × 3 | levels 1–11 × 5 |
+| `paladinSlots` | absent | – | DS:43E5 | 0x0EFC5 | 5 | – | levels 9–11 × 5 |
+| `rangerSlots` | absent | – | DS:4448 | 0x0F028 | 5 | – | levels 8–11 × 5 |
+| `startGold` | DS:4263 | 0x10A23 | DS:45B3 | 0x0F193 | 2 | 8 base classes × 2 | 8 base classes × 2 |
+| `saves` | DS:426E | 0x10A2E | DS:45BE | 0x0F19E | 45 / 60 | 8 classes × 45 (levels 0–8 × 5) | 8 classes × 60 (levels 1–12 × 5) |
+| `fanDx1` | absent | – | DS:0A22 | 0x0B602 | – | – | 8 directions |
+| `fanDy1` | absent | – | DS:0A2A | 0x0B60A | – | – | 8 directions |
+| `fanDx2` | absent | – | DS:0A12 | 0x0B5F2 | – | – | 8 directions |
+| `fanDy2` | absent | – | DS:0A1A | 0x0B5FA | – | – | 8 directions |
+| `gasCloud` | DS:290D | 0x0F0CD | DS:27D9 | 0x0D3B9 | – | 4 squares, from 1 | 4 squares, from 1 |
+| `killCloud` | absent | – | DS:27DD | 0x0D3BD | – | – | 9 squares, from 1 |
+| `furnishDx` | absent | – | DS:034B | 0x0AF2B | – | – | 4 sides, from 1 |
+| `furnishDy` | absent | – | DS:034F | 0x0AF2F | – | – | 4 sides, from 1 |
+| `viewPieces` | DS:0C8C | 0x0D44C | DS:0ADA | 0x0B6BA | – | 10 kinds × (3 bytes + 2 words) | 10 kinds × (3 bytes + 2 words) |
+<!-- /generated:tables -->
+
 ## Routines part A cites
 
 Every PoR routine named `FUN_seg_off` (or `seg_off`) in part A, with its image offset
