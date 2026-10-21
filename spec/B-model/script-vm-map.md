@@ -197,7 +197,7 @@ operand that is not an immediate ends the walk there. Operand slots MUST hold at
 | `twoSlotSkipsFF` | LOAD_WALLSETS | in two-slot mode (A 0x49E7 and 0x49E8 set), an operand of 0xFF leaves its slot as it is; false: it is loaded like any record | false (image 0x1A96D: no test) | true (0x19563, 0x19575) |
 | `damageDespiteSave` | DAMAGE | flag bits with which a successful save still takes the damage (0: none) | 0 | 0x10 (0x1B22A; the bit is also part of the save bonus) |
 | `loadPastEnd` | LOAD_CHARACTER | an index past the end of the list sets a flag that the next read of B + 0x100 returns as 0 and clears; the current character is unchanged | false | true (DS:8B87: 0x18B39, 0x20390) |
-| `wipeBanner` | DAMAGE | text shown before "The entire party is killed!" when DAMAGE leaves nobody in play; null: none | "The END!" (0x1C667) | null |
+| `wipeBanner` | DAMAGE | the address of the text shown before "The entire party is killed!" when DAMAGE leaves nobody in play; null: none | 0x1C35D, "The END!" (`FUN_29c3_2775`) | null |
 | `refreshAfterPicture` | CALL refresh | the view is drawn again over a picture once the area's walls are loaded, even if nothing else changed; false: only when the view changed | false (`FUN_29c3_2c90`) | true (0x1B7B2: flags DS:8B7C … 8B84, DS:47FB) |
 | `pauseMs` | PAUSE, CALL frame | the wait is game speed × this many milliseconds | 225 (`FUN_1709_0dbe`) | 100 (0x1B15B, 0x57F9: Delay(DS:4FC2 · 100)) |
 | `addNpc.enemyId` | ADD_NPC | the monster id that joins on the enemy side (char side := 1 for it, 0 for any other); null: the side byte is left as the record holds it | 0x18 (handler `29c3:2B7E`) | null (0x1B61A) |

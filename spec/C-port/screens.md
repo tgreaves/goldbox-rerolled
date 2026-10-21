@@ -587,5 +587,5 @@ original rules.
 
 - §6.9: CotAB's own Fix command is not yet described in part A; whether the port's Fix matches it is
   **?** (UI5).
-- The engine messages quoted as *game text* are still copied into the code; reading them by address
-  is the C24 code task ([strings.md §2](../D-appendices/strings.md#2-game-texts-the-screens-show)).
+- The engine messages quoted as *game text* are read by address (C24 done,
+  [strings.md](../D-appendices/strings.md)); what the port still words itself is strings.md §6.

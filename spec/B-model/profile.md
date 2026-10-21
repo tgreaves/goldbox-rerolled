@@ -38,9 +38,10 @@ Every value in this part is one of three kinds, marked in the tables:
 | **P** | written for the port (not in the original) | the value, stated in this part or in [D-appendices/port-data.md](../D-appendices/port-data.md) |
 
 Game **text** is never a C or P value: a message, name or caption that is in the game's files is read
-from them by address (D1, [D-appendices/strings.md](../D-appendices/strings.md)). Where the reference
-implementation still holds a copy, this part says so; that is a known gap ([AUDIT.md](../AUDIT.md)
-§6.8, C24), not a licence to copy.
+from them by address (D1, [D-appendices/strings.md](../D-appendices/strings.md)); the profile holds the
+address (C), the text is F. A message, name or caption in the profile data (effect and spell lines,
+monster names, credits, the camp Display names, the wipe banner) is likewise an address
+([strings.md §5](../D-appendices/strings.md#5-texts-in-the-profile-data)).
 
 ### 1.2 Activation
 
@@ -73,7 +74,8 @@ profile value reads it from the active profile when it runs.
 | `view` | `ViewArt` | the 3D view's dressing, pictures, overland kind, frames, sky art | C, P | §3.1 | §3.1 |
 | `title` | `TitleScript` | the title sequence and credits | C | §3.2 | §3.2 |
 | `startMenu` | `StartMenu` or null | the menu after the title and the demo it runs | C | null | §3.3 |
-| `sound` | `SoundDriver` | where the sound driver sits in START.EXE | C | §3.4 | §3.4 |
+| `sound` | `SoundDriver` | where the sound driver sits in START.EXE, whether it cuts effects off | C | §3.4 | §3.4 |
+| `strings` | id → image address | the engine's messages: the address of each string the shared procedures print | F (addresses C) | [D-appendices/strings.md §4](../D-appendices/strings.md#4-engine-messages) | same |
 | `ending` | `EndingScript` | the ending (PROGRAM 8) | C | §3.5 | §3.5 |
 | `imports` | `CharacterImport[]` | characters this game takes from other games | C | none | [procedures.md §13](procedures.md#13-character-import) |
 | `commissions` | boolean | shows the commissions panel (PoR's City Council quests, read from its script variables) | P | true | false |
@@ -139,14 +141,14 @@ The start-up sequence is part A ([engine/input-and-menus.md §1](../A-games/engi
 | `configLine` | the line that holds the long-intro flag | 4 (POOL.CFG line 5, `DS:49D1`) | 3 (CURSE.CFG line 4, `DS:4FB1`) |
 | `credits.ms` | how long the credits stay | 10 000 | 10 000 |
 | `credits.frame` | rope boxes as text cells (x1, y1, x2, y2), or the screen frame with divider rows | boxes (1, 1)–(38, 3) and (1, 5)–(38, 23) | screen frame, dividers at rows 3 and 8 |
-| `credits.lines` | (row, column, colour, text) per line | [por/title-and-credits.md](../A-games/por/title-and-credits.md#credits-screen-o-290c0206-strings-290c004b01e2) | [coab/assets.md §7](../A-games/coab/assets.md#7-start-up-title-copy-protection-o) step 5 |
+| `credits.lines` | (row, column, colour, image address of the line's string) per line | [por/title-and-credits.md](../A-games/por/title-and-credits.md#credits-screen-o-290c0206-strings-290c004b01e2) | [coab/assets.md §7](../A-games/coab/assets.md#7-start-up-title-copy-protection-o) step 5 |
 
 A screen's `lightning` (PoR) flashes palette register 1 at irregular moments (presentation only:
 any generator, [host-contracts.md §6](host-contracts.md#6-randomness-the-dice-source)); a screen's
 `sound` plays once the game's sound driver is mapped. The credits' text is game text: the routine
 prints Pascal strings from the overlay (PoR `290c:004B–01E2`, CotAB 0x182AD), each at its row,
-column and colour; a conforming build reads them there. The reference implementation transcribes
-them ([AUDIT.md](../AUDIT.md) §6.8, C24).
+column and colour; a conforming build reads them there (the profile gives each line's address,
+[D-appendices/strings.md §5](../D-appendices/strings.md#5-texts-in-the-profile-data)).
 
 ### 3.3 The start-up menu and demo (`StartMenu`)
 
@@ -238,5 +240,3 @@ the CotAB research's checklist; each item is now profile data or a part A fact:
 ## Open
 
 - PoR's ending is still a procedure of its own (`ending.por`), not a list of steps (§3.5).
-- Credits, the wipe banner and other engine messages are still transcribed in the reference
-  implementation (C24).

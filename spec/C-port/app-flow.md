@@ -137,8 +137,8 @@ CotAB [coab/assets.md §7](../A-games/coab/assets.md#7-start-up-title-copy-prote
 - **The credits** are drawn on a 320 × 200 canvas: PoR's two rope boxes, CotAB's screen frame with
   its dividers ([rendering.md §4](rendering.md#4-frames)), and the credit lines in the game font in
   their colours (the lines: [title-and-credits.md](../A-games/por/title-and-credits.md), CotAB
-  [coab/assets.md §7](../A-games/coab/assets.md#7-start-up-title-copy-protection-o); D1: to be read by
-  address, [strings.md §2](../D-appendices/strings.md#2-game-texts-the-screens-show)).
+  [coab/assets.md §7](../A-games/coab/assets.md#7-start-up-title-copy-protection-o); read by address, [strings.md §5](../D-appendices/strings.md#5-texts-in-the-profile-data);
+  without `START.EXE` the frame alone).
 - **Layout**: the picture centred, as large as fits (at most 96 % of the width), whole-pixel scaled,
   with "Press any key or tap to continue" below it (IMP-050).
 - **Input**: any key, click or tap ends the current screen and shows the next; the screen also

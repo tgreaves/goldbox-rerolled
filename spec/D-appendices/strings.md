@@ -1,10 +1,9 @@
 # Game strings
 
-> **Status: partial** (work-plan steps 4 and 6, [AUDIT.md](../AUDIT.md) §8). §2 (the game texts the
-> screens show, both games) and §3 (the port's own texts) are written; the full list of engine
-> messages with their reading routines comes in step 6 with the C24 code task. The addresses are
-> normative; the strings themselves stay in the game files. Part D of the
-> [specification](../README.md).
+> **Status: written** (work-plan steps 4 and 6, [AUDIT.md](../AUDIT.md) §8; C24 done 2026-10-21).
+> §2 the game texts the screens show, §3 the port's own texts, §4 the engine's messages by id, §5 the
+> texts the profile data address, §6 what is still worded by the port. The addresses are normative;
+> the strings themselves stay in the game files. Part D of the [specification](../README.md).
 
 Per D1, game text is read from the player's files, never copied into the code or the spec: this
 appendix lists each message with its address in each game's files. Quotations here identify a message;
@@ -19,131 +18,151 @@ they do not define it.
   `image 0x…`; CotAB: the working image, [coab/README.md, "Working image"](../A-games/coab/README.md#working-image)).
   A reader that does not merge the overlays maps an image offset back to `START.EXE` or `GAME.OVR` by the
   overlay stubs ([containers.md](../A-games/engine/containers.md)).
-- Already read by address in the reference implementation: the CotAB start-up menu and demo texts
-  (`START.EXE`, profile `startMenu`), the ending captions (`GAME.OVR` at the profile's `ending.cs` plus
-  each caption's offset), the temple's service names (`T.templeNames`), the class, race and alignment
-  names where the profile's table map gives them ([B-model/records-and-tables.md](../B-model/records-and-tables.md)).
-- Everything in §2 is still copied into the code (C24): a conforming build reads it from these
-  addresses instead.
+- **The merged image** a reader builds (as `tools/mergeovr.py` does): the unpacked `START.EXE` load
+  image; then, from the first 256-paragraph boundary at or past both the end of that image and the end
+  of the program's stack (SS:SP of the EXEPACK header), each overlay's code from `GAME.OVR`, in the order
+  of their file offsets, each starting on a paragraph and padded to one. An overlay is found by its stub
+  in the image: a paragraph beginning `CD 3F 00 00`, then the overlay's file offset (32 bits), its code
+  size, its fix-up size and its entry count (16 bits each), every entry at +0x20 + 5·*i* beginning
+  `CD 3F` ([containers.md](../A-games/engine/containers.md)). The fix-ups and stub entries do not matter
+  for text.
+- **Reading**: the string at address *a* is the *n* = image[*a*] bytes that follow, each 0x20–0x7E; a
+  conforming build treats anything else (past the end, a control byte) as "no text there".
+- **Without the files**: without `START.EXE` (or an unreadable one) no game text can be read, and
+  without `GAME.OVR` none of the overlay strings (every address at or past the overlays' base). A
+  conforming build then shows a message as `#` and its address in hex capitals (`#1E8EC`), as a missing
+  name shows `#n`, and goes on; a message a game has no address for shows as `#` and its id. The
+  credits draw no lines. The parts that need `START.EXE` for their rules (combat, camp, shops, temples,
+  creation, sound) refuse already and say which file to import
+  ([B-model/files-and-detection.md](../B-model/files-and-detection.md)).
+- Read by address in the reference implementation: everything in §2, §4 and §5 except what §6 lists,
+  plus the CotAB start-up menu and demo texts (`START.EXE`, profile `startMenu`), the ending captions
+  (`GAME.OVR` at the profile's `ending.cs` plus each caption's offset), the temple's service names
+  (`T.templeNames`), and the class, race and alignment names where the profile's table map gives them
+  ([B-model/records-and-tables.md](../B-model/records-and-tables.md)).
+- **Which copy.** Both games keep a copy of a string per routine (each overlay has its own constants),
+  so the same words often sit at several addresses. The address given is always the copy referenced by
+  the routine that prints the line (a `mov di, offset; push cs|ds; push di` before the print call),
+  found by searching the images for each reference (2026-10-21). The routine is given as PoR's Ghidra
+  function and CotAB's image offset of the function start.
 
 ## 2. Game texts the screens show
 
-Found by searching both images for each message as a Pascal string (2026-10-21); **I** until each is
-confirmed at the routine that prints it (step 6). "—" means not found as a string of its own in that
-game: CotAB words it differently or builds it from parts (to be resolved in step 6). A text that is
-several strings printed in turn (a name between them) is listed by its parts. Where the part C file
-quotes a game text it marks it *game text* and points here.
+Every address is **O**: referenced by the routine in the last column (2026-10-21). "—" means no
+string of its own in that game: CotAB words it differently or builds it from parts (§4 gives CotAB's
+pieces where the port prints the line). A text that is several strings printed in turn (a name between
+them) is listed by its parts. Where the part C file quotes a game text it marks it *game text* and
+points here.
 
-| Text (identification only) | PoR image | CotAB image | Where it is used (part C) |
-|---|---|---|---|
-| "Camp:" | 0x3166B | 0x321B4 | camp prompt |
-| "Save View Magic Rest Alter Exit" | 0x0CCC8 | — | camp menu (PoR) |
-| "Save View Magic Rest Alter Fix Exit" | — | 0x0B00A | camp menu (CotAB) |
-| "Cast Memorize Scribe Display Rest Exit" | 0x0CCF1 | 0x0B033 | magic menu |
-| "Order Drop Speed Icon Pics Exit" | 0x0CD1A | 0x0B05C | alter menu |
-| "Alter:" | 0x31420 | 0x31A97 | alter prompt |
-| "Party Order:" | 0x30F50 | 0x315C4 | order prompt |
-| "has been selected" | 0x30F7E | 0x315F2 | order: selected |
-| "Drop from party?" | 0x310A2 | 0x31716 | alter drop question |
-| "bids you farewell" | 0x310B4 | 0x31728 | alter drop: yes |
-| "is dumped in a ditch" | 0x310C6 | 0x3173A | alter drop: yes, out of play |
-| "Breathes A sigh of relief" | 0x310DB | 0x3174F | alter drop: no |
-| "Game Speed =" | 0x31240 | 0x318B4 | speed prompt |
-| " (0=fastest 9=slowest)" | 0x3124E | 0x318C2 | speed prompt, end |
-| "Quit TO DOS" | 0x31672 | 0x321BA | camp save: quit question |
-| "cannot cast spells in this area" | 0x2FB12 | 0x300D6 | spell activity refused |
-| "is in no condition to" | 0x2FB32 | 0x300F6 | spell activity refused |
-| "has no spells memorized" | 0x2FC99 | 0x3025D | cast: none |
-| "Spells " | 0x3B2D4 (**I**; also 0x393B3) | 0x409A4 (**I**; also 0x3E05A) | list prefix, with "in Memory", "in Spell Book", "on Scrolls", "to choose from", "to be memorized", "to be scribed" |
-| "in Memory" | 0x3B279 | 0x40959 | cast list |
-| "in Spell Book" | 0x3B283 | — | memorize list |
-| "on Scrolls" | 0x3B29B | 0x40979 | scribe list |
-| "to choose from" | 0x3B2A6 | — | training spell choice |
-| "to be memorized" | 0x3B2B5 | — | memorize summary |
-| "to be scribed" | 0x3B2C5 | — | scribe summary |
-| "Memorize These Spells?" | 0x300CF | 0x306AA | memorize confirm |
-| "Scribe These Spells?" | 0x302C9 | 0x308A9 | scribe confirm |
-| "You already know that spell" | 0x302F7 | 0x308D7 | scribe refusal |
-| "You are already scibing that spell" | 0x30313 | 0x308F3 | scribe refusal |
-| "You can not scribe that spell." | 0x30336 | 0x30916 | scribe refusal |
-| "has no copyable scrolls" | 0x302DF | 0x308BF | scribe: none |
-| "Funky--" | 0x306D0 | 0x30CB2 | display, unknown |
-| " <No Spell Effects>" | 0x307AF | 0x30DC5 | display, none |
-| "is a combat-only spell..." | 0x3F0DE | — | cast: combat-only |
-| "Lose it?" | 0x3F0F8 | 0x451F0 | cast: combat-only, question |
-| "Rest Time:" | 0x3BA43 | 0x414A8 | rest prompt |
-| "As you Leave the Shopkeeper says" | 0x1FBC0 | 0x1F6C9 | shop leave |
-| "As you leave a priest says" | 0x1DDCE | 0x1D40E | temple leave |
-| "There is still treasure left." | 0x1EEFD | 0x1E753 | treasure leave |
-| "Take:" | 0x1EDA0 | 0x1E5F6 | treasure take prompt |
-| "cast cure anyway:" | 0x1D140 | 0x1C6E2 | temple: not needed |
-| " will only cost" | 0x1D1B6 | 0x1C758 | temple: price |
-| "pay for cure" | 0x1D1D5 | 0x1C777 | temple: price, end |
-| "is cured." | 0x1D1F5 | 0x1C797 | temple: done |
-| "No Gems or Jewelry" | 0x3DBB0 | 0x435E6 | appraise: none |
-| "You have a fine collection of:" | 0x3DBF3 | 0x43629 | appraise |
-| "The Gem is Valued at" | 0x3DC35 | 0x4366B | appraise: gem |
-| "The Jewel is Valued at" | 0x3DC6A | 0x436A0 | appraise: jewel |
-| "You can :" | 0x3DC5F | 0x43695 | appraise: choice |
-| "OverLoaded" | 0x1F92E | 0x1F3A1 | take refused |
-| "Drop It?" | 0x3982E | 0x3EAA9 | items: drop |
-| "I'll give you" | 0x3A5CB | 0x3FC8F | items: sell offer |
-| "Is It a Deal?" | 0x3A5F1, 0x3A830 | 0x3FCB5, 0x3FEF7 | items: deal |
-| "Sold!" | 0x3A600 | 0x3FCC4 | items: sold |
-| "For 200 gold pieces I'll identify your" | 0x3A808 | 0x3FECF | items: identify |
-| "Not Enough Money" | 0x3A83F | 0x3FF06 | items: no money |
-| "I can't tell anything new about your" | 0x3A850 | 0x3FF17 | items: identify, nothing |
-| "It looks like some sort of" | 0x3A876 | 0x3FF3D | items: identify, result |
-| "Must be Readied" | 0x39803 | 0x3EA7E | items: use unreadied |
-| "Nothing Happens..." | 0x2BC37 | 0x2B765 | items: use, nothing |
-| "is a combat-only item..." | 0x3F10C | 0x45204 | items: use combat-only |
-| "Trade with Whom?" | 0x3A058 | 0x3F630 | items: trade |
-| "is it Okay to lose it?" | 0x39698 | 0x3E3D9 | items: scroll warning |
-| "uses an item" | 0x3A3B7 | 0x3F98F | items: use |
-| "Trade to?" | 0x3AA5A | 0x4012A | money: trade |
-| "Select type of coin" | 0x3AA66, 0x3ADB8, 0x3CF8D | 0x40136, 0x40490, 0x42A64 | money: type |
-| "How much" | 0x3AA7B, 0x3ADCD, 0x3CFA1 | 0x40153, 0x404AD, 0x42A80 | money: amount |
-| "Continue Battle:" | 0x2292F | 0x226D2 | combat: continue |
-| "Flee:" | 0x22A91 | 0x22841 | combat: flee |
-| "Move/Attack, Move Left =" | 0x22A74, 0x23B16 | 0x22824, 0x23A75 | combat: step prompt |
-| "Your Teammate is Dying" | 0x22918 | 0x226BB | combat: dying |
-| "Not with that weapon" | 0x22DF0 | 0x22C1E | combat: wrong weapon |
-| "Blocked" | 0x22A97 | — | combat: blocked |
-| "is bandaged" | 0x230B3 | 0x503A3 | combat: bandage |
-| "Attack Ally:" | 0x2D46A | 0x2D461 | combat: attack ally |
-| "Aim:" | 0x2D57B | 0x2D572 | combat: aim |
-| "Target" | 0x2D555, 0x2D8BF | 0x2D54C, 0x2D8CA | combat: target |
-| "Begins Casting" | 0x2CEE5 | 0x2CCAE | combat: begins casting |
-| "Camp Only Spell" | 0x2CED5 | 0x2CC9E | combat: camp-only |
-| "Abort Spell?" | 0x3F134 | 0x45235 | combat: abort |
-| "Guarding" | 0x0321D | 0x4F87A | combat: guarding |
-| "The party has won." | 0x1E8EC | 0x1E106 | aftermath: won |
-| "The monsters rejoice for the party has been destroyed" | 0x1F557 | 0x1EE32 | aftermath: destroyed |
-| "The END!" | 0x1C35D, 0x1F54E | — | aftermath / party killed banner |
-| "The entire party is killed!" | 0x1C366 | 0x1B169 | party killed (outside battles) |
-| "press <enter>/<return> to continue" | 0x1C382, 0x1E973, 0x1F345 | 0x1B185, 0x1E179, 0x1EBCB | continue prompt |
-| "Press any key to continue" | 0x077DE, 0x1F58D | 0x0515E, 0x1EE68, 0x3CC6B | game over prompt |
-| "Not Here" | 0x2F0DB | 0x2F7E6 | area refused |
-| "Locked." | 0x2F4C4 | 0x2FA87 | locked door |
-| "Bash" | 0x2F4AC | 0x2FA6F | locked door menu |
-| "Choose a function" | 0x318D3 | 0x3697A | party screen prompt |
-| "Quit to DOS" | 0x31926 | 0x369CD | party screen exit |
-| "Drop " | 0x336C2 | 0x38DC5 | party screen drop |
-| " forever?" | 0x336C8 | 0x38DCB | party screen drop |
-| "Are you sure?" | 0x336D3 | 0x38DD6 | party screen drop |
-| "You dump" | 0x336E2 | 0x38DE5 | party screen drop: out of play |
-| " bids you farewell." | 0x336F7 | 0x38DFA | party screen drop: yes |
-| " breathes a sigh of relief." | 0x3370B | 0x38E0E | party screen drop: no |
-| " can't be modified." | 0x3385E | 0x39059 | modify refused |
-| "Modify character:" | 0x33872 | — | modify prompt |
-| "Is this icon ok?" | 0x3500B | 0x3A704 | icon editor |
-| "Save Which Game:" | 0x37915 | 0x3623A | save prompt |
-| "Do you wish to train?" | 0x34174 | 0x3B52D | training question |
-| "Congratulations..." | 0x3418B | 0x3B544 | training |
+| Text (identification only) | PoR image | CotAB image | Where it is used (part C) | Printed by (O) |
+|---|---|---|---|---|
+| "Camp:" | 0x3166B | 0x321B4 | camp prompt | PoR `FUN_3f81_1e6f`; CotAB 0x321CB |
+| "Save View Magic Rest Alter Exit" | 0x0CCC8 | — | camp menu (PoR) | PoR `FUN_3f81_1e6f` |
+| "Save View Magic Rest Alter Fix Exit" | — | 0x0B00A | camp menu (CotAB) | CotAB 0x321CB |
+| "Cast Memorize Scribe Display Rest Exit" | 0x0CCF1 | 0x0B033 | magic menu | PoR `FUN_3f81_13f1`; CotAB 0x31275 |
+| "Order Drop Speed Icon Pics Exit" | 0x0CD1A | 0x0B05C | alter menu | PoR `FUN_3f81_1c59`; CotAB 0x31AD8 |
+| "Alter:" | 0x31420 | 0x31A97 | alter prompt | PoR `FUN_3f81_1c59`; CotAB 0x31AD8 |
+| "Party Order:" | 0x30F50 | 0x315C4 | order prompt | PoR `FUN_3f81_1780`; CotAB 0x31604 |
+| "has been selected" | 0x30F7E | 0x315F2 | order: selected | PoR `FUN_3f81_1780`; CotAB 0x31604 |
+| "Drop from party?" | 0x310A2 | 0x31716 | alter drop question | PoR `FUN_3f81_18e5`; CotAB 0x31769 |
+| "bids you farewell" | 0x310B4 | 0x31728 | alter drop: yes | PoR `FUN_3f81_18e5`; CotAB 0x31769 |
+| "is dumped in a ditch" | 0x310C6 | 0x3173A | alter drop: yes, out of play | PoR `FUN_3f81_18e5`; CotAB 0x31769 |
+| "Breathes A sigh of relief" | 0x310DB | 0x3174F | alter drop: no | PoR `FUN_3f81_18e5`; CotAB 0x31769 |
+| "Game Speed =" | 0x31240 | 0x318B4 | speed prompt | PoR `FUN_3f81_1a97`; CotAB 0x3191B |
+| " (0=fastest 9=slowest)" | 0x3124E | 0x318C2 | speed prompt, end | PoR `FUN_3f81_1a97`; CotAB 0x3191B |
+| "Quit TO DOS" | 0x31672 | 0x321BA | camp save: quit question | PoR `FUN_3f81_1e6f`; CotAB 0x321CB |
+| "cannot cast spells in this area" | 0x2FB12 | 0x300D6 | spell activity refused | PoR `FUN_3f81_036c`; CotAB 0x30140 |
+| "is in no condition to" | 0x2FB32 | 0x300F6 | spell activity refused | PoR `FUN_3f81_036c`; CotAB 0x30140 |
+| "has no spells memorized" | 0x2FC99 | 0x3025D | cast: none | PoR `FUN_3f81_04a1`; CotAB 0x30275 |
+| "Spells " | 0x3B2D4 (also 0x393B3) | 0x409A4 (also 0x3E05A) | list prefix, with "in Memory", "in Spell Book", "on Scrolls", "to choose from", "to be memorized", "to be scribed" | PoR `FUN_4894_299c`; CotAB 0x409AC |
+| "in Memory" | 0x3B279 | 0x40959 | cast list | PoR `FUN_4894_299c`; CotAB 0x409AC |
+| "in Spell Book" | 0x3B283 | — | memorize list | PoR `FUN_4894_299c` |
+| "on Scrolls" | 0x3B29B | 0x40979 | scribe list | PoR `FUN_4894_299c`; CotAB 0x409AC |
+| "to choose from" | 0x3B2A6 | — | training spell choice | PoR `FUN_4894_299c` |
+| "to be memorized" | 0x3B2B5 | — | memorize summary | PoR `FUN_4894_299c` |
+| "to be scribed" | 0x3B2C5 | — | scribe summary | PoR `FUN_4894_299c` |
+| "Memorize These Spells?" | 0x300CF | 0x306AA | memorize confirm | PoR `FUN_3f81_090a`; CotAB 0x306F5 |
+| "Scribe These Spells?" | 0x302C9 | 0x308A9 | scribe confirm | PoR `FUN_3f81_0b5b`; CotAB 0x3094B |
+| "You already know that spell" | 0x302F7 | 0x308D7 | scribe refusal | PoR `FUN_3f81_0b5b`; CotAB 0x3094B |
+| "You are already scibing that spell" | 0x30313 | 0x308F3 | scribe refusal | PoR `FUN_3f81_0b5b`; CotAB 0x3094B |
+| "You can not scribe that spell." | 0x30336 | 0x30916 | scribe refusal | PoR `FUN_3f81_0b5b`; CotAB 0x3094B |
+| "has no copyable scrolls" | 0x302DF | 0x308BF | scribe: none | PoR `FUN_3f81_0b5b`; CotAB 0x3094B |
+| "Funky--" | 0x306D0 | 0x30CB2 | display, unknown | PoR `FUN_3f81_0fbc`; CotAB 0x30DDA |
+| " <No Spell Effects>" | 0x307AF | 0x30DC5 | display, none | PoR `FUN_3f81_0fbc`; CotAB 0x30DDA |
+| "is a combat-only spell..." | 0x3F0DE | — | cast: combat-only | PoR `FUN_4e53_0c20` |
+| "Lose it?" | 0x3F0F8 | 0x451F0 | cast: combat-only, question | PoR `FUN_4e53_0c20`; CotAB 0x45251 |
+| "Rest Time:" | 0x3BA43 | 0x414A8 | rest prompt | PoR `FUN_4b46_05f0`; CotAB 0x414B5 |
+| "As you Leave the Shopkeeper says" | 0x1FBC0 | 0x1F6C9 | shop leave | PoR `FUN_2f70_053e`; CotAB 0x1F747 |
+| "As you leave a priest says" | 0x1DDCE | 0x1D40E | temple leave | PoR `FUN_2d14_0d09`; CotAB 0x1D489 |
+| "There is still treasure left." | 0x1EEFD | 0x1E753 | treasure leave | PoR `FUN_2e08_0ecd`; CotAB 0x1E7A3 |
+| "Take:" | 0x1EDA0 | 0x1E5F6 | treasure take prompt | PoR `FUN_2e08_0d38`; CotAB 0x1E60E |
+| "cast cure anyway:" | 0x1D140 | 0x1C6E2 | temple: not needed | PoR `FUN_2d14_0013`; CotAB 0x1C6F5 |
+| " will only cost" | 0x1D1B6 | 0x1C758 | temple: price | PoR `FUN_2d14_00bf`; CotAB 0x1C7A1 |
+| "pay for cure" | 0x1D1D5 | 0x1C777 | temple: price, end | PoR `FUN_2d14_00bf`; CotAB 0x1C7A1 |
+| "is cured." | 0x1D1F5 | 0x1C797 | temple: done | PoR `FUN_2d14_00bf`; CotAB 0x1C7A1 |
+| "No Gems or Jewelry" | 0x3DBB0 | 0x435E6 | appraise: none | PoR `FUN_4c2d_19b2`; CotAB 0x436B8 |
+| "You have a fine collection of:" | 0x3DBF3 | 0x43629 | appraise | PoR `FUN_4c2d_19b2`; CotAB 0x436B8 |
+| "The Gem is Valued at" | 0x3DC35 | 0x4366B | appraise: gem | PoR `FUN_4c2d_19b2`; CotAB 0x436B8 |
+| "The Jewel is Valued at" | 0x3DC6A | 0x436A0 | appraise: jewel | PoR `FUN_4c2d_19b2`; CotAB 0x436B8 |
+| "You can :" | 0x3DC5F | 0x43695 | appraise: choice | PoR `FUN_4c2d_19b2`; CotAB 0x436B8 |
+| "OverLoaded" | 0x1F92E | 0x1F3A1 | take refused | PoR `FUN_2f70_0239`; CotAB 0x1F3AC |
+| "Drop It?" | 0x3982E | 0x3EAA9 | items: drop | PoR `FUN_4894_0ef8`; CotAB 0x3EAB3 |
+| "I'll give you" | 0x3A5CB | 0x3FC8F | items: sell offer | PoR `FUN_4894_1cee`; CotAB 0x3FCF2 |
+| "Is It a Deal?" | 0x3A5F1, 0x3A830 | 0x3FCB5, 0x3FEF7 | items: deal | PoR `FUN_4894_1cee`; CotAB 0x3FCF2 |
+| "Sold!" | 0x3A600 | 0x3FCC4 | items: sold | PoR `FUN_4894_1cee`; CotAB 0x3FCF2 |
+| "For 200 gold pieces I'll identify your" | 0x3A808 | 0x3FECF | items: identify | PoR `FUN_4894_1f52`; CotAB 0x3FF59 |
+| "Not Enough Money" | 0x3A83F | 0x3FF06 | items: no money | PoR `FUN_4894_1f52`; CotAB 0x3FF59 |
+| "I can't tell anything new about your" | 0x3A850 | 0x3FF17 | items: identify, nothing | PoR `FUN_4894_1f52`; CotAB 0x3FF59 |
+| "It looks like some sort of" | 0x3A876 | 0x3FF3D | items: identify, result | PoR `FUN_4894_1f52`; CotAB 0x3FF59 |
+| "Must be Readied" | 0x39803 | 0x3EA7E | items: use unreadied | PoR `FUN_4894_0ef8`; CotAB 0x3EAB3 |
+| "Nothing Happens..." | 0x2BC37 | 0x2B765 | items: use, nothing | PoR `FUN_3aae_116a`; CotAB 0x2B778 |
+| "is a combat-only item..." | 0x3F10C | 0x45204 | items: use combat-only | PoR `FUN_4e53_0c20`; CotAB 0x45251 |
+| "Trade with Whom?" | 0x3A058 | 0x3F630 | items: trade | PoR `FUN_4894_1734`; CotAB 0x3F64C |
+| "is it Okay to lose it?" | 0x39698 | 0x3E3D9 | items: scroll warning | PoR `FUN_4894_0d70`; CotAB 0x3E3F1 |
+| "uses an item" | 0x3A3B7 | 0x3F98F | items: use | PoR `FUN_4894_1a8a`; CotAB 0x3F9A8 |
+| "Trade to?" | 0x3AA5A | 0x4012A | money: trade | PoR `FUN_4894_2156`; CotAB 0x4016E |
+| "Select type of coin" | 0x3AA66, 0x3ADB8, 0x3CF8D | 0x40136, 0x40490, 0x42A64 | money: type | PoR `FUN_4894_2156`; CotAB 0x4016E |
+| "How much" | 0x3AA7B, 0x3ADCD, 0x3CFA1 | 0x40153, 0x404AD, 0x42A80 | money: amount | PoR `FUN_4894_2156`; CotAB 0x4016E |
+| "Continue Battle:" | 0x2292F | 0x226D2 | combat: continue | PoR `FUN_320c_0880`; CotAB 0x226E3 |
+| "Flee:" | 0x22A91 | 0x22841 | combat: flee | PoR `FUN_320c_09df`; CotAB 0x22856 |
+| "Move/Attack, Move Left =" | 0x22A74, 0x23B16 | 0x22824, 0x23A75 | combat: step prompt | PoR `FUN_320c_09df`; CotAB 0x22856 |
+| "Your Teammate is Dying" | 0x22918 | 0x226BB | combat: dying | PoR `FUN_320c_0880`; CotAB 0x226E3 |
+| "Not with that weapon" | 0x22DF0 | 0x22C1E | combat: wrong weapon | PoR `FUN_320c_0d45`; CotAB 0x22C33 |
+| "Blocked" | 0x22A97 | — | combat: blocked | PoR `FUN_320c_09df` |
+| "is bandaged" | 0x230B3 | 0x503A3 | combat: bandage | PoR `FUN_320c_0fff`; CotAB 0x503AF |
+| "Attack Ally:" | 0x2D46A | 0x2D461 | combat: attack ally | PoR `FUN_3aae_2998`; CotAB 0x2D46F |
+| "Aim:" | 0x2D57B | 0x2D572 | combat: aim | PoR `FUN_3aae_2aa0`; CotAB 0x2D577 |
+| "Target" | 0x2D555, 0x2D8BF | 0x2D54C, 0x2D8CA | combat: target | PoR `FUN_3aae_2aa0`; CotAB 0x2D577 |
+| "Begins Casting" | 0x2CEE5 | 0x2CCAE | combat: begins casting | PoR `FUN_3aae_2414`; CotAB 0x2CCBD |
+| "Camp Only Spell" | 0x2CED5 | 0x2CC9E | combat: camp-only | PoR `FUN_3aae_2414`; CotAB 0x2CCBD |
+| "Abort Spell?" | 0x3F134 | 0x45235 | combat: abort | PoR `FUN_4e53_0c20`; CotAB 0x45251 |
+| "Guarding" | 0x0321D | 0x4F87A | combat: guarding | PoR `FUN_10ba_2686`; CotAB 0x4F883 |
+| "The party has won." | 0x1E8EC | 0x1E106 | aftermath: won | PoR `FUN_2e08_0916`; CotAB 0x1E19C |
+| "The monsters rejoice for the party has been destroyed" | 0x1F557 | 0x1EE32 | aftermath: destroyed | PoR `FUN_2e08_1527`; CotAB 0x1EE82 |
+| "The END!" | 0x1C35D, 0x1F54E | — | aftermath / party killed banner | PoR `FUN_29c3_2775` |
+| "The entire party is killed!" | 0x1C366 | 0x1B169 | party killed (outside battles) | PoR `FUN_29c3_2775`; CotAB 0x1B1A8 |
+| "press <enter>/<return> to continue" | 0x1C382, 0x1E973, 0x1F345 | 0x1B185, 0x1E179, 0x1EBCB | continue prompt | PoR `FUN_29c3_2775`; CotAB 0x1B1A8 |
+| "Press any key to continue" | 0x077DE, 0x1F58D | 0x0515E, 0x1EE68, 0x3CC6B | game over prompt | PoR `FUN_1709_0768`; CotAB 0x05178 |
+| "Not Here" | 0x2F0DB | 0x2F7E6 | area refused | PoR `FUN_3e76_0989`; CotAB 0x2F7EF |
+| "Locked." | 0x2F4C4 | 0x2FA87 | locked door | PoR `FUN_3e76_0d6d`; CotAB 0x2FA90 |
+| "Bash" | 0x2F4AC | 0x2FA6F | locked door menu | PoR `FUN_3e76_0d6d`; CotAB 0x2FA90 |
+| "Choose a function" | 0x318D3 | 0x3697A | party screen prompt | PoR `FUN_417f_0161`; CotAB 0x36A1C |
+| "Quit to DOS" | 0x31926 | 0x369CD | party screen exit | PoR `FUN_417f_0161`; CotAB 0x36A1C |
+| "Drop " | 0x336C2 | 0x38DC5 | party screen drop | PoR `FUN_417f_1f37`; CotAB 0x38E2A |
+| " forever?" | 0x336C8 | 0x38DCB | party screen drop | PoR `FUN_417f_1f37`; CotAB 0x38E2A |
+| "Are you sure?" | 0x336D3 | 0x38DD6 | party screen drop | PoR `FUN_417f_1f37`; CotAB 0x38E2A |
+| "You dump" | 0x336E2 | 0x38DE5 | party screen drop: out of play | PoR `FUN_417f_1f37`; CotAB 0x38E2A |
+| " bids you farewell." | 0x336F7 | 0x38DFA | party screen drop: yes | PoR `FUN_417f_1f37`; CotAB 0x38E2A |
+| " breathes a sigh of relief." | 0x3370B | 0x38E0E | party screen drop: no | PoR `FUN_417f_1f37`; CotAB 0x38E2A |
+| " can't be modified." | 0x3385E | 0x39059 | modify refused | PoR `FUN_417f_209f`; CotAB 0x39080 |
+| "Modify character:" | 0x33872 | — | modify prompt | PoR `FUN_417f_209f` |
+| "Is this icon ok?" | 0x3500B | 0x3A704 | icon editor | PoR `FUN_417f_382d`; CotAB 0x3A716 |
+| "Save Which Game:" | 0x37915 | 0x3623A | save prompt | PoR `FUN_45c5_1d58`; CotAB 0x3631E |
+| "Do you wish to train?" | 0x34174 | 0x3B52D | training question | PoR `FUN_417f_29ae`; CotAB 0x3B557 |
+| "Congratulations..." | 0x3418B | 0x3B544 | training | PoR `FUN_417f_29ae`; CotAB 0x3B557 |
 
-Credits text, the racial handlers' monster names and the rest of the engine's messages (about 190 in
-the reference's `rules/`, `vm/`, `games/` and `ui/`) are still to be listed (step 6). The script texts
-(ECL) are read from the scripts already ([ecl.md](../A-games/engine/ecl.md)); the port quotes a few
+The engine's other messages are in §4, the texts the profile data address (effect and spell lines,
+the credits, the monster-name lists) in §5. The script texts (ECL) are read from the scripts already ([ecl.md](../A-games/engine/ecl.md)); the port quotes a few
 words of them only as match keys ([port-data.md](port-data.md) §3–§5).
 
 ## 3. Port texts
@@ -219,12 +238,267 @@ game texts (§2).
 
 The original's prompts that the port rewords (for example "Healing for *Name*:", "Take which?",
 "Magic:", the training hall's "Choose a function:" with a colon, "Nothing happens." for the game's
-"Nothing Happens...") are port texts until step 6 decides, per message, whether the port reads the
-game's string instead (C24).
+"Nothing Happens...") stay port texts (§6).
 
-## 4. To come (step 6)
+## 4. Engine messages
 
-- message ids and their offsets per game (START.EXE, GAME.OVR), with the routine that prints each, for
-  every engine message;
-- the credits, the monster-name lists of the racial handlers; ruling C24 moves them from code to reads
-  by address.
+The messages the engine prints from shared procedures, by the id the profile's string table uses
+(`strings`, [B-model/profile.md](../B-model/profile.md)): the address in each game and the routine that
+prints it (**O**). A game without the message has no entry ("—"); a procedure that prints it there
+shows `#id` (§1), which a conforming build never reaches. Where a line is assembled at run time the
+pieces are the original's, in its order: the name, a space, the piece, as the original's print
+routine joins them (for example the attack line: name, `attacks` or `backstabs`, the target,
+`fromBehind` when it applies, `hittingFor`, the number, `point` or `points`, `ofDamage`). The trailing
+spaces some prompts carry (the original's input routine prints after them) are dropped where the port
+shows the prompt as a heading. CotAB's own wordings come with its addresses: `blocked` is "can't go
+there", `lostDuel` "You have lost the fight.", and its share line is `hidesShare`, then `his` or `her`
+by the gender byte (0 his), then `share`.
+
+| Id | What | PoR image | printed by | CotAB image | printed by |
+|---|---|---|---|---|---|
+| `cough` | Stinking Cloud, saved | 0x42C1B | `FUN_5216_0ae7` | 0x4B8B5 | 0x4B8F7 |
+| `nausea` | Stinking Cloud, not saved | 0x42C2B | `FUN_5216_0ae7` | 0x4B8C5 | 0x4B8F7 |
+| `cloudPoisoned` | Cloudkill | — |  | 0x4B8E1 | 0x4B8F7 |
+| `cloudKilled` | Cloudkill | — |  | 0x4B8ED | 0x4B8F7 |
+| `battleBegins` | battle start | 0x26A8E | `FUN_34c7_1e31` | 0x268B8 | 0x268CB |
+| `teammateDying` | round end | 0x22918 | `FUN_320c_0880` | 0x226BB | 0x226E3 |
+| `continueBattle` | no enemy left | 0x2292F | `FUN_320c_0880` | 0x226D2 | 0x226E3 |
+| `gameSpeed` | speed prompt | 0x31240 | `FUN_3f81_1a97` | 0x318B4 | 0x3191B |
+| `speedRange` | speed prompt, end | 0x3124E | `FUN_3f81_1a97` | 0x318C2 | 0x3191B |
+| `bandaged` | Bandage | 0x230B3 | `FUN_320c_0fff` | 0x503A3 | 0x503AF |
+| `flee` | a step off the battlefield | 0x22A91 | `FUN_320c_09df` | 0x22841 | 0x22856 |
+| `blocked` | a step that cannot be taken (CotAB: "can't go there") | 0x22A97 | `FUN_320c_09df` | 0x22847 | 0x22856 |
+| `notWithWeapon` | Aim with a missile weapon | 0x22DF0 | `FUN_320c_0d45` | 0x22C1E | 0x22C33 |
+| `attackAlly` | aiming at the own side | 0x2D46A | `FUN_3aae_2998` | 0x2D461 | 0x2D46F |
+| `aim` | aim prompt | 0x2D57B | `FUN_3aae_2aa0` | 0x2D572 | 0x2D577 |
+| `usesItem` | Use | 0x3A3B7 | `FUN_4894_1a8a` | 0x3F98F | 0x3F9A8 |
+| `campOnlySpell` | Cast in combat | 0x2CED5 | `FUN_3aae_2414` | 0x2CC9E | 0x2CCBD |
+| `beginsCasting` | Cast in combat | 0x2CEE5 | `FUN_3aae_2414` | 0x2CCAE | 0x2CCBD |
+| `sweeps` | sweep attack | 0x2B95B | `FUN_3aae_0e82` | 0x2B486 | 0x2B48D |
+| `backstabs` | attack line | 0x2AD12 | `FUN_3aae_02f9` | 0x2A7A1 | 0x2A868 |
+| `slaysHelpless` | attack on the helpless | 0x2AD1E | `FUN_3aae_02f9` | 0x2A7AD | 0x2A868 |
+| `attacks` | attack line | 0x2AD2D | `FUN_3aae_02f9` | 0x2A7BC | 0x2A868 |
+| `fromBehind` | attack line | 0x2AD35 | `FUN_3aae_02f9` | 0x2A7C4 | 0x2A868 |
+| `cruelBlow` | attack on the helpless | 0x2AD44 | `FUN_3aae_02f9` | 0x2A7D3 | 0x2A868 |
+| `hittingFor` | attack line | 0x2AD58 | `FUN_3aae_02f9` | 0x2A7E7 | 0x2A868 |
+| `point` | attack line | 0x2AD65 | `FUN_3aae_02f9` | 0x2A7F4 | 0x2A868 |
+| `points` | attack line | 0x2AD6D | `FUN_3aae_02f9` | 0x2A7FC | 0x2A868 |
+| `ofDamage` | attack line | 0x2AD76 | `FUN_3aae_02f9` | 0x2A805 | 0x2A868 |
+| `andMisses` | attack line | 0x2AD80 | `FUN_3aae_02f9` | 0x2A80F | 0x2A868 |
+| `lostSpell` | damage while casting | 0x2AD8B | `FUN_3aae_02f9` | 0x2A81A | 0x2A868 |
+| `goesDown` | a fall | 0x2AD98 | `FUN_3aae_02f9` | 0x2A827 | 0x2A868 |
+| `andIsDying` | a fall | 0x2ADA2 | `FUN_3aae_02f9` | 0x2A831 | 0x2A868 |
+| `isKilled` | a fall | 0x2ADCF | `FUN_3aae_02f9` | 0x2A85E | 0x2A868 |
+| `gotAway` | flight off the battlefield | 0x2B72F | `FUN_3aae_0c6a` | 0x2B250 | 0x2B26B |
+| `escapeBlocked` | flight | 0x2B738 | `FUN_3aae_0c6a` | 0x2B259 | 0x2B26B |
+| `turnsUndead` | Turn | 0x2BC10 | `FUN_3aae_116a` | 0x2B73E | 0x2B778 |
+| `isTurned` | Turn | 0x2BC20 | `FUN_3aae_116a` | 0x2B74E | 0x2B778 |
+| `isDestroyed` | Turn | 0x2BC2A | `FUN_3aae_116a` | 0x2B758 | 0x2B778 |
+| `nothingHappens` | Turn | 0x2BC37 | `FUN_3aae_116a` | 0x2B765 | 0x2B778 |
+| `abortSpell` | a cast without a target | 0x3F134 | `FUN_4e53_0c20` | 0x45235 | 0x45251 |
+| `spellAborted` | a cast without a target | 0x3F142 | `FUN_4e53_0c20` | 0x45243 | 0x45251 |
+| `castsASpell` | a monster casts | 0x41835 | `FUN_4e53_331a` | 0x4A3E8 | 0x4A3FD |
+| `spellName` | a monster casts | 0x41843 | `FUN_4e53_331a` | 0x4A3F6 | 0x4A3FD |
+| `alreadyTargeted` | target list | 0x2CB8D | `FUN_3aae_20c3` | 0x2C76B | 0x2C781 |
+| `charmUnaffected` | Charm / Hold Person on the large | 0x3F6F4 | `FUN_4e53_11dd` | 0x45E85 | 0x45E9E |
+| `fleesInPanic` | morale | 0x23340 | `FUN_3334_000f` | 0x230FC | 0x2310B |
+| `forcedToFlee` | morale | 0x243FA | `FUN_3334_10d7` | 0x24422 | 0x2443F |
+| `surrenders` | morale | 0x2440C | `FUN_3334_10d7` | 0x24434 | 0x2443F |
+| `wonDuel` | aftermath | 0x1E8D5 | `FUN_2e08_0916` | 0x1E0EF | 0x1E19C |
+| `foundTreasure` | aftermath | 0x1E913 | `FUN_2e08_0916` | 0x1E119 | 0x1E19C |
+| `duelistReceives` | aftermath | 0x1E931 | `FUN_2e08_0916` | 0x1E137 | 0x1E19C |
+| `experiencePoints` | aftermath | 0x1E960 | `FUN_2e08_0916` | 0x1E166 | 0x1E19C |
+| `lostDuel` | aftermath (CotAB: "the fight") | 0x1E8BD | `FUN_2e08_0916` | 0x1E0D6 | 0x1E19C |
+| `partyWon` | aftermath | 0x1E8EC | `FUN_2e08_0916` | 0x1E106 | 0x1E19C |
+| `eachReceives` | aftermath | 0x1E947 | `FUN_2e08_0916` | 0x1E14D | 0x1E19C |
+| `partyFled` | aftermath | 0x1E8FF | `FUN_2e08_0916` | 0x1E0C2 | 0x1E19C |
+| `theEnd` | the party destroyed | 0x1F54E | `FUN_2e08_1527` | — |  |
+| `monstersRejoice` | the party destroyed | 0x1F557 | `FUN_2e08_1527` | 0x1EE32 | 0x1EE82 |
+| `hidesShare` | an NPC takes its share (CotAB: then his/her, " share.") | 0x1F329 | `FUN_2e08_12e8` | 0x1EBA8 | 0x1EBEE |
+| `his` | CotAB share line | — |  | 0x1EBBA | 0x1EBEE |
+| `share` | CotAB share line | — |  | 0x1EBBE | 0x1EBEE |
+| `her` | CotAB share line | — |  | 0x1EBC6 | 0x1EBEE |
+| `locked` | a locked door | 0x2F4C4 | `FUN_3e76_0d6d` | 0x2FA87 | 0x2FA90 |
+| `noMonster` | LOAD_MONSTER | 0x36AF5 | `FUN_45c5_0ec4` | 0x3563D | 0x3565C |
+| `bothWait` | encounter | 0x1BB04 | `FUN_29c3_1ef8` | 0x1A8E9 | 0x1A90D |
+| `monstersFlee` | encounter | 0x1BB15 | `FUN_29c3_1ef8` | 0x1A8FA | 0x1A90D |
+| `dies` | script DAMAGE | 0x21F21 | `FUN_2fea_20cc` | 0x21B85 | 0x21BD0 |
+| `isHitFor` | script DAMAGE | 0x21F29 | `FUN_2fea_20cc` | 0x21B8D | 0x21BD0 |
+| `pointsOfDamage` | script DAMAGE | 0x21F36 | `FUN_2fea_20cc` | 0x21B9A | 0x21BD0 |
+| `riverStench` | PoR wilderness | 0x2EF54 | `FUN_3e76_0818` | — |  |
+| `wrongClass` | Ready | 0x39DE0 | `FUN_4894_14d0` | 0x3F3D6 | 0x3F406 |
+| `alreadyUsing` | Ready | 0x39DEC | `FUN_4894_14d0` | 0x3F3E2 | 0x3F406 |
+| `handsFull` | Ready | 0x39DFB | `FUN_4894_14d0` | 0x3F3F1 | 0x3F406 |
+| `cursed` | Unready | 0x39DD4 | `FUN_4894_14d0` | 0x3F3CA | 0x3F406 |
+| `overloaded` | Trade | 0x3A069 | `FUN_4894_1734` | 0x3F641 | 0x3F64C |
+| `consciousOnly` | training | 0x340DE | `FUN_417f_29ae` | 0x3B497 | 0x3B557 |
+| `notThatClass` | training | 0x34115 | `FUN_417f_29ae` | 0x3B4CE | 0x3B557 |
+| `notEnoughXp` | training | 0x34134 | `FUN_417f_29ae` | 0x3B4ED | 0x3B557 |
+| `aLevel` | training | 0x34158 | `FUN_417f_29ae` | 0x3B511 | 0x3B557 |
+| `trainingCosts` | training | 0x340FD | `FUN_417f_29ae` | 0x3B4B6 | 0x3B557 |
+| `willBecome` | training | 0x3414A | `FUN_417f_29ae` | 0x3B503 | 0x3B557 |
+| `andALevel` | training | 0x34167 | `FUN_417f_29ae` | 0x3B520 | 0x3B557 |
+| `wishToTrain` | training | 0x34174 | `FUN_417f_29ae` | 0x3B52D | 0x3B557 |
+| `congratulations` | training | 0x3418B | `FUN_417f_29ae` | 0x3B544 | 0x3B557 |
+| `isDrained` | energy drain | 0x2931F | `FUN_3723_2122` | — |  |
+| `drainLevels` | energy drain | 0x2930F | `FUN_3723_2122` | — |  |
+| `drainALevel` | energy drain | 0x29317 | `FUN_3723_2122` | — |  |
+| `hasScribed` | rest | 0x3BE3B | `FUN_4b46_09e7` | 0x418B6 | 0x418C2 |
+| `hasMemorized` | rest | 0x3BD77 | `FUN_4b46_0925` | 0x417F2 | 0x41800 |
+| `partyHealed` | rest | 0x3BCB7 | `FUN_4b46_0871` | 0x41727 | 0x41741 |
+| `interrupted` | rest | 0x3C0D9 | `FUN_4b46_0c9a` | — |  |
+| `fallKilled` | damage outside combat | 0x4349A | `FUN_5216_1344` | 0x4CA60 | 0x4CA6A |
+| `fallDown` | damage outside combat | 0x43461 | `FUN_5216_1344` | 0x4CA27 | 0x4CA6A |
+| `getsBackUp` | revive | 0x439BC | `FUN_5216_1869` | 0x4CF6A | 0x4CF77 |
+| `unCursed` | Remove Curse | 0x40A4E | `FUN_4e53_2540` | 0x47552 | 0x47575 |
+| `itemUnCursed` | Remove Curse | 0x40A5B | `FUN_4e53_2540` | — |  |
+| `miscasts` | CotAB miscast | — |  | 0x45226 | 0x45251 |
+| `casts` | cast outside combat | 0x3F12E | `FUN_4e53_0c20` | 0x4522F | 0x45251 |
+| `noEvilScum` | joining | — |  | 0x39E42 | 0x39E98 |
+| `tooManyRangers` | joining | — |  | 0x39E66 | 0x39E98 |
+| `toleratesNoEvil` | joining | — |  | 0x39E80 | 0x39E98 |
+| `feelsBetter` | Lay on Hands | — |  | 0x40BEA | 0x40C07 |
+| `handsUnaffected` | Lay on Hands | — |  | 0x40BF8 | 0x40C07 |
+| `diseaseCured` | Cure Disease | — |  | 0x40D12 | 0x40D1C |
+| `mustUnready` | Drop | 0x39660 | `FUN_4894_0d70` | 0x3E3A1 | 0x3E3F1 |
+| `takeOverloaded` | Trade | 0x3A069 | `FUN_4894_1734` | 0x3F641 | 0x3F64C |
+| `cantHalve` | Halve | 0x3A11C | `FUN_4894_17ed` | 0x3F6F4 | 0x3F705 |
+| `moneyOverloaded` | money trade | 0x3C711 | `FUN_4c2d_044c` | 0x421F0 | 0x421FB |
+| `takes` | damage line | 0x433E7 | `FUN_5216_1344` | 0x4C9AD | 0x4CA6A |
+| `pointsOfDamageLine` | damage line | 0x433EE | `FUN_5216_1344` | 0x4C9B4 | 0x4CA6A |
+| `takesOnePoint` | damage line | 0x43401 | `FUN_5216_1344` | 0x4C9C7 | 0x4CA6A |
+| `fromFire` | damage line | 0x4341A | `FUN_5216_1344` | 0x4C9E0 | 0x4CA6A |
+| `fromCold` | damage line | 0x43424 | `FUN_5216_1344` | 0x4C9EA | 0x4CA6A |
+| `fromElectricity` | damage line | 0x4342E | `FUN_5216_1344` | 0x4C9F4 | 0x4CA6A |
+| `fromAcid` | damage line | 0x4343F | `FUN_5216_1344` | 0x4CA05 | 0x4CA6A |
+| `fromMagic` | damage line | 0x43449 | `FUN_5216_1344` | 0x4CA0F | 0x4CA6A |
+| `unaffected` | add-effect negated | 0x437A8 | `FUN_5216_1656` | 0x4CD83 | 0x4CD91 |
+| `avoidsIt` | save avoids | 0x281D2 | `FUN_3723_0fac` | 0x2824C | 0x28256 |
+| `deadForever` | energy drain | 0x2932B | `FUN_3723_2122` | — |  |
+| `drainKilled` | energy drain | 0x29348 | `FUN_3723_2122` | — |  |
+| `isCured` | cure | 0x431D8 | `FUN_5216_1081` | 0x4C0F4 | 0x4C0FD |
+| `howMuch` | money: amount (pool, take) | 0x3CFA1 | `FUN_4c2d_0ceb` | 0x42A80 | 0x42A9A |
+| `noGems` | appraise | 0x3DBB0 | `FUN_4c2d_19b2` | 0x435E6 | 0x436B8 |
+| `fineCollection` | appraise | 0x3DBF3 | `FUN_4c2d_19b2` | 0x43629 | 0x436B8 |
+| `gemOne` | appraise | 0x3DBC3 | `FUN_4c2d_19b2` | 0x435F9 | 0x436B8 |
+| `pieceOfJewelry` | appraise | 0x3DBCE | `FUN_4c2d_19b2` | 0x43604 | 0x436B8 |
+| `gemsCount` | appraise | 0x3DBC8 | `FUN_4c2d_19b2` | 0x435FE | 0x436B8 |
+| `piecesOfJewelry` | appraise | 0x3DBE0 | `FUN_4c2d_19b2` | 0x43616 | 0x436B8 |
+| `gemValued` | appraise | 0x3DC35 | `FUN_4c2d_19b2` | 0x4366B | 0x436B8 |
+| `gp` | appraise | 0x3DC4B | `FUN_4c2d_19b2` | 0x43681 | 0x436B8 |
+| `jewelValued` | appraise | 0x3DC6A | `FUN_4c2d_19b2` | 0x436A0 | 0x436B8 |
+| `youCan` | appraise | 0x3DC5F | `FUN_4c2d_19b2` | 0x43695 | 0x436B8 |
+| `shopOverloaded` | shop Buy, treasure Take | 0x1F92E | `FUN_2f70_0239` | 0x1F3A1 | 0x1F3AC |
+| `shopNoMoney` | shop Buy | 0x1FA4F | `FUN_2f70_0361` | 0x1F4C2 | 0x1F4D4 |
+| `notBlind` | temple | 0x1D36C | `FUN_2d14_0249` | 0x1C911 | 0x1C92E |
+| `notDiseased` | temple | 0x1D40F | `FUN_2d14_02ed` | 0x1C9B4 | 0x1C9D2 |
+| `notPoisoned` | temple | 0x1D86E | `FUN_2d14_0751` | 0x1CF18 | 0x1CF3B |
+| `notDead` | temple | 0x1D638 | `FUN_2d14_0510` | 0x1CCCE | 0x1CCE6 |
+| `notCursed` | temple | 0x1D95E | `FUN_2d14_083a` | 0x1D008 | 0x1D024 |
+| `notStoned` | temple | 0x1DA4A | `FUN_2d14_0928` | 0x1D0F4 | 0x1D112 |
+| `cureAnyway` | temple | 0x1D140 | `FUN_2d14_0013` | 0x1C6E2 | 0x1C6F5 |
+| `willOnlyCost` | temple | 0x1D1B6 | `FUN_2d14_00bf` | 0x1C758 | 0x1C7A1 |
+| `goldPieces` | temple | 0x1D1C7 | `FUN_2d14_00bf` | 0x1C769 | 0x1C7A1 |
+| `payForCure` | temple | 0x1D1D5 | `FUN_2d14_00bf` | 0x1C777 | 0x1C7A1 |
+| `templeNoMoney` | temple | 0x1D1E3 | `FUN_2d14_00bf` | 0x1C785 | 0x1C7A1 |
+| `templeCured` | temple | 0x1D1F5 | `FUN_2d14_00bf` | 0x1C797 | 0x1C7A1 |
+| `take` | treasure | 0x1EDA0 | `FUN_2e08_0d38` | 0x1E5F6 | 0x1E60E |
+| `makesCamp` | camp | 0x31633 | `FUN_3f81_1e6f` | 0x3217C | 0x321CB |
+| `camp` | camp | 0x3166B | `FUN_3f81_1e6f` | 0x321B4 | 0x321CB |
+| `quitToDos` | camp Save | 0x31672 | `FUN_3f81_1e6f` | 0x321BA | 0x321CB |
+| `castAny` | spell activity | 0x2FB49 | `FUN_3f81_036c` | 0x3010D | 0x30140 |
+| `memorizeAny` | spell activity | 0x2FB59 | `FUN_3f81_036c` | 0x3011D | 0x30140 |
+| `scribeAny` | spell activity | 0x2FB69 | `FUN_3f81_036c` | 0x3012D | 0x30140 |
+| `noCastHere` | spell activity | 0x2FB12 | `FUN_3f81_036c` | 0x300D6 | 0x30140 |
+| `noCondition` | spell activity | 0x2FB32 | `FUN_3f81_036c` | 0x300F6 | 0x30140 |
+| `noSpells` | Cast | 0x2FC99 | `FUN_3f81_04a1` | 0x3025D | 0x30275 |
+| `combatOnlySpell` | Cast outside combat | 0x3F0DE | `FUN_4e53_0c20` | — |  |
+| `loseIt` | Cast outside combat | 0x3F0F8 | `FUN_4e53_0c20` | 0x451F0 | 0x45251 |
+| `memorizeThese` | Memorize | 0x300CF | `FUN_3f81_090a` | 0x306AA | 0x306F5 |
+| `memorizeThese2` | Memorize | 0x30102 | `FUN_3f81_090a` | 0x306DD | 0x306F5 |
+| `cannotMemorize` | Memorize | 0x300E7 | `FUN_3f81_090a` | 0x306C2 | 0x306F5 |
+| `scribeThese` | Scribe | 0x302C9 | `FUN_3f81_0b5b` | 0x308A9 | 0x3094B |
+| `scribeThese2` | Scribe | 0x30355 | `FUN_3f81_0b5b` | 0x30935 | 0x3094B |
+| `noScrolls` | Scribe | 0x302DF | `FUN_3f81_0b5b` | 0x308BF | 0x3094B |
+| `knowSpell` | Scribe | 0x302F7 | `FUN_3f81_0b5b` | 0x308D7 | 0x3094B |
+| `scribingSpell` | Scribe | 0x30313 | `FUN_3f81_0b5b` | 0x308F3 | 0x3094B |
+| `cannotScribe` | Scribe | 0x30336 | `FUN_3f81_0b5b` | 0x30916 | 0x3094B |
+| `funky` | Display | 0x306D0 | `FUN_3f81_0fbc` | 0x30CB2 | 0x30DDA |
+| `noSpellEffects` | Display | 0x307AF | `FUN_3f81_0fbc` | 0x30DC5 | 0x30DDA |
+| `restTime` | Rest | 0x3BA43 | `FUN_4b46_05f0` | 0x414A8 | 0x414B5 |
+| `alter` | Alter | 0x31420 | `FUN_3f81_1c59` | 0x31A97 | 0x31AD8 |
+| `selected` | Alter Order | 0x30F7E | `FUN_3f81_1780` | 0x315F2 | 0x31604 |
+| `dropFromParty` | Alter Drop | 0x310A2 | `FUN_3f81_18e5` | 0x31716 | 0x31769 |
+| `bidsFarewell` | Alter Drop | 0x310B4 | `FUN_3f81_18e5` | 0x31728 | 0x31769 |
+| `dumpedInDitch` | Alter Drop | 0x310C6 | `FUN_3f81_18e5` | 0x3173A | 0x31769 |
+| `sighOfRelief` | Alter Drop | 0x310DB | `FUN_3f81_18e5` | 0x3174F | 0x31769 |
+| `partyKilled` | the party destroyed outside battles | 0x1C366 | `FUN_29c3_2775` | 0x1B169 | 0x1B1A8 |
+| `cantModify` | Modify | 0x3385E | `FUN_417f_209f` | 0x39059 | 0x39080 |
+| `goldForYour` | Sell | 0x3A5DA | `FUN_4894_1cee` | 0x3FC9E | 0x3FCF2 |
+| `illGiveYou` | Sell | 0x3A5CB | `FUN_4894_1cee` | 0x3FC8F | 0x3FCF2 |
+| `mustBeReadied` | Use | 0x39803 | `FUN_4894_0ef8` | 0x3EA7E | 0x3EAB3 |
+| `moveLeft` | battle step | 0x22A74 | `FUN_320c_09df` | 0x22824 | 0x22856 |
+| `shopLeave` | shop Exit with money left | 0x1FBC0 | `FUN_2f70_053e` | 0x1F6C9 | 0x1F747 |
+| `shopGoBack` | shop Exit with money left | 0x1FC13 | `FUN_2f70_053e` | 0x1F71C | 0x1F747 |
+| `templeLeave` | temple Exit with money left | 0x1DDCE | `FUN_2d14_0d09` | 0x1D40E | 0x1D489 |
+| `templeGoBack` | temple Exit with money left | 0x1DE19 | `FUN_2d14_0d09` | 0x1D459 | 0x1D489 |
+| `treasureLeft` | treasure Exit | 0x1EEFD | `FUN_2e08_0ecd` | 0x1E753 | 0x1E7A3 |
+| `treasureGoBack` | treasure Exit | 0x1EF1D | `FUN_2e08_0ecd` | 0x1E773 | 0x1E7A3 |
+| `guarding` | Guard | 0x0321D | `FUN_10ba_2686` | 0x4F87A | 0x4F883 |
+| `dropIt` | items: Drop | 0x3982E | `FUN_4894_0ef8` | 0x3EAA9 | 0x3EAB3 |
+| `isItADeal` | items: Sell | 0x3A5F1 | `FUN_4894_1cee` | 0x3FCB5 | 0x3FCF2 |
+| `sold` | items: Sell | 0x3A600 | `FUN_4894_1cee` | 0x3FCC4 | 0x3FCF2 |
+| `identifyFor` | items: identify | 0x3A808 | `FUN_4894_1f52` | 0x3FECF | 0x3FF59 |
+| `identifyDeal` | items: identify | 0x3A830 | `FUN_4894_1f52` | 0x3FEF7 | 0x3FF59 |
+| `idNoMoney` | items: identify | 0x3A83F | `FUN_4894_1f52` | 0x3FF06 | 0x3FF59 |
+| `nothingNew` | items: identify | 0x3A850 | `FUN_4894_1f52` | 0x3FF17 | 0x3FF59 |
+| `looksLike` | items: identify | 0x3A876 | `FUN_4894_1f52` | 0x3FF3D | 0x3FF59 |
+| `tradeWithWhom` | items: Trade | 0x3A058 | `FUN_4894_1734` | 0x3F630 | 0x3F64C |
+| `okayToLose` | items: a marked scroll | 0x39698 | `FUN_4894_0d70` | 0x3E3D9 | 0x3E3F1 |
+| `tradeTo` | money: Trade | 0x3AA5A | `FUN_4894_2156` | 0x4012A | 0x4016E |
+| `selectCoin` | money: Trade | 0x3AA66 | `FUN_4894_2156` | 0x40136 | 0x4016E |
+| `notHere` | Area refused | 0x2F0DB | `FUN_3e76_0989` | 0x2F7E6 | 0x2F7EF |
+| `partyOrder` | Alter Order | 0x30F50 | `FUN_3f81_1780` | 0x315C4 | 0x31604 |
+
+## 5. Texts in the profile data
+
+Texts that belong to a game's data rather than to a shared procedure are image addresses in that data
+(the handler maps of [B-model/vocabularies.md](../B-model/vocabularies.md), the title script, the ECL
+map), each the copy the cited routine prints (**O**, found as in §1):
+
+- **Effect lines** (`effects.handlers` and `items`): the parameters `msg`, `msgs`, `death`, `gazes`,
+  `reflects`, `misses`, `lost`, `resists`, `fleeMsg`, `confused`, `berserkMsg`, `enraged`, `rays`,
+  `gone` hold addresses; CotAB's handlers that are PoR's carry CotAB's own copy of the line (read at
+  the routine of DS:6FC0 + 4·type). PoR's 82 prints "is paralyzed with fear" (0x28DC1, read by `FUN_3723_1ba8`),
+  which the port used to word "is Paralyzed".
+- **Named foes** (`names`): PoR's 18 and 26 compare the monster's name with the string[15] slots at
+  `DS:0342` (4) and `DS:0382` (8), 47 with the 8 slots at `DS:0402`, of which only the first five hold
+  text (OGRE … HILL GIANT; the other three match nothing, as in the original), 48 with two strings in
+  its own segment (0x28498, 0x284A0).
+- **Spell lines** (`spells.handlers`): `msg`, `unaffected`, `immuneMsg`, `itemMsg`, Fire Shield's
+  `prompt`, `abort` and its options' lines; CotAB's inherited PoR spells carry CotAB's copies (read at
+  the routine of DS:72BA + 4·id).
+- **The camp Display names** (`effects.names`, effect type → address): PoR `FUN_3f81_0fbc`
+  (Studying Manual of Bodily Health … Displaced), CotAB 0x30DDA, a list of its own (Dispel Evil, Faerie
+  Fire, Fumbling, … Minor Globe of Invulnerability, protected from dragon breath, berserk).
+- **The credits** (`title.credits.lines`: row, column, colour, address): PoR's 29 strings at `290c:004B`
+  … (image 0x1910B …, [title-and-credits.md](../A-games/por/title-and-credits.md)), CotAB's at
+  0x1811F … (printed by 0x182AD).
+- **The wipe banner** (`ecl.wipeBanner`): PoR "The END!" 0x1C35D (`FUN_29c3_2775`); CotAB none.
+
+Validation: `web/test/gametext.test.ts` builds the merged image (checked byte for byte against
+`tools/unexepack.py` + `mergeovr.py`, the stubs aside), reads every address of §4 and §5 for both games
+and compares each string's SHA-256 with `text-hashes.json` (the strings were checked against the
+copies they replaced before those were removed).
+
+## 6. Still worded by the port
+
+- The **menu words** (EXIT, YES, NO, SAVE, TAKE …): the port's menus are buttons (IMP-010) labelled
+  with the original's menu words in capitals; the original's menus are single strings (the camp's
+  "Save View Magic Rest Alter Exit", §2) that a later step can read and split.
+- The **list prompts the port rewords** ("Spells in Memory:", "Spells to be memorized: …"), the party
+  screen and its functions (IMP-073), the slot dialogs ("Save in which slot?"), the icon editor (IMP-017,
+  no "Is this icon ok?"), the sheet's own lines, and every text of §3.
+- Messages the original builds from pieces the port has not split ("*Name* has died", "Nothing to use",
+  "Use:", "Cast from scroll:", "Target for", "*Name* reacts", "*Name* misses"): no string of their own
+  was found in either image; they are port wordings of the original's lines.

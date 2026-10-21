@@ -81,8 +81,10 @@ procedure:
 - **Optional content switched by data**: the commissions panel (`commissions`, PoR's quests) and the
   tile wilderness (`view.tileOverland` with the `overlandTile` battlefield and its terrain table,
   [procedures.md §15.4](procedures.md#154-battlefields)) are PoR content kept in shared modules.
-- **Text copied into code**: credits, monster names, engine messages (C24); a new game's text is read
-  by address from the start ([D-appendices/strings.md](../D-appendices/strings.md)).
+- **Text**: read by address (C24 done): a new game gives its own addresses for the engine's messages
+  (`strings`) and in its handler maps, title and ECL map, each found at the routine that prints it
+  ([D-appendices/strings.md](../D-appendices/strings.md)); the menu words and the port's rewordings
+  stay port texts (strings.md §6).
 
 The project's step log and this list's current state are kept in
 [docs/multi-game.md](../../docs/multi-game.md) ("Tracking to the goal").

@@ -128,8 +128,11 @@ hard-coded alternative paths.** Where things stand:
 **Done as data.** Record layouts, START.EXE tables, the script VM's memory map and opcode variants,
 save layouts, rules values (spells, caps, limits, money, temple, joining, creation effects), effect
 event lists, random treasure, title, start-up menu and demo, ending, view dressing, sound driver, character import, and the
-names of races, classes, alignments, statuses and coins. Nothing branches on the game's id in shared
-code (checked by grep).
+names of races, classes, alignments, statuses and coins. Game text (2026-10-21, C24): the engine's
+messages (`strings`), the effect and spell lines, the monster-name lists, the camp Display names, the
+credits and the wipe banner are addresses into the player's merged START.EXE + GAME.OVR, each the copy
+its routine prints (`spec/D-appendices/strings.md`); the menu words and the port's rewordings are
+still port text. Nothing branches on the game's id in shared code (checked by grep).
 
 **Procedure choices, named in the profile.** These are allowed by the design but are the places to
 watch, because each is an alternative path in code:

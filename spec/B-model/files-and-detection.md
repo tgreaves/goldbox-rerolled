@@ -50,9 +50,9 @@ What each kept file is for, and what happens without it:
 | File | Used for | Without it |
 |---|---|---|
 | `*.DAX` | everything the game draws and runs (scripts, maps, walls, pictures, monsters, items of encounters) | the required ones block the import; a missing optional family shows nothing for it |
-| `START.EXE` | the rules tables (the table map), names, spell records, the sound driver, the start-up menu's strings | names show as `#n`; combat, camp, shops, temples, creation and sound cannot run, and say which file to import |
+| `START.EXE` | the rules tables (the table map), names, spell records, the sound driver, the start-up menu's strings, every game text read by address | names show as `#n`, messages as `#` and their address, the credits without lines; combat, camp, shops, temples, creation and sound cannot run, and say which file to import |
 | `ITEMS` | the item types table ([engine/records.md, "Item types"](../A-games/engine/records.md#item-types-items-o)) | combat, camp, shops and temples cannot run |
-| `GAME.OVR` | the ending's captions ([profile.md §3.5](profile.md#35-the-ending-endingscript)) and other overlay strings | the ending shows no captions and says so |
+| `GAME.OVR` | the ending's captions ([profile.md §3.5](profile.md#35-the-ending-endingscript)) and the overlay strings: most engine messages ([D-appendices/strings.md](../D-appendices/strings.md)) | the ending shows no captions and says so; a message from an overlay shows as `#` and its address ([strings.md §1](../D-appendices/strings.md#1-how-to-read-a-string)) |
 | the configuration file | the long-intro flag ([profile.md §3.2](profile.md#32-the-title-titlescript)) | the long intro is shown |
 | `CHRDAT*`, `*.GUY/.SWG/.FX` | the game's own characters: the pre-made party and roster ([records-and-tables.md §4](records-and-tables.md#4-save-files-savefiles)) | no pre-made characters to add |
 | `SAVGAM?.DAT` | the game's own save slots, offered by the party screen's Load | none offered |
