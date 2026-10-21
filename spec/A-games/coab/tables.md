@@ -195,7 +195,7 @@ Services DS:00E6: Cure Blindness, Cure Disease, CLW, CSW, CCW, **Heal**, Neutral
 **Heal** (O, image 0x1CBF6–0x1CCC5): asks to pay 5000 ("Y"), then heals (max HP − current HP − 1d4) as a byte (0x1CC34) through the heal routine `e3:84` (0x4CE85), whose sum is a byte too, so HP becomes max − 1d4 even from nearly full; Cure Light, Serious and Critical Wounds go through the same routine (0x1CB35, 0x1CB84, 0x1CBD5), so the Dead and Stoned gain nothing; removes effect 0x21 (blindness), the six disease effects of DS:00DF[1..6] (31, 34, 43, 44, 50, 57, the same list as PoR's DS:0113[1..6]) and 0x44 (ghoul paralysis); then recomputes INT and WIS from their base values (`4aab:18D9`, stats 1 and 2: undoes feeblemind). PoR's temple has no Heal.
 
 ### 3.12 Combat tables (O)
-- Battlefield cells DS:26A4: byte 0 is 1, 2 or 4 (a move cost) or FF; byte 1 is 1 or 2 (PoR always 0); byte 2 is sight; byte 3 is image. Several outdoor cells (0x24, 0x28–0x2B, 0x30–0x3F) changed passability and cost. The port's `cellTable()` reads bytes 0, 2 and 3 and treats byte 0 as "1 enterable". CotAB's costs need the move code (other agent).
+- Battlefield cells DS:26A4: byte 0 is 1, 2 or 4 (a move cost) or FF; byte 1 is 1 or 2 (PoR always 0); byte 2 is sight; byte 3 is image. Several outdoor cells (0x24, 0x28–0x2B, 0x30–0x3F) changed passability and cost. The port's `cellTable()` reads bytes 0, 2 and 3; the cost of a step is byte 0 × 3 diagonally, × 2 straight ([B-model/procedures.md §15.5](../../B-model/procedures.md#155-battlefield-movement), from CotAB's move code 0x2AC98).
 - Stinking Cloud and Cloudkill cell lists, dx/dy: identical.
 
 ### 3.13 Items

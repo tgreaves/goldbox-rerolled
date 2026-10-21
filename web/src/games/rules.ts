@@ -178,6 +178,15 @@ export interface GameRules {
    * place (ECL `place`) from T.placeTerrain (CotAB 0x25CC0: A 0x1CC = 0 → WILDCOM and 0x25C58)
    */
   wildBattle: { kind: 'overlandTile' } | { kind: 'placeFlags'; mapFlag: number; place: number }
+  /**
+   * Movement on the battlefield (spec/B-model/procedures.md §15.5): a step onto a cell costs the cell's
+   * move byte (T.battleCells byte 0) × 3 half-squares diagonally, × 2 straight. `test`: what the Move
+   * command's "Blocked" (more than the movement left) and the computer's step probe (as much as or more
+   * than the movement left) compare: the cell's byte (PoR FUN_320c_09df, FUN_3334_0675) or the step's
+   * cost (CotAB 0x22B2C, 0x238DA). `shortStep`: a step that costs more than is left takes the rest and
+   * does not move (PoR FUN_3aae_0712) or moves anyway (CotAB 0x2AD78)
+   */
+  battleMove: { test: 'byte' | 'cost'; shortStep: 'stay' | 'move' }
   /** how a wilderness battlefield is built from its terrain flags (rules/battlefield.ts wildField) */
   wildField: WildFieldSpec
   /** how a map-area battlefield is built from the GEO map around the party (rules/battlefield.ts mapBattlefield) */
@@ -253,6 +262,7 @@ export const POR_RULES: GameRules = {
   dualClass: false,
   bolt: { lightning: 8, skipLast: false, mapAreaOnly: false, noRepeatBounce: false, chargeSinceLast: false },
   wildBattle: { kind: 'overlandTile' },
+  battleMove: { test: 'byte', shortStep: 'stay' }, // every cell's byte 0 is 1 or 0xFF
   // FUN_34c7_11b4: open ground, river FUN_34c7_0bde (ford FUN_34c7_0b97), trees 0d13, scatter 0e9e, finishing 0000
   wildField: {
     fill: 0x17, blank: [0x17, 0x36],
@@ -317,6 +327,8 @@ export const COAB_RULES: GameRules = {
   // 0x25D56: the grid builder takes the map generator only when A 0x1CC (ECL 0x4BE6, the engine's 0x49E6)
   // is set; the place is A byte 0x342 (ECL 0x4CA1, the engine's 0x4AA1)
   wildBattle: { kind: 'placeFlags', mapFlag: 0x49e6, place: 0x4aa1 },
+  // cells cost 1, 2 (table, tall grass, rocks, ponds) or 4 (water): the step routine 0x2AC98
+  battleMove: { test: 'cost', shortStep: 'move' },
   // 0x25C58: open ground, river 0x25690, trees and logs 0x2579B, scatter 0x25ADA (0x25932); no finishing
   // pass, which in CotAB's RandCom would put tables and chairs outdoors (spec/A-games/coab/combat.md)
   wildField: {

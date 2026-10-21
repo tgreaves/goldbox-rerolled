@@ -604,8 +604,38 @@ Passes:
   1d`die` ≤ `atMost`, and then each blank neighbour at `T.furnishDx/Dy` entries 1–4 takes `chair` the
   same way. PoR null; CotAB { 0x40, [0x17, 0x36], [0x1A, d10, 5], [0x1B, d10, 9] }.
 
-*Known gap:* CotAB's cell table gives a cost to enter of 1, 2 or 4 ([coab/combat.md, "Cell table"](../A-games/coab/combat.md#cell-table-o-ds26a4-4-bytes-a-cell));
-the reference implementation's movement uses only "enterable or not" for both games ([AUDIT.md](../AUDIT.md) §6.9).
+### 15.5 Battlefield movement
+
+**Original:** PoR the Move command `FUN_320c_09df`, the step routine `FUN_3aae_0712`, the computer's
+probe `FUN_3334_0675`; CotAB 0x22ADD, 0x2AC98, 0x237FB ([engine/combat-rules.md, "Move"](../A-games/engine/combat-rules.md#move-fun_320c_09df),
+[engine/combat-ai.md, "Movement"](../A-games/engine/combat-ai.md#movement-o-fun_3334_07f2-probe-fun_3334_0675),
+[coab/combat.md, "Cell table"](../A-games/coab/combat.md#cell-table-o-ds26a4-4-bytes-a-cell)).
+
+A step in direction *d* onto a cell of move byte *m* (`T.battleCells` byte 0) **costs** *m* × 3
+half-squares for a diagonal (*d* odd) and *m* × 2 otherwise, as a byte (**O**: CotAB 0x2AD05–0x2AD64;
+PoR's step routine takes 3 and 2 without reading the byte, the same since every PoR cell is 1 or 0xFF).
+`battleMove: { test, shortStep }`:
+
+- **Move** (the player, each step): an occupant attacks, a cell 0 asks "Flee:"; then "Blocked" when the
+  tested value is more than the movement left R[6]: with `test` `byte` the cell's byte (which only
+  rejects 0xFF), with `cost` the step's cost (0xFF for a 0xFF cell). Otherwise the attacks of
+  opportunity, then the step routine.
+- **The step routine**: when the cost is more than R[6], R[6] := 0 and, with `shortStep` `stay`, nothing
+  moves; with `move` the step is made anyway. Otherwise R[6] −= cost. Then the move, the engagement
+  counters cleared, the guards (part A).
+- **The computer's probe** (each direction it tries, in its preference order): refused off the arena,
+  on an occupied or 0xFF cell, when the tested value (as for Move) is **as much as or more than** R[6],
+  or when the cost is more than R[6] (and on a cloud cell it fears); a refused direction passes to the
+  next preference.
+
+| Game | `battleMove` | Source |
+|---|---|---|
+| PoR | test `byte`, shortStep `stay` | `FUN_320c_09df` (byte > R[6]), `FUN_3334_0675` (byte ≥ R[6]; R[6] ≥ need), `FUN_3aae_0712` (short: R[6] := 0, no move) |
+| CotAB | test `cost`, shortStep `move` | 0x22B2C (cost > R[6] → "Blocked"), 0x238DA (cost ≥ R[6] → refused), 0x2AD78 (short: R[6] := 0, then the move) |
+
+So in CotAB the player cannot enter a cell that costs more than is left, the computer needs strictly
+more than the cost, and the step routine's short branch is reached by neither (**I**: no other caller
+found). The battle screen's planned walk and reachable squares (part C) use the same costs.
 
 ## 16. Demo mode
 
@@ -656,5 +686,4 @@ null), `aiFirstSlot` (PoR 0, CotAB 1). Cure Light Wounds' patient test is the sp
 ## Open
 
 - CotAB's druid and monk fixed hit points (2) are **I** (no druid or monk in play).
-- The movement cost of CotAB's battlefield cells (§15.4) and the temple's effect ids (§9) are
-  known gaps of the reference implementation.
+- The temple's effect ids (§9) are a known gap of the reference implementation.

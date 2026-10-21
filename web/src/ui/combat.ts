@@ -130,7 +130,7 @@ export async function runBattle(s: BattleScreen) {
   /** a planned walk (IMP-044): the cells to the tapped destination and the directions still to take */
   let plan: { cells: { x: number; y: number }[]; dirs: number[]; to: { x: number; y: number } } | null = null
   let walking: { dirs: number[]; at: { x: number; y: number } } | null = null
-  /** cheapest route for f within its movement (half-squares: 2 straight, 3 diagonal), free cells only */
+  /** cheapest route for f within its movement (half-squares: each step's cost, Battle.stepCost), free cells only */
   const route = (f: Fighter, tx: number, ty: number): { cells: { x: number; y: number }[]; dirs: number[] } | null => {
     if (!battle) return null
     const b = battle, budget = f.r[6]
@@ -144,7 +144,7 @@ export async function runBattle(s: BattleScreen) {
       if (x === tx && y === ty) break
       if (cost > (best.get(key(x, y)) ?? Infinity)) continue
       for (let d = 0; d < 8; d++) {
-        const nx = x + DIRS[d][0], ny = y + DIRS[d][1], nc = cost + (d % 2 ? 3 : 2)
+        const nx = x + DIRS[d][0], ny = y + DIRS[d][1], nc = cost + b.stepCost(nx, ny, d)
         if (nc > budget || !b.passable(nx, ny, f.size || 1) || b.occupied(nx, ny, f.size || 1, f)) continue
         if (nc < (best.get(key(nx, ny)) ?? Infinity)) { best.set(key(nx, ny), nc); prev.set(key(nx, ny), [key(x, y), d]); open.push([nc, nx, ny]) }
       }
@@ -166,7 +166,7 @@ export async function runBattle(s: BattleScreen) {
       const [cost, x, y] = open.shift()!
       if (cost > (best.get(key(x, y)) ?? Infinity)) continue
       for (let d = 0; d < 8; d++) {
-        const nx = x + DIRS[d][0], ny = y + DIRS[d][1], nc = cost + (d % 2 ? 3 : 2)
+        const nx = x + DIRS[d][0], ny = y + DIRS[d][1], nc = cost + b.stepCost(nx, ny, d)
         if (nc > budget || !b.passable(nx, ny, f.size || 1) || b.occupied(nx, ny, f.size || 1, f)) continue
         if (nc < (best.get(key(nx, ny)) ?? Infinity)) { best.set(key(nx, ny), nc); open.push([nc, nx, ny]) }
       }
@@ -276,7 +276,7 @@ export async function runBattle(s: BattleScreen) {
           const r = route(f, cell.col, cell.row)
           if (!r) { plan = null; s.print(`Can't get there (Move Left = ${left})`); draw(); return }
           plan = { ...r, to: { x: cell.col, y: cell.row } }
-          const cost = r.dirs.reduce((a, d) => a + (d % 2 ? 3 : 2), 0)
+          const cost = r.dirs.reduce((a, d, i) => a + battle!.stepCost(r.cells[i].x, r.cells[i].y, d), 0)
           s.print(`Path: ${r.dirs.length} step${r.dirs.length > 1 ? 's' : ''}, ${cost >> 1} of ${left} movement. Tap the green square again to go.`)
           draw()
         },

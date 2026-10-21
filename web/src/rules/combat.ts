@@ -922,7 +922,8 @@ export class Battle implements FxHost {
       if (await this.ui.confirm('Flee:')) { await this.flee(f); return true }
       return false
     }
-    if (!this.passable(nx, ny, f.size)) { this.print('Blocked'); return false }
+    // FUN_320c_09df / CotAB 0x22B2C: the cell's byte, or the step's cost, more than the movement left
+    if (!this.passable(nx, ny, f.size) || this.moveTest(nx, ny, d) > f.r[6]) { this.print('Blocked'); return false }
     await this.stepF(f, d)
     this.ui.redraw(f)
     if (f.r[6] < 2) f.r[6] = 0
@@ -1335,10 +1336,25 @@ export class Battle implements FxHost {
   }
 
   // ------------------------------------------------------------ movement
-  /** A step with attacks of opportunity (FUN_3aae_08b2) and guards (FUN_3aae_0712). */
+  /**
+   * What a step in direction d onto the cell at (x, y) costs in half-squares (PoR FUN_3aae_0712, CotAB
+   * 0x2AD05): the cell's move byte × 3 diagonally, × 2 straight, as a byte (procedures.md §15.5).
+   */
+  stepCost(x: number, y: number, d: number) {
+    return ((this.cells[this.bf.get(y, x)]?.move ?? 0xff) * (d % 2 ? 3 : 2)) & 0xff
+  }
+
+  /** What the Move command and the step probe compare with the movement left (R.battleMove.test). */
+  private moveTest(x: number, y: number, d: number) {
+    const move = this.cells[this.bf.get(y, x)]?.move ?? 0xff
+    return R.battleMove.test === 'byte' || move === 0xff ? move : this.stepCost(x, y, d)
+  }
+
+  /**
+   * A step: attacks of opportunity from those left behind (FUN_3aae_08b2, before the step routine),
+   * then the step routine (FUN_3aae_0712; CotAB 0x2AC98): its cost, the move, the guards.
+   */
   async stepF(f: Fighter, d: number) {
-    const cost = d % 2 ? 3 : 2
-    if (cost > f.r[6]) { f.r[6] = 0; return }
     const nx = f.x + DX[d], ny = f.y + DY[d]
     // attacks of opportunity from enemies left behind
     const adjacent = this.enemiesWithin(f, 1)
@@ -1358,7 +1374,12 @@ export class Battle implements FxHost {
       e.target = keep
     }
     if (!this.inPlay(f)) return
-    f.r[6] -= cost
+    const cost = this.stepCost(nx, ny, d)
+    if (cost <= f.r[6]) f.r[6] -= cost
+    else {
+      f.r[6] = 0
+      if (R.battleMove.shortStep === 'stay') return // PoR: the rest is lost and nothing moves
+    }
     f.x = nx; f.y = ny
     f.r[0xf] = 0; f.r[0x12] = 0 // walking does not change the facing R[9] (FUN_3aae_0712)
     // guards
@@ -2049,7 +2070,9 @@ export class Battle implements FxHost {
       if (this.bf.get(ny, nx) === 0) { if (fleeing) { await this.flee(f); return false } continue }
       if (this.occupied(nx, ny, f.size, f) || !this.passable(nx, ny, f.size)) continue
       if (this.bf.get(ny, nx) === 0x1e && !this.e.effectsOf(f.c).some((x) => [0x20, 0x1e, 0x6f, 0x7d].includes(x.type))) continue
-      if ((d % 2 ? 3 : 2) > f.r[6]) return false
+      // the probe (FUN_3334_0675, CotAB 0x237FB) refuses a direction whose byte (or cost) is as much as
+      // the movement left, or whose cost is more; the next preference is tried
+      if (this.moveTest(nx, ny, d) >= f.r[6] || this.stepCost(nx, ny, d) > f.r[6]) continue
       await this.stepF(f, d) // paced there, as for the player
       return true
     }

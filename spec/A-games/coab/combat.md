@@ -183,7 +183,12 @@ plants and puddles that CotAB's WildCom does not have.
 
 ### Cell table (O, DS:26A4, 4 bytes a cell)
 
-Byte 0: cost to enter, 1, 2 or 4, or 0xFF blocked (PoR: 1 or 0xFF); byte 1: 1 for most cells, 0 for
+Byte 0: cost to enter, 1, 2 or 4, or 0xFF blocked (PoR: 1 or 0xFF, checked on every cell); a step costs
+byte 0 × 3 half-squares diagonally and × 2 straight (the step routine 0x2AC98 at 0x2AD05; the Move
+command 0x22ADD and the computer's probe 0x237FB compute the same), "Blocked" for the player when that
+is more than the movement left (0x22B2C), refused for the computer when it is as much or more
+(0x238DA); a step routine call short of movement zeroes it and still moves (0x2AD78); the procedure
+is [B-model/procedures.md §15.5](../../B-model/procedures.md#155-battlefield-movement) (O); byte 1: 1 for most cells, 0 for
 the water, 2 for the table (PoR: always 0; read by line of sight as eye height, **I**); byte 2: sight
 block 2 or 0; byte 3: image slot. Image names are from WildCom and RandCom as drawn (**I** for what
 they depict).

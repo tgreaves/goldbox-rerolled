@@ -242,6 +242,9 @@ need only its profile modules and any procedure the earlier games do not have.
    flag (`COAB_ECL.viewReads`, `loadPastEnd`), CALL 0x6803 (`calls.frame`), BIGPIC pictures, DAMAGE's
    flag (`ecl.damageDespiteSave`), the random-treasure table (`COAB_TREASURE`), ADD_NPC (`ecl.addNpc`,
   2026-10-21: CotAB's draws nothing, has no enemy-side id and shows the NPC's CPIC picture).
+  Battlefield movement costs (`R.battleMove`, 2026-10-21): a step costs the cell's move byte × 3
+  diagonally, × 2 straight in both games; what is tested against the movement left and what a short
+  step does are profile data.
 5. **CotAB data.** Characters (.SAV/.SWG/.FX), saves (13 149 bytes), the roster, the pre-made party,
    monsters.
    *Done 2026-10-19*: `web/src/games/files.ts`: each game's item/effect/roster extensions (PoR

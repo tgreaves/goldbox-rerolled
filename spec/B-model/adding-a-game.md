@@ -81,8 +81,6 @@ procedure:
 - **Optional content switched by data**: the commissions panel (`commissions`, PoR's quests) and the
   tile wilderness (`view.tileOverland` with the `overlandTile` battlefield and its terrain table,
   [procedures.md §15.4](procedures.md#154-battlefields)) are PoR content kept in shared modules.
-- **Battlefield movement costs**: CotAB's cells cost 1, 2 or 4 to enter; the movement procedure
-  takes no cost parameter yet ([procedures.md §15.4](procedures.md#154-battlefields)).
 - **Text copied into code**: credits, monster names, engine messages (C24); a new game's text is read
   by address from the start ([D-appendices/strings.md](../D-appendices/strings.md)).
 
