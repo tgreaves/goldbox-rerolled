@@ -11,7 +11,7 @@ import { heal as healChar, isScroll } from './camp'
 import { amount, castShared, line, msgOf, spellSpec, term, textOf } from './spellkinds'
 import type { Amount, SpellSpec } from '../games/spellrules'
 import { spellText } from './spelltext'
-import { casterLevel, duration as spellDuration, forget, itemSpellId, mayCast } from './magic'
+import { casterLevel, duration as spellDuration, forget, itemSpellId, mayCast, readsScroll } from './magic'
 import { F } from '../games/fields'
 import { R, classLevel, formerLevelsCount } from '../games/rules'
 import { T } from '../games/tables'
@@ -1033,6 +1033,8 @@ export class Battle implements FxHost {
       const k = await this.ui.pick('Cast from scroll:', spells.map((s) => st.get(s)?.name ?? `#${s}`), spells.map((s) => { const sp = st.get(s); return sp ? spellText(sp) : '' }))
       if (k < 0) return
       const id = spells[k]
+      // CotAB 0x3FADB: who may read it; "oops!" and nothing cast (the scroll kept, I), the turn over
+      if (!readsScroll(f.c, (n, s) => this.e.roll(n, s))) { this.print(`${name(f.c)} ${msg('scrollOops')}`); this.endTurnF(f); return }
       for (let j = 0; j < 3; j++) if ((it.raw[0x3c + j] & 0x7f) === id) { it.raw[0x3c + j] = 0; break }
       const s = st.get(id)
       if (!s) return

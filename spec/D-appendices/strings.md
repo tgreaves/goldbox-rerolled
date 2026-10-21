@@ -347,6 +347,7 @@ by the gender byte (0 his), then `share`.
 | `dropHowMuch`, `dropWillYou` | money Drop: "How much ", the coin word, "will you drop? " | 0x3ADCD, 0x3ADD7 | `FUN_4894_24a7` | 0x404AD, 0x404B7 | 0x404C7 |
 | `takeSelectCoin`, `takeWillYou` | taking from the pool: the list's prompt; "will you take? " after `howMuch` and the coin word | 0x3CF8D, 0x3CFAB | `FUN_4c2d_0ceb` | 0x42A64, 0x42A8A | 0x42A9A |
 | `coinCopper` … `coinJewelry` | the money prompts' coin words, by coin: "Copper ", "silver ", "electrum ", "Gold ", "Platinum ", "Gems ", "Jewelry " | 0x3CE52, 0x3CE4A, 0x3CE40, 0x3CE30, 0x3CE36, 0x3CE2A, 0x3CE5A | `FUN_4c2d_0b93` | 0x4292A, 0x42922, 0x42918, 0x42908, 0x4290E, 0x42902, 0x42932 | 0x4293B |
+| `scrollOops` | a scroll its user cannot read, after the name | — |  | 0x3F9A2 | 0x3F9A8 |
 | `pickNewClass` | dual-classing: the list's title | — |  | 0x5131D | 0x5135D |
 | `doesntQualify` | dual-classing: no class allowed, after the name | — |  | 0x5132C | 0x5135D |
 | `nowFirstLevel`, `nowFirstLevelEnd` | dual-classing done: name, this, the class name, the full stop | — |  | 0x51346, 0x5135B | 0x5135D |

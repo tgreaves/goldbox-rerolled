@@ -47,6 +47,21 @@ export function mayCast(c: Uint8Array, s: Pick<Spell, 'cls'>, armoured = false):
 }
 
 /**
+ * Whether `c` reads a scroll now (R.casting.scrollReaders; CotAB 0x3FADB): a cleric or magic-user, as
+ * the current or former class (0x51776, 0x5171A) or with a level, else a thief above 9 on d100 ≤ 75
+ * (the request made only then). False: "*Name* oops!" and nothing is cast.
+ */
+export function readsScroll(c: Uint8Array, roll: (n: number, s: number) => number): boolean {
+  const r = R.casting.scrollReaders
+  if (!r) return true
+  const s8 = (v: number) => (v << 24) >> 24
+  const first = (at: number) => { let k = 0; while (k < 7 && c[at + k] === 0) k++; return s8(c[at + k]) > 0 ? k : -1 }
+  const cur = first(F.levels), former = F.prevLevels >= 0 ? first(F.prevLevels) : -1
+  if (r.classes.some((k) => former === k || cur === k || s8(c[F.levels + k]) > 0)) return true
+  return s8(c[F.levels + r.thief.cls]) > r.thief.above && roll(1, 100) <= r.thief.chance
+}
+
+/**
  * Duration in minutes (FUN_4e53_07d6): the game's special cases (games/spellrules.ts), else d0 + d1 ×
  * level. A case naming a `record` takes d0 and d1 from that spell record instead, read from START.EXE
  * (CotAB Entangle's Duration(0x88), a bug kept; I: at the cast's level, which the original leaves

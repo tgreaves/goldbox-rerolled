@@ -225,6 +225,7 @@ export type StringId =
   | 'coinJewelry'
   | 'takeSelectCoin'
   | 'takeWillYou'
+  | 'scrollOops'
   | 'pickNewClass'
   | 'doesntQualify'
   | 'nowFirstLevel'
@@ -659,6 +660,7 @@ export const COAB_STRINGS: Strings = {
   coinJewelry: 0x42932, // 0x4293B
   takeSelectCoin: 0x42a64, // money: take from the pool; 0x42a9a
   takeWillYou: 0x42a8a, // money: take from the pool; 0x42a9a
+  scrollOops: 0x3f9a2, // a scroll its reader cannot read; 0x3F9A8
 }
 
 /**

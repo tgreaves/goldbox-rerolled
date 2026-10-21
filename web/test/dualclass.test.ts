@@ -16,7 +16,7 @@ import { installNames, parseCharacter } from '../src/data/character'
 import { installText } from '../src/data/gametext'
 import { msg } from '../src/games/strings'
 import { ItemTables, Item } from '../src/data/items'
-import { mayCast } from '../src/rules/magic'
+import { mayCast, readsScroll } from '../src/rules/magic'
 
 const dir = process.env.COAB ?? ''
 const have = dir !== '' && existsSync(dir)
@@ -134,6 +134,21 @@ describe.skipIf(!have)('dual-classing (CotAB 0x5135D)', () => {
     expect([mayCast(d, mu, true), mayCast(d, druid)]).toEqual([true, true])
     d[F.levels + 5] = 9
     expect([mayCast(d, mu, true), mayCast(d, druid)]).toEqual([false, false]) // not counting yet
+  })
+
+  it('reads a scroll as a cleric or magic-user, current or former, or as a thief above 9 on d100 ≤ 75 (0x3FADB)', () => {
+    const rolls: number[] = []
+    const d = (v: number) => (n: number, sd: number) => { rolls.push(sd); return v }
+    expect(readsScroll(human(5, 1, [10, 10, 10, 10, 10, 10]), d(100))).toBe(true)
+    const f = human(2, 5, [16, 10, 17, 10, 10, 10])
+    expect(readsScroll(f, d(1))).toBe(false) // a fighter: no roll
+    f[F.prevLevels + 0] = 3 // a former cleric, counting or not
+    expect(readsScroll(f, d(100))).toBe(true)
+    const th = human(6, 10, [10, 10, 10, 17, 10, 10])
+    expect([readsScroll(th, d(75)), readsScroll(th, d(76))]).toEqual([true, false])
+    th[F.levels + 6] = 9
+    expect(readsScroll(th, d(1))).toBe(false)
+    expect(rolls).toEqual([100, 100])
   })
 
   it('gains no hit points until the new class passes the old level, then the old class counts again', () => {

@@ -1156,10 +1156,12 @@ when its table column or sentence names CotAB.
 | 0x3F1C0 | coab/records | coab/records: 7.2 Engine conversion |  |
 | 0x3F40D | coab/effects | coab/effects: 6. Item kinds 0x3F034 |  |
 | 0x3F57D | coab/effects | coab/effects: 6. Item kinds 0x3F034 |  |
-| 0x3F9A8 | coab/chargen-and-progression, coab/spells, B/procedures | coab/chargen-and-progression: Open | `FUN_4894_1a8a` |
+| 0x3F9A2 | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
+| 0x3F9A8 | coab/chargen-and-progression, coab/spells, B/procedures | coab/chargen-and-progression: The former class afterwards | `FUN_4894_1a8a` |
 | 0x3F9A9 | coab/tables | coab/tables: 3.7a Caster level |  |
 | 0x3F9F1 | coab/spells | coab/spells: 1. Dispatch and shared helpers |  |
 | 0x3FA0D | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers | `FUN_4894_1a8a` |
+| 0x3FADB | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: The former class afterwards |  |
 | 0x40BC4 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x40E37 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x40EBE | coab/ecl | coab/ecl: Opcodes |  |

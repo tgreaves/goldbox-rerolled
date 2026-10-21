@@ -133,7 +133,13 @@ armour readied (+0x159) in game mode 5 (battle) only a ranger above 8, or a form
 no such test. In practice it bars a dual-class character's spells before the former class counts, and
 an armoured former magic-user's spells in battle.
 
+**Reading a scroll** (O, the item-use routine 0x3F9A8 at 0x3FADB): a cleric or magic-user as the
+current class (0x51776) or the former class (0x5171A, whether it counts or not), or with a level in
+either, reads it; else a thief above level 9 reads it when the request (1, 100) gives at most 75;
+else "*Name*" " oops!" (0x3F9A2) and nothing is cast; in battle the turn ends. PoR's Use has no such
+test.
+
 ## Open
 
-- The item-use routine 0x3F9A8 lets a character read a scroll as a cleric or magic-user, current or
-  former (0x5171A, 0x51776), or as a thief above level 9 on d100 ≤ 75; not yet in the port.
+- Whether a scroll that is not read ("oops!") is used up: the routine then consumes it when its
+  caller's result byte is set, which this path does not set itself (**I**: kept; the port keeps it).

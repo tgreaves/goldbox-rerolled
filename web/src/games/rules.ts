@@ -266,6 +266,13 @@ export interface GameRules {
      * Null: no filter (PoR's lists, FUN_4894_299c, take every memorised or known spell).
      */
     allowed: Record<number, { stat: number; above: number; any: [number, number][] | null; armoured: { race: number; any: [number, number][]; formerWith: number } | null }> | null
+    /**
+     * Who may read a scroll (CotAB 0x3FADB in the item-use routine 0x3F9A8): one of `classes` as its
+     * current or former class, or with a level in one; else a level in `thief.cls` above
+     * `thief.above` and the request (1, 100) at most `thief.chance`; else "oops!" and nothing is
+     * cast. Null: anyone who has the scroll readied (PoR).
+     */
+    scrollReaders: { classes: number[]; thief: { cls: number; above: number; chance: number } } | null
   }
 }
 
@@ -331,7 +338,7 @@ export const POR_RULES: GameRules = {
   mapField: { cornerWallEnd: 0x04, finishing: true, furnish: null },
   clouds: { gas: { cell: 0x1e, immune: [0x1e, 0x1f, 0x20, 0x6f, 0x7d], roundEnd: true, apply: false }, kill: null }, // FUN_5216_0ae7
   // FUN_3aae_02f9 → FUN_10ba_148b; FUN_3334_0545; FUN_3334_03e4 (3334:04D6)
-  casting: { lostFrom: 'current', miscast: null, aiFirstSlot: 0, aiItemSpell: { above: 0x38, minus: 0x17 }, allowed: null },
+  casting: { lostFrom: 'current', miscast: null, aiFirstSlot: 0, aiItemSpell: { above: 0x38, minus: 0x17 }, allowed: null, scrollReaders: null },
   thief: { dualClass: false, bonus: 0, clampWithBonus: false, gloves: null, gauntlets: null },
   saveCon: null,
   startEffects: { race: { 1: [0x5a, 0x61, 0x1a, 0x2f], 2: [0x6b], 3: [0x61, 0x12, 0x2f, 0x30], 4: [0x7c], 5: [0x5a, 0x61] }, cls: {} },
@@ -413,7 +420,8 @@ export const COAB_RULES: GameRules = {
     // 0x43F8E: cleric spells WIS > 8 and a cleric or a paladin above 8; druid spells WIS > 8 and a ranger
     // above 6; magic-user spells INT > 8, and an armoured human in combat a ranger above 8 (or a former one, with a magic-user level)
     allowed: { 0: { stat: 2, above: 8, any: [[0, 0], [3, 8]], armoured: null }, 1: { stat: 2, above: 8, any: [[4, 6]], armoured: null },
-      2: { stat: 1, above: 8, any: null, armoured: { race: 7, any: [[4, 8]], formerWith: 5 } } } },
+      2: { stat: 1, above: 8, any: null, armoured: { race: 7, any: [[4, 8]], formerWith: 5 } } },
+    scrollReaders: { classes: [5, 0], thief: { cls: 6, above: 9, chance: 75 } } }, // 0x3FADB
   // 0x50F5A: Gloves of Thievery (effect 0x0B), Gauntlets of Dexterity (effect 0x02)
   thief: { dualClass: true, bonus: 7, clampWithBonus: true, gloves: { effect: 0x0b, raise: { 1: 5, 2: 7 }, bonus: 5 }, gauntlets: { effect: 0x02, minLevel: 4, bonus: 10 } },
   // a paladin joins no party with an evil member, nor an evil character a party with a paladin; three rangers at most

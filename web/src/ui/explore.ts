@@ -44,7 +44,7 @@ import { proposeSplit } from '../rules/treasure'
 import { camp, effectNames, type CampUi } from './camp'
 import { runBattle, type BattleControls } from './combat'
 import { clockText, freeSlots, isScroll, knows, memorise, memorised, preparation } from '../rules/camp'
-import { castOutside, itemSpells, mayCast, spendUse, targetKind } from '../rules/magic'
+import { castOutside, itemSpells, mayCast, readsScroll, spendUse, targetKind } from '../rules/magic'
 import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
 import { creatorTools } from './creator'
 import { msg, entry, word, ask, type MenuOpts } from '../games/strings'
@@ -1535,6 +1535,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           if (!a.startsWith('use-on-')) { again({ selected: keep, confirm: 'use', use: u }); return }
           targets = [engine.party()[Number(a.slice(7))]]
         }
+        // CotAB 0x3FADB: who may read a scroll; "oops!" and nothing cast (the scroll kept, I)
+        if (u.scroll && !readsScroll(node, (n, sd) => engine.roll(n, sd))) { again({ selected: keep, message: `${c.name} ${msg('scrollOops')}` }); return }
         print(`${c.name} ${msg('usesItem')}`, false)
         void castOutside(engine, node, s, targets, true).then((out) => {
           spendUse(items, it, u.scroll, s.id)
