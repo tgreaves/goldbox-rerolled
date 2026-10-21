@@ -341,3 +341,19 @@ After a 0x8000/0x8001 fight the aftermath awards `100 × char[0x73]` experience 
 - with edge exits modelled (0x6DD5), 2 runs fail: block 1 area 24 on its second map (GEO 31) has open south-edge squares (4,15) and (11,15) whose exit table entry is 255. Walking off there would make the original try to load ECL record 255, and its loader retries forever (**I**: a bug in the original, or squares never reached in play; unconfirmed)
 - the sweep starts every area from the shipped save's variables, so area-specific story state is not explored
 - not yet compared against the running original (DOSBox)
+
+## Open
+
+- Engine globals written through B or A whose readers are not traced (**?**): `DS:84D3` (B 0x6B00
+  written 0), `DS:84D2` (B 0x6C00 written 0), char[0xB8] and char[0xBA] (B 0x6BF7, 0x6BF9), the
+  redraw of A 0x49FD/0x49FE (`DS:84E8`), the registers 0x03DE, 0x00B8, 0x00B9; and why ECL 0x6DE3
+  is cleared after every battle.
+- Meanings inferred (**I**): the CHA table at B 0x6DCF (reaction or loyalty), ECL 0x6DC8 (enemies
+  defeated), monsters left in the party list after an avoided battle, the `88 13` prefix of every
+  record (a C64 load address or marker).
+- ECL operand kinds other than 0/1/2/3/0x80/0x81 at ECL2/15 0x9B5B and ECL8/16 0x9B00 (never
+  executed in the sweep).
+- Block 1 area 24, second map (GEO 31): the open south-edge squares (4,15) and (11,15) have exit 255
+  (Validation); to confirm in DOSBox.
+- Engine address 0x035F, which the overland scripts compare with their impassable-tile table, is
+  undefined in the original; a conforming build reads 0 (Engine registers).

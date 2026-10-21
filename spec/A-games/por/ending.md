@@ -20,3 +20,7 @@ Strings are Pascal strings in the code segment 4804 (image 0x38040 + offset). Ga
 6. Three calls to `FUN_1709_0dbe`, then the view is redrawn and the script continues (PROGRAM acts as EXIT).
 
 A frame stays up while the timer (`FUN_1709_0c3f`) has advanced by at most (speed + 3) × its delay; the helper counts a cycle each time the frame index wraps.
+
+## Open
+
+- What re-runs the tower's `on_enter` after the ending, in the original: [open-questions.md](../../open-questions.md), "Smaller loose ends".

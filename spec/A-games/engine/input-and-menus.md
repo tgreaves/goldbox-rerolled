@@ -171,3 +171,11 @@ Current HP always = max HP. No point budget: any stat can be set anywhere inside
 
 - After leaving: Yes/No "Is this icon ok? " (prompt 13); **N** restarts the editor from the kept values.
 - Icon build (`FUN_45c5_0482`): head from CHEAD.DAX, body/weapon from CBODY.DAX. Record = part index, + 0x40 when large (`DS:08C5`: size 1 'S', size 2 'T'), + 0x80 for the action pose (ready = +0) (`FUN_58af_01c8`). Head composited onto body (`FUN_45c5_032f`), then pixel colour c ∈ {1,2,3,4,6,7} → low nibble and c + 8 → high nibble of the matching byte C1…C6 (`FUN_1464_1e5c`).
+
+## Open
+
+- Start-up step 9's `FUN_55a0_0155(6, 7, 0, 0x0B)` (**?**; the routine sets the view's background
+  bands, [maps-and-view.md](maps-and-view.md)).
+- Inferred (**I**): `POOL.CFG` line 2 as the sound device and line 5 as "fixed disk"; the extended-key
+  table `DS:285B`; Enter in horizontal menus being ignored by their callers; Modify's maximum-HP CON
+  term; char[0x85] as the "modified" flag; the Drop message's test of char[0x10D].

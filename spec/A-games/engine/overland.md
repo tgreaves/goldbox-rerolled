@@ -74,3 +74,7 @@ No sound is played. Crossing between areas is done by the scripts' `on_move`: at
 ## Encounters
 
 Encounter sprites in the wilderness always use the middle frame (frame 2) instead of one per distance (`FUN_2fea_054e` tests `DS:49FA` = 1).
+
+## Open
+
+- None known.

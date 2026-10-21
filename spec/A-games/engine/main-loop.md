@@ -146,3 +146,8 @@ Described in [input-and-menus.md](input-and-menus.md) §2, with the cheat keys.
 ## Sound (O)
 
 See [sound.md](sound.md). Effects are played by number with `FUN_18ae_00dc(n)` from a table at `DS:2610`; the game uses 2–12 (10 footstep, 7 bump, 11 script effect via `CALL 0xBA03`). By default each effect is **cut off after about 0.1 s**; only some code sections let effects play in full.
+
+## Open
+
+- What re-runs the tower's `on_enter` after the ending (the walk back to New Phlan;
+  [open-questions.md](../../open-questions.md), "Smaller loose ends").

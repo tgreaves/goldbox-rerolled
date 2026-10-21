@@ -97,3 +97,7 @@ COMSPR 25, an opaque grey bevelled square, is drawn under the combatant whose tu
 ## Absent (O)
 
 No Fireball or area burst graphic, no Magic Missile sprite, no sparkle on the caster, no icon change for Sleep/Hold/Charm, no blinking of the active combatant; "Continue Battle:" is text only; `1feb` effects draw at a big monster's top-left cell only, the skull on every cell.
+
+## Open
+
+- More than 5 monster types in one battle would overwrite icon slot 13 onwards (**?**, no check found).

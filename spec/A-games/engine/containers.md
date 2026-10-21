@@ -74,3 +74,7 @@ Engine routine `FUN_1802_050f`. For each control byte `n` in the stored stream:
 | `0x7F`, `0x80` | not handled by the engine (would loop forever); never present in data |
 
 Validated: all 1245 records decode to exactly `raw_size` while consuming exactly `comp_size`.
+
+## Open
+
+- None.

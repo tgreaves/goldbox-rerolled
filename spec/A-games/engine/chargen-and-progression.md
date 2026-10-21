@@ -263,3 +263,8 @@ DEX adjustments (PP OL F/RT MS HS, `DS:3D4E + DEX·5`): 9: −15 −10 −10 −
 ## Combat experience (O, `FUN_2e08_0000`)
 
 Experience from battles (the monsters' award values, money and magic items converted to experience, the division over the party and the class bonuses) is described with the aftermath of a battle: [combat-rules.md, "Experience"](combat-rules.md#experience-o-fun_2e08_0000) and ["Award"](combat-rules.md#award-o-fun_2e08_0355). Duels give `100 × char[0x73]` to the current character.
+
+## Open
+
+- The fifth u16 of each race's age thresholds (`DS:3F31`) has no reader found (**?**).
+- How char[0x2D] reaches char[0x110] beyond the derived statistics' STR step (**I**).

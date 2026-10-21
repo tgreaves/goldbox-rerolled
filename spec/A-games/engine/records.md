@@ -198,7 +198,7 @@ for i in 1..n:                       // n = operand − 0x80; 0x80 makes nothing
 for every item now in the list: FUN_10ba_0442(DS:5D92, item, 0, 0, 0, 0)   // name cache item[0x00]
 ```
 
-- **Per-call state** (O): t is an uninitialised local byte of the handler (`bp−0x65`). On r2 = 48 or 49 the previous item's type in the same `TREASURE` repeats, with fresh dice for that type (new plus, new spells, …). For the first item of a call t is stale stack (**?**); a value that matches no branch below gives a blank item (type t, every other byte 0, mask 6), which is G's "item with no name". G (9.4) says 48–49 always give that blank item.
+- **Per-call state** (O): t is an uninitialised local byte of the handler (`bp−0x65`). On r2 = 48 or 49 the previous item's type in the same `TREASURE` repeats, with fresh dice for that type (new plus, new spells, …). For the first item of a call t is stale stack (**?**; a conforming build takes t = 0, which gives the blank item below); a value that matches no branch below gives a blank item (type t, every other byte 0, mask 6), which is G's "item with no name". G (9.4) says 48–49 always give that blank item.
 - Items come out newest first, so the screen lists them in reverse generation order (O). The list is not cleared first: they go in front of anything already in it.
 - Every range and die above matches G 9.4.
 
@@ -425,3 +425,17 @@ The add routine `FUN_5216_1656` fires event 9 first and builds the record only i
 refused it ([effects.md](effects.md) §1). An existing record of the same type is removed first only
 when the new duration is 0 or longer than the existing one (`5216:16d0–16fd`); otherwise both are
 kept ([spells.md, "Shared helpers"](spells.md#shared-helpers)).
+
+## Open
+
+- Unlabelled character bytes; `ITEMS` byte 8 (0x80 on most weapons, no reader found); what types 0,
+  60, 64–66, 80, 81, 83, 89, 94–96 and 127 were for (no instance in the shipped data).
+- The first random item of a `TREASURE` when its second d100 is 48–49: its type is an uninitialised
+  stack byte (**?**; a conforming build takes type 0, a blank item, "Type choice").
+- Confirm in DOSBox: random arrow and quarrel stacks weigh 40 per unit (400 per stack of 10) against
+  4 for shop arrows.
+- Effects that write char[0x110]–[0x112] or [0x11C] directly (Shield, Cause Blindness) are undone
+  by a recalculation mid-combat unless the effect hook applies them again (event 11 follows the
+  recalculation before a melee to-hit roll, [effects.md](effects.md)); which ones are lost is not
+  checked.
+- The missile attack count's final conversion `FUN_3aae_0e52` (**I**, "Derived statistics").

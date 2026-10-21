@@ -241,3 +241,13 @@ Suffix: " Detect Exit" if there are items and the current character has Detect M
 - **Drop money** `FUN_4894_24a7`: the same list and "How much <coin>will you drop? "; `FUN_4c2d_0a01` takes the coins off the character, and only in mode 1 (shop, temple) or 6 (treasure screen) adds them to the pool `DS:67F4`; anywhere else they are gone.
 - **Treasure Detect** (`FUN_2e08_0ecd`): with items on the screen and the current character holding Detect Magic ready (slot value 5 or 0x0B), the menu ends "Detect Exit". It casts through `FUN_4e53_0c20` without the "casts" line and uses up the memorised copy (`4e53:0EA7`); effect 5 makes every item name with plus > 0, save bonus > 0 or cursed show "* " (`FUN_10ba_0442`) while anyone in the party has it.
 - **Scroll warning** `FUN_4894_0d70` (Items Trade, Drop and Sell; not Halve, Join or Use): a readied item gives "Must be unreadied"; a scroll (ITEMS slot 11–13) with a spell marked for scribing (bit 7 of item[0x3C..0x3E]) prints "<name> was going to scribe from that scroll" and asks "is it Okay to lose it?" (No cancels).
+
+## Open
+
+- The shop and temple "Pool" key is skipped while a local flag (passed to the menu and to View) is
+  set; when that happens (**?**).
+- Appraise: whether Escape at "Sell Keep" sells the gem (every key other than K does on the path
+  seen).
+- The Remove Curse spell handler used by the temple: not traced here.
+- Confirm in DOSBox: the stack Sell price (value/2 × count / 20 for every stack), the vanishing share
+  of 0xB3 NPCs in Share, and the lost gem when keeping it with an empty inventory.

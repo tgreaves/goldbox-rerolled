@@ -226,3 +226,7 @@ Renderer tick counts include the final tick that reads the end command.
 ## No music (O)
 
 The DOS version has no music, title or otherwise. Every call to `PlaySound` is listed in §7 and none is in the title or intro code; the longest effect is 8 (2.5 s). The driver can play note sequences (bytes below FAh), but no effect data uses them, so that part is unused in this release.
+
+## Open
+
+- None known for the driver; which effects play in full is by call site (§6), as the [README](../../README.md) rules (C23).

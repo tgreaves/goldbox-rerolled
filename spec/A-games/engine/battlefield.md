@@ -14,7 +14,7 @@ The battle grid and how it is built from a map area or a wilderness square. Conv
 
 1. Load combat icon set: `DUNGCOM` when `DS:49FA` = 1 (map area), otherwise `WILDCOM`/`RANDCOM` (`FUN_34c7_1244`)
 2. Allocate the grid: 0x4E9 bytes = 7-byte header + **25 rows × 50 columns** (`cell = grid[7 + row·50 + col]`); header [2],[3] = view origin (first party member's position − 3)
-3. Build terrain: map areas `FUN_34c7_0810`, wilderness `FUN_34c7_11b4` (**?**)
+3. Build terrain: map areas `FUN_34c7_0810`, wilderness `FUN_34c7_11b4` (both below, O)
 4. Create a 22-byte combat record per list entry (`FUN_34c7_12e1`); entries after the first `B[0x67C]` (party size) are monsters (record [0x13] = 1); record [9] = facing from `DS:02F2[party facing / 2]`, monsters face the opposite way; monsters with morale byte 0 or > 102 get `B[0x58C]` (encounter morale) + NPC bit
 5. Place combatants (`FUN_34c7_19f5`): deployment zones per side from `DS:0306` (12 bytes per direction: 6 rows of [min col, max col]); `FUN_34c7_1577` finds a free spot; a monster that cannot be placed is removed; party members who cannot act are laid down as bodies (cell set to 0x1F, original cell remembered in `DS:66D6`)
 6. Effect hook 8 for everyone, `FUN_3aae_2879`, game mode `DS:49F3` = 5
@@ -71,7 +71,7 @@ A hard-coded range table maps the overland tile id to a flag byte. The names are
 | 0xE1–0xE4, 0xEA–0xED | 0xA0 |
 | anything else (including 0) | not set: the original returns an uninitialised byte; use 0 |
 
-The tests run in the order listed, so the first matching row wins. If the result has bit 0x80 and ECL word `A` 0x4AB3 (byte offset 0x366) is 0xFF, the value becomes `(flags + 0x80) | 1`, which clears 0x80 and sets 0x01 (**I**: a story state that changes the arid terrain).
+The tests run in the order listed, so the first matching row wins. If the result has bit 0x80 and ECL word `A` 0x4AB3 (byte offset 0x366) is 0xFF, the value becomes `(flags + 0x80) | 1`, which clears 0x80 and sets 0x01. 0x4AB3 is the river-pollution commission's entry, 0xFF once it is rewarded ([por/commissions.md](../por/commissions.md#commission-table-ecl-0x4aa60x4abf)), so from then the arid tiles get plain ground as well (O, from the scripts).
 
 ### River pass (O, `FUN_34c7_0bde`)
 
@@ -235,3 +235,9 @@ Wilderness battlefields also run this pass.
 
 The engine model's map-area procedure (one for both games, with PoR's corner cell 0x04, the
 finishing pass and no furnishing) is [B-model/procedures.md §15.4](../../B-model/procedures.md#154-battlefields).
+
+## Open
+
+- The overland tile ids behind the terrain-flag rows (which ids are roads, towns, water): the table
+  is complete as code; only the names are missing ([combat-rules.md, "Open"](combat-rules.md#open)).
+- The step direction table `DS:25C1` of the line of sight (**I**).

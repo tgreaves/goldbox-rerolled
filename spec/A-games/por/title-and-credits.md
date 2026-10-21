@@ -55,3 +55,7 @@ The 29 strings run contiguously from `290c:004B` to `290c:0205`; four are printe
 - Table: 13 records of 21 bytes at `DS:0002 + 21·r`: word string[6], Espruar rune 1, rune 2, Dethek rune 1, rune 2 (0xFF = none), path string[9] (three patterns: solid, dash-dot, dotted). Glyph = rune byte + 0x40 in the 8X8D1 font. The values are informative ([expected-values.md §3](../../D-appendices/expected-values.md#3-pool-of-radiance-credits-and-code-wheel)).
 - Validation: input string = word. Wrong → `298d:00E4` ("Sorry, that's incorrect.", 14) and retry; third failure exits to DOS.
 - **This binary is patched**: the branch after the compare at `298d:032C` is `90 90` (NOPs) followed by `jmp` to the success exit, so any input is accepted. (Whether GoldBox Rerolled shows the screen is part C: [app-flow.md §4](../../C-port/app-flow.md#4-the-title).)
+
+## Open
+
+- None.

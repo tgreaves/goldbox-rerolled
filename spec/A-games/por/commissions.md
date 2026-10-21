@@ -79,3 +79,7 @@ Outside City Hall the walls tell the player which numbered proclamations to read
 | 7 | CXXIX |
 | 8 | CCI |
 | 9 | CXIV |
+
+## Open
+
+- None known.
