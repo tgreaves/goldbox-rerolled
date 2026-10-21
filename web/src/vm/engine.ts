@@ -335,7 +335,7 @@ export class Engine {
   }
 
   /**
-   * The 3D view's background colours, EGA indices (FUN_54cf_0163 → FUN_55a0_0174): the sky from
+   * The 3D view's background colours, EGA indices (FUN_54cf_016d → FUN_55a0_0174): the sky from
    * DS:0C26 by ECL 0x49FD, or 0x49FE when the party's square has event bit 7; the horizon line and
    * band from register 0xC05F, the floor from 0xC059 (FUN_54cf_00c7, 00fb, 012f).
    */

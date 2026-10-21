@@ -76,22 +76,74 @@ A wall type's 156 bytes are tile ids for 10 **piece kinds**, row-major. Constant
 | 6 | 54 | 7 | 8 | 2 | 1 | front wall, current square |
 | 7 | 110 | 2 | 11 | 0 | 0 | left side wall, current square |
 | 8 | 132 | 2 | 11 | 9 | 0 | right side wall, current square |
-| 9 | 154 | 1 | 2 | 5 | 4 | far edge piece (end of a run of far walls) |
+| 9 | 154 | 1 | 2 | 5 | 4 | far edge piece: the column between two far front walls (Drawing order) |
 
 `draw_piece(kind, walltype, row, col)`: for each cell in the W×H block, tile id = `walls[(walltype-1)*156 + start + i]`; tile 0 = transparent; cells outside 0..10 are clipped.
 
 ### Drawing order (painter's algorithm)
 
-Let `L = (f+6)%8`, `R = (f+2)%8`, `B = (f+4)%8`; `wall(dir, x, y)` = [maps-and-view.md](maps-and-view.md) wall lookup.
+(**O**, `FUN_55a0_05fd`, read instruction by instruction; CotAB's `Draw3dWorld` 0x53EC0 is the same
+routine with the same constants, [coab/assets.md §3](../coab/assets.md#geo-and-walldef-unchanged-o).)
+The routine takes the party's x, y and facing *f* (0, 2, 4, 6). Let `L = (f+6)%8`, `R = (f+2)%8`,
+`B = (f+4)%8`, `dx`/`dy` the vectors above, `col[k]`/`row[k]` the base column and row of kind *k*, and
+`wall(x, y, d)` the view's wall lookup `FUN_55a0_047b` (below). `piece(k, t, c)` draws kind *k* of wall
+type *t* at column *c* and row `row[k]` (`FUN_55a0_0211`).
 
-1. **Depth 2** (square 2 ahead): walk 4 squares left and 4 right from it. For each square with a front wall (`wall(f)`), draw kind 0 at column `5 ± 2k`; maintain an edge-piece rule (kind 9 at ±1) where a run of front walls ends. For the 3 nearest squares on each side, draw side walls `wall(L)` as kind 1 and `wall(R)` as kind 2, column offsets `-2k-1` / `+2k+1`
-2. **Depth 1**: from 2 squares to the left to 2 to the right (3 each side, step 3 columns): front walls kind 3 (col 4 ± 3k), side walls kinds 4/5
-3. **Depth 0** (current square): 2 each side, step 7 columns: front walls kind 6, side walls kinds 7/8
-4. Blit (`FUN_55a0_05f3`). Background (floor/sky, `FUN_55a0_0174`) is drawn first, below
+1. If `DS:6AAC` ≠ 0, draw the overhead map instead ([below](#overhead-map-o-fun_55a0_0000)) and stop.
+2. Draw the background bands (`FUN_55a0_0174`, "Background colours").
+3. (*px*, *py*) = (x + 2·dx[f], y + 2·dy[f]), the square two ahead. For depth 2, 1, 0 in turn, draw that
+   depth's pieces (below), then step (*px*, *py*) one square back by dx[B], dy[B].
+4. Copy the finished view to the screen (`FUN_55a0_05f3` → `FUN_1464_1b52`).
 
-**Background colours** (O, `FUN_54cf_0163` → `FUN_55a0_0155`/`0174`). Four bands fill the 88-pixel view before the walls: sky rows 0–42, a 1-pixel horizon line, a 2-pixel band, floor rows 46–87. Map areas only (`DS:49FA` = 1 or ECL 0x49E6 ≠ 0).
+**Depth 2.**
 
-- Sky: `DS:0C26[v]` (0, 15, 12, 11, 13, 10, 9, 14, repeated for 8–15), v = ECL 0x49FD, or 0x49FE when the **party's** square has event byte bit 7 set (`FUN_55a0_057a`). Scripts set 8 (black) indoors and at night, 11 (light cyan) by day, 9, 10, 13 elsewhere.
+- *Front walls, left walk*: from (*px*, *py*), *k* = 0 … 3 squares to the left (each step adds dx[L],
+  dy[L]), with column offset *o* = −2*k* and `prev` = 0 at the start. For each square, w = `wall(x, y, f)`;
+  if the square is outside the map (x or y outside 0–15) and `wall(x, y, R)` = 0, `prev` := 0. Then:
+  - w ≠ 0: if `prev` > 0, `piece(9, prev, col[9] + o + 1)`; `prev` := w; `piece(0, w, col[0] + o)`.
+  - w = 0: if `prev` > 0 and the previous square (x − dx[L], y − dy[L]) has `wall(…, L)` ≠ 0,
+    `piece(9, prev, col[9] + o + 1)`; `prev` := 0.
+- *Front walls, right walk*: the same from (*px*, *py*) to the right (dx[R], dy[R]), *o* = +2*k*, the
+  outside test with `wall(x, y, L)`, the previous square's `wall(…, R)`, and the edge piece at
+  `col[9] + o − 1`. The front wall of the square ahead is thus drawn twice, once by each walk.
+- *Side walls*: from (*px*, *py*), *k* = 0 … 2 squares to the left: `wall(x, y, L)` ≠ 0 → `piece(1, w,
+  col[1] − 2k)` for *k* = 0, `col[1] − 2k − 1` beyond; then *k* = 0 … 2 to the right: `wall(x, y, R)` → `piece(2,
+  w, col[2] + 2k)` for *k* = 0, `col[2] + 2k + 1` beyond.
+
+Kind 9 thus fills the column between two adjacent far front walls (columns 5, 3, 1 and 5, 7, 9 are the
+front walls; 4, 2 and 6, 8 the gaps), in the type of the wall nearer the centre.
+
+**Depth 1.** From the square two to the left of (*px*, *py*), three squares stepping right, column offset
+*o* = −6, −3, 0: `wall(x, y, f)` → `piece(3, w, col[3] + o)`, then `wall(x, y, L)` → `piece(4, w,
+col[4] + o)`. Then from the square two to the right, three squares stepping left, *o* = 6, 3, 0: `piece(3,
+…, col[3] + o)` for the front wall, `wall(x, y, R)` → `piece(5, w, col[5] + o)`.
+
+**Depth 0.** The same with one square each side and steps of 7 columns: from the square to the left, *o* =
+−7, 0: front → `piece(6, w, col[6] + o)`, `wall(x, y, L)` → `piece(7, w, col[7] + o)`; from the square to
+the right, *o* = 7, 0: front → kind 6, `wall(x, y, R)` → `piece(8, w, col[8] + o)`.
+
+The centre square's front wall is drawn by both halves of each depth; later pieces overwrite earlier ones
+where they overlap (everything at depth 0 last).
+
+**The view's wall lookup** (`FUN_55a0_047b(x, y, d)`, signed bytes): if (x, y) is outside 0–15 and the
+area (`DS:84DC`) is 0 or 10, the result is 0; otherwise a coordinate above 15 becomes 0 and one below 0
+becomes 15 (not modulo 16: x + 4 = 18 reads column 0), and the result is the wall nibble of side *d*
+(0 N, 2 E, 4 S, 6 W) of that square.
+
+**A piece** (`FUN_55a0_0211(col, row, type, kind)`): rows *r* = `row` … `row` + H − 1, and within each
+row columns *c* = `col` … `col` + W − 1; a counter starting at `start[kind]` advances one per cell,
+**clipped cells included**. A cell with *r* and *c* in 0–10 and tile id `walls[(type − 1)·156 + counter]`
+≠ 0 is drawn by `FUN_5924_015d(c + 2, r + 2, id, 1, 1)`: the tile from the tile bank (below) at screen
+cell (*c* + 2, *r* + 2), masked (`FUN_1464_08d4`, colour 13 leaves the pixel under it) into the back
+buffer `DS:4A20`. A tile id whose bank is not loaded is skipped.
+
+**Encounter sprites** are drawn after the view ([graphics.md, "Encounter sprites"](graphics.md#encounter-sprites-o)):
+`FUN_2fea_054e` first redraws the view (`FUN_54cf_016d`) when a sprite is already on show and no
+picture is, so a sprite that comes nearer replaces its farther frame.
+
+**Background colours** (O, the redraw `FUN_54cf_016d` (stub `03ca:0025`) → `FUN_55a0_0155`/`0174`). Four bands fill the 88-pixel view before the walls (`FUN_1464_2632` fills at cell column 2, 11 cells wide: y 16, 43 rows; y 59, 1 row; y 60, 2 rows; y 62, 42 rows): sky rows 0–42, a 1-pixel horizon line (row 43), a 2-pixel band (rows 44–45), floor rows 46–87. Map areas only (`DS:49FA` = 1 or ECL 0x49E6 ≠ 0).
+
+- Sky: `DS:0C26[v]` (0, 15, 12, 11, 13, 10, 9, 14, repeated for 8–15), v = ECL 0x49FD, or 0x49FE when the **party's** square has event byte bit 7 set (`FUN_55a0_057a`). The index is the whole stored word (no mask); scripts store values below 16 (**I**). Scripts set 8 (black) indoors and at night, 11 (light cyan) by day, 9, 10, 13 elsewhere.
 - Horizon line (`FUN_54cf_00c7`) and band (`00fb`) from engine register 0xC05F (`DS:6F69`): line 0 for 8 or 0x41, else 15; band 8 for 8, else 7.
 - Floor (`FUN_54cf_012f`) from register 0xC059 (`DS:6F68`): 0x0B → 8, 6 → 1, anything else (0x41, 9, 0xDB) → 6, brown.
 - Both registers are recomputed only after a write (`DS:84E5`); the VM reset (`FUN_2fea_01b6`) sets 0xC059 = 0x41 and 0xC05F = 9, the game start 0xDB and 0xE8. Only ECL8 writes them (0xC05F = 65 or 8, 0xC059 from a table).
