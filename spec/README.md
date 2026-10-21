@@ -195,17 +195,17 @@ The port's own design (work-plan steps 3 and 4).
 | File | Covers | Status |
 |---|---|---|
 | [overview.md](C-port/overview.md) | requirements, constraints, conformance | complete |
-| [app-flow.md](C-port/app-flow.md) | games screen, import, title, party screen, play, demo, ending | stub |
-| [ui-contract.md](C-port/ui-contract.md) | layouts, panels, command bar, input map, text log (D4) | stub |
-| [screens.md](C-port/screens.md) | every screen's states, inputs and texts | stub |
-| [exploration-view.md](C-port/exploration-view.md) | the 3D view (D6), sprites, wilderness view, area map | stub |
-| [combat-ui.md](C-port/combat-ui.md) | the battle screen | stub |
-| [rendering.md](C-port/rendering.md) | pixel scaling, frames, the font, icons, palette | stub |
-| [audio.md](C-port/audio.md) | device choice, the cut-off rule, Tandy | stub |
+| [app-flow.md](C-port/app-flow.md) | games screen, import, title, party screen, play, demo, ending | complete |
+| [ui-contract.md](C-port/ui-contract.md) | layouts, panels, command bar, input map, text log (D4) | complete |
+| [screens.md](C-port/screens.md) | every screen's states, inputs and texts | complete |
+| [exploration-view.md](C-port/exploration-view.md) | the 3D view (D6), sprites, wilderness view, area map | complete |
+| [combat-ui.md](C-port/combat-ui.md) | the battle screen | complete |
+| [rendering.md](C-port/rendering.md) | pixel scaling, frames, the font, icons, palette | complete |
+| [audio.md](C-port/audio.md) | device choice, the cut-off rule, Tandy | complete |
 | [storage.md](C-port/storage.md) | browser storage, the `.GBR` sidecar, ZIP export and import | complete |
 | [accounts-and-sync.md](C-port/accounts-and-sync.md) | the optional server and sync | complete |
 | [pwa-and-build.md](C-port/pwa-and-build.md) | the offline app, the single-file build, the version line | complete |
-| [departures.md](C-port/departures.md) | each IMP id → the section that specifies it | stub |
+| [departures.md](C-port/departures.md) | each IMP id → the section that specifies it | complete |
 
 ## Part D: appendices ([D-appendices/](D-appendices/))
 
