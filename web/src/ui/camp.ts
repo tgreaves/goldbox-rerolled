@@ -7,7 +7,7 @@ import type { Engine } from '../vm/engine'
 import { parseCharacter } from '../data/character'
 import type { Spell } from '../data/spells'
 import { clearPending, freeSlots, knows, memorise, memorised, preparation, readableScrolls, restStep, startRest, isScroll, fix as fixParty } from '../rules/camp'
-import { castOutside, targetKind, forget } from '../rules/magic'
+import { castOutside, targetKind, forget, mayCast } from '../rules/magic'
 import { msg, menu, word, ask, type StringId, type MenuOpts, type MenuWord } from '../games/strings'
 import { text } from '../data/gametext'
 
@@ -105,7 +105,7 @@ export async function cast(ui: CampUi) {
     const c = e.cur
     const ready = memorised(c).filter((v) => v > 0 && v < 0x80)
     if (!ready.length) { ui.print(`${nameOf(c)} ${msg('noSpells')}`, false); return }
-    const spells = ready.map((id) => st.get(id)!).filter(Boolean)
+    const spells = ready.map((id) => st.get(id)!).filter((s) => s && mayCast(c, s)) // CotAB 0x43F8E
     const i = await list(ui, spells.map((s) => s.name.toUpperCase()), { prompt: 'Spells in Memory:', notes: spells.map(spellText) })
     if (i >= spells.length) return
     const s = spells[i]
@@ -147,7 +147,7 @@ async function memorize(ui: CampUi) {
     const has = casterClasses().filter((k) => levels.some((l) => slots(c, k.cls, l)))
     if (!has.length) { ui.print(`${nameOf(c)} ${msg('cannotMemorize')}`, false); return }
     ui.print(`${nameOf(c)} can memorize:${has.map((k) => `  ${k.name} Spells: ${row(k.cls)}`).join('')}`, true)
-    const book: Spell[] = st.spells.filter((s) => bookSpell(s) && knows(c, s.id))
+    const book: Spell[] = st.spells.filter((s) => bookSpell(s) && knows(c, s.id) && mayCast(c, s))
     const short = (cls: number) => casterClasses().find((k) => k.cls === cls)?.short ?? ''
     const i = await list(ui, book.map((s) => `${s.name.toUpperCase()} (${short(s.cls)} ${s.level})`), { prompt: 'Spells in Spell Book:', notes: book.map(spellText) })
     if (i >= book.length) break

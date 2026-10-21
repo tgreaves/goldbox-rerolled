@@ -254,7 +254,19 @@ export interface GameRules {
    * spell id it gives, less `minus` above `above` (both 0x38, 0x17; CotAB's Use then casts the power as
    * it stands, spec/A-games/coab/spells.md)
    */
-  casting: { lostFrom: 'current' | 'target'; miscast: { effect: number; sides: number } | null; aiFirstSlot: number; aiItemSpell: { above: number; minus: number } }
+  casting: {
+    lostFrom: 'current' | 'target'; miscast: { effect: number; sides: number } | null; aiFirstSlot: number; aiItemSpell: { above: number; minus: number }
+    /**
+     * Who may cast a spell of each spell class, the filter of every player spell list (CotAB 0x43F8E,
+     * called by the list builder 0x449E4; procedures.md §15.1): the ability `stat` must be above
+     * `above`; then a level term [class, above] passes with the class's level above it, or the former
+     * level when former levels count; `any` null: no class test. `armoured`: in combat, for a character
+     * of `race` with body armour readied, only these terms count, a former one only together with a
+     * level, current or former, in class `formerWith`. A spell class without an entry: never.
+     * Null: no filter (PoR's lists, FUN_4894_299c, take every memorised or known spell).
+     */
+    allowed: Record<number, { stat: number; above: number; any: [number, number][] | null; armoured: { race: number; any: [number, number][]; formerWith: number } | null }> | null
+  }
 }
 
 export type TempleService = 'blind' | 'disease' | 'clw' | 'csw' | 'ccw' | 'heal' | 'poison' | 'raise' | 'curse' | 'stone'
@@ -319,7 +331,7 @@ export const POR_RULES: GameRules = {
   mapField: { cornerWallEnd: 0x04, finishing: true, furnish: null },
   clouds: { gas: { cell: 0x1e, immune: [0x1e, 0x1f, 0x20, 0x6f, 0x7d], roundEnd: true, apply: false }, kill: null }, // FUN_5216_0ae7
   // FUN_3aae_02f9 → FUN_10ba_148b; FUN_3334_0545; FUN_3334_03e4 (3334:04D6)
-  casting: { lostFrom: 'current', miscast: null, aiFirstSlot: 0, aiItemSpell: { above: 0x38, minus: 0x17 } },
+  casting: { lostFrom: 'current', miscast: null, aiFirstSlot: 0, aiItemSpell: { above: 0x38, minus: 0x17 }, allowed: null },
   thief: { dualClass: false, bonus: 0, clampWithBonus: false, gloves: null, gauntlets: null },
   saveCon: null,
   startEffects: { race: { 1: [0x5a, 0x61, 0x1a, 0x2f], 2: [0x6b], 3: [0x61, 0x12, 0x2f, 0x30], 4: [0x7c], 5: [0x5a, 0x61] }, cls: {} },
@@ -397,7 +409,11 @@ export const COAB_RULES: GameRules = {
   // 0x4B8F7: no 0x1E immunity; HD 0–4 die, 5 save at −4, 6 save, 7 and up (and below 0) unaffected
   clouds: { gas: { cell: 0x1e, immune: [0x1f, 0x20, 0x6f, 0x7d], roundEnd: false, apply: true }, kill: { cell: 0x1c, save: 0, bands: [[0, 4, null], [5, 5, -4], [6, 6, 0]], poison: 0x37 } },
   // 0x2AAB4 / 0x4CC8A forget(target, spell); 0x45373 effect 0x4A, 1d2; 0x236E4 slots 1–0x53
-  casting: { lostFrom: 'target', miscast: { effect: 0x4a, sides: 2 }, aiFirstSlot: 1, aiItemSpell: { above: 0x38, minus: 0x17 } }, // 0x23651
+  casting: { lostFrom: 'target', miscast: { effect: 0x4a, sides: 2 }, aiFirstSlot: 1, aiItemSpell: { above: 0x38, minus: 0x17 }, // 0x23651
+    // 0x43F8E: cleric spells WIS > 8 and a cleric or a paladin above 8; druid spells WIS > 8 and a ranger
+    // above 6; magic-user spells INT > 8, and an armoured human in combat a ranger above 8 (or a former one, with a magic-user level)
+    allowed: { 0: { stat: 2, above: 8, any: [[0, 0], [3, 8]], armoured: null }, 1: { stat: 2, above: 8, any: [[4, 6]], armoured: null },
+      2: { stat: 1, above: 8, any: null, armoured: { race: 7, any: [[4, 8]], formerWith: 5 } } } },
   // 0x50F5A: Gloves of Thievery (effect 0x0B), Gauntlets of Dexterity (effect 0x02)
   thief: { dualClass: true, bonus: 7, clampWithBonus: true, gloves: { effect: 0x0b, raise: { 1: 5, 2: 7 }, bonus: 5 }, gauntlets: { effect: 0x02, minLevel: 4, bonus: 10 } },
   // a paladin joins no party with an evil member, nor an evil character a party with a paladin; three rangers at most

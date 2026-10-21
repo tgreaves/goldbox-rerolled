@@ -1,5 +1,6 @@
 // Training (spec/A-games/engine/chargen-and-progression.md, FUN_417f_29ae) and the derived statistics after a level (FUN_51cf_0000).
 import { R, slots, formerLevelsCount } from '../games/rules'
+import { mayCast } from './magic'
 import { T } from '../games/tables'
 import { rollHitDice, conBonus, saves, thiefSkills, wisdomBonus, type Tables } from './chargen'
 import type { Dice } from './dice'
@@ -242,7 +243,7 @@ export function newSpellChoices(t: Tables, c: Uint8Array): number[] {
   for (let id = 1; id <= R.spells.named; id++) {
     const cls = t.b(T.spellRecords.at + id * T.spellRecords.row), lvl = t.b(T.spellRecords.at + id * T.spellRecords.row + 1)
     if (c[F.known + id]) continue
-    if (slots(c, cls, lvl) > 0) out.push(id)
+    if (slots(c, cls, lvl) > 0 && mayCast(c, { cls })) out.push(id) // CotAB's list builder 0x449E4, mode 4
   }
   return out
 }

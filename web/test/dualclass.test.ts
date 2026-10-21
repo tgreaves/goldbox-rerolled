@@ -16,6 +16,7 @@ import { installNames, parseCharacter } from '../src/data/character'
 import { installText } from '../src/data/gametext'
 import { msg } from '../src/games/strings'
 import { ItemTables, Item } from '../src/data/items'
+import { mayCast } from '../src/rules/magic'
 
 const dir = process.env.COAB ?? ''
 const have = dir !== '' && existsSync(dir)
@@ -107,6 +108,32 @@ describe.skipIf(!have)('dual-classing (CotAB 0x5135D)', () => {
     const sword = make(fighterOnly, false), cursedSword = make(fighterOnly, true)
     changeClass(t, c, 0, [sword, cursedSword], items)
     expect([sword.ready, cursedSword.ready]).toEqual([false, true])
+  })
+
+  it('lists only the spells the caster may cast (0x43F8E): WIS or INT above 8, the class, armour in battle', () => {
+    const cleric = { cls: 0 }, druid = { cls: 1 }, mu = { cls: 2 }, item = { cls: 3 }
+    const c = human(0, 3, [10, 10, 9, 10, 10, 10])
+    expect([mayCast(c, cleric), mayCast(c, druid), mayCast(c, item)]).toEqual([true, false, false])
+    c[F.stat[2]] = 8
+    expect(mayCast(c, cleric)).toBe(false) // WIS 8
+    const p = human(3, 9, [17, 10, 13, 10, 10, 17])
+    expect(mayCast(p, cleric)).toBe(true) // a paladin above 8
+    p[F.levels + 3] = 8
+    expect(mayCast(p, cleric)).toBe(false)
+    // a magic-user's spells need INT above 8 only; in battle in body armour a human needs a ranger
+    // above 8, or a former one (counting) with a magic-user level
+    const m = human(5, 5, [10, 9, 10, 10, 10, 10])
+    expect([mayCast(m, mu), mayCast(m, mu, true)]).toEqual([true, false])
+    m[F.stat[1]] = 8
+    expect(mayCast(m, mu)).toBe(false)
+    const r = human(4, 9, [17, 13, 14, 10, 14, 10])
+    expect([mayCast(r, druid), mayCast(r, mu, true)]).toEqual([true, true])
+    const d = human(5, 10, [17, 13, 14, 10, 14, 10]) // a ranger 9 who became a magic-user, now level 10
+    d[F.levels + 5] = 10; d[F.prevLevels + 4] = 9; d[F.hpLevel] = 9
+    expect(formerLevelsCount(d)).toBe(true)
+    expect([mayCast(d, mu, true), mayCast(d, druid)]).toEqual([true, true])
+    d[F.levels + 5] = 9
+    expect([mayCast(d, mu, true), mayCast(d, druid)]).toEqual([false, false]) // not counting yet
   })
 
   it('gains no hit points until the new class passes the old level, then the old class counts again', () => {

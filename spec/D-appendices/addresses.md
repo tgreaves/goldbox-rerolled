@@ -1179,8 +1179,8 @@ when its table column or sentence names CotAB.
 | 0x42D5F | coab/records | coab/records: 8. Random treasure items |  |
 | 0x42D97 | coab/ecl, coab/records, coab/tables, B/procedures | coab/ecl: Random treasure types | `FUN_4c2d_1010` |
 | 0x43F70 | coab/spells | coab/spells: CotAB spell handlers: diff against PoR `engine/spells.md |  |
-| 0x43F8E | coab/chargen-and-progression | coab/chargen-and-progression: Open |  |
-| 0x449E4 | coab/chargen-and-progression | coab/chargen-and-progression: Open |  |
+| 0x43F8E | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: The former class afterwards |  |
+| 0x449E4 | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: The former class afterwards |  |
 | 0x44E02 | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers | `FUN_4e53_07d6` |
 | 0x44EEF | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers | `FUN_4e53_08c3` |
 | 0x450BD | coab/spells | coab/spells: 1. Dispatch and shared helpers | `FUN_4e53_0a91` |

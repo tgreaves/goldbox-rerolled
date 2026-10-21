@@ -11,7 +11,7 @@ import { heal as healChar, isScroll } from './camp'
 import { amount, castShared, line, msgOf, spellSpec, term, textOf } from './spellkinds'
 import type { Amount, SpellSpec } from '../games/spellrules'
 import { spellText } from './spelltext'
-import { casterLevel, duration as spellDuration, forget, itemSpellId } from './magic'
+import { casterLevel, duration as spellDuration, forget, itemSpellId, mayCast } from './magic'
 import { F } from '../games/fields'
 import { R, classLevel, formerLevelsCount } from '../games/rules'
 import { T } from '../games/tables'
@@ -1085,7 +1085,11 @@ export class Battle implements FxHost {
 
   async playerCast(f: Fighter) {
     const st = this.e.spells!
+    // CotAB's list takes only what the caster may cast (0x43F8E: with body armour, in battle)
+    const armoured = this.e.itemsOf(f.c).some((it) => it.ready && this.e.items?.baseOf(it)?.slot === 2)
     const ready = Array.from({ length: F.memorisedCount }, (_, k) => f.c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
+      .filter((id) => { const s = st.get(id); return !s || mayCast(f.c, s, armoured) })
+    if (!ready.length) { this.print(`${name(f.c)} ${msg('noSpells')}`); return }
     const i = await this.ui.pick('Cast:', ready.map((id) => st.get(id)?.name ?? `#${id}`), ready.map((id) => { const s = st.get(id); return s ? spellText(s) : '' }))
     if (i < 0) return
     await this.beginCast(f, st.get(ready[i])!)

@@ -44,7 +44,7 @@ import { proposeSplit } from '../rules/treasure'
 import { camp, effectNames, type CampUi } from './camp'
 import { runBattle, type BattleControls } from './combat'
 import { clockText, freeSlots, isScroll, knows, memorise, memorised, preparation } from '../rules/camp'
-import { castOutside, itemSpells, spendUse, targetKind } from '../rules/magic'
+import { castOutside, itemSpells, mayCast, spendUse, targetKind } from '../rules/magic'
 import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
 import { creatorTools } from './creator'
 import { msg, entry, word, ask, type MenuOpts } from '../games/strings'
@@ -1105,7 +1105,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
               ? `<button class="spell pending" data-clear="${k}" title="Pending: tap to clear">${escape(st.get(v & 0x7f)!.name)} ✕</button>`
               : `<span class="spell ready">${escape(st.get(v)!.name)}</span>`).join('')
             const empty = Array.from({ length: Math.max(0, total - inSlots.length) }, () => '<span class="spell empty">empty</span>').join('')
-            const book = st.spells.filter((s) => bookSpell(s) && s.cls === cls && s.level === l && knows(c, s.id))
+            const book = st.spells.filter((s) => bookSpell(s) && s.cls === cls && s.level === l && knows(c, s.id) && mayCast(c, s))
             const free = freeSlots(c, cls, l, st)
             return `<div class="mem-level"><h4>Level ${l} <span class="muted">${total - free} of ${total} slots</span></h4>
               <div class="mem-slots">${chips}${empty}</div>
@@ -1409,7 +1409,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     function spellsPanel(): string {
       const st = engine.spells
       if (!st || opts.combat) return ''
-      const ready = [...new Set(memorised(node).filter((v) => v > 0 && v < 0x80))].map((id) => st.get(id)!).filter(Boolean)
+      const ready = [...new Set(memorised(node).filter((v) => v > 0 && v < 0x80))].map((id) => st.get(id)!).filter((s) => s && mayCast(node, s))
       if (!ready.length) return ''
       if (opts.castOn !== undefined) {
         const s = st.get(opts.castOn)!

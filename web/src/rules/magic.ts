@@ -1,5 +1,5 @@
 // Casting outside combat (spec/A-games/engine/spells.md, "Casting outside combat" and "Spell effects").
-import { R, classLevel } from '../games/rules'
+import { R, classLevel, formerLevelsCount } from '../games/rules'
 import type { Engine } from '../vm/engine'
 import type { Spell } from '../data/spells'
 import { recalc } from './equip'
@@ -22,6 +22,28 @@ export function casterLevel(c: Uint8Array, s: Spell, fromItem = false): number {
   let L = gated ? gate.level : terms ? Math.max(0, ...terms.map((t) => classLevel(c, t.cls) - t.minus)) : 12
   if (fromItem && s.cls !== R.spells.item) L = 6
   return L
+}
+
+/**
+ * Whether `c` may cast spell `s` now (R.casting.allowed; CotAB 0x43F8E): the filter of the cast,
+ * memorise and learn lists. `armoured`: in combat with body armour readied.
+ */
+export function mayCast(c: Uint8Array, s: Pick<Spell, 'cls'>, armoured = false): boolean {
+  const all = R.casting.allowed
+  if (!all) return true
+  const rule = all[s.cls]
+  if (!rule) return false
+  if (c[F.stat[rule.stat]] <= rule.above) return false
+  const s8 = (v: number) => (v << 24) >> 24
+  const f = formerLevelsCount(c)
+  const lev = (k: number) => s8(c[F.levels + k]), prev = (k: number) => (F.prevLevels >= 0 ? s8(c[F.prevLevels + k]) : 0)
+  const ar = rule.armoured
+  if (ar && armoured && c[F.race] === ar.race) {
+    if (ar.any.some(([k, above]) => lev(k) > above)) return true
+    if (!f || !ar.any.some(([k, above]) => prev(k) > above)) return false
+    return lev(ar.formerWith) > 0 || prev(ar.formerWith) > 0
+  }
+  return rule.any === null || rule.any.some(([k, above]) => lev(k) > above || (f && prev(k) > above))
 }
 
 /**

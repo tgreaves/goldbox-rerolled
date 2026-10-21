@@ -123,12 +123,17 @@ From then on these read the former levels (each **O** at the address):
 
 Combat and the locked-door menu: [combat.md, "The former class in battle"](combat.md#the-former-class-in-battle-o).
 
+**The spell lists** (O, 0x43F8E, called by the list builder 0x449E4 for the cast list, mode 0, the
+memorise list of known spells, mode 1, and the training's new spells, mode 4) take a spell only when
+its caster may cast it: a cleric spell with WIS (+0x15) above 8 and a cleric level, or a former one
+when it counts, or a paladin above 8 (or a former one); a druid spell with WIS above 8 and a ranger
+above 6 (or a former one); a magic-user spell with INT (+0x13) above 8, and for a human with body
+armour readied (+0x159) in game mode 5 (battle) only a ranger above 8, or a former ranger above 8
+(counting) with a magic-user level; an item spell (class 3) never. PoR's builder (`FUN_4894_299c`) has
+no such test. In practice it bars a dual-class character's spells before the former class counts, and
+an armoured former magic-user's spells in battle.
+
 ## Open
 
-- The spell-list builder 0x449E4 filters every list (cast, memorise, learn) through 0x43F8E, which
-  reads the former levels too (a cleric spell: WIS > 8 and a cleric, a former cleric when it
-  counts, or a paladin above 8; a magic-user spell: INT > 8, and for a human in body armour in
-  game mode 5 a ranger above 8 or a former one; a druid spell: a ranger above 6). Not yet in the
-  port (it lists by slots and memorised spells only).
 - The item-use routine 0x3F9A8 lets a character read a scroll as a cleric or magic-user, current or
   former (0x5171A, 0x51776), or as a thief above level 9 on d100 ≤ 75; not yet in the port.
