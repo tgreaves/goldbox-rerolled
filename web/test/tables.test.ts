@@ -31,7 +31,7 @@ describe.skipIf(!por || !existsSync(por))('Pool of Radiance tables', () => {
 })
 
 const coab = process.env.COAB ?? ''
-describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds tables (spec/coab/tables.md)', () => {
+describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds tables (spec/A-games/coab/tables.md)', () => {
   const img = image(coab), m = COAB_TABLES, t = new Tables(img, m.ds)
   it('read the class bits, trainer bits and sky', () => {
     expect(bytes(t, m.classBits.at, 8)).toEqual([0x02, 0x10, 0x08, 0x40, 0x40, 0x01, 0x04, 0x20])

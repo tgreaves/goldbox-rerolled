@@ -2,7 +2,15 @@
 
 GoldBox Rerolled began as Pool of Radiance (PoR). Curse of the Azure Bonds (CotAB) is next, and the
 aim is the whole series with each game's own rules respected. This note sets out how the code is
-organised for that. The research behind it: [CotAB spec](../spec/coab/README.md).
+organised for that. The research behind it: the engine as PoR defines it in
+[`spec/A-games/engine/`](../spec/README.md#part-a-the-original-games), CotAB as differences in
+[`spec/A-games/coab/`](../spec/A-games/coab/README.md).
+
+The design sections below ("The game profile", "Records stay native", "Rules as data first", "Where a
+game is described", "Adding a game") are being moved into the specification's part B, the engine
+model ([`spec/B-model/`](../spec/README.md#part-b-the-engine-model-b-model)), which will be normative;
+until then they stay here. The step log, "Tracking to the goal" and the backlog are project status and
+stay in this note.
 
 ## What changes between games
 
@@ -49,7 +57,7 @@ active profile's field table. So:
   loops over them go through the existing helpers (`memorised()`, `knows()`).
 
 Converting the ~1 050 raw offsets is mechanical: each PoR offset in use is mapped to a field name
-once (the record maps in spec/records.md and spec/coab/records.md), then replaced. PoR's tests must
+once (the record maps in spec/A-games/engine/records.md and spec/A-games/coab/records.md), then replaced. PoR's tests must
 pass unchanged after it, which proves nothing moved for PoR.
 
 Items keep their 63-byte record in both games, and effects their 9-byte one, so those stay as they
@@ -171,7 +179,7 @@ watch, because each is an alternative path in code:
    `saveEach`, `teleport`, `scare`, `flameShield`, `saveOrElse`, `beam`; the Hold loop's `lastSaves`
    and `runAfter`, the target picker's `pool`, the clouds' squares from START.EXE, Dispel Magic's
    `zones`), with the cloud occupant check one procedure on `R.clouds`. What is inferred is listed in
-   spec/coab/spells.md (port status). The effect handlers' tests of spell 15 (Shield 17, type 91) are
+   spec/A-games/coab/spells.md (port status). The effect handlers' tests of spell 15 (Shield 17, type 91) are
    a parameter of their behaviours (`spell`).
 2. Effect type numbers named in shared code: the effect handlers' own types (what they add, test or
    remove) are parameters of their behaviours in both games' maps (2026-10-20). Still in code: the
@@ -184,7 +192,7 @@ watch, because each is an alternative path in code:
    the stat routine runs for the types the profile lists).
 
 **Plan, in order:** ~~CotAB's changed and new spell handlers as kinds~~ (done); ~~PoR's effect handler map made
-explicit~~ (done); ~~PoR's effect handlers checked against the binary~~ (done, spec/effects.md "Port
+explicit~~ (done); ~~PoR's effect handlers checked against the binary~~ (done, spec/A-games/engine/effects.md "Port
 status"); ~~profile functions replaced by data~~ (done); the paired procedures made parametric where
 the originals allow it (the PoR ending procedure); named ids for effect types. When those are done, a third game should
 need only its profile modules and any procedure the earlier games do not have.
@@ -270,7 +278,7 @@ need only its profile modules and any procedure the earlier games do not have.
    type (`games/effectrules.ts` `handlers`, `rules/effectkinds.ts`), the monster-class flags (+0x14B),
    the new events 20–22, the current-stat routine on removal, and readied items by CotAB's item kinds
    (Gauntlets of Ogre Power, girdles, Ring of Wizardry, Gloves of Thievery…). Not yet: event 14 (monster
-   specials, unfired in PoR too) and the area breaths and eye rays (spec/coab/effects.md, "Port status").
+   specials, unfired in PoR too) and the area breaths and eye rays (spec/A-games/coab/effects.md, "Port status").
 7. **CotAB presentation.** Sky and ground in the 3D view, the BIGPIC overland, title, code wheel.
    *Done 2026-10-19* (7a–7c), profile data in `games/view.ts`, `title.ts`, `sound.ts`: the floor
    colour and the cobbled ground (SKY #252) tiled on the WebGL floor (IMP-069); BIGPIC pictures from
@@ -281,7 +289,7 @@ need only its profile modules and any procedure the earlier games do not have.
    panels follow the profile: the journal and the commissions are hidden for CotAB. CotAB is now
    playable, marked early. Not yet: the sun and clouds, the code wheel (skipped, IMP-068), the
    Rules reference text and the ending for CotAB; nothing has been played through in a browser yet.
-8. **Importing PoR characters**, by the game's own "Pool" import (spec/coab/records.md), with its
+8. **Importing PoR characters**, by the game's own "Pool" import (spec/A-games/coab/records.md), with its
    STR bug fixed and logged.
    *Done 2026-10-20*: `games/imports.ts` holds the conversion as data (fields copied by name through
    both games' maps, stats clamped to CotAB's race limits, 300 platinum, no items, Animate Dead
@@ -297,7 +305,7 @@ in the explore screen with nothing saved. Since 2026-10-21 the port offers it as
 the party screen instead of the original's menu after the title (IMP-074); the menu's text and
 timeouts stay in the profile as the original's data. The demo mode's behaviours are flags read by the procedures
 they change (key reads, "Continue Battle:", the battle aftermath), so a later game's demo is its
-profile entry. PoR's `startMenu` is null and its start-up is unchanged. spec/coab/ecl.md, "Start-up
+profile entry. PoR's `startMenu` is null and its start-up is unchanged. spec/A-games/coab/ecl.md, "Start-up
 menu and demo"; tests `test/demo.test.ts`.
 
 **Play-testing (2026-10-20).** A headless player (`web/test/playtest.ts`, one module, the game a
@@ -325,7 +333,7 @@ spell ids; the debug jump took CotAB's areas 25–27 for PoR's wilderness; grab 
 (PoR 74, 75) called their own removal for ever. Found, not changed: in large map-area battles
 (New Phlan's city watch, the Tilverton kennel) monsters placed in the neighbouring squares can be
 walled off from the party, and with everyone on Quick nobody reaches anybody: the placement's ring
-wall check is marked I in spec/combat.md, so this may be the original's own behaviour. Not covered: rendering, the DOM panels (the
+wall check is marked I in spec/A-games/engine/combat-rules.md ("Placement"), so this may be the original's own behaviour. Not covered: rendering, the DOM panels (the
 treasure split, Buy, Memorize), the town and overland menus beyond random play, anything past
 where random play gets (CotAB: Tilverton and the jumped-to areas).
 

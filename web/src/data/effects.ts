@@ -1,4 +1,4 @@
-// Effect records (spec/records.md, "Effect record"): 9 bytes each in .SPC files and MON<n>SPC.DAX:
+// Effect records (spec/A-games/engine/records.md, "Effect record"): 9 bytes each in .SPC files and MON<n>SPC.DAX:
 // u8 type, u16 duration in minutes (0 = permanent), u8 power, u8 call-on-removal flag, ptr next.
 export const EFFECT_SIZE = 9
 

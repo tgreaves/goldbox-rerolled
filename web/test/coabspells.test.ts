@@ -1,4 +1,4 @@
-// CotAB's spell handlers on a real battlefield (spec/coab/spells.md §2), each by its kind and the
+// CotAB's spell handlers on a real battlefield (spec/A-games/coab/spells.md §2), each by its kind and the
 // parameters in games/spellrules.ts; scripted dice (each roll takes the next value, else its count, so
 // an unscripted d20 is a 1 and every save fails). Needs COAB (and POOLRAD for the PoR comparisons).
 import { afterAll, describe, expect, it } from 'vitest'
@@ -176,7 +176,7 @@ describe.skipIf(!haveCoab)('CotAB spells done as parameters (6da4862)', () => {
     it.raw[0x3d] = 15
     expect(itemSpells(it, false)).toEqual([15])
     setGame(COAB)
-    it.raw[0x3d] = 59 // the Potion of Giant Strength from CotAB's treasure (spec/coab/records.md)
+    it.raw[0x3d] = 59 // the Potion of Giant Strength from CotAB's treasure (spec/A-games/coab/records.md)
     expect(itemSpells(it, false)).toEqual([59])
     it.raw[0x3d] = 0x83
     expect(itemSpells(it, false)).toEqual([3])

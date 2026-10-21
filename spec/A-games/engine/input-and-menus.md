@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Input widgets, start-up and the party screen
 
-Part of [[spec/README]]. The shared input widgets, the start-up sequence, the party screen, Modify and the combat-icon editor. Character creation (its flow, tables and the record bytes it sets) is in [[spec/chargen]]; Pool of Radiance's credits screen and code wheel are in [title-and-credits.md](../por/title-and-credits.md).
+Part of the [specification](../../README.md), part A. The shared input widgets, the start-up sequence, the party screen, Modify and the combat-icon editor. Character creation (its flow, tables and the record bytes it sets) is in [chargen-and-progression.md](chargen-and-progression.md); Pool of Radiance's credits screen and code wheel are in [title-and-credits.md](../por/title-and-credits.md).
 
 O = observed in code/data (address given), I = inferred. Addresses are `seg:off` (linear = seg·16 + off). Colours are EGA indices; text grid 40 × 25. `print(text, colour, row, col)` = `FUN_1709_0626`.
 
@@ -19,7 +19,7 @@ O = observed in code/data (address given), I = inferred. Addresses are `seg:off`
 - `extKeys`: an extended key returns its scan code with `isExt = 1`; digits 1–9 then act as a keypad via `DS:288C` (1 End 0x4F, 2 Down 0x50, 3 PgDn 0x51, 4 Left 0x4B, 5 → 0x20, 6 Right 0x4D, 7 Home 0x47, 8 Up 0x48, 9 PgUp 0x49); `\` → 0x37.
 - An optional timeout (`DS:6B2E`, u32, hundredths of a second) returns the default key `DS:6B32` when it expires; a negative value disables it.
 - Extended keys pass through the table at `DS:285B` when the caller accepts them (cursor movement, **I**).
-- While waiting, the picture animation runs ([[spec/graphics]], "Animation").
+- While waiting, the picture animation runs ([graphics.md, "Animation"](graphics.md#animation-o)).
 
 ### Yes/No `FUN_53aa_10d1(prompt, …)` (O)
 
@@ -81,7 +81,7 @@ No other intro text exists in the executable.
 | S | Save Current Game | current character exists |
 | B | BEGIN Adventuring | current character exists |
 | E | Exit to DOS | always |
-| J | (hidden) | only when started as `START STING`: "I Understand, master..." and free training ([[spec/progression]]); nothing is typed after J |
+| J | (hidden) | only when started as `START STING`: "I Understand, master..." and free training ([chargen-and-progression.md](chargen-and-progression.md)); nothing is typed after J |
 
 "Current character exists" = `DS:5D92` ≠ nil (always true when the party is non-empty).
 
@@ -95,7 +95,7 @@ No other intro text exists in the executable.
 
 | Action | Behaviour |
 |---|---|
-| Create | [[spec/chargen]]. The new character is written to disk and **not** added to the party (O: `FUN_45c5_069e` at `417f:1EAD`, then FreeMem at `417f:1EC9`) |
+| Create | [chargen-and-progression.md](chargen-and-progression.md). The new character is written to disk and **not** added to the party (O: `FUN_45c5_069e` at `417f:1EAD`, then FreeMem at `417f:1EC9`) |
 | Drop (`417f:1F37`) | Yes/No "Drop NAME forever? " then "Are you sure? ". Both Y: message "You dump NAME out back." if char[0x10D] = 0 (unconscious/dead, I) else "NAME bids you farewell."; remove from party, free combat-icon slot, free record. **No file is deleted or written**; its charlist entry was already removed when it joined (below). Otherwise "NAME breathes a sigh of relief." (O) |
 | Modify (`417f:209F`) | §3 |
 | Train (`417f:29AE`) | spec/progression |
@@ -109,7 +109,7 @@ No other intro text exists in the executable.
 
 ### Cheat keys
 
-Cheat mode (O for the keys below): when the first command-line parameter is `STING` (`START STING`), the shared key reader (load-image 0x89E9) also accepts **Ctrl-C** (quit to DOS at once, 0x8990) and **Ctrl-D** (toggle `DS:49F7`, hit-point debugging). **Ctrl-S** toggles sound in any mode. The GameFAQs guide ([[spec/README]], External references) adds **Alt-X** to win a combat at once, and says the introduction and copy protection are skipped (**?** not yet traced).
+Cheat mode (O for the keys below): when the first command-line parameter is `STING` (`START STING`), the shared key reader (load-image 0x89E9) also accepts **Ctrl-C** (quit to DOS at once, 0x8990) and **Ctrl-D** (toggle `DS:49F7`, hit-point debugging). **Ctrl-S** toggles sound in any mode. The GameFAQs guide ([por/README.md, "External reference"](../por/README.md#external-reference)) adds **Alt-X** to win a combat at once, and says the introduction and copy protection are skipped (**?** not yet traced).
 
 ### 2.1 Add Character (O)
 

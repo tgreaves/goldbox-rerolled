@@ -1,4 +1,4 @@
-// Locked doors: Bash, Pick and Knock (FUN_3e76_0d6d and friends, spec/architecture.md "Moving"); needs POOLRAD.
+// Locked doors: Bash, Pick and Knock (FUN_3e76_0d6d and friends, spec/A-games/engine/main-loop.md "Moving"); needs POOLRAD.
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'

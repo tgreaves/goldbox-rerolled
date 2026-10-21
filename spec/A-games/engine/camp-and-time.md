@@ -5,18 +5,18 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Camp, rest, memorisation and time
 
-Part of [[spec/README]]. Status marks: **O** observed in code, **G** from the GameFAQs guide (not checked in code), **I** inferred, **?** unknown. Function names are Ghidra names in the merged image. The guide's section 12.6.3 lists the same functions under its own segment numbers (its "Segment 2F73" is our `3f81`, "3B38" is `4b46`); the offsets agree.
+Part of the [specification](../../README.md), part A. Status marks: **O** observed in code, **G** from the GameFAQs guide (not checked in code), **I** inferred, **?** unknown. Function names are Ghidra names in the merged image. The guide's section 12.6.3 lists the same functions under its own segment numbers (its "Segment 2F73" is our `3f81`, "3B38" is `4b46`); the offsets agree.
 
 Two variables share the number 0x49FB: ECL word **0x49FB** (array A, automap and coordinate display) and the engine global **`DS:49FB`** (rest-encounter step counter). They are unrelated.
 
 ## Encamp (O, `FUN_29c3_2dd3` → `FUN_3f81_1e6f`)
 
-Reached by `E` in a map area or in the wilderness command menu ([[spec/architecture]]), or by ECL `PROGRAM 9` (inns and other scripted rests).
+Reached by `E` in a map area or in the wilderness command menu ([main-loop.md](main-loop.md)), or by ECL `PROGRAM 9` (inns and other scripted rests).
 
 1. Run the area's **`camp_menu`** vector. Scripts use it to set the rest-encounter interval and chance, ECL **0x6DD2** / **0x6DD3** (below). If they set nothing, both are 0 from the last `NEW_ECL` and rest is never interrupted.
 2. Camp screen (`FUN_3f81_1e6f`, below), which returns an *interrupted* flag.
 3. If interrupted: redraw, then run **`camp_confirmed`** (scripts start the wandering-monster fight there).
-4. `FUN_54cf_016d` (redraw, **I**); clear the "saved" flag `DS:557D` ([[spec/menus]]).
+4. `FUN_54cf_016d` (redraw, **I**); clear the "saved" flag `DS:557D` ([input-and-menus.md](input-and-menus.md)).
 
 Camp screen:
 
@@ -32,7 +32,7 @@ Prompt "Camp: ", horizontal menu **"Save View Magic Rest Alter Exit"** (`FUN_53a
 
 | Key | Action |
 |---|---|
-| S | Save: the party-screen save routine `FUN_45c5_1d58` (slot menu A–J, Esc cancels, [[spec/savegame]]). Then "Quit TO DOS " Yes/No, asked even after a cancelled save; **Y** exits to DOS (`FUN_1899_0000`) |
+| S | Save: the party-screen save routine `FUN_45c5_1d58` (slot menu A–J, Esc cancels, [savegame.md](savegame.md)). Then "Quit TO DOS " Yes/No, asked even after a cancelled save; **Y** exits to DOS (`FUN_1899_0000`) |
 | V | View the current character (`FUN_4894_0ab3`, the character sheet) |
 | M | Magic menu |
 | R | Rest (`FUN_3f81_077a`, the same routine as Magic → Rest) |
@@ -64,7 +64,7 @@ Run first by Cast (1), Memorise (2) and Scribe (3), for the current character:
 Also the explore-mode **C**ast command. `DS:6DB5` = `DS:6DB7` = 0, then repeat until the list is closed:
 
 1. List the ready spells (`FUN_4894_299c` mode 0 "Spells in Memory": slots with 0 < byte < 0x80). None → "has no spells memorized".
-2. Cast the pick at once with `FUN_4e53_0c20(spell, 0, from_memory = 1)`; see [[spec/spells]], "Casting outside combat".
+2. Cast the pick at once with `FUN_4e53_0c20(spell, 0, from_memory = 1)`; see [spells.md, "Casting outside combat"](spells.md#casting-outside-combat-o-fun_4e53_0c20spell--from_memory).
 
 ### Memorize (O, `FUN_3f81_090a`)
 
@@ -75,7 +75,7 @@ Also the explore-mode **C**ast command. `DS:6DB5` = `DS:6DB7` = 0, then repeat u
 5. If `FUN_3f81_025c(class, level)` > 0: store **id + 0x80** in the first empty slot (char[0x17 + k] = 0) and sort the 21 slots ascending by `byte & 0x7F` (`FUN_3f81_0824`; empty slots sort first). A pick without a free slot is ignored silently. Back to step 3.
 6. If anything was picked, list the pending spells and ask **"Memorize these spells? "**; **N** clears all pending spells.
 
-Free slots = char[0xB1 + class·3 + level] − (memorised slots, ready **or pending**, whose spell has that class and level), where class is spell record byte 0 (0 cleric, 1 magic-user) and level byte 1. Slot counts come from class level and Wisdom ([[spec/progression]]); Intelligence adds none (O: no INT term in `FUN_51cf_01af`; G: guide 7.5.2). A cleric's spell book holds every cleric spell of each level it has a slot for (set by `FUN_51cf_0000`); a magic-user's holds only the spells chosen at creation and training, or scribed.
+Free slots = char[0xB1 + class·3 + level] − (memorised slots, ready **or pending**, whose spell has that class and level), where class is spell record byte 0 (0 cleric, 1 magic-user) and level byte 1. Slot counts come from class level and Wisdom ([chargen-and-progression.md](chargen-and-progression.md)); Intelligence adds none (O: no INT term in `FUN_51cf_01af`; G: guide 7.5.2). A cleric's spell book holds every cleric spell of each level it has a slot for (set by `FUN_51cf_0000`); a magic-user's holds only the spells chosen at creation and training, or scribed.
 
 A pending spell (id + 0x80) cannot be cast, counts against the slots, and becomes ready during rest (below).
 
@@ -189,9 +189,9 @@ Resulting timing for one character: the base hours, then each spell 15 minutes �
 ### Healing (O, `FUN_5216_175d(char, amount = 1, force = 0)`)
 
 - Only status Okay, Animated, Unconscious or Dying (set `5216:173D` = {0, 1, 4, 5}); Dead, Stoned, Running and tempgone are skipped.
-- Blocked when the character has effect **0x32** (mummy rot), which heals 1 HP every 10 days on its own ([[spec/effects]]).
+- Blocked when the character has effect **0x32** (mummy rot), which heals 1 HP every 10 days on its own ([effects.md](effects.md)).
 - HP += 1, capped at max HP.
-- If char[0x10D] = 0 afterwards: Dying → Unconscious; an Unconscious character outside combat (game mode DS:49F3 ≠ 5) runs effect 0x4E (revive) as a removal call (0x43985): its handler `FUN_3723_19d9` calls `FUN_5216_1869(current HP)`, which sets status Okay, **char[0x10D] = 1** (back in play) and HP, with no test of the HP (**O**, 0x439FF–0x43A14; CotAB the same, heal 0x4CE85, revive 0x4CFAD/0x4CFB6; [[spec/effects]]).
+- If char[0x10D] = 0 afterwards: Dying → Unconscious; an Unconscious character outside combat (game mode DS:49F3 ≠ 5) runs effect 0x4E (revive) as a removal call (0x43985): its handler `FUN_3723_19d9` calls `FUN_5216_1869(current HP)`, which sets status Okay, **char[0x10D] = 1** (back in play) and HP, with no test of the HP (**O**, 0x439FF–0x43A14; CotAB the same, heal 0x4CE85, revive 0x4CFAD/0x4CFB6; [effects.md](effects.md)).
 
 Natural healing is therefore **1 HP per character per 24 hours of rest**, whatever the class, level or Constitution.
 
@@ -208,7 +208,7 @@ Both are zeroed by every `NEW_ECL`, so an area's `camp_menu` sets them each time
 
 ### Storage
 
-Seven words in ECL array A, so they are saved with it ([[spec/savegame]]):
+Seven words in ECL array A, so they are saved with it ([savegame.md](savegame.md)):
 
 | ECL | Unit | Range |
 |---|---|---|
@@ -237,14 +237,14 @@ Arrays A, B and C are zero-filled at program start, so a new game starts at 00:0
 | Look (map area or wilderness) | 10 minutes | `FUN_3e76_0989` |
 | combat round | 1 minute at the end of each round | `FUN_320c_0880` |
 | rest | 5 minutes per step | above |
-| ECL `DELAY` (0x34) | an undefined number of minutes (uninitialised operand index); used once in the data | [[spec/ecl]] |
+| ECL `DELAY` (0x34) | an undefined number of minutes (uninitialised operand index); used once in the data | [ecl.md](ecl.md) |
 
 Turning, menus, shops, temples, training and casting outside combat take no time. Scripts may also write the clock words directly (some add 2 to the hour or set it to 0, 14 or 18); such a write is only normalised at the next advance, one carry per unit.
 
 ### Effect time-out (`FUN_4b46_0000(count, unit)`)
 
 1. Convert to minutes: count × the product of the limits below the unit (unit 1 = minutes). Units 0 and 6 are not handled properly but are never used.
-2. Repeat in chunks of `min(remaining, 10)` minutes. For each party member and each of its effects with duration ≠ 0 (0 = permanent): if chunk < duration, duration −= chunk; otherwise remove the effect (`FUN_5216_0026`, which runs its removal callback, [[spec/effects]]). In combat the round end advances the clock by 1 minute while the monsters are linked into the party list, so their effects time out the same way (I).
+2. Repeat in chunks of `min(remaining, 10)` minutes. For each party member and each of its effects with duration ≠ 0 (0 = permanent): if chunk < duration, duration −= chunk; otherwise remove the effect (`FUN_5216_0026`, which runs its removal callback, [effects.md](effects.md)). In combat the round end advances the clock by 1 minute while the monsters are linked into the party list, so their effects time out the same way (I).
 
 Effect durations are therefore in **minutes** (1 combat round = 1 minute). An effect expires at the first chunk that reaches its remaining time, up to 9 minutes early on a long advance.
 

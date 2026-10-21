@@ -1,4 +1,4 @@
-// Spell handler kinds that work the same in and out of combat (spec/spells.md, "Per spell"): the
+// Spell handler kinds that work the same in and out of combat (spec/A-games/engine/spells.md, "Per spell"): the
 // handlers reach the world through the effect host, so the battle and the camp share them. Each game's
 // profile names a kind and its parameters for every spell id (games/spellrules.ts); the battle adds
 // the kinds that need the battlefield (rules/combat.ts), the camp its own heal and Apply (rules/magic.ts).

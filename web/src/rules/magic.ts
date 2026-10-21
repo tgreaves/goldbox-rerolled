@@ -1,4 +1,4 @@
-// Casting outside combat (spec/spells.md, "Casting outside combat" and "Spell effects").
+// Casting outside combat (spec/A-games/engine/spells.md, "Casting outside combat" and "Spell effects").
 import { R, classLevel } from '../games/rules'
 import type { Engine } from '../vm/engine'
 import type { Spell } from '../data/spells'

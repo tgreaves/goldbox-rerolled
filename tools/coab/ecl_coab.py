@@ -1,7 +1,7 @@
 """ECL bytecode disassembler for Curse of the Azure Bonds (DOS, GOG 1.0).
 
 Adapted from pool-of-radiance-re/tools/ecl.py. CotAB engine facts (image
-addresses, see ecl.md next to this file):
+addresses, see spec/A-games/coab/ecl.md):
   - dispatcher 0x1BBF2 (ovr 1885:33A2), run loop 0x1BE57, operand reader 0x1FA02
   - code buffer 0x1E00 bytes at virtual 0x8000-0x9DFF (PoR: 0x9900-0xB6FF)
   - opcodes 0x00-0x40 (0x1F has no handler); operand encoding unchanged from PoR

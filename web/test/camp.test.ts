@@ -1,4 +1,4 @@
-// Camp rules against the shipped party (spec/camp.md); needs POOLRAD.
+// Camp rules against the shipped party (spec/A-games/engine/camp-and-time.md); needs POOLRAD.
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'

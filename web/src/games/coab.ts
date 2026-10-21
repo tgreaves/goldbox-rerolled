@@ -1,4 +1,4 @@
-// Curse of the Azure Bonds (1989). Research: spec/coab/; status: docs/multi-game.md.
+// Curse of the Azure Bonds (1989). Research: spec/A-games/coab/; status: docs/multi-game.md.
 import type { GameProfile } from './types'
 import { COAB_IMPORTS } from './imports'
 import { COAB_RULES_TEXT } from './rulestext'
@@ -25,10 +25,10 @@ export const COAB: GameProfile = {
   name: 'Curse of the Azure Bonds',
   folder: 'CURSE',
   config: 'CURSE.CFG',
-  // no GEO1/WALLDEF1/HEAD1/BODY1, no SQRPACI; SKY, BIGPIC and TILES are new (spec/coab/assets.md)
+  // no GEO1/WALLDEF1/HEAD1/BODY1, no SQRPACI; SKY, BIGPIC and TILES are new (spec/A-games/coab/assets.md)
   markers: ['SKY.DAX', 'BIGPIC1.DAX', 'TILES.DAX'],
   required: ['ECL1.DAX', 'GEO2.DAX', '8X8D1.DAX', 'WALLDEF2.DAX', 'SKY.DAX'],
-  // roster NAME.GUY/.SWG/.FX, party files CHRDAT<x><n>.SAV/.SWG/.FX (spec/coab/records.md §1); GAME.OVR holds
+  // roster NAME.GUY/.SWG/.FX, party files CHRDAT<x><n>.SAV/.SWG/.FX (spec/A-games/coab/records.md §1); GAME.OVR holds
   // the overlay code (the ending's captions)
   keep: [/\.DAX$/, /^ITEMS$/, /^START\.EXE$/, /^GAME\.OVR$/, /^CURSE\.CFG$/, /\.(GUY|SWG|FX)$/, /^CHRDAT.+\.SAV$/, /^SAVGAM.\.DAT$/],
   stores: { files: 'goldbox-coab', user: 'goldbox-coab-user' },

@@ -1,4 +1,4 @@
-// Combat (spec/combat.md): battle setup and placement, rounds, turns, attacks, movement, morale, the
+// Combat (spec/A-games/engine/combat-rules.md): battle setup and placement, rounds, turns, attacks, movement, morale, the
 // computer's AI and the aftermath. The screen is behind CombatUi so the rules can run headless.
 import type { Engine } from '../vm/engine'
 import type { Item } from '../data/items'
@@ -36,7 +36,7 @@ export interface AimEntry { f: Fighter | null; x: number; y: number; cost: numbe
 
 /** A COMSPR frame: record (0–11, +128 for the second image) and whether it is drawn mirrored. */
 export interface SpriteFrame { rec: number; mirror?: boolean }
-/** A flight: its frames, the delay per 8-pixel step, and the sounds before and after (spec/combat.md, "Combat visuals"). */
+/** A flight: its frames, the delay per 8-pixel step, and the sounds before and after (spec/A-games/engine/combat-visuals.md, "Combat visuals"). */
 export interface Flight { frames: SpriteFrame[]; delay: number; sounds?: [number, number] }
 
 /** The standard 4-frame cycle of a COMSPR slot (FUN_10ba_19de): image, mirrored, second image mirrored, second image. */
@@ -55,7 +55,7 @@ export function missileFlight(type: number, dir: number): Flight {
   return { frames: [{ rec: 7 }, { rec: 135 }], delay: 20, sounds }
 }
 
-/** How long a message holds before the next (combat pacing, spec/combat.md "Pacing"). */
+/** How long a message holds before the next (combat pacing, spec/A-games/engine/combat-rules.md "Pacing"). */
 export interface Hold {
   ms: number
   /** flash this combatant meanwhile (the hit display, FUN_10ba_1feb) */
@@ -359,7 +359,7 @@ export class Battle implements FxHost {
     return bounce
   }
   /**
-   * The bolt path (PoR FUN_4e53_295b, CotAB 0x479B4, spec/combat.md "Lightning Bolt"): from the aimed
+   * The bolt path (PoR FUN_4e53_295b, CotAB 0x479B4, spec/A-games/engine/combat-rules.md "Lightning Bolt"): from the aimed
    * square away from c, 2·len half-squares; it stops at each new creature, a cell 0 (the end), a cell of
    * movement above 1 or the length, and hits there (boltCell). A bounce makes that cell the new origin
    * and sends the bolt straight back through c (the last-hit memory cleared); on the first bounce, with
@@ -1597,7 +1597,7 @@ export class Battle implements FxHost {
     return out.length ? out : null
   }
 
-  /** Spell effects in combat (spec/spells.md, "Per spell"): the kind the game gives the spell id. */
+  /** Spell effects in combat (spec/A-games/engine/spells.md, "Per spell"): the kind the game gives the spell id. */
   async applySpell(f: Fighter, s: Spell, L: number, targets: Fighter[]) {
     const dur = spellDuration(this.e, s, L, true)
     const p = spellSpec(s.id)
@@ -1972,7 +1972,7 @@ export class Battle implements FxHost {
     if (c[F.levels] > 0 && !f.r[0x11] && this.enemiesWithin(f, 255).some((e) => e.c[F.undead] > 0 && !e.r[0x10])) { await this.turnUndead(f); return }
     if (await this.aiCast(f)) return
     this.chooseWeapon(f)
-    await fire(this, c, 14) // FUN_3334_0b3c: the gaze, breath and spit specials first (spec/combat.md)
+    await fire(this, c, 14) // FUN_3334_0b3c: the gaze, breath and spit specials first (spec/A-games/engine/combat-ai.md)
     for (let tries = 0; tries < 20 && s8(f.r[3]) > 0 && this.inPlay(f); tries++) {
       while (f.r[0x14] && f.r[6] > 1 && s8(f.r[3]) > 0 && s8(f.r[3]) < 20) {
         if (!(await this.aiStep(f, true))) break
@@ -2349,7 +2349,7 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
   } else {
     e.write(0x6dc7, 0x80)
     msgs.push('The END!', 'The monsters rejoice for the party has been destroyed')
-    // every party entry leaves the list; party size 0 (spec/combat.md, Results)
+    // every party entry leaves the list; party size 0 (spec/A-games/engine/combat-rules.md, Results)
     for (const f of party) { const i = e.nodes.indexOf(f.c); if (i >= 0) e.nodes.splice(i, 1); e.inventory.delete(f.c); e.effects.delete(f.c) }
     e.write(0x6e3e, 0)
     e.quit = true

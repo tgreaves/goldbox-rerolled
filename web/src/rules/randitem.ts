@@ -1,4 +1,4 @@
-// Random treasure items (spec/records.md, "Random items"): the type choice of the TREASURE handler
+// Random treasure items (spec/A-games/engine/records.md, "Random items"): the type choice of the TREASURE handler
 // and FUN_4c2d_1010, which builds the 63-byte record. Tables come from the player's START.EXE.
 import { T } from '../games/tables'
 import { game } from '../games/profile'

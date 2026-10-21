@@ -1,5 +1,5 @@
 // Who may join the party (PoR Add: party size; CotAB 0x36848 + 0x3815..0x39F1: also the paladin and
-// ranger rules, spec/coab/records.md §1). Rules from the game's profile (R.join).
+// ranger rules, spec/A-games/coab/records.md §1). Rules from the game's profile (R.join).
 import { F } from '../games/fields'
 import { R } from '../games/rules'
 

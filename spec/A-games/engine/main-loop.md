@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Architecture: engine vs data
 
-Part of [[spec/README]].
+Part of the [specification](../../README.md), part A.
 
 ## The split
 
@@ -13,7 +13,7 @@ Part of [[spec/README]].
 |---|---|
 | ECL virtual machine | Area scripts (ECL bytecode) |
 | 3D view renderer, movement, doors | Maps (GEO), wall art sets (WALLDEF, 8X8D tiles) |
-| Combat engine, spell effects, character rules (see [[spec/combat]], [[spec/effects]], [[spec/progression]]) | Monster stats/items/spells (MON*CHA/ITM/SPC), item tables |
+| Combat engine, spell effects, character rules (see [combat-rules.md](combat-rules.md), [effects.md](effects.md), [chargen-and-progression.md](chargen-and-progression.md)) | Monster stats/items/spells (MON*CHA/ITM/SPC), item tables |
 | Menus, text window, input | All adventure text (packed inside ECL) |
 | Native routines reachable via ECL `CALL` | Pictures, sprites, portraits |
 
@@ -46,7 +46,7 @@ Vectors are cached in `DS:49E3` (`on_move`), `49E5` (`on_step`), `49E7` (`camp_m
 
 1. Read a command (`FUN_3e76_0989`, below). It returns only for a move, Encamp or Look. A forward move first sets ECL 0x6DD5 = 1 if the square ahead is open but outside the 16×16 map (`FUN_3e76_068d`), so `on_move` can handle edge exits.
 2. While Look is pending (ECL 0x6DCA > 1) or the command is Encamp:
-   - Encamp: the camp screen ([[spec/camp]])
+   - Encamp: the camp screen ([camp-and-time.md](camp-and-time.md))
    - Look: remember Search (bit 0), set 0x6DCA = 1, run **`on_step`** on the current square, re-enter if the area changed, then restore 0x6DCA to the remembered Search bit
    - then read the next command
 3. Run **`on_move`**.
@@ -63,7 +63,7 @@ Map areas (`DS:49FA` = 1): "Area Cast View Encamp Search Look", plus the cursor 
 
 | Input | Effect | Returns? |
 |---|---|---|
-| **A**rea | toggle the overhead map (`DS:6AAC`) unless ECL 0x49FB ≠ 0 ("Not Here"); see [[spec/maps]], "Overhead map" | no |
+| **A**rea | toggle the overhead map (`DS:6AAC`) unless ECL 0x49FB ≠ 0 ("Not Here"); see [maps-and-view.md, "Overhead map"](maps-and-view.md#overhead-map-o-fun_55a0_0000) | no |
 | **C**ast | camp-style cast for the current character if status Okay | no |
 | **V**iew | character sheet | no |
 | **E**ncamp | | yes |
@@ -76,12 +76,12 @@ Map areas (`DS:49FA` = 1): "Area Cast View Encamp Search Look", plus the cursor 
 
 Overland (`DS:49FA` 2–4): "Cast View Encamp Search Look"; the cursor keys set the facing to N/E/S/W and return a move in that direction. The overland icon set (`ICON`) is loaded on first entry.
 
-Command keys are read by the menu loop in [[spec/graphics]] (number keys work as a keypad).
+Command keys are read by the menu loop in [graphics.md](graphics.md) (number keys work as a keypad).
 
 ### Moving (O, `FUN_3e76_0d6d`)
 
 - If `on_move` set ECL 0x6DC9 ≥ 0xFF, the move is cancelled and 0x6DC9 reset to 0.
-- Map areas: `passage()` from [[spec/maps]]:
+- Map areas: `passage()` from [maps-and-view.md](maps-and-view.md):
   - 1: step forward (`FUN_3e76_073b`)
   - 0: bump sound
   - 2 or 3, locked: "Locked." menu with **Bash**, **Pick** (only if `DS:6DDF` is set and a member has the thief skill, `FUN_3e76_0236(6)`) and **Knock** (only if `DS:6DE0` is set and someone has spell 0x1F, Knock), then Exit. Bash is `FUN_3e76_0294`, Pick `FUN_3e76_04df`, Knock `FUN_3e76_0648`. On a type-3 door, Pick just removes the Pick option (it cannot be picked). A success steps forward.
@@ -101,7 +101,7 @@ Repeated while scripts keep changing area:
 
 1. Read the square's event byte; clear ECL 0x6DD5; remember the current character.
 2. Area kind `DS:49FA` = 1, run **`on_enter`**, game mode 4.
-3. If ECL 0x49E6 = 0: area 25 → kind 2, area 26 → kind 3, area 27 → kind 4, all in mode 3 (overland). On entering area 26 with ECL 0x4AB3 = 0xFE and 0x4AA2 = 0, `FUN_4804_06b3(1)` also runs: the river cleansing ([[spec/overland]]).
+3. If ECL 0x49E6 = 0: area 25 → kind 2, area 26 → kind 3, area 27 → kind 4, all in mode 3 (overland). On entering area 26 with ECL 0x4AB3 = 0xFE and 0x4AA2 = 0, `FUN_4804_06b3(1)` also runs: the river cleansing ([overland.md](overland.md)).
 4. Run **`on_move`**, then, if the area did not change again, **`on_step`**. Restore the current character and redraw.
 
 ## Starting a new game (I)
@@ -121,8 +121,8 @@ Entered through ECL `PROGRAM n` (0x38) or the main loop:
 
 ### Party screen (`FUN_417f_0161`)
 
-Described in [[spec/menus]] §2, with the cheat keys.
+Described in [input-and-menus.md](input-and-menus.md) §2, with the cheat keys.
 
 ## Sound (O)
 
-See [[spec/sound]]. Effects are played by number with `FUN_18ae_00dc(n)` from a table at `DS:2610`; the game uses 2–12 (10 footstep, 7 bump, 11 script effect via `CALL 0xBA03`). By default each effect is **cut off after about 0.1 s**; only some code sections let effects play in full.
+See [sound.md](sound.md). Effects are played by number with `FUN_18ae_00dc(n)` from a table at `DS:2610`; the game uses 2–12 (10 footstep, 7 bump, 11 script effect via `CALL 0xBA03`). By default each effect is **cut off after about 0.1 s**; only some code sections let effects play in full.

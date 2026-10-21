@@ -1,4 +1,4 @@
-// Shop, temple and treasure screens (spec/town.md), run when a script's COMBAT finds the shop or
+// Shop, temple and treasure screens (spec/A-games/engine/town.md), run when a script's COMBAT finds the shop or
 // temple flag set, or treasure without monsters. They use the exploration screen's menus and text.
 import { game } from '../games/profile'
 import { R } from '../games/rules'

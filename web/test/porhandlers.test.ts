@@ -1,4 +1,4 @@
-// PoR effect handlers transcribed exactly (spec/effects.md, "Port status"): 61 and 113's byte
+// PoR effect handlers transcribed exactly (spec/A-games/engine/effects.md, "Port status"): 61 and 113's byte
 // arithmetic per die, 117 and 122 on the current character's weapon, and the handlers whose rolls keep
 // the dice count (FUN_5216_0e2e → DS:681C). A stub host, no game files needed.
 import { describe, expect, it } from 'vitest'

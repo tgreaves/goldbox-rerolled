@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Shops, temples, items menu, treasure
 
-Part of [[spec/README]]. Item records, readying and derived statistics are in [[spec/records]]. Status marks: O = seen in code, G = from the GameFAQs guide (not checked in code), I = inferred, ? = unknown.
+Part of the [specification](../../README.md), part A. Item records, readying and derived statistics are in [records.md](records.md). Status marks: O = seen in code, G = from the GameFAQs guide (not checked in code), I = inferred, ? = unknown.
 
 ## How scripts open them (O)
 
@@ -64,7 +64,7 @@ All temples offer the same nine services at the same prices (the engine has one 
 | | | | | Plate Mail | 400 / 450 |
 | | | | | Shield | 15 / 100 |
 
-**Silver shop** (record 55): Silver Mace 80, Silver Bastard Sword 250, Silver Broad Sword 100, Silver Long Sword 150, Silver Short Sword 80, Silver Two-Handed Sword 300, Silver Dagger ×1 20, Silver Arrow ×20 20, Silver Quarrel ×1 20, Silver Chain Mail 750, Silver Plate Mail 4000, Silver Ring 90, Fine Composite Long Bow 25000 gp. Silver items have the stats of their plain type ([[spec/records]], type table).
+**Silver shop** (record 55): Silver Mace 80, Silver Bastard Sword 250, Silver Broad Sword 100, Silver Long Sword 150, Silver Short Sword 80, Silver Two-Handed Sword 300, Silver Dagger ×1 20, Silver Arrow ×20 20, Silver Quarrel ×1 20, Silver Chain Mail 750, Silver Plate Mail 4000, Silver Ring 90, Fine Composite Long Bow 25000 gp. Silver items have the stats of their plain type ([records.md](records.md), type table).
 
 Stacks are bought whole at the record's value: 10 arrows, 20 quarrels, 4 darts, 2 javelins and the sling cost nothing, which makes them the cheapest way to convert coins (see Money).
 
@@ -159,7 +159,7 @@ Raise Dead always succeeds, also on elves (G).
 
 ## Items menu (O, `FUN_4894_0ef8`)
 
-Opened from View (character screen) on the current character's item list. Each line shows "Yes"/"No" (readied) and the item name ([[spec/records]], Display name). Options:
+Opened from View (character screen) on the current character's item list. Each line shows "Yes"/"No" (readied) and the item name ([records.md](records.md), Display name). Options:
 
 | Key | Option | Shown when |
 |---|---|---|
@@ -174,7 +174,7 @@ Opened from View (character screen) on the current character's item list. Each l
 
 After each action the character's statistics are recalculated (`FUN_10ba_0bb8`) and the list is rebuilt.
 
-- **Ready** (R): the rules in [[spec/records]] (Ready / unready).
+- **Ready** (R): the rules in [records.md](records.md) (Ready / unready).
 - **Available** test for T, D, S (`FUN_4894_0d70`): a readied item gives "Must be unreadied"; a scroll with a spell flagged for scribing asks "<name> was going to scribe from that scroll, is it Okay to lose it?".
 - **Use** (U, `FUN_4894_1a8a`): the item must be readied ("Must be Readied"). A scroll (slot 11–14, G) opens its spell list for casting; another item with item[0x3D] > 0 and item[0x3E] < 0x80 casts spell item[0x3D] (minus 0x17 if > 0x38), printing "<name> uses an item". If the cast happens: scrolls lose that spell; otherwise, if item[0x3C] (charges) > 0, a stack (count > 1) loses one unit, a single item loses one charge and is destroyed at 0. Outside combat Use does not end the character's turn.
 - **Trade** (T, `FUN_4894_1734`): "Trade with Whom?" (defaults to the last recipient, DS:471A); refused with "Overloaded" if the recipient has 16 items or not enough capacity; else the item moves to the end of the recipient's list.

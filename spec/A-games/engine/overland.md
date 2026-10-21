@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Overland travel (wilderness)
 
-Areas 25–27 are the western, central and eastern wilderness once their `on_enter` has cleared ECL 0x49E6 (see [[spec/architecture]], re-entering). The same three areas also hold the lair maps: `on_enter` loads a GEO map instead when ECL 0x4A9E = 255 ("entered a lair"), and the lair's exit sets it back to 0. All of this page is observed (O) unless marked.
+Areas 25–27 are the western, central and eastern wilderness once their `on_enter` has cleared ECL 0x49E6 (see [main-loop.md](main-loop.md), re-entering). The same three areas also hold the lair maps: `on_enter` loads a GEO map instead when ECL 0x4A9E = 255 ("entered a lair"), and the lair's exit sets it back to 0. All of this page is observed (O) unless marked.
 
 ## Tables (data segment of `START.EXE`)
 
@@ -48,7 +48,7 @@ The party marker (`FUN_58af_04fc`) is drawn in its cell, cycling through the six
 
 ## River cleansing (O, `FUN_4804_06b3`)
 
-After the pyramid's sorcerer is beaten (ECL 0x4AB3 = 0xFE), entering area 26 with 0x4AA2 = 0 runs `FUN_4804_06b3(1)` between `on_enter` and `on_move` ([[spec/architecture]]). The script then prints "AS YOU LEAVE THE SORCERER'S PYRAMID..." and sets 0x4AA2 = 255 (ECL7 0x9AE0 → 0xAE8F, 0xAF35), which also opens the river to travel.
+After the pyramid's sorcerer is beaten (ECL 0x4AB3 = 0xFE), entering area 26 with 0x4AA2 = 0 runs `FUN_4804_06b3(1)` between `on_enter` and `on_move` ([main-loop.md](main-loop.md)). The script then prints "AS YOU LEAVE THE SORCERER'S PYRAMID..." and sets 0x4AA2 = 255 (ECL7 0x9AE0 → 0xAE8F, 0xAF35), which also opens the river to travel.
 
 - `FUN_1464_1e5c(image, partial, frame, to, from)` recolours one frame of a tile image in place by a 16-entry colour map. With `partial` ≠ 0 each matching pixel changes only if `Random(4)` = 0.
 - River frames (`DS:0900`, 11 bytes; above 0x7F = frame & 0x7F of the second image): 0x65–0x6B, 0x71, 0xE0–0xE2, so tile ids 0x66–0x6C, 0x72, 0xE1–0xE3. Map `DS:091D` → `DS:092D`: colour 0 → 1, 7 → 2 (black pollution to blue water, grey dead land to green).
@@ -65,7 +65,7 @@ The command menu offers Cast, View, Encamp, Search, Look; the cursor keys set th
 3. River tiles 0x66–0x6C and 0x72: while ECL 0x4AA2 = 0, "The river's stench drives you back." and no move.
 4. Otherwise the position is stored and 12 hours pass (`FUN_4b46_03d5(12, 3)`: 12 units of hours).
 
-No sound is played. Crossing between areas is done by the scripts' `on_move`: at the area's edge columns they set the new area's x and block (ECL 0x6E12) and `NEW_ECL` to the neighbouring area. Their own destination-tile check (`CALL 0xC01B`, then reading 0x035F) is dead code in the DOS version ([[spec/ecl]], CALL targets).
+No sound is played. Crossing between areas is done by the scripts' `on_move`: at the area's edge columns they set the new area's x and block (ECL 0x6E12) and `NEW_ECL` to the neighbouring area. Their own destination-tile check (`CALL 0xC01B`, then reading 0x035F) is dead code in the DOS version ([ecl.md](ecl.md), CALL targets).
 
 ## Encounters
 

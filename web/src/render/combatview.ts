@@ -1,4 +1,4 @@
-// Battlefield view: a window onto the 25 x 50 combat grid (spec/combat.md, "Battlefield"), drawn
+// Battlefield view: a window onto the 25 x 50 combat grid (spec/A-games/engine/battlefield.md, "Battlefield"), drawn
 // from the game's tile sets (DUNGCOM or WILDCOM, then RANDCOM from image slot 0x22) with the
 // combatants' icons on top. One cell is one 24 x 24 tile.
 import type { GameFiles } from '../store/gamefiles'
@@ -26,7 +26,7 @@ export interface Figure {
   pose?: boolean
 }
 
-/** A COMSPR sprite drawn over the battlefield at a position in grid pixels (spec/combat.md, "Combat visuals"). */
+/** A COMSPR sprite drawn over the battlefield at a position in grid pixels (spec/A-games/engine/combat-visuals.md, "Combat visuals"). */
 export interface Sprite { x: number; y: number; rec: number; mirror?: boolean }
 
 /** the picture on a canvas, enlarged when smoothing is on (IMP-047); drawn at its logical size */

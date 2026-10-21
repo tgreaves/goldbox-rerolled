@@ -9,7 +9,7 @@ exactly like the original), and renders WAV files:
   effect_N.wav        PC speaker, effect N played to completion
   effect_N_short.wav  PC speaker, cut off after --cut ticks (the game's default
                       "transient" mode stops every effect after ~0.1 s; see
-                      sound_driver.md)
+                      spec/A-games/engine/sound.md §6)
   tandy_effect_N.wav  Tandy/PCjr SN76489 rendering (approximate chip model)
 
 Usage: python3 render.py IMG.BIN [OUTDIR] [--ideal] [--cut TICKS] [--no-tandy]
@@ -17,7 +17,7 @@ Usage: python3 render.py IMG.BIN [OUTDIR] [--ideal] [--cut TICKS] [--no-tandy]
 
 IMG.BIN is either START.EXE (unpacked on the fly) or a flat memory image where
 linear address L is at file offset L-0x10000 (the driver segment sits at offset
-0x8AE0 in both). Format and behaviour: ../spec/sound.md. Python 3 stdlib only.
+0x8AE0 in both). Format and behaviour: ../spec/A-games/engine/sound.md. Python 3 stdlib only.
 """
 import struct
 import sys

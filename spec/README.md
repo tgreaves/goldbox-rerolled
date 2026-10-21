@@ -68,9 +68,9 @@ the reference cannot differ silently.
 | Notation | Meaning |
 |---|---|
 | `seg:off`, `FUN_seg_off` | PoR: Ghidra address and function name in the merged image (`START.EXE` unpacked, `GAME.OVR` overlays merged by `tools/mergeovr.py`; load segment 0x1000; linear = seg·16 + off) |
-| `0x2555D` | CotAB: offset in the engine image with overlays merged ([coab/README.md](A-games/coab/README.md), "Working image") |
+| `0x2555D` | CotAB: offset in the engine image with overlays merged ([coab/README.md, "Working image"](A-games/coab/README.md#working-image)) |
 | `DS:x` | offset x in the game's data segment (PoR and CotAB have different DS bases) |
-| ECL `0x49F2` | an ECL (script) address: A space from 0x4900, B from 0x6B00 in PoR ([engine/ecl.md](A-games/engine/ecl.md), "Memory map") |
+| ECL `0x49F2` | an ECL (script) address: A space from 0x4900, B from 0x6B00 in PoR ([engine/ecl.md, "Memory map"](A-games/engine/ecl.md#memory-map-o-fun_2fea_06fb-read-fun_2fea_0e0c-write-fun_2fea_0c77)) |
 | `A[x]`, `B[x]` | byte offset x into the word array behind ECL A or B (`x = 2·(var − base)`) |
 | `char[x]`, `c[x]` | byte x of the character/monster record; `item[x]` of an item record; `R[x]` of a combat record |
 | `ITEMS[t][k]` | byte k of item type t in the `ITEMS` table |

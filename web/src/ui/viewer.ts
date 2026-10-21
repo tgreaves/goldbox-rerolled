@@ -86,7 +86,7 @@ function imageFigure(frames: Frame[], label: string): HTMLElement {
   return fig
 }
 
-/** Animation timing from spec/graphics.md: delay in tenths of a second, cycle wraps to frame 1. */
+/** Animation timing from spec/A-games/engine/graphics.md: delay in tenths of a second, cycle wraps to frame 1. */
 function animate(c: HTMLCanvasElement, frames: Frame[]) {
   const ctx = c.getContext('2d')!
   const images = frames.map((f) => toImageData(f.picture))

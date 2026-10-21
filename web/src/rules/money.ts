@@ -1,4 +1,4 @@
-// Money (spec/town.md, "Money" and "Appraise"): seven u16 words per character (copper, silver,
+// Money (spec/A-games/engine/town.md, "Money" and "Appraise"): seven u16 words per character (copper, silver,
 // electrum, gold, platinum, gems, jewelry) and the pool, the treasure money table.
 import { COIN_VALUES } from '../data/character'
 import { Item, ITEM_SIZE, type ItemTables } from '../data/items'

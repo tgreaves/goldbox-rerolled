@@ -1,4 +1,4 @@
-// Items (spec/records.md): 63-byte item records (CHRDAT*.ITM, ITEM<n>.DAX, MON<n>ITM.DAX), the
+// Items (spec/A-games/engine/records.md): 63-byte item records (CHRDAT*.ITM, ITEM<n>.DAX, MON<n>ITM.DAX), the
 // 16-byte base item table in ITEMS, and the name words in START.EXE's data segment.
 import { T } from '../games/tables'
 import { unexepack } from './exepack'

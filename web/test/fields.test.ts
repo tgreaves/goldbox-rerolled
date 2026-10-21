@@ -22,7 +22,7 @@ describe('field maps', () => {
 })
 
 const coab = process.env.COAB ?? ''
-describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds pre-made party (spec/coab/records.md §2.3)', () => {
+describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds pre-made party (spec/A-games/coab/records.md §2.3)', () => {
   const F = COAB_FIELDS
   const load = (n: number) => new Uint8Array(readFileSync(join(coab, 'SAVE', `CHRDATA${n}.SAV`)))
 

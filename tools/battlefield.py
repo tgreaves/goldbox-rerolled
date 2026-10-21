@@ -1,6 +1,6 @@
 """Map-area combat battlefield builder (Pool of Radiance DOS), reference implementation.
 
-Follows FUN_34c7_0810 and its nested helpers (spec/combat.md, "Map areas: squares -> cells"):
+Follows FUN_34c7_0810 and its nested helpers (spec/A-games/engine/battlefield.md, "Map areas: squares -> cells"):
   012b  edge(x, y, dir)      one side of an edge: 0 open, 1 wall, 3 door
   01ad  classify(x, y, dir)  edge(x, y, dir) | edge(neighbour, opposite dir)
   0221  plot(c, r, piece)    grid[dy*5 + 10 + r][dx*6 + dy*5 + 21 + c] = piece + 1 (clipped)

@@ -1,6 +1,6 @@
 // Each game's title sequence (docs/multi-game.md, step 7): which TITLE records go where and for how
-// long, the credits, and the configuration line that allows the long intro. PoR: spec/menus.md,
-// "Start-up sequence"; CotAB: spec/coab/assets.md §7.
+// long, the credits, and the configuration line that allows the long intro. PoR: spec/A-games/engine/input-and-menus.md,
+// "Start-up sequence", and spec/A-games/por/title-and-credits.md; CotAB: spec/A-games/coab/assets.md §7.
 
 export interface TitleScreen {
   /** TITLE records drawn in order at pixel positions */

@@ -1,4 +1,4 @@
-// Effects ("affects", spec/effects.md): per-event dispatch of effect handlers (FUN_5216_02fa), adding and
+// Effects ("affects", spec/A-games/engine/effects.md): per-event dispatch of effect handlers (FUN_5216_02fa), adding and
 // removing effects, and the helpers the handlers share. Each game's handlers are named in its profile
 // (games/effectrules.ts) and run as behaviours (rules/effectkinds.ts). Globals of the original
 // (DS:6816..6826) live in the Fx context.

@@ -1,4 +1,4 @@
-// Camp, rest, memorisation, scribing and the game clock (spec/camp.md).
+// Camp, rest, memorisation, scribing and the game clock (spec/A-games/engine/camp-and-time.md).
 import { R, slots } from '../games/rules'
 import type { Engine } from '../vm/engine'
 import type { Item, ItemTables } from '../data/items'

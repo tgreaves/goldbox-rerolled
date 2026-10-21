@@ -2,7 +2,7 @@
 // the breath bolt, thrown lightning, the area breaths, the eye rays and the gaze, with the AI target
 // hook they share. Each is the original's procedure; each game's profile (games/effectrules.ts) names it
 // with its parameters (PoR's type 88 and CotAB's specials).
-// PoR: spec/effects.md; CotAB: spec/coab/effects.md §2 and §7. CotAB addresses are image offsets.
+// PoR: spec/A-games/engine/effects.md; CotAB: spec/A-games/coab/effects.md §2 and §7. CotAB addresses are image offsets.
 import type { Effect } from '../data/effects'
 import type { HandlerSpec } from '../games/effectrules'
 import { F } from '../games/fields'

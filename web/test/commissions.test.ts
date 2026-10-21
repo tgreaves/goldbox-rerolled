@@ -1,4 +1,4 @@
-// The commissions panel's reading of the ECL variables (spec/commissions.md); no game files needed.
+// The commissions panel's reading of the ECL variables (spec/A-games/por/commissions.md); no game files needed.
 import { describe, expect, it } from 'vitest'
 import { report, revealedBy } from '../src/rules/commissions'
 

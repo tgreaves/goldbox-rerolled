@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Sound driver
 
-Part of [[spec/README]]. The driver lives in the resident part of `START.EXE` (it is not an overlay), so the browser port reads it from the player's own file.
+Part of the [specification](../../README.md), part A. The driver lives in the resident part of `START.EXE` (it is not an overlay), so the browser port reads it from the player's own file.
 Driver code segment 0x18AE, linear base 0x18AE0. `CS:x` below means linear 0x18AE0+x.
 The code loads `DS = 0x08AE` (the unrelocated value of the same paragraph), so all
 driver variables are CS-relative. O = observed in code/data, I = inferred.

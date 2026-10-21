@@ -12,5 +12,5 @@ The method for bringing another Gold Box game onto the engine: unpack and merge 
 
 ## Sources to fold in
 
-- [CLAUDE.md](../../CLAUDE.md) "Method for a new game or table"
-- [docs/multi-game.md](../../docs/multi-game.md) "Adding a game"
+- [CLAUDE.md, "Method for a new game or table"](../../CLAUDE.md#method-for-a-new-game-or-table)
+- [docs/multi-game.md, "Adding a game"](../../docs/multi-game.md#adding-a-game)

@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Containers and compression
 
-Part of [[spec/README]]. Everything here is **observed** and implemented in `tools/`.
+Part of the [specification](../../README.md), part A. Everything here is **observed** and implemented in `tools/`.
 
 ## Distribution (GOG Mac package)
 

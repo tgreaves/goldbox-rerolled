@@ -1,5 +1,5 @@
-// ECL interpreter and exploration loop (spec/ecl.md, spec/architecture.md).
-// A port of tools/eclvm.py; every opcode, including the original's quirks, follows spec/ecl.md.
+// ECL interpreter and exploration loop (spec/A-games/engine/ecl.md, spec/A-games/engine/main-loop.md).
+// A port of tools/eclvm.py; every opcode, including the original's quirks, follows spec/A-games/engine/ecl.md.
 // The interpreter is async: menus, input and screen refreshes await the front end (Io).
 
 import { R, classLevel } from '../games/rules'
@@ -31,7 +31,7 @@ export const C0 = 0x9700
 export const CODE = 0x9900
 const CODE_END = 0xb700
 
-// engine-visible ECL variables (spec/ecl.md)
+// engine-visible ECL variables (spec/A-games/engine/ecl.md)
 const AREA_ID = 0x49f2, PREV_X = 0x49f0, PREV_Y = 0x49f1, GEO_ID = 0x49c5, NO_OVERLAND = 0x49e6, NO_ITEM_USE = 0x49e5
 const CANCEL_MOVE = 0x6dc9, SEARCH_LOOK = 0x6dca, SURPRISE_RESULT = 0x6dcb, EDGE = 0x6dd5
 const OUTCOME = 0x6dc7, DEFEATED = 0x6dc8, SPRITE_MAX = 0x6dc0, SPRITE_DIST = 0x6dc1
@@ -215,7 +215,7 @@ export class Engine {
     this.B[PARTY_SIZE - B0] = 0
   }
 
-  /** Resume from a save game (SAVGAM*.DAT layout, spec/savegame.md). */
+  /** Resume from a save game (SAVGAM*.DAT layout, spec/A-games/engine/savegame.md). */
   loadSave(d: Uint8Array, party: Uint8Array[]) {
     const w = (o: number, n: number) => {
       const out = new Uint16Array(n)
@@ -252,7 +252,7 @@ export class Engine {
   }
 
   /**
-   * The SAVGAM<x>.DAT image (the game's layout: PoR 13 137 bytes, spec/savegame.md), with the engine globals copied into
+   * The SAVGAM<x>.DAT image (the game's layout: PoR 13 137 bytes, spec/A-games/engine/savegame.md), with the engine globals copied into
    * ECL variables first as FUN_45c5_1d58 does. stems: the character file stems for the party.
    */
   toSave(stems: string[]): Uint8Array {
@@ -969,7 +969,7 @@ export class Engine {
   doorTries = { bash: true, pick: true, knock: true }
 
   /**
-   * The locked-door menu (FUN_3e76_0d6d; spec/architecture.md, "Moving"). Passage 2 is an ordinary
+   * The locked-door menu (FUN_3e76_0d6d; spec/A-games/engine/main-loop.md, "Moving"). Passage 2 is an ordinary
    * locked door, 3 one that cannot be picked and needs great strength. Returns true when the party
    * gets through: Bash and Pick unlock the door on both sides (FUN_3e76_0109), Knock only lets the
    * party through this once. Every party entry tries in list order until one succeeds.
@@ -1179,7 +1179,7 @@ export class Engine {
   }
 
   /**
-   * DAMAGE (PoR 0x1C3A5, CotAB 0x1B1A8, spec/ecl.md row 2E): one damage roll for every victim of a
+   * DAMAGE (PoR 0x1C3A5, CotAB 0x1B1A8, spec/A-games/engine/ecl.md row 2E): one damage roll for every victim of a
    * save mode, rolled again after each attack in attack mode; the dead are skipped; "dies." when the
    * damage exceeds HP + 10; the press-Enter prompt always. CotAB's flag 0x10 hurts despite a save.
    */
@@ -1258,7 +1258,7 @@ export class Engine {
     await this.io.menu(['PRESS ENTER'], {})
   }
 
-  /** Opcodes a game handles its own way (games/ecl.ts; CotAB: spec/coab/ecl.md, "Opcodes"). */
+  /** Opcodes a game handles its own way (games/ecl.ts; CotAB: spec/A-games/coab/ecl.md, "Opcodes"). */
   private async variant(v: EclVariant) {
     switch (v) {
       case 'divideRemainder': { // DIVIDE, plus the remainder in B 0x6E3F (CotAB 0x7F3F)
@@ -1409,7 +1409,7 @@ export class Engine {
     await this.enter()
   }
 
-  /** Overland travel (areas 25-27 once on_enter cleared ECL 0x49E6, spec/architecture.md). */
+  /** Overland travel (areas 25-27 once on_enter cleared ECL 0x49E6, spec/A-games/engine/main-loop.md). */
   get overland(): boolean {
     return this.A[NO_OVERLAND - A0] === 0 && game().view.tileOverland.includes(this.area)
   }

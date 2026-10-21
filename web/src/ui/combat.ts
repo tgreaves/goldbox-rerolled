@@ -72,7 +72,7 @@ export async function runBattle(s: BattleScreen) {
   let focus = { row: 12, col: 25 }
   let marks: { row: number; col: number; colour: string; fill?: string }[] = []
   let acting: Fighter | null = null
-  /** combatants shown in their action frame, and COMSPR sprites over the battlefield (spec/combat.md, "Combat visuals") */
+  /** combatants shown in their action frame, and COMSPR sprites over the battlefield (spec/A-games/engine/combat-visuals.md, "Combat visuals") */
   const poses = new Set<Fighter>()
   /** combatants already out of play whose skull is still queued, and where they stood */
   const falling = new Map<Fighter, { x: number; y: number }>()

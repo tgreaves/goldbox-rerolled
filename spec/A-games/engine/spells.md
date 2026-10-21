@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Spells
 
-Part of [[spec/README]]. Extractor: `tools/spells.py` (reads the unpacked `START.EXE`).
+Part of the [specification](../../README.md), part A. Extractor: `tools/spells.py` (reads the unpacked `START.EXE`).
 
 ## Tables (O)
 
@@ -41,19 +41,19 @@ Range when casting from an item (`DS:6DBF` set) uses caster level 6.
 
 ### Casting outside combat (O, `FUN_4e53_0c20(spell, ?, from_memory)`)
 
-Camp Cast and the explore-mode Cast command ([[spec/camp]]) call the shared routine directly; casting takes no game time (G: guide 8.1).
+Camp Cast and the explore-mode Cast command ([camp-and-time.md](camp-and-time.md)) call the shared routine directly; casting takes no game time (G: guide 8.1).
 
-- Outside combat (`DS:49F3` ≠ 5) a spell whose record **byte 7 (side) = 0** is refused, whatever byte 11 says: "*spell* is a combat-only spell..." then "Lose it? ". **Y** removes it from memory (`FUN_10ba_148b`); either way nothing is cast. Knock (id 31, byte 11 = camp, side 0) is caught by this too; doors use their own Knock path ([[spec/architecture]]).
+- Outside combat (`DS:49F3` ≠ 5) a spell whose record **byte 7 (side) = 0** is refused, whatever byte 11 says: "*spell* is a combat-only spell..." then "Lose it? ". **Y** removes it from memory (`FUN_10ba_148b`); either way nothing is cast. Knock (id 31, byte 11 = camp, side 0) is caught by this too; doors use their own Knock path ([main-loop.md](main-loop.md)).
 - From an item (`DS:6DBF` set) the same test prints "That Item is a combat-only item..." and "Use it? "; **Y** sets the caller's used-up flag (**I**: the charge is spent).
 - Byte 11 (where) is checked only in combat (`FUN_3aae_2414`).
 
 ## Memorisation, scribing and learning
 
-Rules are in [[spec/camp]] (Memorize, Scribe, Rest) and [[spec/progression]] (slots per level, Wisdom bonus, the spell picked at each magic-user level). In short:
+Rules are in [camp-and-time.md](camp-and-time.md) (Memorize, Scribe, Rest) and [chargen-and-progression.md](chargen-and-progression.md) (slots per level, Wisdom bonus, the spell picked at each magic-user level). In short:
 
 - A spell is cast from one of the 21 memorised slots char[0x17..0x2B]. Memorising picks a known spell (char[0x32 + id]) of a class and level with a free slot and stores id + 0x80 (pending); resting turns it into id.
 - Rest time: 4 hours (6 if any pending spell is level 3) plus 15 minutes per spell level, for memorised and scribed spells together.
-- Clerics know every cleric spell of each level they have a slot for. Magic-users start with Detect Magic, Read Magic, Shield and Sleep ([[spec/chargen]]), learn one spell per magic-user level gained, and scribe more from scrolls (needs Read Magic to read them).
+- Clerics know every cleric spell of each level they have a slot for. Magic-users start with Detect Magic, Read Magic, Shield and Sleep ([chargen-and-progression.md](chargen-and-progression.md)), learn one spell per magic-user level gained, and scribe more from scrolls (needs Read Magic to read them).
 - Restoration (id 56, level 7) is never in a spell book and has no slot; it is used from scrolls only.
 
 ## Spell list
@@ -117,13 +117,13 @@ Rules are in [[spec/camp]] (Memorize, Scribe, Rest) and [[spec/progression]] (sl
 | 55 | Slow | Magic-User | 3 | 9+1/lvl | 3+1/lvl | 10 | 0 | - | spell | 0x2A | combat | 3 | 5 | 1 | 0 |
 | 56 | Restoration | Cleric | 7 | 0+0/lvl | 0+0/lvl | 4 | 2 | - | spell | 0x00 | both | 6 | 0 | 0 | 0 |
 
-Ranges are in game squares. Durations are in **minutes**, the unit of effect records (O: the clock's effect time-out, [[spec/camp]]); 1 combat round = 1 minute, and the values match AD&D (Resist Cold 1 turn = 10 minutes per level, Strength and Slow Poison 1 hour per level; **I** that `FUN_5216_1656` applies them unscaled). Two "Detect Magic", "Protection From Evil/Good" and "Dispel Magic" entries exist because cleric and magic-user versions differ.
+Ranges are in game squares. Durations are in **minutes**, the unit of effect records (O: the clock's effect time-out, [camp-and-time.md](camp-and-time.md)); 1 combat round = 1 minute, and the values match AD&D (Resist Cold 1 turn = 10 minutes per level, Strength and Slow Poison 1 hour per level; **I** that `FUN_5216_1656` applies them unscaled). Two "Detect Magic", "Protection From Evil/Good" and "Dispel Magic" entries exist because cleric and magic-user versions differ.
 
 ## Spell effects (O, segment 4e53)
 
 ### Dispatch
 
-`FUN_4e53_3413` fills the far-pointer table `DS:6B84 + 4·id`. Entry 0 is the target-selection hook: `FUN_4e53_0a91` outside combat, `FUN_3aae_20c3` in combat ([[spec/combat]], Spell targets). `FUN_4e53_0c20` sets `DS:681B` = id, calls `[6B84 + 4·id]`, then clears `DS:681B` and `DS:6820`. Targets: count `DS:6C94`, far pointers at `DS:6C95 + 4·(i−1)`.
+`FUN_4e53_3413` fills the far-pointer table `DS:6B84 + 4·id`. Entry 0 is the target-selection hook: `FUN_4e53_0a91` outside combat, `FUN_3aae_20c3` in combat ([combat-rules.md](combat-rules.md), Spell targets). `FUN_4e53_0c20` sets `DS:681B` = id, calls `[6B84 + 4·id]`, then clears `DS:681B` and `DS:6820`. Targets: count `DS:6C94`, far pointers at `DS:6C95 + 4·(i−1)`.
 
 ### Shared helpers
 
@@ -187,7 +187,7 @@ L = caster level; "1st" = only the first target is used.
 | 44 / 45 | Bestow Curse / Blink | 2604 / 263d | effect 0x24 (touch, negates) / 0x25 | | | |
 | 47 / 64 | Fireball / Necklace of Missiles | 266b | n = L (id 64: 1d3×2 + 1) d6, type 9, one roll; outdoors (ECL 0x49E6 = 0) radius 2 | half | area | |
 | 48 / 55 | Haste / Slow | 2892 / 2c09 → 2764 | effect 0x27 / 0x2A on up to L targets of the caster's / the enemy side; a target with the opposite effect only loses it ("is Cured", `FUN_5216_1081`); Apply on the rest, then event 18 on each | — | | the L cap applies to both |
-| 51 | Lightning Bolt | 2bb7 | L d6, type 0x0C, save vs spell for half per creature hit; path in [[spec/combat]] | half | line | |
+| 51 | Lightning Bolt | 2bb7 | L d6, type 0x0C, save vs spell for half per creature hit; path in [combat-rules.md](combat-rules.md) | half | line | |
 | 56 | Restoration | 2c43 | if drained levels [0x74] > 0: hp = [0x75] / [0x74] added to max, current and [0xB1]; one level back to the class with the cheapest next level; XP raised to that level's minimum | | 1st | |
 | 57 | Potion of Speed | 2e02 | removes Slow if present, else Haste for 5d4 | | | |
 | 58 | Keoghtum's Ointment | 2e4d | **one of**: poisoned → removes 0x37 (and 0x16); else cure disease; only if neither applied, heal 1d4 + 8 | | | ≠ guide |
@@ -207,12 +207,12 @@ L = caster level; "1st" = only the first target is used.
 3. Each of the 4 squares (offsets `DS:290D` through the direction tables) whose cell movement byte < 0xFF becomes cell 0x1E.
 4. Each creature standing there gets `0ae7`, skipped if not in play, not on cell 0x1E, or already under 0x1E, 0x1F, 0x20 (animated), 0x6F or 0x7D. Save vs type 0: success "starts to cough", effect 0x1E for 1 round (power FF, handler runs); failure "chokes and gags from nausea", 0x1F helpless for 1d4 + 1 rounds (the turn ends).
 
-`FUN_4e53_30d9` is the handler of effect 88, the breath bolt (O, [[spec/effects]] row 88): the Lightning Bolt routines `28bc`/`295b` for the breather's max HP (damage type 0x0C) over 10 squares from the square beside it, save vs breath for half, 3 uses; after round 0 a 50 % chance.
+`FUN_4e53_30d9` is the handler of effect 88, the breath bolt (O, [effects.md](effects.md) row 88): the Lightning Bolt routines `28bc`/`295b` for the breather's max HP (damage type 0x0C) over 10 squares from the square beside it, save vs breath for half, 3 uses; after round 0 a 50 % chance.
 
 ## Open
 
-- ~~Effect handlers~~ see [[spec/effects]]
+- ~~Effect handlers~~ see [effects.md](effects.md)
 - ~~Haste/Slow~~ resolved: Haste (0x27) doubles attacks and movement, Slow (0x2A) halves them (combat code 0x31E9C/0x31EBF); the original character sheet shows them reversed (display bug)
 - Immediate effects (damage spells, cures) in `FUN_5216_1344`
-- ~~Spell memorisation and learning rules, spell slots per level~~ see [[spec/camp]] and [[spec/progression]]
+- ~~Spell memorisation and learning rules, spell slots per level~~ see [camp-and-time.md](camp-and-time.md) and [chargen-and-progression.md](chargen-and-progression.md)
 - Whether `FUN_5216_1656` scales spell durations

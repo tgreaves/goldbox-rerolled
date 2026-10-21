@@ -1,4 +1,4 @@
-// CotAB's effect handlers (spec/coab/effects.md §2), its current-stat routine (0x4C389) and item kinds
+// CotAB's effect handlers (spec/A-games/coab/effects.md §2), its current-stat routine (0x4C389) and item kinds
 // (0x3F034), against the shipped game's tables and monsters; needs COAB.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'

@@ -1,4 +1,4 @@
-// 6-bit packed ECL text (spec/ecl.md)
+// 6-bit packed ECL text (spec/A-games/engine/ecl.md)
 
 export function unpackText(data: Uint8Array): string {
   let out = ''

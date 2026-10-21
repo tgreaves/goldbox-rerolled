@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # ECL virtual machine
 
-Part of [[spec/README]]. Disassembler: `tools/ecl.py`. Status markers: **O** observed in code, **I** inferred, **?** unknown.
+Part of the [specification](../../README.md), part A. Disassembler: `tools/ecl.py`. Status markers: **O** observed in code, **I** inferred, **?** unknown.
 
 ## Loading (O)
 
@@ -45,7 +45,7 @@ instruction := opcode:u8 operand*
 operand     := kind:u8 payload
 ```
 
-The reader fills an operand table: kind at `DS:7005+i`, first payload byte **LO** at `DS:7085+i`, second byte **HI** at `DS:7045+i`. The three tables are 0x40 bytes apart, so an instruction can carry up to 63 operands (I; CotAB has a 33-way `ON_GOTO`, [[spec/coab/ecl]]). String operands are decoded into their own buffers, numbered by string operand within the call (`DS:6FC8 + k·0x100`, k = 1, 2, …).
+The reader fills an operand table: kind at `DS:7005+i`, first payload byte **LO** at `DS:7085+i`, second byte **HI** at `DS:7045+i`. The three tables are 0x40 bytes apart, so an instruction can carry up to 63 operands (I; CotAB has a 33-way `ON_GOTO`, [coab/ecl.md](../coab/ecl.md)). String operands are decoded into their own buffers, numbered by string operand within the call (`DS:6FC8 + k·0x100`, k = 1, 2, …).
 
 | kind | Payload | Value as a number (`FUN_2fea_0136`) | As a string |
 |---|---|---|---|
@@ -120,41 +120,41 @@ Variables the engine itself reads or writes, so a port must give them meaning. E
 
 | ECL address | Meaning | Spec |
 |---|---|---|
-| 0x49C3, 0x49C4 | overland x, y (wilderness) | [[spec/combat]] |
-| 0x49C5 | current GEO record (restored on load) | [[spec/savegame]] |
-| 0x49E5 | area flag: no item Use / no AI item use | [[spec/town]], [[spec/combat]] |
-| 0x49E6 | ≠ 0: areas 25–27 behave as map areas instead of overland travel | [[spec/architecture]] |
+| 0x49C3, 0x49C4 | overland x, y (wilderness) | [battlefield.md](battlefield.md#wilderness-battlefields-o-fun_34c7_11b4) |
+| 0x49C5 | current GEO record (restored on load) | [savegame.md](savegame.md) |
+| 0x49E5 | area flag: no item Use / no AI item use | [town.md](town.md), [combat-rules.md](combat-rules.md) |
+| 0x49E6 | ≠ 0: areas 25–27 behave as map areas instead of overland travel | [main-loop.md](main-loop.md) |
 | 0x49E7, 0x49E8 | both ≠ 0: `LOAD_WALLSETS` loads only operands 1 and 3 (slots 1 and 3), so a two-set record in slot 1 keeps slot 2. Block 4 and 5 scripts set both before using two-set records such as WALLDEF5 #24 | this file |
-| 0x49F0, 0x49F1 | party X, Y before the last move | [[spec/architecture]] |
+| 0x49F0, 0x49F1 | party X, Y before the last move | [main-loop.md](main-loop.md) |
 | 0x49F2 | current area id (written by `NEW_ECL`) | this file |
-| 0x49FB | ≠ 0: the Area (overhead map) command answers "Not Here" | [[spec/architecture]] |
-| 0x49FC | game speed copy (save) | [[spec/savegame]] |
+| 0x49FB | ≠ 0: the Area (overhead map) command answers "Not Here" | [main-loop.md](main-loop.md) |
+| 0x49FC | game speed copy (save) | [savegame.md](savegame.md) |
 | 0x49FD, 0x49FE | written values force a redraw (**?** meaning) | above |
-| 0x49FF | monster/portrait toggles copy (save) | [[spec/savegame]] |
+| 0x49FF | monster/portrait toggles copy (save) | [savegame.md](savegame.md) |
 | 0x4A00–0x4A1F | per-area variables, zeroed on area entry | this file |
-| 0x4AA2 | river cleansed (255): river tiles passable and recoloured; on load, `FUN_4804_06b3(0)` | [[spec/overland]] |
-| 0x4AB3 | 0xFF changes arid wilderness terrain | [[spec/combat]] |
-| 0x4AFA–0x4AFF | wall-set record ids and slots (save) | [[spec/savegame]] |
-| 0x6DA8 | trainable class mask for the training hall | [[spec/progression]] |
+| 0x4AA2 | river cleansed (255): river tiles passable and recoloured; on load, `FUN_4804_06b3(0)` | [overland.md](overland.md) |
+| 0x4AB3 | 0xFF changes arid wilderness terrain | [battlefield.md](battlefield.md#wilderness-battlefields-o-fun_34c7_11b4) |
+| 0x4AFA–0x4AFF | wall-set record ids and slots (save) | [savegame.md](savegame.md) |
+| 0x6DA8 | trainable class mask for the training hall | [chargen-and-progression.md](chargen-and-progression.md) |
 | 0x6DC0, 0x6DC1 | encounter sprite maximum and current distance | below |
-| 0x6DC7 | outcome of the last `COMBAT`: 0 won, 0x80 party defeated, 0x81 party fled (`FUN_2e08_1527`, `FUN_2e08_04c9`) | [[spec/combat]] |
-| 0x6DC8 | after a battle: number of enemy-side combatants (char[0x10E] = 1) left unable to act, counted while `FUN_2e08_11ac` removes them (**I**: enemies defeated) | [[spec/combat]] |
-| 0x6DC9 | set to ≥ 0xFF by `on_move` to cancel the move (the engine then resets it to 0) | [[spec/architecture]] |
-| 0x6DCA | bit 0 = Search mode, bit 1 = Look requested | [[spec/architecture]] |
+| 0x6DC7 | outcome of the last `COMBAT`: 0 won, 0x80 party defeated, 0x81 party fled (`FUN_2e08_1527`, `FUN_2e08_04c9`) | [combat-rules.md](combat-rules.md) |
+| 0x6DC8 | after a battle: number of enemy-side combatants (char[0x10E] = 1) left unable to act, counted while `FUN_2e08_11ac` removes them (**I**: enemies defeated) | [combat-rules.md](combat-rules.md) |
+| 0x6DC9 | set to ≥ 0xFF by `on_move` to cancel the move (the engine then resets it to 0) | [main-loop.md](main-loop.md) |
+| 0x6DCA | bit 0 = Search mode, bit 1 = Look requested | [main-loop.md](main-loop.md) |
 | 0x6DCB | SURPRISE result | below |
-| 0x6DC6 | encounter morale | [[spec/combat]] |
-| 0x6DD2, 0x6DD3 | rest-encounter interval (steps) and chance % | [[spec/camp]] |
-| 0x6DD5 | 1 when the attempted move would leave the 16×16 map (set before `on_move`; cleared on area entry); scripts use it for edge exits | [[spec/architecture]] |
-| 0x6DE1 | portrait selector | [[spec/graphics]] |
-| 0x6DE2 | temple flag for `COMBAT` | [[spec/town]] |
-| 0x6DE6 | duel flag (`CALL 0x8000`) | [[spec/progression]] |
+| 0x6DC6 | encounter morale | [combat-rules.md](combat-rules.md) |
+| 0x6DD2, 0x6DD3 | rest-encounter interval (steps) and chance % | [camp-and-time.md](camp-and-time.md) |
+| 0x6DD5 | 1 when the attempted move would leave the 16×16 map (set before `on_move`; cleared on area entry); scripts use it for edge exits | [main-loop.md](main-loop.md) |
+| 0x6DE1 | portrait selector | [graphics.md](graphics.md) |
+| 0x6DE2 | temple flag for `COMBAT` | [town.md](town.md) |
+| 0x6DE6 | duel flag (`CALL 0x8000`) | [combat-rules.md](combat-rules.md#results-o-fun_2e08_04c9) |
 | 0x6E12 | block digit | above |
 | 0x6E3E | party size | above |
-| 0x6E6C | shop flag for `COMBAT` | [[spec/town]] |
-| 0x6DE3 | cleared after every battle (**?**) | [[spec/combat]] |
-| 0x6E70 | to-hit bonus for the enemy side (char[0x10E] = 1) in the next battle | [[spec/combat]] |
-| 0x6E71 | to-hit bonus for the party side | [[spec/combat]] |
-| 0x6E72 | combat movement bonus for the party side (`FUN_3aae_0123`) | [[spec/combat]] |
+| 0x6E6C | shop flag for `COMBAT` | [town.md](town.md) |
+| 0x6DE3 | cleared after every battle (**?**) | [combat-rules.md](combat-rules.md) |
+| 0x6E70 | to-hit bonus for the enemy side (char[0x10E] = 1) in the next battle | [combat-rules.md](combat-rules.md) |
+| 0x6E71 | to-hit bonus for the party side | [combat-rules.md](combat-rules.md) |
+| 0x6E72 | combat movement bonus for the party side (`FUN_3aae_0123`) | [combat-rules.md](combat-rules.md) |
 | 0x6E79–0x6E82 | scratch, zeroed by every `NEW_ECL` | this file |
 
 0x6DE3, 0x6DE6 and 0x6E70–0x6E72 are all reset to 0 at the end of every battle, so scripts set them just before `COMBAT`.
@@ -197,7 +197,7 @@ Variables the engine itself reads or writes, so a port must give them meaning. E
 
 ## Opcodes
 
-Operands are numbered from 1. *val n* is the numeric value of operand n, *addr n* its address (`HI<<8 | LO`), *str n* its text. Handlers are in segment 29c3. Every opcode appears in the data; the disassembler reaches 97.8% of ECL bytes with no decode errors, and the interpreter (`tools/eclvm.py`) runs every area on every square without error ([[#Validation]]).
+Operands are numbered from 1. *val n* is the numeric value of operand n, *addr n* its address (`HI<<8 | LO`), *str n* its text. Handlers are in segment 29c3. Every opcode appears in the data; the disassembler reaches 97.8% of ECL bytes with no decode errors, and the interpreter (`tools/eclvm.py`) runs every area on every square without error ([Validation](#validation)).
 
 ### Control flow
 
@@ -248,7 +248,7 @@ Operands are numbered from 1. *val n* is the numeric value of operand n, *addr n
 
 ### Party and characters
 
-All of these walk the party list `DS:5D96`, which **also holds loaded monsters** after `LOAD_MONSTER` (see [[#Monsters in the party list]]).
+All of these walk the party list `DS:5D96`, which **also holds loaded monsters** after `LOAD_MONSTER` (see [Monsters in the party list](#monsters-in-the-party-list)).
 
 | Op | Name | Operands | Semantics | |
 |---|---|---|---|---|
@@ -273,7 +273,7 @@ All of these walk the party list `DS:5D96`, which **also holds loaded monsters**
 | 0E | PICTURE | val 1 | 255: restore the 3D view. Otherwise show `PIC` record n, or, when portrait selector 0x6DE1 ≠ 0xFF, a head/body portrait (head 0x6DE1, body n) | O |
 | 23 | SURPRISE | val 1–4 (bytes) | a = v4 + 2 − v1, b = v2 + 2 − v3 (signed bytes); two d6 rolls r1, r2. Result 0; r1 ≤ a → 1 (or 3 if also r2 ≤ b); then r2 ≤ b → 2. So **3 never comes out**. Written to 0x6DCB | O |
 | 29 | ENCOUNTER_MENU | 14, below | stores 0–3 in addr 4; never jumps | O |
-| 24 | COMBAT | — | without loaded monsters: shop if 0x6E6C = 1, temple if 0x6DE2 = 1 (flag cleared), else the treasure screen. Otherwise the battle and its aftermath ([[spec/combat]]), which sets the outcome 0x6DC7 | O |
+| 24 | COMBAT | — | without loaded monsters: shop if 0x6E6C = 1, temple if 0x6DE2 = 1 (flag cleared), else the treasure screen. Otherwise the battle and its aftermath ([combat-rules.md](combat-rules.md)), which sets the outcome 0x6DC7 | O |
 | 27 | TREASURE | val 1–7 money, val 8 items | money table = the seven values. Items: < 0x80 load `ITEM<block>` record (63-byte items, **prepended** so they end up reversed; a missing record halts the game); 0xFF none; 0x80–0xFE that many random items from the table below | O |
 
 **ENCOUNTER_MENU** operands: 1 sprite, 2 max distance, 3 picture, **4 destination**, 5–9 reaction codes for COMBAT, WAIT, FLEE, ADVANCE, PARLAY, 10–12 texts for distance 0, 1, 2, 13 flee threshold f, 14 pursuit threshold g.
@@ -293,7 +293,7 @@ All of these walk the party list `DS:5D96`, which **also holds loaded monsters**
 
 Stored values: **0** the monsters flee ("The monsters flee."), **1** combat, **2** the party escapes, **3** parlay. "Approach" lowers the distance and loops ("Both sides wait." at distance 0). Scripts follow with `ON_GOTO [dest], 4, …`.
 
-**Random treasure**: the `TREASURE` handler (`29c3:19B0`) picks each item's type with d100 rolls, calls `FUN_4c2d_1010(type, item)` to build the 63-byte record, and prepends the record to the treasure list. After the last item it rebuilds every list item's display name. **48–49 on the second d100 leave the type unset, so the previous item's type repeats.** The full algorithm, with the dice, the bytes set for each outcome, the random item array at DS:0972 and its bugs, is in [[spec/records#Random items]] (O).
+**Random treasure**: the `TREASURE` handler (`29c3:19B0`) picks each item's type with d100 rolls, calls `FUN_4c2d_1010(type, item)` to build the 63-byte record, and prepends the record to the treasure list. After the last item it rebuilds every list item's display name. **48–49 on the second d100 leave the type unset, so the previous item's type repeats.** The full algorithm, with the dice, the bytes set for each outcome, the random item array at DS:0972 and its bugs, is in [records.md, "Random items"](records.md#random-items) (O).
 
 ### Monsters in the party list
 
@@ -325,7 +325,7 @@ The DOS port maps former C64 machine-code entry points to native routines:
 | 0xC01B | nothing in the DOS port. The overland scripts (areas 25–27) call it and then read engine address 0x035F as the destination tile; that address is unmapped and returns an undefined value, so this C64 tile check is dead code (**I**: overland legality is done natively by `FUN_3e76_0818`) |
 | 0xC01E | move the party one square forward (with wrap-around) and refresh square registers |
 
-After a 0x8000/0x8001 fight the aftermath awards `100 × char[0x73]` experience to the current character (see [[spec/progression]]).
+After a 0x8000/0x8001 fight the aftermath awards `100 × char[0x73]` experience to the current character (see [chargen-and-progression.md](chargen-and-progression.md)).
 
 ## Validation
 

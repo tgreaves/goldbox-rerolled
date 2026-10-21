@@ -1,4 +1,4 @@
-// SAVGAM*.DAT (spec/savegame.md; CotAB spec/coab/records.md §5), in the active game's layout
+// SAVGAM*.DAT (spec/A-games/engine/savegame.md; CotAB spec/A-games/coab/records.md §5), in the active game's layout
 import { game } from '../games/profile'
 
 export interface SaveGame {

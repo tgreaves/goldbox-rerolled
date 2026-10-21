@@ -1,4 +1,4 @@
-// CotAB's map-area battlefield (spec/coab/combat.md, "Map-area generator"): the shared generator with
+// CotAB's map-area battlefield (spec/A-games/coab/combat.md, "Map-area generator"): the shared generator with
 // CotAB's profile, cell for cell against a statement-by-statement transcription of 0x2555D and the
 // routines it calls, on real GEO maps with scripted and seeded dice. PoR's map fields are checked
 // against tools/battlefield.py in battlefield.test.ts. Needs COAB.

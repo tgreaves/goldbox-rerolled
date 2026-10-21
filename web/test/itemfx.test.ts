@@ -1,4 +1,4 @@
-// Items that act when readied (spec/effects.md, "Item handlers") and the Spiritual Hammer; needs POOLRAD.
+// Items that act when readied (spec/A-games/engine/effects.md, "Item handlers") and the Spiritual Hammer; needs POOLRAD.
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'

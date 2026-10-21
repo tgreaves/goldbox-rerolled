@@ -1,7 +1,7 @@
 // The script VM's memory map per game (docs/multi-game.md, step 4). The engine keeps Pool of
 // Radiance's addresses internally; a game whose regions sit elsewhere has the addresses its scripts
 // use translated on the way in. Offsets inside each region are the same in both games
-// (spec/coab/ecl.md, "Memory map").
+// (spec/A-games/coab/ecl.md, "Memory map").
 import { F, type CharFields } from './fields'
 import { classLevel } from './rules'
 
@@ -76,7 +76,7 @@ export const POR_ECL: EclMap = {
   quitProgram: null,
 }
 
-// spec/coab/ecl.md, "B as a view of the current character"; B+0x100's "loaded past the end" flag is
+// spec/A-games/coab/ecl.md, "B as a view of the current character"; B+0x100's "loaded past the end" flag is
 // loadPastEnd below.
 export const COAB_ECL: EclMap = {
   a: 0x4b00, b: 0x7c00, c: 0x7a00, code: 0x8000, memorisedView: 1,
@@ -88,7 +88,7 @@ export const COAB_ECL: EclMap = {
     0xe4: { raw: 0x192, mask: 1 }, // CotAB record byte 0x192 (set by the Hillsfar import), no field yet
     0xc9: { classLevel: 5 }, // the magic-user level with its dual-class part (FUN 0x51841)
   },
-  // spec/coab/ecl.md, "Opcodes"
+  // spec/A-games/coab/ecl.md, "Opcodes"
   ops: {
     0x06: 'divideRemainder', 0x13: 'returnOrExit', 0x34: 'passTime', 0x3b: 'findSpell', 0x3c: 'protection',
     0x3d: 'redrawScreen', 0x3e: 'dropCharacter', 0x3f: 'findEffect', 0x40: 'destroyItems',
@@ -102,7 +102,7 @@ export const COAB_ECL: EclMap = {
   damageDespiteSave: 0x10,
   loadPastEnd: true,
   wipeBanner: null,
-  // the start-up code sets block 2 for a real game (spec/coab/assets.md); record 1 is block 2's first (I)
+  // the start-up code sets block 2 for a real game (spec/A-games/coab/assets.md); record 1 is block 2's first (I)
   start: { block: 2, area: 1 },
   // image 0x1C001–0x1C050: area 0 → record 1 (82 in the demo: games/startup.ts), loaded rather than restored
   areaZero: 1,

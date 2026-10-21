@@ -18,7 +18,7 @@ export interface LandmarkRules {
 
 export const POR_LANDMARKS: LandmarkRules = {
   first: [{ re: /\bTAVERN\b/, kind: 'tavern', label: 'Tavern' }],
-  // the four New Phlan shops (spec/town.md)
+  // the four New Phlan shops (spec/A-games/engine/town.md)
   shops: [
     { re: /JEWELRY/, kind: 'jeweller', label: 'Jeweller' },
     { re: /ARMS AND ARMOR/, kind: 'armoury', label: 'Arms and armour' },

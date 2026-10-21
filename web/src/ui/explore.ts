@@ -1,4 +1,4 @@
-// Exploration screen in the original's arrangement (spec/architecture.md, spec/graphics.md
+// Exploration screen in the original's arrangement (spec/A-games/engine/main-loop.md, spec/A-games/engine/graphics.md
 // "Screen layout"): 3D view top left, party roster to its right, text window below,
 // command line at the bottom. Area scripts run through the ECL engine (src/vm/engine.ts).
 import { R, slots, bookSpell, casterClasses } from '../games/rules'
@@ -53,7 +53,7 @@ import type { DemoMode } from '../games/startup'
 
 const FACING = ['North', 'East', 'South', 'West']
 const STAT_KEYS = ['STR', 'INT', 'WIS', 'DEX', 'CON', 'CHA'] as const
-/** readied slots 0–8 (char 0xCC + 4·slot, spec/records.md) */
+/** readied slots 0–8 (char 0xCC + 4·slot, spec/A-games/engine/records.md) */
 const SLOT_NAMES = ['Weapon', 'Shield', 'Armour', 'Gauntlets', 'Helm', 'Belt/Necklace', 'Robe', 'Cloak', 'Boots']
 const SLOT_LABEL = (n: number) => n <= 8 ? SLOT_NAMES[n] : n === 9 ? 'Ring' : n === 11 || n === 12 || n === 13 ? 'Scroll' : 'Other'
 const CONTINUE_PROMPTS = ['PRESS <RETURN> OR BUTTON TO CONTINUE', 'PRESS <ENTER>/<RETURN> TO CONTINUE']
@@ -210,7 +210,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     if (!d) imageOf.set(p, (d = toImageData(p)))
     return d
   }
-  /** the running picture animation (spec/graphics.md, "Animation"): a frame stays up delay × 0.1 s, then the next, wrapping to the first */
+  /** the running picture animation (spec/A-games/engine/graphics.md, "Animation"): a frame stays up delay × 0.1 s, then the next, wrapping to the first */
   let animTimer: number | null = null
   /** the PIC on show and its frame, for a script that steps it (CALL frame) */
   let shownPic: { f: { picture: Picture }[]; i: number } | null = null
@@ -239,7 +239,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       world.showSprite(null)
       return paint([])
     }
-    if ('big' in p) { // CotAB: a 304 × 120 BIGPIC (spec/coab/assets.md §5)
+    if ('big' in p) { // CotAB: a 304 × 120 BIGPIC (spec/A-games/coab/assets.md §5)
       const pic = frames('BIGPIC', p.big)?.[0]
       if (!pic) return
       const show = (cursor: boolean) => {
@@ -629,7 +629,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const list = party()
     const t = getTables(), st = engine.spells, it = engine.items
     // a portrait from HEAD/BODY where the game has the portrait record tables (PoR); CotAB characters
-    // have none (its creation shows the combat icon, spec/coab/tables.md)
+    // have none (its creation shows the combat icon, spec/A-games/coab/tables.md)
     const portraits = T.headRecords.at >= 0
     roster.innerHTML = list.map((c, i) => {
       const raw = c.raw
@@ -1095,7 +1095,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
 
   /**
-   * The party screen a training hall opens (PROGRAM 0; spec/menus.md, spec/progression.md): Create,
+   * The party screen a training hall opens (PROGRAM 0; spec/A-games/engine/input-and-menus.md, spec/A-games/engine/chargen-and-progression.md): Create,
    * Drop, Modify, Train, View, Add, Remove, Save and Begin. Load needs an empty party, which this
    * screen never leaves, so it is not offered. Created and removed characters go to the roster
    * (browser storage), as the original writes their files.
@@ -1182,7 +1182,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     }
   }
 
-  /** Character sheet with the items menu (spec/town.md, "Items menu"); IMP-027 for the panel. */
+  /** Character sheet with the items menu (spec/A-games/engine/town.md, "Items menu"); IMP-027 for the panel. */
   /** steps of a money Trade or Drop (FUN_4894_2156 / 24a7): recipient, coin type, amount */
   interface MoneyStep { op: 'trade' | 'drop'; to?: number; type?: number }
   /** steps of Use on the sheet: which spell, then whom */
@@ -1424,7 +1424,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         void (it.ready ? unreadyItem(host, node, items, it, t) : readyItem(host, node, items, it, t))
           .then((m) => again({ selected: keep, message: [m, ...said].filter(Boolean).join(' ') }))
       } else if (a === 'use' || a.startsWith('use-')) {
-        // Use outside combat (FUN_4894_1a8a); it does not end anything (spec/town.md, "Items menu")
+        // Use outside combat (FUN_4894_1a8a); it does not end anything (spec/A-games/engine/town.md, "Items menu")
         const st = engine.spells
         if (!it.ready) { again({ selected: keep, message: 'Must be Readied' }); return }
         if (!st) return

@@ -1,4 +1,4 @@
-// Character creation, combat-icon editor and Modify (spec/menus.md, spec/chargen.md), shared by the
+// Character creation, combat-icon editor and Modify (spec/A-games/engine/input-and-menus.md, spec/A-games/engine/chargen-and-progression.md), shared by the
 // start-up party screen and the party screen a training hall opens.
 import type { GameFiles } from '../store/gamefiles'
 import { parseCharacter } from '../data/character'
@@ -54,7 +54,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, rng: (
     })
   }
 
-  /** Character creation (FUN_417f_056c; spec/chargen.md) on one screen (IMP-040). */
+  /** Character creation (FUN_417f_056c; spec/A-games/engine/chargen-and-progression.md) on one screen (IMP-040). */
   function create(t: Tables): Promise<Uint8Array | null> {
     return createCharacter(dialog, files, rng, t)
   }

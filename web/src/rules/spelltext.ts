@@ -1,5 +1,5 @@
 // Spell descriptions for the Cast and Memorize lists and the Rules reference (IMP-058). The numbers
-// come from the spell table in the player's START.EXE (spec/spells.md, "Tables"); the one-line
+// come from the spell table in the player's START.EXE (spec/A-games/engine/spells.md, "Tables"); the one-line
 // effects are each game's own notes (its profile's spellNotes, games/spellnotes.ts).
 import type { Spell } from '../data/spells'
 import { game } from '../games/profile'

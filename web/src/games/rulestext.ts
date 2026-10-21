@@ -1,5 +1,5 @@
 // The Rules reference's text per game (IMP-058): what the printed rule book told players, in short,
-// for the game as the port runs it. PoR: spec/; CotAB: spec/coab/ (tables §3, records §8–9, effects).
+// for the game as the port runs it. PoR: spec/; CotAB: spec/A-games/coab/ (tables §3, records §8–9, effects).
 
 export type Entries = [string, string][]
 export interface RulesText { basics: Entries; classes: Entries; combat: Entries; keys: Entries }

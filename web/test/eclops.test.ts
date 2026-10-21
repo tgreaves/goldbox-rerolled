@@ -1,4 +1,4 @@
-// ECL opcodes ROB, CHECK_PARTY, FIND_ITEM, NEWLINE, CLEAR_TOP, PRINT_LIST (spec/ecl.md); needs POOLRAD.
+// ECL opcodes ROB, CHECK_PARTY, FIND_ITEM, NEWLINE, CLEAR_TOP, PRINT_LIST (spec/A-games/engine/ecl.md); needs POOLRAD.
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'

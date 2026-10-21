@@ -16,4 +16,4 @@ The `GameProfile` that describes one game to the shared engine: every top-level 
 
 - [AUDIT.md](../AUDIT.md) §5.1
 - `web/src/games/types.ts` and the JSDoc of every profile module (reference implementation)
-- [docs/multi-game.md](../../docs/multi-game.md) "The game profile", "Where a game is described"
+- [docs/multi-game.md, "The game profile"](../../docs/multi-game.md#the-game-profile), "Where a game is described"

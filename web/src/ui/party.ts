@@ -1,4 +1,4 @@
-// Party screen ("Choose a function", FUN_417f_0161; spec/architecture.md, Party screen).
+// Party screen ("Choose a function", FUN_417f_0161; spec/A-games/engine/input-and-menus.md, Party screen).
 import type { GameFiles } from '../store/gamefiles'
 import { joinRefusal } from '../rules/joining'
 import { startEffects } from '../rules/chargen'
@@ -85,7 +85,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, nav: {
       const raw = byStem(party[Number(card.dataset.i)]).sav
       const pic = (family: string, id: number) => { const r = files.record(family, id); try { return r ? parseRecord(r).frames[0].picture : null } catch { return null } }
       const portrait = card.querySelector<HTMLCanvasElement>('.pc-portrait')
-      // a game without portraits (CotAB: spec/coab/records.md) has no canvas for one
+      // a game without portraits (CotAB: spec/A-games/coab/records.md) has no canvas for one
       const port = portrait ? sizeCanvas(portrait, 88, 88) : null
       if (port) { port.fillStyle = '#000'; port.fillRect(0, 0, 88, 88) }
       if (port && tables) {

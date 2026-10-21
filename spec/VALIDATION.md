@@ -7,7 +7,7 @@ The record of how the spec has been checked: cross-checks against the binaries, 
 
 ## Will contain
 
-- cross-checks against the binaries (from [engine/ecl.md](A-games/engine/ecl.md) "Validation" and the audits)
+- cross-checks against the binaries (from [engine/ecl.md, "Validation"](A-games/engine/ecl.md#validation) and the audits)
 - validations V1–V13 and their state
 - clean-room runs and what each found
 - the open-question register ([open-questions.md](open-questions.md)) once its items move to per-section Open blocks

@@ -1,5 +1,5 @@
 // Characters a game takes from another (docs/multi-game.md, step 8): CotAB's "Pool" source in Add,
-// the converter at 323c:14b3 (spec/coab/records.md §7). The record is copied field by field through
+// the converter at 323c:14b3 (spec/A-games/coab/records.md §7). The record is copied field by field through
 // both games' field maps; the rules below are the converter's, with its STR bug fixed (IMP-070).
 import type { CharFields } from './fields'
 

@@ -1,6 +1,6 @@
 // Each game's start-up menu and its demo ("attract mode"), as data (docs/multi-game.md). The menu's
 // title and choices are strings in START.EXE, read at run time by offset (nothing of the game's text
-// is stored here). CotAB: spec/coab/ecl.md, "Start-up menu and demo"; Pool of Radiance has neither
+// is stored here). CotAB: spec/A-games/coab/ecl.md, "Start-up menu and demo"; Pool of Radiance has neither
 // (no "Demo" in its START.EXE or GAME.OVR): its profile holds null and it starts with the party screen.
 
 /**

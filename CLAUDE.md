@@ -31,7 +31,8 @@ came first and is playable; Curse of the Azure Bonds (CotAB) is being added. The
    game does. Every deliberate departure goes in [`IMPROVEMENTS.md`](IMPROVEMENTS.md) (next IMP
    number) **in the same commit**.
 3. **Evidence.** Spec statements are marked **O** (observed in the binary or data), **I** (inferred)
-   or **?** (unknown), with the routine or address that shows it. Code comments cite the routine
+   or **?** (unknown), with the routine or address that shows it (the full legend, with **G** and
+   **Bug**, is in `spec/README.md`). Code comments cite the routine
    (`FUN_seg_off`, or image offsets for CotAB) and the spec section.
 4. **No game data in the repository.** Game files, their extracted art and text, and tool output that
    contains them stay local. (The journal text is the exception: CC BY-SA, credited in the README.)
@@ -66,14 +67,21 @@ use, no unbounded background jobs.
 
 1. Unpack START.EXE (`tools/unexepack.py`), merge overlays (`tools/mergeovr.py`), disassemble with
    objdump. Find the data segment from the Turbo Pascal start-up (`mov dx,…; mov ds,dx`).
-2. Diff against the PoR spec: write findings to `spec/<game>/`, with addresses for both games.
+2. Diff against the PoR spec (`spec/A-games/engine/`): write findings to `spec/A-games/<game>/`, with
+   addresses for both games; what the profile must hold goes in part B (`spec/B-model/`).
 3. Add the game's profile in `web/src/games/` (fields, tables, ECL map, save files, rules), test it
    against the game's own files, then make the code read it.
 4. Run the headless script sweep over every area and square; it must show no interpreter errors.
 
 ## Where things are
 
-- `spec/`: the PoR specification; `spec/coab/`: CotAB, as differences from PoR
+- `spec/`: the specification, the single normative source the port can be rebuilt from (start at
+  `spec/README.md`: conventions, evidence marks, the dice-tape rule, the index of every file).
+  Part A `spec/A-games/`: the original games (`engine/` as PoR defines it, `por/` what is PoR's own,
+  `coab/` CotAB as differences); part B `spec/B-model/`: the engine model (profile, procedures,
+  vocabularies, host contracts); part C `spec/C-port/`: the port's own design (UI, 3D view, storage,
+  sync); part D `spec/D-appendices/`. `spec/AUDIT.md` is the Phase 1 audit and work plan
+  (provenance). Links are plain Markdown; `python3 tools/speclinks.py` checks them all
 - `tools/`: Python decoders and the headless interpreter; `tools/coab/`: CotAB extractors
 - `web/src/games/`: game profiles: `fields.ts` (character record), `tables.ts` (START.EXE tables),
   `ecl.ts` (script VM map and opcode variants), `files.ts` (saves), `rules.ts` (rules values and

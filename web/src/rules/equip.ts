@@ -1,4 +1,4 @@
-// Readying items and the derived statistics (spec/records.md, "Inventory and readying").
+// Readying items and the derived statistics (spec/A-games/engine/records.md, "Inventory and readying").
 // All AC and THAC0 values are stored as 60 − value in the character record.
 import type { Item, ItemTables } from '../data/items'
 import { itemHandler, type FxHost } from './effects'

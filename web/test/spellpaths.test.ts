@@ -1,4 +1,4 @@
-// Lightning Bolt path and bounce, Stinking Cloud squares, the line walker (spec/combat.md, spec/spells.md).
+// Lightning Bolt path and bounce, Stinking Cloud squares, the line walker (spec/A-games/engine/combat-rules.md, spec/A-games/engine/spells.md).
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'

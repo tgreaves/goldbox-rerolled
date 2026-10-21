@@ -1,4 +1,4 @@
-// Microsoft EXEPACK unpacker for START.EXE (spec/containers.md); a port of tools/unexepack.py.
+// Microsoft EXEPACK unpacker for START.EXE (spec/A-games/engine/containers.md); a port of tools/unexepack.py.
 // Returns the unpacked load image (the program as loaded at its load segment), which holds
 // engine data such as the sound driver's effect tables.
 

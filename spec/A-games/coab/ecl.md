@@ -3,13 +3,13 @@ created: 2026-10-19
 tags: [reverse-engineering, gold-box, coab, spec]
 ---
 
-# CotAB ECL virtual machine: diff against PoR `spec/ecl.md`
+# CotAB ECL virtual machine: diff against PoR `engine/ecl.md`
 
-Scope: Curse of the Azure Bonds, GOG 1.0 (`START.EXE` + `GAME.OVR` merged). This file only lists what differs from `spec/ecl.md` (PoR) plus everything needed to implement the CotAB VM. Anything not mentioned behaves as in PoR.
+Scope: Curse of the Azure Bonds, GOG 1.0 (`START.EXE` + `GAME.OVR` merged). This file only lists what differs from `engine/ecl.md` (PoR) plus everything needed to implement the CotAB VM. Anything not mentioned behaves as in PoR.
 
 Evidence marks: **O** observed in code, **I** inferred, **?** unknown. Addresses are **image offsets** into `coab/img.bin` (overlay segment in brackets: `1885:xxxx` = image 0x18850 + xxxx; Ghidra segment = paragraph + 0x1000, so `1885:xxxx` is `FUN_2885_xxxx`). DS = image paragraph 0x0ABE (DS:x = image 0xABE0 + x; O: the clock-modulus table DS:3E2C sits at image 0xEA0C). PoR handler addresses are `29c3:xxxx` as in the PoR spec.
 
-Disassembler: `ecl_coab.py` (same directory). 25 records in ECL1–6, **0 decode errors**, 96.7% of code bytes reachable (see [[#Decoder status]]).
+Disassembler: `ecl_coab.py` (same directory). 25 records in ECL1–6, **0 decode errors**, 96.7% of code bytes reachable (see [Decoder status](#decoder-status)).
 
 ## Why `tools/ecl.py` fails on CotAB (O)
 
@@ -62,7 +62,7 @@ Calls into overlays go through VROOMM stubs that the merge already patched into 
 
 ## Loading (O)
 
-- **New game or load (0x1BFED–0x1C050)**: the area to load is A[0x4BF2]; if it is 0 the game starts at record **1** (record 82, the demo, when DS:4FD5 ≠ 0: [[#Start-up menu and demo (O)]]) and loads its script, otherwise a load restores the saved script buffer (DS:47FB = 1). The shipped `SAVGAMA.DAT` names area 0 with an empty buffer, so a new game begins at ECL2 record 1. Then the reset (0x1FBB8) and `on_enter`.
+- **New game or load (0x1BFED–0x1C050)**: the area to load is A[0x4BF2]; if it is 0 the game starts at record **1** (record 82, the demo, when DS:4FD5 ≠ 0: [Start-up menu and demo (O)](#start-up-menu-and-demo-o)) and loads its script, otherwise a load restores the saved script buffer (DS:47FB = 1). The shipped `SAVGAMA.DAT` names area 0 with an empty buffer, so a new game begins at ECL2 record 1. Then the reset (0x1FBB8) and `on_enter`.
 
 - `ECL<n>.DAX` where n = DS:5C08 (block digit); record id = area id (CotAB blocks: ECL1 80–82, ECL2 1–4, ECL3 16–18 21, ECL4 32–35 37, ECL5 48–51 53, ECL6 64 66 67 69)
 - 0x1FD3C: zero the 0x1E00 buffer, show "Loading...Please Wait", retry until size ≥ 2, copy record bytes 2.. to the buffer start; all records start `88 13`, largest 7622 code bytes (fits 0x1E00)
@@ -111,7 +111,7 @@ There is no key test that ends the demo (O: no other reader of DS:4FD5; the key 
 5. `SAVE 1 → 0x4BE6`, `PICTURE 1` "WHILE THE RISK OF ADVENTURE IS GREAT…", `PICTURE 123` "BUT THE ULTIMATE PRIZE IS NOT GOLD OR POWER…", "YOUR ENEMIES ARE PREPARED…", four `PAUSE`s each.
 6. **`PROGRAM 3`**: DS:4FE0 = 1 (quit), then EXIT (0x1BA7E; ECL1 #82 is its only use). Then the party is dropped (0x1C069) and the loop shows the title and the menu again.
 
-The demo's battle (O): the grid builder 0x25CC0 loads `DungCom` when A 0x1CC (ECL 0x4BE6) is set, else `WildCom` (strings at 0x25CA8/0x25CB0), then `RandCom`; with 0x4BE6 = 0 it takes the wilderness generator 0x25C58: every cell 0x17 (open ground), terrain type DS:4A2C = A byte 0x342 (ECL 0x4CA1, the overland place), its feature flags from the place table **DS:0354** (0x25621; PoR used a range table over overland tiles), then the passes 0x25690 (river), 0x2579B (trees and logs) and 0x25ADA (scatter), all three CotAB's own procedures, and **no finishing pass** ([[spec/coab/combat]]). The demo never sets 0x4CA1, so it fights on place 0's terrain (flags 0: no river, trees and logs at 10 %, then grass, pebbles and rocks). Every CotAB battle with 0x4BE6 = 0 (the overland) is built this way. Port: done (`R.wildBattle`, `T.placeTerrain`, `R.wildField`; until 2026-10-20 the port ran PoR's passes, whose finishing pass put RandCom's table 0x1A and chair 0x1B on the field).
+The demo's battle (O): the grid builder 0x25CC0 loads `DungCom` when A 0x1CC (ECL 0x4BE6) is set, else `WildCom` (strings at 0x25CA8/0x25CB0), then `RandCom`; with 0x4BE6 = 0 it takes the wilderness generator 0x25C58: every cell 0x17 (open ground), terrain type DS:4A2C = A byte 0x342 (ECL 0x4CA1, the overland place), its feature flags from the place table **DS:0354** (0x25621; PoR used a range table over overland tiles), then the passes 0x25690 (river), 0x2579B (trees and logs) and 0x25ADA (scatter), all three CotAB's own procedures, and **no finishing pass** ([combat.md](combat.md)). The demo never sets 0x4CA1, so it fights on place 0's terrain (flags 0: no river, trees and logs at 10 %, then grass, pebbles and rocks). Every CotAB battle with 0x4BE6 = 0 (the overland) is built this way. Port: done (`R.wildBattle`, `T.placeTerrain`, `R.wildField`; until 2026-10-20 the port ran PoR's passes, whose finishing pass put RandCom's table 0x1A and chair 0x1B on the field).
 
 ## Vectors (O)
 
@@ -154,7 +154,7 @@ Same five slots and semantics as PoR; code starts with five `GOTO` (in CotAB dat
 | **0x8000–0x9DFF** | code bytes (write stores low byte) | DS:4FBE | 0x9900–0xB6FF |
 | anything else | engine registers (below) | — | same |
 
-Translation rule for PoR addresses: A `0x49xx/0x4Axx` → `0x4Bxx/0x4Cxx` (+0x200); B `0x6Bxx–0x6Exx` → `0x7Cxx–0x7Fxx` (+0x1100). Offsets inside A and B are the same as PoR wherever checked (O for every row of [[#Engine-visible variables]]).
+Translation rule for PoR addresses: A `0x49xx/0x4Axx` → `0x4Bxx/0x4Cxx` (+0x200); B `0x6Bxx–0x6Exx` → `0x7Cxx–0x7Fxx` (+0x1100). Offsets inside A and B are the same as PoR wherever checked (O for every row of [Engine-visible variables](#engine-visible-variables-o-engine-code-touching-the-word-meaning-i-where-it-rests-on-the-por-analog)).
 
 ### Side effects of A writes (0x20722, O)
 
@@ -180,7 +180,7 @@ Offsets relative to 0x7C00 (identical to PoR's offsets from 0x6B00); the charact
 | 0x7CA5–0x7CAC | 0xA5–0xAC | char[0xE9 + (off − 0xA4)] = char[0xEA..0xF1] (thief skills) | — | PoR [0x77..0x7E] |
 | 0x7CB8 | 0xB8 | char[0xF7] | char[0xF7] = v (−0x32 if v > 0xB2) | PoR [0x84] |
 | 0x7CBB…0x7CC3 (odd) | 0xBB…0xC3 | words char[0xFB], [0xFD], [0xFF], [0x101], [0x103] | same | PoR [0x88..0x90] |
-| 0x7CC9 | 0xC9 | f(char)·char[0x116] + char[0x10E], f = FUN 0x51841 (signed bytes): the magic-user level with its dual-class part (O, [[spec/coab/tables]] §3.7a) | — | **new** |
+| 0x7CC9 | 0xC9 | f(char)·char[0x116] + char[0x10E], f = FUN 0x51841 (signed bytes): the magic-user level with its dual-class part (O, [tables.md](tables.md) §3.7a) | — | **new** |
 | 0x7CD6 | 0xD6 | char[0x119] signed | — | **new** |
 | 0x7CD8 | 0xD8 | char[0x11B] signed | — | PoR [0xA0] |
 | 0x7CE4 | 0xE4 | char[0x192] & 1 | — | **new** |

@@ -11,7 +11,7 @@ export interface ViewArt {
   bigFrom: number | null
   /** the BIGPIC that is the overland map, shown with the city cursor (T.cursorX/Y by ECL 0x4CA1) */
   overlandPicture: number | null
-  /** areas that are the tile wilderness (PoR's 25–27; spec/overland.md) */
+  /** areas that are the tile wilderness (PoR's 25–27; spec/A-games/engine/overland.md) */
   tileOverland: number[]
   /** window and screen frames, from 8X8D1 #202: PoR's fixed rope tiles (frame style 0 of
    *  FUN_13f1_0000), or CotAB's frame tables (T.frameTop …), whose values count from tile `tile0` */
@@ -25,7 +25,7 @@ export interface ViewArt {
 export const POR_VIEW: ViewArt = { floor: null, ground: null, bigFrom: null, overlandPicture: null, tileOverland: [25, 26, 27],
   frame: { rope: { corner: 20, vertical: 21, horizontal: 22 } }, skyArt: null }
 
-// spec/coab/assets.md §3: in EGA the floor is colour 8 under SKY #252, the cobbled ground drawn at
+// spec/A-games/coab/assets.md §3: in EGA the floor is colour 8 under SKY #252, the cobbled ground drawn at
 // view rows 40–87 in every square, indoors too
 // §4–5: PICTURE ids from 0x78 load BIGPIC (handler 0x190C3); the overland is BIGPIC #121 (0x79) with a
 // blinking 8 × 8 white city cursor; there is no tile wilderness

@@ -1,4 +1,4 @@
-// GEO maps (spec/maps.md): 16x16 squares, four 256-byte planes after a 2-byte header
+// GEO maps (spec/A-games/engine/maps-and-view.md): 16x16 squares, four 256-byte planes after a 2-byte header
 
 export const DIRS = ['N', 'E', 'S', 'W'] as const
 export const STEP: ReadonlyArray<readonly [number, number]> = [[0, -1], [1, 0], [0, 1], [-1, 0]]

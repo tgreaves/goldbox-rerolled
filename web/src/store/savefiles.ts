@@ -1,5 +1,5 @@
 // Saved games as the original's files (IMP-006): SAVGAM<x>.DAT plus CHRDAT<x><n>.SAV/.ITM/.SPC per
-// party member (spec/savegame.md), exported as one ZIP and imported from loose files or a ZIP, so a
+// party member (spec/A-games/engine/savegame.md), exported as one ZIP and imported from loose files or a ZIP, so a
 // game moves between this port and DOSBox.
 import { game } from '../games/profile'
 import { convert, importable } from '../rules/import'
@@ -98,9 +98,9 @@ export function importsFrom(files: NamedFile[], t: Tables): { chars: StoredChara
 }
 
 /**
- * Roster characters from a DOS install's save folder (spec/menus.md, "Character files"): each
+ * Roster characters from a DOS install's save folder (spec/A-games/engine/input-and-menus.md, "Character files"): each
  * <stem>.CHA with its .ITM and .SPC; with charlist.txt, only the names it lists. CotAB: every
- * <stem>.GUY with its .SWG and .FX (no charlist, spec/coab/records.md §1).
+ * <stem>.GUY with its .SWG and .FX (no charlist, spec/A-games/coab/records.md §1).
  */
 export function rosterFrom(files: NamedFile[]): { chars: StoredCharacter[]; missing: string[] } {
   const byName = new Map(files.map((f) => [f.name.split('/').pop()!.toUpperCase(), f.data]))

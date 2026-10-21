@@ -1,6 +1,6 @@
 // Character record fields by name (docs/multi-game.md, step 2). Records stay in their own game's
 // byte layout; code reads `c[F.hp]` instead of `c[0x11b]`, and F holds the active game's offsets.
-// PoR: spec/records.md. CotAB: spec/coab/records.md §2 (its "PoR" column pairs every field).
+// PoR: spec/A-games/engine/records.md. CotAB: spec/A-games/coab/records.md §2 (its "PoR" column pairs every field).
 // Arrays give the offset of element 0; their lengths are the `…Count` fields.
 
 export interface CharFields {
@@ -44,7 +44,7 @@ export interface CharFields {
   hpLevel: number
   /** CotAB: the paladin's Cure Disease uses left (−1 in PoR) */
   abilityUses: number
-  /** CotAB: monster-class flags (0 in player characters; spec/coab/effects.md §4): 1 evil/extraplanar,
+  /** CotAB: monster-class flags (0 in player characters; spec/A-games/coab/effects.md §4): 1 evil/extraplanar,
    *  2 kobold/goblin kind, 4 orc/goblin kind, 8 giant class (−1 in PoR, which names the monsters instead) */
   classFlags: number
   /** levels lost to energy drain, and the max HP they took (Restoration and training give them back);

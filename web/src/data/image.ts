@@ -1,4 +1,4 @@
-// Images (spec/graphics.md): 17-byte header, 4 bits per pixel, default EGA palette
+// Images (spec/A-games/engine/graphics.md): 17-byte header, 4 bits per pixel, default EGA palette
 
 export const EGA: ReadonlyArray<readonly [number, number, number]> = [
   [0, 0, 0], [0, 0, 170], [0, 170, 0], [0, 170, 170], [170, 0, 0], [170, 0, 170],
@@ -103,7 +103,7 @@ export function toImageData(p: Picture, palette = EGA): ImageData {
 }
 
 /**
- * Encounter sprite (`SPRIT`) as drawn on EGA (spec/graphics.md, "Encounter sprites"): colour 0 is
+ * Encounter sprite (`SPRIT`) as drawn on EGA (spec/A-games/engine/graphics.md, "Encounter sprites"): colour 0 is
  * transparent, then colour 13 is remapped to black (`FUN_1464_1e5c`, tables `DS:0C6C` / `DS:0C7C`).
  * Colour 13 is the artist's opaque black: outlines, boots, drop shadows.
  */

@@ -1,5 +1,5 @@
 // Commissions panel (IMPROVEMENTS.md IMP-023), read from the ECL variables the scripts keep
-// (spec/commissions.md). The original has no quest log: only the City Clerk reports on these.
+// (spec/A-games/por/commissions.md). The original has no quest log: only the City Clerk reports on these.
 
 /** Commission table entry i is ECL 0x4AA6 + i: 254 finished and reward due, 255 closed. */
 const TABLE = 0x4aa6
@@ -105,7 +105,7 @@ export function report(read: Read, known: ReadonlySet<string>): { lines: Line[];
     if (v === DUE) lines.push({ title: d.title, state: 'reward', detail: 'Reward waiting: see the City Clerk' })
     else if (v === CLOSED) lines.push({ title: d.title, state: 'closed' })
   }
-  // clearing bounties paid once by the clerk (spec/commissions.md, clerk's visit step 3)
+  // clearing bounties paid once by the clerk (spec/A-games/por/commissions.md, clerk's visit step 3)
   if ((read(0x4a31) & 96) === 96 && read(0x4ac2) !== CLOSED) lines.push({ title: 'The library cleared', state: 'reward', detail: 'Reward waiting: see the City Clerk' })
   if (read(0x4ae7) === DUE) lines.push({ title: 'Podal Plaza cleared', state: 'reward', detail: 'Reward waiting: see the City Clerk' })
   if (read(0x4ae6) === DUE) lines.push({ title: 'The Cadorna textile house cleared', state: 'reward', detail: 'Reward waiting: see the City Clerk' })

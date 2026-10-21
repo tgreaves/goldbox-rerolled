@@ -1,4 +1,4 @@
-// A whole battle on computer control (spec/combat.md); needs POOLRAD.
+// A whole battle on computer control (spec/A-games/engine/combat-rules.md); needs POOLRAD.
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -236,7 +236,7 @@ describe.skipIf(!have)('combat', () => {
       const hits = holds.filter((h) => / Hitting for /.test(h.text))
       const misses = holds.filter((h) => / and Misses$/.test(h.text))
       expect(hits.length + misses.length).toBeGreaterThan(0)
-      // weapon results: the line and the message pause, no flash (spec/combat.md, "Combat visuals")
+      // weapon results: the line and the message pause, no flash (spec/A-games/engine/combat-visuals.md, "Combat visuals")
       for (const h of [...hits, ...misses]) expect(h).toMatchObject({ ms: speed * 225, flash: false })
       expect(holds.find((h) => h.text === 'A battle begins...')?.ms).toBe(speed * 225)
       expect(steps).toBeGreaterThan(0)

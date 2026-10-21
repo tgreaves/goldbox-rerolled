@@ -1,6 +1,6 @@
 // Random treasure items per game (docs/multi-game.md): the TREASURE type choice and the item
 // builder's tables. The procedure is the same in both games (PoR FUN_4c2d_1010 and the TREASURE
-// handler 29c3:19B0, spec/records.md "Random items"; CotAB 0x42D97 and 0x1A5A3, spec/coab/records.md §7).
+// handler 29c3:19B0, spec/A-games/engine/records.md "Random items"; CotAB 0x42D97 and 0x1A5A3, spec/A-games/coab/records.md §7).
 
 /** A roll: a value, the previous item's type, the band's own roll, or a die whose result picks a band
  *  (the first whose upper bound it does not exceed) */

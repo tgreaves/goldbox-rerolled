@@ -1,4 +1,4 @@
-// Map-area battlefield builder against tools/battlefield.py (spec/combat.md); needs POOLRAD.
+// Map-area battlefield builder against tools/battlefield.py (spec/A-games/engine/battlefield.md); needs POOLRAD.
 import { describe, expect, it } from 'vitest'
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'

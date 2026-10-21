@@ -1,4 +1,4 @@
-// Spell handlers shared by combat and camp (spec/spells.md, "Per spell"); needs POOLRAD.
+// Spell handlers shared by combat and camp (spec/A-games/engine/spells.md, "Per spell"); needs POOLRAD.
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'

@@ -1,4 +1,4 @@
-// The script VM memory map per game (docs/multi-game.md, step 4; spec/coab/ecl.md "Memory map").
+// The script VM memory map per game (docs/multi-game.md, step 4; spec/A-games/coab/ecl.md "Memory map").
 import { describe, expect, it } from 'vitest'
 import { canonical, native, COAB_ECL, POR_ECL } from '../src/games/ecl'
 

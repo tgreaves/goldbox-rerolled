@@ -79,7 +79,7 @@ describe.skipIf(!have)('ECL engine', () => {
             await e.command('f')
           } catch (err) {
             const msg = (err as Error).message
-            // record 255: the known missing exit (spec/ecl.md, Validation); WALLDEF5 #25: needs flags
+            // record 255: the known missing exit (spec/A-games/engine/ecl.md, Validation); WALLDEF5 #25: needs flags
             // 0x49E7/0x49E8 that another area sets first (the sweep starts every area fresh)
             if (!/no ECL record 255|WALLDEF5 has no record 25/.test(msg)) failures.push(`block ${block} area ${id} square ${sq}: ${msg}`)
           }

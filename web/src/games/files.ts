@@ -1,5 +1,5 @@
-// Each game's character and save files (docs/multi-game.md, step 5). PoR: spec/savegame.md and
-// spec/records.md; CotAB: spec/coab/records.md §1 and §5.
+// Each game's character and save files (docs/multi-game.md, step 5). PoR: spec/A-games/engine/savegame.md and
+// spec/A-games/engine/records.md; CotAB: spec/A-games/coab/records.md §1 and §5.
 
 export interface SaveFiles {
   /** extensions of a character's item list (63-byte records) and effect list (9-byte records) */

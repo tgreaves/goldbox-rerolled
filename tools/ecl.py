@@ -2,7 +2,7 @@
 
 Encoding and operand counts come from the engine's operand reader (2fea:0000),
 skip routine (2fea:1ea6) and per-opcode handlers (segment 29c3). See
-../spec/ecl.md for the semantics.
+../spec/A-games/engine/ecl.md for the semantics.
 
 Usage: python3 ecl.py <ECLn.DAX> [record_id]
 """

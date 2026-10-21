@@ -17,4 +17,4 @@ Each rules procedure that serves several games stated once, with its parameters,
 
 - [AUDIT.md](../AUDIT.md) §5.2
 - `web/src/games/rules.ts`, `treasure.ts`
-- [docs/multi-game.md](../../docs/multi-game.md) "Rules as data first"
+- [docs/multi-game.md, "Rules as data first"](../../docs/multi-game.md#rules-as-data-first)

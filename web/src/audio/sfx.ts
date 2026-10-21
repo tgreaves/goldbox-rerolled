@@ -1,5 +1,5 @@
 // Sound effects from the original driver: effect data is read from the player's START.EXE and
-// rendered by an emulation of the driver and the PC speaker (src/audio/driver.ts, spec/sound.md).
+// rendered by an emulation of the driver and the PC speaker (src/audio/driver.ts, spec/A-games/engine/sound.md).
 
 import { renderEffect, renderTandy } from './driver'
 import { unexepack } from '../data/exepack'
@@ -54,9 +54,9 @@ export function unlockAudio() {
 /**
  * Play effect n. By default the game stops an effect after about 0.1 s: PlaySound waits
  * 10 centiseconds of BIOS time, which is 14-26 driver ticks depending on the clock phase.
- * full: play to the end (the game does this only in some sections, spec/sound.md).
+ * full: play to the end (the game does this only in some sections, spec/A-games/engine/sound.md).
  */
-/** effects the original plays with SetResident(0), i.e. to the end (spec/sound.md §6–7) */
+/** effects the original plays with SetResident(0), i.e. to the end (spec/A-games/engine/sound.md §6–7) */
 const FULL = new Set([2, 3, 4, 5, 6, 8, 11, 12])
 export function play(n: number, full = FULL.has(n)) {
   if (device === 'off' || !ctx || !image) return

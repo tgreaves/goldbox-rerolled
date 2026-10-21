@@ -1,7 +1,7 @@
 """Reference for random treasure items: ECL TREASURE 0x80-0xFE (handler 29c3:19B0) and FUN_4c2d_1010.
 
 Builds the 63-byte item records exactly as the original does, from an explicit sequence
-of dice results, so a port can be checked byte for byte. Spec: spec/records.md, "Random items".
+of dice results, so a port can be checked byte for byte. Spec: spec/A-games/engine/records.md, "Random items".
 
 Tables come from the shipped data: name words DS:10A7 + 21*w, random item array DS:0972,
 spell names DS:2912 (START.EXE unpacked by unexepack.py; DS = paragraph 0x0C7C of the load

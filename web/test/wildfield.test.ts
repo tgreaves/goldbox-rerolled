@@ -1,4 +1,4 @@
-// Wilderness battlefields (spec/combat.md, "Wilderness battlefields"; spec/coab/combat.md).
+// Wilderness battlefields (spec/A-games/engine/battlefield.md, "Wilderness battlefields"; spec/A-games/coab/combat.md).
 // Both games: the passes with scripted dice, and whole fields cell for cell against a statement-by-
 // statement transcription of the original's routines.
 import { describe, expect, it } from 'vitest'
@@ -216,7 +216,7 @@ describe('PoR wilderness battlefield (FUN_34c7_11b4)', () => {
 })
 
 // ---------------------------------------------------------------------------------------------------
-// CotAB (spec/coab/combat.md): its own passes, cell for cell against the transcription.
+// CotAB (spec/A-games/coab/combat.md): its own passes, cell for cell against the transcription.
 
 const COAB_FIELD = COAB_RULES.wildField
 const only = (pass: WildPass['pass']): WildFieldSpec => ({ ...COAB_FIELD, passes: COAB_FIELD.passes.filter((p) => p.pass === pass) })

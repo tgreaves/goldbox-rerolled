@@ -1,6 +1,6 @@
 // Each game's effect system as data (docs/multi-game.md): which effect types answer each event, in the
 // original's order, and which effects reach their neighbours. PoR: the dispatcher FUN_5216_02fa
-// (image 0x4245A), spec/effects.md; CotAB: 0x4AEC4 (events 0–23), spec/coab/effects.md.
+// (image 0x4245A), spec/A-games/engine/effects.md; CotAB: 0x4AEC4 (events 0–23), spec/A-games/coab/effects.md.
 
 export interface EffectRules {
   /** event → the effect types that respond, in the order the original calls them */
@@ -41,7 +41,7 @@ export interface HandlerSpec {
 
 const each = (types: number[], spec: HandlerSpec) => Object.fromEntries(types.map((t) => [t, spec]))
 
-/** PoR's handlers by type (spec/effects.md §2; segment 3723 unless an image offset is given). */
+/** PoR's handlers by type (spec/A-games/engine/effects.md §2; segment 3723 unless an image offset is given). */
 const POR_HANDLERS: Record<number, HandlerSpec> = {
   ...each([5, 13, 16, 19, 24, 27], { b: 'none' }), // 319b (16: 0647; 24 is read by 25)
   1: { b: 'rollMorale', roll: 1, morale: 5 }, // 010d Bless
@@ -175,7 +175,7 @@ export const POR_EFFECTS: EffectRules = {
   areaRadius: { 49: 6 },
   handlers: POR_HANDLERS,
   removalStat: {},
-  // PoR's item handlers 128–139 (spec/effects.md "Item handlers"), by +0x3E − 0x80
+  // PoR's item handlers 128–139 (spec/A-games/engine/effects.md "Item handlers"), by +0x3E − 0x80
   items: {
     ...each([0, 1, 2, 5, 6, 8, 10, 11], { b: 'grantEffect', power: 0x0c, flag: 0, quietly: 1 }), // 2eda: 128–130, 133, 134, 136, 138, 139
     3: { b: 'strengthItem', str: 18, pct: 100, effect: 38, msg: 'is stronger' }, // 131 Gauntlets of Ogre Power (0x3A187)
@@ -203,7 +203,7 @@ export const COAB_EFFECTS: EffectRules = {
   },
   area: [21, 45, 46, 49],
   areaRadius: { 49: 6 },
-  // PoR's handlers, then the changed and new ones (DS:6FC0 + 4·type, filled at 0x29E28 and 0x4AA3A); spec/coab/effects.md §2
+  // PoR's handlers, then the changed and new ones (DS:6FC0 + 4·type, filled at 0x29E28 and 0x4AA3A); spec/A-games/coab/effects.md §2
   handlers: {
     ...POR_HANDLERS,
     3: { b: 'snakes' }, // 0x2742C
@@ -275,7 +275,7 @@ export const COAB_EFFECTS: EffectRules = {
   },
   // remove 0x4ABBA: CHA after 0x0E, STR after 0x0C, 0x26, 0x92
   removalStat: { 0x0e: [5], 0x0c: [0], 0x26: [0], 0x92: [0] },
-  // the item kinds (0x3F034, spec/coab/effects.md)
+  // the item kinds (0x3F034, spec/A-games/coab/effects.md)
   items: {
     0: { b: 'grantEffect', power: 0xff, flag: 1, outsideCombat: 1 }, // the generic handler 147 (0x29A23)
     1: { b: 'doubleSlots', levels: 3 }, // Ring of Wizardry

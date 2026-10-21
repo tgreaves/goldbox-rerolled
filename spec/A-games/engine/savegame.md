@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Save games
 
-Part of [[spec/README]].
+Part of the [specification](../../README.md), part A.
 
 ## Files (O, save routine `FUN_45c5_1d58`)
 
@@ -14,7 +14,7 @@ A save slot is a letter `A`–`J` (`DS:537A` + letter). One slot = one `SAVGAM<x
 | File | Content |
 |---|---|
 | `SAVGAM<x>.DAT` | world state, 13 137 bytes (below) |
-| `CHRDAT<x><n>.SAV` | character record, 285 bytes ([[spec/records]]) |
+| `CHRDAT<x><n>.SAV` | character record, 285 bytes ([records.md](records.md)) |
 | `CHRDAT<x><n>.ITM` | item records, 63 bytes each |
 | `CHRDAT<x><n>.SPC` | effect records, 9 bytes each |
 
@@ -66,7 +66,7 @@ Because the whole ECL VM (code + all three arrays) is saved, a reimplementation 
 3. Restore `DS:49F6 = A[byte 0x1FE] >> 1`, `DS:49F5 = A[byte 0x1FE] & 1`, `DS:49E2 = A[byte 0x1F8]`; `B[0x67C]` (party size) = 0, then load each `CHRDAT<x><n>.SAV/.ITM/.SPC` (`FUN_45c5_0aec`, `FUN_45c5_1446`)
 4. Block digit `DS:5376` = `B[byte 0x624]`
 5. Map areas (`DS:49FA` < 2): reload GEO record `A[byte 0x18A]` and the three wall sets from `A[0x4AFA..0x4AFF]`; wilderness: load the overland icon set
-6. If `A[byte 0x344]` (ECL 0x4AA2) ≠ 0 run `FUN_4804_06b3(0)`: the cleansed river's tile colours ([[spec/overland]])
+6. If `A[byte 0x344]` (ECL 0x4AA2) ≠ 0 run `FUN_4804_06b3(0)`: the cleansed river's tile colours ([overland.md](overland.md))
 7. Back on the party screen, "Begin" sets `DS:49F8` = 1 so the VM reset keeps the saved ECL buffer and per-area variables instead of reloading the script from the DAX
 
 ## Open

@@ -1,4 +1,4 @@
-// Combat battlefield (spec/combat.md, "Battlefield"): a 25 x 50 grid of cell values, the cell table
+// Combat battlefield (spec/A-games/engine/battlefield.md, "Battlefield"): a 25 x 50 grid of cell values, the cell table
 // from START.EXE, and the terrain generators.
 import { T } from '../games/tables'
 import { R, type CellDie, type FlagValue, type MapFieldSpec, type RiverCourse, type WildFieldSpec, type WildPass } from '../games/rules'
@@ -98,8 +98,8 @@ export function flagValue(v: FlagValue, flags: number): number {
 /**
  * A wilderness battlefield from its terrain feature flags: every cell `spec.fill`, then the game's passes
  * in order (R.wildField; PoR FUN_34c7_11b4: river FUN_34c7_0bde, trees 0d13, scatter 0e9e, finishing
- * 0000; CotAB 0x25C58: river 0x25690, trees 0x2579B, scatter 0x25ADA, no finishing pass. spec/combat.md,
- * spec/coab/combat.md).
+ * 0000; CotAB 0x25C58: river 0x25690, trees 0x2579B, scatter 0x25ADA, no finishing pass. spec/A-games/engine/battlefield.md,
+ * spec/A-games/coab/combat.md).
  */
 export function wildField(flags: number, roll: Roll, spec: WildFieldSpec = R.wildField): Battlefield {
   const bf = new Battlefield(true)
@@ -141,7 +141,7 @@ const cellOf = (c: CellDie, roll: Roll) => (c[1] ? c[0] + roll(c[1]) : c[0])
 
 /**
  * A river running down and to the right, one column a row, with fords (PoR FUN_34c7_0bde with the ford
- * FUN_34c7_0b97; CotAB 0x25690 with 0x2563C; spec/combat.md "River pass", spec/coab/combat.md "River").
+ * FUN_34c7_0b97; CotAB 0x25690 with 0x2563C; spec/A-games/engine/battlefield.md "River pass", spec/A-games/coab/combat.md "River").
  * Edge `spill`: the original's grid is one flat array, so a cell at column 50 is the next row's column 0
  * (PoR: start 26, row 23 puts the second bank at (24, 0)); `clip`: the original tests the edge first.
  */
@@ -249,7 +249,7 @@ export function finishingPass(bf: Battlefield, roll: Roll, area: number) {
 }
 
 /**
- * A map square's byte in GEO plane 2 (CotAB 0x53E45; PoR's map lookups do the same, spec/maps.md):
+ * A map square's byte in GEO plane 2 (CotAB 0x53E45; PoR's map lookups do the same, spec/A-games/engine/maps-and-view.md):
  * outside 0–15, 0 in areas 0 and 10, else the coordinate is moved to the far edge (above 15 → 0,
  * below 0 → 15).
  */
@@ -267,8 +267,8 @@ function squareByte(geo: GeoMap, x: number, y: number, area: number): number {
  * around the party, rows of squares outer, each a sheared 6 × 5 block of cells, north up. Edge classes:
  * 0 open, 1 wall, 3 door. Per square: floor and west edge, north edge, north-west and north-east
  * corners (PoR 0x24F2A, 0x24FE7, 0x2507F, 0x25285; CotAB 0x2508C, 0x25131, 0x251AE, 0x25386), then the
- * furnishing (CotAB 0x24D63); after all squares the finishing pass (PoR). spec/combat.md "Map-area
- * battlefields", spec/coab/combat.md "Map-area generator".
+ * furnishing (CotAB 0x24D63); after all squares the finishing pass (PoR). spec/A-games/engine/battlefield.md "Map-area
+ * battlefields", spec/A-games/coab/combat.md "Map-area generator".
  */
 export function mapBattlefield(geo: GeoMap, X: number, Y: number, roll: Roll, area: number,
   spec: MapFieldSpec = R.mapField, img: Uint8Array | null = null): Battlefield {

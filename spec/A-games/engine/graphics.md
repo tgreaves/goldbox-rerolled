@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Graphics
 
-Part of [[spec/README]]. Decoder: `tools/gfx.py` (writes PNGs).
+Part of the [specification](../../README.md), part A. Decoder: `tools/gfx.py` (writes PNGs).
 
 ## Image block (O)
 
@@ -65,7 +65,7 @@ Frames are loaded into a table at `DS:6ABE`: byte count, byte current frame (1-b
 
 ## Menu input loop (O, `FUN_53aa_03bd`)
 
-All horizontal menus share one loop, described with the other input widgets in [[spec/menus]] §0.
+All horizontal menus share one loop, described with the other input widgets in [input-and-menus.md](input-and-menus.md) §0.
 
 ## Transparency (O)
 

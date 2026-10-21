@@ -1,4 +1,4 @@
-"""List every sound effect's bytecode (spec/sound.md).
+"""List every sound effect's bytecode (spec/A-games/engine/sound.md).
 Usage: python3 sounddis.py <START.EXE | flat image>"""
 import struct,sys,os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

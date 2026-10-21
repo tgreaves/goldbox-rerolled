@@ -1,7 +1,7 @@
 // Landmarks on the area map (IMPROVEMENTS.md IMP-024): shops, temples, inns and the like, found by
 // reading the area's ECL script statically. Each map square carries an event number (GEO plane 2);
 // the script's on_step vector dispatches on it with one ON_GOTO, so each event's handler can be
-// walked and classified from what it does (spec/ecl.md, spec/town.md).
+// walked and classified from what it does (spec/A-games/engine/ecl.md, spec/A-games/engine/town.md).
 import type { GeoMap } from '../data/geo'
 import { unpackText } from '../data/text'
 import { game } from '../games/profile'

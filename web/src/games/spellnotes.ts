@@ -1,5 +1,5 @@
 // One-line spell effects for the spell lists and the Rules reference, written for the port: they
-// summarise each game's spell handlers as the port runs them (PoR: spec/spells.md, "Per spell").
+// summarise each game's spell handlers as the port runs them (PoR: spec/A-games/engine/spells.md, "Per spell").
 
 export const POR_SPELL_NOTES: Record<number, string> = {
   1: 'Allies not yet in melee: +1 to hit and better morale.',
@@ -70,5 +70,5 @@ export const POR_SPELL_NOTES: Record<number, string> = {
   67: 'Constitution and hit points improve over a day of reading.',
 }
 
-/** CotAB: spells 1–56 are PoR's spells (spec/coab/tables.md §3.7); its new spells have no notes yet. */
+/** CotAB: spells 1–56 are PoR's spells (spec/A-games/coab/tables.md §3.7); its new spells have no notes yet. */
 export const COAB_SPELL_NOTES: Record<number, string> = Object.fromEntries(Object.entries(POR_SPELL_NOTES).filter(([id]) => Number(id) <= 56))

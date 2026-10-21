@@ -1,4 +1,4 @@
-// Casting in combat for both games (spec/combat.md "Cast", spec/coab/combat.md "Casting"): "Begins
+// Casting in combat for both games (spec/A-games/engine/combat-rules.md "Cast", spec/A-games/coab/combat.md "Casting"): "Begins
 // Casting" and the spell going off when the caster is picked again later in the round, the spell lost
 // to damage before then (PoR forgets it from the current character, CotAB from the caster), the
 // computer's delayed cast and its spell choice, casting at once, the camp-only refusal, Abort Spell?,

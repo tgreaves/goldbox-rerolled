@@ -10,17 +10,17 @@ The work concentrates on the split between the engine and the data that drives t
 
 ## Layout
 
-- [`spec/`](spec/README.md): the specification. Every statement is marked **O** (observed in the engine code or data), **I** (inferred) or **?** (unknown). Start at `spec/README.md`.
+- [`spec/`](spec/README.md): the specification, the single normative source the port can be rebuilt from with the player's own game files: part A the original games, part B the engine model, part C the port's own design, part D appendices. Every statement about the originals is marked **O** (observed in the engine code or data), **I** (inferred) or **?** (unknown). Start at `spec/README.md`.
 - `tools/`: Python 3, standard library only.
 - [`web/`](web/README.md): the browser port (TypeScript, Vite).
 - [`server/`](docs/server.md): the optional server: serves the app and keeps players' accounts and data (Node 24, no dependencies).
 - [`docs/requirements.md`](docs/requirements.md): requirements and design for the browser port.
 - [`docs/multi-game.md`](docs/multi-game.md): how the engine supports several games, and the status of each step.
-- [`spec/coab/`](spec/coab/README.md): *Curse of the Azure Bonds*, as differences from the PoR spec; `tools/coab/`: its extractors.
+- [`spec/A-games/coab/`](spec/A-games/coab/README.md): *Curse of the Azure Bonds*, as differences from the PoR spec; `tools/coab/`: its extractors.
 - [`CLAUDE.md`](CLAUDE.md): standing rules and method for working in the repository (data-driven first, faithful to the original, evidence marks, commits, testing).
 - [`IMPROVEMENTS.md`](IMPROVEMENTS.md): every deliberate departure from the original.
 
-The spec files use Obsidian-style `[[spec/name]]` links; they map to `spec/name.md`.
+The spec files use plain Markdown links; `python3 tools/speclinks.py` checks every link and anchor.
 
 ## Tools
 
@@ -40,6 +40,7 @@ Game files are not included. Point the tools at an extracted `POOLRAD/` folder f
 | `gfx.py` | image decoder to PNG (EGA palette, animation frames) |
 | `chars.py` | character and monster record decoder |
 | `spells.py` | spell table extractor (from the unpacked `START.EXE`) |
+| `speclinks.py` | checks every link and heading anchor in the repository's Markdown files |
 
 Examples:
 
@@ -55,7 +56,7 @@ Output from `automap.py`, `gfx.py` and the interpreter contains game text and ar
 
 - Engine: `START.EXE` + `GAME.OVR` (Borland Turbo Pascal with overlays), unpacked and merged into one image, then analysed in Ghidra through REA and with objdump; CotAB the same way, diffed against the PoR findings
 - Data formats confirmed against every shipped file (all 1,245 DAX records decode exactly)
-- Script semantics checked by running all 29 areas through `eclvm.py`; see `spec/ecl.md`, Validation
+- Script semantics checked by running all 29 areas through `eclvm.py`; see `spec/A-games/engine/ecl.md`, Validation
 - The browser port repeats these checks in its tests: every PoR and every CotAB area run headless from many squares, and each game's profile is tested against that game's own files
 
 ## Server and accounts (optional)

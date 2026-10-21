@@ -16,5 +16,5 @@ How the engine reaches the game's own data: the character record by named fields
 
 - [AUDIT.md](../AUDIT.md) §5.3
 - [coab/tables.md](../A-games/coab/tables.md) §2 and §4
-- [docs/multi-game.md](../../docs/multi-game.md) "Records stay native"
+- [docs/multi-game.md, "Records stay native"](../../docs/multi-game.md#records-stay-native)
 - `web/src/games/fields.ts`, `tables.ts`

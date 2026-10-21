@@ -1,6 +1,6 @@
 // Character creation (FUN_417f_056c) and the derived-statistics routines it calls.
 // Tables are read at runtime from the data segment of the player's START.EXE; nothing from the
-// game is embedded here. Behaviour, including the original's quirks, follows spec/chargen.md.
+// game is embedded here. Behaviour, including the original's quirks, follows spec/A-games/engine/chargen-and-progression.md.
 
 import { R, classLevel } from '../games/rules'
 import type { Item } from '../data/items'
@@ -42,7 +42,7 @@ export function alignmentsFor(t: Tables, cls: number): number[] {
 export const headRecord = (t: Tables, n: number) => t.b(T.headRecords.at + n)
 export const bodyRecord = (t: Tables, n: number) => t.b(T.bodyRecords.at + n)
 
-/** Start a character: steps 1-6 of spec/chargen.md (race, gender, class, alignment, age). */
+/** Start a character: steps 2-6 of spec/A-games/engine/chargen-and-progression.md, "Sequence" (race, gender, class, alignment, age). */
 export function begin(t: Tables, rng: Rng, race: number, gender: number, cls: number, alignment: number): Uint8Array {
   const c = new Uint8Array(F.size)
   c[F.race] = race
@@ -169,7 +169,7 @@ export function hitDice(t: Tables, rng: Rng, c: Uint8Array): number {
  * The hit dice of the classes given, at their current levels, by the game's rules (R.hitPoints): the
  * class's dice (`laterDice` dice after level 1 where set), the best of `rolls` rolls, at least the
  * level-1 minimum; from the class's stop level (T.hitDiceStop) the fixed amount, replacing the sum so
- * far (CotAB's quirk, spec/coab/tables.md §3.4). PoR FUN_417f_4235 / training; CotAB FUN 0x3b230.
+ * far (CotAB's quirk, spec/A-games/coab/tables.md §3.4). PoR FUN_417f_4235 / training; CotAB FUN 0x3b230.
  */
 export function rollHitDice(t: Tables, rng: Rng, c: Uint8Array, classes: number[]): number {
   const hp = R.hitPoints
@@ -188,7 +188,7 @@ export function rollHitDice(t: Tables, rng: Rng, c: Uint8Array, classes: number[
 
 /**
  * The base (permanent) abilities follow the current ones after creation, Modify, Raise Dead's CON
- * loss or an edit (CotAB keeps both, spec/coab/records.md §2.1; in PoR they are the same bytes).
+ * loss or an edit (CotAB keeps both, spec/A-games/coab/records.md §2.1; in PoR they are the same bytes).
  */
 export function keepBase(c: Uint8Array) {
   for (let i = 0; i < 6; i++) c[F.baseStat[i]] = c[F.stat[i]]

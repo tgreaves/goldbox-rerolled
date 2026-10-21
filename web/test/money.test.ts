@@ -1,4 +1,4 @@
-// Money rules (spec/town.md, "Money"); coin values come from START.EXE (POOLRAD), the rest needs no files.
+// Money rules (spec/A-games/engine/town.md, "Money"); coin values come from START.EXE (POOLRAD), the rest needs no files.
 import { describe, expect, it } from 'vitest'
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'

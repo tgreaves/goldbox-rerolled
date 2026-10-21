@@ -28,7 +28,7 @@ describe.skipIf(!por || !existsSync(por))('Pool of Radiance spell book', () => {
 })
 
 const coab = process.env.COAB ?? ''
-describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds spell book (spec/coab/tables.md §3.7)', () => {
+describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds spell book (spec/A-games/coab/tables.md §3.7)', () => {
   afterAll(() => setGame(POR))
   it('has 100 spells over five levels, by its own class codes', () => {
     setGame(COAB)

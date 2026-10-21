@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Commissions and proclamations
 
-The engine has no quest system. Commissions, rewards and the proclamations are kept in ordinary ECL variables in the A array (global and saved with the game, [[spec/savegame]]), and the scripts set and test them. The City Hall clerk is `ECL3` record 8; the proclamation walls outside City Hall are in `ECL3` record 0. All of this is observed from the scripts (O).
+The engine has no quest system. Commissions, rewards and the proclamations are kept in ordinary ECL variables in the A array (global and saved with the game, [engine/savegame.md](../engine/savegame.md)), and the scripts set and test them. The City Hall clerk is `ECL3` record 8; the proclamation walls outside City Hall are in `ECL3` record 0. All of this is observed from the scripts (O).
 
 ## Commission table (ECL 0x4AA6–0x4ABF)
 

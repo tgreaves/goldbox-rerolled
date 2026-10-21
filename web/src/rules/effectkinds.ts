@@ -1,7 +1,7 @@
 // Effect behaviours a game profile names for each effect type (games/effectrules.ts `handlers`, with their
 // parameters), the current-stat routine and the item kinds. Named by what they do so later games reuse
-// them; first transcribed from Pool of Radiance (spec/effects.md §2, segment 3723) or from Curse of the
-// Azure Bonds (spec/coab/effects.md §2, image offsets; its stat routine 0x4C389, item kinds 0x3F034).
+// them; first transcribed from Pool of Radiance (spec/A-games/engine/effects.md §2, segment 3723) or from Curse of the
+// Azure Bonds (spec/A-games/coab/effects.md §2, image offsets; its stat routine 0x4C389, item kinds 0x3F034).
 // The handlers get (arg, effect, character): arg 1 is a removal. The originals do not know the event;
 // the PoR behaviours apply each part on the event it means something for, as the port always has.
 import type { Effect } from '../data/effects'
@@ -60,7 +60,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   none() {},
 
   // ---------------------------------------------------------------- first transcribed from PoR
-  // (spec/effects.md §2, segment 3723 unless said). The port runs each part on the event it means
+  // (spec/A-games/engine/effects.md §2, segment 3723 unless said). The port runs each part on the event it means
   // something for (roll on 10, morale on 17, …); the originals change the globals whichever it is.
 
   /** 1, 2 Bless, Curse [10, 17]: the attack roll by `roll`; the morale by `morale` (lowered no further than 0) */
@@ -1052,7 +1052,7 @@ function conHitPoints(h: FxHost, c: Uint8Array, con: number) {
 /**
  * What readying (`ready`) or putting away an item with item +0x3E ≥ 0x80 does, named in the profile by
  * +0x3E & 0x7F (games/effectrules.ts `items`): PoR's item handler 128–139 (FUN_4894_14d0 →
- * FUN_5216_0000, spec/effects.md "Item handlers"), CotAB's item kind (0x3F034, spec/coab/effects.md).
+ * FUN_5216_0000, spec/A-games/engine/effects.md "Item handlers"), CotAB's item kind (0x3F034, spec/A-games/coab/effects.md).
  * +0x3D is the item's value (an effect type, a stat, an alignment and damage).
  */
 type ItemBehaviour = (h: FxHost, c: Uint8Array, it: Item, ready: boolean, p: HandlerSpec) => Promise<void>

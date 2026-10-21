@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Character creation, experience and training
 
-Part of [[spec/README]]. Creation is `FUN_417f_056c` (party screen "Create character"; the menus it uses are the widgets of [[spec/menus]] §0); training is `FUN_417f_29ae`; the level-derived statistics `FUN_51cf_0000`. This file merges the former `chargen.md`, the creation section of `menus.md` and `progression.md`.
+Part of the [specification](../../README.md), part A. Creation is `FUN_417f_056c` (party screen "Create character"; the menus it uses are the widgets of [input-and-menus.md](input-and-menus.md) §0); training is `FUN_417f_29ae`; the level-derived statistics `FUN_51cf_0000`. This file merges the former `chargen.md`, the creation section of `menus.md` and `progression.md`.
 
 ## Character creation (`FUN_417f_056c`)
 
@@ -24,14 +24,14 @@ Part of [[spec/README]]. Creation is `FUN_417f_056c` (party screen "Create chara
    - Yes/No "Keep this character? " (prompt 13). **N** re-rolls abilities, HP and gold (race, class, alignment, age kept). Abilities cannot be swapped or edited here (use Modify).
 8. **Name**: "Character name: " (prompt 13), max **15**, characters 0x20–0x7A, upper-cased; repeated while empty.
 9. **Portrait** (`FUN_417f_33e7`): frame rows 1–11, cols 28–38; head over body drawn at col 28, row 1 (`FUN_5523_04f9`). Menu "Head Body Keep": **H** next head (1–14, wraps to 1), **B** next body (1–12, wraps), **K** keep. No previous key; Esc does nothing. Head n → HEAD3.DAX record `DS:286F[n]` = 0, 8, 9, 13, 16, 18, 22, 34, 45, 51, 53, 57, 67, 68; body n → BODY3.DAX record `DS:287D[n]` = 1, 2, 3, 4, 7, 8, 18, 24, 26, 33, 35, 37 (file digit = `DS:5376`, which is 3 on the party screen). Stored in char[0xBB] / char[0xBC].
-10. **Combat icon** editor ([[spec/menus]] §3.2).
+10. **Combat icon** editor ([input-and-menus.md](input-and-menus.md) §3.2).
 11. Save to `<stem>.cha/.itm/.spc` + append to `charlist.txt` (`FUN_45c5_069e("", char)`), free the record. To play it the player must **Add** it.
 
 Esc/Exit in any of the four lists abandons creation: the code jumps to `417f:1ECE`, past the FreeMem, so the record leaks (O).
 
 ### Innate racial effects (O)
 
-| Race | Innate effects ([[spec/effects]]) |
+| Race | Innate effects ([effects.md](effects.md)) |
 |---|---|
 | Dwarf | 0x5A CON bonus to poison saves; 0x61 CON bonus to rod/staff/wand and spell saves; 0x1A +1 to hit orcs, goblins, hobgoblins (by monster name); 0x2F −4 to be hit by ogres, trolls, giants |
 | Elf | 0x6B 90% resistance to Sleep and Charm |
@@ -174,7 +174,7 @@ Only these fighter limits and the half-elf cleric limit are coded. The middle ro
 
 ## Training halls (O)
 
-New Phlan's training hall is `ECL3` record 11. Each door stores a class mask in ECL **0x6DA8** (`B[0x550]`), prints "'WE TRAIN ONLY *class* HERE. DO YOU WANT TO TRAIN?'" and runs `PROGRAM 0` (the party screen, whose **T**rain entry is enabled only while 0x6DA8 ≠ 0 or the cheat is on, [[spec/menus]]):
+New Phlan's training hall is `ECL3` record 11. Each door stores a class mask in ECL **0x6DA8** (`B[0x550]`), prints "'WE TRAIN ONLY *class* HERE. DO YOU WANT TO TRAIN?'" and runs `PROGRAM 0` (the party screen, whose **T**rain entry is enabled only while 0x6DA8 ≠ 0 or the cheat is on, [input-and-menus.md](input-and-menus.md)):
 
 | Hall | 0x6DA8 | Class bit it matches |
 |---|---|---|
@@ -219,7 +219,7 @@ Coin values in copper (`DS:0D24`): cp 1, sp 10, ep 100, gp 200, pp 1000. The pri
 
 ### Free training cheat (O, `FUN_417f_0161` at `417f:04ad`)
 
-Pressing **J** on the party screen compares the first command-line parameter (`ParamStr(1)`) with "STING". If it matches: `DS:470C` = 1 and "I Understand, master...". Nothing is typed after J; [[spec/menus]] and [[spec/architecture]] describe it as typing STING, which is wrong. `DS:470C` is reset to 0 every time the party screen is entered.
+Pressing **J** on the party screen compares the first command-line parameter (`ParamStr(1)`) with "STING". If it matches: `DS:470C` = 1 and "I Understand, master...". Nothing is typed after J; [input-and-menus.md](input-and-menus.md) and [main-loop.md](main-loop.md) describe it as typing STING, which is wrong. `DS:470C` is reset to 0 every time the party screen is entered.
 
 With the cheat, training skips the status, money, experience and hall checks and charges nothing; every class not at its game or demi-human cap gains a level at once. XP is still truncated as in step 4. The Train entry is enabled even outside a hall (G: guide 11.1 "J: train for free").
 

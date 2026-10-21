@@ -1,7 +1,7 @@
 // Character creation on one screen (IMP-040): race, gender, class and alignment as button rows
 // (combinations the rules forbid are greyed out with the reason), the rolled character with Reroll
 // and inline Modify steppers, and the name, portrait and combat icon beside it, all at once.
-// The rules are the original's (spec/chargen.md, FUN_417f_056c; Modify FUN_417f_209f; icon editor
+// The rules are the original's (spec/A-games/engine/chargen-and-progression.md, FUN_417f_056c; Modify FUN_417f_209f; icon editor
 // FUN_417f_382d); only the order of the questions is gone.
 import { R } from '../games/rules'
 import type { GameFiles } from '../store/gamefiles'

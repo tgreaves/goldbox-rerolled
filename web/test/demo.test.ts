@@ -1,4 +1,4 @@
-// The start-up menu and the demo (games/startup.ts, spec/coab/ecl.md "Start-up menu and demo"): the
+// The start-up menu and the demo (games/startup.ts, spec/A-games/coab/ecl.md "Start-up menu and demo"): the
 // menu's strings read from START.EXE, the demo script run headless from start to end in demo mode,
 // and Pool of Radiance without either. Needs COAB (and POOLRAD for the Pool of Radiance check).
 import { afterAll, describe, expect, it, vi } from 'vitest'

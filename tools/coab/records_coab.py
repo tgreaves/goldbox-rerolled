@@ -6,7 +6,7 @@ Usage:
   records_coab.py --mon GAME_DIR [N]    monsters from MON<N>CHA/ITM/SPC.DAX (all blocks if N omitted)
   records_coab.py --por FILE.CHA        convert a PoR 285-byte record the way the CotAB engine does
                                         (323c:14b3) and print the result
-Layout: see records.md next to this script.  Offsets are CotAB record offsets.
+Layout: see spec/A-games/coab/records.md.  Offsets are CotAB record offsets.
 """
 import os, sys, struct, glob
 
@@ -139,7 +139,7 @@ def show(c, fx=None):
 
 
 def items(d):
-    """63-byte item records, same layout as PoR (spec/records.md)."""
+    """63-byte item records, same layout as PoR (spec/A-games/engine/records.md)."""
     out = []
     for o in range(0, len(d) - ITEM + 1, ITEM):
         r = d[o:o + ITEM]

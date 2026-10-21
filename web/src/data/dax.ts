@@ -1,4 +1,4 @@
-// DAX container and RLE (spec/containers.md)
+// DAX container and RLE (spec/A-games/engine/containers.md)
 
 export interface DaxEntry {
   id: number

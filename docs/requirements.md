@@ -19,7 +19,7 @@ Assumed unless changed: the full game is in scope (exploration, combat, characte
 ## Constraints
 
 - **No game data in the repository or the build.** The player imports their own `POOLRAD` folder or GOG `.pkg`; the app decodes it in the browser and stores the original files locally. Nothing is uploaded.
-- **The original memory model is the game state**: ECL word arrays A, B, C, the script buffer and the party records, as in [`spec/savegame.md`](../spec/savegame.md). This keeps original saves loadable.
+- **The original memory model is the game state**: ECL word arrays A, B, C, the script buffer and the party records, as in [`spec/A-games/engine/savegame.md`](../spec/A-games/engine/savegame.md). This keeps original saves loadable.
 - **No network at runtime.** Fonts, libraries and assets are bundled.
 
 ## Architecture
@@ -29,8 +29,8 @@ web/
   src/
     data/      decoders: DAX/RLE, GEO, ECL, images, font, records (ports of tools/*.py)
     vm/        ECL interpreter (port of tools/eclvm.py), async so menus can await input
-    rules/     character rules, combat, spells, effects (spec/combat.md, spells.md, effects.md, ...)
-    engine/    exploration loop, camp, shops, party screen (spec/architecture.md, camp.md, town.md)
+    rules/     character rules, combat, spells, effects (spec/A-games/engine/combat-rules.md, spells.md, effects.md, ...)
+    engine/    exploration loop, camp, shops, party screen (spec/A-games/engine/main-loop.md, camp-and-time.md, town.md)
     render/    3D view (WebGL), 2D combat view, pictures and sprites
     ui/        responsive layout, menus, message log, automap, settings
     store/     game files and saves (OPFS / IndexedDB), import/export

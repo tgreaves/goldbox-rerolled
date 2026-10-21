@@ -1,4 +1,4 @@
-// Training and derived statistics (spec/progression.md) against the shipped characters; needs POOLRAD.
+// Training and derived statistics (spec/A-games/engine/chargen-and-progression.md) against the shipped characters; needs POOLRAD.
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'

@@ -1,5 +1,5 @@
 // Where each game's sound driver sits in START.EXE's load image (docs/multi-game.md, step 7). The
-// driver is the same code in both games; CotAB's is moved by −0xBD (spec/coab/assets.md).
+// driver is the same code in both games; CotAB's is moved by −0xBD (spec/A-games/coab/assets.md).
 
 export interface SoundDriver {
   /** image offset of the driver's code segment */

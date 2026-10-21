@@ -5,9 +5,9 @@ CHRDAT* characters) with the screens stubbed out. Text is printed, menus are
 answered from a queue (or with the first option), and engine screens such as
 combat, shops and the party screen are logged instead of run.
 
-It exists to check ../spec/ecl.md against the shipped scripts, and it records
+It exists to check ../spec/A-games/engine/ecl.md against the shipped scripts, and it records
 which variables the scripts touch. Opcode behaviour follows the handlers,
-including their bugs; see spec/ecl.md for each one.
+including their bugs; see spec/A-games/engine/ecl.md for each one.
 
 Usage:
   python3 eclvm.py <game_dir> [--save A] [--moves ffLre] [--answers 0,1,2]
@@ -25,7 +25,7 @@ CODE_END = 0xB700
 CHAR_SIZE = 0x11D
 ITEM_SIZE = 0x3F
 
-# ECL addresses with engine meaning (spec/ecl.md, engine-visible variables)
+# ECL addresses with engine meaning (spec/A-games/engine/ecl.md, engine-visible variables)
 AREA_ID, PREV_X, PREV_Y, GEO_ID, NO_OVERLAND = 0x49F2, 0x49F0, 0x49F1, 0x49C5, 0x49E6
 NO_ITEM_USE = 0x49E5
 CANCEL_MOVE, SEARCH_LOOK, SURPRISE_RESULT, EDGE = 0x6DC9, 0x6DCA, 0x6DCB, 0x6DD5
@@ -580,7 +580,7 @@ class Game:
         self.io.engine('ROB items', percent=p)
 
     def op_damage(self):
-        """Handler 29c3:2775 (traced in this session, see spec/ecl.md)."""
+        """Handler 29c3:2775 (traced in this session, see spec/A-games/engine/ecl.md)."""
         self.readops(5)
         flags, count, sides, bonus, save = (self.val(i) & 0xFF for i in range(1, 6))
         party = self.nodes[:self.B[PARTY_SIZE - B0]] or self.nodes
@@ -819,7 +819,7 @@ class Game:
                 return
 
     def command(self, c):
-        """One exploration command in a map area (spec/architecture.md)."""
+        """One exploration command in a map area (spec/A-games/engine/main-loop.md)."""
         if c in 'lrb':
             self.facing2 = (self.facing2 + {'l': 6, 'r': 2, 'b': 4}[c]) % 8
             return

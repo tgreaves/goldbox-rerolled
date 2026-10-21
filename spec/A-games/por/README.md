@@ -35,7 +35,7 @@ Radiance uses it; Curse of the Azure Bonds replaces it with a picture
 
 To be written: the scenario variables the engine and the port read by name (the commission and
 journal variables are in [commissions.md](commissions.md); the rest are spread over the engine
-files, [ecl.md](../engine/ecl.md) "Engine-visible variables").
+files, [engine/ecl.md, "Engine-visible variables"](../engine/ecl.md#engine-visible-variables-o-unless-marked)).
 
 ## External reference
 

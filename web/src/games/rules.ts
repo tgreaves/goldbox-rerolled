@@ -1,5 +1,5 @@
 // Each game's rules where they differ (docs/multi-game.md, step 6). Values first; where a procedure
-// differs the profile names which one, and both live in rules/. PoR: spec/; CotAB: spec/coab/tables.md §3.
+// differs the profile names which one, and both live in rules/. PoR: spec/; CotAB: spec/A-games/coab/tables.md §3.
 import { F } from './fields'
 
 export interface SpellRules {
@@ -32,7 +32,7 @@ export type CellDie = [base: number, sides: number]
  *  `count`d`sides`, then lowered until (column + `offset`) mod `every` = 0; one column right per row */
 export interface RiverCourse { chance: FlagValue; from: number; count: number; sides: number; every: number; offset: number }
 /**
- * One pass of a wilderness battlefield (spec/combat.md, "Wilderness battlefields"; spec/coab/combat.md).
+ * One pass of a wilderness battlefield (spec/A-games/engine/battlefield.md, "Wilderness battlefields"; spec/A-games/coab/combat.md).
  * Each names a procedure in rules/battlefield.ts by what it does; its numbers are the game's. The passes
  * that visit every cell scan columns outer, rows inner (both originals).
  * - `river`: each row while the column is on the field, the two `cells` of the water, then d`fordDie`
@@ -87,7 +87,7 @@ export interface MapFieldSpec {
 
 export interface GameRules {
   spells: SpellRules
-  /** how spell slots are worked out (PoR FUN_51cf_0000, CotAB FUN 0x50480, spec/coab/tables.md §3.5):
+  /** how spell slots are worked out (PoR FUN_51cf_0000, CotAB FUN 0x50480, spec/A-games/coab/tables.md §3.5):
    *  optionally clear every slot first; then per source, if the class has a level: one first-level slot
    *  (`first`), and the table's rows from level `from` either set (the class's own level's row) or added
    *  (rows from..level), each column into a pool and spell level; the WIS bonus after the cleric source
@@ -117,7 +117,7 @@ export interface GameRules {
   temple: { kind: TempleService; gp: number }[]
   /** caster level by spell class: the best of its terms (a class's level, plus its former dual-class
    *  level when that counts, minus `minus`; never below 0); item-only spells cast at 12 and anything
-   *  cast from an item at 6 (PoR FUN_10ba_26c2; CotAB 0x4F8BF, spec/coab/tables.md §3.7) */
+   *  cast from an item at 6 (PoR FUN_10ba_26c2; CotAB 0x4F8BF, spec/A-games/coab/tables.md §3.7) */
   casterTerms: Record<number, { cls: number; minus: number }[]>
   /** CotAB: characters with none of these levels high enough cast everything at 6 (0x4F8C5) */
   casterGate: { atLeast: Record<number, number>; level: number } | null
@@ -141,7 +141,7 @@ export interface GameRules {
    *  CotAB's paladin and ranger rules (null: none) */
   join: { pcs: number; members: number; maxRangers: number | null; evil: number[]; paladins: boolean }
   /** innate effects a new character gets, permanent, power 0xFF, in this order: by race, then by class id
-   *  (PoR spec/chargen.md; CotAB 0x371F6, 0x37647) */
+   *  (PoR spec/A-games/engine/chargen-and-progression.md; CotAB 0x371F6, 0x37647) */
   startEffects: { race: Record<number, number[]>; cls: Record<number, number[]> }
   /** CotAB's paladin abilities from the View menu (0x3D530 + 0x35F0 …): Lay on Hands heals 2 × level once a
    *  day (effect 0x8C), Cure Disease has uses that a weekly effect 0x8D refills to (level − 1) div 5 + 1 */
@@ -163,7 +163,7 @@ export interface GameRules {
   chaReaction: number[]
   /**
    * The bolt routines, one procedure (hit a cell, then the path from the aimed square away from the
-   * caster, with bounces; spec/combat.md "Lightning Bolt", spec/coab/effects.md §7): PoR FUN_4e53_28bc /
+   * caster, with bounces; spec/A-games/engine/combat-rules.md "Lightning Bolt", spec/A-games/coab/effects.md §7): PoR FUN_4e53_28bc /
    * FUN_4e53_295b, CotAB 0x478F6 / 0x479B4. `lightning`: Lightning Bolt's length in squares (PoR 8 at
    * 0x4111A, CotAB 7 at 0x47C7F); `skipLast`: a stop does not hit the creature the previous stop hit;
    * `mapAreaOnly`: bounces only where ECL 0x49E6 (CotAB 0x4BE6) = 1; `noRepeatBounce`: not twice without
@@ -198,7 +198,7 @@ export interface GameRules {
     kill: { cell: number; save: number; bands: [number, number, number | null][]; poison: number } | null
   }
   /**
-   * Casting in combat, one procedure (spec/combat.md "Cast", spec/coab/combat.md "Casting"): the cast
+   * Casting in combat, one procedure (spec/A-games/engine/combat-rules.md "Cast", spec/A-games/coab/combat.md "Casting"): the cast
    * routine (PoR FUN_3aae_2414, CotAB 0x2CCBD), the spell going off (FUN_4e53_0c20, 0x45251) and the
    * lost spell on damage (FUN_3aae_02f9 / FUN_5216_1344, 0x2AA62 / 0x4CC3C). `lostFrom`: whose memorised
    * list loses the queued spell when damage interrupts it: 'current', the current character's (PoR's
@@ -214,7 +214,7 @@ export interface GameRules {
 export type TempleService = 'blind' | 'disease' | 'clw' | 'csw' | 'ccw' | 'heal' | 'poison' | 'raise' | 'curse' | 'stone'
 
 
-// creation and training values both games share (O: same code in both, spec/chargen.md and spec/coab/tables.md §3.9)
+// creation and training values both games share (O: same code in both, spec/A-games/engine/chargen-and-progression.md and spec/A-games/coab/tables.md §3.9)
 const SHARED = {
   raceMenu: [1, 2, 3, 4, 5, 7], // Dwarf, Elf, Gnome, Half-Elf, Halfling, Human (Half-Orc never offered)
   components: [[0], [1], [2], [3], [4], [5], [6], [7], [0, 2], [0, 2, 5], [0, 4], [0, 5], [0, 6], [2, 5], [2, 6], [2, 5, 6], [5, 6]],
@@ -241,7 +241,7 @@ export const POR_RULES: GameRules = {
   },
   extraAttacks: { 2: 6 },
   hitPoints: { laterDice: null, rolls: 1, firstLevelMin: [2, 3], fixed: null },
-  // spec/progression.md; races 1 dwarf, 2 elf, 3 gnome, 4 half-elf, 5 halfling; classes 0 cleric, 2 fighter
+  // spec/A-games/engine/chargen-and-progression.md; races 1 dwarf, 2 elf, 3 gnome, 4 half-elf, 5 halfling; classes 0 cleric, 2 fighter
   levelLimits: [
     { race: 1, cls: 2, by: 0, limits: [7, 8, 9] }, { race: 2, cls: 2, by: 0, limits: [5, 6, 7] },
     { race: 3, cls: 2, by: 0, limits: [5, 5, 6] }, { race: 4, cls: 2, by: 0, limits: [6, 7, 8] },
@@ -318,7 +318,7 @@ export const COAB_RULES: GameRules = {
   // is set; the place is A byte 0x342 (ECL 0x4CA1, the engine's 0x4AA1)
   wildBattle: { kind: 'placeFlags', mapFlag: 0x49e6, place: 0x4aa1 },
   // 0x25C58: open ground, river 0x25690, trees and logs 0x2579B, scatter 0x25ADA (0x25932); no finishing
-  // pass, which in CotAB's RandCom would put tables and chairs outdoors (spec/coab/combat.md)
+  // pass, which in CotAB's RandCom would put tables and chairs outdoors (spec/A-games/coab/combat.md)
   wildField: {
     fill: 0x17, blank: [0x17, 0x36],
     passes: [
@@ -334,7 +334,7 @@ export const COAB_RULES: GameRules = {
     ],
   },
   // 0x2555D: PoR's squares (one corner cell differs), no finishing pass; rooms furnished by 0x24D63 with
-  // tables (RandCom 0) on d10 ≤ 5 and chairs (RandCom 1) beside them on d10 ≤ 9 (spec/coab/combat.md)
+  // tables (RandCom 0) on d10 ≤ 5 and chairs (RandCom 1) beside them on d10 ≤ 9 (spec/A-games/coab/combat.md)
   mapField: { cornerWallEnd: 0x08, finishing: false, furnish: { flag: 0x40, blank: [0x17, 0x36], table: [0x1a, 10, 5], chair: [0x1b, 10, 9] } },
   // 0x4B8F7: no 0x1E immunity; HD 0–4 die, 5 save at −4, 6 save, 7 and up (and below 0) unaffected
   clouds: { gas: { cell: 0x1e, immune: [0x1f, 0x20, 0x6f, 0x7d], roundEnd: false, apply: true }, kill: { cell: 0x1c, save: 0, bands: [[0, 4, null], [5, 5, -4], [6, 6, 0]], poison: 0x37 } },

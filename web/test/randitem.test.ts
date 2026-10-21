@@ -1,4 +1,4 @@
-// Random treasure items against tools/randitem.py with the same dice (spec/records.md); needs POOLRAD.
+// Random treasure items against tools/randitem.py with the same dice (spec/A-games/engine/records.md); needs POOLRAD.
 import { describe, expect, it } from 'vitest'
 import { readFileSync, existsSync, writeFileSync, mkdtempSync } from 'node:fs'
 import { join } from 'node:path'

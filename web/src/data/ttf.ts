@@ -1,4 +1,4 @@
-// The game's 8 × 8 font (8X8D1.DAX #201, spec/graphics.md "Font") turned into a TrueType font at run
+// The game's 8 × 8 font (8X8D1.DAX #201, spec/A-games/engine/graphics.md "Font") turned into a TrueType font at run
 // time, so ordinary HTML text can use it (IMP-038). The font comes from the player's files; nothing of
 // it is shipped. Each lit run of pixels becomes a square outline: 128 units a pixel, 1024 to the em,
 // baseline under row 6 (row 7 holds descenders), every glyph 8 pixels wide.
@@ -6,7 +6,7 @@ import { parseFont } from './font'
 
 const PX = 128, EM = 8 * PX, ASC = 7 * PX, DESC = PX
 
-/** Characters drawn, as the original's text codes map (spec/graphics.md): no lowercase in the game. */
+/** Characters drawn, as the original's text codes map (spec/A-games/engine/graphics.md): no lowercase in the game. */
 export function charMap(): Map<number, number> {
   const m = new Map<number, number>()
   for (let c = 0x20; c <= 0x3f; c++) if (c !== 0x25) m.set(c, c) // 0x25 is a solid block in the game, not %

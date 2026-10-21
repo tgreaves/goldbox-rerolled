@@ -1,4 +1,4 @@
-// Spell tables (spec/spells.md): names (PoR DS:2912, 56 × 41-byte Pascal strings) and 16-byte records
+// Spell tables (spec/A-games/engine/spells.md): names (PoR DS:2912, 56 × 41-byte Pascal strings) and 16-byte records
 // (PoR DS:31FA + id × 16), read from the player's START.EXE at the game's T.spellNames / T.spellRecords.
 import { R } from '../games/rules'
 import { T } from '../games/tables'

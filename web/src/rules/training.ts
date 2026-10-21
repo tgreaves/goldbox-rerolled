@@ -1,4 +1,4 @@
-// Training (spec/progression.md, FUN_417f_29ae) and the derived statistics after a level (FUN_51cf_0000).
+// Training (spec/A-games/engine/chargen-and-progression.md, FUN_417f_29ae) and the derived statistics after a level (FUN_51cf_0000).
 import { R, slots } from '../games/rules'
 import { T } from '../games/tables'
 import { rollHitDice, conBonus, saves, thiefSkills, wisdomBonus, type Rng, type Tables } from './chargen'

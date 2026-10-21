@@ -1,7 +1,7 @@
 # CotAB combat: differences from Pool of Radiance
 
-Differences from [[spec/combat]]; anything not listed works as there. Addresses are CotAB image
-offsets ([[spec/coab/README]], "Working image"); DS = image 0xABE0.
+Differences from [engine/battlefield.md](../engine/battlefield.md) and [engine/combat-rules.md](../engine/combat-rules.md); anything not listed works as there. Addresses are CotAB image
+offsets ([README.md, "Working image"](README.md#working-image)); DS = image 0xABE0.
 
 ## Battlefield (O, 0x25CC0)
 
@@ -26,7 +26,7 @@ per square (tables 0x1A and chairs 0x1B in rooms), below.
 
 ### Map-area generator (O, 0x2555D)
 
-PoR's squares → cells procedure ([[spec/combat]], "Map areas: squares → cells"), statement for
+PoR's squares → cells procedure ([engine/battlefield.md, "Map areas: squares → cells"](../engine/battlefield.md#map-areas-squares--cells-fun_34c7_0810)), statement for
 statement, except where marked **new**. The parent's locals are globals here: dx DS:4A24, dy DS:4A25,
 edge classes N DS:4A26, W DS:4A27, E DS:4A28, S DS:4A29; party x, y DS:7229, DS:722A.
 
@@ -103,7 +103,7 @@ in practice the test is "still 0x17". PoR's tree and scatter passes make the sam
    finishing pass.
 
 Every pass reads the flags through **0x25621**: `DS:0354[DS:4A2C]` (the place table, `T.placeTerrain`).
-The flag bits mean what PoR's do ([[spec/combat]], "Terrain flags"); the passes use them differently.
+The flag bits mean what PoR's do ([engine/battlefield.md, "Terrain flags"](../engine/battlefield.md#terrain-flags-o-fun_34c7_08a4)); the passes use them differently.
 
 All loops are Pascal `for` loops over bytes; the grid stride is 50 (`mul 0x32`).
 
@@ -125,9 +125,9 @@ The same course as PoR's river (`FUN_34c7_0bde`), different cells, fords and no 
 Quirk (O, follows from the loop): the ford's lower cell (row + 1, c + 1) is the next row's left half,
 which the next iteration overwrites with 0x3C/0x3D. So 0x41 never survives; a ford is the single cell
 0x40 in place of a right half. The water cells cost 4 to enter, not blocked (cell table byte 0; the
-port reads only "blocked or not", [[spec/coab/tables]] §3.12).
+port reads only "blocked or not", [tables.md](tables.md) §3.12).
 
-Against PoR's river (`FUN_34c7_0bde`, [[spec/combat]] "River pass"): PoR's banks are fixed cells (0x32,
+Against PoR's river (`FUN_34c7_0bde`, [engine/battlefield.md, "River pass"](../engine/battlefield.md#river-pass-o-fun_34c7_0bde)): PoR's banks are fixed cells (0x32,
 0x33), its ford replaces both cells of the row (0x34, 0x35) and repeats on the next row (an odd count
 of fords forces one), and it adds a crossing when no ford was made; PoR writes the second bank at
 column 49 too (it spills into the next row's column 0), CotAB tests for it. The chance, the d100, the
@@ -232,7 +232,7 @@ course. Tested cell for cell against this transcription with scripted dice (`tes
 
 ## Casting (O)
 
-PoR's casting in combat ([[spec/combat]], "Cast"), routine for routine, with three changes.
+PoR's casting in combat ([engine/combat-rules.md, "Cast"](../engine/combat-rules.md#cast-o-fun_3aae_2414var-result-auto-spell)), routine for routine, with three changes.
 
 | PoR | CotAB | Same / changed |
 |---|---|---|
@@ -246,7 +246,7 @@ PoR's casting in combat ([[spec/combat]], "Cast"), routine for routine, with thr
 | acceptance `FUN_3334_02eb` | 0x23471 | same, spell 3 hard-coded (Cure Light Wounds), priority DS:37E9, hostile DS:37EA |
 | patient finder `FUN_3aae_1bf8` | 0x2C34E | same (directions DS:2696/269F, side +0x197, HP +0x1A4 against max +0x78, bodies DS:6E6C + 7n, count DS:6EAB, statuses 6–8 excluded, HP below 8) |
 
-- **Miscast** (0x45373, new): before the loop, a caster with effect 0x4A (has-effect 0xED:0x9D) who rolls 1 on 1d2 (0xE3:0x4D) "miscasts": `0x4A3FD`("miscasts", spell), which in combat shows "*name* Casts a Spell" and "Spell: *spell*" as for any cast (the verb is shown only outside combat), then nothing: no target, no effect, **not forgotten** (so the earlier note "loses the spell" in [[spec/coab/spells]] was wrong). Checked for every cast, from an item too, in and out of combat. Who carries 0x4A in CotAB is ? (its handler 0x28A5E is empty and nothing in the code adds it, [[spec/coab/effects]]); I: data (monster records or saves).
+- **Miscast** (0x45373, new): before the loop, a caster with effect 0x4A (has-effect 0xED:0x9D) who rolls 1 on 1d2 (0xE3:0x4D) "miscasts": `0x4A3FD`("miscasts", spell), which in combat shows "*name* Casts a Spell" and "Spell: *spell*" as for any cast (the verb is shown only outside combat), then nothing: no target, no effect, **not forgotten** (so the earlier note "loses the spell" in [spells.md](spells.md) was wrong). Checked for every cast, from an item too, in and out of combat. Who carries 0x4A in CotAB is ? (its handler 0x28A5E is empty and nothing in the code adds it, [effects.md](effects.md)); I: data (monster records or saves).
 - **Feeblemind** (effect 68, 0x288E5, the third "lost a spell" string at 0x288D9): INT +0x13 and WIS +0x15 := 7, "is stupid"; in combat (DS:4FD3 = 5) rec[1] = 0 and, with a spell queued, "lost a spell", the spell forgotten from the feebleminded character (0x2896F) and rec[0] = 0. So a caster feebleminded while casting loses the spell and the rest of its casting this round.
 - **Event 21** (0x2209E): fired at a turn's start only when rec[0] = 0, so not on the turn a queued spell goes off.
 

@@ -124,7 +124,7 @@ describe.skipIf(!have)('Curse of the Azure Bonds scripts', () => {
     expect(e.cityCursor).toEqual([34, 1])
   })
 
-  it('puts the sun and clouds in the day sky (spec/coab/assets.md §3)', () => {
+  it('puts the sun and clouds in the day sky (spec/A-games/coab/assets.md §3)', () => {
     setGame(COAB)
     const files = load()
     const e = new Engine(files, headless(() => 0), 1)

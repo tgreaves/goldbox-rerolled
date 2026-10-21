@@ -253,6 +253,6 @@ Columns 0–49 outer, rows 0–24 inner. On each cell whose image slot `DS:2747[
 
 Wilderness battlefields also run this pass.
 
-Port: `rules/battlefield.ts` `mapBattlefield`, one procedure with CotAB's 0x2555D (spec/coab/combat.md
+Port: `rules/battlefield.ts` `mapBattlefield`, one procedure with CotAB's 0x2555D (coab/combat.md
 "Map-area generator"); PoR's profile (`R.mapField`) gives the corner cell 0x04, the finishing pass and
 no furnishing.

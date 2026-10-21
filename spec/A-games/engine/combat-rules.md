@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Combat rules
 
-Part of [[spec/README]]. Everything needed to run a battle: start, rounds, player and computer actions, attack resolution, status, end of battle and rewards. Spell effects are in [[spec/spells]] and [[spec/effects]]. Three companion files complete it: the battle grid and its generators in [battlefield.md](battlefield.md), the computer's side in [combat-ai.md](combat-ai.md), and what is drawn in [combat-visuals.md](combat-visuals.md); the conventions below apply to all four.
+Part of the [specification](../../README.md), part A. Everything needed to run a battle: start, rounds, player and computer actions, attack resolution, status, end of battle and rewards. Spell effects are in [spells.md](spells.md) and [effects.md](effects.md). Three companion files complete it: the battle grid and its generators in [battlefield.md](battlefield.md), the computer's side in [combat-ai.md](combat-ai.md), and what is drawn in [combat-visuals.md](combat-visuals.md); the conventions below apply to all four.
 
 ## Conventions
 
@@ -14,14 +14,14 @@ Each rule carries a source marker:
 | Marker | Meaning |
 |---|---|
 | O | read in the engine code (address given) |
-| G | from Stephen Lee's GameFAQs guide v2.00 ([[spec/README]], External references), not checked in code |
+| G | from Stephen Lee's GameFAQs guide v2.00 ([por/README.md, "External reference"](../por/README.md#external-reference)), not checked in code |
 | I | inferred from code and data, not proven |
 | ? | unknown |
 
 **Bug** marks behaviour of the original that looks unintended. An authentic port reproduces it; a port with fixes should log the change.
 
 - Addresses are Ghidra `seg_off` names in the merged image. The guide's IDA segments map to ours by overlay: 1DFA → 2e08, 21FE → 320c, 2326 → 3334, 24B9 → 34c7, 2715 → 3723, 2AA0 → 3aae, 3E45 → 4e53, 4208 → 5216, 46B3 → 56c1, 4771 → 577f, executable 00BA → 10ba. Offsets inside a segment are identical.
-- `c[x]` is a byte of the 0x11D-byte character/monster record ([[spec/records]]); `R[x]` is a byte of its 22-byte combat record (pointer at c[0x108]).
+- `c[x]` is a byte of the 0x11D-byte character/monster record ([records.md](records.md)); `R[x]` is a byte of its 22-byte combat record (pointer at c[0x108]).
 - Distances are in squares. The engine measures them in half-squares: a straight step costs 2, a diagonal step 3 (see [battlefield.md, "Line of sight and range"](battlefield.md#line-of-sight-and-range-o-fun_56c1_0422)). "Distance" in this file is that cost divided by 2, rounded down.
 - `B[x]` is the word array behind ECL variables 0x6B00+ (byte offset x = 2·(var − 0x6B00)); `A[x]` the one behind 0x4900+.
 
@@ -51,10 +51,10 @@ Each rule carries a source marker:
 
 ## Overview
 
-1. A script runs ECL `COMBAT` with monsters loaded by `LOAD_MONSTER` ([[spec/ecl]]). Scripts set the per-battle variables first: surprise 0x6DCB, morale 0x6DC6, side to-hit bonuses 0x6E70/0x6E71, party movement bonus 0x6E72, no-items flag 0x6DE3, duel flag 0x6DE6.
-2. Battlefield built and combatants placed ([[#Starting a battle]], [[#Battlefield (O, `FUN_34c7_1e31`)]]).
-3. Rounds until one side has nobody able to act ([[#Battle flow (O)]]). In each round every combatant gets initiative; the highest acts first and spends its whole move and all its attacks before the next one acts.
-4. Aftermath: survivors, experience, treasure, outcome in ECL 0x6DC7 ([[#Aftermath (`FUN_2e08_1527`)]]).
+1. A script runs ECL `COMBAT` with monsters loaded by `LOAD_MONSTER` ([ecl.md](ecl.md)). Scripts set the per-battle variables first: surprise 0x6DCB, morale 0x6DC6, side to-hit bonuses 0x6E70/0x6E71, party movement bonus 0x6E72, no-items flag 0x6DE3, duel flag 0x6DE6.
+2. Battlefield built and combatants placed ([Starting a battle](#starting-a-battle), [battlefield.md](battlefield.md)).
+3. Rounds until one side has nobody able to act ([Battle flow (O)](#battle-flow-o)). In each round every combatant gets initiative; the highest acts first and spends its whole move and all its attacks before the next one acts.
+4. Aftermath: survivors, experience, treasure, outcome in ECL 0x6DC7 ([Aftermath (`FUN_2e08_1527`)](#aftermath-fun_2e08_1527)).
 
 ## Dice (O, `FUN_5216_0de3`)
 
@@ -64,22 +64,22 @@ Each rule carries a source marker:
 
 ### ECL `COMBAT` entry (O, `FUN_29c3_179b`)
 
-1. If no monsters are loaded and no duel is set up, `COMBAT` is a shop, temple or treasure screen instead ([[spec/ecl]]).
+1. If no monsters are loaded and no duel is set up, `COMBAT` is a shop, temple or treasure screen instead ([ecl.md](ecl.md)).
 2. `d` = how far monsters can stand in front of the party (`FUN_2fea_0482(x, y, facing)`, 0–2, blocked by walls); if `d` < ECL 0x6DC1 (encounter distance), 0x6DC1 = `d`.
 3. Battle (`FUN_320c_007a`), then aftermath (`FUN_2e08_1527`).
 4. Clear the duel flag `DS:84D4`, set the game mode back (4 in map areas, 3 elsewhere), clear the "Look requested" bit of ECL 0x6DCA, redraw the normal view.
 
 ### Surprise (O)
 
-- ECL 0x6DCB: bit 0 = party surprised, bit 1 = monsters surprised. The `SURPRISE` opcode can produce 0, 1 or 2, never 3 ([[spec/ecl]]); scripts may write 3 directly.
-- Applied only to the first round's initiative (−6 for every combatant whose side bit is set, [[#Round start (`FUN_3aae_0000`)]]). `FUN_320c_007a` clears 0x6DCB right after the first round's initiative rolls, so it never applies again.
+- ECL 0x6DCB: bit 0 = party surprised, bit 1 = monsters surprised. The `SURPRISE` opcode can produce 0, 1 or 2, never 3 ([ecl.md](ecl.md)); scripts may write 3 directly.
+- Applied only to the first round's initiative (−6 for every combatant whose side bit is set, [Round start (`FUN_3aae_0000`)](#round-start-fun_3aae_0000)). `FUN_320c_007a` clears 0x6DCB right after the first round's initiative rolls, so it never applies again.
 - With both bits set both sides take −6; this differs from "no surprise" only through the clamping to 0 (G says both-surprised behaves as neither; the code penalises both).
-- Surprise also changes the pre-battle encounter menu, which is script-side ([[spec/ecl]] `ENCOUNTER_MENU`).
+- Surprise also changes the pre-battle encounter menu, which is script-side ([ecl.md](ecl.md) `ENCOUNTER_MENU`).
 
 ### Battle start order (O, `FUN_34c7_1e31`)
 
 1. "A battle begins..."; ECL 0x6E33 (party attacked allies) = 0; body count `DS:6715` = 0; ECL 0x6DC6 clamped to ≤ 100.
-2. Grid and terrain (`FUN_34c7_1244`, then map-area or wilderness generator: [[#Battlefield (O, `FUN_34c7_1e31`)]]).
+2. Grid and terrain (`FUN_34c7_1244`, then map-area or wilderness generator: [battlefield.md](battlefield.md)).
 3. Combat records (`FUN_34c7_12e1`), below.
 4. Placement (`FUN_34c7_19f5`), below.
 5. View origin: grid header [2], [3] = position of the first list entry (party member 1) − 3, so the 7 × 7 view is centred on it.
@@ -95,7 +95,7 @@ For each list entry in order (party first, then monsters in load order), after a
 
 ### Placement (O, `FUN_34c7_19f5`, `FUN_34c7_1577`, `FUN_34c7_1434`)
 
-Each side is placed in a block of map squares ("square" = one map square, drawn as a slanted 7 × 5 parallelogram of cells, [[#Map areas: squares → cells (`FUN_34c7_0810`)]]). Placement uses square-local cells (col 0–10, row 0–5) converted to arena cells by
+Each side is placed in a block of map squares ("square" = one map square, drawn as a slanted 7 × 5 parallelogram of cells, [battlefield.md, "Map areas: squares → cells (`FUN_34c7_0810`)"](battlefield.md#map-areas-squares--cells-fun_34c7_0810)). Placement uses square-local cells (col 0–10, row 0–5) converted to arena cells by
 
 ```
 X = 22 + col + 6·bx + 5·by        Y = 10 + row + 5·by        // (bx, by) = square offset from the party's square
@@ -141,7 +141,7 @@ The party's order in the party list is its marching order: the first members tak
 
 ### Combat icons (O)
 
-Party members use icon slots 0–7 (c[0xBF], assigned on joining, [[spec/menus]]); monsters get slots from 8 up as `LOAD_MONSTER` loads their `CPIC` icons. Icons are drawn with the combatant's facing R[9] (`FUN_58af_04fc`). The terrain icon sets are `DUNGCOM`/`WILDCOM`/`RANDCOM` ([[#Cell table (O, `DS:2744`, 4 bytes per cell value)]]).
+Party members use icon slots 0–7 (c[0xBF], assigned on joining, [input-and-menus.md](input-and-menus.md)); monsters get slots from 8 up as `LOAD_MONSTER` loads their `CPIC` icons. Icons are drawn with the combatant's facing R[9] (`FUN_58af_04fc`). The terrain icon sets are `DUNGCOM`/`WILDCOM`/`RANDCOM` ([battlefield.md, "Cell table (O, `DS:2744`, 4 bytes per cell value)"](battlefield.md#cell-table-o-ds2744-4-bytes-per-cell-value)).
 
 ## Battle flow (O)
 
@@ -165,10 +165,10 @@ cleanup (FUN_320c_0000): free Stinking Cloud zones, restore palette
 For every combatant, whether or not it can act:
 
 1. R[0] = 0 (no queued spell), R[1] = 1 (may cast), R[2] = 1 (may use items), R[8] = 0, R[4] = 2.
-2. Primary attacks c[0x113] ([[#Attacks per round (O, `FUN_3aae_0d23`)]]); secondary attacks c[0x114] = `half(event18(c[0xA2]))`.
+2. Primary attacks c[0x113] ([Attacks per round (O, `FUN_3aae_0d23`)](#attacks-per-round-o-fun_3aae_0d23)); secondary attacks c[0x114] = `half(event18(c[0xA2]))`.
 3. R[5] = c[0x6B] (sweeps).
 4. Initiative R[3]: if the combatant cannot act (c[0x10D] = 0) → 0. Else `d6 + DEX reaction adj` (`FUN_10ba_1168`), at least 1; then −6 if its side is surprised (bit `side+1` of ECL 0x6DCB); a value below 0 or above 20 becomes 0. Haste and Slow do not change initiative (G, consistent with code).
-5. R[6] = movement in half-squares ([[#Movement points (O, `FUN_3aae_0123`)]]).
+5. R[6] = movement in half-squares ([Movement points (O, `FUN_3aae_0123`)](#movement-points-o-fun_3aae_0123)).
 
 ### Turn order (`FUN_320c_0131`)
 
@@ -189,13 +189,13 @@ The turn is over when the action routine clears initiative (`FUN_10ba_2637`: ini
 
 ### Round end (`FUN_320c_0880`)
 
-1. Advance game time by one unit (`FUN_4b46_03D5(1,1)`); effect durations count down by 1, so effect durations in combat are in rounds (expiry callbacks run here, [[spec/effects]]).
+1. Advance game time by one unit (`FUN_4b46_03D5(1,1)`); effect durations count down by 1, so effect durations in combat are in rounds (expiry callbacks run here, [effects.md](effects.md)).
 2. Round counter `DS:6DE3` + 1 (a byte: it wraps after 255 rounds, G; anything keyed to round 0 then happens again).
 3. Recompute the enemy side's remaining HP percentage (`FUN_3aae_2879`, used by morale).
 4. For every combatant: effect event 19; Stinking Cloud check (`FUN_5216_0ae7`); if Dying: R[0xE] + 1, and at R[0xE] ≥ 10 status Dead.
 5. If any party member is Dying: message "Your Teammate is Dying".
 6. Recount sides; redraw. Done if either side has nobody in play.
-7. If the party has someone in play and the enemy side has nobody: prompt "Continue Battle:"; Y keeps the battle going with no enemies (useful for bandaging, curing and buffing, G), anything else ends it. (`DS:49F4` would skip the prompt but is always 0: a demo flag never set, cleared at start-up `0x26FDB`; CotAB's DS:4FD5 does skip it in its demo, [`coab/ecl.md`](coab/ecl.md), "Start-up menu and demo".)
+7. If the party has someone in play and the enemy side has nobody: prompt "Continue Battle:"; Y keeps the battle going with no enemies (useful for bandaging, curing and buffing, G), anything else ends it. (`DS:49F4` would skip the prompt but is always 0: a demo flag never set, cleared at start-up `0x26FDB`; CotAB's DS:4FD5 does skip it in its demo, [`coab/ecl.md`, "Start-up menu and demo"](../coab/ecl.md#start-up-menu-and-demo-o).)
 
 ### Aftermath (`FUN_2e08_1527`)
 
@@ -264,7 +264,7 @@ Every list entry in play (c[0x10D] ≠ 0) and not Animated receives, so in pract
 | 9, 15 (three classes) | share / 3 |
 | 1, 3, 4, 7 | share |
 
-No level-cap check here (training enforces caps, [[spec/progression]]). The summary (`FUN_2e08_0916`) shows the share before the bonus or division: "The party has won." / "The party has fled." (shown as 0) / "The party has found Treasure!", or "You have won/lost the duel.", then "Each character receives N experience points." ("The duelist receives …"). Layout: a rope-framed window over the whole screen (`FUN_13f1_02e8`, cells 1–38 × 1–22, style 0), the outcome at row 1, the treasure line at row 3, "Each character receives N" at row 5 and "experience points." at row 7 (colour 10), then the bottom-line prompt "press <enter>/<return> to continue" (O).
+No level-cap check here (training enforces caps, [chargen-and-progression.md](chargen-and-progression.md)). The summary (`FUN_2e08_0916`) shows the share before the bonus or division: "The party has won." / "The party has fled." (shown as 0) / "The party has found Treasure!", or "You have won/lost the duel.", then "Each character receives N experience points." ("The duelist receives …"). Layout: a rope-framed window over the whole screen (`FUN_13f1_02e8`, cells 1–38 × 1–22, style 0), the outcome at row 1, the treasure line at row 3, "Each character receives N" at row 5 and "experience points." at row 7 (colour 10), then the bottom-line prompt "press <enter>/<return> to continue" (O).
 
 #### Cleanup (O, `FUN_2e08_11ac`)
 
@@ -294,7 +294,7 @@ Anything not taken is lost when the menu closes (items freed; G).
 
 ## Player turn (O, `FUN_320c_031a`)
 
-If the combatant cannot act (c[0x10D] = 0) the turn ends. If a spell is queued in R[0], R[0] is cleared and the spell cast now (`FUN_4e53_0c20(spell, announce 1, auto 0)`, 0x22412, targets chosen at this moment), and the turn ends. R[0] is cleared **before** the cast, so damage the caster takes from its own spell (a bounced Lightning Bolt) loses nothing; the computer's turn does not clear it first ([[#Computer AI]]). Otherwise the menu (`FUN_320c_0666`) repeats until an action ends the turn. Event 15 fires again each time the menu is built.
+If the combatant cannot act (c[0x10D] = 0) the turn ends. If a spell is queued in R[0], R[0] is cleared and the spell cast now (`FUN_4e53_0c20(spell, announce 1, auto 0)`, 0x22412, targets chosen at this moment), and the turn ends. R[0] is cleared **before** the cast, so damage the caster takes from its own spell (a bounced Lightning Bolt) loses nothing; the computer's turn does not clear it first ([combat-ai.md](combat-ai.md)). Otherwise the menu (`FUN_320c_0666`) repeats until an action ends the turn. Event 15 fires again each time the menu is built.
 
 ### Main menu
 
@@ -322,10 +322,10 @@ All waits scale with the game speed `DS:49E2` (0 fastest … 9 slowest, 4 in the
 | Wait | Where | Length |
 |---|---|---|
 | Message pause | `FUN_1709_0dbe` = Delay(speed × 225 ms); after combat messages printed with the pause flag (`FUN_10ba_16ec`, most call sites pass 1) and status-line messages (`FUN_10ba_1693`) | speed × 225 ms |
-| Weapon hit or miss line | the line, sound 7 (hit) or 9 (all missed), then the message pause; no flash (see [[#Combat visuals]]) | speed × 225 ms |
+| Weapon hit or miss line | the line, sound 7 (hit) or 9 (all missed), then the message pause; no flash (see [combat-visuals.md](combat-visuals.md)) | speed × 225 ms |
 | Sparkle / starburst | `FUN_10ba_1feb`: an effect took hold (speed + 1 cycles of 4 frames × 70 ms, sound 4) or spell/effect damage (one cycle, sound 3, then the pause) | (speed + 1) × 280 ms / 280 ms + speed × 225 ms |
 | Before an attack | `3aae:1937` Delay(100) after the target is set | 100 ms |
-| Step | each step plays the footstep (sound 10) in transient mode, which waits `delay(10)` before cutting it off ([[spec/sound]] §6); with sound off there is no wait, so the redraw sets the pace | ≈ 100 ms |
+| Step | each step plays the footstep (sound 10) in transient mode, which waits `delay(10)` before cutting it off ([sound.md](sound.md) §6); with sound off there is no wait, so the redraw sets the pace | ≈ 100 ms |
 | Fall | `FUN_577f_0e11`: the skull on the combatant's cells, sound 5, then the message pause | speed × 225 ms |
 
 At speed 0 only the fixed parts remain (hit flash 280 ms, steps); at speed 9 a message holds about 2 s and a hit about 2.8 s.
@@ -354,13 +354,13 @@ For a step in direction d:
 
 1. Look at the target cell (`FUN_577f_04be`).
 2. A combatant there: melee attack on it (`FUN_320c_0d45`, below); the Move command ends. This works on any combatant, including one that cannot be targeted with Aim (blinked, G).
-3. Cell 0 (outside the 25 × 50 arena): "Flee:" Y/N. Y → flee attempt ([[#Fleeing (O, `FUN_3aae_0c6a`)]]); N → stay.
+3. Cell 0 (outside the 25 × 50 arena): "Flee:" Y/N. Y → flee attempt ([Fleeing (O, `FUN_3aae_0c6a`)](#fleeing-o-fun_3aae_0c6a)); N → stay.
 4. Cell movement byte `DS:2744[cell·4]` > R[6] → "Blocked" (the byte is 1 for open cells and 0xFF for obstacles, so this only rejects obstacles).
 5. Otherwise: attacks of opportunity from enemies being left (`FUN_3aae_08b2`); if still in play, the step itself (`FUN_3aae_0712`); Stinking Cloud check; if now helpless, the turn ends.
 
 When the loop ends with fewer than 2 half-squares left, R[6] = 0.
 
-Melee by moving (`FUN_320c_0d45`): refused with "Not with that weapon" if a non-throwable ranged weapon is readied. Attacking an ally asks "Attack Ally:" (`FUN_3aae_2998`); confirming sets ECL 0x6E33 = 1 and makes allied NPCs hostile (G). A physical attack by an ally on a charmed creature breaks the charm (G). Then target = defender, sweep attempt ([[#Sweep (O, `FUN_3aae_0e82`)]]); if no sweep, engage (`FUN_3aae_17f6`) and attack (`FUN_3aae_1884`).
+Melee by moving (`FUN_320c_0d45`): refused with "Not with that weapon" if a non-throwable ranged weapon is readied. Attacking an ally asks "Attack Ally:" (`FUN_3aae_2998`); confirming sets ECL 0x6E33 = 1 and makes allied NPCs hostile (G). A physical attack by an ally on a charmed creature breaks the charm (G). Then target = defender, sweep attempt ([Sweep (O, `FUN_3aae_0e82`)](#sweep-o-fun_3aae_0e82)); if no sweep, engage (`FUN_3aae_17f6`) and attack (`FUN_3aae_1884`).
 
 ### Aim (O, `FUN_3aae_3558(char, rng, mode, allowEmpty, &done, &buf)`)
 
@@ -430,7 +430,7 @@ r0 (8, bolt)  r1 (9)   r2 (10)    r3 (11)
 **Casting** (`FUN_4e53_0c20`)
 1. Loop on the target pick. On failure players get "Abort Spell?"; Yes → "Spell Aborted" and the memorised spell is lost (not when cast from an item). The AI aborts directly.
 2. The caster turns to the first direction whose cone contains the centre.
-3. A projectile animates to that square; sound 262A for Fireball (47), 2624 for Lightning Bolt (51), else 2618 ([[spec/sound]]).
+3. A projectile animates to that square; sound 262A for Fireball (47), 2624 for Lightning Bolt (51), else 2618 ([sound.md](sound.md)).
 4. Call the handler `DS:6B84[id]`. Outside combat, spells with byte 7 = 0 give "is a combat-only spell... Lose it?" (byte 7, not 11).
 
 ### Spell handlers in combat (O, segment 4e53 handler table)
@@ -454,15 +454,15 @@ r0 (8, bolt)  r1 (9)   r2 (10)    r3 (11)
 
 ### Cast (O, `FUN_3aae_2414(var result, auto, spell)`)
 
-Called by the player's Cast (0x224F2: auto 0, spell 0) and the computer's spell choice (0x2399B: auto 1, [[#Spells and items]]); item Use does not come here, so items have no casting time.
+Called by the player's Cast (0x224F2: auto 0, spell 0) and the computer's spell choice (0x2399B: auto 1, [combat-ai.md, "Spells and items"](combat-ai.md#spells-and-items-o-fun_3334_02ebc-spell-pri)); item Use does not come here, so items have no casting time.
 
 1. No spell given: choose from the memorised list (`FUN_4894_299c`).
 2. Spell byte 11 = 0 (camp only): "Camp Only Spell", nothing happens, result 0: the player's menu comes back, the computer's turn goes on to its weapons.
 3. auto = 0: the screen is redrawn for the caster (`FUN_10ba_2b88`, `FUN_43e0_007f`, `FUN_10ba_09e3`).
 4. `t` = casting time (byte 12) / 3. `t` = 0: cast now (`FUN_4e53_0c20(spell, 1, auto)`) and end the turn (`FUN_10ba_2637`).
-5. Otherwise "Begins Casting", R[0] = spell, initiative R[3] −= `t` if it is above `t` (signed), else 1. Result 1: the turn ends but the combatant stays in the order ([[#Turn order (`FUN_320c_0131`)]]), so it is picked again once its lowered initiative is the highest left, at once if it still is. Then the player's turn ([[#Player turn (O, `FUN_320c_031a`)]]) or the computer's ([[#Computer AI]]) casts the queued spell, its targets chosen then.
+5. Otherwise "Begins Casting", R[0] = spell, initiative R[3] −= `t` if it is above `t` (signed), else 1. Result 1: the turn ends but the combatant stays in the order ([Turn order (`FUN_320c_0131`)](#turn-order-fun_320c_0131)), so it is picked again once its lowered initiative is the highest left, at once if it still is. Then the player's turn ([Player turn (O, `FUN_320c_031a`)](#player-turn-o-fun_320c_031a)) or the computer's ([combat-ai.md](combat-ai.md)) casts the queued spell, its targets chosen then.
 6. What stops it on the way:
-   - Damage (weapon or spell, dmg > 0) clears R[1] and the queued spell: "lost a spell", and one copy is forgotten from the **current** character's list, not the caster's (**Bug**, [[#Hit points and status]]). Nothing is cast and the caster, still with initiative, gets a normal turn later in the round, without Cast (R[1] = 0).
+   - Damage (weapon or spell, dmg > 0) clears R[1] and the queued spell: "lost a spell", and one copy is forgotten from the **current** character's list, not the caster's (**Bug**, [Hit points and status](#hit-points-and-status)). Nothing is cast and the caster, still with initiative, gets a normal turn later in the round, without Cast (R[1] = 0).
    - Anything that ends its turn through `FUN_10ba_2637` before it is picked again (Hold, Sleep, Snake Charm, effect 31 at event 7; going down, `FUN_577f_0e11`) clears R[0]: nothing is cast and the spell stays memorised.
    - Round start clears R[0] for everyone, but a caster always comes up again in the same round (its initiative is at least 1), so only those clear it in practice.
    - Fleeing, Delay and Guard cannot be chosen meanwhile: the next turn casts first.
@@ -475,11 +475,11 @@ In combat (DS:49F3 = 5):
 2. Targets chosen: the caster turns and the bolt flies, `FUN_10b0_005c`, the spell is forgotten (`FUN_10ba_148b`, unless from an item), then its handler (`DS:6B84 + 4·id`, DS:681B = spell).
 3. No target: auto = 0: "Abort Spell?"; Yes: "Spell Aborted", forgotten (unless from an item); **No: back to 1**, announced and aimed again. auto ≠ 0: "Spell Aborted" and forgotten at once.
 
-The callers: the player's queued cast (announce 1, auto 0), Cast with `t` = 0 (1, the caller's auto), the computer's queued cast (1, 1), Use (`FUN_4894_1a8a`, 0x3A51D: announce 0, auto = the user's Quick flag c[0x10F], DS:6DBF = 1, so not forgotten either). AI targets for a friendly spell (byte 14 = 0, `FUN_3aae_20c3` 0x2C94B): the caster itself; for Cure Light Wounds (spell 3) the patient finder `FUN_3aae_1bf8` ([[#Spells and items]]), and none means no target, so the spell is aborted. The spell leaves the memorised list only when it actually goes off or is aborted. Spell effects and targeting: [[spec/spells]].
+The callers: the player's queued cast (announce 1, auto 0), Cast with `t` = 0 (1, the caller's auto), the computer's queued cast (1, 1), Use (`FUN_4894_1a8a`, 0x3A51D: announce 0, auto = the user's Quick flag c[0x10F], DS:6DBF = 1, so not forgotten either). AI targets for a friendly spell (byte 14 = 0, `FUN_3aae_20c3` 0x2C94B): the caster itself; for Cure Light Wounds (spell 3) the patient finder `FUN_3aae_1bf8` ([combat-ai.md, "Spells and items"](combat-ai.md#spells-and-items-o-fun_3334_02ebc-spell-pri)), and none means no target, so the spell is aborted. The spell leaves the memorised list only when it actually goes off or is aborted. Spell effects and targeting: [spells.md](spells.md).
 
 ### Turn undead
 
-See [[#Turn undead (O, `FUN_3aae_116a`)]].
+See [Turn undead (O, `FUN_3aae_116a`)](#turn-undead-o-fun_3aae_116a).
 
 ## Movement (O)
 
@@ -579,12 +579,12 @@ Before a melee attack from the menu, the AI or a guard, `engage(attacker, target
 3. **Large target** (`c[0x6C] > 0x80` or `(c[0x6C] & 7) > 1`, i.e. declared large or an icon taller or wider than one square) and attacker has a readied weapon: hand-1 dice become `ITEMS[t]` bytes 2/3 and the bonus changes by `ITEMS[t][4] − ITEMS[t][11]`. Unarmed and natural attacks are not changed. (The change lasts until the next stat recompute.)
 4. Target stats recomputed, effect event 11 on the target.
 5. AC byte:
-   - backstab ([[#Backstab (O, `FUN_3aae_2574`)]]): `target[0x112] − 2`
+   - backstab ([Backstab (O, `FUN_3aae_2574`)](#backstab-o-fun_3aae_2574)): `target[0x112] − 2`
    - else if target R[0xF] > 1, the direction from attacker to target equals the target's facing (attacker straight behind) and target R[0x12] > 4: from behind
    - from behind (by that test or by the caller): `target[0x112]`, else `target[0x111]`
 6. Range penalty for missile weapons (`FUN_3aae_1b1e`): `band = (ITEMS[weapon][12] − 1) / 3`, d = distance: d > band → AC byte + 2; d > 2·band → a further + 3. With no ranged weapon nothing changes.
 7. Attack type for messages: 0 normal, 1 from behind, 2 backstab.
-8. For hand h = R[4] down to 1, while c[0x112+h] > 0 and the target is still in play: c[0x112+h] − 1, R[4] = h, attack count + 1, to-hit roll; on a hit (or if the target has become helpless) hit count + 1, damage (`FUN_3aae_0191`), apply ([[#Hit points and status]]), then effect event h+1 (2 or 3, "after hit") on the attacker if the target is still in play.
+8. For hand h = R[4] down to 1, while c[0x112+h] > 0 and the target is still in play: c[0x112+h] − 1, R[4] = h, attack count + 1, to-hit roll; on a hit (or if the target has become helpless) hit count + 1, damage (`FUN_3aae_0191`), apply ([Hit points and status](#hit-points-and-status)), then effect event h+1 (2 or 3, "after hit") on the attacker if the target is still in play.
 9. No hit at all: "and Misses".
 10. done = no attacks left in either hand; R[5] (sweeps) = 0.
 
@@ -633,12 +633,12 @@ With `ac_byte = 60 − AC` and `attacker[0x110] = 60 − THAC0` this is the AD&D
 | STR | to-hit and damage for weapons with ITEMS flag 4 and for unarmed attacks, only if c[0xAA] ≠ 0 (characters, 49 monster records) | O |
 | DEX | to-hit for weapons with ITEMS flag 2 (missile) | O |
 | elf | +1 to hit with Long Sword, Short Sword, Composite Long/Short Bow, Long/Short Bow (types 36, 37, 41–44); not the Fine Composite Long Bow (45) | O |
-| dwarf, gnome racial | effects 26, 18 by monster name ([[spec/effects]]) | O |
+| dwarf, gnome racial | effects 26, 18 by monster name ([effects.md](effects.md)) | O |
 | side bonus | ECL 0x6E70 / 0x6E71, set by scripts per battle (e.g. Kobold Caves, G) | O |
 | range | +2 / +5 AC at medium / long range | O |
 | rear | rear AC (no DEX, no shield, −2), backstab −2 more | O |
 | invisible target | −4 (effect 25 at event 16) | O |
-| Bless, Curse, Prayer, Blindness, Bestow Curse | ±1, ±4 ([[spec/effects]]) | O |
+| Bless, Curse, Prayer, Blindness, Bestow Curse | ±1, ±4 ([effects.md](effects.md)) | O |
 
 ## Damage (O, `FUN_3aae_0191(hand, target, attacker)`)
 
@@ -671,9 +671,9 @@ else HP = HP'
 HP is unsigned; negative HP exists only as R[0xE]. Then, in `FUN_3aae_02f9`:
 
 1. If dmg > 0: R[1] = 0 (no more casting this round). If a spell is queued (R[0] > 0): "lost a spell", R[0] = 0, and `FUN_10ba_148b(spell)` removes one copy of that spell from the memorised list of the **current character**, which during an attack is the attacker, not the caster (**Bug**, O: the interrupted caster keeps the spell memorised; an attacker who has the same spell memorised loses it).
-2. If the target is out of play: "goes down", "and is Dying" or "is killed"; effects that end at 0 HP are removed (`FUN_5216_100a`: 7, 11, 30–32, 51–54, 58, 59, 74, 75, 95, 98, 137); effect event 13; fall graphic (`FUN_577f_0e11`: the skull, COMSPR 11, over every footprint cell (see [[#Combat visuals]]), sound 5 and the message pause; a party entry, R[0x13] = 0, then lies there as a body, its cell set to 0x1F unless it is a cloud 0x1E and the old cell kept in `DS:66D6 + 7n`; a monster leaves nothing, the redraw removes the picture), initiative, movement, queued spell and guard cleared (`FUN_577f_0e11`).
+2. If the target is out of play: "goes down", "and is Dying" or "is killed"; effects that end at 0 HP are removed (`FUN_5216_100a`: 7, 11, 30–32, 51–54, 58, 59, 74, 75, 95, 98, 137); effect event 13; fall graphic (`FUN_577f_0e11`: the skull, COMSPR 11, over every footprint cell (see [combat-visuals.md](combat-visuals.md)), sound 5 and the message pause; a party entry, R[0x13] = 0, then lies there as a body, its cell set to 0x1F unless it is a cloud 0x1E and the old cell kept in `DS:66D6 + 7n`; a monster leaves nothing, the redraw removes the picture), initiative, movement, queued spell and guard cleared (`FUN_577f_0e11`).
 
-Non-weapon damage (spells, traps, effects) goes through `FUN_5216_1344`, which fires event 6 (damage type in `DS:6819`), halves or zeroes on a save, and applies the same thresholds ([[spec/effects]]).
+Non-weapon damage (spells, traps, effects) goes through `FUN_5216_1344`, which fires event 6 (damage type in `DS:6819`), halves or zeroes on a save, and applies the same thresholds ([effects.md](effects.md)).
 
 ### Statuses in combat
 
@@ -697,7 +697,7 @@ Used by ECL `DAMAGE` (traps): `r = d20` (1 fails, 20 → 100), `effects(target, 
 
 ## Saving throws (O, `FUN_5216_0d63(char, type, bonus)`)
 
-Character bytes 0x6D–0x71 hold save targets: death/poison/paralysis, petrification/polymorph, rod/staff/wand, breath weapon, spell (tables in [[spec/progression]]).
+Character bytes 0x6D–0x71 hold save targets: death/poison/paralysis, petrification/polymorph, rod/staff/wand, breath weapon, spell (tables in [chargen-and-progression.md](chargen-and-progression.md)).
 
 ```
 r = d20
@@ -709,7 +709,7 @@ success if char[0x6D + type] <= DS:6816
 
 ## Effects hook (O, `FUN_5216_02fa(char, event)`)
 
-A switch over 20 event codes, each firing a fixed list of effect types (targeting, after hit, damage, turn start, effect added, to-hit, saving throw, death, morale, rate, round end). Full event table and all handlers in [[spec/effects]].
+A switch over 20 event codes, each firing a fixed list of effect types (targeting, after hit, damage, turn start, effect added, to-hit, saving throw, death, morale, rate, round end). Full event table and all handlers in [effects.md](effects.md).
 
 ## Combat statistics (O, `FUN_10ba_0bb8`)
 
@@ -723,7 +723,7 @@ The statistics routine and the ability adjustments it uses (STR to-hit and damag
 4. Repeat while a target exists, `count` > 0 and nothing has failed:
    - target (`FUN_3aae_1351`): among enemies in sight (`FUN_10ba_2433(c, 255)`), not already turned (R[0x10] = 0), with undead type c[0x76] > 0, the lowest type; ties go to the first in the sight list (I: nearest first)
    - `v = DS:0447[type · 10 + column]`; `r < |v|` → failure, stop
-   - `v ≥ 1`: "is turned", R[0x10] = 1 (it flees, [[#Computer-controlled combatants (O, `FUN_3334_000f`)]]); `v ≤ 0`: "Is destroyed", status Gone (8), out of play
+   - `v ≥ 1`: "is turned", R[0x10] = 1 (it flees, [combat-ai.md](combat-ai.md)); `v ≤ 0`: "Is destroyed", status Gone (8), out of play
    - `minimum` − 1 (if > 0); `count` − 1; if `count` reached 0 while `minimum` > 0 and this target was a D* (v < 0), `count` = 1 (keep going)
 5. "Nothing Happens..." if nothing was affected. Recount sides, end the turn.
 
@@ -752,9 +752,9 @@ Reproduce these in an authentic port (O unless marked).
 |---|---|
 | Interrupting a spell removes the spell from the attacker's memorised list, not the caster's; the caster keeps it | `FUN_3aae_02f9` → `FUN_10ba_148b` |
 | A negative damage total wraps to 255 (I) | `FUN_3aae_0191` |
-| Protection from Evil/Good −2 to hit is overwritten (only the save bonus works) | [[spec/effects]] |
-| Mirror Image absorbs only targeted spells, never weapons | [[spec/effects]] |
-| Haste/Slow shown reversed on the character sheet (combat uses the right values) | [[spec/effects]] |
+| Protection from Evil/Good −2 to hit is overwritten (only the save bonus works) | [effects.md](effects.md) |
+| Mirror Image absorbs only targeted spells, never weapons | [effects.md](effects.md) |
+| Haste/Slow shown reversed on the character sheet (combat uses the right values) | [effects.md](effects.md) |
 | A diagonal step with exactly 2 half-squares left forfeits the remaining movement | `FUN_3aae_0712` |
 | Opportunity attackers get one attack even when they have none left | `FUN_3aae_08b2` |
 | Round counter is a byte; round-0 rules recur after 256 rounds (G) | `DS:6DE3` |

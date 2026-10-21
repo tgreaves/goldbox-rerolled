@@ -1,6 +1,6 @@
 // The original sound driver (in START.EXE; where, from the game's profile) emulated tick by tick,
 // and the PC speaker (8253 timer channel 2 + port 61h) it drives. A port of the reference
-// renderer; format and behaviour in spec/sound.md.
+// renderer; format and behaviour in spec/A-games/engine/sound.md.
 
 import { game } from '../games/profile'
 import type { SoundDriver } from '../games/sound'
@@ -10,7 +10,7 @@ const TICK_DIV = 0x13b1 // timer interrupt every 5041 PIT clocks: 236.7 Hz
 export const TICK_MS = (TICK_DIV * 1000) / PIT_HZ
 
 // driver variables, tables and command handlers, CS-relative in PoR's driver; a game whose driver is
-// moved adds its shift (games/sound.ts; CotAB −0xBD, spec/coab/assets.md "Sound driver")
+// moved adds its shift (games/sound.ts; CotAB −0xBD, spec/A-games/coab/assets.md "Sound driver")
 const OFFSETS = {
   V_BUSY: 0x1d8, V_CHLOOP: 0x1d9, V_STRUCTSZ: 0x1da, V_EFFECT: 0x1ff, V_CURCH: 0x201,
   V_CHBASE: 0x203, V_FREQTAB: 0x205, V_RETADDR: 0x207, V_CHEFFECT: 0x209, V_ENABLE: 0x20d,
@@ -400,7 +400,7 @@ export function renderEffect(image: Uint8Array, n: number, rate: number, cut?: n
 /**
  * Texas Instruments SN76489 as in the Tandy 1000 / PCjr: three square-wave voices and a noise
  * channel, 2 dB attenuation steps. An approximation: the Tandy chip's noise taps may differ
- * (spec/sound.md).
+ * (spec/A-games/engine/sound.md).
  */
 class SN76489 {
   private reg = [0, 0xf, 0, 0xf, 0, 0xf, 0, 0xf] // tone0, att0, tone1, att1, tone2, att2, noise, att3

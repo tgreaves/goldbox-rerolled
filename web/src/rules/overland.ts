@@ -1,4 +1,4 @@
-// Overland travel in the wilderness (areas 25-27), spec/overland.md. The tables are read at runtime
+// Overland travel in the wilderness (areas 25-27), spec/A-games/engine/overland.md. The tables are read at runtime
 // from the data segment of the player's START.EXE; nothing from the game is shipped.
 import { T } from '../games/tables'
 import { unexepack } from '../data/exepack'

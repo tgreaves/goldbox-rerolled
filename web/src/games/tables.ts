@@ -1,7 +1,7 @@
 // The rules tables in each game's START.EXE data segment, by name (docs/multi-game.md, step 3).
 // Code reads `t.b(T.thac0.at + k * T.thac0.row + L)` instead of `t.b(0x3c7c + k * 11 + L)`, and T
 // holds the active game's addresses. PoR: the spec files cited in the port; CotAB:
-// spec/coab/tables.md §2. `at` is the DS offset of entry 0 (−1: the game has no such table); `row`
+// spec/A-games/coab/tables.md §2. `at` is the DS offset of entry 0 (−1: the game has no such table); `row`
 // is the size of one row where the table is indexed by a first key (class, race, level …).
 
 export interface TableRef { at: number; row: number }

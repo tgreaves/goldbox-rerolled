@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Characters, monsters, items
 
-Part of [[spec/README]]. Decoder: `tools/chars.py`.
+Part of the [specification](../../README.md), part A. Decoder: `tools/chars.py`.
 
 ## One record for everyone (O)
 
@@ -110,7 +110,7 @@ Same layout in character `.ITM` files, `ITEM<block>.DAX` (placed treasure and sh
 | 0x3A | u16 | value in gp: the Buy price; Sell offers half | O |
 | 0x3C | u8 | property 1: charges / doses. Scrolls: 0x3C–0x3E hold up to three spell ids, bit 7 = flagged for scribing (the item cannot then be traded, dropped or sold without confirming "is it Okay to lose it?") | O |
 | 0x3D | u8 | property 2: spell cast by Use (ids > 0x38 have 0x17 subtracted: 80–90 → item-only spells 57–67); or the effect / parameter for an item handler | O |
-| 0x3E | u8 | property 3: ≥ 0x80 = item effect handler type (128–139, [[spec/effects]]) called on ready/unready; then the item cannot be Used | O |
+| 0x3E | u8 | property 3: ≥ 0x80 = item effect handler type (128–139, [effects.md](effects.md)) called on ready/unready; then the item cannot be Used | O |
 
 Weights and values of shop items match the GameFAQs guide (9.2) and AD&D (flail 150 / 3 gp, banded mail 350 / 90 gp, two-handed sword 250 / 30 gp). A stack weighs item[0x37] × count (10 shop arrows of weight 4 weigh 40); the guide's per-arrow 0.4 does not match the shipped records (O, `FUN_10ba_0bb8` and `FUN_4894_275b`).
 
@@ -151,7 +151,7 @@ File `ITEMS`: u16 header (0x7600, unused), then 128 × 16 bytes; loaded at DS:55
 |---|---|---|
 | 0 | slot: 0 weapon, 1 shield, 2 body armour, 3 gauntlets, 4 helm, 5 belt/necklace, 6 robe, 7 cloak, 8 boots, 9 ring, 10 miscellaneous (ammunition, potions, mirrors, holy symbols, jewellery), 11 magic-user scroll, 12 clerical scroll; other values are unique slot numbers that never conflict: 74, 75, 77 (bracers), 78 (both wand types), 80 (potions of giant strength), 81, 82, 83, 91 | ready, recalc (O) |
 | 1 | hands needed (0–2) | ready, recalc (O) |
-| 2, 3, 4 | damage vs large: dice count, sides, s8 bonus | combat (O, [[spec/combat]]) |
+| 2, 3, 4 | damage vs large: dice count, sides, s8 bonus | combat (O, [combat-rules.md](combat-rules.md)) |
 | 5 | missile attacks per round × 2 | combat round start (O, `FUN_3aae_0d23`) |
 | 6 | AC descriptor: < 0x80 none; 0x80 = "AC from the item's plus" (misc or ring); 0x81 shield (+1); ≥ 0xB2 body/bracers AC in 60 − AC units (value − 0x80: 50 + armour bonus) | recalc (O) |
 | 7 | damage type: 0 slashing, 1 piercing, 0x80 bashing | effects 94/115 (O) |
@@ -264,7 +264,7 @@ Data quirks kept as shipped: Bec De Corbin has the thrown flag but range 0 (neve
 
 ## Random items
 
-The only source is ECL `TREASURE` (0x27) with item operand 0x80 + n (handler `29c3:19B0`, O). `FUN_4c2d_1010` has no other caller (one far call, through stub `008F:0061`, O). Monster loot is never random: the aftermath copies the monsters' own `MON<block>ITM` items ([[spec/combat]] Aftermath; O: value > 0 always taken; value 0 kept on d10 ≤ 3 unless 8 items, of any value, were already taken in this battle). Reference implementation: `tools/randitem.py` (builds the bytes from a list of dice results). dN = `roll(1, N)` = Random(N) + 1 (`FUN_5216_0de3`).
+The only source is ECL `TREASURE` (0x27) with item operand 0x80 + n (handler `29c3:19B0`, O). `FUN_4c2d_1010` has no other caller (one far call, through stub `008F:0061`, O). Monster loot is never random: the aftermath copies the monsters' own `MON<block>ITM` items ([combat-rules.md](combat-rules.md) Aftermath; O: value > 0 always taken; value 0 kept on d10 ≤ 3 unless 8 items, of any value, were already taken in this battle). Reference implementation: `tools/randitem.py` (builds the bytes from a list of dice results). dN = `roll(1, N)` = Random(N) + 1 (`FUN_5216_0de3`).
 
 ### Type choice (O, in the TREASURE handler)
 
@@ -305,7 +305,7 @@ else: m from the magic table, below (types without an entry keep m = 0: blank it
 if m ≠ 0: overwrite from the random item array
 ```
 
-Names (word numbers as in [[#Name words (O)]]; displayed 0x31 0x30 0x2F; mask 4 hides 0x2F, mask 6 hides 0x2F and 0x30):
+Names (word numbers as in [Name words (O)](#name-words-o); displayed 0x31 0x30 0x2F; mask 4 hides 0x2F, mask 6 hides 0x2F and 0x30):
 
 | t | 0x31 | 0x30 | 0x2F | 0x35 | unidentified → identified |
 |---|---|---|---|---|---|
@@ -390,7 +390,7 @@ item[0x37] = W[m + 3];  item[0x39] = 0;  item[0x3A] = W[m + 4]
 item[0x3C + j] = low byte W[m + 5 + j], j = 0..2
 ```
 
-Type, mask 6, cursed 0 and readied 0 stay as set. The save bonus only counts for AC descriptor 0x80 ([[#Item record (63 bytes)]]), so of these items only the Cloak of Displacement gets it (+2 saves, matching G; the shipped cloaks have 0). A random Ring of Protection gets 0x33 = 0 (G agrees).
+Type, mask 6, cursed 0 and readied 0 stay as set. The save bonus only counts for AC descriptor 0x80 ([Item record (63 bytes)](#item-record-63-bytes)), so of these items only the Cloak of Displacement gets it (+2 saves, matching G; the shipped cloaks have 0). A random Ring of Protection gets 0x33 = 0 (G agrees).
 
 Random item array (DS:0972, O; words 0x2F 0x30 0x31, then weight, value, 0x3C 0x3D 0x3E):
 
@@ -420,7 +420,7 @@ Unidentified (mask 6) only 0x31 shows: "Potion", "Wand", "Ring", "Cloak", "Keogh
 
 **The javelin bug** (O): m = 0x90 is one word before entry 0x91, so every field shifts by one. The item keeps type 0x15 (Javelin) and gets words 0, 229, 167 ("of" → identified "of Elvenkind"), plus 1, save 1, weight 88, value 25, 0x3C = 0x70 (low byte of 6000), 0x3D = 0, 0x3E = 72 (< 0x80, so no handler). It is fixed, not the "hard-to-predict" item in G.
 
-All random items have plus ≥ 1 except blanks, so Detect Magic marks them. In a battle's treasure each gives 400 × plus experience ([[spec/combat]] Aftermath): 400 for scrolls and array items, 800 for the Cloak of Displacement, 1600–3200 for bracers (plus 4–8).
+All random items have plus ≥ 1 except blanks, so Detect Magic marks them. In a battle's treasure each gives 400 × plus experience ([combat-rules.md](combat-rules.md) Aftermath): 400 for scrolls and array items, 800 for the Cloak of Displacement, 1600–3200 for bracers (plus 4–8).
 
 ## Inventory and readying
 
@@ -441,7 +441,7 @@ All random items have plus ≥ 1 except blanks, so Detect Magic marks them. In a
 
 Unready (item readied):
 1. If cursed (item[0x36] ≠ 0): "It's Cursed", nothing changes.
-2. Else item[0x34] = 0; if item[0x3E] ≥ 0x80, call the item effect handler with "unreadied" ([[spec/effects]] 128–139).
+2. Else item[0x34] = 0; if item[0x3E] ≥ 0x80, call the item effect handler with "unreadied" ([effects.md](effects.md) 128–139).
 
 Ready (item not readied): compute an error code; each later check overwrites the earlier one, so the message priority is Wrong Class > already using > hands full.
 1. hands: `ITEMS[t][1] + char[0x100] > 2` → 3
@@ -454,7 +454,7 @@ Consequences: slots 10 and above (misc items, potions, bracers, wands, keys) nev
 
 ### Derived statistics (O, `FUN_10ba_0bb8`)
 
-Run after any change to items, money or effects (items menu, trade target, buying, the can-carry test). This is the only description of the routine; combat runs it at the start of every turn, before every attack on the target, and whenever equipment or effects change ([[spec/combat]], "Combat statistics"). All AC values are "60 − AC" (higher is better); THAC0 is "60 − THAC0".
+Run after any change to items, money or effects (items menu, trade target, buying, the can-carry test). This is the only description of the routine; combat runs it at the start of every turn, before every attack on the target, and whenever equipment or effects change ([combat-rules.md, "Combat statistics"](combat-rules.md#combat-statistics-o-fun_10ba_0bb8)). All AC values are "60 − AC" (higher is better); THAC0 is "60 − THAC0".
 
 1. Clear the 13 pointers char[0xCC..0xFF], char[0xC7] = 0, char[0x100] = 0, char[0x102] = 0, readied weight = 0.
 2. For each item: char[0xC7] += 1; w = weight × count (if count > 0); char[0x102] += w. If readied: readied weight += w; slot 0–8 → char[0xCC + 4·slot] = item (the last one wins); slot 9 → char[0xF0] if empty, else char[0xF4] if empty; type 73 → char[0xF8]; type 28 → char[0xFC]; word n1 = 0xBA → Bag of Holding; char[0x100] += `ITEMS[t][1]`.
@@ -468,7 +468,7 @@ Run after any change to items, money or effects (items menu, trade target, buyin
    3. plus = W[0x32]; + quarrels' plus if flags & 0x80 and quarrels readied; + arrows' plus if flags & 0x01 and arrows readied
    4. char[0x119] += plus
    5. elf (race 2) with type 36, 37 or 41–44 (long sword, short sword, the four plain bows; not the Fine Composite Long Bow): plus += 1 (to-hit only)
-   6. char[0x110] += plus; char[0x115] = `ITEMS[t][9]`, char[0x117] = `ITEMS[t][10]` (vs-large dice are substituted at attack time, [[spec/combat]])
+   6. char[0x110] += plus; char[0x115] = `ITEMS[t][9]`, char[0x117] = `ITEMS[t][10]` (vs-large dice are substituted at attack time, [combat-rules.md](combat-rules.md))
 8. For each readied item: armour movement, then AC (below).
 9. If any readied body armour has plus > 0: `ring` = 0 (rings of protection do not stack with magic armour; bracers are not body armour).
 10. Bag of Holding: char[0x102] = max(readied weight, char[0x102] − 5000) (0 if below 5000 before the max).
@@ -489,7 +489,7 @@ So body armour and bracers do not stack: the better one sets the base AC; shield
 
 **Armour movement** (`FUN_10ba_01fb`, readied slot-2 items): weight ≤ 150 → char[0x72]; 151–399 → 9; ≥ 400 → 6; then if plus ≠ 0 and the result ≤ 9: + 3. (Leather/padded 12, studded/ring/chain/banded 9, scale/splint/plate 6; a negative plus also gets the +3, bug.)
 
-**Encumbrance movement** (`FUN_10ba_03a0`): excess = char[0x102] − WA (floor 0); excess ≤ 512 → no limit; 513–768 → 9; 769–1024 → 6; > 1024 → 3; movement = min(current, limit). The guide's statement that the higher of armour and load limits applies is wrong: both only lower it. Haste and Slow are applied where movement is used ([[spec/combat]], [[spec/overland]]).
+**Encumbrance movement** (`FUN_10ba_03a0`): excess = char[0x102] − WA (floor 0); excess ≤ 512 → no limit; 513–768 → 9; 769–1024 → 6; > 1024 → 3; movement = min(current, limit). The guide's statement that the higher of armour and load limits applies is wrong: both only lower it. Haste and Slow are applied where movement is used ([combat-rules.md](combat-rules.md), [overland.md](overland.md)).
 
 **Ability adjustments** (strength index `si` as above; DEX = char[0x13]):
 
@@ -511,10 +511,10 @@ Both are 0 unless char[0xAA] ≠ 0: set for player characters and for 49 of the 
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | missile to-hit / initiative (`FUN_10ba_1168`) | −4 | −3 | −2 | −1 | 0 | +1 | +2 | +3 | +3 | +4 | +5 | 0 |
 
-Gauntlets of Ogre Power and Potions of Giant Strength act through Strength effect records (types 12/38, [[spec/effects]]) that overwrite char[0x10]/[0x16] while active; the recalculation then reads the new STR.
+Gauntlets of Ogre Power and Potions of Giant Strength act through Strength effect records (types 12/38, [effects.md](effects.md)) that overwrite char[0x10]/[0x16] while active; the recalculation then reads the new STR.
 
 Worked example: a human fighter, STR 18/63, DEX 16, banded mail +1, shield, long sword +1: body = max(56 + 1, 50) = 57, shield = 1 + 0, dex = 2, ring = 0 (magic armour) → char[0x111] = 60 (AC 0), rear = 57 − 2 = 55 (AC 5); THAC0 byte = char[0x2D] + 2 (STR) + 1 = THAC0 − 3; damage 1d8 + 3 (STR) + 1; movement: banded 350 → 9, magic → 12.
 
 ## Effect record (9 bytes, I)
 
-`u8 type, u16 duration (0 = permanent), u8 power, u8 call-on-removal flag, ptr next`. List head at char[0x7F]. Full type list in [[spec/effects]].
+`u8 type, u16 duration (0 = permanent), u8 power, u8 call-on-removal flag, ptr next`. List head at char[0x7F]. Full type list in [effects.md](effects.md).

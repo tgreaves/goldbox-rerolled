@@ -15,5 +15,5 @@ The named behaviours the profiles map game numbers onto: effect behaviours, item
 
 ## Sources to fold in
 
-- [engine/effects.md](../A-games/engine/effects.md) "Port status"; the "Port" sections of [coab/](../A-games/coab/README.md)
+- [engine/effects.md, "Port status"](../A-games/engine/effects.md#port-status-2026-10-20); the "Port" sections of [coab/](../A-games/coab/README.md)
 - `web/src/rules/effectkinds.ts`, `spellkinds.ts`, `specials.ts`; `web/src/games/effectrules.ts`, `spellrules.ts`

@@ -1,7 +1,7 @@
 // Spell handlers per game: each spell id names a handler kind (a procedure in rules/spellkinds.ts or the
 // battle's own, named by what it does) and its parameters, as the original's handler table does
 // (PoR DS:6B84 + 4·id, filled by FUN_4e53_3413; CotAB DS:72BA, filled at 0x4A4FF). Every id a game has is
-// listed, so no game is the default. spec/spells.md "Per spell"; spec/coab/spells.md §2.
+// listed, so no game is the default. spec/A-games/engine/spells.md "Per spell"; spec/A-games/coab/spells.md §2.
 
 /**
  * A count, a bonus or a fixed amount: a number, the caster level 'L', 'L/2' (L div 2), '(L+1)/2', or a
@@ -123,9 +123,9 @@ export const POR_SPELLS: SpellRules = {
 
 // ---------------------------------------------------------------- Curse of the Azure Bonds
 /**
- * CotAB's table (DS:72BA): ids 1–56 are PoR's spells, most with the same handler (spec/coab/spells.md
+ * CotAB's table (DS:72BA): ids 1–56 are PoR's spells, most with the same handler (spec/A-games/coab/spells.md
  * §2, "same"); 57–67 keep PoR's item spells where the record matches; 58 and 66–100 are its own.
- * Every id is transcribed (spec/coab/spells.md §2 and its port status, which lists what is inferred).
+ * Every id is transcribed (spec/A-games/coab/spells.md §2 and its port status, which lists what is inferred).
  */
 const POR_HANDLERS_1_57 = Object.fromEntries(Object.entries(POR_SPELLS.handlers).filter(([id]) => Number(id) <= 57 || [60, 61, 62, 63, 64, 65].includes(Number(id))))
 

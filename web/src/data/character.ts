@@ -1,4 +1,4 @@
-// Character records in the active game's layout (spec/records.md; CotAB spec/coab/records.md §2)
+// Character records in the active game's layout (spec/A-games/engine/records.md; CotAB spec/A-games/coab/records.md §2)
 
 import { F } from '../games/fields'
 import { T, type TableRef } from '../games/tables'

@@ -1,4 +1,4 @@
-// Wall sets and the 8x8 tile bank (spec/maps.md, "Wall sets", "Tile bank").
+// Wall sets and the 8x8 tile bank (spec/A-games/engine/maps-and-view.md, "Wall sets", "Tile bank").
 import type { GameFiles } from '../store/gamefiles'
 import { parseRecord, type Picture } from './image'
 

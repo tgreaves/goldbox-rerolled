@@ -5,7 +5,7 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Effects ("affects")
 
-Part of [[spec/README]]. Produced by a delegated analysis of all 117 handler routines (Ghidra pseudocode plus direct disassembly where Ghidra failed); the Haste/Slow finding was re-verified by hand at 0x31E9C/0x31EBF. O/I markers as elsewhere.
+Part of the [specification](../../README.md), part A. Produced by a delegated analysis of all 117 handler routines (Ghidra pseudocode plus direct disassembly where Ghidra failed); the Haste/Slow finding was re-verified by hand at 0x31E9C/0x31EBF. O/I markers as elsewhere.
 
 Linear addresses throughout: linear = 0x10000 + img.bin offset, and seg:off = seg*16+off. Handler segment 3723 is linear 0x37230. DS = 0x1C7C, so DS-relative initialised data sits at img.bin offset 0xC7C0+x.
 

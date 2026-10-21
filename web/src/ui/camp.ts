@@ -1,4 +1,4 @@
-// Camp screens (spec/camp.md): Encamp menu, Magic, Rest, Alter.
+// Camp screens (spec/A-games/engine/camp-and-time.md): Encamp menu, Magic, Rest, Alter.
 import { R, slots, bookSpell, casterClasses } from '../games/rules'
 import { game } from '../games/profile'
 import { F } from '../games/fields'

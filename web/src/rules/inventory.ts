@@ -1,4 +1,4 @@
-// Items menu actions (spec/town.md, "Items menu", FUN_4894_0ef8): available test, trade, halve, join.
+// Items menu actions (spec/A-games/engine/town.md, "Items menu", FUN_4894_0ef8): available test, trade, halve, join.
 import type { Item, ItemTables } from '../data/items'
 import { canTakeItem, recalc } from './equip'
 

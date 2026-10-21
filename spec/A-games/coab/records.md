@@ -1,4 +1,4 @@
-# CotAB records and save files (diff against PoR spec/records.md + spec/savegame.md)
+# CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md)
 
 Scope: Curse of the Azure Bonds, GOG 1.0 (engine "v1.3"). Decoder: `records_coab.py` (same folder).
 
@@ -27,7 +27,7 @@ Key routines (all O):
 
 ---
 
-## 1. Files (diff vs spec/savegame.md "Files" and spec/menus.md "Character files")
+## 1. Files (diff vs engine/savegame.md "Files" and engine/input-and-menus.md "Character files")
 
 | | PoR | CotAB |
 |---|---|---|
@@ -88,7 +88,7 @@ Column "PoR" = source offset in the 285-byte PoR record as copied by the convert
 | 0xE4 | 1 | base movement | 0x72 | moved | O (recalc `4d05:0eaf`) |
 | 0xE5 | 1 | hit dice / highest level | 0x73 | moved | O (`5047:042f`) |
 | 0xE6 | 1 | level used by the HP recompute for dual-class (converter sets = 0xE5) | — | new | O (copy) / I (use, `4aab:1d08`) |
-| 0xE7, 0xE8 | 1, 1 | levels lost to energy drain, and the max HP they took (I: the converter copies PoR 0x74/0x75 here, whose meaning is O in [[spec/records]]) | 0x74, 0x75 | moved | O (copy) |
+| 0xE7, 0xE8 | 1, 1 | levels lost to energy drain, and the max HP they took (I: the converter copies PoR 0x74/0x75 here, whose meaning is O in [engine/records.md](../engine/records.md)) | 0x74, 0x75 | moved | O (copy) |
 | 0xE9 | 1 | undead type | 0x76 | moved | O (copy) |
 | 0xEA–0xF1 | 8 | thief skills % (PP OL F/RT MS HS HN CW RL) | 0x77–0x7E | moved | O (copy) / I (order) |
 | 0xF2 | 4 | effect list head (stale in files) | 0x7F | moved | O (`323c:23c6`) |
@@ -115,7 +115,7 @@ Column "PoR" = source offset in the 285-byte PoR record as copied by the convert
 | 0x137–0x13B | 5 | magic-user spell slots L1–5 | 0xB5–0xB7 → 0x137–0x139 | changed | O |
 | 0x13C | 2 | XP award base (monsters) | 0xB8 | moved | O (copy) / I (Fire Knife 350 + 8/HP) |
 | 0x13E | 1 | XP per HP | 0xBA | moved | O / I |
-| 0x13F, 0x140 | 1, 1 | portrait head, body | 0xBB, 0xBC | moved | O: written only (the PoR import copies them, 0x340E4; character set-up stores 1 and 1, 0x34D87) and never read; CotAB shows no character portrait (its HEAD/BODY records are NPC portraits for PICTURE, [[spec/coab/ecl]]) |
+| 0x13F, 0x140 | 1, 1 | portrait head, body | 0xBB, 0xBC | moved | O: written only (the PoR import copies them, 0x340E4; character set-up stores 1 and 1, 0x34D87) and never read; CotAB shows no character portrait (its HEAD/BODY records are NPC portraits for PICTURE, [ecl.md](ecl.md)) |
 | 0x141, 0x142 | 1, 1 | combat icon head, body/weapon | 0xBD, 0xBE | moved | O (copy) / I |
 | 0x143 | 1 | combat icon slot (assigned on joining) | (0xBF) | changed, not converted | O (`323c:35d9`, `3cd7`) |
 | 0x144 | 1 | icon size | 0xC0 | moved | O |
@@ -175,7 +175,7 @@ All have base = current stats, 300 pp and nothing else, no items (no `.SWG` file
 
 ---
 
-## 3. Items (diff vs spec/records.md "Item record", "Item types")
+## 3. Items (diff vs engine/records.md "Item record", "Item types")
 
 - **Record: unchanged, 63 bytes, same fields** (O): loaders read 0x3F-byte blocks (`323c:2ec3`, monster `323c:350f`, treasure `1885:1c84`); next pointer +0x2A (`323c:2f5c`); recalc reads type +0x2E, readied +0x34, weight +0x37, count +0x39 (`4d05:0c9c..0d85`); cursed +0x36 and readied in the class check (`5047:057c`). Shipped `ITEM2.DAX` records decode to "Banded Mail +1 (300, 3000 gp)", "Long Sword +1 (75, 2000)", scrolls with three spell ids at 0x3C–0x3E, "Ioun Stone" with handler 136 at 0x3E (O, data).
 - **Storage**: per character in `<stem>.SWG` (roster `NAME.SWG`, save `CHRDAT<x><n>.SWG`), not inside the `.SAV` (O, §1). The shipped party has none.
@@ -195,7 +195,7 @@ Same 9-byte record (O): `u8 type, u16 duration (0 = permanent), u8 power, u8 cal
 
 ---
 
-## 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs spec/savegame.md)
+## 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md)
 
 Read by `323c:37b5`, written by `323c:3f5e` in the same order (O):
 
@@ -219,11 +219,11 @@ Before writing (O, `323c:41a3..41d3`): A[0x1F8] = speed `DS:4FC2`; A[0x1FE] = `D
 
 Loading (O, `323c:37b5`): lists A–J that exist ("Load Which Game: "); reads the fields above; `DS:4FD7` = A[0x1FE] >> 1, `DS:4FD8` = A[0x1FE] & 1, `DS:4FC2` = A[0x1F8], B[0x67C] = 0; for each stem with an existing `<stem>.sav` (`323c:3be5`): allocate 0x1A6, `323c:22a0` (Curse source), add to the party (`323c:360a`); delete every member's roster files; load combat icons (PCs, morale < 0x80) or `CPIC` by id (+0x126); block digit = B[0x624]; if A[0x1CC] ≠ 0 (map area) and the saved state ≠ 0: 3D map A[0x18A] (if slot 1 record > 0) and the wall sets with record > 0 (`536a:1025(record, slot)`); A[0x1CC] = 0 → overland picture 0x79 (`52e0:080c`); finally `DS:4FD4` = `DS:4FD3`, `DS:4FD3` = 0.
 
-Shipped `SAVGAMA.DAT` (O): block 2, position (7, 13) facing 0, states 0/0, wall slots (0, 1), (−1, −1), (−1, −1), party `CHRDATA1–6`, speed 4, pictures 3, A[0x1CC] = 1, B[0x624] = 2, ECL buffer all zero: a start-of-game save; area 0 makes the loader start at record 1 with its script loaded (O, [[spec/coab/ecl]], "Loading").
+Shipped `SAVGAMA.DAT` (O): block 2, position (7, 13) facing 0, states 0/0, wall slots (0, 1), (−1, −1), (−1, −1), party `CHRDATA1–6`, speed 4, pictures 3, A[0x1CC] = 1, B[0x624] = 2, ECL buffer all zero: a start-of-game save; area 0 makes the loader start at record 1 with its script loaded (O, [ecl.md, "Loading"](ecl.md#loading-o)).
 
 ---
 
-## 6. Monsters (`MON<n>CHA/ITM/SPC.DAX`, diff vs spec/records.md "One record for everyone")
+## 6. Monsters (`MON<n>CHA/ITM/SPC.DAX`, diff vs engine/records.md "One record for everyone")
 
 - `MON<n>CHA` record = the 422-byte character record (all 81 records in blocks 1–6, O); `MON<n>ITM` multiples of 63, `MON<n>SPC` multiples of 9 (O). All decode with RLE variant 0 (as PoR).
 - `323c:329c(id, char)`: filename "MON" + block digit `DS:5C08` + "CHA"/"SPC"/"ITM" + ".dax" (strings `323c:3270`), copy 0x1A6 bytes, effects (9) then items (63) relinked; "Unable to load monster" if the CHA record is missing. `323c:357d` (NPC join): party ≤ 7, +0x126 = monster id, icon slot assigned, picture `CPIC` by id.
@@ -306,9 +306,9 @@ Source 2: 0xBC-byte `*.hil`, name at +4, NPC test skipped. `323c:1f35` merges on
 
 ## 7. Random treasure items (O, builder 0x42D97, type choice 0x1A5A3–0x1A6E2)
 
-Same procedure as PoR's (`FUN_4c2d_1010`, [[spec/records]] "Random items"), different tables. The port holds both as data (`web/src/games/treasure.ts`).
+Same procedure as PoR's (`FUN_4c2d_1010`, [engine/records.md, "Random items"](../engine/records.md#random-items)), different tables. The port holds both as data (`web/src/games/treasure.ts`).
 
-- **Type choice**: as [[spec/coab/ecl]] "Random treasure types"; r2 48/49 gives 0x3B (PoR repeats the previous type), r1 93–98 a d15 over 0x47/0x54/0x4F, r1 99–100 0x3B.
+- **Type choice**: as [ecl.md, "Random treasure types"](ecl.md#random-treasure-types-o-0x1a5a30x1a6e2); r2 48/49 gives 0x3B (PoR repeats the previous type), r1 93–98 a d15 over 0x47/0x54/0x4F, r1 99–100 0x3B.
 - **Plus** (0x42D5F): d20, 1–14 +1, 15–20 +2; no +3, so bracers are AC 6 or AC 4 only.
 - **Names, weights (incl. type 9 count 5; unlisted 40 with count 10), values (plus × k)**: identical to PoR.
 - **Javelin** (type 0x15, d5 = 5): record 0x31, the real Javelin of Lightning (PoR's 0x90 is one word short, a bug).
@@ -324,7 +324,7 @@ Strings at 0x36848 + 0x35AE: "Add from where? ", "Curse Pool Hillsfar Exit", "Ad
 - The port: `web/src/rules/joining.ts` with the profile's `join` rules, used by both Add commands. PoR has only the size limits.
 
 ## 9. Creation effects and paladin abilities (O)
-- **Innate effects** at creation (0x371F6, 0x37647), permanent, power 0xFF: halfling 0x61; dwarf 0x61, 0x1A, 0x2F; gnome 0x61, 0x12, 0x2F, 0x30; elf 0x6B; half-elf 0x7C; then paladin 8 (protection from evil), ranger and cleric/ranger 0x86 (giant-class damage). PoR's dwarf and halfling 0x5A is gone (its CON save bonus moved into the saves routine, [[spec/coab/tables]] §3.6a). A paladin starts with **+0x191 = 1**.
+- **Innate effects** at creation (0x371F6, 0x37647), permanent, power 0xFF: halfling 0x61; dwarf 0x61, 0x1A, 0x2F; gnome 0x61, 0x12, 0x2F, 0x30; elf 0x6B; half-elf 0x7C; then paladin 8 (protection from evil), ranger and cleric/ranger 0x86 (giant-class damage). PoR's dwarf and halfling 0x5A is gone (its CON save bonus moved into the saves routine, [tables.md](tables.md) §3.6a). A paladin starts with **+0x191 = 1**.
 - **Lay on Hands** (View menu "Heal", availability 0x3D530 + 0x35F0: class 3 or a counting former paladin, not in combat, status Okay, no effect 0x8C; use + 0x36D7): "Heal whom?", heals 2 × paladin level (status 0/1/4/5 and HP below max; dying → unconscious), "feels better" / "is unaffected", then effect 0x8C for 1440 minutes, even when nothing was healed.
 - **Cure Disease** (View menu "Cure", + 0x3655: as above but +0x191 > 0; use + 0x37EC): "Cure whom?"; not diseased → "is not diseased", "cure anyway:" (No spends nothing); removes one of each disease effect DS:082A (31, 34, 43, 44, 50, 57), +0x191 − 1, adds effect 0x8D for 10080 minutes with the removal call unless present, "is cured". The removal of 0x8D (0x27350 + 0x28EF) sets +0x191 = (paladin level − 1) div 5 + 1.
 - Paladins do not turn undead (the Turn command needs a cleric level).
