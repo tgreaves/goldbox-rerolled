@@ -8,6 +8,11 @@
 > spec covers after that point.
 >
 > Audited at commit `1721f1a` (2026-10-21). Read-only audit: nothing else was changed.
+>
+> **Since then:** the decisions are recorded in §6.8. Work-plan step 1 (the layout of §7, the
+> moves, the links, the documentation-only fixes of §6.4) is done; §6.9 says which findings it
+> fixed and which stay open. Paths in this file are those of the audit (`spec/combat.md` …); §7.1
+> maps them to the new files.
 
 ## Purpose
 
@@ -562,6 +567,22 @@ elsewhere (C13, C19). The live ones that matter for a rebuild, by area:
 | D4 | What is normative in part C | the full UI (layouts, states, texts) or a behavioural contract (what must be reachable, what each screen shows, inputs) with presentation left free. Compunet chose a contract plus a conformance checklist for the details that are "load-bearing" |
 | D5 | Data dumps in part A | normative tables or informative "expected values" appendices |
 | D6 | The 3D view | specify the WebGL view as built (camera, geometry, light) or specify the original pre-drawn view (fully O in maps.md, pixel-comparable with DOSBox) as the conformance target and the WebGL view as a permitted presentation |
+
+### 6.8 Decisions (taken 2026-10-21)
+
+Tristan's decisions on §6.7 and on the two flagged findings. Where they set policy they are also
+stated in the spec's front matter ([README.md](README.md), "How to read this spec").
+
+| # | Decision |
+|---|---|
+| D1 | **Game text** that is in the game files is read from them by address, as the ending and the start-up menu already are. Strings copied into the code are to be replaced (a later code task); the spec gives addresses, not copies ([D-appendices/strings.md](D-appendices/strings.md)). |
+| D2 | **Randomness**: the spec defines dice as an injected source, the **dice tape** (the sequence of (count, sides) requests and their results), so builds are comparable roll for roll. The engine's own RNG is informative. |
+| D3 | **Links**: plain Markdown links `[text](file.md#anchor)` everywhere; every `[[wikilink]]` is converted. |
+| D4 | **User interface**: normative is the behaviour contract (every screen, its states, controls and keys, texts, what each does, and its layout described in words per screen class); exact CSS and pixels are informative; [CONFORMANCE.md](CONFORMANCE.md) covers the look. |
+| D5 | **Data**: values extractable from the game files go in informative appendices, with their addresses as the normative part; values that cannot be extracted (port-authored) are normative. |
+| D6 | **3D view**: the original's drawn view is the normative conformance target (pixel-exact); the port's WebGL, upscaled rendering is an optional enhancement checked within a tolerance. |
+| C23 | **Ruling**: sound effects follow the original, by call site as [sound.md](A-games/engine/sound.md) §6 says. To verify and fix in a later code task. |
+| C24 | **Ruling**: the copied engine messages, credits and monster-name lists are read from the game files by address (D1). A later code task. |
 
 ---
 
