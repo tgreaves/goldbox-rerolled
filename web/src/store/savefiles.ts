@@ -31,6 +31,11 @@ export function readSidecar(d: Uint8Array | undefined): string[] | undefined {
   } catch { return undefined }
 }
 
+/** The exported ZIP's name for slot x of the active game (storage.md §7.1): `poolrad-save-A.zip`, `curse-save-A.zip`. */
+export function exportName(slot: string): string {
+  return `${game().saves.exportName}-${slot}.zip`
+}
+
 /** The files of one saved game, named as the original writes them, plus the port's sidecar. */
 export function saveFiles(g: SavedGame): NamedFile[] {
   const stems = parseSave(g.dat).party

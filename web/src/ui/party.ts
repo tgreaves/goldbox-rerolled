@@ -20,7 +20,7 @@ import { enhancePanel } from './panel'
 import { initSound } from '../audio/sfx'
 import { saveCharacter, listSaves, writeSave, readAutosave, listConflicts } from '../store/user'
 import { onPulled } from '../store/account'
-import { importsFrom, rosterFrom, saveFiles, savesFrom, unzip, zip, type NamedFile } from '../store/savefiles'
+import { exportName, importsFrom, rosterFrom, saveFiles, savesFrom, unzip, zip, type NamedFile } from '../store/savefiles'
 import { parseSave, saveArea, saveBlock } from '../data/save'
 import type { Start } from './explore'
 import type { Dice } from '../rules/dice'
@@ -239,7 +239,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
         const blob = new Blob([zip(saveFiles(g)) as Uint8Array<ArrayBuffer>], { type: 'application/zip' })
         const a = document.createElement('a')
         a.href = URL.createObjectURL(blob)
-        a.download = `poolrad-save-${g.slot}.zip`
+        a.download = exportName(g.slot)
         a.click()
         setTimeout(() => URL.revokeObjectURL(a.href), 10_000)
         say(`Slot ${g.slot} exported: unzip it into the game folder to play it in DOSBox.`)

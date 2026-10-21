@@ -109,3 +109,13 @@ describe.skipIf(!have)('original format', () => {
     }
   })
 })
+
+describe('export name', () => {
+  it('names the ZIP per game (storage.md §7.1); import reads any ZIP, whatever its name', async () => {
+    const { COAB, POR, setGame } = await import('../src/games/profile')
+    const { exportName } = await import('../src/store/savefiles')
+    setGame(COAB)
+    try { expect(exportName('C')).toBe('curse-save-C.zip') } finally { setGame(POR) }
+    expect(exportName('A')).toBe('poolrad-save-A.zip')
+  })
+})

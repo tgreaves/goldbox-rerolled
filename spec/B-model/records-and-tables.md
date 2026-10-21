@@ -270,6 +270,7 @@ The profile's `saves` says what differs:
 | `saveSize` | `SAVGAM<x>.DAT` size in bytes | 13 137 | 13 149 |
 | `partyAt` | offset of the party count byte; the members' file stems (Pascal `string[40]` each) follow | 0x3208 | 0x3214 |
 | `wallSetsAt` | offset of the wall-set slots 1–3 as (u16 record, u16 slot) pairs; −1 when the save keeps them in ECL A | −1 | 0x3208 |
+| `exportName` | the port's exported save ZIP is `<exportName>-<x>.zip` ([C-port/storage.md §7.1](../C-port/storage.md#71-export)); port data | `poolrad-save` | `curse-save` |
 
 A save is read and written through these values only; both shipped save files MUST load and save
 back at their own size ([VALIDATION.md](../VALIDATION.md) V2). A CotAB save whose area word is 0

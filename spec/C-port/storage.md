@@ -241,7 +241,8 @@ IMP-006: a saved game moves between the port, DOSBox and another browser as the 
 
 Party screen → **Export saved game** lists the slots A–J that hold a save ("There are no saved
 games in this browser." when none; the autosave is not offered) and downloads, for the one chosen, a
-ZIP named **`poolrad-save-<x>.zip`** (the same name for every game) holding, in this order:
+ZIP named **`<saves.exportName>-<x>.zip`** (PoR `poolrad-save-<x>.zip`, CotAB `curse-save-<x>.zip`;
+[B-model/records-and-tables.md](../B-model/records-and-tables.md)) holding, in this order:
 
 1. `SAVGAM<x>.DAT`;
 2. for each member *i*, with `stem` the *i*-th stem of the `.DAT` (`CHRDAT<x><i>` if the table is
@@ -259,7 +260,8 @@ folder to play it in DOSBox."
 Party screen → **Import saved game** takes any number of files: ZIPs, whose entries join the set,
 and loose files (the picker offers `.zip`, `.dat`, `.sav`, `.txt`, the game's item, effect and roster
 extensions, and those of the games it imports characters from). Every name is taken without its
-folder and compared in upper case. Three things are looked for:
+folder and compared in upper case; a ZIP's own name does not matter (an export of
+any game, including the earlier `poolrad-save-<x>.zip` of every game, is read). Three things are looked for:
 
 1. **Saved games.** Each `SAVGAM<x>.DAT` (*x* in A–J): its party stems are read from it; for each,
    `<STEM>.SAV` is required and `<STEM>.<saves.items>` and `.<saves.effects>` are taken when present.
@@ -365,7 +367,5 @@ first value listed). "Synced" keys travel with an account
 
 ## Open
 
-- The export's name `poolrad-save-<x>.zip` serves every game, like PoR's database names
-  ([AUDIT.md](../AUDIT.md) §6.9).
 - The sidecar's `version` is never checked; a version 2 needs a reading rule (read what is
   understood, or refuse) before it is introduced.
