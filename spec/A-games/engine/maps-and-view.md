@@ -5,7 +5,10 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Maps, movement and wall sets
 
-Part of the [specification](../../README.md), part A. Decoder/renderer: `tools/geo.py`.
+> **Status: complete.** Normative. Part A of the [specification](../../README.md): the engine as
+> Pool of Radiance defines it. Evidence marks as in the README; addresses are PoR's (`FUN_seg_off`).
+> The drawn view here is the conformance target of D6. *Informative:* reference decoder and
+> renderer `tools/geo.py`. Curse of the Azure Bonds: [coab/assets.md](../coab/assets.md).
 
 ## GEO record (O)
 
@@ -115,7 +118,7 @@ Loading wall-set record *r* into slot *s* (`LOAD_WALLSETS`, `FUN_55a0_0e08`):
 
 Wall type *t* (1–15) indexes the 0x30C × 3 table directly: `(t − 1)·156`, i.e. slot `(t − 1) div 5 + 1`, entry `(t − 1) mod 5` (O).
 
-The kind-6 piece (7 × 8 tiles, the wall directly ahead) of every wall type is a complete flat wall face, with tile 0 cells transparent; the browser port uses it as the wall texture ([`IMPROVEMENTS.md`](../../../IMPROVEMENTS.md) IMP-007).
+The kind-6 piece (7 × 8 tiles, the wall directly ahead) of every wall type is a complete flat wall face, with tile 0 cells transparent; how GoldBox Rerolled's optional WebGL view uses it is part C ([exploration-view.md](../../C-port/exploration-view.md)).
 
 ## Overhead map (O, `FUN_55a0_0000`)
 
