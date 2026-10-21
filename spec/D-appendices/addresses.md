@@ -1105,12 +1105,12 @@ when its table column or sentence names CotAB.
 | 0x3599F | coab/ecl, B/script-vm-map | coab/ecl: Opcodes |  |
 | 0x359CA | coab/ecl, coab/records | coab/ecl: Opcodes |  |
 | 0x35AF6 | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
-| 0x35B75 | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) | `FUN_45c5_1602` |
+| 0x35B75 | coab/records, B/script-vm-map | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) | `FUN_45c5_1602` |
 | 0x35EEB | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x35F08 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x35FA5 | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
 | 0x36032 | coab/records | coab/records: 1. Files (diff vs engine/savegame.md "Files" and engine/input-and-menus.md "Character files") |  |
-| 0x36068 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
+| 0x36068 | coab/records, B/script-vm-map | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x360CB | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x3614A | coab/assets | coab/assets: 4. Overland: no tile map |  |
 | 0x3631E | coab/ecl, coab/records | coab/ecl: Opcodes | `FUN_45c5_1d58` |

@@ -208,9 +208,10 @@ operand that is not an immediate ends the walk there. Operand slots MUST hold at
 ADD_NPC's draws, in order: the loader's colours (when `loaderRolls`), the tag (when `random`), then,
 where the game has the NPC portrait tables (`T.npcHeads`, `T.npcBodies*`), the class pick (1, *k*)
 among its *k* classes and the body (1, 5) and head (1, 8) of [engine/ecl.md](../A-games/engine/ecl.md)
-(`FUN_45c5_1262`). CotAB makes none. *Informative:* the reference implementation keeps an NPC's
-combat picture for the session only; after a save and load the NPC's icon is built from its parts
-(what the original does on loading a saved NPC is not examined, **?**).
+(`FUN_45c5_1262`). CotAB makes none. With `iconPicture`, loading a saved game gives every member
+whose morale byte is 0x80 or more (an NPC) the combat picture of its identity tag, which ADD_NPC set
+to its monster id (CotAB's loader 0x35B75 at 0x36068, **O**); player characters' icons are built from
+their parts. PoR's loader (`FUN_45c5_1602`) has no such branch: every icon is built.
 
 The banner and every other message are game text: a conforming build reads them from the game's
 files ([D-appendices/strings.md](../D-appendices/strings.md)); the reference implementation still

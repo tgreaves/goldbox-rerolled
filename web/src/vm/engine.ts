@@ -244,6 +244,9 @@ export class Engine {
       this.area = zero // (then reset as any load is, 0x1C05C: portrait selector, vectors, saved per-area variables)
       this.loadEcl(zero)
     }
+    // CotAB's loader (0x35B75, at 0x36068): an NPC (morale byte 0x80 or more) gets the combat picture
+    // of its identity tag, which ADD_NPC set to its monster id; a player character's icon is built
+    if (game().ecl.addNpc.iconPicture) for (const c of this.nodes) if (c[F.morale] >= 0x80) this.combatPicture.set(c, c[F.id])
   }
 
   private restoring = false
