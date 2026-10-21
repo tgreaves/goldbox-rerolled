@@ -20,18 +20,22 @@ const RESERVED = new Set([
   'register', 'account', 'accounts', 'users', 'user', 'health', 'config', 'export', 'privacy', 'ssi',
 ])
 
-/** The account name as stored (lower case), or null when it is not an acceptable name. */
+/** The account name as stored (NFKC, lower case), or null when it is not an acceptable name. Every
+ *  string the server compares (names, passwords, codes) is taken in NFKC form first. */
 export function normaliseName(raw: unknown): string | null {
-  if (typeof raw !== 'string') return null
-  const n = raw.trim().toLowerCase()
+  if (typeof raw !== 'string' || raw.length > 256) return null
+  const n = raw.normalize('NFKC').trim().toLowerCase()
   return NAME_RE.test(n) ? n : null
 }
 export const reservedName = (n: string) => RESERVED.has(n)
 
 export function passwordProblem(pw: unknown): string | null {
   if (typeof pw !== 'string') return 'a password is needed'
-  if ([...pw].length < PASSWORD_MIN) return `the password needs at least ${PASSWORD_MIN} characters`
-  if (pw.length > PASSWORD_MAX) return 'the password is too long'
+  // both limits in code points of the NFKC form, the string that is hashed
+  if (pw.length > 4 * PASSWORD_MAX) return 'the password is too long'
+  const n = [...pw.normalize('NFKC')].length
+  if (n < PASSWORD_MIN) return `the password needs at least ${PASSWORD_MIN} characters`
+  if (n > PASSWORD_MAX) return 'the password is too long'
   return null
 }
 
@@ -83,7 +87,7 @@ export function newCode(): string {
 /** A code as typed: case, spaces and dashes do not matter; O reads as 0, I and L as 1. */
 export function normaliseCode(raw: unknown): string | null {
   if (typeof raw !== 'string' || raw.length > 64) return null
-  const s = raw.toUpperCase().replace(/[\s-]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1')
+  const s = raw.normalize('NFKC').toUpperCase().replace(/[\s-]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1')
   return /^[0-9A-HJKMNP-TV-Z]{20}$/.test(s) ? s : null
 }
 const codeHash = (code: string) => sha256(`goldbox-code:${code}`)

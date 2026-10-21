@@ -141,6 +141,10 @@ describe('server: sign-up', () => {
     expect(c.setCookie).not.toMatch(/Secure/)
     expect((await c.me()).data.user).toBe('player_one') // signed in straight away
     expect((await new Client(base).signup('PLAYER_ONE')).status).toBe(409)
+    // names, passwords and codes are taken in NFKC form: full-width letters are the same name
+    expect((await new Client(base).signup('\uff30\uff4c\uff41\uff59\uff45\uff52_one')).status).toBe(409)
+    // the password's length is counted in the form that is hashed: five ligatures 'ﬀ' are ten letters
+    expect((await new Client(base).signup('ligatures', '\ufb00'.repeat(5))).status).toBe(200)
     // only hashes on disk
     const acc = readFileSync(join(app.accounts.usersDir, 'player_one', 'account.json'), 'utf8')
     expect(acc).not.toContain('a long password')
@@ -288,7 +292,7 @@ describe('server: data', () => {
     const bad = [
       ['..', 'saves', 'A'], ['%2e%2e', 'saves', 'A'], ['POR', 'saves', 'A'], ['por', 'x', 'A'], ['por', 'saves', 'K'],
       ['por', 'saves', '../A'], ['por', 'characters', 'A/B'], ['por', 'characters', '..'], ['por', 'characters', 'TOOLONGNAME'],
-      ['por', 'characters', 'lower'], ['por', 'docs', 'other'], ['por', 'conflicts', 'UPPER'],
+      ['por', 'characters', 'lower'], ['por', 'docs', 'other'], ['por', 'docs', 'journal'], ['por', 'conflicts', 'UPPER'],
     ]
     for (const [g, k, id] of bad) expect([400, 404], `${g}/${k}/${id}`).toContain((await a.put(g, k, id, 0)).status)
     for (const name of ['../X.DAT', 'A/B.DAT', 'NOEXT', 'TOOLONGNAME.DAT', 'X.DATA', 'lower.dat', '.HIDDEN']) {
@@ -299,6 +303,8 @@ describe('server: data', () => {
     expect((await a.req('PUT', '/api/v1/games/por/docs/party', { base: 0, meta: {}, files: [{ name: 'A.DAT', data: 'AA==' }] })).status).toBe(400)
     expect((await a.req('PUT', '/api/v1/games/por/saves/A', { base: -1, meta: {}, files: [] })).status).toBe(400)
     expect((await a.req('PUT', '/api/v1/games/por/saves/A', { base: 0, meta: { x: 'y'.repeat(20_000) }, files: [] })).status).toBe(400)
+    // the metadata limit is in bytes: 6 000 three-byte characters are over it
+    expect((await a.req('PUT', '/api/v1/games/por/saves/A', { base: 0, meta: { x: '\u20ac'.repeat(6000) }, files: [] })).status).toBe(400)
     // nothing was written anywhere
     expect(readdirSync(join(app.accounts.usersDir, 'gina'))).toEqual(['account.json'])
     expect(readdirSync(app.accounts.dataDir).sort()).toEqual(['invites', 'sessions', 'users'])
@@ -392,6 +398,10 @@ describe('server: data', () => {
     const again = new Client(base)
     expect((await again.signup('nina')).status).toBe(200) // the name is free again
     expect((await again.get('por', 'saves', 'A')).status).toBe(404)
+    // a write that finds its account gone (deleted while it ran) is signed out, never recreates it
+    const r = await app.storage.put('ghost', 'por', 'saves', 'A', 0, {}, [])
+    expect(r).toEqual({ ok: false, reason: 'gone' })
+    expect(existsSync(join(app.accounts.usersDir, 'ghost'))).toBe(false)
   })
 })
 

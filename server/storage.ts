@@ -5,7 +5,7 @@
 //   users/<name>/<game>/saves/<slot>@<version>/      SAVGAMx.DAT, CHRDATxn.SAV/… , SAVGAMx.GBR
 //   users/<name>/<game>/characters/<stem>.json, <stem>@<version>/
 //   users/<name>/<game>/conflicts/<id>.json, <id>@<version>/
-//   users/<name>/<game>/party.json, settings.json, journal.json   (documents: metadata only)
+//   users/<name>/<game>/party.json, settings.json   (documents: metadata only)
 //
 // A record is replaced by writing its files into a new version directory, then the pointer
 // (atomically), then deleting the old directory: a reader sees the old record or the new one.
@@ -22,7 +22,7 @@ export const KINDS = {
   saves: /^(?:[A-J]|AUTO)$/,
   characters: new RegExp(`^${STEM}$`),
   conflicts: /^[a-z0-9]{1,40}$/,
-  docs: /^(?:party|settings|journal)$/,
+  docs: /^(?:party|settings)$/,
 } as const
 export type Kind = keyof typeof KINDS
 export const isKind = (k: string): k is Kind => Object.hasOwn(KINDS, k)
@@ -40,6 +40,7 @@ export type PutResult =
   | { ok: true; updatedAt: number }
   | { ok: false; reason: 'conflict'; updatedAt: number }
   | { ok: false; reason: 'quota'; used: number; quota: number }
+  | { ok: false; reason: 'gone' }
   | { ok: false; reason: 'limit' }
 
 export class Storage {
@@ -114,7 +115,7 @@ export class Storage {
       const curVer = cur?.updatedAt ?? 0
       if (base !== curVer) return { ok: false, reason: 'conflict', updatedAt: curVer }
       // the account may have been deleted since the request was checked: never recreate its folder
-      if (!(await stat(join(this.usersDir, user, 'account.json')).then(() => true, () => false))) return { ok: false, reason: 'limit' }
+      if (!(await stat(join(this.usersDir, user, 'account.json')).then(() => true, () => false))) return { ok: false, reason: 'gone' }
       if (!cur) {
         if (kind !== 'docs' && (await listDir(dir)).filter((n) => n.endsWith('.json')).length >= LIMITS.records) return { ok: false, reason: 'limit' }
         const games = await this.games(user)

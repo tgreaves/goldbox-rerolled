@@ -277,12 +277,13 @@ export async function createApp(config: Config): Promise<App> {
         const base = body.base
         if (typeof base !== 'number' || !Number.isSafeInteger(base) || base < 0) throw new HttpError(400, 'bad request')
         const meta = body.meta
-        if (!meta || typeof meta !== 'object' || Array.isArray(meta) || JSON.stringify(meta).length > LIMITS.metaBytes) throw new HttpError(400, 'bad request')
+        if (!meta || typeof meta !== 'object' || Array.isArray(meta) || Buffer.byteLength(JSON.stringify(meta)) > LIMITS.metaBytes) throw new HttpError(400, 'bad request')
         const files = decodeFiles(body.files ?? [])
         if (kind === 'docs' && files.length) throw new HttpError(400, 'bad request')
         const r = await storage.put(acc.name, game, kind, id, base, meta as Meta, files)
         if (r.ok) return send(res, 200, { updatedAt: r.updatedAt })
         if (r.reason === 'conflict') throw new HttpError(409, 'conflict', { updatedAt: r.updatedAt })
+        if (r.reason === 'gone') throw new HttpError(401, 'signed out') // the account was deleted while the request ran
         if (r.reason === 'quota') throw new HttpError(507, `storage quota exceeded (${mb(r.used)} of ${mb(r.quota)} MB used)`, { used: r.used, quota: r.quota })
         throw new HttpError(507, 'too many records')
       }

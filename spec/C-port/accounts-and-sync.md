@@ -44,11 +44,11 @@ writes its key as `<kind>/<id>` (`saves/A`, `characters/ALIAS`, `docs/party`).
 | `saves` | `A` … `J`, `AUTO` | a saved game; `AUTO` is the autosave |
 | `characters` | a DOS stem: 1–8 characters from `A`–`Z`, `0`–`9` and ``! # $ % & ' ( ) + = @ ^ _ ` { } ~ - [ ]`` | a roster character |
 | `conflicts` | `[a-z0-9]{1,40}` | a conflict copy of a save or a character |
-| `docs` | `party`, `settings`, `journal` | a document: metadata only, no files |
+| `docs` | `party`, `settings` | a document: metadata only, no files |
 
 A record is `{ meta, files }`:
 
-- `meta`: a JSON object, at most 16 384 characters as `JSON.stringify` writes it. The server keeps it
+- `meta`: a JSON object, at most 16 384 bytes as `JSON.stringify` writes it, in UTF-8. The server keeps it
   verbatim and returns it in listings; its fields are the client's (§1.3).
 - `files`: a list of `{ name, data }`, at most 64, each name unique, each at most 1 MiB. A name is a
   DOS 8.3 name in upper case: a stem as above, a dot, 1–3 of `A-Z 0-9`. `docs` records have no files.
@@ -91,8 +91,7 @@ losing change's time).
 
 **`docs/party`**: `meta.stems`, the party as roster stems; **`docs/settings`**: `meta.values`, an
 object of the synced localStorage keys that are set, each a string ([§5.9](#59-settings)); both with
-`modifiedAt`. **`docs/journal`** is accepted by the server and not used by the reference client
-(journal finds travel inside each save's `.GBR`).
+`modifiedAt`. Journal finds have no document: they travel inside each save's `.GBR`.
 
 ## 2. HTTP API v1
 
@@ -210,7 +209,7 @@ A record replaced while it was being read also gives 404; the client asks again 
 
 **Put** `PUT games/<game>/<kind>/<id>`, body `{ base, meta, files }`:
 
-- `base`: a safe integer ≥ 0, else 400; `meta`: an object (not an array) within 16 384 characters,
+- `base`: a safe integer ≥ 0, else 400; `meta`: an object (not an array) within 16 384 bytes (UTF-8),
   else 400; `files` (default `[]`): an array of at most 64 `{ name, data }`, else 400; a bad,
   repeated or non-8.3 name: 400 `bad file name`; `data` not padded base64: 400; a decoded file over
   1 MiB: 413 `too large`; files on a `docs` record: 400.
@@ -218,8 +217,8 @@ A record replaced while it was being read also gives 404; the client asks again 
   `{ error: "conflict", updatedAt }`, the current version (`0` when there is none).
 - The new record would take the account over its quota: **507**
   `{ error: "storage quota exceeded (<used> of <quota> MB used)", used, quota }` (bytes).
-- A new record when its kind already has 500 records (`docs` exempt), or in a 33rd game, or for an
-  account deleted while the request ran: 507 `too many records`.
+- A new record when its kind already has 500 records (`docs` exempt), or in a 33rd game: 507 `too many records`. A write that finds its account deleted while the request ran: **401**
+  `signed out` (the account's folder is never recreated).
 - Otherwise the record is replaced as a whole and the response is `{ updatedAt }`, its new version.
 
 **Delete** `DELETE games/<game>/<kind>/<id>?base=<n>`: `base` a safe integer ≥ 0, else 400. A
@@ -248,7 +247,8 @@ record that does not exist: 200, whatever `base` is. `base` not the current vers
 
 ### 3.1 Names
 
-An account name is the submitted string with surrounding white space removed and lower-cased; it
+An account name is the submitted string (at most 256 UTF-16 units) in Unicode NFKC form, with
+surrounding white space removed and lower-cased; it
 must then match **`^[a-z0-9_-]{3,24}$`**. Names are compared and stored in that form, so `Alice` and
 `alice` are one account. Reserved (refused at sign-up and by the admin CLI): `admin`,
 `administrator`, `root`, `system`, `sysadmin`, `support`, `help`, `api`, `www`, `web`, `mail`,
@@ -258,7 +258,8 @@ must then match **`^[a-z0-9_-]{3,24}$`**. Names are compared and stored in that 
 
 ### 3.2 Passwords
 
-- At least **10** characters counted as Unicode code points, at most 256 UTF-16 code units. The
+- At least **10** and at most **256** characters, counted as Unicode code points of its NFKC form
+  (the string that is hashed); a submitted string over 1 024 UTF-16 units is too long at once. The
   problems, as 400 messages: `a password is needed` (not a string), `the password needs at least 10
   characters`, `the password is too long`.
 - Hashed with **scrypt** over the password in Unicode **NFKC** form: N = 2^15, r = 8, p = 1, a
@@ -295,7 +296,7 @@ must then match **`^[a-z0-9_-]{3,24}$`**. Names are compared and stored in that 
 - A code is **20 symbols** of the Crockford base-32 alphabet `0123456789ABCDEFGHJKMNPQRSTVWXYZ`
   (100 bits; each symbol is a random byte's low 5 bits), shown as five groups of four joined by `-`
   (`7K2M-…`).
-- **As typed**: upper-cased; white space and `-` removed; `O` read as `0`, `I` and `L` as `1`; then
+- **As typed**: in NFKC form, upper-cased; white space and `-` removed; `O` read as `0`, `I` and `L` as `1`; then
   it must be 20 symbols of the alphabet, else it matches nothing. At most 64 characters are accepted.
 - Stored only as SHA-256 hex of `goldbox-code:` + the normalised code.
 - **Recovery code**: one per account, shown once at sign-up, after each recovery, and on request
@@ -340,7 +341,7 @@ users/<name>/<game>/saves/<id>.json          a record's pointer
 users/<name>/<game>/saves/<id>@<version>/    its files: SAVGAMA.DAT, CHRDATA1.SAV, … SAVGAMA.GBR
 users/<name>/<game>/characters/<stem>.json, <stem>@<version>/
 users/<name>/<game>/conflicts/<id>.json, <id>@<version>/
-users/<name>/<game>/party.json, settings.json, journal.json     documents (pointer only)
+users/<name>/<game>/party.json, settings.json                   documents (pointer only)
 sessions/<sha-256 hex of token>.json
 invites/<sha-256 hex of "goldbox-code:" + code>.json
 ```
@@ -749,8 +750,5 @@ This file does not depend on them: they check it. Results go to [VALIDATION.md](
 
 ## Open
 
-- The cookie's `Max-Age` is set only at sign-in, so a session the server keeps renewing still ends in
-  the browser one lifetime after sign-in ([AUDIT.md](../AUDIT.md) §6.9).
 - Settings are one set per browser but one record per game on the server (§5.9, C22): documented as
   the behaviour; per-game settings would be a change of both sides.
-- `docs/journal` is accepted and never written by the reference client.
