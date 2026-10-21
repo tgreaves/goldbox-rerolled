@@ -4,7 +4,7 @@
 > produces these outputs from these inputs. Part D of the [specification](../README.md).
 
 Inputs and the outputs a conforming build must give for them, for the procedures of part B and the
-validations V1, V3, V5–V8 of [CLEANROOM.md](../CLEANROOM.md): the dice source
+validations V1, V3, V5–V8 of [CLEANROOM.md](../CLEANROOM.md#4-the-validations): the dice source
 (D2), hit points, caster level, joining, the strength encoding, appraisal, the derived statistics (spell
 slots, saving throws, thief skills, THAC0), creation, training, money, the battlefield generators,
 spells on a battlefield (the bolt, the clouds), attacks, saving throws, random treasure, headless
@@ -550,7 +550,7 @@ vectors skip without the game files).
 The two other reference hash sets are kept with the tests: the V9 view frames
 (`web/test/view-frames.json`, [exploration-view.md §2.3](../C-port/exploration-view.md#23-conformance))
 and the game texts by address (`web/test/text-hashes.json`, [strings.md](strings.md)); a clean-room
-run gets copies of both ([CLEANROOM.md](../CLEANROOM.md)).
+run gets copies of both ([CLEANROOM.md §2](../CLEANROOM.md#2-the-file-sets)).
 
 ## Open
 

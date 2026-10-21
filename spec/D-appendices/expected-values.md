@@ -1,8 +1,9 @@
 # Expected values
 
-> **Status: partial** (work-plan steps 5 and 6, [AUDIT.md](../AUDIT.md) §8). Informative. Part D
-> of the [specification](../README.md). Written: the data dumps moved out of part A in step 5 (§1–§6).
-> To come: decoded sizes and hashes for validation V1.
+> **Status: complete** (work-plan steps 5 and 6, [AUDIT.md](../AUDIT.md) §8). Informative. Part D
+> of the [specification](../README.md). The data dumps moved out of part A (§1–§6: rules values as
+> numbers, game text and art as hashes) and the V1 hashes of the decoded images, every table and every
+> DAX file of both games (§7).
 
 Per D5, values the game files hold are **informative** here: a builder reads them from the player's
 files at the addresses part A gives (those addresses and reading rules are normative) and can check
