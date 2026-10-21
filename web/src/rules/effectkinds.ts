@@ -9,7 +9,7 @@ import { text, textOrNull } from '../data/gametext'
 import type { Item } from '../data/items'
 import type { HandlerSpec } from '../games/effectrules'
 import { F } from '../games/fields'
-import { R, formerLevelsCount } from '../games/rules'
+import { R, classLevel, formerLevelsCount } from '../games/rules'
 import { T } from '../games/tables'
 import { Item as ItemRecord, ITEM_SIZE } from '../data/items'
 import { addEffect, addRaw, deflect, drain, fire, fx, handle, has, healedLine, negate, rearm, removeEffect, removeFirst, removeType, restoreStr, runEffect, setStr, strDec, strKey, type FxHost } from './effects'
@@ -229,7 +229,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   collapse(h, eff, c, removal, p) {
     if (!removal || fx.noRearm) return
     h.setStatus(c, 6, `${h.name(c)} ${txt(p, 'msg')}`)
-    c[F.side] = eff.power >> 4; c[F.quick] = 1; c[F.undead] = 0; c[F.sweep] = c[F.levels + 2]; c[F.baseMove] = num(p, 'move')
+    c[F.side] = eff.power >> 4; c[F.quick] = 1; c[F.undead] = 0; c[F.sweep] = classLevel(c, 2) & 0xff; c[F.baseMove] = num(p, 'move')
     if (c[F.morale] === 0xb3) c[F.morale] = 0
     c[F.monsterType] = 0
   },

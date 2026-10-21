@@ -121,7 +121,14 @@ From then on these read the former levels (each **O** at the address):
 | paladin abilities | 0x3D530 (View) | a former paladin's Lay on Hands and Cure Disease ([records.md §10](records.md#10-creation-effects-and-paladin-abilities-o)) |
 | the character's level lines | 0x38B07 (View), 0x3D87C | a former class is listed, with its former level, when that level is below the current level (0x517D2) |
 
+Combat and the locked-door menu: [combat.md, "The former class in battle"](combat.md#the-former-class-in-battle-o).
+
 ## Open
 
-- The former-level readings in combat (the sweep level, the backstab, Turn Undead) and the
-  locked-door menu are listed in [combat.md](combat.md) once examined.
+- The spell-list builder 0x449E4 filters every list (cast, memorise, learn) through 0x43F8E, which
+  reads the former levels too (a cleric spell: WIS > 8 and a cleric, a former cleric when it
+  counts, or a paladin above 8; a magic-user spell: INT > 8, and for a human in body armour in
+  game mode 5 a ranger above 8 or a former one; a druid spell: a ranger above 6). Not yet in the
+  port (it lists by slots and memorised spells only).
+- The item-use routine 0x3F9A8 lets a character read a scroll as a cleric or magic-user, current or
+  former (0x5171A, 0x51776), or as a thief above level 9 on d100 ≤ 75; not yet in the port.

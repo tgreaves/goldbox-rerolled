@@ -3,6 +3,7 @@
 import type { Item, ItemTables } from '../data/items'
 import { itemHandler, type FxHost } from './effects'
 import { F } from '../games/fields'
+import { classLevel, formerLevelsCount } from '../games/rules'
 import { msg } from '../games/strings'
 
 const ARROW = 73
@@ -140,7 +141,9 @@ export function recalc(c: Uint8Array, items: Item[], t: ItemTables) {
   body = Math.max(body, c[F.acBase])
   c[F.ac] = (dex + shield + misc + ring + body) & 0xff
   c[F.acRear] = (body + misc + ring - 2) & 0xff
-  c[F.sweep] = c[F.race] !== 0 && c[F.levels + 2] > 0 ? c[F.levels + 2] : 1
+  // CotAB 0x4E0BC: a fighter, or a former fighter whose levels count, sweeps at the level with its former part
+  const fighter = c[F.levels + 2] > 0 || (formerLevelsCount(c) && c[F.prevLevels + 2] > 0)
+  c[F.sweep] = c[F.race] !== 0 && fighter ? classLevel(c, 2) & 0xff : 1
 }
 
 /** Ready an unreadied item (FUN_4894_14d0); returns the message to show, or '' when it worked. */

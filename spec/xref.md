@@ -43,7 +43,7 @@ checks that every path named here exists.
 | [coab/tables.md](A-games/coab/tables.md) | `web/src/games/tables.ts` (`COAB_TABLES`), `web/src/games/rules.ts` (`COAB_RULES`); `tools/coab/tables_coab.py` | `tables`, `spellrules`, `training` |
 | [coab/spells.md](A-games/coab/spells.md) | `web/src/games/spellrules.ts` (`COAB_SPELLS`), `web/src/rules/spellkinds.ts` | `coabspells`, `spellmap` |
 | [coab/effects.md](A-games/coab/effects.md) | `web/src/games/effectrules.ts` (CotAB's maps), `web/src/rules/effectkinds.ts`, `web/src/rules/specials.ts` | `effectkinds`, `specials`, `effectmap` |
-| [coab/combat.md](A-games/coab/combat.md) | `web/src/rules/battlefield.ts`, `web/src/rules/combat.ts` | `mapfield`, `wildfield`, `casting` |
+| [coab/combat.md](A-games/coab/combat.md) | `web/src/rules/battlefield.ts`, `web/src/rules/combat.ts` (`backstab`, `backstabFactor`, `turnUndead`), `web/src/rules/equip.ts` (the sweep level) | `mapfield`, `wildfield`, `casting`, `formerlevels` |
 | [coab/assets.md](A-games/coab/assets.md) | `web/src/games/view.ts`, `web/src/games/frametiles.ts`, `web/src/games/title.ts`, `web/src/render/world.ts`, `web/src/audio/sfx.ts` | `coabsweep`, `coabsound`, `drawnview` |
 | [coab/camp.md](A-games/coab/camp.md) | `web/src/ui/camp.ts` (Fix), `web/src/rules/camp.ts` | `camp` |
 

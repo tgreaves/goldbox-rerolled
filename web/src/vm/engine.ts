@@ -2,7 +2,7 @@
 // A port of tools/eclvm.py; every opcode, including the original's quirks, follows spec/A-games/engine/ecl.md.
 // The interpreter is async: menus, input and screen refreshes await the front end (Io).
 
-import { R, classLevel } from '../games/rules'
+import { R, classLevel, formerLevelsCount } from '../games/rules'
 import { installNames } from '../data/character'
 import { installText, text } from '../data/gametext'
 import { msg, menu as gameMenu, ask, items as menuItems, type MenuOpts } from '../games/strings'
@@ -995,7 +995,8 @@ export class Engine {
   private async lockedDoor(kind: number): Promise<boolean> {
     const list = this.nodes
     const s8 = (v: number) => (v << 24) >> 24
-    const hasClass = (k: number) => list.some((c) => s8(c[F.levels + k]) > 0)
+    // CotAB 0x2F185: a former class counts once its levels do
+    const hasClass = (k: number) => list.some((c) => s8(c[F.levels + k]) > 0 || (formerLevelsCount(c) && s8(c[F.prevLevels + k]) > 0))
     const knockCaster = () => list.find((c) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).includes(0x1f))
     // the game's pieces, each when it applies: "Bash", " Pick", " Knock", then " Exit"
     const words = [...(this.doorTries.bash ? gameMenu('doorBash') : []), ...(this.doorTries.pick && hasClass(6) ? gameMenu('doorPick') : []),

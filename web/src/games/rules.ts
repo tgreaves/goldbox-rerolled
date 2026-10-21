@@ -139,6 +139,14 @@ export interface GameRules {
    * readied items it no longer allows are put away unless cursed (CotAB; PoR sets it at creation only).
    */
   recalc: { attacksReset: boolean; classMask: boolean }
+  /**
+   * The backstab (PoR FUN_3aae_2574, CotAB 0x2CE27; damage PoR FUN_3aae_0191, CotAB 0x2A6E2): `armour`, the
+   * one body armour a thief may wear (null: any, CotAB reads the slot but never tests it); `weapons`,
+   * the weapon types allowed (no weapon always is); `notLarge`, the target must not be large
+   * (size flags & 0x7F ≤ 1); damage × ((thief level − `minus`) div 4 + 2), the level with its former
+   * dual-class part.
+   */
+  backstab: { armour: number | null; weapons: number[]; notLarge: boolean; minus: number }
   /** thief skills (PoR FUN_51cf_0329, CotAB 0x50F5A): the level (with former dual-class levels in
    *  CotAB), a bonus on every skill (CotAB: an uninitialised variable that holds 7 from the saves
    *  routine, confirmed by the shipped characters), whether the race clamp counts it, and the first
@@ -290,6 +298,7 @@ export const POR_RULES: GameRules = {
   casterGate: null,
   dualClass: null,
   recalc: { attacksReset: true, classMask: false },
+  backstab: { armour: 50, weapons: [7, 8, 35, 36, 37], notLarge: false, minus: 0 }, // Leather Armor; Club, Dagger, the swords
   bolt: { lightning: 8, skipLast: false, mapAreaOnly: false, noRepeatBounce: false, chargeSinceLast: false },
   wildBattle: { kind: 'overlandTile' },
   battleMove: { test: 'byte', shortStep: 'stay' }, // every cell's byte 0 is 1 or 0xFF
@@ -359,6 +368,7 @@ export const COAB_RULES: GameRules = {
   // 0x511AE: abilities with a class minimum of 9 or more, 15 for the old class and 17 for the new
   dualClass: { race: 7, primeFrom: 9, oldAtLeast: 15, newAtLeast: 17 },
   recalc: { attacksReset: false, classMask: true }, // 0x50836
+  backstab: { armour: null, weapons: [0x61, 7, 8, 35, 36, 37], notLarge: true, minus: 1 }, // 0x2CE27, 0x2A74C
   bolt: { lightning: 7, skipLast: true, mapAreaOnly: true, noRepeatBounce: true, chargeSinceLast: true }, // 0x478F6, 0x479B4
   // 0x25D56: the grid builder takes the map generator only when A 0x1CC (ECL 0x4BE6, the engine's 0x49E6)
   // is set; the place is A byte 0x342 (ECL 0x4CA1, the engine's 0x4AA1)

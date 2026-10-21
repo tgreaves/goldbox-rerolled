@@ -245,6 +245,33 @@ PoR's casting in combat ([engine/combat-rules.md, "Cast"](../engine/combat-rules
 
 The engine model's casting parameters: [B-model/procedures.md §15.1](../../B-model/procedures.md#151-casting).
 
+## The backstab (O, 0x2CE27; damage 0x2A6E2)
+
+PoR's ([engine/combat-rules.md, "Backstab"](../engine/combat-rules.md#backstab-o-fun_3aae_2574)) with
+these differences:
+
+- the attacker is a thief (+0x10F > 0) or a former thief whose levels count (+0x117 > 0 and 0x51841,
+  [chargen-and-progression.md §2](chargen-and-progression.md#2-dual-classing-o-0x5135d));
+- **no armour test**: the body-armour slot (+0x159) is read and never tested;
+- the weapon: none, or type 0x61, Club (7), Dagger (8), or 35–37 (0x22 < type < 0x26);
+- the target must not be large: size flags (+0xDE) & 0x7F ≤ 1;
+- then PoR's position test (R[0xF] > 1, straight behind the target's facing, 0x2CF0C);
+- damage × (((L − 1) as a word) div 4 + 2), L = the thief level with its former part (0x2A74C):
+  ×2 at levels 1–4, ×3 at 5–8, ×4 at 9–12 (PoR L div 4 + 2: ×2 at 1–3, ×3 at 4–7).
+
+## The former class in battle (O)
+
+Where a dual-class character's former levels count once they do (0x51841), besides the backstab:
+
+| What | Where | Rule |
+|---|---|---|
+| the Turn command | 0x225D4 | offered with a cleric level, or a former cleric level when it counts (and Turn not used this battle) |
+| Turn Undead | 0x2B778 (band 0x2B7EE) | L = f·former cleric + cleric level: 1–8 → the column is the **current** cleric level (`DS:0369` + undead·10 + column), 9–13 → 9, else 10. A former cleric's current level is 0, so the entry read is the one before the row: the previous row's last, or before the first row `DS:0373` (0x20, which no d20 reaches). **Bug**: a former cleric of level 1–8 turns at the wrong column or not at all |
+| the computer's Turn | 0x2330B | a cleric level, or a former cleric level above the change level +0xE6 (never true after a change, since +0xE6 is then the cleric's level) |
+| the sweep level | 0x4E0BC | (+0xDD) a fighter, or a former fighter when it counts, of a race above 0: f·former + fighter level; else 1 |
+| the sweep of a creature an effect brings in | 0x27BEE | f·former + fighter level |
+| the locked-door menu | 0x2F185 | Pick and Knock look for a party member with the class, or the former class when it counts |
+
 ## Open
 
 - ~~Who carries effect 0x4A (the miscast)~~ answered: the Robe of Vermin ("Casting").

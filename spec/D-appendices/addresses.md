@@ -879,6 +879,7 @@ when its table column or sentence names CotAB.
 | 0x2209E | coab/combat, coab/effects | coab/combat: Casting |  |
 | 0x2213E | coab/combat | coab/combat: Casting | `FUN_320c_031a` |
 | 0x22412 | coab/combat | coab/combat: Casting | `FUN_320c_031a` |
+| 0x225D4 | coab/combat | coab/combat: The former class in battle |  |
 | 0x2272D | coab/spells | coab/spells: 1. Dispatch and shared helpers |  |
 | 0x227EF | coab/ecl, B/profile | coab/ecl: Start-up menu and demo |  |
 | 0x22A3F | coab/ecl | coab/ecl: Start-up menu and demo |  |
@@ -887,6 +888,7 @@ when its table column or sentence names CotAB.
 | 0x22BC4 | coab/spells | coab/spells: 1. Dispatch and shared helpers |  |
 | 0x230C0 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x23238 | coab/combat | coab/combat: Casting | `FUN_3334_000f` |
+| 0x2330B | coab/combat | coab/combat: The former class in battle |  |
 | 0x23471 | coab/combat | coab/combat: Casting | `FUN_3334_02eb` |
 | 0x2347C | coab/combat | coab/combat: Casting | `FUN_3334_000f` |
 | 0x2356A | coab/combat, coab/spells, B/procedures | coab/combat: Casting | `FUN_3334_03e4` |
@@ -954,6 +956,7 @@ when its table column or sentence names CotAB.
 | 0x27A16 | B/vocabularies | B/vocabularies: 3.2 Attack and damage modifiers |  |
 | 0x27A4B | B/vocabularies | B/vocabularies: 3.2 Attack and damage modifiers |  |
 | 0x27A8F | B/vocabularies | B/vocabularies: 3.4 Targeting and protection |  |
+| 0x27BEE | coab/combat | coab/combat: The former class in battle |  |
 | 0x27D29 | B/vocabularies | B/vocabularies: 3.6 Charm, morale and control |  |
 | 0x27ED0 | B/vocabularies | B/vocabularies: 3.1 Markers and turn control |  |
 | 0x284A3 | B/vocabularies | B/vocabularies: 3.2 Attack and damage modifiers |  |
@@ -997,12 +1000,16 @@ when its table column or sentence names CotAB.
 | 0x29D69 | B/vocabularies | B/vocabularies: 3.8 On-hit effects |  |
 | 0x29E21 | B/vocabularies | B/vocabularies: 3.1 Markers and turn control |  |
 | 0x29E28 | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
+| 0x2A6E2 | coab/combat, B/procedures | coab/combat: The backstab |  |
+| 0x2A74C | coab/combat | coab/combat: The backstab |  |
 | 0x2AA62 | coab/combat, B/procedures | coab/combat: Casting | `FUN_3aae_02f9` |
 | 0x2AAB4 | coab/combat | coab/combat: Casting |  |
 | 0x2AC98 | coab/combat, coab/tables, B/procedures | coab/combat: Cell table | `FUN_3aae_0712` |
 | 0x2AD05 | coab/combat, B/procedures | coab/combat: Cell table |  |
 | 0x2AD64 | B/procedures | B/procedures: 15.5 Battlefield movement |  |
 | 0x2AD78 | coab/combat, B/procedures | coab/combat: Cell table |  |
+| 0x2B778 | coab/combat | coab/combat: The former class in battle |  |
+| 0x2B7EE | coab/combat | coab/combat: The former class in battle |  |
 | 0x2C2F7 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x2C34E | coab/combat | coab/combat: Casting | `FUN_3aae_1bf8` |
 | 0x2C56C | coab/effects, B/vocabularies | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
@@ -1011,6 +1018,8 @@ when its table column or sentence names CotAB.
 | 0x2CB5D | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x2CCBD | coab/combat, B/procedures | coab/combat: Casting | `FUN_3aae_2414` |
 | 0x2CDA1 | coab/ecl | coab/ecl: Engine entry points |  |
+| 0x2CE27 | coab/combat, B/procedures | coab/combat: The backstab |  |
+| 0x2CF0C | coab/combat | coab/combat: The backstab |  |
 | 0x2D4D0 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x2E394 | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x2E582 | B/vocabularies | B/vocabularies: 3.7 Holding, draining, engulfing |  |
@@ -1018,6 +1027,7 @@ when its table column or sentence names CotAB.
 | 0x2EB16 | B/vocabularies | B/vocabularies: 3.7 Holding, draining, engulfing |  |
 | 0x2EC4C | B/vocabularies | B/vocabularies: 3.7 Holding, draining, engulfing |  |
 | 0x2ED5C | B/vocabularies | B/vocabularies: 3.7 Holding, draining, engulfing |  |
+| 0x2F185 | coab/combat | coab/combat: The former class in battle |  |
 | 0x2F252 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x2F697 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x2F7FC | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
@@ -1146,7 +1156,7 @@ when its table column or sentence names CotAB.
 | 0x3F1C0 | coab/records | coab/records: 7.2 Engine conversion |  |
 | 0x3F40D | coab/effects | coab/effects: 6. Item kinds 0x3F034 |  |
 | 0x3F57D | coab/effects | coab/effects: 6. Item kinds 0x3F034 |  |
-| 0x3F9A8 | coab/spells, B/procedures | coab/spells: 1. Dispatch and shared helpers | `FUN_4894_1a8a` |
+| 0x3F9A8 | coab/chargen-and-progression, coab/spells, B/procedures | coab/chargen-and-progression: Open | `FUN_4894_1a8a` |
 | 0x3F9A9 | coab/tables | coab/tables: 3.7a Caster level |  |
 | 0x3F9F1 | coab/spells | coab/spells: 1. Dispatch and shared helpers |  |
 | 0x3FA0D | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers | `FUN_4894_1a8a` |
@@ -1169,6 +1179,8 @@ when its table column or sentence names CotAB.
 | 0x42D5F | coab/records | coab/records: 8. Random treasure items |  |
 | 0x42D97 | coab/ecl, coab/records, coab/tables, B/procedures | coab/ecl: Random treasure types | `FUN_4c2d_1010` |
 | 0x43F70 | coab/spells | coab/spells: CotAB spell handlers: diff against PoR `engine/spells.md |  |
+| 0x43F8E | coab/chargen-and-progression | coab/chargen-and-progression: Open |  |
+| 0x449E4 | coab/chargen-and-progression | coab/chargen-and-progression: Open |  |
 | 0x44E02 | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers | `FUN_4e53_07d6` |
 | 0x44EEF | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers | `FUN_4e53_08c3` |
 | 0x450BD | coab/spells | coab/spells: 1. Dispatch and shared helpers | `FUN_4e53_0a91` |
@@ -1278,6 +1290,7 @@ when its table column or sentence names CotAB.
 | 0x4DEEF | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x4DEFF | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x4DF16 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
+| 0x4E0BC | coab/combat | coab/combat: The former class in battle |  |
 | 0x4E2CF | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x4E381 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x4E570 | coab/combat | coab/combat: Casting | `FUN_10ba_148b` |
@@ -1312,7 +1325,7 @@ when its table column or sentence names CotAB.
 | 0x5133F | coab/chargen-and-progression | coab/chargen-and-progression: Allowed classes (0x511AE) |  |
 | 0x51346 | coab/chargen-and-progression | coab/chargen-and-progression: The change (0x51521) |  |
 | 0x5135B | coab/chargen-and-progression | coab/chargen-and-progression: The change (0x51521) |  |
-| 0x5135D | coab/README, coab/chargen-and-progression, B/procedures | coab/README: Curse of the Azure Bonds (CotAB) |  |
+| 0x5135D | coab/README, coab/chargen-and-progression, coab/combat, B/procedures | coab/README: Curse of the Azure Bonds (CotAB) |  |
 | 0x51521 | coab/chargen-and-progression | coab/chargen-and-progression: The change (0x51521) |  |
 | 0x515F9 | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x51691 | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
@@ -1320,7 +1333,7 @@ when its table column or sentence names CotAB.
 | 0x51776 | coab/chargen-and-progression | coab/chargen-and-progression: Allowed classes (0x511AE) |  |
 | 0x517D2 | coab/chargen-and-progression | coab/chargen-and-progression: The change (0x51521) |  |
 | 0x51822 | coab/chargen-and-progression | coab/chargen-and-progression: Where |  |
-| 0x51841 | coab/chargen-and-progression, coab/ecl, coab/tables, B/procedures | coab/chargen-and-progression: 1. The recalculation |  |
+| 0x51841 | coab/chargen-and-progression, coab/combat, coab/ecl, coab/tables, B/procedures | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x5194A | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x51A39 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x51C48 | coab/assets, coab/ecl | coab/assets: 4. Overland: no tile map |  |

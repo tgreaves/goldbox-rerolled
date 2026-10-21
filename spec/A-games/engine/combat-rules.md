@@ -588,7 +588,7 @@ Before a melee attack from the menu, the AI or a guard, `engage(attacker, target
 
 ### Backstab (O, `FUN_3aae_2574`)
 
-All of:
+(CotAB's differs: [coab/combat.md, "The backstab"](../coab/combat.md#the-backstab-o-0x2ce27-damage-0x2a6e2).) All of:
 
 - attacker thief level c[0x9C] > 0
 - no body armour, or armour item type 50 (Leather Armor). G also lists elven chain; the code accepts only type 50 (**?** whether elven chain uses that type)

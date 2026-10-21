@@ -281,7 +281,9 @@ Parameters (`dualClass`, null: no dual-classing): `race` (who may), `primeFrom`,
 - **After it**: training gains hit points only while `hitDice` > `hpLevel` (signed; §2's caller,
   CotAB 0x3BE45), so none until the new class passes the old level. From then on the former levels
   count (§4): casting levels, spell slots (§1), THAC0, attacks, thief skills and the item mask
-  (§7.1), and the class shows with its level on the character's lines.
+  (§7.1), the backstab (§15.6), the Turn command and Turn Undead, the sweep level and the
+  locked-door menu ([coab/combat.md, "The former class in battle"](../A-games/coab/combat.md#the-former-class-in-battle-o)),
+  and the class shows with its level on the character's lines.
 
 | Game | Values |
 |---|---|
@@ -735,6 +737,26 @@ PoR's step routine takes 3 and 2 without reading the byte, the same since every 
 So in CotAB the player cannot enter a cell that costs more than is left, the computer needs strictly
 more than the cost, and the step routine's short branch is reached by neither (**I**: no other caller
 found). The battle screen's planned walk and reachable squares (part C) use the same costs.
+
+### 15.6 The backstab
+
+**Original:** PoR `FUN_3aae_2574` (damage `FUN_3aae_0191`), CotAB 0x2CE27 (damage 0x2A6E2)
+([engine/combat-rules.md, "Backstab"](../A-games/engine/combat-rules.md#backstab-o-fun_3aae_2574),
+[coab/combat.md, "The backstab"](../A-games/coab/combat.md#the-backstab-o-0x2ce27-damage-0x2a6e2)).
+
+Parameters (`backstab`): `armour` (the one body-armour type allowed; null: no test), `weapons` (the
+weapon types allowed; no weapon always is), `notLarge` (the target's size flags & 0x7F must be ≤ 1),
+`minus`.
+
+A backstab when the attacker's thief level with its former part (§4) is above 0, the armour and
+weapon tests pass, the target is not large where `notLarge`, R[0xF] > 1 and the attacker stands
+straight behind the target's facing. Damage × (((L − `minus`) as a 16-bit word) div 4 + 2), L that
+level.
+
+| Game | Values |
+|---|---|
+| PoR | armour 50 (Leather Armor), weapons 7, 8, 35, 36, 37, notLarge false, minus 0 |
+| CotAB | armour null, weapons 0x61, 7, 8, 35, 36, 37, notLarge true, minus 1 |
 
 ## 16. Demo mode
 

@@ -13,7 +13,7 @@ import type { Amount, SpellSpec } from '../games/spellrules'
 import { spellText } from './spelltext'
 import { casterLevel, duration as spellDuration, forget, itemSpellId } from './magic'
 import { F } from '../games/fields'
-import { R, formerLevelsCount } from '../games/rules'
+import { R, classLevel, formerLevelsCount } from '../games/rules'
 import { T } from '../games/tables'
 import type { SoundMode } from '../games/sound'
 import { hasMsg, msg, menu, ask, type MenuOpts, type MenuWord } from '../games/strings'
@@ -110,6 +110,12 @@ export type Outcome = 'won' | 'fled' | 'destroyed' | 'spared'
 const name = (c: Uint8Array) => String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name]))
 const u16 = (c: Uint8Array, o: number) => c[o] | (c[o + 1] << 8)
 const s8 = (v: number) => (v << 24) >> 24
+
+/** The backstab's damage factor (R.backstab): PoR FUN_3aae_0191 thief level div 4 + 2; CotAB 0x2A74C
+ *  (level − 1) div 4 + 2, the level with its former dual-class part (×2 at 1–4, ×3 at 5–8 …). */
+export function backstabFactor(c: Uint8Array): number {
+  return (((classLevel(c, 6) - R.backstab.minus) & 0xffff) >> 2) + 2
+}
 
 /** A spell's range (FUN_4e53_0729): byte 2 + byte 3 × level as a byte; touch (0xFF) 1; 0 with targets 1. */
 function spellRange(s: Spell, L: number) {
@@ -828,7 +834,8 @@ export class Battle implements FxHost {
         ...(f.r[6] > 1 && !flat ? of(menu('battleMove'), { M: 'm' }) : []), ...of(menu('battleViewAim'), { V: 'v', A: 'a' }),
         ...(this.e.itemsOf(c).length ? of(menu('battleUse'), { U: 'u' }) : []),
         ...(canCast ? of(menu('battleCast'), { C: 'c' }) : []),
-        ...(c[F.levels] > 0 && !f.r[0x11] ? of(menu('battleTurn'), { T: 't' }) : []),
+        // a cleric, or a dual-class former one whose levels count (CotAB 0x225D4)
+        ...(classLevel(c, 0) > 0 && !f.r[0x11] ? of(menu('battleTurn'), { T: 't' }) : []),
         // IMP-054: with the live command prompt the Done choices sit in the same row
         ...(flat ? doneRow() : of(menu('battleQuickDone'), { Q: 'q', D: 'd' })),
       ]
@@ -1210,7 +1217,7 @@ export class Battle implements FxHost {
           hit = true
           fx.hits[h]++
           let dmg = this.e.roll(ac[F.dice - 1 + h], ac[F.sides - 1 + h]) + s8(ac[F.bonus - 1 + h])
-          if (backstab) dmg *= Math.floor(ac[F.levels + 6] / 4) + 2
+          if (backstab) dmg *= backstabFactor(ac)
           fx.dmg = dmg & 0xff; fx.dmgType = 0; fx.spell = 0
           await fire(this, ac, 4)
           await fire(this, tc, 5)
@@ -1259,14 +1266,16 @@ export class Battle implements FxHost {
     return { chance, damage: `${cnt}d${sides}${plus ? (plus > 0 ? '+' : '') + plus : ''}` }
   }
 
+  /** PoR FUN_3aae_2574, CotAB 0x2CE27 (R.backstab): a thief (or former thief whose levels count) */
   backstab(a: Fighter, t: Fighter): boolean {
-    const c = a.c
-    if (c[F.levels + 6] <= 0) return false
+    const c = a.c, rule = R.backstab
+    if (classLevel(c, 6) <= 0) return false
     const items = this.e.itemsOf(c), tb = this.e.items
     const armour = items.find((it) => it.ready && tb?.baseOf(it)?.slot === 2)
-    if (armour && armour.type !== 50) return false
+    if (rule.armour !== null && armour && armour.type !== rule.armour) return false
     const w = this.weaponOf(c)
-    if (w && ![7, 8, 35, 36, 37].includes(w.type)) return false
+    if (w && !rule.weapons.includes(w.type)) return false
+    if (rule.notLarge && (t.c[F.sizeFlags] & 0x7f) > 1) return false
     return t.r[0xf] > 1 && this.dirTo(a, t) === t.r[9]
   }
 
@@ -1478,8 +1487,11 @@ export class Battle implements FxHost {
     f.r[0x11] = 1
     let count = this.e.roll(1, 12), minimum = 6
     const r = this.e.roll(1, 20)
-    const L = f.c[F.levels]
-    const col = L >= 1 && L <= 8 ? L - 1 : L <= 13 && L >= 9 ? 8 : 9
+    // the band from the cleric level with its former part; within 1–8 the column is the current
+    // cleric level (CotAB 0x2B7EE), 0 for a former cleric: then the entry before (the previous row's
+    // last; before the first row CotAB's DS:0373, 0x20, which no d20 reaches)
+    const L = classLevel(f.c, 0)
+    const col = L >= 1 && L <= 8 ? f.c[F.levels] - 1 : L <= 13 && L >= 9 ? 8 : 9
     const TABLE = [
       [10, 7, 4, 1, 1, 0, 0, -1, -1, -1], [13, 10, 7, 1, 1, 0, 0, 0, -1, -1], [16, 13, 10, 4, 1, 1, 0, 0, 0, -1],
       [19, 16, 13, 7, 4, 1, 1, 0, 0, -1], [20, 19, 16, 10, 7, 4, 1, 1, 0, 0], [99, 20, 19, 13, 10, 7, 4, 1, 1, 0],
@@ -1490,7 +1502,8 @@ export class Battle implements FxHost {
     while (count > 0) {
       const t = this.enemiesWithin(f, 255).filter((e) => !e.r[0x10] && e.c[F.undead] > 0).sort((a, b) => a.c[F.undead] - b.c[F.undead])[0]
       if (!t) break
-      const v = TABLE[Math.min(t.c[F.undead], 10) - 1][col]
+      const at = (Math.min(t.c[F.undead], 10) - 1) * 10 + col
+      const v = at >= 0 ? TABLE[Math.floor(at / 10)][at % 10] : 32
       if (r < Math.abs(v)) break
       any = true
       if (v >= 1) { this.announce(t.c, msg('isTurned')); t.r[0x10] = 1 }
@@ -2039,7 +2052,9 @@ export class Battle implements FxHost {
     // turn clears it first), so damage from its own spell costs the caster another copy
     if (await this.aiUseItem(f)) { this.endTurnF(f); return }
     if (f.r[0]) { await this.castSpell(f, this.e.spells!.get(f.r[0])!, { auto: true }); this.endTurnF(f); return }
-    if (c[F.levels] > 0 && !f.r[0x11] && this.enemiesWithin(f, 255).some((e) => e.c[F.undead] > 0 && !e.r[0x10])) { await this.turnUndead(f); return }
+    // CotAB 0x2330B also takes a former cleric level above the change level (+0xE6)
+    const former0 = F.prevLevels >= 0 && F.hpLevel >= 0 && s8(c[F.prevLevels]) > s8(c[F.hpLevel])
+    if ((s8(c[F.levels]) > 0 || former0) && !f.r[0x11] && this.enemiesWithin(f, 255).some((e) => e.c[F.undead] > 0 && !e.r[0x10])) { await this.turnUndead(f); return }
     if (await this.aiCast(f)) return
     this.chooseWeapon(f)
     await fire(this, c, 14) // FUN_3334_0b3c: the gaze, breath and spit specials first (spec/A-games/engine/combat-ai.md)
