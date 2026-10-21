@@ -16,6 +16,9 @@ import { addRaw } from '../src/rules/effects'
 import { COAB, POR, setGame, wants, type GameProfile } from '../src/games/profile'
 import { F } from '../src/games/fields'
 import type { Spell } from '../src/data/spells'
+import { Item } from '../src/data/items'
+
+const s8 = (v: number) => (v << 24) >> 24
 
 const OPEN = 1
 const cells: CellInfo[] = Array.from({ length: 0x42 }, (_, i) => ({ move: 1, sight: 0, image: i }))
@@ -231,7 +234,7 @@ for (const game of games) {
       const mage = add(2, 5, 0, 'MAGE', 6, [FIREBALL], { quick: true, from: game.slot })
       add(10, 5, 1, 'ORC', 5)
       b.magicOn = true
-      dice.push(1, 1, 1) // the turn's d8 and d4 (FUN_3334_000f), then one pass, at priority 7 (Fireball's)
+      dice.push(1, 1, 1, 1) // the turn's d8 and d4 (FUN_3334_000f), item use's d7 (no item), then one pass, at priority 7 (Fireball's)
       const order = await round((f) => f === mage ? false : pass(f))
       expect(order).toEqual(['MAGE', 'ORC', 'MAGE'])
       expect(printed).toContain('MAGE Begins Casting')
@@ -257,7 +260,7 @@ for (const game of games) {
       add(3, 5, 0, 'HURT', 2, [], { hp: 50 })
       add(14, 5, 1, 'ORC', 5)
       b.magicOn = true
-      dice.push(1, 1, 7) // the turn's d8 and d4 (FUN_3334_000f), then seven passes: Cure Light Wounds has priority 1
+      dice.push(1, 1, 1, 7) // the turn's d8 and d4 (FUN_3334_000f), item use's d7 (no item), then seven passes: Cure Light Wounds has priority 1
       const order = await round((f) => f === priest ? false : pass(f))
       expect(order).toEqual(['PRIEST', 'ORC', 'PRIEST', 'HURT'])
       expect(printed).toContain('PRIEST Begins Casting')
@@ -289,6 +292,52 @@ for (const game of games) {
       expect(went).toEqual([['MAGE', 'Fireball', ['ORC']]])
       expect(printed).not.toContain('MAGE Casts a Spell')
       expect(memorised(mage)).toEqual([FIREBALL])
+    })
+
+    /** a readied item of type 0 (not a scroll) with `power` (item[0x3D]) and `charges` (item[0x3C]) */
+    const wand = (e: Engine, f: Fighter, power: number, charges: number) => {
+      const raw = new Uint8Array(63)
+      raw[0x3c] = charges; raw[0x3d] = power; raw[0x34] = 1
+      const it = new Item(raw)
+      e.itemsOf(f.c).push(it)
+      return it
+    }
+
+    it('the computer uses a readied item before its spells (FUN_3334_03e4, CotAB 0x2356A)', async () => {
+      const { b, e, add, dice, went, printed, memorised } = make()
+      const mage = add(2, 5, 0, 'MAGE', 6, [FIREBALL], { quick: true, from: game.slot })
+      add(6, 5, 1, 'ORC', 5)
+      b.magicOn = true
+      const it = wand(e, mage, MAGIC_MISSILE, 2)
+      expect(e.spells!.get(MAGIC_MISSILE)!.aiPriority).toBeGreaterThan(0)
+      dice.push(1, 1, 7) // the turn's d8 and d4, then item use's seven passes
+      b.current_ = mage
+      await b.turn(mage)
+      expect(printed).toContain('MAGE uses an item')
+      expect(went).toEqual([['MAGE', 'Magic Missile', ['ORC']]])
+      expect(it.raw[0x3c]).toBe(1) // a charge spent
+      expect(memorised(mage)).toEqual([FIREBALL]) // the spell choice never ran
+      expect(s8(mage.r[3])).toBeLessThanOrEqual(0) // the turn is over
+    })
+
+    it('the computer rolls its item passes even when it may not use one (R[2], ECL 0x49E5, no enemy)', async () => {
+      const { b, e, add, dice, went } = make()
+      const mage = add(2, 5, 0, 'MAGE', 6, [], { quick: true })
+      add(6, 5, 1, 'ORC', 5)
+      wand(e, mage, MAGIC_MISSILE, 2)
+      const asked: number[] = []
+      e.roll = (n: number, d: number) => { asked.push(d); return dice.length ? dice.shift()! : n }
+      mage.r[2] = 0
+      expect(await b.aiUseItem(mage)).toBe(false)
+      mage.r[2] = 1
+      e.write(0x49e5, 1)
+      expect(await b.aiUseItem(mage)).toBe(false)
+      e.write(0x49e5, 0)
+      const idle = wand(e, mage, 0, 0); idle.raw[0x34] = 0 // an unreadied, powerless item is passed over
+      dice.push(7) // seven passes: Magic Missile's priority is reached
+      expect(await b.aiUseItem(mage)).toBe(true)
+      expect(asked.slice(0, 3)).toEqual([7, 7, 7]) // then the cast's own draws
+      expect(went.map((w) => w[1])).toEqual(['Magic Missile'])
     })
 
     if (game.g === POR) {

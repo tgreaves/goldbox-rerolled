@@ -215,9 +215,12 @@ export interface GameRules {
    * interrupted caster's (CotAB's 0xED:0x66 takes it). `miscast`: a caster with effect `effect` who
    * rolls 1 on 1d`sides` "miscasts": the spell does not go off and stays memorised (CotAB 0x45373);
    * null: no such check. `aiFirstSlot`: the first memorised slot the computer's spell choice reads
-   * (PoR FUN_3334_0545 from 0; CotAB 0x236E4 from 1, so slot 0 is never chosen)
+   * (PoR FUN_3334_0545 from 0; CotAB 0x236E4 from 1, so slot 0 is never chosen). `aiItemSpell`: the
+   * computer's item choice (PoR FUN_3334_03e4, CotAB 0x2356A) judges an item's power item[0x3D] as the
+   * spell id it gives, less `minus` above `above` (both 0x38, 0x17; CotAB's Use then casts the power as
+   * it stands, spec/A-games/coab/spells.md)
    */
-  casting: { lostFrom: 'current' | 'target'; miscast: { effect: number; sides: number } | null; aiFirstSlot: number }
+  casting: { lostFrom: 'current' | 'target'; miscast: { effect: number; sides: number } | null; aiFirstSlot: number; aiItemSpell: { above: number; minus: number } }
 }
 
 export type TempleService = 'blind' | 'disease' | 'clw' | 'csw' | 'ccw' | 'heal' | 'poison' | 'raise' | 'curse' | 'stone'
@@ -279,7 +282,8 @@ export const POR_RULES: GameRules = {
   // FUN_34c7_0810, then the finishing pass FUN_34c7_0000
   mapField: { cornerWallEnd: 0x04, finishing: true, furnish: null },
   clouds: { gas: { cell: 0x1e, immune: [0x1e, 0x1f, 0x20, 0x6f, 0x7d], roundEnd: true, apply: false }, kill: null }, // FUN_5216_0ae7
-  casting: { lostFrom: 'current', miscast: null, aiFirstSlot: 0 }, // FUN_3aae_02f9 → FUN_10ba_148b; FUN_3334_0545
+  // FUN_3aae_02f9 → FUN_10ba_148b; FUN_3334_0545; FUN_3334_03e4 (3334:04D6)
+  casting: { lostFrom: 'current', miscast: null, aiFirstSlot: 0, aiItemSpell: { above: 0x38, minus: 0x17 } },
   thief: { dualClass: false, bonus: 0, clampWithBonus: false, gloves: null, gauntlets: null },
   saveCon: null,
   startEffects: { race: { 1: [0x5a, 0x61, 0x1a, 0x2f], 2: [0x6b], 3: [0x61, 0x12, 0x2f, 0x30], 4: [0x7c], 5: [0x5a, 0x61] }, cls: {} },
@@ -351,7 +355,7 @@ export const COAB_RULES: GameRules = {
   // 0x4B8F7: no 0x1E immunity; HD 0–4 die, 5 save at −4, 6 save, 7 and up (and below 0) unaffected
   clouds: { gas: { cell: 0x1e, immune: [0x1f, 0x20, 0x6f, 0x7d], roundEnd: false, apply: true }, kill: { cell: 0x1c, save: 0, bands: [[0, 4, null], [5, 5, -4], [6, 6, 0]], poison: 0x37 } },
   // 0x2AAB4 / 0x4CC8A forget(target, spell); 0x45373 effect 0x4A, 1d2; 0x236E4 slots 1–0x53
-  casting: { lostFrom: 'target', miscast: { effect: 0x4a, sides: 2 }, aiFirstSlot: 1 },
+  casting: { lostFrom: 'target', miscast: { effect: 0x4a, sides: 2 }, aiFirstSlot: 1, aiItemSpell: { above: 0x38, minus: 0x17 } }, // 0x23651
   // 0x50F5A: Gloves of Thievery (effect 0x0B), Gauntlets of Dexterity (effect 0x02)
   thief: { dualClass: true, bonus: 7, clampWithBonus: true, gloves: { effect: 0x0b, raise: { 1: 5, 2: 7 }, bonus: 5 }, gauntlets: { effect: 0x02, minLevel: 4, bonus: 10 } },
   // a paladin joins no party with an evil member, nor an evil character a party with a paladin; three rangers at most

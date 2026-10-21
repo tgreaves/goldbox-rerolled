@@ -1,7 +1,7 @@
 // The dice tape and the headless runner (spec/B-model/host-contracts.md §6.4, §8). The runs need POOLRAD.
 import { describe, expect, it } from 'vitest'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { execFileSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { Divergence, TapePlayer, TapeRecorder, generator, type Tape } from '../src/rules/dice'
@@ -83,7 +83,8 @@ describe.skipIf(!have)('headless runner', () => {
     try {
       writeFileSync(join(tmp, 'script.json'), JSON.stringify(script))
       const web = join(__dirname, '..')
-      const node = (args: string[]) => execFileSync(process.execPath, ['--import', './headless/node-ts.mjs', 'headless/run.ts', '--files', dir, '--script', join(tmp, 'script.json'), ...args], { cwd: web, encoding: 'utf8' })
+      // the exit status is 1 when the run ends in an error (an answer of the wrong kind): the output still counts
+      const node = (args: string[]) => spawnSync(process.execPath, ['--import', './headless/node-ts.mjs', 'headless/run.ts', '--files', dir, '--script', join(tmp, 'script.json'), ...args], { cwd: web, encoding: 'utf8' }).stdout
       const first = node(['--seed', '5', '--record', join(tmp, 'tape.json')])
       const again = node(['--tape', join(tmp, 'tape.json')])
       expect(again).toBe(first)

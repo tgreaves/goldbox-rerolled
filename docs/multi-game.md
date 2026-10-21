@@ -349,8 +349,8 @@ where random play gets (CotAB: Tilverton and the jumped-to areas).
 
 ## Backlog
 
-- The computer's item use in combat (PoR `FUN_3334_03e4`, CotAB 0x2356A, tried before its queued
-  spell and its spell choice) is not ported: computer-run combatants never use items.
+- ~~The computer's item use in combat~~: done 2026-10-21 (PoR `FUN_3334_03e4`, CotAB 0x2356A,
+  `Battle.aiUseItem`, `R.casting.aiItemSpell`; spec/B-model/procedures.md §15.1).
 
 - ~~CotAB journal~~: done 2026-10-20, from the Gold Box Wiki's transcription (source from Tristan):
   entries 1–59, tavern tales 1–62 and the four background notes (`data/coab-journal.json`, built by

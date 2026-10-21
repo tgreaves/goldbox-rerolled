@@ -461,6 +461,18 @@ level and id, for a magic type its pick.
 | `lostFrom` | whose memorised list loses the queued spell when damage interrupts a caster: `current`, the current character's (PoR's forget takes no character: during an attack that is the attacker, a bug kept), or `target`, the interrupted caster's | `current` | `target` |
 | `miscast` | `{ effect, sides }`: before a spell goes off (in and out of combat, from an item too), a caster with that effect who rolls 1 on 1d`sides` "miscasts": the spell does nothing and stays memorised; null: no check | null | { 0x4A, 2 } |
 | `aiFirstSlot` | the first memorised slot the computer's spell choice reads | 0 | 1 (slot 0 never chosen) |
+| `aiItemSpell` | `{ above, minus }`: the computer's item choice judges an item's power item[0x3D] as spell power − `minus` when above `above`, whatever the game's Use then casts | { 0x38, 0x17 } (`FUN_3334_03e4`) | { 0x38, 0x17 } (0x23651) |
+
+**The computer's item use** (PoR `FUN_3334_03e4`, CotAB 0x2356A, the same procedure; **O**), tried
+before the queued spell ([engine/combat-ai.md](../A-games/engine/combat-ai.md#computer-controlled-combatants-o-fun_3334_000f)):
+the request (1, 7) for the number of passes comes first, always; then nothing happens without R[2],
+without an enemy in play, or with ECL 0x49E5 ≠ 0. Pass *k* (from 0) at priority 7 − *k* walks the
+item list in order and takes the first item that is not a scroll (ITEMS slot 11–13), has item[0x3E]
+< 0x80, is readied and has a power > 0 whose spell (`aiItemSpell`) the spell test accepts at that
+priority; the chosen item is used by the game's Use (PoR `FUN_4894_1a8a`, CotAB 0x3F9A8: its spell by
+`spells.itemSpell`, a unit or a charge spent, "uses an item", no casting time, not announced, the
+computer aiming), and the turn ends. So CotAB's computer can judge an item by one spell and cast
+another (a power above 0x38).
 
 The rest of casting is part A and the same in both games. The computer's Cure Light Wounds patient
 test is the spell map's `aiTarget: woundedNear` ([vocabularies.md §4.1](vocabularies.md#41-the-spell-map-spellrules)).

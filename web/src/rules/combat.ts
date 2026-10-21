@@ -7,7 +7,7 @@ import type { Effect } from '../data/effects'
 import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, wildField, type Battlefield, type CellInfo } from './battlefield'
 import { dexMissile, recalc } from './equip'
 import { fx, fire, damageText, healedLine, addEffect, addRaw, removeEffect, removeFirst, removeOne, removeType, runEffect, type FxHost } from './effects'
-import { heal as healChar } from './camp'
+import { heal as healChar, isScroll } from './camp'
 import { amount, castShared, line, spellSpec, term } from './spellkinds'
 import type { Amount, SpellSpec } from '../games/spellrules'
 import { spellText } from './spelltext'
@@ -1009,24 +1009,59 @@ export class Battle implements FxHost {
     if (i < 0) return
     const it = items[i]
     const slot = t.baseOf(it)?.slot ?? 0
-    let id: number
     if (slot === 11 || slot === 12) {
       const spells = it.props.filter((p) => p > 0).map((p) => p & 0x7f)
       const k = await this.ui.pick('Cast from scroll:', spells.map((s) => st.get(s)?.name ?? `#${s}`), spells.map((s) => { const sp = st.get(s); return sp ? spellText(sp) : '' }))
       if (k < 0) return
-      id = spells[k]
+      const id = spells[k]
       for (let j = 0; j < 3; j++) if ((it.raw[0x3c + j] & 0x7f) === id) { it.raw[0x3c + j] = 0; break }
-    } else {
-      id = itemSpellId(it.props[1]) // FUN_4894_1a8a, CotAB 0x3F9F1 (`spells.itemSpell`)
-      if (it.count > 1) it.count--
-      else if (it.props[0] > 0 && --it.raw[0x3c] === 0) this.e.itemsOf(f.c).splice(this.e.itemsOf(f.c).indexOf(it), 1)
-    }
-    const s = st.get(id)
-    if (!s) return
-    this.print(`${name(f.c)} uses an item`)
-    // FUN_4894_1a8a (CotAB 0x3F9F1): no casting time, not announced, the computer aims for a Quick character
-    await this.castSpell(f, s, { fromItem: true, announce: false, auto: !!f.c[F.quick] })
+      const s = st.get(id)
+      if (!s) return
+      this.print(`${name(f.c)} uses an item`)
+      await this.castSpell(f, s, { fromItem: true, announce: false, auto: !!f.c[F.quick] })
+    } else if (!await this.useItem(f, it, !!f.c[F.quick])) return
     this.endTurnF(f)
+  }
+
+  /**
+   * Use for an item that is not a scroll (FUN_4894_1a8a, CotAB 0x3F9A8 from 0x3F9F1): spell item[0x3D]
+   * by the game's Use (`spells.itemSpell`), a unit or a charge spent, "uses an item", then the spell
+   * with no casting time and not announced; `auto`: the computer aims.
+   */
+  async useItem(f: Fighter, it: Item, auto: boolean): Promise<boolean> {
+    const s = this.e.spells?.get(itemSpellId(it.props[1]))
+    if (it.count > 1) it.count--
+    else if (it.props[0] > 0 && --it.raw[0x3c] === 0) this.e.itemsOf(f.c).splice(this.e.itemsOf(f.c).indexOf(it), 1)
+    if (!s) return false
+    this.print(`${name(f.c)} uses an item`)
+    await this.castSpell(f, s, { fromItem: true, announce: false, auto })
+    return true
+  }
+
+  /**
+   * The computer's item use (FUN_3334_03e4, CotAB 0x2356A, the same), before its queued spell: d7 passes
+   * are rolled first, whatever follows; then it needs R[2] (may use items this round), enemies in play and
+   * ECL 0x49E5 = 0 (items allowed here). Pass k at priority 7 − k takes the first item in the list that is
+   * not a scroll, is readied, has item[0x3E] < 0x80 and a power item[0x3D] > 0 whose spell
+   * (R.casting.aiItemSpell) the computer accepts (`aiAccepts`); it is used (`useItem`). True when used.
+   */
+  async aiUseItem(f: Fighter): Promise<boolean> {
+    const passes = this.e.roll(1, 7)
+    const st = this.e.spells, t = this.e.items
+    if (!f.r[2] || !st || !t || !this.enemies(f).length || this.e.read(0x49e5) !== 0) return false
+    const { above, minus } = R.casting.aiItemSpell
+    let chosen: Item | null = null
+    for (let pass = 0; pass < passes && !chosen; pass++) {
+      for (const it of this.e.itemsOf(f.c)) {
+        const power = it.props[1]
+        if (isScroll(it, t) || it.props[2] >= 0x80 || !it.ready || power === 0) continue
+        const s = st.get(power > above ? power - minus : power)
+        if (s && this.aiAccepts(f, s, 7 - pass)) { chosen = it; break }
+      }
+    }
+    if (!chosen) return false
+    await this.useItem(f, chosen, true)
+    return true
   }
 
   async playerCast(f: Fighter) {
@@ -1989,6 +2024,7 @@ export class Battle implements FxHost {
     if (f.r[0x14] && !f.r[0x10]) this.print(`${name(c)} flees in panic`)
     // the queued spell goes off with R[0] still set (FUN_3334_000f 0x2347C, CotAB 0x23238; the player's
     // turn clears it first), so damage from its own spell costs the caster another copy
+    if (await this.aiUseItem(f)) { this.endTurnF(f); return }
     if (f.r[0]) { await this.castSpell(f, this.e.spells!.get(f.r[0])!, { auto: true }); this.endTurnF(f); return }
     if (c[F.levels] > 0 && !f.r[0x11] && this.enemiesWithin(f, 255).some((e) => e.c[F.undead] > 0 && !e.r[0x10])) { await this.turnUndead(f); return }
     if (await this.aiCast(f)) return
