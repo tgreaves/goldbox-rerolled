@@ -53,35 +53,7 @@ canvas.pixel { image-rendering: pixelated; background: #000; border: 1px solid v
   padding: 0.5rem 0.75rem; display: flex; gap: 0.5rem; align-items: center; z-index: 10;
 }
 
-.update-bar {
-  position: fixed; left: 50%; bottom: calc(1rem + env(safe-area-inset-bottom)); transform: translateX(-50%);
-  background: var(--panel); border: 1px solid var(--accent); border-radius: 8px;
-  padding: 0.5rem 0.75rem; display: flex; gap: 0.5rem; align-items: center; z-index: 10;
-}
-
-.explore { position: relative; flex: 1; min-height: 100dvh; display: flex; }
 .view3d { flex: 1; width: 100%; height: 100dvh; display: block; touch-action: manipulation; image-rendering: pixelated; }
-.explore .hud {
-  position: absolute; top: env(safe-area-inset-top); left: 0; right: 0; display: flex; gap: 0.75rem;
-  align-items: center; padding: 0.5rem 0.75rem; background: linear-gradient(#000000e0, #00000000);
-  pointer-events: none;
-}
-.explore .hud > * { pointer-events: auto; }
-.explore .where { font-size: 0.9rem; color: var(--muted); }
-.explore .message {
-  position: absolute; top: 4rem; left: 50%; transform: translateX(-50%); background: var(--panel);
-  border: 1px solid var(--line); border-radius: 6px; padding: 0.4rem 0.8rem; opacity: 0; transition: opacity 0.2s;
-}
-.explore .message.show { opacity: 1; }
-.explore .pad {
-  position: absolute; right: calc(1rem + env(safe-area-inset-right)); bottom: calc(1rem + env(safe-area-inset-bottom));
-  display: grid; grid-template-columns: repeat(3, 3.25rem); grid-template-rows: repeat(2, 3.25rem); gap: 0.4rem;
-}
-.explore .pad button { font-size: 1.3rem; padding: 0; background: #000000cc; }
-.explore .pad [data-c="l"] { grid-column: 1; grid-row: 1; }
-.explore .pad [data-c="f"] { grid-column: 2; grid-row: 1; }
-.explore .pad [data-c="r"] { grid-column: 3; grid-row: 1; }
-.explore .pad [data-c="b"] { grid-column: 2; grid-row: 2; }
 
 /* Exploration screen: the original's arrangement (view | party / text / commands) */
 :root { --ega-green: #55ff55; --ega-yellow: #ffff55; --ega-magenta: #ff55ff; --ega-cyan: #55ffff; }
@@ -246,10 +218,6 @@ dialog.panel form.jump input { width: 4.5rem; }
 .partyscreen h1 { margin: 0; color: var(--ega-cyan); }
 .partyscreen h2 { margin: 0 0 0.4rem; font-size: 1rem; color: #fff; }
 .partyscreen .members { border: 2px solid var(--ega-cyan); border-radius: 4px; padding: 0.5rem 0.75rem; }
-.partyscreen .members table { width: 100%; border-collapse: collapse; }
-.partyscreen .members td { color: var(--ega-green); padding: 0.35rem 0.4rem; cursor: pointer; }
-.partyscreen .members tr.current td { color: #fff; background: #ffffff14; }
-.partyscreen .members tr.current td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .partyscreen .info { color: var(--ega-green); min-height: 1.5em; }
 .partyscreen .functions { display: grid; gap: 1rem; align-content: start; }
 /* the functions in groups (IMP-073): Play, Party, Files; each button with a line on what it does */
@@ -264,11 +232,6 @@ dialog.panel form.jump input { width: 4.5rem; }
 ol.pick { list-style: none; padding: 0; display: grid; gap: 0.35rem; }
 ol.pick button { width: 100%; text-align: left; }
 form.yn { display: flex; gap: 0.5rem; justify-content: flex-end; }
-@media (max-width: 600px) {
-  .partyscreen .members td:nth-child(2), .partyscreen .members td:nth-child(3) { display: none; }
-}
-.namebox { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-.namebox input { background: var(--field); border: 1px solid var(--line); border-radius: 4px; padding: 0.4rem 0.5rem; color: var(--ega-green); text-transform: uppercase; min-height: 40px; }
 canvas.portrait { width: 264px; display: block; margin: 0.5rem 0; }
 form.yn span { margin-right: auto; align-self: center; }
 
