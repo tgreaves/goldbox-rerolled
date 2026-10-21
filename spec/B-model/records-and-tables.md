@@ -24,7 +24,7 @@ The maps belong to the game profile ([profile.md](profile.md), fields `fields`, 
    rewrites them, except where part A says the original writes them.
 4. Items keep their 63-byte record and effects their 9-byte record in both games
    ([engine/records.md, "Item record"](../A-games/engine/records.md#item-record-63-bytes),
-   ["Effect record"](../A-games/engine/records.md#effect-record-9-bytes-i)); they are read by the fixed
+   ["Effect record"](../A-games/engine/records.md#effect-record-9-bytes-o)); they are read by the fixed
    offsets part A gives. A later game that changes either gets a field map of its own, built the same
    way as §2.
 5. Where a game keeps **base and current** values (CotAB's abilities, [coab/records.md §2.1](../A-games/coab/records.md#21-base-vs-current-stats-o)),

@@ -191,7 +191,12 @@ saves. **Continue** on the party screen loads the autosave and is offered only w
 Loading brings the save's `known` back into play.
 
 The bytes written, and loading, are part A's ([savegame.md](../A-games/engine/savegame.md)): a save
-written by the port and loaded by the original, or the other way round, is the same game.
+written by the port and loaded by the original, or the other way round, is the same game. Of the
+bytes the original never reads, the effect records' next pointers and the stem table after each
+Pascal string and beyond the party count are written as 0; an item record is written as it is held,
+its stale next pointer included (as read from the file, 0 in an item made in play). A loaded save
+written back is therefore byte-for-byte the same except those bytes (moved here from part A's
+savegame.md, 2026-10-21; [records-and-tables.md §1](../B-model/records-and-tables.md#1-records-stay-native) rule 3).
 
 ## 6. Journal finds and the `.GBR` sidecar
 

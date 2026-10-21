@@ -5,7 +5,13 @@ tags: [reverse-engineering, gold-box, spec]
 
 # Characters, monsters, items
 
-Part of the [specification](../../README.md), part A. Decoder: `tools/chars.py`.
+> **Status: complete.** Normative, except passages marked *informative*. Part A of the
+> [specification](../../README.md): the engine as Pool of Radiance defines it. Evidence marks as in
+> the README; addresses are PoR's (`FUN_seg_off`, `DS:x`). Values the game files hold (the `ITEMS`
+> table, the random-item array) are informative here and listed in
+> [D-appendices/expected-values.md](../../D-appendices/expected-values.md); their addresses and
+> reading rules are normative. *Informative:* reference decoder `tools/chars.py`. Curse of the Azure
+> Bonds: [coab/records.md](../coab/records.md).
 
 ## One record for everyone (O)
 
@@ -41,6 +47,7 @@ O = read by the character sheet (`FUN_4894_004a`, `050d`, `0608`, `0901`, `FUN_1
 | 0x74, 0x75 | u8, u8 | levels lost to energy drain, and the max HP they took (energy drain `FUN_3723_2122` adds; Restoration and training take back max HP ÷ levels) | O |
 | 0x76 | u8 | undead type (monsters; turn undead table row) | O |
 | 0x77–0x7E | u8 ×8 | thief skills % (PP, OL, F/RT, MS, HS, HN, CW, RL) | O |
+| 0x7F | ptr | effect list head (in memory; [Effect record](#effect-record-9-bytes-o)) | O |
 | 0x2D | u8 | 60 − base THAC0 (best class) | O |
 | 0x73 | u8 | highest class level | O |
 | 0x84 | u8 | NPC morale; bit 7 set = NPC | O |
@@ -162,105 +169,11 @@ File `ITEMS`: u16 header (0x7600, unused), then 128 × 16 bytes; loaded at DS:55
 | 14 | weapon flags: 0x01 fires arrows (char[0xF8]), 0x02 DEX missile to-hit applies, 0x04 STR to-hit and damage apply, 0x08 launcher/missile weapon (AI; needs 0x01/0x80 ammunition unless thrown or flags = 0x0A sling), 0x10 thrown, 0x80 fires quarrels (char[0xFC]) | recalc, combat (O) |
 | 15 | always 0 | — |
 
-Every defined type (names from the shipped item records; G = from the guide only; S/M and L = damage vs small/medium and large; RoF ×2):
-
-| t | name | slot | hands | S/M | L | RoF | range | AC | class | flags |
-|---|---|---|---|---|---|---|---|---|---|---|
-| 0 | (unused) | 0 | 1 | 1d6 | 1d6 | | | | 0x48 | 0x01 |
-| 1 | Battle Axe | 0 | 1 | 1d8 | 1d8 | | | | 0x48 | 0x04 |
-| 2 | Hand Axe | 0 | 1 | 1d6 | 1d4 | 2 | 4 | | 0x68 | 0x14 |
-| 3 | Bardiche | 0 | 2 | 2d4 | 3d4 | | | | 0x68 | 0x04 |
-| 4 | Bec De Corbin | 0 | 2 | 1d8 | 1d6 | | | | 0x68 | 0x14 |
-| 5 | Bill-Guisarme | 0 | 2 | 2d4 | 1d10 | | | | 0x68 | 0x01 |
-| 6 | Bo Stick | 0 | 1 | 1d6 | 1d3 | | | | 0x68 | 0x04 |
-| 7 | Club | 0 | 1 | 1d6 | 1d3 | 2 | 4 | | 0x7E | 0x14 |
-| 8 | Dagger | 0 | 1 | 1d4 | 1d3 | | 1 | | 0x7D | 0x04 |
-| 9 | Dart | 0 | 1 | 1d3 | 1d2 | 6 | 6 | | 0x5D | 0x10 |
-| 10 | Fauchard | 0 | 2 | 1d6 | 1d8 | | | | 0x68 | 0x04 |
-| 11 | Fauchard-Fork | 0 | 2 | 1d8 | 1d10 | | | | 0x68 | 0x04 |
-| 12 | Flail | 0 | 1 | 1d6+1 | 2d4 | | | | 0x4A | 0x04 |
-| 13 | Military Fork | 0 | 2 | 1d8 | 2d4 | | | | 0x68 | 0x04 |
-| 14 | Glaive | 0 | 2 | 1d6 | 1d10 | | | | 0x68 | 0x04 |
-| 15 | Glaive-Guisarme | 0 | 2 | 2d4 | 2d6 | | | | 0x68 | 0x04 |
-| 16 | Guisarme | 0 | 2 | 2d4 | 1d8 | | | | 0x68 | 0x04 |
-| 17 | Guisarme-Voulge | 0 | 2 | 2d4 | 2d4 | | | | 0x68 | 0x00 |
-| 18 | Halberd | 0 | 2 | 1d10 | 2d6 | | | | 0x68 | 0x04 |
-| 19 | Lucern Hammer | 0 | 2 | 2d4 | 1d6 | | | | 0x48 | 0x04 |
-| 20 | Hammer | 0 | 1 | 1d4+1 | 1d4 | 2 | 4 | | 0x5A | 0x14 |
-| 21 | Javelin | 0 | 1 | 1d6 | 1d6 | 2 | 7 | | 0x68 | 0x1A |
-| 22 | Jo Stick | 0 | 1 | 1d6 | 1d4 | | | | 0x68 | 0x04 |
-| 23 | Mace | 0 | 1 | 1d6+1 | 1d6 | | | | 0x4A | 0x04 |
-| 24 | Morning Star | 0 | 1 | 2d4 | 1d6+1 | | | | 0x48 | 0x04 |
-| 25 | Partisan | 0 | 2 | 1d6 | 1d6+1 | | | | 0x68 | 0x04 |
-| 26 | Military Pick | 0 | 1 | 1d6+1 | 2d4 | | | | 0x48 | 0x04 |
-| 27 | Awl Pike | 0 | 2 | 1d6 | 1d12 | | | | 0x68 | 0x04 |
-| 28 | Quarrel | 10 | 0 | 1d4 | 1d4 | | | | 0x68 | 0x8A |
-| 29 | Ranseur | 0 | 2 | 2d4 | 2d4 | | | | 0x68 | 0x04 |
-| 30 | Scimitar | 0 | 1 | 1d8 | 1d8 | | | | 0x58 | 0x04 |
-| 31 | Spear | 0 | 2 | 1d6 | 1d8 | 2 | 4 | | 0x78 | 0x14 |
-| 32 | Spetum | 0 | 2 | 1d6+1 | 2d6 | | | | 0x68 | 0x04 |
-| 33 | Quarter Staff | 0 | 2 | 1d6 | 1d6 | | | | 0x7B | 0x04 |
-| 34 | Bastard Sword | 0 | 2 | 2d4 | 2d8 | | | | 0x48 | 0x04 |
-| 35 | Broad Sword | 0 | 1 | 2d4 | 1d6+1 | | | | 0x4C | 0x04 |
-| 36 | Long Sword | 0 | 1 | 1d8 | 1d12 | | | | 0x4C | 0x04 |
-| 37 | Short Sword | 0 | 1 | 1d6 | 1d8 | | | | 0x4C | 0x04 |
-| 38 | Two-Handed Sword | 0 | 2 | 1d10 | 3d6 | | | | 0x48 | 0x04 |
-| 39 | Trident | 0 | 1 | 1d6+1 | 3d4 | | | | 0x48 | 0x04 |
-| 40 | Voulge | 0 | 2 | 2d4 | 2d4 | | | | 0x68 | 0x04 |
-| 41 | Composite Long Bow | 0 | 2 | 1d6 | 1d6 | 4 | 22 | | 0x48 | 0x0B |
-| 42 | Composite Short Bow | 0 | 2 | 1d6 | 1d6 | 4 | 19 | | 0x48 | 0x0B |
-| 43 | Long Bow | 0 | 2 | 1d6 | 1d6 | 4 | 22 | | 0x48 | 0x0B |
-| 44 | Short Bow | 0 | 2 | 1d6 | 1d6 | 4 | 16 | | 0x48 | 0x0B |
-| 45 | Fine Composite Long Bow (monster copies named Heavy Crossbow) | 0 | 2 | 1d6 | 1d6 | 4 | 20 | | 0x68 | 0x0F |
-| 46 | Light Crossbow | 0 | 2 | 1d4 | 1d4 | 2 | 19 | | 0x68 | 0x8A |
-| 47 | Sling | 0 | 1 | 1d4+1 | 1d6+1 | 2 | 21 | | 0x5C | 0x0A |
-| 50 | Leather Armor | 2 | 0 | | | | | 52 (AC 8) | 0x5E | |
-| 51 | Padded Armor | 2 | 0 | | | | | 52 (AC 8) | 0x4A | |
-| 52 | Studded Leather Armor | 2 | 0 | | | | | 53 (AC 7) | 0x4A | |
-| 53 | Ring Mail | 2 | 0 | | | | | 53 (AC 7) | 0x4A | |
-| 54 | Scale Mail | 2 | 0 | | | | | 54 (AC 6) | 0x4A | |
-| 55 | Chain Mail | 2 | 0 | | | | | 55 (AC 5) | 0x4A | |
-| 56 | Splint Mail | 2 | 0 | | | | | 56 (AC 4) | 0x4A | |
-| 57 | Banded Mail | 2 | 0 | | | | | 56 (AC 4) | 0x4A | |
-| 58 | Plate Mail | 2 | 0 | | | | | 57 (AC 3) | 0x4A | |
-| 59 | Shield | 1 | 1 | | | | | +1 | 0x5A | |
-| 60 | (no instance) | 10 | 2 | | | | | | 0x7F | |
-| 61 | Magic User Scroll | 11 | 2 | | | | | | 0x01 | |
-| 62 | Clerical Scroll | 12 | 2 | | | | | | 0x02 | |
-| 63 | Gauntlets (of Ogre Power) | 3 | 0 | | | | | | 0x7F | |
-| 64 | (helm; no instance) | 4 | 0 | | | | | | 0x7F | |
-| 65 | (belt/necklace; no instance) | 5 | 0 | | | | | | 0x7F | |
-| 66 | (robe; no instance) | 6 | 0 | | | | | | 0x7F | |
-| 67 | Cloak (Elvenkind; no AC) | 7 | 0 | | | | | | 0x7F | |
-| 68 | Boots | 8 | 0 | | | | | | 0x7F | |
-| 69 | Ring (Fire Resistance, Invisibility, plain) | 9 | 0 | | | | | | 0x7F | |
-| 70 | miscellaneous, no hands (potions, Dust, holy symbols, statuettes, jewellery, kept gems, Bag of Holding) | 10 | 0 | | | | | | 0x7F | |
-| 71 | miscellaneous, one hand (mirrors, holy symbols of Tyr/Sune/Tempus, potions) | 10 | 1 | | | | | | 0x7F | |
-| 72 | miscellaneous, two hands (tapestry, brazier, rug, saddle) | 10 | 2 | | | | | | 0x7F | |
-| 73 | Arrow | 10 | 0 | 1d6 | 1d6 | | | | 0x48 | 0x00 |
-| 74 | Leather Holy Symbol (of Bane) | 74 | 0 | | | | | | 0x7F | |
-| 75 | Brass Key | 75 | 1 | | | | | | 0x7F | |
-| 76 | Cursed Necklace | 5 | 0 | | | | | from plus (−5) | 0x7F | |
-| 77 | Bracers (AC 10 − plus) | 77 | 0 | | | | | 50 + plus | 0x7F | |
-| 78 | Wand (Lightning, Paralyzation, Fireballs) | 78 | 1 | | | | 90 | | 0x01 | |
-| 79 | Wand of Magic Missiles | 78 | 1 | | | | | | 0x7F | |
-| 80, 81 | (no instance) | 80, 81 | 1 | | | | | | 0x7F | |
-| 82 | Efreeti Bottle | 82 | 2 | | | | | | 0x7F | |
-| 83 | (no instance; nobody can ready it) | 83 | 1 | | | | | | 0x00 | |
-| 84 | Potion of Giant Strength | 80 | 1 | | | | | | 0x08 | |
-| 85 | Holy Water Vial (damage via effect 117) | 0 | 1 | 1d1−1 | 1d1−1 | 2 | 4 | | 0x7F | 0x1A |
-| 86 | Flask of Oil | 0 | 1 | 2d6 | 2d6 | 2 | 4 | | 0x7F | 0x1A |
-| 87 | Boulder (STR 19+, effect 135) | 0 | 2 | 1d8+8 | 1d8+8 | 2 | 10 | | 0x08 | 0x1A |
-| 88 | Large Boulder (G; no instance) | 0 | 2 | 1d12+8 | 1d12+8 | 2 | 20 | | 0x00 | 0x1A |
-| 89 | (no instance; two-handed sword stats) | 0 | 2 | 1d10 | 3d6 | | | | 0x08 | 0x04 |
-| 90 | Ring of Feather Falling | 9 | 0 | | | | | | 0x7F | |
-| 91 | Pass (class mask 0: cannot be readied) | 91 | 0 | | | | | 60 | 0x00 | |
-| 92 | Cloak of Displacement | 7 | 0 | | | | | from plus | 0x7F | |
-| 93 | Ring of Protection | 9 | 0 | | | | | from plus | 0x7F | |
-| 94, 95, 96 | (no instance; bows with STR bonus) | 0 | 2 | 1d6 | 1d6 | 4 | 22, 22, 16 | | 0x48 | 0x0F |
-| 127 | (no instance; monster weapon?) | 0 | 1 | 2d20 | 2d20 | 40 | 60 | 54 | 0x7F | 0x0A |
-
-Data quirks kept as shipped: Bec De Corbin has the thrown flag but range 0 (never ranged); Bill-Guisarme has "fires arrows"; Guisarme-Voulge lacks the STR flag; darts get neither STR nor DEX. Thieves (0x04) cannot ready bows or arrows (mask 0x48).
+The values of every type are informative: a builder reads them from `ITEMS`. The full table, with
+the names the shipped item records give each type and the data quirks a decoder will meet, is in
+[expected-values.md §1](../../D-appendices/expected-values.md#1-item-types-items). Types the code
+names by number (73 arrow, 28 quarrel, 0x56 oil, 0x55 holy water, 0x57 boulder, …) are named where
+they are used.
 
 ## Random items
 
@@ -392,31 +305,10 @@ item[0x3C + j] = low byte W[m + 5 + j], j = 0..2
 
 Type, mask 6, cursed 0 and readied 0 stay as set. The save bonus only counts for AC descriptor 0x80 ([Item record (63 bytes)](#item-record-63-bytes)), so of these items only the Cloak of Displacement gets it (+2 saves, matching G; the shipped cloaks have 0). A random Ring of Protection gets 0x33 = 0 (G agrees).
 
-Random item array (DS:0972, O; words 0x2F 0x30 0x31, then weight, value, 0x3C 0x3D 0x3E):
-
-| m | words | identified name | weight | value | 0x3C | 0x3D | 0x3E | reached by |
-|---|---|---|---|---|---|---|---|---|
-| 0x01 | 187 167 64 | Potion of Extra (shipped: "Potion Extra Healing") | 1 | 800 | 3 | 3 | 0 | 0x47 |
-| 0x09 | 239 167 64 | Potion of Giant Strength | 1 | 1100 | 1 | 82 | 0 | 0x54 |
-| 0x11 | 185 167 64 | Potion of Healing | 1 | 400 | 1 | 85 | 0 | 0x47 |
-| 0x19 | 173 167 64 | Potion of Speed | 1 | 450 | 1 | 80 | 0 | 0x47 |
-| 0x21 | 240 167 65 | Scroll of Restoring Level(s) | 1 | 2100 | 56 | 56 | 0 | nothing |
-| 0x29 | 238 167 66 | Ring of Feather Falling | 1 | 5000 | 0 | 27 | 128 | 0x45 |
-| 0x31 | 157 167 69 | Wand of Lightning | 1 | 6000 | 20 | 51 | 0 | unreachable |
-| 0x39 | 206 167 69 | Wand of Magic Missiles | 1 | 11000 | 30 | 88 | 0 | 0x4F |
-| 0x41 | 225 167 69 | Wand of Paralyzation | 1 | 5000 | 20 | 84 | 0 | 0x4E |
-| 0x49 | 226 167 100 | Gauntlets of Ogre Power | 10 | 15000 | 0 | 38 | 131 | 0x3F only |
-| 0x51 | 0 111 182 | Keoghtum's Ointment | 1 | 10000 | 5 | 81 | 0 | 0x47 |
-| 0x59 | 228 167 119 | Necklace of Missiles | 1 | 16000 | 20 | 87 | 0 | 0x46 |
-| 0x61 | 170 167 88 | Cloak of Displacement | 25 | 17500 | 0 | 89 | 133 | 0x5C |
-| 0x69 | 157 167 21 | Javelin of Lightning | 20 | 3000 | 1 | 83 | 0 | unreachable (typo) |
-| 0x71 | 242 167 69 | Wand of Fireballs | 1 | 5000 | 20 | 47 | 0 | 0x4E |
-| 0x79 | 205 167 66 | Ring of Fire Resistance | 1 | 5000 | 0 | 61 | 129 | 0x45 |
-| 0x81 | 227 167 66 | Ring of Invisibility | 1 | 7500 | 0 | 56 | 139 | 0x45 |
-| 0x89 | 186 167 73 | Bag of Holding | 150 | 25000 | 0 | 0 | 0 | 0x46 |
-| 0x91 | 229 167 88 | Cloak of Elvenkind | 25 | 6000 | 0 | 72 | 134 | 0x43 |
-
-Unidentified (mask 6) only 0x31 shows: "Potion", "Wand", "Ring", "Cloak", "Keoghtum's".
+The array's values (19 entries: name words, weight, value, properties) are informative: listed,
+with which `m` reaches each entry, in
+[expected-values.md §2](../../D-appendices/expected-values.md#2-the-random-item-array-ds0972).
+*Informative*, from those values: Unidentified (mask 6) only 0x31 shows: "Potion", "Wand", "Ring", "Cloak", "Keoghtum's".
 
 **The javelin bug** (O): m = 0x90 is one word before entry 0x91, so every field shifts by one. The item keeps type 0x15 (Javelin) and gets words 0, 229, 167 ("of" → identified "of Elvenkind"), plus 1, save 1, weight 88, value 25, 0x3C = 0x70 (low byte of 6000), 0x3D = 0, 0x3E = 72 (< 0x80, so no handler). It is fixed, not the "hard-to-predict" item in G.
 
@@ -515,6 +407,21 @@ Gauntlets of Ogre Power and Potions of Giant Strength act through Strength effec
 
 Worked example: a human fighter, STR 18/63, DEX 16, banded mail +1, shield, long sword +1: body = max(56 + 1, 50) = 57, shield = 1 + 0, dex = 2, ring = 0 (magic armour) → char[0x111] = 60 (AC 0), rear = 57 − 2 = 55 (AC 5); THAC0 byte = char[0x2D] + 2 (STR) + 1 = THAC0 − 3; damage 1d8 + 3 (STR) + 1; movement: banded 350 → 9, magic → 12.
 
-## Effect record (9 bytes, I)
+## Effect record (9 bytes, O)
 
-`u8 type, u16 duration (0 = permanent), u8 power, u8 call-on-removal flag, ptr next`. List head at char[0x7F]. Full type list in [effects.md](effects.md).
+Built by `FUN_5216_0e52(char, type, duration, power, flag)` (GetMem 9; appended at the **end** of the
+list at char[0x7F]); removed by `FUN_5216_0026` ([effects.md](effects.md) §1); the same 9 bytes are
+the records of `.SPC` files and `MON<block>SPC.DAX`.
+
+| Offset | Type | Field | |
+|---|---|---|---|
+| 0 | u8 | effect type ([effects.md](effects.md)) | O (`5216:0edf`) |
+| 1 | u16 | duration; 0 = permanent (the countdown skips it) | O (`5216:0ee8`) |
+| 3 | u8 | power: the parameter the handler reads (effects.md's Pw) | O (`5216:0efc`) |
+| 4 | u8 | call on removal: ≠ 0 makes the remove routine call the handler with arg 1 first | O (`5216:0ef2`, read `5216:0086`) |
+| 5 | ptr | next record (in memory; cleared on creation, stale in files) | O (`5216:0ed1`) |
+
+The add routine `FUN_5216_1656` fires event 9 first and builds the record only if no handler
+refused it ([effects.md](effects.md) §1). An existing record of the same type is removed first only
+when the new duration is 0 or longer than the existing one (`5216:16d0–16fd`); otherwise both are
+kept ([spells.md, "Shared helpers"](spells.md#shared-helpers)).
