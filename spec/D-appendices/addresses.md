@@ -680,6 +680,7 @@ when its table column or sentence names CotAB.
 | 0x06700 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x069B0 | coab/ecl, B/script-vm-map | coab/ecl: CALL targets |  |
 | 0x0B00A | coab/camp | coab/camp: 1. Fix |  |
+| 0x0B1DB | coab/chargen-and-progression | coab/chargen-and-progression: Where |  |
 | 0x16310 | coab/tables | coab/tables: 1. Data segment |  |
 | 0x180D0 | coab/assets | coab/assets: 7. Start-up, title, copy protection |  |
 | 0x182AD | coab/assets, B/profile | coab/assets: 7. Start-up, title, copy protection | `FUN_290c_0206` |
@@ -734,6 +735,7 @@ when its table column or sentence names CotAB.
 | 0x19936 | coab/ecl | coab/ecl: Instruction encoding |  |
 | 0x19A90 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x19AF9 | coab/ecl | coab/ecl: Opcodes |  |
+| 0x19B7E | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
 | 0x19CA4 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x19ECE | coab/ecl | coab/ecl: Opcodes |  |
 | 0x19F6E | coab/ecl | coab/ecl: Opcodes |  |
@@ -1065,7 +1067,7 @@ when its table column or sentence names CotAB.
 | 0x34569 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x34573 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x34640 | coab/records | coab/records: 1. Files (diff vs engine/savegame.md "Files" and engine/input-and-menus.md "Character files") |  |
-| 0x34660 | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) | `FUN_45c5_0aec` |
+| 0x34660 | coab/chargen-and-progression, coab/records | coab/chargen-and-progression: 1. The recalculation | `FUN_45c5_0aec` |
 | 0x34741 | coab/records | coab/records: 7.2 Engine conversion |  |
 | 0x34786 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x34795 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
@@ -1082,6 +1084,7 @@ when its table column or sentence names CotAB.
 | 0x3546C | coab/records | coab/records: 4. Effects: `.FX` (CotAB) vs `.SPC` (PoR) |  |
 | 0x3554A | coab/records | coab/records: 1. Files (diff vs engine/savegame.md "Files" and engine/input-and-menus.md "Character files") |  |
 | 0x3561A | coab/records | coab/records: 1. Files (diff vs engine/savegame.md "Files" and engine/input-and-menus.md "Character files") |  |
+| 0x35625 | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x35630 | coab/records | coab/records: 6. Monsters (`MON<n>CHA/ITM/SPC.DAX`, diff vs engine/records.md "One record for everyone") |  |
 | 0x3565C | coab/ecl, coab/records, B/script-vm-map | coab/ecl: Opcodes |  |
 | 0x357EF | coab/records | coab/records: 4. Effects: `.FX` (CotAB) vs `.SPC` (PoR) |  |
@@ -1091,6 +1094,7 @@ when its table column or sentence names CotAB.
 | 0x35999 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x3599F | coab/ecl, B/script-vm-map | coab/ecl: Opcodes |  |
 | 0x359CA | coab/ecl, coab/records | coab/ecl: Opcodes |  |
+| 0x35AF6 | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x35B75 | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) | `FUN_45c5_1602` |
 | 0x35EEB | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x35F08 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
@@ -1108,6 +1112,7 @@ when its table column or sentence names CotAB.
 | 0x36850 | coab/ecl, C/screens | coab/ecl: Start-up menu and demo |  |
 | 0x36A1C | coab/assets, coab/ecl | coab/assets: 7. Start-up, title, copy protection |  |
 | 0x36A6C | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x36CEF | coab/chargen-and-progression | coab/chargen-and-progression: Where |  |
 | 0x36DCD | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x36DD5 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x3708F | B/procedures | B/procedures: 7. Creation and training values | `FUN_417f_056c` |
@@ -1115,7 +1120,9 @@ when its table column or sentence names CotAB.
 | 0x37647 | coab/records | coab/records: 10. Creation effects and paladin abilities |  |
 | 0x3764E | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x388DB | B/procedures | B/procedures: 3. Starting money |  |
+| 0x389B7 | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x389EA | B/procedures | B/procedures: 3. Starting money |  |
+| 0x38B07 | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
 | 0x38C70 | coab/records | coab/records: 2.1 Base vs current stats |  |
 | 0x39DFE | coab/README, coab/records | coab/README: Open |  |
 | 0x39E98 | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) |  |
@@ -1123,6 +1130,9 @@ when its table column or sentence names CotAB.
 | 0x3A275 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x3A468 | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers |  |
 | 0x3B230 | B/procedures | B/procedures: 2. Hit points | `FUN_417f_29ae` |
+| 0x3B557 | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
+| 0x3BD91 | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
+| 0x3BE45 | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x3BF10 | B/profile | B/profile: 3.5 The ending (`EndingScript`) |  |
 | 0x3BF78 | coab/assets | coab/assets: 8. Config, video, palette, sound |  |
 | 0x3C6A2 | coab/assets | coab/assets: 8. Config, video, palette, sound |  |
@@ -1130,7 +1140,8 @@ when its table column or sentence names CotAB.
 | 0x3D02C | coab/ecl, B/profile, C/app-flow | coab/ecl: Opcodes | `FUN_4804_02a4` |
 | 0x3D34D | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x3D459 | coab/assets | coab/assets: 5. BIGPIC uses |  |
-| 0x3D530 | coab/records, B/procedures | coab/records: 10. Creation effects and paladin abilities |  |
+| 0x3D530 | coab/chargen-and-progression, coab/records, B/procedures | coab/chargen-and-progression: The former class afterwards |  |
+| 0x3D87C | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
 | 0x3F034 | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x3F1C0 | coab/records | coab/records: 7.2 Engine conversion |  |
 | 0x3F40D | coab/effects | coab/effects: 6. Item kinds 0x3F034 |  |
@@ -1153,6 +1164,7 @@ when its table column or sentence names CotAB.
 | 0x41B6A | coab/camp | coab/camp: 1. Fix |  |
 | 0x41B8F | coab/camp | coab/camp: 1. Fix |  |
 | 0x41CEA | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x41D56 | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x4245A | coab/effects, B/vocabularies | coab/effects: Event → types, in the order called |  |
 | 0x42D5F | coab/records | coab/records: 8. Random treasure items |  |
 | 0x42D97 | coab/ecl, coab/records, coab/tables, B/procedures | coab/ecl: Random treasure types | `FUN_4c2d_1010` |
@@ -1178,6 +1190,7 @@ when its table column or sentence names CotAB.
 | 0x4675B | coab/spells, B/vocabularies | coab/spells: 4. Quirks of the original | `FUN_4e53_1b11` |
 | 0x46B40 | coab/spells | coab/spells: 2. Per spell id |  |
 | 0x46BCB | B/vocabularies | B/vocabularies: 4.2 Shared kinds |  |
+| 0x46BF8 | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
 | 0x46FA7 | coab/spells | coab/spells: 1. Dispatch and shared helpers |  |
 | 0x47096 | coab/spells | coab/spells: 2. Per spell id |  |
 | 0x47154 | B/vocabularies | B/vocabularies: 4.3 The battle's kinds |  |
@@ -1191,6 +1204,7 @@ when its table column or sentence names CotAB.
 | 0x47C01 | coab/effects, B/procedures | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
 | 0x47C49 | coab/effects, B/vocabularies | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
 | 0x47C7F | coab/spells, B/procedures | coab/spells: 2. Per spell id |  |
+| 0x47E69 | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x47F27 | B/vocabularies | B/vocabularies: 4.2 Shared kinds |  |
 | 0x47FB0 | coab/effects | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
 | 0x4814A | B/vocabularies | B/vocabularies: 4.2 Shared kinds |  |
@@ -1245,7 +1259,7 @@ when its table column or sentence names CotAB.
 | 0x4C72B | B/procedures | B/procedures: 11. The current-stat routine |  |
 | 0x4C743 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x4C761 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
-| 0x4C7B8 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
+| 0x4C7B8 | coab/chargen-and-progression, coab/records | coab/chargen-and-progression: The former class afterwards |  |
 | 0x4C875 | B/procedures | B/procedures: 11. The current-stat routine |  |
 | 0x4CA6A | coab/spells | coab/spells: 1. Dispatch and shared helpers | `FUN_5216_1344` |
 | 0x4CAB2 | coab/effects | coab/effects: 1. Dispatch |  |
@@ -1271,23 +1285,42 @@ when its table column or sentence names CotAB.
 | 0x4F395 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x4F5B4 | coab/effects | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x4F758 | coab/effects | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
-| 0x4F8BF | coab/spells, coab/tables, B/procedures | coab/spells: 3. Durations | `FUN_10ba_26c2` |
+| 0x4F8BF | coab/chargen-and-progression, coab/spells, coab/tables, B/procedures | coab/chargen-and-progression: 1. The recalculation | `FUN_10ba_26c2` |
 | 0x4F8C5 | coab/tables, B/procedures | coab/tables: 3.7a Caster level |  |
 | 0x4FA79 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x4FBB6 | coab/camp, coab/ecl | coab/camp: 1. Fix |  |
+| 0x5047F | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation | `FUN_51cf_0000` |
 | 0x50480 | coab/effects, B/procedures | coab/effects: 6. Item kinds 0x3F034 |  |
+| 0x504AC | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
+| 0x50568 | coab/chargen-and-progression, coab/tables, B/procedures | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x507C3 | coab/effects, coab/tables, B/procedures | coab/effects: 6. Item kinds 0x3F034 |  |
-| 0x50836 | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) |  |
+| 0x50836 | coab/README, coab/chargen-and-progression, coab/records, coab/tables, B/procedures | coab/README: Curse of the Azure Bonds (CotAB) |  |
 | 0x5089F | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x508C4 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
-| 0x50929 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
+| 0x50929 | coab/chargen-and-progression, coab/records | coab/chargen-and-progression: The former class afterwards |  |
 | 0x50952 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x5098A | coab/records | coab/records: 2.2 Recomputed on load/import |  |
 | 0x509EC | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
-| 0x50AF6 | coab/tables | coab/tables: Open |  |
-| 0x50C6B | coab/records, coab/tables, B/procedures | coab/records: 2.2 Recomputed on load/import | `FUN_51cf_0255` |
-| 0x50F5A | coab/effects, coab/records, coab/tables, B/procedures | coab/effects: 6. Item kinds 0x3F034 | `FUN_51cf_0329` |
-| 0x51841 | coab/ecl, coab/tables, B/procedures | coab/ecl: B as a view of the current character |  |
+| 0x50A10 | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
+| 0x50A3B | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
+| 0x50AF6 | coab/chargen-and-progression, coab/tables, B/procedures | coab/chargen-and-progression: 1. The recalculation |  |
+| 0x50C6B | coab/chargen-and-progression, coab/records, coab/tables, B/procedures | coab/chargen-and-progression: 1. The recalculation | `FUN_51cf_0255` |
+| 0x50F5A | coab/chargen-and-progression, coab/effects, coab/records, coab/tables, B/procedures | coab/chargen-and-progression: 1. The recalculation | `FUN_51cf_0329` |
+| 0x511AE | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: Allowed classes (0x511AE) |  |
+| 0x5131D | coab/chargen-and-progression | coab/chargen-and-progression: Allowed classes (0x511AE) |  |
+| 0x5132C | coab/chargen-and-progression | coab/chargen-and-progression: Allowed classes (0x511AE) |  |
+| 0x5133F | coab/chargen-and-progression | coab/chargen-and-progression: Allowed classes (0x511AE) |  |
+| 0x51346 | coab/chargen-and-progression | coab/chargen-and-progression: The change (0x51521) |  |
+| 0x5135B | coab/chargen-and-progression | coab/chargen-and-progression: The change (0x51521) |  |
+| 0x5135D | coab/README, coab/chargen-and-progression, B/procedures | coab/README: Curse of the Azure Bonds (CotAB) |  |
+| 0x51521 | coab/chargen-and-progression | coab/chargen-and-progression: The change (0x51521) |  |
+| 0x515F9 | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: 1. The recalculation |  |
+| 0x51691 | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
+| 0x5171A | coab/chargen-and-progression | coab/chargen-and-progression: Where |  |
+| 0x51776 | coab/chargen-and-progression | coab/chargen-and-progression: Allowed classes (0x511AE) |  |
+| 0x517D2 | coab/chargen-and-progression | coab/chargen-and-progression: The change (0x51521) |  |
+| 0x51822 | coab/chargen-and-progression | coab/chargen-and-progression: Where |  |
+| 0x51841 | coab/chargen-and-progression, coab/ecl, coab/tables, B/procedures | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x5194A | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x51A39 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x51C48 | coab/assets, coab/ecl | coab/assets: 4. Overland: no tile map |  |

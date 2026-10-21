@@ -295,7 +295,7 @@ Defined by [procedures.md](../B-model/procedures.md#1-spell-slots).
 | `E-derive-coab-4` | `{"record":{"race":1,"cls":2,"levels":[0,0,5,0,0,0,0,0],"stat":[17,10,10,10,17,10]}}` | – | (179 characters) |
 | `E-derive-coab-5` | `{"record":{"race":5,"cls":6,"levels":[0,0,0,0,0,0,6,0],"stat":[10,10,10,17,10,10]}}` | – | (187 characters) |
 | `E-derive-coab-6` | `{"record":{"race":7,"cls":5,"levels":[0,0,0,0,0,11,0,0],"stat":[10,18,10,10,19,10]}}` | – | (177 characters) |
-| `E-derive-coab-7` | `{"record":{"race":7,"cls":2,"levels":[0,0,6,0,0,0,0,0],"prevLevels":[0,0,0,0,0,0,5,0],"hpLevel":5,"stat":[15,10,10,16,10,10]}}` | – | (179 characters) |
+| `E-derive-coab-7` | `{"record":{"race":7,"cls":2,"levels":[0,0,6,0,0,0,0,0],"prevLevels":[0,0,0,0,0,0,5,0],"hpLevel":5,"stat":[15,10,10,16,10,10]}}` | – | (187 characters) |
 | `E-derive-coab-8` | `{"record":{"race":4,"cls":10,"levels":[6,0,0,0,6,0,0,0],"stat":[14,13,14,10,14,10]}}` | – | (250 characters) |
 
 #### `creation` (E)
@@ -328,8 +328,19 @@ Defined by [procedures.md](../B-model/procedures.md#2-hit-points).
 | `E-training-por-4` | `{"record":{"race":7,"cls":5,"levels":[0,0,0,0,0,1,0,0],"stat":[10,17,10,10,6,10],"hp":3,"maxHp":4,"hpRolled":4},"classes":[5]}` | 1 draws | (292 characters) |
 | `E-training-coab-1` | `{"record":{"race":7,"cls":2,"levels":[0,0,1,0,0,0,0,0],"stat":[16,10,10,10,16,10],"hp":20,"maxHp":30,"hpRolled":28},"classes":[2]}` | 2 draws | (329 characters) |
 | `E-training-coab-2` | `{"record":{"race":7,"cls":2,"levels":[0,0,9,0,0,0,0,0],"stat":[16,10,10,10,16,10],"hp":20,"maxHp":30,"hpRolled":28},"classes":[2]}` | 0 draws | (328 characters) |
-| `E-training-coab-3` | `{"record":{"race":7,"cls":4,"levels":[0,0,0,0,7,0,0,0],"stat":[16,14,14,10,15,10],"hp":40,"maxHp":50,"hpRolled":48},"classes":[4]}` | 2 draws | (340 characters) |
-| `E-training-coab-4` | `{"record":{"race":7,"cls":3,"levels":[0,0,0,8,0,0,0,0],"stat":[17,10,14,10,15,17],"hp":50,"maxHp":50,"hpRolled":45},"classes":[3]}` | 2 draws | (339 characters) |
+| `E-training-coab-3` | `{"record":{"race":7,"cls":4,"levels":[0,0,0,0,7,0,0,0],"stat":[16,14,14,10,15,10],"hp":40,"maxHp":50,"hpRolled":48},"classes":[4]}` | 2 draws | (341 characters) |
+| `E-training-coab-4` | `{"record":{"race":7,"cls":3,"levels":[0,0,0,8,0,0,0,0],"stat":[17,10,14,10,15,17],"hp":50,"maxHp":50,"hpRolled":45},"classes":[3]}` | 2 draws | (340 characters) |
+
+#### `dualclass` (E)
+
+Defined by [procedures.md](../B-model/procedures.md#72-dual-classing).
+
+| Vector | Input | Tape | Output |
+|---|---|---|---|
+| `E-dualclass-coab-1` | `{"record":{"race":7,"cls":2,"levels":[0,0,7,0,0,0,0,0],"stat":[16,10,17,12,14,10],"baseStat":[16,10,17,12,14,10],"alignment":0,"xp":70000,"hp":50,"maxHp":50,"hpRolled":44},"to":0}` | – | (422 characters) |
+| `E-dualclass-coab-2` | `{"record":{"race":7,"cls":5,"levels":[0,0,0,0,0,6,0,0],"stat":[17,15,10,14,12,10],"baseStat":[17,15,10,14,12,10],"alignment":4,"xp":70000,"hp":50,"maxHp":50,"hpRolled":44},"to":2}` | – | (407 characters) |
+| `E-dualclass-coab-3` | `{"record":{"race":7,"cls":2,"levels":[0,0,5,0,0,0,0,0],"stat":[14,10,17,12,14,10],"baseStat":[14,10,17,12,14,10],"alignment":0,"xp":70000,"hp":50,"maxHp":50,"hpRolled":44},"to":0}` | – | (404 characters) |
+| `E-dualclass-coab-4` | `{"record":{"race":7,"cls":0,"levels":[4,0,0,0,0,0,0,0],"stat":[17,10,16,17,12,10],"baseStat":[17,10,16,17,12,10],"alignment":4,"xp":70000,"hp":50,"maxHp":50,"hpRolled":44},"to":6}` | – | (446 characters) |
 
 #### `money.coinValue` (E)
 

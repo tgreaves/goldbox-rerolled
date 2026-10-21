@@ -340,6 +340,9 @@ by the gender byte (0 his), then `share`.
 | `andALevel` | training | 0x34167 | `FUN_417f_29ae` | 0x3B520 | 0x3B557 |
 | `wishToTrain` | training | 0x34174 | `FUN_417f_29ae` | 0x3B52D | 0x3B557 |
 | `congratulations` | training | 0x3418B | `FUN_417f_29ae` | 0x3B544 | 0x3B557 |
+| `pickNewClass` | dual-classing: the list's title | — |  | 0x5131D | 0x5135D |
+| `doesntQualify` | dual-classing: no class allowed, after the name | — |  | 0x5132C | 0x5135D |
+| `nowFirstLevel`, `nowFirstLevelEnd` | dual-classing done: name, this, the class name, the full stop | — |  | 0x51346, 0x5135B | 0x5135D |
 | `isDrained` | energy drain | 0x2931F | `FUN_3723_2122` | — |  |
 | `drainLevels` | energy drain | 0x2930F | `FUN_3723_2122` | — |  |
 | `drainALevel` | energy drain | 0x29317 | `FUN_3723_2122` | — |  |
@@ -516,7 +519,7 @@ original does (**O**, 2026-10-21):
 | `doorBash`, `doorPick`, `doorKnock`, `doorExit` | locked door: "Bash", " Pick", " Knock" (each when offered), " Exit" | 0x2F4AC, 0x2F4B1, 0x2F4B7, 0x2F4BE | `FUN_3e76_0d6d` | 0x2FA6F, 0x2FA74, 0x2FA7A, 0x2FA81 | 0x2FA90 |
 | `itemReady` … `itemId` | items menu: "Ready", " Use", " Trade", " Drop", " Halve", " Join", " Sell", " Id" | 0x397C3, 0x397C9, 0x397CE, 0x397D5, 0x397DB, 0x397E2, 0x397E8, 0x397EE | `FUN_4894_0ef8` | 0x3EA3E, 0x3EA44, 0x3EA49, 0x3EA50, 0x3EA56, 0x3EA5D, 0x3EA63, 0x3EA69 | 0x3EAB3 |
 | `viewTrade`, `viewDrop`, `viewExit` | the view menu's "Trade ", "Drop ", "Exit" | 0x393BB, 0x393C2, 0x393C8 | `FUN_4894_0ab3` | 0x3E062, 0x3E069, 0x3E07B | 0x3E0A0 |
-| `partyCreate` … `partyExit` | the party screen's functions (Create New Character … Exit to DOS; CotAB adds Human Change Classes, not used) | 0x0CDD9 + 0x2A·*i* | `FUN_417f_0161` | 0x0B133, 0x0B15D, 0x0B187, 0x0B1B1, then 0x0B205 + 0x2A·*i* | 0x36A1C |
+| `partyCreate` … `partyExit` | the party screen's functions (Create New Character … Exit to DOS; CotAB adds Human Change Classes, `partyChangeClass`, offered in the training hall: [coab/chargen-and-progression.md §2](../A-games/coab/chargen-and-progression.md#2-dual-classing-o-0x5135d)) | 0x0CDD9 + 0x2A·*i* | `FUN_417f_0161` | 0x0B133, 0x0B15D, 0x0B187, 0x0B1B1, then 0x0B205 + 0x2A·*i* | 0x36A1C |
 | `modify` | Modify: "Keep Exit" | 0x33885 | `FUN_417f_209f` | 0x39076 | 0x39080 |
 | `iconMain`, `iconHeadWeapon`, `iconParts`, `iconEdit` | icon editor levels 1, 2, 3, 5 (`DS:07BF`, CotAB `DS:0723`, + 0x29·level) | 0x0CFA8, 0x0CFD1, 0x0CFFA, 0x0D04C | `FUN_417f_382d` | 0x0B32C, 0x0B355, 0x0B37E, 0x0B3D0 | 0x3A716 |
 | `iconSmall`, `iconLarge`, `iconHair`, `iconFace` | the icon editor's "Small", "Large" (level 4), "Hair", "Face" (level 3's third word) | 0x34FD0, 0x34FD6, 0x34FDC, 0x34FE1 | `FUN_417f_382d` | 0x3A6BB, 0x3A6C1, 0x3A6DA, 0x3A6DF | 0x3A716 |

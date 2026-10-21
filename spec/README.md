@@ -175,6 +175,7 @@ set of differences** throughout; how the port realises them is in parts B and C.
 | [effects.md](A-games/coab/effects.md) | event lists, changed and new handlers, item kinds, monster-class flags, the target hook |
 | [combat.md](A-games/coab/combat.md) | the battlefield generators, the cell table, casting |
 | [camp.md](A-games/coab/camp.md) | the camp menus and Fix |
+| [chargen-and-progression.md](A-games/coab/chargen-and-progression.md) | the recalculation after a level, the starting spells, dual-classing and the former-level rule |
 | [camp.md](A-games/coab/camp.md) | the camp's Fix, the rest prompt, the silent rest |
 | [assets.md](A-games/coab/assets.md) | DAX families, the 3D view's sky and ground, BIGPIC, title and start-up, sound |
 

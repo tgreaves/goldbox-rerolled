@@ -118,7 +118,7 @@ A different model from PoR. Slots are recomputed from zero as **cumulative incre
 - Paladin: for L = 9..level add DS:43E5[L·5 + n] to the cleric slots, then knows the cleric spells.
 - Ranger: for L = 8..level add DS:4448[L·5 + n]: n 1–3 to druid slots, n 4–5 to MU levels 1–2. The ranger knows **every** class-1 (druid) spell.
 - MU: +1 first-level slot, then L = 2..level add DS:44AB[L·5 + n].
-- The WIS bonus routine still follows (call 50af6). Not re-derived here (?).
+- The WIS bonus routine follows inside the cleric branch (0x50568 → 0x50AF6, O): PoR's bonus, only with a cleric level, so a paladin's cleric slots never get it ([chargen-and-progression.md §1](chargen-and-progression.md#1-the-recalculation-o-0x50836)).
 
 The resulting slot counts per level are listed in [expected-values.md §5.3](../../D-appendices/expected-values.md#53-spell-slots-ds42bc-ds43e5-ds4448-ds44ab); levels 1–6 equal PoR's absolute tables.
 

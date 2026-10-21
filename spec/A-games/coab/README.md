@@ -18,6 +18,7 @@ B ([B-model/profile.md](../../B-model/profile.md), [procedures.md](../../B-model
 | [ecl.md](ecl.md) | the ECL script VM: code at 0x8000, address spaces A 0x4B00 / B 0x7C00 / C 0x7A00, opcodes 0x3E–0x40 new, changed opcodes, CALL targets |
 | [records.md](records.md) | the 422-byte character record, items (.SWG), effects (.FX), SAVGAM (13 149 bytes), monsters, the roster (*.guy), the Pool of Radiance character import |
 | [tables.md](tables.md) | DS base 0x0ABE (image 0xABE0); every rules table, PoR → CotAB addresses; level caps, classes, spells (100 ids, 5 levels), hit points, slots |
+| [chargen-and-progression.md](chargen-and-progression.md) | the recalculation after a level (0x50836), the starting spells, dual-classing ("Human Change Classes", 0x5135D) and where the former levels count |
 | [spells.md](spells.md) | spell handlers by id: which match PoR, which changed, the new spells 58–100, durations, quirks |
 | [effects.md](effects.md) | the effect system: event lists (0–23), changed and new handlers, item effects, monster-class flags |
 | [combat.md](combat.md) | the battlefield: grid builder 0x25CC0, the wilderness passes (river, trees and logs, scatter; no finishing pass), the cell table DS:26A4 |

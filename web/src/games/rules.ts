@@ -90,12 +90,14 @@ export interface GameRules {
   /** how spell slots are worked out (PoR FUN_51cf_0000, CotAB FUN 0x50480, spec/A-games/coab/tables.md §3.5):
    *  optionally clear every slot first; then per source, if the class has a level: one first-level slot
    *  (`first`), and the table's rows from level `from` either set (the class's own level's row) or added
-   *  (rows from..level), each column into a pool and spell level; the WIS bonus after the cleric source
-   *  or always; then the spells learnt (those of a class with slots, or all of a class) */
+   *  (rows from..level), each column into a pool and spell level, a dual-class character's former level
+   *  standing in for a class's own once it counts (CotAB 0x50480); the WIS bonus right after the cleric
+   *  source (PoR FUN_51cf_01af, CotAB 0x50AF6), so a paladin's cleric slots never get it; then the
+   *  spells learnt (those of a class with slots, or all of a class) */
   slots: {
     clear: boolean
     sources: { cls: number; table: 'clericSlots' | 'muSlots' | 'paladinSlots' | 'rangerSlots'; from: number; first: boolean; add: boolean; columns: { pool: 'cleric' | 'druid' | 'mu'; level: number }[] }[]
-    wisdom: 'afterCleric' | 'always'
+    wisdom: 'afterCleric'
     learn: { classes: number[]; spellClass: 'cleric' | 'druid'; all: boolean }[]
     /** a readied item with this effect byte (+0x3E) doubles the magic-user slots of levels 1..levels */
     doubler: { effect: number; levels: number } | null
@@ -121,8 +123,22 @@ export interface GameRules {
   casterTerms: Record<number, { cls: number; minus: number }[]>
   /** CotAB: characters with none of these levels high enough cast everything at 6 (0x4F8C5) */
   casterGate: { atLeast: Record<number, number>; level: number } | null
-  /** former dual-class levels count once the new class's level has passed them (CotAB FUN 0x51841) */
-  dualClass: boolean
+  /**
+   * Dual-classing (CotAB's "Human Change Classes", 0x5135D; spec/B-model/procedures.md §7.2): who may
+   * (`race`, checked by 0x51822), and the ability rule of the eligibility test 0x511AE: every ability
+   * whose class minimum (T.classMins) is at least `primeFrom` must be at least `oldAtLeast` for the
+   * current class and `newAtLeast` for the new one. Former dual-class levels count once the new
+   * class's level has passed them (FUN 0x51841). Null: the game has no dual-classing (PoR).
+   */
+  dualClass: { race: number; primeFrom: number; oldAtLeast: number; newAtLeast: number } | null
+  /**
+   * The recalculation after creation and training (PoR FUN_51cf_0000, CotAB 0x50836):
+   * `attacksReset`: the fighter's attacks are set back to 2 below the extra-attack level (PoR); CotAB
+   * only ever raises them to 3. `classMask`: the item class mask (char item mask) is worked out again
+   * from T.classBits over the classes with a level, and former levels below the highest level, and
+   * readied items it no longer allows are put away unless cursed (CotAB; PoR sets it at creation only).
+   */
+  recalc: { attacksReset: boolean; classMask: boolean }
   /** thief skills (PoR FUN_51cf_0329, CotAB 0x50F5A): the level (with former dual-class levels in
    *  CotAB), a bonus on every skill (CotAB: an uninitialised variable that holds 7 from the saves
    *  routine, confirmed by the shipped characters), whether the race clamp counts it, and the first
@@ -243,7 +259,7 @@ const SHARED = {
   ageColumns: { 8: 0, 9: 0, 11: 0, 12: 0, 13: 5, 15: 5, 16: 5, 14: 2 },
   clericMultis: [8, 9, 10, 11, 12],
   trainingCost: 1000,
-  startSpells: [11, 18, 19, 21], // Detect Magic, Read Magic, Shield, Sleep
+  startSpells: [11, 18, 19, 21], // Detect Magic, Read Magic, Shield, Sleep (PoR 417f creation)
   // CHA 3 … 25 (index 0 = CHA 0)
   chaReaction: [0, 0, 0, 0, 5, 10, 15, 20, 25, 25, 25, 25, 25, 30, 35, 40, 50, 55, 60, 60, 60, 60, 60, 60, 60, 60],
 }
@@ -272,7 +288,8 @@ export const POR_RULES: GameRules = {
   startMoney: { coin: 3, fixed: null },
   casterTerms: { 0: [{ cls: 0, minus: 0 }], 1: [{ cls: 5, minus: 0 }] },
   casterGate: null,
-  dualClass: false,
+  dualClass: null,
+  recalc: { attacksReset: true, classMask: false },
   bolt: { lightning: 8, skipLast: false, mapAreaOnly: false, noRepeatBounce: false, chargeSinceLast: false },
   wildBattle: { kind: 'overlandTile' },
   battleMove: { test: 'byte', shortStep: 'stay' }, // every cell's byte 0 is 1 or 0xFF
@@ -309,6 +326,7 @@ export const COAB_RULES: GameRules = {
   ...SHARED,
   // 100 spells, five levels; class byte 0 cleric, 1 druid, 2 magic-user, 3 item/monster (§3.7)
   spells: { records: 100, named: 100, book: 100, levels: 5, cleric: 0, druid: 1, magicUser: 2, item: 3, itemSpell: { mask: 0x7f, above: 0xff, minus: 0 } },
+  startSpells: [11, 18, 12, 21], // Detect Magic, Read Magic, Enlarge, Sleep (creation 0x389B7, dual-classing 0x515F9)
   slots: {
     clear: true,
     sources: [
@@ -317,7 +335,7 @@ export const COAB_RULES: GameRules = {
       { cls: 4, table: 'rangerSlots', from: 8, first: false, add: true, columns: [{ pool: 'druid', level: 1 }, { pool: 'druid', level: 2 }, { pool: 'druid', level: 3 }, { pool: 'mu', level: 1 }, { pool: 'mu', level: 2 }] },
       { cls: 5, table: 'muSlots', from: 2, first: true, add: true, columns: [{ pool: 'mu', level: 1 }, { pool: 'mu', level: 2 }, { pool: 'mu', level: 3 }, { pool: 'mu', level: 4 }, { pool: 'mu', level: 5 }] },
     ],
-    wisdom: 'always',
+    wisdom: 'afterCleric', // 0x50568: inside the cleric branch, before the paladin's rows
     learn: [{ classes: [0, 3], spellClass: 'cleric', all: false }, { classes: [4], spellClass: 'druid', all: true }],
     doubler: { effect: 0x81, levels: 3 }, // Ring of Wizardry (0x507C3)
   },
@@ -338,7 +356,9 @@ export const COAB_RULES: GameRules = {
   casterTerms: { 0: [{ cls: 0, minus: 0 }, { cls: 3, minus: 8 }], 1: [{ cls: 4, minus: 7 }], 2: [{ cls: 5, minus: 0 }, { cls: 4, minus: 8 }] },
   // no cleric or magic-user level, paladin below 9 and ranger below 8
   casterGate: { atLeast: { 0: 1, 5: 1, 3: 9, 4: 8 }, level: 6 },
-  dualClass: true,
+  // 0x511AE: abilities with a class minimum of 9 or more, 15 for the old class and 17 for the new
+  dualClass: { race: 7, primeFrom: 9, oldAtLeast: 15, newAtLeast: 17 },
+  recalc: { attacksReset: false, classMask: true }, // 0x50836
   bolt: { lightning: 7, skipLast: true, mapAreaOnly: true, noRepeatBounce: true, chargeSinceLast: true }, // 0x478F6, 0x479B4
   // 0x25D56: the grid builder takes the map generator only when A 0x1CC (ECL 0x4BE6, the engine's 0x49E6)
   // is set; the place is A byte 0x342 (ECL 0x4CA1, the engine's 0x4AA1)
@@ -427,7 +447,7 @@ export function bookSpell(s: { id: number; cls: number; level: number }): boolea
  * class with a level has passed the level they had when they changed class (+0xE6).
  */
 export function formerLevelsCount(c: Uint8Array): boolean {
-  if (!R.dualClass || F.prevLevels < 0 || F.hpLevel < 0 || c[F.race] !== 7) return false
+  if (!R.dualClass || F.prevLevels < 0 || F.hpLevel < 0 || c[F.race] !== R.dualClass.race) return false
   let cur = c[F.levels + 7]
   for (let k = 0; k < 7; k++) if (c[F.levels + k] !== 0) { cur = c[F.levels + k]; break }
   return ((cur << 24) >> 24) > ((c[F.hpLevel] << 24) >> 24)

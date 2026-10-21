@@ -354,6 +354,11 @@ where random play gets (CotAB: Tilverton and the jumped-to areas).
 
 ## Backlog
 
+- ~~CotAB dual-classing~~: done 2026-10-21 ("Human Change Classes" 0x5135D in the training hall's
+  party screen, `rules/dualclass.ts`, `R.dualClass`; the recalculation's CotAB parts as `R.recalc`:
+  the item class mask again and no attack reset; spec/B-model/procedures.md §7.1, §7.2,
+  spec/A-games/coab/chargen-and-progression.md).
+
 - ~~The computer's item use in combat~~: done 2026-10-21 (PoR `FUN_3334_03e4`, CotAB 0x2356A,
   `Battle.aiUseItem`, `R.casting.aiItemSpell`; spec/B-model/procedures.md §15.1).
 

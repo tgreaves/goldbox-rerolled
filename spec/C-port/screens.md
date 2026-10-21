@@ -497,8 +497,8 @@ PROGRAM 0 opens the original's party screen inside the game (IMP-032;
 [chargen-and-progression.md, "Training"](../A-games/engine/chargen-and-progression.md#training-o-fun_417f_29ae)),
 in the play screen: each round prints "*Name* is selected (choose from the party list)." (a new
 block) and offers "Choose a function:" with the party screen's functions as the game names them
-(CREATE NEW CHARACTER, DROP CHARACTER, MODIFY CHARACTER, TRAIN CHARACTER, VIEW CHARACTER, ADD CHARACTER
-TO PARTY, REMOVE CHARACTER FROM PARTY, SAVE CURRENT GAME, BEGIN ADVENTURING; each on its first letter,
+(CREATE NEW CHARACTER, DROP CHARACTER, MODIFY CHARACTER, TRAIN CHARACTER, in CotAB HUMAN CHANGE CLASSES
+when the selected character may change class, VIEW CHARACTER, ADD CHARACTER TO PARTY, REMOVE CHARACTER FROM PARTY, SAVE CURRENT GAME, BEGIN ADVENTURING; each on its first letter,
 named below by that word); the cards
 select the character. Load is not offered (this screen never empties the party).
 
@@ -508,6 +508,7 @@ select the character. Load is not offered (this screen never empties the party).
 | DROP | not the last member ("The party needs at least one character."); "*Name* will be gone forever. Drop this character?"; "*Name* has been dropped." (the roster keeps a copy only if it had one) |
 | MODIFY | as §1.2, then the items recomputed |
 | TRAIN | the training check; refused with the game's message; else "*Name* will become:" and the new levels, "Do you wish to train?" YES NO, "Congratulations...", and for a magic-user with new spells "Spells to choose from:" (IMP-028 when the list is empty) |
+| HUMAN (CotAB) | dual-classing ([procedures.md §7.2](../B-model/procedures.md#72-dual-classing)): offered for a human who never changed class; no class allowed: "*Name* doesn't qualify."; else "Pick New Class" and a vertical list of the allowed classes, then Exit; a class: the change, "*Name* is now a 1st level *Class*." and the cards redrawn; Exit: nothing |
 | VIEW | the sheet (§3) |
 | ADD | the party full ("The party is full."); else the roster list (§1.3) |
 | REMOVE | not the last member; the character is written to the roster with its items and effects: "*Name* leaves the party (still available to Add)." |

@@ -222,8 +222,8 @@ Gain = `max(1, Σ rolls / classes)` to the raw counter char[0xB1]; HP gain = `ma
 
 ## Derived statistics (O, `FUN_51cf_0000`, run after creation and training)
 
-- char[0x2D] = best over classes of `DS:3C7C[class·11 + level]` = **60 − base THAC0** (then adjusted by STR etc. into char[0x110], **I**)
-- char[0x73] = highest class level
+- char[0x2D] = best over **all eight** classes of `DS:3C7C[class·11 + level]` (level read signed; a class without a level reads its level-0 row, 40 in every row) = **60 − base THAC0** (then adjusted by STR etc. into char[0x110], **I**)
+- char[0x73] = the highest class level, only ever raised (`41d56`: max of itself and each level; a level drain sets it itself)
 - Fighter level ≥ 7: char[0xA1] = 3 (3 attacks per 2 rounds), else 2 (half-attacks per round, **I**)
 - Cleric level ≥ 2: slots char[0xB2..0xB4] (spell levels 1–3) from `DS:40BC[level·3 + n]`, plus WIS bonus spells (`FUN_51cf_01af`); the cleric then knows every cleric spell of any level with a slot
 - Magic-User level ≥ 2: slots char[0xB5..0xB7] from `DS:41D4[level·3 + n]`

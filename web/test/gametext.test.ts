@@ -111,7 +111,7 @@ const KEYS: Record<string, Record<string, string>> = {
 }
 KEYS.coab = { ...KEYS.por, camp: 'SVMRAFE', rest: 'RDHMASE' }
 /** the party screen's functions: one string each, its first letter the key */
-const ENTRIES: Record<string, string> = { partyCreate: 'C', partyDrop: 'D', partyModify: 'M', partyTrain: 'T', partyView: 'V', partyAdd: 'A',
+const ENTRIES: Record<string, string> = { partyCreate: 'C', partyDrop: 'D', partyModify: 'M', partyTrain: 'T', partyChangeClass: 'H', partyView: 'V', partyAdd: 'A',
   partyRemove: 'R', partyLoad: 'L', partySave: 'S', partyBegin: 'B', partyExit: 'E' }
 
 describe('menus by address', () => {
@@ -133,7 +133,7 @@ describe('menus by address', () => {
         else got[id] = menuWords(s!).map((w) => w.key).join('')
       }
       expect(got).toEqual(KEYS[g.id])
-      expect(entries).toEqual(ENTRIES)
+      expect(entries).toEqual(Object.fromEntries(Object.entries(ENTRIES).filter(([id]) => id in g.menus))) // CotAB adds Human Change Classes
     })
   }
 })

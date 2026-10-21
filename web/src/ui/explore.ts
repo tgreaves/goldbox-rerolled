@@ -57,6 +57,7 @@ import { accountLabel, openAccount } from './account'
 import { accountStatus } from '../store/account'
 import { unexepack } from '../data/exepack'
 import { checkTraining, levelLimit, newSpellChoices, train, willBecome, xpFor } from '../rules/training'
+import { changeClass, changeClassChoices, className, offersChangeClass } from '../rules/dualclass'
 import { initSound, play, unlockAudio } from '../audio/sfx'
 import type { DemoMode } from '../games/startup'
 
@@ -1193,7 +1194,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       print(`${nameOf(engine.cur)} is selected (choose from the party list).`, true)
       // the party screen's functions as the game names them (its table, PoR DS:0619, CotAB DS:0553;
       // FUN_417f_0161, CotAB 0x36A1C), the key each one's first letter
-      const fns = (['partyCreate', 'partyDrop', 'partyModify', 'partyTrain', 'partyView', 'partyAdd', 'partyRemove', 'partySave', 'partyBegin'] as const).map(entry)
+      // CotAB's Human Change Classes only for a human who never changed class (0x36A93)
+      const change = game().menus.partyChangeClass !== undefined && offersChangeClass(engine.cur)
+      const fns = (['partyCreate', 'partyDrop', 'partyModify', 'partyTrain', ...(change ? ['partyChangeClass'] as const : []), 'partyView', 'partyAdd', 'partyRemove', 'partySave', 'partyBegin'] as const).map(entry)
       const o = await ask(menu, fns, { prompt: 'Choose a function:' })
       const c = engine.cur
       if (o === 'B' || o === '') return
@@ -1231,6 +1234,17 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       } else if (o === 'M') {
         if ((c[F.xp] | c[F.xp + 1] | c[F.xp + 2] | c[F.xp + 3]) !== 0) print(`${nameOf(c)}${msg('cantModify')}`, false)
         else if (await tools.modify(c)) { if (engine.items) recalc(c, engine.itemsOf(c), engine.items); print(`${nameOf(c)} has been modified.`, false) }
+      } else if (o === 'H' && change) {
+        // 0x5135D: the classes allowed, or "doesn't qualify"; the change on Select, nothing on Exit
+        const choices = changeClassChoices(t, c)
+        if (!choices.length) { print(`${nameOf(c)}${msg('doesntQualify')}`, false); continue }
+        const exit = word('listExit', 'E').text.trim().toUpperCase()
+        const k = await menu([...choices.map((x) => className(x).toUpperCase()), exit], { prompt: msg('pickNewClass'), vertical: true })
+        if (k < 0 || k >= choices.length) continue
+        changeClass(t, c, choices[k], engine.itemsOf(c), engine.items ?? undefined)
+        if (engine.items) recalc(c, engine.itemsOf(c), engine.items)
+        drawRoster()
+        print(`${nameOf(c)}${msg('nowFirstLevel')}${className(choices[k])}${msg('nowFirstLevelEnd')}`, false)
       } else if (o === 'T') {
         const chk = checkTraining(t, c, engine.read(0x6da8))
         drawRoster()

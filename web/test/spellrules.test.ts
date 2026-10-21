@@ -62,7 +62,7 @@ describe.skipIf(!coab || !existsSync(coab))('Curse of the Azure Bonds spell book
     expect(at(3, 11).cl.slice(0, 2)).toEqual([2, 1])
     expect([at(4, 8).dr[0], at(4, 8).mu[0]]).toEqual([1, 0])
     expect([at(4, 11).dr[0], at(4, 11).mu[0]]).toEqual([2, 2])
-    expect([at(2, 7).att, at(3, 7).att, at(4, 7).att, at(4, 8).att]).toEqual([3, 3, 2, 3]) // fighter/paladin > 6, ranger > 7
+    expect([at(2, 7).att, at(3, 7).att, at(4, 7).att, at(4, 8).att]).toEqual([3, 3, 0, 3]) // fighter/paladin > 6, ranger > 7; never set back (0x508B4)
   })
 
   it('rolls hit points the CotAB way (§3.4): best of two below the stop level, fixed from it', () => {

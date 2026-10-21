@@ -39,6 +39,7 @@ checks that every path named here exists.
 | [coab/README.md](A-games/coab/README.md) | `web/src/games/coab.ts`; `tools/coab/` | `profile` |
 | [coab/ecl.md](A-games/coab/ecl.md) | `web/src/games/ecl.ts` (CotAB's map and variants), `web/src/games/startup.ts`, `web/src/vm/engine.ts`; `tools/coab/ecl_coab.py` | `coabsweep`, `demo`, `npc` |
 | [coab/records.md](A-games/coab/records.md) | `web/src/games/fields.ts` (`COAB_FIELDS`), `web/src/games/files.ts`, `web/src/games/imports.ts`, `web/src/rules/import.ts`, `web/src/rules/joining.ts`, `web/src/rules/abilities.ts`, `web/src/games/treasure.ts`; `tools/coab/records_coab.py` | `fields`, `import`, `joining`, `abilities`, `coabtreasure` |
+| [coab/chargen-and-progression.md](A-games/coab/chargen-and-progression.md) | `web/src/rules/dualclass.ts`, `web/src/rules/training.ts` (`derive`, `train`), `web/src/games/rules.ts` (`dualClass`, `recalc`, `startSpells`), `web/src/ui/explore.ts` (the training hall's party screen) | `dualclass`, `training`, `spellrules`, `vectors` |
 | [coab/tables.md](A-games/coab/tables.md) | `web/src/games/tables.ts` (`COAB_TABLES`), `web/src/games/rules.ts` (`COAB_RULES`); `tools/coab/tables_coab.py` | `tables`, `spellrules`, `training` |
 | [coab/spells.md](A-games/coab/spells.md) | `web/src/games/spellrules.ts` (`COAB_SPELLS`), `web/src/rules/spellkinds.ts` | `coabspells`, `spellmap` |
 | [coab/effects.md](A-games/coab/effects.md) | `web/src/games/effectrules.ts` (CotAB's maps), `web/src/rules/effectkinds.ts`, `web/src/rules/specials.ts` | `effectkinds`, `specials`, `effectmap` |

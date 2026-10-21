@@ -28,7 +28,7 @@ Parameters (`slots`):
 |---|---|
 | `clear` | every slot of every pool is set to 0 first |
 | `sources[]` | in order: `cls` (base class), `table` (`clericSlots`, `muSlots`, `paladinSlots`, `rangerSlots` of the table map), `from` (first table row used), `first` (one first-level slot when the class has a level), `add` (rows are added, else the class's own level's row is set), `columns[]` (table column *k* + 1 → `{ pool: cleric \| druid \| mu, level }`) |
-| `wisdom` | `afterCleric`: the WIS bonus right after the source of class 0; `always`: once after all sources |
+| `wisdom` | `afterCleric`: the WIS bonus right after the source of class 0, so the paladin's rows (a later source) never get it (both games: PoR `FUN_51cf_01af`, CotAB 0x50568 → 0x50AF6, which returns at once without a cleric level) |
 | `learn[]` | `{ classes, spellClass, all }`: when any of `classes` has a level, the spells of `spellClass` become known: all of them (`all`), or those whose level has a slot |
 | `doubler` | `{ effect, levels }`: a readied item whose +0x3E equals `effect` doubles the magic-user slots of levels 1..`levels` (as a byte); null: none |
 
@@ -37,7 +37,8 @@ Procedure:
 ```
 if clear: every pool's slotLevels bytes := 0
 for src in sources:
-    L := levels[src.cls];  if L ≤ 0: next source
+    L := (former levels count (§4) and prevLevels[src.cls] ≠ 0) ? prevLevels[src.cls] : levels[src.cls]   (signed)
+    if L ≤ 0: next source
     if src.first: pool(src.columns[0].pool)[level 1] += 1
     if L < src.from: next source                       (no WIS bonus after it either)
     for row in (src.add ? src.from .. L : L .. L):
@@ -46,7 +47,6 @@ for src in sources:
             slot := pool(col.pool)[col.level]
             slot := src.add ? (slot + v) as a byte : v
     if src.cls = 0 and wisdom = afterCleric: WIS bonus
-if wisdom = always: WIS bonus
 for l in learn: if any class of l.classes has a level:
     for id in 1 .. spells.named with spell class l.spellClass (record byte 0):
         known[id] := 1 if l.all, or if the slots of its class and level (record byte 1) > 0
@@ -62,7 +62,7 @@ slots.
 | Game | Values |
 |---|---|
 | PoR | clear false; sources: cleric `clericSlots` from 2, first false, set, columns cleric 1–3; magic-user (5) `muSlots` from 2, first false, set, columns mu 1–3; wisdom afterCleric; learn: classes [0] cleric, with slots; doubler null |
-| CotAB | clear true; sources: cleric `clericSlots` from 2, first, add, cleric 1–5; paladin (3) `paladinSlots` from 9, add, cleric 1–5; ranger (4) `rangerSlots` from 8, add, columns druid 1, druid 2, druid 3, mu 1, mu 2; magic-user (5) `muSlots` from 2, first, add, mu 1–5; wisdom always; learn: classes [0, 3] cleric with slots, classes [4] druid all; doubler { effect 0x81, levels 3 } (Ring of Wizardry, 0x507C3) |
+| CotAB | clear true; sources: cleric `clericSlots` from 2, first, add, cleric 1–5; paladin (3) `paladinSlots` from 9, add, cleric 1–5; ranger (4) `rangerSlots` from 8, add, columns druid 1, druid 2, druid 3, mu 1, mu 2; magic-user (5) `muSlots` from 2, first, add, mu 1–5; wisdom afterCleric; learn: classes [0, 3] cleric with slots, classes [4] druid all; doubler { effect 0x81, levels 3 } (Ring of Wizardry, 0x507C3) |
 
 *Known gap:* CotAB's cleric learning skips spell 36 (Animate Dead), which is class 3 in CotAB and
 so never matches; the rule needs no exception. Creation's level-1 slots are set by the creation
@@ -129,10 +129,10 @@ amount and nothing else (§13).
 ([coab/tables.md §3.7a](../A-games/coab/tables.md#37a-caster-level-o-0x4f8bf-thunk-edca-por-fun_10ba_26c2)).
 
 Parameters: `casterTerms` (spell class code → terms `{ cls, minus }`), `casterGate`
-(`{ atLeast: base class → minimum level, level }` or null), `dualClass` (former levels can count).
+(`{ atLeast: base class → minimum level, level }` or null), `dualClass` (non-null: former levels can count; §7.2).
 
-- **Former levels count** (`formerLevelsCount(c)`): `dualClass` is true, the game has `prevLevels`
-  and `hpLevel`, the character is human (race 7), and its current level in the first class (in base
+- **Former levels count** (`formerLevelsCount(c)`): `dualClass` is set, the game has `prevLevels`
+  and `hpLevel`, the character is of `dualClass.race` (human, 7), and its current level in the first class (in base
   class order 0–7) that has a level, read signed, is greater than `hpLevel` (signed). Then a class's
   level for casting is `levels[k] + prevLevels[k]` (both signed); else `levels[k]`.
 - **The caster level** of a character for spell *s*:
@@ -145,8 +145,8 @@ Parameters: `casterTerms` (spell class code → terms `{ cls, minus }`), `caster
 
 | Game | Values |
 |---|---|
-| PoR | terms: cleric (0) [cleric − 0], magic-user (1) [magic-user − 0]; gate null; dualClass false |
-| CotAB | terms: cleric (0) [cleric − 0, paladin − 8], druid (1) [ranger − 7], magic-user (2) [magic-user − 0, ranger − 8]; gate { cleric ≥ 1, magic-user ≥ 1, paladin ≥ 9, ranger ≥ 8 } → 6 (0x4F8C5); dualClass true |
+| PoR | terms: cleric (0) [cleric − 0], magic-user (1) [magic-user − 0]; gate null; dualClass null |
+| CotAB | terms: cleric (0) [cleric − 0, paladin − 8], druid (1) [ranger − 7], magic-user (2) [magic-user − 0, ranger − 8]; gate { cleric ≥ 1, magic-user ≥ 1, paladin ≥ 9, ranger ≥ 8 } → 6 (0x4F8C5); dualClass set (§7.2) |
 
 The script view's `{ classLevel: k }` reads the casting level of class *k*
 ([script-vm-map.md §4.2](script-vm-map.md#42-per-game-view)).
@@ -215,15 +215,78 @@ Values the original holds as code, the same procedure in both games (part A,
 | `components` | base classes of each class id 0–16 | [0] … [7], then 8 [0, 2], 9 [0, 2, 5], 10 [0, 4], 11 [0, 5], 12 [0, 6], 13 [2, 5], 14 [2, 6], 15 [2, 5, 6], 16 [5, 6] | the same |
 | `ageColumns` | the starting-age column a multi-class uses (single classes use their own id) | 8, 9, 11, 12 → 0; 13, 15, 16 → 5; 14 → 2 | the same |
 | `clericMultis` | multi-classes with a cleric part, whose WIS is raised to at least 13 | 8, 9, 10, 11, 12 | the same |
-| `startSpells` | spells a new magic-user knows | 11, 18, 19, 21 (Detect Magic, Read Magic, Shield, Sleep) | the same |
+| `startSpells` | spells a new magic-user knows (creation; CotAB's dual-classing too) | 11, 18, 19, 21 (Detect Magic, Read Magic, Shield, Sleep; creation, linear 0x334DF) | 11, 18, **12**, 21 (Detect Magic, Read Magic, Enlarge, Sleep; creation 0x389B7, dual-classing 0x515F9) |
 | `startEffects` | innate effects of a new character, permanent, power 0xFF, flag 0: by race, then by class id | race 1 [0x5A, 0x61, 0x1A, 0x2F], 2 [0x6B], 3 [0x61, 0x12, 0x2F, 0x30], 4 [0x7C], 5 [0x5A, 0x61]; class none | race 1 [0x61, 0x1A, 0x2F], 2 [0x6B], 3 [0x61, 0x12, 0x2F, 0x30], 4 [0x7C], 5 [0x61]; class 3 [8], 4 [0x86], 10 [0x86] |
 | `levelLimits` | demi-human limits: `{ race, cls, by, limits }`: the ability `by` (0 STR, 1 INT) sets the band: below 17, at 17, at 18 or more (18/xx counts as 18); no rule: no limit | dwarf F 7/8/9, elf F 5/6/7, gnome F 5/5/6, half-elf F 6/7/8, halfling F 4/5/6, half-elf C 5/5/5 (all by STR) | PoR's, plus elf MU by INT 9/10/11, half-elf ranger by STR 6/7/8, half-elf MU by INT 6/7/8 |
-| `extraAttacks` | base class → the level above which it gets 3 attacks per 2 rounds (`attacksBase` 3, else 2) | fighter > 6 | fighter > 6, paladin > 6, ranger > 7 |
+| `extraAttacks` | base class → the level above which it gets 3 attacks per 2 rounds (`attacksBase` 3; below it 2 where `recalc.attacksReset`, §7.1) | fighter > 6 | fighter > 6, paladin > 6, ranger > 7 |
 | `trainingCost` | the training fee in gp | 1 000 | 1 000 |
 | `chaReaction` | the reaction value scripts read at B + 0x2CF, by CHA 0–25 | 0 0 0 0 5 10 15 20 25 25 25 25 25 30 35 40 50 55 60 60 60 60 60 60 60 60 | the same |
 
 The paladin's Cure Disease starts at `paladin.cureDisease.initial` uses when the class has a paladin
 part (§10).
+
+### 7.1 The recalculation
+
+**Original:** PoR `FUN_51cf_0000`, CotAB 0x50836 (O; [engine/chargen-and-progression.md, "Derived
+statistics"](../A-games/engine/chargen-and-progression.md#derived-statistics-o-fun_51cf_0000-run-after-creation-and-training),
+[coab/chargen-and-progression.md §1](../A-games/coab/chargen-and-progression.md#1-the-recalculation-o-0x50836)).
+Run after training, a level drain or restore, an import, joining and dual-classing.
+
+Parameters (`recalc`): `attacksReset` (below the extra-attack level the attacks are set to 2),
+`classMask` (the item class mask is worked out again).
+
+```
+thac0Base := max over k = 0..7 of T.thac0[k · row + levels[k]]   (signed level; a class without a level reads its level-0 row)
+hitDice := max(hitDice, every levels[k])                          (raised, never lowered; a drain sets it itself)
+if some extraAttacks class k has levels[k] > its level: attacksBase := 3
+else if attacksReset: attacksBase := 2
+spell slots (§1); saves (§6); thief skills (§5) when levels[thief] > 0
+if classMask:
+    itemMask := Σ (byte) T.classBits[k] over k with levels[k] > 0, or 0 < prevLevels[k] < hitDice
+    every readied item whose base classes ∧ itemMask = 0 and that is not cursed is put away
+if former levels count (§4):
+    if some extraAttacks class k has prevLevels[k] > its level: attacksBase := 3
+    thac0Base := max(thac0Base, max over k of T.thac0[k · row + prevLevels[k]])
+    thief skills (§5) when prevLevels[thief] > 0
+```
+
+| Game | Values |
+|---|---|
+| PoR | attacksReset true, classMask false (the mask is set at creation only) |
+| CotAB | attacksReset false (only ever raised to 3), classMask true |
+
+### 7.2 Dual-classing
+
+**Original:** CotAB's party-screen function "Human Change Classes" (0x5135D, eligibility 0x511AE;
+[coab/chargen-and-progression.md §2](../A-games/coab/chargen-and-progression.md#2-dual-classing-o-0x5135d)).
+PoR has none (G: Lee, "dual-classing is not available"; no such function or string in its files).
+
+Parameters (`dualClass`, null: no dual-classing): `race` (who may), `primeFrom`, `oldAtLeast`,
+`newAtLeast` (the ability rule).
+
+- **Offered** (in the party screen a training hall opens) when the character is of `race` and has
+  no former class (every `prevLevels` byte, in the 0–6 then 7 scan, is 0).
+- **Allowed classes**: the race's class list (`T.raceClasses`), in its order, keeping class *k* when
+  *k* is not the current class (the first class 0–6 whose level is not 0, if above 0; else 7); every
+  ability *a* with `T.classMins[cur][a] ≥ primeFrom` has base value ≥ `oldAtLeast`; every ability
+  with `T.classMins[k][a] ≥ primeFrom` has base value ≥ `newAtLeast`; and the alignment is in
+  `T.alignments[k]`. None: "*Name* doesn't qualify." and nothing changes.
+- **The change** to class *k*: experience 0; `attacksBase` 2; `prevLevels[cur]` := the current
+  level; `hpLevel` := `hitDice`, then `hitDice` := 1; `levels[cur]` := 0, `levels[k]` := 1; every slot
+  of every pool 0; *k* = cleric: cleric slot 1 := 1; *k* = magic-user: magic-user slot 1 := 1 and
+  `startSpells` known (the spell book is otherwise kept); the class byte := *k*; the memorised
+  spells cleared; the recalculation (§7.1); saves (§6); thief skills (§5) whatever the classes, so a
+  former thief's fall to the level-0 row; every item (readied or not) the new mask does not allow
+  and not cursed is put away. Hit points stay. "*Name* is now a 1st level *Class*."
+- **After it**: training gains hit points only while `hitDice` > `hpLevel` (signed; §2's caller,
+  CotAB 0x3BE45), so none until the new class passes the old level. From then on the former levels
+  count (§4): casting levels, spell slots (§1), THAC0, attacks, thief skills and the item mask
+  (§7.1), and the class shows with its level on the character's lines.
+
+| Game | Values |
+|---|---|
+| PoR | null |
+| CotAB | race 7 (human), primeFrom 9, oldAtLeast 15, newAtLeast 17 |
 
 ## 8. Joining the party
 

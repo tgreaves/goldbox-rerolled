@@ -208,6 +208,10 @@ export type StringId =
   | 'selectCoin'
   | 'notHere'
   | 'partyOrder'
+  | 'pickNewClass'
+  | 'doesntQualify'
+  | 'nowFirstLevel'
+  | 'nowFirstLevelEnd'
 
 export type Strings = Partial<Record<StringId, number>>
 
@@ -600,6 +604,10 @@ export const COAB_STRINGS: Strings = {
   selectCoin: 0x40136, // money: Trade; 0x4016e
   notHere: 0x2f7e6, // Area refused; 0x2f7ef
   partyOrder: 0x315c4, // Alter Order; 0x31604
+  pickNewClass: 0x5131d, // Human Change Classes: the list's title; 0x5135D
+  doesntQualify: 0x5132c, // Human Change Classes, no class allowed; 0x5135D
+  nowFirstLevel: 0x51346, // Human Change Classes, done; 0x5135D
+  nowFirstLevelEnd: 0x5135b, // its full stop; 0x5135D
 }
 
 /**
@@ -622,7 +630,7 @@ export type MenuId =
   | 'doorBash' | 'doorPick' | 'doorKnock' | 'doorExit'
   | 'itemReady' | 'itemUse' | 'itemTrade' | 'itemDrop' | 'itemHalve' | 'itemJoin' | 'itemSell' | 'itemId'
   | 'viewTrade' | 'viewDrop' | 'viewExit'
-  | 'partyCreate' | 'partyDrop' | 'partyModify' | 'partyTrain' | 'partyView' | 'partyAdd' | 'partyRemove' | 'partyLoad'
+  | 'partyCreate' | 'partyDrop' | 'partyModify' | 'partyTrain' | 'partyChangeClass' | 'partyView' | 'partyAdd' | 'partyRemove' | 'partyLoad'
   | 'partySave' | 'partyBegin' | 'partyExit'
   | 'modify' | 'iconMain' | 'iconHeadWeapon' | 'iconParts' | 'iconEdit' | 'iconSmall' | 'iconLarge' | 'iconHair' | 'iconFace'
 
@@ -776,6 +784,7 @@ export const COAB_MENUS: Menus = {
   partyDrop: 0x0b15d, // 0x36A1C
   partyModify: 0x0b187, // 0x36A1C
   partyTrain: 0x0b1b1, // 0x36A1C
+  partyChangeClass: 0x0b1db, // Human Change Classes, hot key H (0x36CEF); 0x36A1C
   partyView: 0x0b205, // 0x36A1C
   partyAdd: 0x0b22f, // 0x36A1C
   partyRemove: 0x0b259, // 0x36A1C

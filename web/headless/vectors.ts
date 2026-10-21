@@ -18,6 +18,7 @@ import { Engine, type Io } from '../src/vm/engine'
 import { TapePlayer, TapeRecorder, generator, random, type Dice, type Draw, type Tape } from '../src/rules/dice'
 import { Tables, begin, rollAbilities, rollHitDice } from '../src/rules/chargen'
 import { derive, train } from '../src/rules/training'
+import { changeClass, changeClassChoices } from '../src/rules/dualclass'
 import { casterLevel } from '../src/rules/magic'
 import { joinRefusal } from '../src/rules/joining'
 import { msg } from '../src/games/strings'
@@ -333,6 +334,17 @@ export const PROCEDURES: Record<string, Procedure> = {
       derive(t, c)
       train(t, x.dice, c, i.classes, true)
       return character(c)
+    },
+  },
+  'dualclass': {
+    kind: 'E', spec: 'B-model/procedures.md#72-dual-classing', rolls: false,
+    run: (x, i: { record: Fields; to: number }) => {
+      const t = new Tables(exeImage(x))
+      const c = record(i.record)
+      derive(t, c)
+      const choices = changeClassChoices(t, c)
+      if (choices.includes(i.to)) changeClass(t, c, i.to)
+      return { choices, cls: c[F.cls], xp: (c[F.xp] | (c[F.xp + 1] << 8) | (c[F.xp + 2] << 16) | (c[F.xp + 3] << 24)) >>> 0, prevLevels: bytes(c, F.prevLevels, 8), hpLevel: c[F.hpLevel], ...character(c) }
     },
   },
   'money.coinValue': {

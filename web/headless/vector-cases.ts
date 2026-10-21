@@ -185,6 +185,16 @@ add('coab', 'training', [
   { record: { race: 7, cls: 3, levels: lv({ 3: 8 }), stat: st(17, 10, 14, 10, 15, 17), hp: 50, maxHp: 50, hpRolled: 45 }, classes: [3], seed: 94 },
 ], 'E-training')
 
+// ---- dual-classing (procedures.md §11; CotAB 0x5135D): a human fighter to cleric, a magic-user to
+// fighter (prime abilities 15 and 17, the alignment the new class allows), and one who does not qualify
+const human = (cls: number, L: number, stat: number[], alignment: number) => ({ race: 7, cls, levels: lv({ [cls]: L }), stat, baseStat: stat, alignment, xp: 70000, hp: 50, maxHp: 50, hpRolled: 44 })
+add('coab', 'dualclass', [
+  { record: human(2, 7, st(16, 10, 17, 12, 14, 10), 0), to: 0 },
+  { record: human(5, 6, st(17, 15, 10, 14, 12, 10), 4), to: 2 },
+  { record: human(2, 5, st(14, 10, 17, 12, 14, 10), 0), to: 0 },
+  { record: human(0, 4, st(17, 10, 16, 17, 12, 10), 4), to: 6 },
+], 'E-dualclass')
+
 // ---- money (town.md "Money")
 const MONEY = [[1, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0], [99, 0, 0, 0, 0, 0, 0], [100, 0, 0, 0, 0, 0, 0], [123, 45, 67, 89, 10, 5, 5], [65535, 65535, 65535, 65535, 65535, 0, 0]]
 add('por', 'money.coinValue', [{ money: MONEY }], 'E-coins')
