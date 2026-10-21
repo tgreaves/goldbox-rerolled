@@ -348,3 +348,34 @@ Labels the screens use that are not game text (part C defines where they appear)
 
 *Known gap:* the base-class names duplicate START.EXE's class-name table, which the port should read
 instead (`T.classNames`; [AUDIT.md](../AUDIT.md) §4).
+
+## 9. Interface tooltips
+
+`TIPS` (IMP-058): what the 1988 numbers mean, shown as tooltips on the character sheet's labels and
+the cards' AC ([C-port/screens.md §3.1](../C-port/screens.md#31-layout), [C-port/ui-contract.md §4.1](../C-port/ui-contract.md#41-party-cards)).
+Port-authored, the same in every game.
+
+| Label | Text |
+|---|---|
+| STR | Strength: to-hit and damage bonuses at 17 and above, and how much can be carried. Fighters can have 18/01 to 18/00. |
+| INT | Intelligence: magic-users need it. |
+| WIS | Wisdom: clerics with 13 or more get extra spells. |
+| DEX | Dexterity: better AC and missile to-hit at 15 and above. |
+| CON | Constitution: extra hit points per level at 15 and above. |
+| CHA | Charisma: how people react to the party. |
+| HP | Hit points: at 0 a character is down; below that, dying, and dead at −10. |
+| AC | Armour class: lower is better. 10 is unarmoured, 0 is excellent, below 0 takes magic. |
+| THAC0 | To Hit Armour Class 0: the d20 roll needed to hit AC 0. To hit AC n you need THAC0 − n or more. Lower is better. |
+| Damage | Damage dice with the readied weapon (or fists) against man-sized foes. |
+| Movement | Squares per combat round. Heavy loads cut it. |
+| Experience | Experience points: train at a training hall when there are enough for the next level. |
+| Load | Everything carried, weighed in coins (each coin counts 1). Heavier loads lower movement. |
+
+*Known gap:* the texts describe Pool of Radiance's rules (WIS bonus spells from 13, the CON bonus from
+15); a game whose tables differ should have its own set in its profile.
+
+## 10. Landmark icons
+
+The area map's icon per landmark kind (IMP-024): shop 🏪, store 🛒, jeweller 💎, armoury 🛡,
+silver 🥈, temple ⛪, inn 🛏, tavern 🍺, hall 🏛, training ⚔, harbour ⚓, gate 🚪. The classification
+that gives the kinds is [C-port/exploration-view.md §6.2](../C-port/exploration-view.md#62-landmarks).
