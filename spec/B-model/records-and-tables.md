@@ -233,7 +233,7 @@ without it does:
 | Absent table | Then |
 |---|---|
 | `hitDiceStop` | no fixed hit points ([procedures.md §2](procedures.md#2-hit-points)) |
-| `npcHeads`, `npcBodies*` | an NPC added by ADD_NPC keeps the portrait its record holds |
+| `npcHeads`, `npcBodies*` | an NPC added by ADD_NPC keeps the portrait its record holds, and no class is picked for one (no draw) |
 | `headRecords`, `bodyRecords` | no portrait picker at creation; portraits are the record's CHEAD/CBODY numbers |
 | `overlandMap`, `overlandSpecials`, `overlandColumns` | no tile wilderness (the profile's `view.tileOverland` is empty) |
 | `paladinSlots`, `rangerSlots` | no such slot sources (they are named only in the game's `rules.slots`) |

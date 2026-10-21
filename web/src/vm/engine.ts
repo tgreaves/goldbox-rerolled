@@ -956,10 +956,16 @@ export class Engine {
     this.monstersLoaded = true
   }
 
-  /** A monster record as the loader leaves it (FUN_45c5_0ec4): icon size by race, random icon colours. */
-  private monsterRecord(raw: Uint8Array) {
+  /** A record as stored in MON<block>CHA, the record's size taken (CotAB's loader 0x3565C). */
+  private storedRecord(raw: Uint8Array) {
     const m = new Uint8Array(F.size)
     m.set(raw.subarray(0, F.size))
+    return m
+  }
+
+  /** A monster record as the loader leaves it (FUN_45c5_0ec4): icon size by race, random icon colours. */
+  private monsterRecord(raw: Uint8Array) {
+    const m = this.storedRecord(raw)
     const race = m[F.race]
     if ([1, 3, 5].includes(race)) m[F.iconSize] = 1
     else if ([2, 4, 6, 7].includes(race)) m[F.iconSize] = 2
@@ -1045,27 +1051,31 @@ export class Engine {
   }
 
   /**
-   * ADD_NPC (handler 29c3:2B7E, loader FUN_45c5_1262): monster record `id` of this block joins the end
-   * of the party (at most 8), with a random portrait for its class and gender; it becomes the current
-   * character. Morale char[0x84] = (morale >> 1) | 0x80; id 0x18 is on the enemy side.
+   * ADD_NPC (PoR handler 29c3:2B7E, loader FUN_45c5_1262; CotAB 0x1B61A, 0x3593D): monster record `id`
+   * of this block joins the end of the party (at most 8) and becomes the current character; morale
+   * char[0x84] = (morale >> 1) | 0x80. What else the game does is its `ecl.addNpc`: the loader's
+   * icon rolls, the identity tag, the enemy side for one monster id; and, where the game has the NPC
+   * portrait tables, a random portrait for a class among its levels and its gender.
    */
   addNpc(id: number, morale: number) {
     const party = this.party()
+    const how = game().ecl.addNpc
     if (party.length <= 7) {
       const raw = this.files.record(`MON${this.block}CHA`, id)
       if (!raw) { this.io.print('Unable to load monster', false); return }
-      const c = this.monsterRecord(raw)
-      c[F.id] = this.rand(256)
-      const classes = [0, 1, 2, 3, 4, 5, 6].filter((k) => ((c[F.levels + k] << 24) >> 24) > 0)
-      const cls = classes.length ? classes[this.roll(1, classes.length) - 1] : 2
+      const c = how.loaderRolls ? this.monsterRecord(raw) : this.storedRecord(raw)
+      c[F.id] = how.tag === 'random' ? this.rand(256) : id
       const img = this.startImage
       if (img && T.npcHeads.at >= 0) {
+        const classes = [0, 1, 2, 3, 4, 5, 6].filter((k) => ((c[F.levels + k] << 24) >> 24) > 0)
+        const cls = classes.length ? classes[this.roll(1, classes.length) - 1] : 2
         const tb = (o: number) => img[T.ds + o]
         const g = c[F.gender]
         const body = cls === 0 ? T.npcBodiesCleric : cls === 5 ? T.npcBodiesMagicUser : cls === 6 ? T.npcBodiesThief : T.npcBodiesFighter
         c[F.body] = tb(body.at + g * 5 + this.roll(1, 5))
         c[F.head] = tb(T.npcHeads.at + g * 8 + this.roll(1, 8))
       }
+      if (how.iconPicture) this.combatPicture.set(c, id)
       const n = party.length
       this.nodes.splice(n, 0, c)
       this.B[PARTY_SIZE - B0] = n + 1
@@ -1075,7 +1085,7 @@ export class Engine {
     }
     // the handler then writes to whoever is current (unchanged when the party was full)
     this.cur[F.morale] = (morale >> 1) | 0x80
-    this.cur[F.side] = id === 0x18 ? 1 : 0
+    if (how.enemyId !== null) this.cur[F.side] = id === how.enemyId ? 1 : 0
     if (this.items) recalc(this.cur, this.itemsOf(this.cur), this.items)
   }
 

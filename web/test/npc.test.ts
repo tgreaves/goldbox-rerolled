@@ -46,6 +46,19 @@ describe.skipIf(!have)('NPCs and duels', () => {
     expect(npc[0xbb]).toBeGreaterThan(0)
   })
 
+  it('makes PoR\'s draws (FUN_45c5_1262): icon colours, the tag, the class pick, body, head; 0x18 is an enemy', async () => {
+    const e = await game(1)
+    const asked: [number, number][] = []
+    e.roll = (n, s) => { asked.push([n, s]); return 1 }
+    const id = Array.from({ length: 120 }, (_, i) => i).find((i) => i !== 0x18 && files.record(`MON${e.block}CHA`, i))!
+    e.addNpc(id, 100)
+    const classes = [0, 1, 2, 3, 4, 5, 6].filter((k) => ((e.cur[0x96 + k] << 24) >> 24) > 0).length
+    expect(asked).toEqual([...Array(5).fill([1, 6]), [1, 256], ...(classes ? [[1, classes]] : []), [1, 5], [1, 8]])
+    expect(e.cur[0xab]).toBe(0)
+    expect(e.combatPicture.has(e.cur)).toBe(false) // its icon is built from its parts
+    if (files.record(`MON${e.block}CHA`, 0x18)) { e.addNpc(0x18, 100); expect(e.cur[0x10e]).toBe(1) }
+  })
+
   it('duels a copy of the current character and puts the bystanders back', async () => {
     for (const seed of [1, 2, 3]) {
       const e = await game(seed)
@@ -113,5 +126,31 @@ describe.skipIf(!have)('NPCs and duels', () => {
       expect(e.read(0x6dc7)).toBe(0x80)
       expect(e.quit).toBe(true)
     }
+  })
+})
+
+const coab = process.env.COAB ?? ''
+describe.skipIf(!(coab && existsSync(coab)))('CotAB ADD_NPC (0x1B61A, 0x3593D)', () => {
+  it('rolls nothing, tags the NPC with its monster id, leaves its side alone and shows its combat picture', async () => {
+    const { COAB, POR, F, setGame } = await import('../src/games/profile')
+    const { loadFolder } = await import('../headless/harness')
+    setGame(COAB)
+    try {
+      const files = loadFolder(COAB, coab)
+      const io = { print: () => {}, menu: async () => 0, refresh: async () => {}, pause: async () => {}, sound: () => {},
+        picture: () => {}, sprite: () => {}, engine: async () => {}, inputNumber: async () => 0, inputText: async () => '' } as unknown as Io
+      const asked: [number, number][] = []
+      const e = new Engine(files, io, { roll: (n, s) => { asked.push([n, s]); return n } })
+      e.newDemo(COAB.startMenu!.demo!) // block 1, nobody in the party
+      const raw = files.record('MON1CHA', 85)!
+      e.addNpc(85, 100) // RUSTLE, who joins in the demo
+      const c = e.cur
+      expect(asked).toEqual([])
+      expect(c[F.id]).toBe(85)
+      expect(c[F.morale]).toBe(0x80 | 50)
+      expect(c[F.side]).toBe(raw[F.side]) // no side written
+      for (let k = F.iconSize; k < F.iconColours + 6; k++) expect(c[k]).toBe(raw[k]) // icon size and colours as stored
+      expect(e.combatPicture.get(c)).toBe(85)
+    } finally { setGame(POR) }
   })
 })

@@ -240,7 +240,8 @@ need only its profile modules and any procedure the earlier games do not have.
    view, the CALL 0x6803 picture frame, CotAB's own PICTURE (BIGPIC), DAMAGE and ADD_NPC changes,
    and its random-treasure table (step 5/6). *Since done* (checked 2026-10-21): B+0xC9 and the load-past-end
    flag (`COAB_ECL.viewReads`, `loadPastEnd`), CALL 0x6803 (`calls.frame`), BIGPIC pictures, DAMAGE's
-   flag (`ecl.damageDespiteSave`), the random-treasure table (`COAB_TREASURE`).
+   flag (`ecl.damageDespiteSave`), the random-treasure table (`COAB_TREASURE`), ADD_NPC (`ecl.addNpc`,
+  2026-10-21: CotAB's draws nothing, has no enemy-side id and shows the NPC's CPIC picture).
 5. **CotAB data.** Characters (.SAV/.SWG/.FX), saves (13 149 bytes), the roster, the pre-made party,
    monsters.
    *Done 2026-10-19*: `web/src/games/files.ts`: each game's item/effect/roster extensions (PoR

@@ -49,6 +49,16 @@ export interface EclMap {
   pauseMs: number
   /** the PROGRAM operand that ends the game (CotAB 3: DS:4FE0 = 1, then EXIT, 0x1BA7E); null: none */
   quitProgram: number | null
+  /**
+   * ADD_NPC (spec/B-model/script-vm-map.md §5.2): `enemyId` the monster id that joins on the enemy side
+   * (PoR 0x18, handler 29c3:2B7E; CotAB none, 0x1B61A); `tag` the identity tag char[id]: `random`
+   * Random(256) (PoR FUN_45c5_1262) or `monster` the monster id (CotAB 0x35974); `loaderRolls` the record
+   * is finished as LOAD_MONSTER's loader does (PoR FUN_45c5_0ec4: icon size by race, icon colours
+   * rolled), else kept as stored (CotAB 0x3565C); `iconPicture` its combat icon is the combat picture
+   * (CPIC) record of its monster id, as LOAD_MONSTER's picture (CotAB 0x3599F → 0x56C50), else built from
+   * its icon parts (PoR). The random portrait follows T.npcHeads/npcBodies*.
+   */
+  addNpc: { enemyId: number | null; tag: 'random' | 'monster'; loaderRolls: boolean; iconPicture: boolean }
 }
 
 /** One B-view read: a character field (element `index` of an array field; `signed` sign-extends a byte;
@@ -74,6 +84,7 @@ export const POR_ECL: EclMap = {
   twoSlotSkipsFF: false,
   pauseMs: 225,
   quitProgram: null,
+  addNpc: { enemyId: 0x18, tag: 'random', loaderRolls: true, iconPicture: false },
 }
 
 // spec/A-games/coab/ecl.md, "B as a view of the current character"; B+0x100's "loaded past the end" flag is
@@ -109,6 +120,9 @@ export const COAB_ECL: EclMap = {
   twoSlotSkipsFF: true,
   pauseMs: 100,
   quitProgram: 3,
+  // 0x1B61A → 0x3593D: the record as stored (0x3565C rolls nothing), char[0x126] = id, CPIC record id as
+  // the combat icon, no side, no portrait
+  addNpc: { enemyId: null, tag: 'monster', loaderRolls: false, iconPicture: true },
 }
 
 const SIZES: ['a' | 'b' | 'c' | 'code', number][] = [['a', 0x400], ['b', 0x400], ['c', 0x200], ['code', 0x1e00]]

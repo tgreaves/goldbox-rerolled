@@ -117,7 +117,8 @@ export async function runBattle(s: BattleScreen) {
   const iconOf = (f: Fighter) => {
     let v = icons.get(f.c)
     if (!v) {
-      if (f.monster && e.combatPicture.has(f.c)) {
+      // a monster's picture from LOAD_MONSTER, or a CotAB NPC's from ADD_NPC (ecl.addNpc.iconPicture)
+      if (e.combatPicture.has(f.c)) {
         const id = e.combatPicture.get(f.c) ?? 0
         const pic = (r: number) => { const raw = s.files.record(`CPIC${e.block}`, r); try { return raw ? parseRecord(raw).frames[0].picture : null } catch { return null } }
         v = { icon: pic(id), action: pic(id + 128) }

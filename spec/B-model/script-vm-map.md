@@ -200,6 +200,17 @@ operand that is not an immediate ends the walk there. Operand slots MUST hold at
 | `wipeBanner` | DAMAGE | text shown before "The entire party is killed!" when DAMAGE leaves nobody in play; null: none | "The END!" (0x1C667) | null |
 | `refreshAfterPicture` | CALL refresh | the view is drawn again over a picture once the area's walls are loaded, even if nothing else changed; false: only when the view changed | false (`FUN_29c3_2c90`) | true (0x1B7B2: flags DS:8B7C … 8B84, DS:47FB) |
 | `pauseMs` | PAUSE, CALL frame | the wait is game speed × this many milliseconds | 225 (`FUN_1709_0dbe`) | 100 (0x1B15B, 0x57F9: Delay(DS:4FC2 · 100)) |
+| `addNpc.enemyId` | ADD_NPC | the monster id that joins on the enemy side (char side := 1 for it, 0 for any other); null: the side byte is left as the record holds it | 0x18 (handler `29c3:2B7E`) | null (0x1B61A) |
+| `addNpc.tag` | ADD_NPC | the identity tag (`id` field): `random` Random(256), `monster` the monster id | `random` (`FUN_45c5_1262`) | `monster` (0x35974) |
+| `addNpc.loaderRolls` | ADD_NPC | the record is finished as LOAD_MONSTER's loader does: icon size by race, the five icon colours rolled (d6 each); false: kept as stored | true (`FUN_45c5_0ec4`) | false (0x3565C) |
+| `addNpc.iconPicture` | ADD_NPC | the NPC's combat icon is the combat picture (`CPIC`) record of its monster id, as LOAD_MONSTER's picture; false: built from its icon parts | false | true (0x3599F → 0x56C50) |
+
+ADD_NPC's draws, in order: the loader's colours (when `loaderRolls`), the tag (when `random`), then,
+where the game has the NPC portrait tables (`T.npcHeads`, `T.npcBodies*`), the class pick (1, *k*)
+among its *k* classes and the body (1, 5) and head (1, 8) of [engine/ecl.md](../A-games/engine/ecl.md)
+(`FUN_45c5_1262`). CotAB makes none. *Informative:* the reference implementation keeps an NPC's
+combat picture for the session only; after a save and load the NPC's icon is built from its parts
+(what the original does on loading a saved NPC is not examined, **?**).
 
 The banner and every other message are game text: a conforming build reads them from the game's
 files ([D-appendices/strings.md](../D-appendices/strings.md)); the reference implementation still
