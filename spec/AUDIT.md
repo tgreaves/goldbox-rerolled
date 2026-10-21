@@ -772,6 +772,38 @@ Found while doing it (numbered PA):
 | PA8 | [engine/ecl.md](A-games/engine/ecl.md) "Engine registers" vs `vm/engine.ts` | unmapped engine addresses read 0 in the reference; the original's value is undefined | stated as the conforming-build rule |
 | PA9 | `tools/coab/` and coab files | several CotAB files cited scratch scripts (`agents/…`) and a local game path that are not in the repository | removed; the repository's `tools/coab/` scripts are cited instead |
 
+**Work-plan steps 6 and 7 (2026-10-21): the appendices and the companion documents.** Part D is
+complete: [test-vectors.md](D-appendices/test-vectors.md) with its manifest
+[test-vectors.json](D-appendices/test-vectors.json) (549 vectors: 73 synthetic, 59 on the games'
+executables, 417 on the player's files as hashes; dice tapes as runs), generated and checked by
+`web/headless/vectors.ts`, `vector-cases.ts` and `vectors-run.ts` (`npm run vectors`) and replayed by
+`web/test/vectors.test.ts`; [addresses.md](D-appendices/addresses.md) with every table of the table
+map (both games), the PoR routines only parts B and C cite and 657 CotAB addresses parts A–C cite
+(`tools/specaddresses.py`); [expected-values.md](D-appendices/expected-values.md) with the V1 hashes
+(images, tables, DAX files); [glossary.md](D-appendices/glossary.md) with the terms of parts B and C;
+[strings.md](D-appendices/strings.md) (§4 checked id by id and address by address against the string
+table) and [port-data.md](D-appendices/port-data.md) (every text and pattern of the profile's port
+data) checked against the code after C24. The companion documents are written:
+[CONFORMANCE.md](CONFORMANCE.md) (the rules and engine checklist K–R, the items this project got
+wrong marked), [CLEANROOM.md](CLEANROOM.md) (file sets, isolation, V1–V13, the three-run plan, the
+brief, findings), [VALIDATION.md](VALIDATION.md) (the record so far, an empty runs table) and
+[xref.md](xref.md) (checked by `web/test/xref.test.ts`).
+
+Found while doing it (numbered AP, appendices):
+
+| # | Where | What | Next |
+|---|---|---|---|
+| AP1 | `web/src/rules/combat.ts` `revive` (`FUN_5216_1869`) | "stands up and grins" and "gets back up" are copies in the code; both images hold them (length bytes PoR 0x439A8, 0x439BC; CotAB 0x4CF56, 0x4CF6A; **I** until confirmed at their reader) | code task (D1): two ids of the string table |
+| AP2 | `web/src/rules/money.ts` `receive`, `COIN_PROMPT` | "Overloaded. Money will be put in pool." and the coin prompt words ("Copper " … "Jewelry ") are copies; the images hold "Money will be put in pool." (length bytes PoR 0x3A613, CotAB 0x3FCD7) and the coin words | code task (D1), with the menu words |
+| AP3 | [procedures.md §8](B-model/procedures.md#8-joining-the-party) | said every joining message is game text: "The party is full." is the port's (neither image holds it) | **Resolved:** §8 says which are the game's (commit `57a7edf`) |
+| AP4 | `web/test/server.test.ts`, `sync.test.ts` | they start the reference server in-process and use its data folder and admin command line, so V11 cannot run them against a builder's server | test task before step 8: the server's address and data folder from the environment, the white-box cases skipped ([CLEANROOM.md §4](CLEANROOM.md#4-the-validations)) |
+| AP5 | [CONFORMANCE.md](CONFORMANCE.md) H1, [exploration-view.md §2.3](C-port/exploration-view.md#23-conformance) | the V9 reference frames are `web/test/view-frames.json`, which a clean-room builder does not have (nor `text-hashes.json`) | **Resolved:** the clean-room set gets copies of both hash files ([CLEANROOM.md §2](CLEANROOM.md#2-the-file-sets)); H1 reworded |
+| AP6 | CONFORMANCE.md I2 | still said the reference cuts CotAB's effects (C23 is resolved) | **Resolved** (commit `7e0ff38`) |
+| AP7 | §8.1 V4 | "every square (PoR)": the TypeScript sweeps run every third square in both games; only `tools/eclsweep.py` ran every square | CLEANROOM.md V4 and VALIDATION.md §4 state what runs |
+| AP8 | [host-contracts.md §6.3](B-model/host-contracts.md#63-the-generator-informative) (informative) | the reference generator's first values from a small seed are tiny (seed 1 answers its first requests with 1s), so a tape recorded with `--seed 1` starts with a run of ones; the vector generator mixes its seeds first | optional code change: the headless command line could mix its seed the same way |
+| AP9 | [expected-values.md §5.2](D-appendices/expected-values.md#52-thac0-ds3e3a) | the note on the bold cells was printed twice | **Resolved** (removed) |
+| AP10 | the README's index | [coab/camp.md](A-games/coab/camp.md) (written with UI5) was not listed | **Resolved** (commit `71a0840`) |
+
 
 ---
 
