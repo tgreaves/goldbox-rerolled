@@ -14,7 +14,10 @@ import type { GameFiles } from '../store/gamefiles'
 import { parseCharacter, MONEY, type Character } from '../data/character'
 import { parseRecord, spriteImage, toImageData, type Picture } from '../data/image'
 import { World } from '../render/world'
-import { blit, blitCanvas, pixels, sizeCanvas } from '../render/upscale'
+import { VIEW, drawView, frameRGBA } from '../render/drawnview'
+import { sceneOf, spriteFrame } from '../render/viewscene'
+import { EGA } from '../data/image'
+import { F as SCALE, blit, blitCanvas, pixels, sizeCanvas, upscale } from '../render/upscale'
 import { parseFont } from '../data/font'
 import { editCharacters } from './debugedit'
 import { enhancePanel } from './panel'
@@ -46,7 +49,7 @@ import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
 import { creatorTools } from './creator'
 import { playEnding } from './ending'
 import { onClose } from './sheet'
-import { openSettings, reducedMotion } from './settings'
+import { openSettings, reducedMotion, viewMode } from './settings'
 import { accountLabel, openAccount } from './account'
 import { accountStatus } from '../store/account'
 import { unexepack } from '../data/exepack'
@@ -95,6 +98,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     <div class="game">
       <section class="view" aria-label="3D view">
         <canvas class="view3d"></canvas>
+        <canvas class="drawnview" width="88" height="88" hidden></canvas>
         <canvas class="wildview" width="120" height="120" hidden></canvas>
         <canvas class="combatview" hidden></canvas>
         <div class="combat-info" hidden></div>
@@ -132,8 +136,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   /** the sun or clouds over the view (CotAB), in the original's 88 × 88 view coordinates */
   function drawSky() {
     const art = game().view.skyArt, at = engine.overland ? null : engine.skyArt
-    skylayer.hidden = !at
-    if (!art || !at) return
+    skylayer.hidden = !at || drawnMode // the drawn view has the sky pictures in its frame
+    if (!art || !at || drawnMode) return
     const g = sizeCanvas(skylayer, 88, 88)
     g.clearRect(0, 0, 88, 88)
     const pic = frames('SKY', at.record)?.[0] ?? (() => { const r = files.record('SKY', at.record); return r ? parseRecord(r).frames[0]?.picture : undefined })()
@@ -157,16 +161,64 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const dialog = app.querySelector<HTMLDialogElement>('dialog.panel')!
   enhancePanel(dialog)
   dialog.addEventListener('close', () => dialog.classList.remove('wide'))
-  const world = new World(canvas)
-  // the game's ground picture on the floor (games/view.ts; CotAB SKY #252)
-  const ground = game().view.ground
-  if (ground) {
-    const rec = files.record(ground.file, ground.record)
-    const pic = rec ? parseRecord(rec).frames[0]?.picture : undefined
-    if (pic) {
-      const [from, to] = ground.rows
-      world.ground(toImageData({ ...pic, height: to - from, pixels: pic.pixels.slice(from * pic.width, to * pic.width) }), ground.repeat)
+  // ------------------------------------------------------------- the 3D view
+  // Two views (D6, spec/C-port/exploration-view.md §1): the original's drawn view (render/drawnview.ts)
+  // and the enhanced WebGL view (render/world.ts, IMP-001), chosen by the View setting. Both answer the
+  // same Io calls: refresh (sync), clearView, sprite, picture.
+  const drawn = app.querySelector<HTMLCanvasElement>('.drawnview')!
+  let drawnMode = viewMode() === 'original'
+  /** the WebGL view, made the first time it is shown */
+  let world: World | null = null
+  /** the map or wall sets changed while the WebGL view was not drawing */
+  let worldStale = true
+  /** the encounter sprite over the view (Io.sprite), until clearView or a picture */
+  let viewSprite: { frames: Picture[]; distance: number } | null = null
+  function ensureWorld(): World {
+    if (world) return world
+    world = new World(canvas)
+    // the game's ground picture on the floor (games/view.ts; CotAB SKY #252)
+    const ground = game().view.ground
+    if (ground) {
+      const rec = files.record(ground.file, ground.record)
+      const pic = rec ? parseRecord(rec).frames[0]?.picture : undefined
+      if (pic) {
+        const [from, to] = ground.rows
+        world.ground(toImageData({ ...pic, height: to - from, pixels: pic.pixels.slice(from * pic.width, to * pic.width) }), ground.repeat)
+      }
     }
+    resize()
+    return world
+  }
+  /** the view region shows the 3D view (not a battle, not the tile wilderness) */
+  let viewShown = true
+  function showView(on: boolean) {
+    viewShown = on
+    canvas.hidden = !on || drawnMode
+    drawn.hidden = !on || !drawnMode
+  }
+  /** The drawn view's frame now (§2): the party's view with the sprite on show, scaled as pictures are. */
+  function drawFrame() {
+    const scene = sceneOf(engine, files, viewSprite ? spriteFrame(viewSprite.frames, viewSprite.distance) : null)
+    if (!scene) return
+    const img = new ImageData(frameRGBA(drawView(scene), EGA), VIEW, VIEW)
+    if (drawn.width !== VIEW * SCALE) { drawn.width = VIEW * SCALE; drawn.height = VIEW * SCALE }
+    drawn.getContext('2d')!.putImageData(upscale(img), 0, 0)
+  }
+  function viewSpriteShow(frames: Picture[] | null, distance = 0) {
+    viewSprite = frames?.length ? { frames, distance } : null
+    if (drawnMode) { if (!engine.overland) drawFrame() } else world?.showSprite(frames, distance)
+  }
+  /** The View setting changed: show the other view, at once. */
+  function applyView() {
+    const want = viewMode() === 'original'
+    if (want === drawnMode) return
+    drawnMode = want
+    if (!drawnMode) {
+      const w = ensureWorld()
+      w.showSprite(viewSprite?.frames ?? null, viewSprite?.distance ?? 0)
+    }
+    showView(viewShown)
+    void sync(0)
   }
 
   // ------------------------------------------------------------ text window
@@ -239,7 +291,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     stopAnimation()
     shownPic = null
     if (!p) {
-      world.showSprite(null)
+      viewSpriteShow(null)
       return paint([])
     }
     if ('big' in p) { // CotAB: a 304 × 120 BIGPIC (spec/A-games/coab/assets.md §5)
@@ -301,7 +353,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   function clearTop(on: boolean) {
     if (!on) { if (topBlank) { topBlank = false; paint([]) } return }
     stopAnimation()
-    world.showSprite(null)
+    viewSpriteShow(null)
     const g = sizeCanvas(overlay, 120, 120)
     g.fillStyle = '#000000'
     g.fillRect(0, 0, 120, 120)
@@ -437,7 +489,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     sprite(sprite, picture, distance) {
       const f = frames('SPRIT', sprite)
       if (distance === 0 && picture !== 255) {
-        world.showSprite(null)
+        viewSpriteShow(null)
         const portrait = engine.B[0x6de1 - 0x6b00]
         showPicture(portrait === 0xff ? { pic: picture } : { head: portrait, body: picture })
       } else if (f && engine.overland) {
@@ -446,7 +498,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         paint([{ pic, x: pic.x * 8, y: pic.y * 8, sprite: true }])
       } else if (f) {
         paint([])
-        world.showSprite(f, distance)
+        viewSpriteShow(f, distance)
       }
     },
     refresh: () => (demoLeft ? Promise.reject(new DemoLeft()) : sync()),
@@ -471,7 +523,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       if (what === 'combat') {
         townMode = 'camp'
         const combatCanvas = app.querySelector<HTMLCanvasElement>('.combatview')!
-        canvas.hidden = true
+        showView(false)
         wildview.hidden = true
         // the battlefield replaces the encounter picture or sprite (the overlay sits above every view)
         showPicture(null)
@@ -488,7 +540,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           // after a battle (game mode 6) the view shows PIC<block> #1, the treasure chest (FUN_10ba_27d9)
           if (engine.demo && !engine.demo.aftermath) { /* CotAB 0x1EEAC: nothing after the clean-up */ }
           else if (r.survived) {
-            canvas.hidden = engine.overland
+            showView(!engine.overland)
             wildview.hidden = !engine.overland
             showPicture({ pic: 1 })
             try { await treasure(townUi) } finally { showPicture(null) }
@@ -499,7 +551,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         } finally {
           app.querySelector('.game')!.classList.remove('in-combat')
           townMode = null
-          canvas.hidden = engine.overland
+          showView(!engine.overland)
           wildview.hidden = !engine.overland
           for (const k of Object.keys(battleInput)) delete (battleInput as Record<string, unknown>)[k]
           drawRoster()
@@ -582,21 +634,27 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   let animDone: (() => void) | null = null
   function sync(ms = 180): Promise<void> {
     if (engine.mapDirty && engine.geo) {
-      world.build(engine.geo, engine.walls)
+      worldStale = true
       engine.mapDirty = false
       ms = 0
     }
     const outdoors = engine.overland
-    canvas.hidden = outdoors
+    showView(!outdoors)
     wildview.hidden = !outdoors || !engine.wild
     padLabels(outdoors)
     if (outdoors) {
       drawWild()
       ms = 0
+    } else if (drawnMode) {
+      // the original redraws the whole frame in one go: no slides (§2.2)
+      drawFrame()
+      ms = 0
     } else {
+      const w = ensureWorld()
+      if (worldStale && engine.geo) { w.build(engine.geo, engine.walls); worldStale = false; ms = 0 }
       const bd = engine.backdrop
-      world.colours(bd.sky, bd.floor)
-      world.go({ x: engine.x, y: engine.y, facing: engine.facing }, ms)
+      w.colours(bd.sky, bd.floor)
+      w.go({ x: engine.x, y: engine.y, facing: engine.facing }, ms)
     }
     drawSky()
     drawMinimap()
@@ -1588,7 +1646,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   async function cleanseRiver() {
     const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
     if (!engine.wild) return
-    canvas.hidden = true
+    showView(false)
     wildview.hidden = false
     drawWild([17, 15])
     if (!reducedMotion()) for (const at of Overland.CLEANSING_VIEW) {
@@ -1852,7 +1910,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     if (engine.quit) return
     if (busy) {
       // pressing faster than the slide: finish it now and take this move next
-      if (animDone && !pending && !dialog.open) { world.finish(); queuedMove = c }
+      if (animDone && !pending && !dialog.open) { world?.finish(); queuedMove = c }
       return
     }
     if (engine.overland) {
@@ -1883,7 +1941,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         break
       }
       case 'settings':
-        void openSettings(dialog, { speed: { get: () => engine.speed, set: (v) => { engine.speed = v } }, changed: () => commandBar() })
+        void openSettings(dialog, { speed: { get: () => engine.speed, set: (v) => { engine.speed = v } }, changed: () => { commandBar(); applyView() } })
         break
       case 'nosound': note(`Sound needs START.EXE: go back to Assets and re-import the ${game().folder} folder.`); break
       case 'commissions': commissions(); break
@@ -1961,13 +2019,16 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   window.addEventListener('keydown', onKey)
   pad.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => move(b.dataset.c!)))
   app.addEventListener('pointerdown', unlockAudio)
-  canvas.addEventListener('pointerup', (e) => {
+  // a tap on the view: left third turns left, right third right, the middle steps forward
+  const viewTap = (e: PointerEvent) => {
     if (skipPause && !pending) return skipPause()
     if (pending && pending.items.length === 1) return choose(0)
-    const r = canvas.getBoundingClientRect()
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
     const fx = (e.clientX - r.left) / r.width
     move(fx < 1 / 3 ? 'l' : fx > 2 / 3 ? 'r' : 'f')
-  })
+  }
+  canvas.addEventListener('pointerup', viewTap)
+  drawn.addEventListener('pointerup', viewTap)
   app.querySelector<HTMLCanvasElement>('.combatview')!.addEventListener('pointerup', (e) => { battleInput.tap?.(e) })
   wildview.addEventListener('pointerup', (e) => {
     if (skipPause && !pending) return skipPause()
@@ -1991,7 +2052,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   })
 
   let running = true
-  const resize = () => {
+  function resize() {
+    if (!world) return
     const r = canvas.getBoundingClientRect()
     world.resize(Math.max(1, Math.round(r.width)), Math.max(1, Math.round(r.height)))
   }
@@ -2000,8 +2062,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   resize()
   const loop = (now: number) => {
     if (!running) return
-    world.frame(now)
-    if (animDone && !world.busy()) {
+    if (world && !drawnMode) world.frame(now)
+    if (animDone && !(world && !drawnMode && world.busy())) {
       const done = animDone
       animDone = null
       done()
@@ -2021,7 +2083,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     running = false
     observer.disconnect()
     window.removeEventListener('keydown', onKey)
-    world.renderer.dispose()
+    world?.renderer.dispose()
     back()
   }
 

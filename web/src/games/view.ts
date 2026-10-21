@@ -1,12 +1,22 @@
-// How each game's 3D view is dressed (docs/multi-game.md, step 7). The port draws the view in
-// WebGL (IMP-001); these say which of the game's own pictures and colours go where.
+// How each game's 3D view is dressed (docs/multi-game.md, step 7): which of the game's own pictures
+// and colours go where, in the drawn view (render/drawnview.ts, D6) and the WebGL view (IMP-001).
+
+/** A band's colour: one of the backdrop's (Engine.backdrop) or a fixed EGA colour. */
+export type BandColour = 'sky' | 'line' | 'band' | 'floor' | number
 
 export interface ViewArt {
+  /** the drawn view's background, view rows `rows` inclusive, top to bottom (PoR FUN_55a0_0174,
+   *  CotAB 0x53824 on EGA) */
+  bands: { rows: [number, number]; colour: BandColour }[]
+  /** areas where the view's wall lookups outside the map find no wall (FUN_55a0_047b: DS:84DC 0 or
+   *  10; CotAB 0x53D42, DS:8B78); elsewhere a coordinate wraps by one map */
+  closedEdges: number[]
   /** EGA floor colour, instead of the one the script's floor key gives (null: the key decides) */
   floor: number | null
-  /** a ground picture laid on the floor (IMP-069): DAX family and record, the rows used (the least
-   *  foreshortened, nearest the viewer) and how many times they repeat along one square */
-  ground: { file: string; record: number; rows: [number, number]; repeat: number } | null
+  /** a ground picture: DAX family and record; `at`, the view pixel where the drawn view puts it (over
+   *  the bands and sky pictures, under the walls; mask colour `mask`); for the WebGL floor (IMP-069) the
+   *  rows used (the least foreshortened, nearest the viewer) and how many times they repeat along one square */
+  ground: { file: string; record: number; at: [number, number]; mask: number; rows: [number, number]; repeat: number } | null
   /** script pictures from this id are full-width BIGPIC<block> records (null: none) */
   bigFrom: number | null
   /** the BIGPIC that is the overland map, shown with the city cursor (T.cursorX/Y by ECL 0x4CA1) */
@@ -22,7 +32,11 @@ export interface ViewArt {
   skyArt: { daySky: number; mask: number; rules: { facing2: number; hours: [number, number]; record: number; col: [number, number]; row: [number, number] }[] } | null
 }
 
-export const POR_VIEW: ViewArt = { floor: null, ground: null, bigFrom: null, overlandPicture: null, tileOverland: [25, 26, 27],
+export const POR_VIEW: ViewArt = {
+  // FUN_55a0_0174: sky rows 0–42, the horizon line 43, the band 44–45, the floor 46–87
+  bands: [{ rows: [0, 42], colour: 'sky' }, { rows: [43, 43], colour: 'line' }, { rows: [44, 45], colour: 'band' }, { rows: [46, 87], colour: 'floor' }],
+  closedEdges: [0, 10],
+  floor: null, ground: null, bigFrom: null, overlandPicture: null, tileOverland: [25, 26, 27],
   frame: { rope: { corner: 20, vertical: 21, horizontal: 22 } }, skyArt: null }
 
 // spec/A-games/coab/assets.md §3: in EGA the floor is colour 8 under SKY #252, the cobbled ground drawn at
@@ -30,7 +44,11 @@ export const POR_VIEW: ViewArt = { floor: null, ground: null, bigFrom: null, ove
 // §4–5: PICTURE ids from 0x78 load BIGPIC (handler 0x190C3); the overland is BIGPIC #121 (0x79) with a
 // blinking 8 × 8 white city cursor; there is no tile wilderness
 export const COAB_VIEW: ViewArt = {
-  floor: 8, ground: { file: 'SKY', record: 252, rows: [32, 48], repeat: 2 }, bigFrom: 0x78, overlandPicture: 0x79, tileOverland: [],
+  // 0x53824, EGA: sky DS:7224 rows 0–43, DS:7226 (never written: 0) rows 44–45, DS:7227 (8) rows 46–87
+  bands: [{ rows: [0, 43], colour: 'sky' }, { rows: [44, 45], colour: 0 }, { rows: [46, 87], colour: 'floor' }],
+  closedEdges: [0, 10],
+  // the ground #252 at screen cell (2, 7), view (0, 40), always, mask 13 (loaded at InitFirst 0x26AA9)
+  floor: 8, ground: { file: 'SKY', record: 252, at: [0, 40], mask: 13, rows: [32, 48], repeat: 2 }, bigFrom: 0x78, overlandPicture: 0x79, tileOverland: [],
   // 0x1330: tile id 0x11E + table value, bank 4 (#202) starting at 0x100, so tile 30 + value (the white set)
   // the tiles are loaded with mask colour 13 (Load8x8D 0x579C5): those pixels are not drawn
   frame: { tables: { tile0: 30, mask: 13 } },

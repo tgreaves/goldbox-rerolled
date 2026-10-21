@@ -1,4 +1,4 @@
-// One Settings panel (IMP-046): game speed (in a game), sound device, font, window borders and text size. Speed is
+// One Settings panel (IMP-046): game speed (in a game), sound device, font, window borders, the 3D view and text size. Speed is
 // the game's own (saved with the game); the rest are per-browser conveniences in localStorage, which travel
 // with an account when signed in (the Account section, IMP-072).
 import { play, setSoundDevice, soundAvailable, soundDevice, unlockAudio, type Device } from '../audio/sfx'
@@ -14,7 +14,20 @@ import { versionHtml } from '../version'
 const SIZE_KEY = 'poolrad.textsize'
 const MOTION_KEY = 'poolrad.motion'
 const PARTY_KEY = 'poolrad.partylayout'
+const VIEW_KEY = 'poolrad.view'
 export type PartyLayout = 'top' | 'side'
+export type ViewMode = 'original' | 'enhanced'
+
+/**
+ * The 3D view (decision D6, spec/C-port/exploration-view.md §1): the original's drawn view, pixel for
+ * pixel (the default), or the enhanced WebGL view (IMP-001).
+ */
+export function viewMode(): ViewMode {
+  try { return localStorage.getItem(VIEW_KEY) === 'enhanced' ? 'enhanced' : 'original' } catch { return 'original' }
+}
+function setViewMode(v: ViewMode) {
+  try { localStorage.setItem(VIEW_KEY, v) } catch { /* this page only */ }
+}
 
 /** Where the party cards go (IMP-064): a row across the top, or the original's column beside the view. */
 export function partyLayout(): PartyLayout {
@@ -75,6 +88,7 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
         : '<div class="set-row"><span class="set-label">Sound</span><span class="muted">needs START.EXE among the game files</span></div>'}
       ${gameFontAvailable() ? seg('Font', [['original', 'Original 8×8'], ['modern', 'Modern']], fontChoice()) : ''}
       ${framesAvailable() ? seg<FrameChoice>('Borders', [['original', 'Original rope'], ['modern', 'Plain']], frameChoice()) : ''}
+      ${seg<ViewMode>('View', [['original', 'Original'], ['enhanced', 'Enhanced (3D)']], viewMode())}
       ${seg<PartyLayout>('Party', [['top', 'Row across the top'], ['side', 'Column beside the view']], partyLayout())}
       ${seg<Motion>('Motion', [['full', 'Full'], ['reduced', 'Reduced (no flashing)']], motionChoice())}
       ${seg<TextSize>('Text size', [['normal', 'Normal'], ['large', 'Large']], textSize())}
@@ -101,6 +115,7 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
       else if (d.textsize) setTextSize(d.textsize as TextSize)
       else if (d.motion) setMotion(d.motion as Motion)
       else if (d.party) setPartyLayout(d.party as PartyLayout)
+      else if (d.view) setViewMode(d.view as ViewMode)
       else if (d.graphics) setGfx(d.graphics as Gfx)
       else if (d.reload) { location.reload(); return }
       host.changed?.()

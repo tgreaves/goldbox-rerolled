@@ -1,0 +1,106 @@
+{
+ "_": "V9 reference frames (spec/C-port/exploration-view.md \u00a72.3): SHA-256 of the 1024 drawn-view frames (88 x 88 EGA indices, squares y 0-15, x 0-15, facings N E S W) of an area, after loading save A, starting play and, with jump, a debug jump to (8, 8) facing north. startExe: SHA-256 of the START.EXE they were computed with (GOG releases); another release skips the comparison.",
+ "por": {
+  "startExe": "d825df2b174675c9088ba1489488bdeebe66ad2a22943f17d3a198e60b6a07bd",
+  "cases": [
+   {
+    "jump": null,
+    "block": 2,
+    "area": 20,
+    "frames": "19251d167a0fcff806450b134586d0e1a2e4f3dd5bfe1d1f4d54c7575303bec3"
+   },
+   {
+    "jump": [
+     3,
+     0
+    ],
+    "block": 3,
+    "area": 0,
+    "frames": "ec8b409005d72e5dc9e469c4401140befa74182acb8d704fdafff287afe9d642"
+   },
+   {
+    "jump": [
+     1,
+     18
+    ],
+    "block": 1,
+    "area": 18,
+    "frames": "0946dfe125e6c55397989b5d63ca236514d1b53f8b6ab7369255ce416c1a3069"
+   },
+   {
+    "jump": [
+     2,
+     9
+    ],
+    "block": 2,
+    "area": 9,
+    "frames": "43bc53ef6d0712444cf8879bf3407617948e639da982277e23683e621cf677bc"
+   },
+   {
+    "jump": [
+     6,
+     1
+    ],
+    "block": 6,
+    "area": 1,
+    "frames": "d38a2558a5ec7786a410a21948f57f385423f2cb34aa4cca74230abe3fdf11d5"
+   },
+   {
+    "jump": [
+     8,
+     13
+    ],
+    "block": 8,
+    "area": 13,
+    "frames": "7cc27b725eaa46121d498ff58a7f75e44ea045cd26409efca149288b80f925aa"
+   }
+  ]
+ },
+ "coab": {
+  "startExe": "42fcefd6785679568b00bc1fb5b1d81ac2773416be4a35e0363920ddf6b78acd",
+  "cases": [
+   {
+    "jump": null,
+    "block": 2,
+    "area": 1,
+    "frames": "aa3f17314b97e22289f3c801336e69f32e381f350ea0c5fd40dab74761089374"
+   },
+   {
+    "jump": [
+     3,
+     16
+    ],
+    "block": 3,
+    "area": 16,
+    "frames": "80bc22b4500c5d603ed6a7e78f34854be3c4cbef9df0356875899de627851423"
+   },
+   {
+    "jump": [
+     4,
+     32
+    ],
+    "block": 4,
+    "area": 32,
+    "frames": "cb62bc520e8e5e9c080fd8304ad5d44a0c85ab19d3e20053fcdf60471ac4b5d0"
+   },
+   {
+    "jump": [
+     5,
+     50
+    ],
+    "block": 5,
+    "area": 50,
+    "frames": "71a07e653824d316cd8a8ae9ad63753499592af1238ae93c424c4e9f81c3f2ba"
+   },
+   {
+    "jump": [
+     6,
+     64
+    ],
+    "block": 6,
+    "area": 64,
+    "frames": "ee2f6234610fb2110e0bc9ae5af9ff2af0bbe544506f941c7a85a4f6c8c52db0"
+   }
+  ]
+ }
+}

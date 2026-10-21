@@ -11,6 +11,7 @@ import { F } from '../src/games/fields'
 import { parseSave } from '../src/data/save'
 import { fight, type Battle, type CombatUi } from '../src/rules/combat'
 import { Divergence, TapePlayer, TapeRecorder, generator, type Dice, type Tape } from '../src/rules/dice'
+import { renderFrame, type ShownSprite, type ViewFrame } from './frame'
 
 /** One answer: a menu index, a number, a text, a step (0–7, `end`, `undo`), an aim (index or null), a yes/no. */
 export type Answer = number | string | boolean | null
@@ -62,6 +63,8 @@ export interface RunOptions {
   seed?: number
   /** each transcript event as it happens */
   out: (e: Event) => void
+  /** render the drawn view at the end of the run (V9): `RunResult.frame` and a `frame` event */
+  frame?: boolean
 }
 
 export interface RunResult {
@@ -69,6 +72,8 @@ export interface RunResult {
   end: string
   /** the dice tape of the run (the replayed one's entries used, or what the generator answered) */
   tape: Tape
+  /** the drawn view's frame at the end (with `frame`), null where the party has no 3D view */
+  frame?: ViewFrame | null
 }
 
 /** Run a script headless (host-contracts.md §8). */
@@ -127,6 +132,8 @@ export async function runScript(o: RunOptions): Promise<RunResult> {
   }
 
   let e!: Engine
+  /** the encounter sprite over the view, until the view is cleared or a picture replaces it */
+  let shown: ShownSprite | null = null
   const io: Io = {
     print: (text, clear) => out({ event: 'text', text, clear }),
     menu: async (items, opts) => { const answer = index(items, opts?.prompt ?? ''); out({ event: 'menu', items, prompt: opts?.prompt ?? '', answer }); return answer },
@@ -142,8 +149,9 @@ export async function runScript(o: RunOptions): Promise<RunResult> {
       out({ event: 'input', kind: 'text', answer: a })
       return a
     },
-    picture: (picture) => out({ event: 'picture', picture }),
-    sprite: (sprite, picture, distance) => out({ event: 'sprite', sprite, picture, distance }),
+    picture: (picture) => { shown = null; out({ event: 'picture', picture }) },
+    sprite: (sprite, picture, distance) => { shown = { sprite, picture, distance }; out({ event: 'sprite', sprite, picture, distance }) },
+    clearView: () => { shown = null },
     refresh: async () => {},
     sound: (n) => out({ event: 'sound', n }),
     pause: async () => {},
@@ -191,8 +199,13 @@ export async function runScript(o: RunOptions): Promise<RunResult> {
     else if (err instanceof Divergence) { end = 'divergence'; out({ event: 'end', reason: end, message: err.message }); return { end, tape: recorder.tape() } }
     else { end = 'error'; out({ event: 'end', reason: end, message: (err as Error).message }); return { end, tape: recorder.tape() } }
   }
+  let frame: ViewFrame | null | undefined
+  if (o.frame && e) {
+    frame = renderFrame(e, files, shown)
+    out({ event: 'frame', block: e.block, area: e.area, x: e.x, y: e.y, facing2: e.facing2, sprite: shown, sha256: frame?.sha256 ?? null })
+  }
   out(waiting ? { event: 'end', reason: end, waiting } : { event: 'end', reason: end })
-  return { end, tape: recorder.tape() }
+  return { end, tape: recorder.tape(), frame }
 }
 
 /**

@@ -126,6 +126,9 @@ export interface TableMap {
    *  chairs go, entries 1–4 (DS:034C, DS:0350: up, right, down, left; PoR furnishes no rooms) */
   furnishDx: TableRef
   furnishDy: TableRef
+  /** the drawn view's piece tables (spec/A-games/engine/maps-and-view.md, "Wall pieces"), contiguous:
+   *  10 bytes first tile index, 10 widths, 10 heights (cells), 10 words base column, 10 words row */
+  viewPieces: TableRef
 }
 
 export const POR_TABLES: TableMap = {
@@ -145,6 +148,7 @@ export const POR_TABLES: TableMap = {
   startGold: t(0x4263, 2), saves: t(0x426e, 0x2d),
   fanDx1: absent, fanDy1: absent, fanDx2: absent, fanDy2: absent,
   gasCloud: t(0x290d), killCloud: absent, furnishDx: absent, furnishDy: absent,
+  viewPieces: t(0x0c8c),
 }
 
 export const COAB_TABLES: TableMap = {
@@ -164,6 +168,7 @@ export const COAB_TABLES: TableMap = {
   startGold: t(0x45b3, 2), saves: t(0x45be, 0x3c),
   fanDx1: t(0x0a22), fanDy1: t(0x0a2a), fanDx2: t(0x0a12), fanDy2: t(0x0a1a),
   gasCloud: t(0x27d9), killCloud: t(0x27dd), furnishDx: t(0x034b), furnishDy: t(0x034f),
+  viewPieces: t(0x0ada),
 }
 
 /** The active game's tables; start-up (setGame) switches them. */
