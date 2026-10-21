@@ -215,8 +215,8 @@ its overland is `BIGPIC1` #121 (profile `view.overlandPicture`) driven by the sc
 - The **city cursor**: an 8 × 8 white block at cell (`T.cursorX`, `T.cursorY` of ECL 0x4CA1), drawn at
   (x·8 − 8, y·8 − 8) on the picture (the original draws the picture at screen (8, 8)); it blinks,
   about 0.5 s on and 0.3 s off, while that picture is shown.
-- Movement keys and the pad do nothing useful there (the scripts' menus travel); the sky layer is
-  hidden.
+- Travel is the scripts' menus (ENTER CITY, JOURNEY ON …); while such a menu waits, movement keys
+  and the pad are ignored as for any pending menu ([ui-contract.md §6.3](ui-contract.md#63-menus-and-prompts)).
 
 ## 5. Pictures and the picture layer
 
@@ -240,8 +240,8 @@ whole-pixel scaled, with black around them (a picture replaces the view, as in t
 - After a won battle the layer shows `PIC<block>` #1 (the chest) while the treasure panel is open;
   the camp shows #29 (the campfire) animated.
 - **The sky layer** (CotAB, profile `view.skyArt`): the sun or clouds by the rules of §2.1 step 2,
-  drawn over the view in the original's 88 × 88 coordinates with colour 13 transparent, hidden in the
-  overland. In the WebGL view it is a flat layer over the 3D picture.
+  drawn over the view in the original's 88 × 88 coordinates with colour 13 transparent, hidden in a
+  tile wilderness and under a picture. In the WebGL view it is a flat layer over the 3D picture.
 
 ## 6. The area map
 
