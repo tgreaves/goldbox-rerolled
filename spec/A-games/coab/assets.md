@@ -1,10 +1,16 @@
 # CotAB data files and presentation (vs PoR)
 
-Scope: every DAX family, graphics, 3D view, overland, BIGPIC, title/start-up, copy protection, fonts, sound, palette. Game: *Curse of the Azure Bonds* v1.3 (GOG 1.0, `/home/tmg/coab-files`).
+> **Status: complete as a set of differences.** Normative. Part A of the
+> [specification](../../README.md): Curse of the Azure Bonds v1.3 (GOG 1.0). Read the engine files
+> of each subject first ([graphics.md](../engine/graphics.md), [maps-and-view.md](../engine/maps-and-view.md),
+> [sound.md](../engine/sound.md), [input-and-menus.md](../engine/input-and-menus.md) §1). Evidence
+> marks as in the README. The engine model's presentation data for CotAB is
+> [B-model/profile.md §4.1](../../B-model/profile.md#41-cotabs-presentation-differences).
 
-**Conventions.** Addresses are offsets in the merged load image `coab/img.bin` (seg:ofs → seg·16+ofs; overlays already merged). **DS = image 0xABE0**, so `DS:x` = image 0xABE0+x (O: sky table found at both). PoR references point at the repo specs. Evidence: **O** = seen in code or data here, **I** = inferred, **?** = open. Names in brackets (`ovr031:0820` etc.) are the segment labels of the reference rebuild's IDA listing, used only to find routines. Every claim below was checked in the CotAB binary or data.
+Scope: every DAX family, graphics, 3D view, overland, BIGPIC, title/start-up, copy protection, fonts, sound, palette.
 
-Helper scripts (scratch only): `agents/inv.py` (inventory), `agents/cmp.py` (vs PoR), `agents/render.py` + `agents/frame.py` (PNG samples), `agents/mapnames.py` → `agents/names.txt` (reference proc labels mapped to image offsets; overlay *n* = n-th entry of `merged.exe.map`, numbering 1–34, 36, 38). PNGs in `agents/png/` (27 files, about 180 KB).
+**Conventions.** Addresses are offsets in the merged load image `coab/img.bin` (seg:ofs → seg·16+ofs; overlays already merged). **DS = image 0xABE0**, so `DS:x` = image 0xABE0+x (O: sky table found at both). PoR references point at the engine files. Names in brackets (`ovr031:0820` etc.) are the segment labels of the reference rebuild's IDA listing, used only to find routines. Every claim below was checked in the CotAB binary or data.
+
 
 ## 1. Containers
 
@@ -33,13 +39,10 @@ Graphics = PoR image block (17-byte header, 4 bpp, default EGA palette), so `too
 | `8X8D2–6` | 5 | 70-tile wall-set banks: 2: 1–4; 3: 3, 5–7; 4: 3, 8–11; 5: 12, 8, **141, 142**; 6: 13, 16, 3, **171, 172** | 8×8 ×70 | same format; #3 is shared by blocks 2/3/4/6, #8 by 4/5 (identical bytes) |
 | `WALLDEF2–6` | 5 | 2: 1–4; 3: 3, 5–7; 4: 3, 8–11; 5: 12, 8, **14 (2 sets)**; 6: 13, 16, 3, **17 (2 sets)** | 780 B per set (0x30C) | same format |
 | `GEO2–6` | 5 | 16 records (2: 1, 3, 4; 3: 16, 17, 21; 4: 32, 33, 37; 5: 50, 51, 53; 6: 64, 66, 67, 69) | 1026 B | same (§3) |
-| `ECL1–6` | 6 | 25 (1: **80, 81, 82** = overland, §4) | script | other agent |
-| `ITEM1–6`, `MON1–6 CHA/ITM/SPC` | 30 | records of 126–3654 B (ITEM), 422 B (CHA) | data | other agent |
+| `ECL1–6` | 6 | 25 (1: **80, 81, 82** = overland, §4) | script | [ecl.md](ecl.md) |
+| `ITEM1–6`, `MON1–6 CHA/ITM/SPC` | 30 | records of 126–3654 B (ITEM), 422 B (CHA) | data | [records.md](records.md) |
 
 **Missing vs PoR (O: no file, no load string):** `SQRPACI` (PoR overland tiles), `BACPAC`, `ICON` and `FINAL`, plus block 1 of `GEO`/`WALLDEF`/`HEAD`/`BODY` and blocks 7–8 of everything. The strings `"ICON"` (0x56C4C) and `"FINAL"` (0x52EEB) survive only as name *comparisons* inside the shared loaders (combat-icon builder `0x56C50`, picture loader `0x52F03`). No code passes them as file names (I: dead PoR leftovers).
-
-### Samples rendered (`agents/png/`)
-TITLE_1–4, BIGPIC1_121, BIGPIC1_123, BIGPIC2_120, BIGPIC6_122, SKY_all, TILES_1, TILES_2, 8X8D1_202, 8X8D1_203, 8X8D2_1, font201, PIC2_7 (XOR undone, 8 frames), PIC1_1, PIC1_80, SPRIT5_54, CPIC5, HEADBODY2, DUNGCOM_1, WILDCOM_1, RANDCOM_1. Composites built from engine data: `view_bg_ega.png` (§3), `overland_cursor_check.png` (§4), `frame_full.png` (§6).
 
 ## 3. 3D view
 
@@ -90,8 +93,8 @@ CotAB has **no tile wilderness**. There is no SQRPACI, no 5×5 tile view and no 
   - Screen position = (x·8, y·8). Entries 0–31 land on the map's town and road nodes (overlay check `overland_cursor_check.png`); entry 32 (15, 0) is on the frame (I: unused).
   - The cursor image is an 8×8 block filled with 0xFF (white; built at init, 0x26B6B–0x26B98, `DS:8C90`); the background is saved in `DS:65E4`.
 - Blink, in the menu input loop `displayInput` **0x51C48** (`ovr027:03D8`), only when `DS:4FD3` = 3, `DS:72AA` = 0x79 and `DS:72A4` ≠ 0x50: on entry SetPosition, Draw, Restore. Then, against the centisecond clock (`04CE:0988`): draw when t ≥ T_on and set T_on = T_off + 30; restore when t ≥ T_off and set T_off = T_on + 50. On exit the cursor is restored (O; I: about 0.5 s on, 0.3 s off).
-- **Travel logic lives in ECL1 #80/#81** (block 1). `on_enter` does `SAVE #0 → 0x4BE6`, `PICTURE #121`; `GET_TABLE … → 0x4CA1`; HMENU "ENTER CITY / JOURNEY ON / CAMP / SEARCH AREA" (O, from `agents/ecl1.lst`). After combat or `LOAD_AREA` with 0x4BE6 = 0 the engine reloads BIGPIC 0x79 (0x19527, 0x1A2B2, 0x3614A).
-- Port consequence: PoR's `engine/overland.md` (tile grid, 12 h per step, river recolouring, party icon) does **not apply**. CotAB needs a "picture + blinking cursor + ECL menu" mode.
+- **Travel logic lives in ECL1 #80/#81** (block 1). `on_enter` does `SAVE #0 → 0x4BE6`, `PICTURE #121`; `GET_TABLE … → 0x4CA1`; HMENU "ENTER CITY / JOURNEY ON / CAMP / SEARCH AREA" (O, from the script). After combat or `LOAD_AREA` with 0x4BE6 = 0 the engine reloads BIGPIC 0x79 (0x19527, 0x1A2B2, 0x3614A).
+- So PoR's [engine/overland.md](../engine/overland.md) (tile grid, 12 h per step, river recolouring, party icon) does **not apply**: CotAB's travel is a picture, a blinking cursor and the script's menu.
 
 ## 5. BIGPIC uses (O)
 | Id | File | Content | Shown by |
@@ -172,12 +175,11 @@ There are no other palette writes and no port 3C0h access (O).
   - **There is no PoR-style 10-cs "transient" cut-off** (no `DS:5374` logic). Reinstall = `0x6A64` (`DS:5C06` := 1). The main program brackets its overlay calls with PlaySound(0xFF) and `0x6A64` when `DS:5C06` says so (O; I: keeps the timer hook out of disk and overlay loads). Effects otherwise play to the end (I).
 - Constant table `DS:25AC` = 0xFF, `25AE` = 0, `25B0` = 1, …, `25CC` = 15. Call counts: 0×4, 1×5, 2×2, 3×1, 4×1, 5×3, 6×2, 7×2, 8×1, 9×3, 10×7, 11×2, 12×2, 13×1 (title).
 
-## 9. Port checklist (summary of differences)
+## 9. Summary of differences
 
-Moved to part B, where each item is now profile data:
-[B-model/profile.md §4.1](../../B-model/profile.md#41-cotabs-presentation-differences).
+Each difference above is profile data in part B: [B-model/profile.md §4.1](../../B-model/profile.md#41-cotabs-presentation-differences).
 
-## Open (?)
+## Open
 - `DS:8B81` (CGA band recompute flag) and `DS:8B84` writers beyond the ECL hook; the `displayInput` timeout value for the demo prompt.
 - Who, if anyone, calls PlaySound(15) (watchdog), e.g. through a variable argument.
 - Exact roles of the frame routines `0x16C7`/`0x17BD` (`seg037` draw8x8_06/07: combat and other screens), not traced here.
