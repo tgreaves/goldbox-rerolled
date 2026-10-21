@@ -1,10 +1,15 @@
 # CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md)
 
-Scope: Curse of the Azure Bonds, GOG 1.0 (engine "v1.3"). Decoder: `records_coab.py` (same folder).
+> **Status: complete as a set of differences.** Normative. Part A of the
+> [specification](../../README.md): Curse of the Azure Bonds, GOG 1.0 (engine "v1.3"). Read
+> [engine/records.md](../engine/records.md) and [engine/savegame.md](../engine/savegame.md) first.
+> Evidence marks as in the README (**O**: read in the CotAB binary or confirmed byte for byte in the
+> shipped data; **I** also covers data plausibility and the PoR analogy). The engine model's field
+> maps are [B-model/records-and-tables.md](../../B-model/records-and-tables.md). *Informative:*
+> decoder `tools/coab/records_coab.py`.
+ The C# rebuild (coab-ref) was used only to find code; every O below cites a CotAB address.
 
-Evidence: **O** = read in the CotAB binary or confirmed byte-for-byte in the shipped data; **I** = inferred (data plausibility, PoR analogy, field mapping); **?** = unknown. The C# rebuild (coab-ref) was used only to find code; every O below cites a CotAB address.
-
-Addresses: `SSSS:OOOO` = overlay paragraph : offset in the merged image `coab/img.bin` (image offset = SSSS·16 + OOOO), e.g. `323c:14b3` = img 0x33873. DS = 0x0ABE, so `DS:x` = img 0xABE0 + x. Turbo Pascal runtime is seg 0x8F7 (`8f7:1925` BlockRead, `8f7:192c` BlockWrite, `8f7:18bb` Close, `8f7:1aaf` Move, `8f7:023f` GetMem, `8f7:0254` FreeMem). Helper `agents/rec/rdis.py SEG START END` prints seg-relative listings with overlay stubs resolved; listings of overlay 323c (save/load/import), 4d05 (recalc), 5047, 4aab, 3685 are in `agents/rec/`.
+Addresses: `SSSS:OOOO` = overlay paragraph : offset in the merged image `coab/img.bin` (image offset = SSSS·16 + OOOO), e.g. `323c:14b3` = img 0x33873. DS = 0x0ABE, so `DS:x` = img 0xABE0 + x. Turbo Pascal runtime is seg 0x8F7 (`8f7:1925` BlockRead, `8f7:192c` BlockWrite, `8f7:18bb` Close, `8f7:1aaf` Move, `8f7:023f` GetMem, `8f7:0254` FreeMem).
 
 Key routines (all O):
 
@@ -185,13 +190,13 @@ All have base = current stats, 300 pp and nothing else, no items (no `.SWG` file
   - 60–62 scrolls: hands 2 → 0; 61 MU scroll mask 0x01 → 0x05 (thieves); 66 robe mask 0x7F → 0x01 (Robe of Powerlessness/Vermin, MU only); 83 mask 0 → 0xFF; 84/87/89 mask 0x08 → 0xC8;
   - new types (names from shipped instances, I): 94 Drow Mace (slot 0, hands 0, 1d6+1/1d6, bashing), 95 Elfin Chain Mail and 96 Drow Chain Mail (slot 2, AC byte 183 = AC 5), 97 Drow Long Sword (1d8/1d12), 98 Spine (thrown, RoF 12/2, range 18), 99 Ring of Wizardry (slot 9, MU), 100 Dart of Hornets Nest (RoF 28/2, range 6), 101 Staff Sling (2 hands, range 24).
 - **`ITEM<n>.DAX`** (O, `1885:1b9d`, string `1885:1b7a` "ITEM" + block + ".dax"): ECL TREASURE with item operand < 0x80 loads record id = operand and splits it into 63-byte items, added to the treasure list `DS:6FA6`; same as PoR. Record sizes 126–3654 (= 58 items, shop stock), all multiples of 63 (O).
-- **Name words**: 255 × 21-byte Pascal strings at `DS:1057` for word 1 (PoR `DS:10BC`), 40 entries changed (O, data): e.g. 72 Dragon Breath, 82 Elfin Chain, 83 Wizardry, 108 Ioun Stone, 127 Dragon Slayer, 130 Frost Brand, 145 Flask of Oil, 160 Drow, 175 Spine; abbreviations 208 "Clrc Scroll", 209 "MU Scroll", 213 "Prot. Scroll", 224 "Of Prot.". Full list: `agents/rec/words.txt`.
+- **Name words**: 255 × 21-byte Pascal strings at `DS:1057` for word 1 (PoR `DS:10BC`), 40 entries changed (O, data): e.g. 72 Dragon Breath, 82 Elfin Chain, 83 Wizardry, 108 Ioun Stone, 127 Dragon Slayer, 130 Frost Brand, 145 Flask of Oil, 160 Drow, 175 Spine; abbreviations 208 "Clrc Scroll", 209 "MU Scroll", 213 "Prot. Scroll", 224 "Of Prot.". The full list is read from `DS:1057` (D5).
 
 ---
 
 ## 4. Effects: `.FX` (CotAB) vs `.SPC` (PoR)
 
-Same 9-byte record (O): `u8 type, u16 duration (0 = permanent), u8 power, u8 call-on-removal flag, ptr next` — next at +5 cleared on load (`323c:30ac`, monsters `323c:342f`), head at char+0xF2 (PoR +0x7F). Only the extension changed. Shipped: paladins `08 0000 FF 00`, dwarf `61/1A/2F`, elf `6B` (O). The type list itself grows in CotAB (Dracolich carries 110, 119, 122, 123, 125–135); not covered here.
+Same 9-byte record (O): `u8 type, u16 duration (0 = permanent), u8 power, u8 call-on-removal flag, ptr next` — next at +5 cleared on load (`323c:30ac`, monsters `323c:342f`), head at char+0xF2 (PoR +0x7F). Only the extension changed. Shipped: paladins `08 0000 FF 00`, dwarf `61/1A/2F`, elf `6B` (O). The type list itself grows in CotAB (Dracolich carries 110, 119, 122, 123, 125–135): [effects.md](effects.md).
 
 ---
 
@@ -228,7 +233,7 @@ Shipped `SAVGAMA.DAT` (O): block 2, position (7, 13) facing 0, states 0/0, wall 
 - `MON<n>CHA` record = the 422-byte character record (all 81 records in blocks 1–6, O); `MON<n>ITM` multiples of 63, `MON<n>SPC` multiples of 9 (O). All decode with RLE variant 0 (as PoR).
 - `323c:329c(id, char)`: filename "MON" + block digit `DS:5C08` + "CHA"/"SPC"/"ITM" + ".dax" (strings `323c:3270`), copy 0x1A6 bytes, effects (9) then items (63) relinked; "Unable to load monster" if the CHA record is missing. `323c:357d` (NPC join): party ≤ 7, +0x126 = monster id, icon slot assigned, picture `CPIC` by id.
 - Files carry the same field roles as PoR monsters: morale 0x80/0xB2 at +0xF7, side 1 at +0x197 (helpers: CYNTHIA, GRENDEL, RUSTLE side 0), XP base/per-HP at +0x13C/+0x13E, 60 − THAC0 at +0x73. The picture id that PoR kept at 0xBF is not used; CotAB picks `CPIC` by monster id (+0x126) (O).
-- Run `records_coab.py --mon /home/tmg/coab-files [n]` for the full list.
+- *Informative:* `tools/coab/records_coab.py --mon <game folder> [n]` lists every monster record.
 
 ---
 
@@ -284,7 +289,7 @@ Not converted (left 0, O by absence from `323c:14b3`): memorised spells and scri
 
 Net effect, PoR → CotAB: name, stats (race-clamped; STR% unclamped; base STR bug), race/class/age/gender/alignment, levels, XP, max/current HP, rolled HP, known spells (minus Animate Dead), spell slots L1–3, thief skills, status, icons and portrait kept; items, money (→ 300 pp), memorised spells and non-racial effects lost.
 
-The port: `web/src/games/imports.ts` (the data) and `web/src/rules/import.ts`, with step 3's bug fixed (IMP-070).
+The engine model's import procedure is [B-model/procedures.md §13](../../B-model/procedures.md#13-character-import); GoldBox Rerolled fixes step 3's bug (IMP-070, [C-port/departures.md](../../C-port/departures.md)).
 
 ### 7.4 CotAB → its own files
 
@@ -292,13 +297,13 @@ Characters made or saved in CotAB are written as `.guy/.swg/.fx` (§1). A CotAB 
 
 ### 7.5 Hillsfar (brief, O for structure)
 
-Source 2: 0xBC-byte `*.hil`, name at +4, NPC test skipped. `323c:1f35` merges onto an existing `NAME.guy` (or a PoR `NAME.cha` converted as above) if one exists (`PlayerFileExists`, `323c:13ae`), raising stats to the Hillsfar values and creating items for Hillsfar gains (necklace/wand/ring entries built at `323c:2648..`); otherwise builds a new level-1 character. Details not needed for the PoR port; see `323c:248b..2801`.
+Source 2: 0xBC-byte `*.hil`, name at +4, NPC test skipped. `323c:1f35` merges onto an existing `NAME.guy` (or a PoR `NAME.cha` converted as above) if one exists (`PlayerFileExists`, `323c:13ae`), raising stats to the Hillsfar values and creating items for Hillsfar gains (necklace/wand/ring entries built at `323c:2648..`); otherwise builds a new level-1 character. Not specified further (see `323c:248b..2801`; Open).
 
 ---
 
 ## 8. Random treasure items (O, builder 0x42D97, type choice 0x1A5A3–0x1A6E2)
 
-Same procedure as PoR's (`FUN_4c2d_1010`, [engine/records.md, "Random items"](../engine/records.md#random-items)), different tables. The port holds both as data (`web/src/games/treasure.ts`).
+Same procedure as PoR's (`FUN_4c2d_1010`, [engine/records.md, "Random items"](../engine/records.md#random-items)), different tables; the engine model states it once with each game's tables ([B-model/procedures.md §14](../../B-model/procedures.md#14-random-treasure)).
 
 - **Type choice**: as [ecl.md, "Random treasure types"](ecl.md#random-treasure-types-o-0x1a5a30x1a6e2); r2 48/49 gives 0x3B (PoR repeats the previous type), r1 93–98 a d15 over 0x47/0x54/0x4F, r1 99–100 0x3B.
 - **Plus** (0x42D5F): d20, 1–14 +1, 15–20 +2; no +3, so bracers are AC 6 or AC 4 only.
@@ -313,7 +318,7 @@ Strings at 0x36848 + 0x35AE: "Add from where? ", "Curse Pool Hillsfar Exit", "Ad
 - An empty party takes the first character with no checks.
 - Otherwise the party is scanned: player characters (morale < 0x80), rangers (+0x10D > 0), whether anyone is evil (alignment 2/5/8, i.e. (a + 1) mod 3 = 0) and the last paladin (+0x10C > 0) in list order. Same name and same id (+0x126) → already in the party (no message).
 - Refused, in this order of messages: a paladin when anyone is evil ("paladins do not join with evil scum", with a double pause); a ranger when there are 3 already ("too many rangers in party"); an evil character when a paladin is present ("<paladin> will tolerate no evil!"). Party full (6 player characters, or 8 members for an NPC) → no message.
-- The port: `web/src/rules/joining.ts` with the profile's `join` rules, used by both Add commands. PoR has only the size limits.
+- PoR has only the size limits. The engine model's joining procedure: [B-model/procedures.md §8](../../B-model/procedures.md#8-joining-the-party).
 
 ## 10. Creation effects and paladin abilities (O)
 - **Innate effects** at creation (0x371F6, 0x37647), permanent, power 0xFF: halfling 0x61; dwarf 0x61, 0x1A, 0x2F; gnome 0x61, 0x12, 0x2F, 0x30; elf 0x6B; half-elf 0x7C; then paladin 8 (protection from evil), ranger and cleric/ranger 0x86 (giant-class damage). PoR's dwarf and halfling 0x5A is gone (its CON save bonus moved into the saves routine, [tables.md](tables.md) §3.6a). A paladin starts with **+0x191 = 1**.
@@ -328,3 +333,4 @@ Strings at 0x36848 + 0x35AE: "Add from where? ", "Curse Pool Hillsfar Exit", "Ad
 - Exact effect of the base-STR bug in play (which events call `4aab:18d9` for an imported character before anything resets base STR) — trace `3d53:1c90..1e97` and the `43f7` callers.
 - Bit 0x80 added to ITEMS class masks.
 - Druid slots at 0x132 (no druid in play).
+- The Hillsfar transfer (§7.5) beyond its structure: `323c:248b..2801` not traced.
