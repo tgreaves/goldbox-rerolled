@@ -65,18 +65,7 @@ Frames are loaded into a table at `DS:6ABE`: byte count, byte current frame (1-b
 
 ## Menu input loop (O, `FUN_53aa_03bd`)
 
-All horizontal menus share one loop. It returns the chosen key:
-
-| Input | Result |
-|---|---|
-| an option's hotkey letter | that option |
-| `,` / `.` | move the highlight left / right (wrapping); the highlighted option is `DS:6B2B` |
-| Enter | the highlighted option, when the menu allows it |
-| Space | returns at once (used by "press a key" prompts) |
-| Esc | returns 0 |
-| extended key (0 prefix) | mapped through `DS:285B` when the caller accepts them (cursor movement, **I**) |
-
-An optional timeout (`DS:6B2E` u32, hundredths) returns the default key `DS:6B32` when it expires; a negative value disables it.
+All horizontal menus share one loop, described with the other input widgets in [[spec/menus]] §0.
 
 ## Transparency (O)
 

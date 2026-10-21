@@ -3,9 +3,145 @@ created: 2026-10-15
 tags: [reverse-engineering, gold-box, spec]
 ---
 
-# Experience, training and levels
+# Character creation, experience and training
 
-Part of [[spec/README]].
+Part of [[spec/README]]. Creation is `FUN_417f_056c` (party screen "Create character"; the menus it uses are the widgets of [[spec/menus]] §0); training is `FUN_417f_29ae`; the level-derived statistics `FUN_51cf_0000`. This file merges the former `chargen.md`, the creation section of `menus.md` and `progression.md`.
+
+## Character creation (`FUN_417f_056c`)
+
+### Sequence (O)
+
+1. GetMem 0x11D, zero-fill, set the defaults in Record bytes, below.
+2. **Race** list "Pick Race": Dwarf, Elf, Gnome, Half-Elf, Halfling, Human (entry 6 → race 7; Half-Orc never offered). Entries are `"  " + name`. Size byte char[0xC0] = 1 (Dwarf, Gnome, Halfling) else 2; innate racial effects added with permanent duration via `FUN_5216_0e52` (table below).
+3. **Gender** list "Pick Gender": Male, Female (`DS:0FEC + 7i`) → char[0x9E] = 0/1.
+4. **Class** list "Pick Class": from `DS:3E17 + race·12` (count, ids) — **race only, no ability prerequisites** (table below). Levels: 1 in every component class (char[0x96 + c]); char[0x73] = 1; thief skills `FUN_51cf_0329` if thief (runs before abilities exist, so the DEX term uses DEX 0; recomputed on joining, I); char[0x2D] = max over classes of `DS:3C7C[c·11 + 1]`; char[0xB0] = Σ class bits `DS:05D6` (Cleric 2, Druid 16, Fighter 8, Paladin 64, Ranger 128, MU 1, Thief 4, Monk 32); saving throws `FUN_51cf_0255`.
+5. **Alignment** list "Pick Alignment": `DS:3FE7 + class·10` (table below) → char[0xA0].
+6. **Age**: single class `base + NdS` (`DS:3E5B + race·0x1C + class·4`: u16 base, u8 N, u8 S). Multi-class: maximum `base + N·S` of one column: C/F, C/F/MU, C/MU, C/T → Cleric; F/MU, F/MU/T, MU/T → Magic-User; F/T → Fighter. Age is **not** re-rolled with the abilities.
+7. Show the sheet (`FUN_4894_004a`, name blank). Roll loop:
+   - each ability: best of six 3d6 rolls; then age adjustments (below), racial min/max clamp (STR min/max by gender), raise to class minimum (`DS:3F81 + class·6`, Class minimums below); WIS < 13 for a cleric multi-class (classes 8–12, set `417f:0525`) → 13; STR 18 with a Fighter level (char[0x98] > 0; Paladin/Ranger do not count) → char[0x16] = 1d100 capped by `DS:3DA7 + race·16 + gender`.
+   - **Racial ability adjustments never apply** (bug): the code tests the race-menu loop variable `[bp-0x17]`, which is always 7 after the menu loop (`417f:1236`), not char[0x2E]. Dwarf CON+1 CHA−1, Elf DEX+1 CON−1, Halfling STR−1 DEX+1, Half-Orc STR+1 CON+1 CHA−2 are dead code. Reproduce: **no** racial adjustment.
+   - HP, gold, spells, slots, natural attack (Record bytes, below); sheet panels redrawn (`FUN_4894_0608` also runs `FUN_10ba_0bb8`, so AC/THAC0/damage/movement are filled).
+   - Yes/No "Keep this character? " (prompt 13). **N** re-rolls abilities, HP and gold (race, class, alignment, age kept). Abilities cannot be swapped or edited here (use Modify).
+8. **Name**: "Character name: " (prompt 13), max **15**, characters 0x20–0x7A, upper-cased; repeated while empty.
+9. **Portrait** (`FUN_417f_33e7`): frame rows 1–11, cols 28–38; head over body drawn at col 28, row 1 (`FUN_5523_04f9`). Menu "Head Body Keep": **H** next head (1–14, wraps to 1), **B** next body (1–12, wraps), **K** keep. No previous key; Esc does nothing. Head n → HEAD3.DAX record `DS:286F[n]` = 0, 8, 9, 13, 16, 18, 22, 34, 45, 51, 53, 57, 67, 68; body n → BODY3.DAX record `DS:287D[n]` = 1, 2, 3, 4, 7, 8, 18, 24, 26, 33, 35, 37 (file digit = `DS:5376`, which is 3 on the party screen). Stored in char[0xBB] / char[0xBC].
+10. **Combat icon** editor ([[spec/menus]] §3.2).
+11. Save to `<stem>.cha/.itm/.spc` + append to `charlist.txt` (`FUN_45c5_069e("", char)`), free the record. To play it the player must **Add** it.
+
+Esc/Exit in any of the four lists abandons creation: the code jumps to `417f:1ECE`, past the FreeMem, so the record leaks (O).
+
+### Innate racial effects (O)
+
+| Race | Innate effects ([[spec/effects]]) |
+|---|---|
+| Dwarf | 0x5A CON bonus to poison saves; 0x61 CON bonus to rod/staff/wand and spell saves; 0x1A +1 to hit orcs, goblins, hobgoblins (by monster name); 0x2F −4 to be hit by ogres, trolls, giants |
+| Elf | 0x6B 90% resistance to Sleep and Charm |
+| Gnome | 0x61 as above; 0x12 +1 to hit kobolds and goblins; 0x2F as dwarf; 0x30 −4 to be hit by bugbears and gnolls |
+| Half-Elf | 0x7C 30% resistance to Sleep and Charm |
+| Halfling | 0x5A, 0x61 as dwarf |
+| Human | none |
+
+Racial bonuses against monster types are matched by **monster name** strings in the engine (e.g. "ORC LEADER", "HILL GIANT").
+
+### Age adjustments (O)
+
+Age adjustment against the race's thresholds (mature, middle-aged, old, venerable) at `DS:3F31 + race·10`: STR +1/−1/−2/−1, INT +1 at middle and venerable, WIS −1 if young then +1 at each of middle/old/venerable, DEX −2 old −1 venerable, CON −1 at each of middle/old/venerable.
+
+### Class and alignment availability (O)
+
+| Race | Classes offered (menu order) |
+|---|---|
+| Dwarf | Fighter, Thief, Fighter/Thief |
+| Elf | Fighter, Magic-User, Thief, Fighter/Magic-User, Fighter/Thief, Fighter/Magic-User/Thief, Magic-User/Thief |
+| Gnome | Fighter, Thief, Fighter/Thief |
+| Half-Elf | Cleric, Fighter, Magic-User, Thief, Cleric/Fighter, Cleric/Fighter/Magic-User, Cleric/Magic-User, Fighter/Magic-User, Fighter/Thief, Fighter/Magic-User/Thief, Magic-User/Thief |
+| Halfling | Fighter, Thief, Fighter/Thief |
+| Human | Cleric, Fighter, Magic-User, Thief |
+| (Half-Orc, data only) | Cleric, Fighter, Thief, Cleric/Fighter, Cleric/Thief, Fighter/Thief |
+
+| Class | Alignments |
+|---|---|
+| Cleric, Fighter, Magic-User, C/F, C/F/MU, C/MU, F/MU, Cleric/Thief | all nine (Cleric/Thief included, although AD&D would forbid LG/CG) |
+| Thief, Fighter/Thief, Fighter/Magic-User/Thief, Magic-User/Thief | LN, LE, NG, TN, NE, CN, CE (no LG, no CG), in that menu order |
+| (Druid / Paladin / Ranger / Monk, not offered) | LN NG TN NE CN / LG / all / all |
+
+### Tables (O)
+
+#### Starting age `base + NdS`
+
+| Race | Cleric | Fighter | Magic-User | Thief |
+|---|---|---|---|---|
+| Dwarf | 250 + 2d20 | 40 + 5d4 | – | 75 + 3d6 |
+| Elf | 650 + 10d10 | 130 + 5d6 | 150 + 5d6 | 100 + 5d6 |
+| Gnome | 300 + 3d12 | 60 + 5d4 | 100 + 2d12 | 80 + 5d4 |
+| Half-Elf | 40 + 2d4 | 22 + 3d4 | 30 + 2d8 | 22 + 3d8 |
+| Halfling | – | 20 + 3d4 | – | 40 + 2d4 |
+| Human | 18 + 1d4 | 15 + 1d4 | 24 + 2d4 | 18 + 1d4 |
+
+(Druid/Paladin/Ranger columns exist for humans: 18+1d4, 17+1d4, 20+1d4.)
+
+#### Age category thresholds (mature, middle-aged, old, venerable)
+
+Dwarf 50/150/250/350, Elf 175/550/875/1200, Gnome 90/300/450/600, Half-Elf 40/100/175/250, Halfling 33/68/101/144, Half-Orc 15/30/45/60, Human 20/40/60/90.
+
+#### Racial ability limits (`DS:3DA3 + race·16`)
+
+| Race | STR (M / F) | 18/xx max (M / F) | INT | WIS | DEX | CON | CHA |
+|---|---|---|---|---|---|---|---|
+| Dwarf | 8–18 / 8–17 | 99 / 0 | 3–18 | 3–18 | 3–17 | 12–19 | 3–16 |
+| Elf | 3–18 / 3–16 | 75 / 0 | 8–18 | 3–18 | 7–19 | 6–18 | 8–18 |
+| Gnome | 6–18 / 6–15 | 50 / 0 | 7–18 | 3–18 | 3–18 | 8–18 | 3–18 |
+| Half-Elf | 3–18 / 3–17 | 90 / 0 | 4–18 | 3–18 | 6–18 | 6–18 | 3–18 |
+| Halfling | 6–17 / 6–14 | 0 / 0 | 6–18 | 3–17 | 8–18 | 10–19 | 3–18 |
+| Human | 3–18 / 3–18 | 100 / 50 | 3–18 | 3–18 | 3–18 | 3–18 | 3–18 |
+
+#### Class minimums (STR INT WIS DEX CON CHA, `DS:3F81 + class·6`, O)
+
+Cleric 6 6 9 – – –; Druid – – 12 – – 15; Fighter 9 – 6 6 7 –; Paladin 13 9 12 – 9 17; Ranger – 13 14 – 14 –; Magic-User – 9 6 6 – –; Thief 6 6 – 9 – –; Monk 15 – 15 15 11 –.
+
+Multi-class: C/F 9 – 9 – – –; C/F/MU 9 9 9 – – –; C/MU – 9 9 – – –; C/T – – 9 9 – –; F/MU 9 9 – – – –; F/T 9 – – 9 – –; F/MU/T 9 9 – 9 – –; MU/T – 9 – 9 – –; C/R – 13 14 – 14 –.
+
+#### Starting gold dice (× 10 gp, `DS:4263`)
+
+Cleric 3d6, Druid 3d6, Fighter 5d4, Paladin 5d4, Ranger 5d4, Magic-User 2d4, Thief 2d6, Monk 5d4.
+
+### Record bytes set by creation (O unless marked)
+
+| Offset | Value |
+|---|---|
+| all | 0 first |
+| 0x00 | name (≤ 15, upper case) |
+| 0x10–0x15, 0x16 | abilities, exceptional STR (0 unless STR 18 + Fighter) |
+| 0x2D | 40, then max `DS:3C7C[class·11 + 1]` (= 60 − 20) |
+| 0x2E, 0x2F, 0x30 | race, class, age |
+| 0x32, 0x11B | max HP = current HP: `FUN_417f_4235` roll (Hit points per level, below) with CON bonus `FUN_417f_3f31`: `(roll + bonus) / classes`; negative bonus with `|bonus| + classes ≥ roll` → 1 |
+| 0x33–0x6A | spells known: Cleric every level-1 cleric spell (`DS:31FA + 16·id`: class 0, level 1); Magic-User 11, 18, 19, 21 |
+| 0x6C | 1 |
+| 0x6D–0x71 | saves (`FUN_51cf_0255`) |
+| 0x72 | 12 (base movement → char[0x11C]) |
+| 0x73 | 1 |
+| 0x77–0x7E | thief skills (see step 4 caveat) |
+| 0x7F | effect list: racial innate effects, permanent |
+| 0x8E | gold = `10 · Σ roll(DS:4263/4264 dice) / classes` (u16) |
+| 0x96–0x9D | 1 for each component class |
+| 0x9E, 0xA0 | gender, alignment |
+| 0xA1 | 2 (one attack per round) |
+| 0xA3, 0xA5 | 1, 2 → natural attack 1d2 (0xA7 bonus 0; second hand 0) |
+| 0xA9 | 50 → base AC 10 (60 − AC), copied to char[0x111] by `FUN_10ba_0bb8` |
+| 0xAA | 1 (STR to-hit/damage apply; not set for monsters) |
+| 0xAB | Random(256): identity tag used by Add's duplicate check |
+| 0xB0 | class-use bitmask |
+| 0xB1 | HP roll / classes (before CON) |
+| 0xB2 / 0xB5 | 1 cleric / magic-user level-1 slot; cleric WIS bonus `FUN_51cf_01af` |
+| 0xBB, 0xBC | portrait head 1–14, body 1–12 (1, 1 by default) |
+| 0xBD, 0xBE | combat icon head 0–13, weapon pose 0–31 (0, 0 by default) |
+| 0xBF | combat-icon slot: 0 at creation, lowest free 0–7 when joining |
+| 0xC0 | icon size 1 small / 2 large (race default; editable) |
+| 0xC1–0xC6 | icon colours (low nibble colour-1, high nibble colour-2) for Body, Arm, Leg, Hair/Face, Shield, Weapon. Default `c | (c+8)<<4` with c = 1, 2, 3, 4, 6, 7 → 0x91, 0xA2, 0xB3, 0xC4, 0xE6, 0xF7 (identity) |
+| 0x10C | 0 (Okay) |
+| 0x10D | 1 (I: conscious/alive flag; cleared when knocked out, set on revival) |
+| 0x110–0x11C | AC, THAC0, damage, movement, encumbrance from `FUN_10ba_0bb8` (spec/combat) |
+
+Not set: experience 0, no items, char[0x84] = 0 (player character), char[0x10E] = 0.
 
 ## Experience table (O)
 
@@ -175,4 +311,5 @@ Summed over monsters (side 1) that did not flee (status ≠ Running):
 
 ## Open
 
+- Where thief skills are recomputed with the real DEX (creation computes them before abilities exist, so with DEX 0)
 - STR/DEX to-hit, damage and AC adjustments; where thief skills are rolled

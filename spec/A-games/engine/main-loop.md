@@ -115,29 +115,13 @@ Entered through ECL `PROGRAM n` (0x38) or the main loop:
 | Mode | Screen | Routine |
 |---|---|---|
 | 0 | Party / training hall screen; switches to block 3 (New Phlan) | `FUN_417f_0161` |
-| 8 | Ending sequence: `FINAL` pictures and text, extra pictures for larger parties | `FUN_4804_02a4` |
-
-### Ending (O, `FUN_4804_02a4`, animation helper `FUN_4804_0006`)
-
-Game mode 7 while it runs, then restored; pictures from `FINAL<block>` (records decoded with XOR frames), positions in pixels within a 120×120 area:
-1. Text rows 17–19: "Mortally wounded, the dragon roars!" / "The spirit of Tyranthraxus flares up" / "from the dragon's body."
-2. Record 1 at (0, 0); record 2 (88×88, 4 frames) animated at (16, 32) for `(10 − speed) × 5 / 2` cycles.
-3. Record 3 at (0, 0); with 2+ in the party record 4 at (0, 88), 3+ record 5 at (104, 72), 4+ record 6 at (0, 72).
-4. Six rows: Tyranthraxus's speech ("Fools, you have but slain the body" … "of you!""); record 7 animated at (16, 0) for the same number of cycles.
-5. Four rows: "\"No Lord Bane!  I can still rule here!" … "Noooo..."; record 8 animated at (16, 0) once.
-6. Three calls to `FUN_1709_0dbe`, then the view is redrawn and the script continues (PROGRAM acts as EXIT).
-
-A frame stays up while the timer (`FUN_1709_0c3f`) has advanced by at most (speed + 3) × its delay; the helper counts a cycle each time the frame index wraps.
+| 8 | Ending sequence: `FINAL` pictures and text, extra pictures for larger parties ([ending.md](../por/ending.md)) | `FUN_4804_02a4` |
 | 9 | Encamp (runs the area's camp vectors) | `FUN_29c3_2dd3` |
 | `E` key while exploring | Encamp | main loop |
 
 ### Party screen (`FUN_417f_0161`)
 
-Menu "Choose a function": **C**reate character (`FUN_417f_056c`), **D**rop (`1f37`), **M**odify (`209f`), **T**rain (`29ae`, see [[spec/progression]]), **V**iew, **A**dd character from disk (`306d`), **R**emove, **L**oad game (`FUN_45c5_1602`), **S**ave game (`FUN_45c5_1d58`, see [[spec/savegame]]), **B**egin adventuring, **E**xit ("Quit to DOS", saves first if needed). Items are enabled per state (no current character → only Create/Load/Add…; Train only if the area's class mask `B[0x550]` is set).
-
-Hidden: **J** on the party screen, when the game was started with the command-line parameter `STING`, prints "I Understand, master..." and sets `DS:470C`, which makes training free and skips the status, money, experience and hall checks (developer cheat; nothing is typed after J, see [[spec/progression]]).
-
-Cheat mode (O for the keys below): when the first command-line parameter is `STING` (`START STING`), the shared key reader (load-image 0x89E9) also accepts **Ctrl-C** (quit to DOS at once, 0x8990) and **Ctrl-D** (toggle `DS:49F7`, hit-point debugging). **Ctrl-S** toggles sound in any mode. The GameFAQs guide ([[spec/README]], External references) adds **Alt-X** to win a combat at once, and says the introduction and copy protection are skipped (**?** not yet traced).
+Described in [[spec/menus]] §2, with the cheat keys.
 
 ## Sound (O)
 

@@ -454,7 +454,7 @@ Consequences: slots 10 and above (misc items, potions, bracers, wands, keys) nev
 
 ### Derived statistics (O, `FUN_10ba_0bb8`)
 
-Run after any change to items, money or effects (items menu, trade target, buying, the can-carry test). This supersedes the summary in [[spec/combat]] (whose step 4 names the armour-movement routine `01fb` as the weapon routine; the weapon routine is `FUN_10ba_0000`). All AC values are "60 − AC" (higher is better); THAC0 is "60 − THAC0".
+Run after any change to items, money or effects (items menu, trade target, buying, the can-carry test). This is the only description of the routine; combat runs it at the start of every turn, before every attack on the target, and whenever equipment or effects change ([[spec/combat]], "Combat statistics"). All AC values are "60 − AC" (higher is better); THAC0 is "60 − THAC0".
 
 1. Clear the 13 pointers char[0xCC..0xFF], char[0xC7] = 0, char[0x100] = 0, char[0x102] = 0, readied weight = 0.
 2. For each item: char[0xC7] += 1; w = weight × count (if count > 0); char[0x102] += w. If readied: readied weight += w; slot 0–8 → char[0xCC + 4·slot] = item (the last one wins); slot 9 → char[0xF0] if empty, else char[0xF4] if empty; type 73 → char[0xF8]; type 28 → char[0xFC]; word n1 = 0xBA → Bag of Holding; char[0x100] += `ITEMS[t][1]`.
@@ -501,7 +501,7 @@ So body armour and bracers do not stack: the better one sets the base AC; shield
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | damage (`FUN_10ba_1325`) | −2 | −1 | 0 | +1 | +1 | +2 | +3 | +4 | +5 | +6 | +7 | +8 | +9 | +10 | +11 | +12 | +14 |
 
-Both are 0 unless char[0xAA] ≠ 0 (player characters). Exceptional strength above 100 or STR > 25 leaves the index undefined (original reads stack garbage; a port can clamp).
+Both are 0 unless char[0xAA] ≠ 0: set for player characters and for 49 of the 172 monster records (fighters, ogre leader, vampires and other strong humanoids; O, data). G's "THAC0 is not recalculated for Strength" therefore holds only for the other 123. Monsters get weapon dice, AC and THAC0 from readied equipment like characters. Exceptional strength above 100 or STR > 25 leaves the index undefined (original reads stack garbage; a port can clamp).
 
 | DEX | 1–3 | 4 | 5 | 6 | 7–14 | 15 | 16 | 17 | 18 | 19–20 | 21–23 | 24–25 | other |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
