@@ -246,7 +246,10 @@ A character *c* asks to join a party:
    evil!", *name* the last paladin in list order.
 
 PoR: pcs 6, members 8, maxRangers null, evil none, paladins false. CotAB: 6, 8, 3, [2, 5, 8], true. The
-messages are game text (D1, [D-appendices/strings.md](../D-appendices/strings.md)).
+messages of 4–6 are game text (D1, [D-appendices/strings.md §4](../D-appendices/strings.md#4-engine-messages):
+`noEvilScum`, `tooManyRangers`, `toleratesNoEvil`); "The party is full." is the port's wording (neither
+image holds it; [strings.md §3.4](../D-appendices/strings.md#34-panels)). Test vectors:
+[test-vectors.md, `join`](../D-appendices/test-vectors.md#4-procedures).
 
 ## 9. Temple
 

@@ -1,8 +1,10 @@
 # Port data
 
 > **Status: complete** for the data sets of the game profile (work-plan steps 2 and 6,
-> [AUDIT.md](../AUDIT.md) §8). Normative (D5): data the port needs that the game files do not hold.
-> Part D of the [specification](../README.md).
+> [AUDIT.md](../AUDIT.md) §8; checked against the code after C24, 2026-10-21: every text and pattern of
+> the spell notes, rules reference, landmark patterns, debug jumps, commissions and tooltips is here).
+> Normative (D5): data the port needs that the game files do not hold. Part D of the
+> [specification](../README.md).
 
 Each data set below is written for the port (kind **P**, [B-model/profile.md §1.1](../B-model/profile.md#11-where-a-value-comes-from)):
 its schema, and its values or the rule that derives them. Values here are normative: a conforming
