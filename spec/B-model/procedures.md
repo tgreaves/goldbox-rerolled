@@ -376,6 +376,27 @@ Parameter `spells.strength` (the module `spells`), the rule for Enlarge, Strengt
   with the line, and the current STR is worked out again (§11); otherwise the kind's `unaffected` line,
   if any, and nothing is added.
 
+### 12.4 The camp's Fix
+
+**Original:** CotAB 0x320D8 ([coab/camp.md §1](../A-games/coab/camp.md#1-fix-o-0x320d8)); Pool of Radiance
+has none, the port offers the same procedure there (IMP-048). Parameter `rules.fix`: `{ cures: { spell,
+level, dice, sides, bonus, minutes, base, group, weight }[], start }`.
+
+With the party's wounds W (Σ max HP − HP, 16 bits) above 0: the pool gets each Okay member's memorised
+`spell`s rolled (`dice`d`sides` + `bonus`, member by member, slot by slot); per member in list order the
+minutes `level`-slots × `minutes` of each cure are worked out for an Okay member (and kept for one who
+is not), the member's time is the largest `base` among the cures with minutes, plus all the minutes, and
+the estimate E (from `start`) grows by the largest `weight` present in each `group`; the rest time is the
+longest member time, divided by (E div W) & 0xFF when W < E and that is not 0. The party rests that
+long silently (the rest steps of [camp-and-time.md](../A-games/engine/camp-and-time.md#rest-loop-o-fun_4b46_0c9a)),
+and unless interrupted the pool gets one roll of each cure per Okay member's slot of its level, all of
+the first cure first, and is shared out in party order: each member's need (capped at the pool, as a
+byte to the heal procedure, §12.2), the pool reduced when the heal does anything.
+
+CotAB: Cure Light Wounds (3) level 1, 1d8, 15 minutes, base 240, group 0, weight 27; Cure Serious
+Wounds (58) level 4, 2d8 + 1, 60, 360, group 1, 34; Cure Critical Wounds (71) level 5, 3d8 + 3, 75,
+360, group 1, 78; start 14. PoR (IMP-048): Cure Light Wounds alone, as CotAB's.
+
 ## 13. Character import
 
 **Original:** CotAB's "Pool" import, the converter `323c:14b3` with `5047:03c6` after it

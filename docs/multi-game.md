@@ -131,8 +131,10 @@ event lists, random treasure, title, start-up menu and demo, ending, view dressi
 names of races, classes, alignments, statuses and coins. Game text (2026-10-21, C24): the engine's
 messages (`strings`), the effect and spell lines, the monster-name lists, the camp Display names, the
 credits and the wipe banner are addresses into the player's merged START.EXE + GAME.OVR, each the copy
-its routine prints (`spec/D-appendices/strings.md`); the menu words and the port's rewordings are
-still port text. Nothing branches on the game's id in shared code (checked by grep).
+its routine prints (`spec/D-appendices/strings.md`); the menus too (`menus`, split by the original's
+rule, the code acting on the hot keys); only the port's rewordings and its own words are port text.
+The camp's Fix is one procedure with its cures as data (`R.fix`, CotAB's 0x320D8, PoR the same with
+its one cure, IMP-048). Nothing branches on the game's id in shared code (checked by grep).
 
 **Procedure choices, named in the profile.** These are allowed by the design but are the places to
 watch, because each is an alternative path in code:

@@ -165,20 +165,23 @@ from the player's database.
    the party. Create or Add one."
 3. A message line (game-text colour, a polite live region): each action's result.
 4. The functions in three groups, each button with its label (hotkey letter underlined in the
-   highlight colour) and a quiet second line: what it does, or, when disabled, why.
+   highlight colour) and a quiet second line: what it does, or, when disabled, why. The original's
+   functions are labelled as its function table names them (*game text*, read by address,
+   [strings.md §4.1](../D-appendices/strings.md#41-menus)); Continue, the demo, Export, Import and Exit
+   are the port's.
 
 | Group | Function (key) | Enabled when | Second line (enabled / disabled) | Does |
 |---|---|---|---|---|
 | **Play** | **Continue** (O), main action | shown only when an autosave exists | "the autosave of *date and time*" | play the autosave (§7) |
-| | **Begin adventuring** (B), main action when there is no autosave | the party is not empty | "with this party" / "add or create a character first" | a new game (§7) |
-| | **Load saved game** (L) | always (IMP-019) | "slots A–J" | the load list ([screens.md §1.7](screens.md#17-load-saved-game)) |
+| | **BEGIN Adventuring** (B), main action when there is no autosave | the party is not empty | "with this party" / "add or create a character first" | a new game (§7) |
+| | **Load Saved Game** (L) | always (IMP-019) | "slots A–J" | the load list ([screens.md §1.7](screens.md#17-load-saved-game)) |
 | | **Watch the demo** (W) | shown only for a game with a demo (CotAB) | "the game's own demo" | the demo (§6) |
-| **Party** | **Add character** (A) | fewer than 6 members and someone in the roster not in the party | "from your roster" / "the party is full" or "no one else in the roster" | [screens.md §1.3](screens.md#13-add-character) |
-| | **Create character** (C) | `START.EXE` readable | "roll a new one" / "needs START.EXE: re-import the game" | [screens.md §1.1](screens.md#11-create-character) |
-| | **Remove character** (R) | the party is not empty | "back to the roster" / "no one in the party" | [screens.md §1.4](screens.md#14-remove-and-drop) |
-| | **View character** (V) | the party is not empty | "the selected one" / "no one in the party" | [screens.md §1.5](screens.md#15-view-character) |
-| | **Modify character** (M) | the party is not empty and `START.EXE` readable | "abilities and hit points" / "no one in the party" | [screens.md §1.2](screens.md#12-modify-character) |
-| | **Drop character** (D) | the party is not empty | "delete for good" / "no one in the party" | [screens.md §1.4](screens.md#14-remove-and-drop) |
+| **Party** | **Add Character to Party** (A) | fewer than 6 members and someone in the roster not in the party | "from your roster" / "the party is full" or "no one else in the roster" | [screens.md §1.3](screens.md#13-add-character) |
+| | **Create New Character** (C) | `START.EXE` readable | "roll a new one" / "needs START.EXE: re-import the game" | [screens.md §1.1](screens.md#11-create-character) |
+| | **Remove Character from Party** (R) | the party is not empty | "back to the roster" / "no one in the party" | [screens.md §1.4](screens.md#14-remove-and-drop) |
+| | **View Character** (V) | the party is not empty | "the selected one" / "no one in the party" | [screens.md §1.5](screens.md#15-view-character) |
+| | **Modify Character** (M) | the party is not empty and `START.EXE` readable | "abilities and hit points" / "no one in the party" | [screens.md §1.2](screens.md#12-modify-character) |
+| | **Drop Character** (D) | the party is not empty | "delete for good" / "no one in the party" | [screens.md §1.4](screens.md#14-remove-and-drop) |
 | **Files** | **Export saved game** (X) | always | "as the original's files" | [screens.md §1.8](screens.md#18-export-and-import) |
 | | **Import saved game** (I) | always | "from the original or an export" | [screens.md §1.8](screens.md#18-export-and-import) |
 | | **Exit** (E) | always | "to the title" | the title (§4) |

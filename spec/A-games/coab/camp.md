@@ -68,7 +68,7 @@ would take (less when the wounds are small against the estimate), and is healed 
 Pool of Radiance has no Fix ([camp-and-time.md, "Camp menu"](../engine/camp-and-time.md#camp-menu-o-ds0508));
 GoldBox Rerolled offers this procedure there with Pool of Radiance's one cure (IMP-048,
 [C-port/departures.md](../../C-port/departures.md)); the profile's `rules.fix` holds the cures, their
-dice, levels, minutes, base and weights ([B-model/profile.md](../../B-model/profile.md)).
+dice, levels, minutes, base and weights ([B-model/procedures.md §12.4](../../B-model/procedures.md#124-the-camps-fix)).
 
 ## 2. Rest
 

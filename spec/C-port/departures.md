@@ -86,7 +86,7 @@ implementation's: *done*, or what remains.
 | IMP-041 | the sheet with equipment | [screens.md §3](screens.md#3-the-character-sheet) | required | done |
 | IMP-042 | the Buy panel | [screens.md §5.2](screens.md#52-buy) | required | done |
 | IMP-043 | the Memorize panel | [screens.md §6.4](screens.md#64-memorize) | required | done |
-| IMP-048 | Fix | [screens.md §6.9](screens.md#69-fix) | required | done; CotAB's own Fix to compare (UI5) |
+| IMP-048 | Fix in Pool of Radiance, as CotAB's ([A-games/coab/camp.md](../A-games/coab/camp.md) §1) | [screens.md §6.9](screens.md#69-fix) | required | done (UI5) |
 | IMP-055 | the Journal | [screens.md §8](screens.md#8-the-journal), [port-data.md §4](../D-appendices/port-data.md#4-the-journal), [storage.md §6](storage.md#6-journal-finds-and-the-gbr-sidecar) | required (a game with a journal) | done |
 | IMP-056 | the treasure panel, Take all | [screens.md §4](screens.md#4-treasure) | required | done |
 | IMP-058 | the numbers explained, the rules reference | [screens.md §3](screens.md#3-the-character-sheet), [§10](screens.md#10-rules-reference), [combat-ui.md §6](combat-ui.md#6-aiming-and-targets), [§7](combat-ui.md#7-information), [port-data.md §1](../D-appendices/port-data.md#1-spell-notes), [§2](../D-appendices/port-data.md#2-rules-reference), [§9](../D-appendices/port-data.md#9-interface-tooltips) | required | done |

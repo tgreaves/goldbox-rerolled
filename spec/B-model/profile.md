@@ -76,6 +76,7 @@ profile value reads it from the active profile when it runs.
 | `startMenu` | `StartMenu` or null | the menu after the title and the demo it runs | C | null | §3.3 |
 | `sound` | `SoundDriver` | where the sound driver sits in START.EXE, whether it cuts effects off | C | §3.4 | §3.4 |
 | `strings` | id → image address | the engine's messages: the address of each string the shared procedures print | F (addresses C) | [D-appendices/strings.md §4](../D-appendices/strings.md#4-engine-messages) | same |
+| `menus` | id → image address | the original's menus: the address of each menu string (or piece of one) the menus show, split by the original's rule | F (addresses C) | [D-appendices/strings.md §4.1](../D-appendices/strings.md#41-menus) | same |
 | `ending` | `EndingScript` | the ending (PROGRAM 8) | C | §3.5 | §3.5 |
 | `imports` | `CharacterImport[]` | characters this game takes from other games | C | none | [procedures.md §13](procedures.md#13-character-import) |
 | `commissions` | boolean | shows the commissions panel (PoR's City Council quests, read from its script variables) | P | true | false |

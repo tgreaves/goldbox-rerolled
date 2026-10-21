@@ -18,6 +18,13 @@ Texts in quotation marks are the port's and normative ([strings.md §3](../D-app
 unless marked *game text* (read by address, [strings.md §2](../D-appendices/strings.md#2-game-texts-the-screens-show)).
 *Name* stands for a character's name as the record holds it (capitals).
 
+**Menu words.** Every menu's words below (SAVE VIEW MAGIC …, YES NO, the lists' EXIT, a panel's Keep
+and Exit) are the game's, read by address and split by the original's rule, in capitals on menus and
+in the game's case on panels, each with the game's hot key underlined and answering its key
+([strings.md §4.1](../D-appendices/strings.md#41-menus)); they are *game text* and may differ between
+the games (CotAB's camp has Fix, its rest prompt Add and Subtract). Words the games have no string for
+are the port's and are listed in [strings.md §6](../D-appendices/strings.md#6-still-worded-by-the-port).
+
 ## 1. The party screen's functions
 
 The screen, its groups and when each function is enabled: [app-flow.md §5](app-flow.md#5-the-party-screen).
@@ -63,7 +70,7 @@ original's requests in the original's order ([chargen-and-progression.md](../A-g
 Only for a character with no experience; otherwise the message "*Name* can't be modified." (*game
 text*). A panel "Modify *Name*" (IMP-018; rules [input-and-menus.md §3.1](../A-games/engine/input-and-menus.md#31-modify-fun_417f_209f-o)):
 a table of STR, INT, WIS, DEX, CON, CHA and HP, each row with **−**, the value, **+** and its range;
-the selected row is highlighted. Footer **Exit** (E) and **Keep** (K, main).
+the selected row is highlighted. Footer **Exit** (E) and **Keep** (K, main), the game's "Keep Exit".
 
 - A click on a row selects it; **−**/**+** step that field by the original's rules (the STR
   percentile, the racial and class minimum quirk, HP between its minimum and maximum).
@@ -103,8 +110,12 @@ as one panel "Combat icon" (IMP-017): the old and new icons, each in the ready a
 ("old: ready, action", "new: ready, action"), drawn in the battle palette as the original's editor
 swaps EGA registers 0 and 8 while it runs ([combat-visuals.md, "Palette"](../A-games/engine/combat-visuals.md#palette-o));
 Head ◀ ▶ (0–13), Weapon ◀ ▶ (0–31), Size (Small/Large);
-the six parts and the Colour 1 / Colour 2 swatches for the selected part; **Exit** (E) restores,
-**Keep** (K, main) keeps.
+the six parts and the two colour swatches for the selected part; **Exit** (E) restores,
+**Keep** (K, main) keeps. The labels are the editor's own words: Head and Weapon (its level 2), the
+parts of level 3 (Body, Arm, Leg, Hair/Face, Shield, Weapon; Hair and Face are the words it puts in
+place of "xxxx"), Size and the colours of level 1 (PoR "color-1", "color-2"; CotAB "1st-color",
+"2nd-color"), Small and Large, Keep and Exit of level 5. The creation panel's icon section (§1.1) uses
+the same words.
 
 It opens from camp **Alter → Icon** on the selected character, as in both originals (PoR
 `FUN_3f81_1c59` → `FUN_417f_382d`; CotAB's Alter 0x31B6D → its editor in the overlay at 0x36850, **O**);
@@ -290,7 +301,9 @@ is largest; else the member with the most spare capacity.
 **Done** with something left shows "These will be left behind:" and the list, with **Leave them**
 (main) and **Go back**; the original's question is "There is still treasure left. Do you want to go back
 and claim your treasure?" (*game text*). Leaving clears the treasure. Without the panel (a build MAY
-offer the original's menus) the treasure menu is VIEW / TAKE / POOL / SHARE / DETECT / EXIT as part A.
+offer the original's menus) the treasure menu is the game's pieces as part A: VIEW TAKE POOL SHARE
+(money), VIEW TAKE POOL (items only) or VIEW POOL EXIT, then DETECT EXIT or EXIT; TAKE with both asks
+MONEY ITEMS EXIT.
 
 ## 5. Shops and temples
 
@@ -324,7 +337,8 @@ Weapons are items of slot 0 and the ammunition types; armour slots 1–9; the re
 ### 5.3 Heal
 
 The temple's services from the game's table (names read from `START.EXE`, PoR nine, CotAB ten; kinds
-and prices from the profile), as a vertical list "Healing for *Name*:" with EXIT. A service the
+and prices from the profile), as a vertical list "Healing for *Name*:" with EXIT (from the list's
+"Heal Exit"). A service the
 character does not need asks "*Name* is not blind. cast cure anyway:" (and "is not Diseased.", "is not
 poisoned.", "is not dead.", "is not cursed.", "is not stoned."); then "*Service* will only cost *n* gold
 pieces. pay for cure?"; "Not enough money." or the cure and "*Name* is cured." All *game text*; the
@@ -336,8 +350,8 @@ procedure is [town.md, "Temple"](../A-games/engine/town.md#temple-o-fun_2d14_0d0
   *coin*?" and a number; the take rule's message.
 - **POOL**, **SHARE**: at once, then "The pool holds *coins*." (or "nothing").
 - **APPRAISE** ([town.md, "Appraise"](../A-games/engine/town.md#appraise-o-fun_4c2d_19b2)): "No Gems or
-  Jewelry", or "You have a fine collection of: *g* Gems, *j* pieces of Jewelry" with GEMS / JEWELRY /
-  EXIT; one is taken and valued ("The Gem is Valued at *n* gp."); "You can :" SELL, or SELL KEEP when
+  Jewelry", or "You have a fine collection of: *g* Gems, *j* pieces of Jewelry" with GEMS (when there
+  are gems) / JEWELRY (when there is jewelry) / EXIT; one is taken and valued ("The Gem is Valued at *n* gp."); "You can :" SELL, or SELL KEEP when
   it can be carried (IMP-028: a kept gem is always added).
 
 ### 5.5 Leaving
@@ -354,17 +368,15 @@ without the time to learn them are cleared. "The party makes camp..." starts a n
 
 ### 6.1 The camp menu
 
-"Camp:" SAVE VIEW MAGIC REST ALTER FIX EXIT (*game text* prompt; the port's menu adds FIX in every
-game, IMP-048). Save is the slot menu; View the sheet (§3); Exit leaves. The cards choose the current
+"Camp:" and the game's camp menu (*game text*): CotAB's SAVE VIEW MAGIC REST ALTER FIX EXIT; Pool
+of Radiance's SAVE VIEW MAGIC REST ALTER EXIT with the port's FIX before EXIT (IMP-048). Save is the
+slot menu; View the sheet (§3); Exit leaves. The cards choose the current
 character. Without `START.EXE` and `ITEMS`: "The camp needs START.EXE and ITEMS: re-import the
 *FOLDER* folder."
 
 After Save (or a cancelled save) comes the original's question "Quit TO DOS" YES NO (*game text*;
 PoR `FUN_3f81_1e6f`, CotAB 0x322D0): Yes ends the game there and goes to the party screen, the port's
 way out (there is no DOS); No goes back to the camp menu.
-
-Note: the original PoR menu has no Fix; CotAB's own camp menu has Fix ("Save View Magic Rest Alter
-Fix Exit", CotAB image 0x0B00A). See [§6.9](#69-fix).
 
 ### 6.2 Magic
 
@@ -409,9 +421,11 @@ Display names them (`FUN_3f81_0fbc`: a spell's name for the spell effects, the f
 
 ### 6.7 Rest
 
-The duration prompt "Rest Time: *dd*:*hh*:*mm*" (*game text*) with REST, DAYS +, DAYS −, HOURS +,
-HOURS −, MINS +, MINS −, EXIT (IMP-030), starting at the longest preparation time of the party, days
-at most 99, minutes in steps of 5. REST runs the rest loop ([camp-and-time.md, "Rest loop"](../A-games/engine/camp-and-time.md#rest-loop-o-fun_4b46_0c9a))
+The duration prompt "Rest Time: *dd*:*hh*:*mm*" (*game text*) with the game's seven words: PoR REST
+DAYS HOURS MINS INC DEC EXIT (DAYS on Y), CotAB REST DAYS HOURS MINS ADD SUBTRACT EXIT (IMP-030).
+DAYS, HOURS and MINS select the field, shown in brackets ("00:04:[15]"; MINS at first); the fourth
+and fifth words change it by a step (a day, an hour, 5 minutes); REST starts, EXIT leaves. The time
+starts at the longest preparation time of the party; days at most 99. REST runs the rest loop ([camp-and-time.md, "Rest loop"](../A-games/engine/camp-and-time.md#rest-loop-o-fun_4b46_0c9a))
 quickly, the cards and location line refreshed every hour of game time, with **Stop resting** on the
 command bar; messages (healing, spells learned, an encounter) go to the log. An interrupted rest
 leaves the camp (`campInterrupted`).
@@ -420,26 +434,28 @@ leaves the camp (`campInterrupted`).
 
 "Alter:" ORDER DROP SPEED ICON PICS EXIT:
 
-- **ORDER**: "Party Order: Select" with the party and EXIT, then "*Name* has been selected" with UP,
-  DOWN, EXIT (IMP-030; dragging a card does the same, IMP-065).
+- **ORDER**: "Party Order: Select" (the game's prompt and "Select Exit") with the party and EXIT, then
+  "*Name* has been selected" with UP, DOWN (the port's words) and EXIT from the game's "Place Exit"
+  (IMP-030; dragging a card does the same, IMP-065).
 - **DROP**: the last member: "The last character cannot leave the party here." (IMP-031); otherwise
   "Drop from party?" Yes: "*Name* bids you farewell" or "*Name* is dumped in a ditch"; No: "Breathes A
   sigh of relief" (*game text*).
-- **SPEED**: "Game Speed = *n* (0=fastest 9=slowest)" with FASTER, SLOWER, EXIT.
+- **SPEED**: "Game Speed = *n* (0=fastest 9=slowest)" with FASTER (above 0), SLOWER (below 9), EXIT,
+  as the original offers them (`FUN_3f81_1a97`, CotAB 0x3191B).
 - **ICON**: the combat icon editor (§1.6) on the selected character.
 - **PICS**: "Monster pictures and portraits are always shown here." (IMP-031: the original's toggles
   are not offered).
 
 ### 6.9 Fix
 
-IMP-048. "The party fixes its wounds..." then rounds of: every healer (Okay, a cleric level, knows Cure
-Light Wounds, has cleric slots) casts each ready Cure Light Wounds on the most wounded (largest max HP
-− HP), "*Healer* heals *Name* (*hp*/*max*)"; the freed level-1 cleric slots memorise it again; the party
-rests exactly the preparation time, the rest's own encounter checks and healing included. It stops
-when nobody is hurt, nobody can heal, no slot can hold a cure, after 200 rounds, or when the rest is
-interrupted (leaving the camp). Before starting: "The party is already healthy.", "No one in the party
-can cast Cure Light Wounds.", "cannot cast spells in this area". At the end: "The party is fully
-healed." or "Fix stops: *names* still hurt."
+CotAB's own command ([coab/camp.md §1](../A-games/coab/camp.md#1-fix-o-0x320d8); the procedure with
+the profile's cures, [B-model/procedures.md §12.4](../B-model/procedures.md#124-the-camps-fix)); in
+Pool of Radiance the port's word and the same procedure with Cure Light Wounds alone (IMP-048). With
+no wounds nothing happens. Otherwise the party rests at once, without the duration prompt or a Stop
+button, as long as the clerics' slots would take to learn again (shortened when the wounds are
+small), and is then healed by the dice of their memorised cures and of one cure per slot, in party
+order. Nothing is cast or used up, and Fix prints nothing of its own; the rest's own lines (natural
+healing, spells learnt, an encounter) go to the log, and an interrupted rest leaves the camp.
 
 ## 7. Script screens
 
@@ -480,7 +496,10 @@ PROGRAM 0 opens the original's party screen inside the game (IMP-032;
 [input-and-menus.md §2](../A-games/engine/input-and-menus.md#2-party-screen-fun_417f_0161),
 [chargen-and-progression.md, "Training"](../A-games/engine/chargen-and-progression.md#training-o-fun_417f_29ae)),
 in the play screen: each round prints "*Name* is selected (choose from the party list)." (a new
-block) and offers "Choose a function:" CREATE DROP MODIFY TRAIN VIEW ADD REMOVE SAVE BEGIN; the cards
+block) and offers "Choose a function:" with the party screen's functions as the game names them
+(CREATE NEW CHARACTER, DROP CHARACTER, MODIFY CHARACTER, TRAIN CHARACTER, VIEW CHARACTER, ADD CHARACTER
+TO PARTY, REMOVE CHARACTER FROM PARTY, SAVE CURRENT GAME, BEGIN ADVENTURING; each on its first letter,
+named below by that word); the cards
 select the character. Load is not offered (this screen never empties the party).
 
 | Function | Behaviour |
@@ -585,7 +604,5 @@ original rules.
 
 ## Open
 
-- §6.9: CotAB's own Fix command is not yet described in part A; whether the port's Fix matches it is
-  **?** (UI5).
 - The engine messages quoted as *game text* are read by address (C24 done,
   [strings.md](../D-appendices/strings.md)); what the port still words itself is strings.md §6.

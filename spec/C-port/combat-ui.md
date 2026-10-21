@@ -72,7 +72,11 @@ stands on every cell the combatant covered, with sound 5, for the hold the rules
 
 The rules offer the original's menu (`FUN_320c_031a`, [combat-rules.md, "Player turn"](../A-games/engine/combat-rules.md))
 with two changes: MOVE is not a command while movement is live (IMP-053), and the Done submenu's
-choices sit in the same row (IMP-054). Buttons in this order, each only when the condition holds:
+choices sit in the same row (IMP-054). Buttons in this order, each only when the condition holds.
+The labels are the game's words read by address, in capitals with the game's hot key
+([strings.md §4.1](../D-appendices/strings.md#41-menus): the pieces "Move ", "View Aim ", "Use ",
+"Cast ", "Turn ", "Quick Done" and the Done submenu's "Guard ", "Delay Quit ", "Bandage ", "Speed Exit");
+UNDO (key N) and END TURN (key E) are the port's:
 
 | Command | Shown when | Original | Does |
 |---|---|---|---|
@@ -87,7 +91,7 @@ choices sit in the same row (IMP-054). Buttons in this order, each only when the
 | **UNDO** | the character has stepped since its last other action | (Escape) | back to where those steps began, with their movement |
 | **QUICK** | always | Quick | §10 |
 | **END TURN** | always | Done → Quit | the turn ends |
-| **SPEED** | always | Done → Speed | "Game Speed = *n* (0=fastest 9=slowest)" with SLOWER, FASTER, EXIT |
+| **SPEED** | always | Done → Speed | "Game Speed = *n* (0=fastest 9=slowest)" with SLOWER (below 9), FASTER (above 0), EXIT, the game's "Slower ", "Faster ", "Exit" (`FUN_320c_10f6`) |
 
 The prompt is "*Name*: Move Left = *n*" while the character has movement left (more than one half
 step), with movement live (§5); otherwise "*Name*:" and the row alone. A build without live movement
