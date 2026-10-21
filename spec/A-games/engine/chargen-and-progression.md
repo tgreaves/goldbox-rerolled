@@ -62,61 +62,40 @@ Age adjustment against the race's thresholds (mature, middle-aged, old, venerabl
 
 ### Class and alignment availability (O)
 
-| Race | Classes offered (menu order) |
-|---|---|
-| Dwarf | Fighter, Thief, Fighter/Thief |
-| Elf | Fighter, Magic-User, Thief, Fighter/Magic-User, Fighter/Thief, Fighter/Magic-User/Thief, Magic-User/Thief |
-| Gnome | Fighter, Thief, Fighter/Thief |
-| Half-Elf | Cleric, Fighter, Magic-User, Thief, Cleric/Fighter, Cleric/Fighter/Magic-User, Cleric/Magic-User, Fighter/Magic-User, Fighter/Thief, Fighter/Magic-User/Thief, Magic-User/Thief |
-| Halfling | Fighter, Thief, Fighter/Thief |
-| Human | Cleric, Fighter, Magic-User, Thief |
-| (Half-Orc, data only) | Cleric, Fighter, Thief, Cleric/Fighter, Cleric/Thief, Fighter/Thief |
-
-| Class | Alignments |
-|---|---|
-| Cleric, Fighter, Magic-User, C/F, C/F/MU, C/MU, F/MU, Cleric/Thief | all nine (Cleric/Thief included, although AD&D would forbid LG/CG) |
-| Thief, Fighter/Thief, Fighter/Magic-User/Thief, Magic-User/Thief | LN, LE, NG, TN, NE, CN, CE (no LG, no CG), in that menu order |
-| (Druid / Paladin / Ranger / Monk, not offered) | LN NG TN NE CN / LG / all / all |
+The classes offered to race r are the list at `DS:3E17 + r·12` (a count, then up to 11 class ids,
+in menu order); the alignments offered to class c the list at `DS:3FE7 + c·10` (a count, then up to
+9 alignment ids, in menu order). The race menu itself is code ([B-model/procedures.md §7](../../B-model/procedures.md#7-creation-and-training-values)):
+Half-Orc has a list but is never offered. Values, with the quirks they hold (Cleric/Thief may take
+every alignment; thieves and their multi-classes never LG or CG):
+[expected-values.md §6.1](../../D-appendices/expected-values.md#61-classes-and-alignments-ds3e17-ds3fe7).
 
 ### Tables (O)
 
 #### Starting age `base + NdS`
 
-| Race | Cleric | Fighter | Magic-User | Thief |
-|---|---|---|---|---|
-| Dwarf | 250 + 2d20 | 40 + 5d4 | – | 75 + 3d6 |
-| Elf | 650 + 10d10 | 130 + 5d6 | 150 + 5d6 | 100 + 5d6 |
-| Gnome | 300 + 3d12 | 60 + 5d4 | 100 + 2d12 | 80 + 5d4 |
-| Half-Elf | 40 + 2d4 | 22 + 3d4 | 30 + 2d8 | 22 + 3d8 |
-| Halfling | – | 20 + 3d4 | – | 40 + 2d4 |
-| Human | 18 + 1d4 | 15 + 1d4 | 24 + 2d4 | 18 + 1d4 |
-
-(Druid/Paladin/Ranger columns exist for humans: 18+1d4, 17+1d4, 20+1d4.)
+For race r and base class c (0–6), `DS:3E5B + r·0x1C + c·4` holds u16 base, u8 count, u8 sides:
+the starting age is base + count d sides (a multi-class character: the maximum of one column, step 6
+of the sequence). Values: [expected-values.md §6.2](../../D-appendices/expected-values.md#62-starting-age-and-age-categories-ds3e5b-ds3f31).
 
 #### Age category thresholds (mature, middle-aged, old, venerable)
 
-Dwarf 50/150/250/350, Elf 175/550/875/1200, Gnome 90/300/450/600, Half-Elf 40/100/175/250, Halfling 33/68/101/144, Half-Orc 15/30/45/60, Human 20/40/60/90.
+Five u16 per race at `DS:3F31 + race·10`: the thresholds of the mature, middle-aged, old and
+venerable categories, then a fifth value (**?**: not read by the age adjustment). Values:
+[expected-values.md §6.2](../../D-appendices/expected-values.md#62-starting-age-and-age-categories-ds3e5b-ds3f31).
 
 #### Racial ability limits (`DS:3DA3 + race·16`)
 
-| Race | STR (M / F) | 18/xx max (M / F) | INT | WIS | DEX | CON | CHA |
-|---|---|---|---|---|---|---|---|
-| Dwarf | 8–18 / 8–17 | 99 / 0 | 3–18 | 3–18 | 3–17 | 12–19 | 3–16 |
-| Elf | 3–18 / 3–16 | 75 / 0 | 8–18 | 3–18 | 7–19 | 6–18 | 8–18 |
-| Gnome | 6–18 / 6–15 | 50 / 0 | 7–18 | 3–18 | 3–18 | 8–18 | 3–18 |
-| Half-Elf | 3–18 / 3–17 | 90 / 0 | 4–18 | 3–18 | 6–18 | 6–18 | 3–18 |
-| Halfling | 6–17 / 6–14 | 0 / 0 | 6–18 | 3–17 | 8–18 | 10–19 | 3–18 |
-| Human | 3–18 / 3–18 | 100 / 50 | 3–18 | 3–18 | 3–18 | 3–18 | 3–18 |
+16 bytes per race: STR minimum (male, female), STR maximum (male, female), exceptional-strength cap
+(male, female), then minimum and maximum of INT, WIS, DEX, CON and CHA;
+values: [expected-values.md §6.3](../../D-appendices/expected-values.md#63-ability-limits-and-class-minimums-ds3da3-ds3f81).
 
 #### Class minimums (STR INT WIS DEX CON CHA, `DS:3F81 + class·6`, O)
 
-Cleric 6 6 9 – – –; Druid – – 12 – – 15; Fighter 9 – 6 6 7 –; Paladin 13 9 12 – 9 17; Ranger – 13 14 – 14 –; Magic-User – 9 6 6 – –; Thief 6 6 – 9 – –; Monk 15 – 15 15 11 –.
-
-Multi-class: C/F 9 – 9 – – –; C/F/MU 9 9 9 – – –; C/MU – 9 9 – – –; C/T – – 9 9 – –; F/MU 9 9 – – – –; F/T 9 – – 9 – –; F/MU/T 9 9 – 9 – –; MU/T – 9 – 9 – –; C/R – 13 14 – 14 –.
+Six bytes per class (0 = no minimum); values: [expected-values.md §6.3](../../D-appendices/expected-values.md#63-ability-limits-and-class-minimums-ds3da3-ds3f81).
 
 #### Starting gold dice (× 10 gp, `DS:4263`)
 
-Cleric 3d6, Druid 3d6, Fighter 5d4, Paladin 5d4, Ranger 5d4, Magic-User 2d4, Thief 2d6, Monk 5d4.
+Two bytes per class (count, sides); values: [expected-values.md §6.4](../../D-appendices/expected-values.md#64-starting-gold-experience-and-hit-dice-ds4263-ds409b-ds08b6-ds08be).
 
 ### Record bytes set by creation (O unless marked)
 
@@ -161,15 +140,9 @@ Not set: experience 0, no items, char[0x84] = 0 (player character), char[0x10E] 
 
 `DS:409B + class × 0x38 + k × 4`, u32. Entry `k` is the experience needed for level `k`; the trainer compares the character's experience with entry `level + 1`. 0xFFFFFFFF = cannot reach.
 
-| Class | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | Max |
-|---|---|---|---|---|---|---|---|---|---|
-| Cleric | 1 501 | 3 001 | 6 001 | 13 001 | 27 501 | – | – | – | 6 |
-| Fighter | 2 001 | 4 001 | 8 001 | 18 001 | 35 001 | 70 001 | 125 001 | – | 8 |
-| Magic-User | 2 501 | 5 001 | 10 001 | 22 501 | 40 001 | – | – | – | 6 |
-| Thief | 1 251 | 2 501 | 5 001 | 10 001 | 20 001 | 42 501 | 70 001 | 110 001 | 9 |
-| Druid, Paladin, Ranger, Monk | – | – | – | – | – | – | – | – | 1 |
-
-Values equal the AD&D 1st edition tables; the caps are Pool of Radiance's.
+The caps that follow from the table (the last level with an entry other than 0xFFFFFFFF): cleric
+6, fighter 8, magic-user 6, thief 9; druid, paladin, ranger and monk 1 (not playable). Values:
+[expected-values.md §6.4](../../D-appendices/expected-values.md#64-starting-gold-experience-and-hit-dice-ds4263-ds409b-ds08b6-ds08be).
 
 ## Demi-human level limits (O, `FUN_417f_29ae`)
 
@@ -241,9 +214,7 @@ With the cheat, training skips the status, money, experience and hall checks and
 
 `FUN_417f_4235`: for each class in the mask, roll `count × d(sides)` from `DS:08B6` / `DS:08BE`; when that class's level is 1, the roll is raised to at least `2·sides/3`. Training raises the levels before rolling, so the minimum applies only at character creation (the guide, 12.6.3, says the function "is also called for later levels"; true, but no level is 1 then).
 
-| Class | Cleric | Druid | Fighter | Paladin | Ranger | Magic-User | Thief | Monk |
-|---|---|---|---|---|---|---|---|---|
-| Hit dice | 1d8 | 1d8 | 1d10 | 1d10 | 2d8 | 1d4 | 1d6 | 2d4 |
+(Values: [expected-values.md §6.4](../../D-appendices/expected-values.md#64-starting-gold-experience-and-hit-dice-ds4263-ds409b-ds08b6-ds08be).)
 
 `FUN_417f_3f31` CON bonus, summed over every class the character has (`DS:408E[CON]`): CON 3 → −2, 4–6 → −1, 7–14 → 0, 15 → +1, 16–20 → +2 (entries above 20 are garbage); a pure Fighter (class 2) gets +1 more at CON 17 and +2 more at CON 18 and above.
 
@@ -257,36 +228,22 @@ Gain = `max(1, Σ rolls / classes)` to the raw counter char[0xB1]; HP gain = `ma
 - Cleric level ≥ 2: slots char[0xB2..0xB4] (spell levels 1–3) from `DS:40BC[level·3 + n]`, plus WIS bonus spells (`FUN_51cf_01af`); the cleric then knows every cleric spell of any level with a slot
 - Magic-User level ≥ 2: slots char[0xB5..0xB7] from `DS:41D4[level·3 + n]`
 - Level 1 slots are set at creation (cleric 0xB2 = 1, magic-user 0xB5 = 1)
-- `FUN_51cf_0255` (**?**), and thief skills (`FUN_51cf_0329`) when the character has thief levels
+- saving throws (`FUN_51cf_0255`, below), and thief skills (`FUN_51cf_0329`) when the character has thief levels
 
 ### Base THAC0 by level (60 − table value)
 
-| Class | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Cleric, Druid, Monk | 20 | 20 | 20 | 18 | 18 | 18 | 16 | 16 | 16 | 14 |
-| Fighter, Paladin, Ranger | 20 | 19 | 18 | 17 | 16 | 15 | 14 | 13 | 12 | 11 |
-| Magic-User | 20 | 20 | 20 | 20 | 20 | 19 | 19 | 19 | 19 | 19 |
-| Thief | 20 | 20 | 20 | 20 | 19 | 19 | 19 | 19 | 16 | 16 |
+The byte at `DS:3C7C + class·11 + level` is 60 − THAC0; values: [expected-values.md §6.5](../../D-appendices/expected-values.md#65-thac0-spell-slots-and-saving-throws-ds3c7c-ds40bc-ds41d4-ds426e).
 
 ### Spell slots (spell levels 1 / 2 / 3)
 
-| Level | 1 | 2 | 3 | 4 | 5 | 6 |
-|---|---|---|---|---|---|---|
-| Cleric | 1 / 0 / 0 | 2 / 0 / 0 | 2 / 1 / 0 | 3 / 2 / 0 | 3 / 3 / 1 | 3 / 3 / 2 |
-| Magic-User | 1 / 0 / 0 | 2 / 0 / 0 | 2 / 1 / 0 | 3 / 2 / 0 | 4 / 2 / 1 | 4 / 2 / 2 |
+Absolute counts per level, three bytes (spell levels 1–3) at `DS:40BC + level·3` (cleric) and
+`DS:41D4 + level·3` (magic-user); values: [expected-values.md §6.5](../../D-appendices/expected-values.md#65-thac0-spell-slots-and-saving-throws-ds3c7c-ds40bc-ds41d4-ds426e).
 
 ## Saving throws (O, `FUN_51cf_0255`)
 
 char[0x6D + i] = min over the character's classes of `DS:426E[class·0x2D + level·5 + i]` (start 20). Order: death/poison, petrification, rod/staff/wand, breath, spell.
 
-| Level | Cleric | Fighter | Magic-User | Thief |
-|---|---|---|---|---|
-| 1–2 | 10 13 14 16 15 | 14 15 16 17 17 | 14 13 11 15 12 | 13 12 14 16 15 |
-| 3–4 | 10/9 13/12 14/13 16/15 15/14 (4+) | 13 14 15 16 16 | 14 13 11 15 12 | 13 12 14 16 15 |
-| 5–6 | 9 12 13 15 14 | 11 12 13 13 14 | 14 13 11 15 12 (6: 13 11 9 13 10) | 12 11 12 15 13 |
-| 7–8 | 7 10 11 13 12 | 10 11 12 12 13 | 13 11 9 13 10 | 12 11 12 15 13 |
-
-(Cleric changes at 4 and 7, fighter at 3, 5, 7, magic-user at 6, thief at 5 — the AD&D 1st edition tables.)
+Values: [expected-values.md §6.5](../../D-appendices/expected-values.md#65-thac0-spell-slots-and-saving-throws-ds3c7c-ds40bc-ds41d4-ds426e).
 
 ## Wisdom bonus spells (O, `FUN_51cf_01af`)
 
@@ -296,19 +253,10 @@ Only for spell levels where the cleric already has a slot: WIS 13 → +1 first-l
 
 char[0x77..0x7E] = base(thief level) + racial adjustment (+ DEX adjustment for the first five); a negative racial adjustment larger than the base gives 0. Skills: pick pockets, open locks, find/remove traps, move silently, hide in shadows, hear noise, climb walls, read languages.
 
-| Thief level | PP | OL | F/RT | MS | HS | HN | CW | RL |
-|---|---|---|---|---|---|---|---|---|
-| 1 | 30 | 25 | 20 | 15 | 10 | 10 | 85 | 0 |
-| 2 | 35 | 29 | 25 | 21 | 15 | 10 | 86 | 0 |
-| 3 | 40 | 33 | 30 | 27 | 20 | 15 | 87 | 0 |
-| 4 | 45 | 37 | 35 | 33 | 25 | 15 | 88 | 20 |
-| 5 | 50 | 42 | 40 | 40 | 31 | 20 | 90 | 25 |
-| 6 | 55 | 47 | 45 | 47 | 37 | 20 | 92 | 30 |
-| 7 | 60 | 52 | 50 | 55 | 43 | 25 | 94 | 35 |
-| 8 | 65 | 57 | 55 | 62 | 49 | 25 | 96 | 40 |
-| 9 | 70 | 62 | 60 | 70 | 56 | 30 | 98 | 45 |
+The base is the byte at `DS:3CF3 + level·8 + s` (s = 1–8, the skills in the order above); values:
+[expected-values.md §6.6](../../D-appendices/expected-values.md#66-thief-skills-ds3cf3-ds3d3b).
 
-Racial adjustments (`DS:3D3B + race·8`): Dwarf 0 +10 +15 0 0 0 −10 −5; Elf +5 −5 0 +5 +10 +5 0 0; Gnome 0 +5 +10 +5 +5 +10 −15 0; Half-Elf +10 0 0 0 +5 0 0 0; Halfling +5 +5 +5 +10 +15 +5 −15 −5; Half-Orc −5 +5 +5 0 0 +5 +5 −10; Human 0.
+Racial adjustments: signed bytes at `DS:3D3B + race·8 + (s − 1)`; values: [expected-values.md §6.6](../../D-appendices/expected-values.md#66-thief-skills-ds3cf3-ds3d3b).
 
 DEX adjustments (PP OL F/RT MS HS, `DS:3D4E + DEX·5`): 9: −15 −10 −10 −20 −10; 10: **−19** −5 −10 −15 −5 (AD&D has −10; likely a data typo, reproduce it); 11: −5 0 −5 −10 0; 12: 0 0 0 −5 0; 13–15: 0; 16: 0 −5 0 0 0; 17: +5 +10 0 +5 +5; 18: +10 +15 +5 +10 +10.
 
