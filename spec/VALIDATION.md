@@ -43,18 +43,20 @@ counters, the south-edge exits: [open-questions.md](open-questions.md)).
 
 The reference implementation's tests (`web/test/`, vitest, run from `web/` with the game files in
 `POOLRAD` and `COAB`; without them the tests that need the files skip). On 2026-10-21 (commit
-`57a7edf`): **65 files, 381 tests, all passing** with both games' files.
+`7711e75` and the next): **67 files, 388 tests, all passing** with both games' files; without them
+129 pass and 259 skip.
 
 | Area | Files (tests) | What they cover |
 |---|---|---|
 | Containers and data | `exepack` (1), `decoders` (6), `text` (2), `walls` (2), `fields` (4), `tables` (9), `profile` (5), `gametext` (6), `ttf` (1), `upscale` (1) | EXEPACK, DAX, RLE, images, wall sets, the field and table maps against each game's files, detection, game text by address, the font |
 | Script VM | `engine` (4), `coabsweep` (4), `eclmap` (2), `eclops` (5), `door` (2), `npc` (7), `damage` (2), `demo` (5), `finale` (2), `ending` (2), `journal` (3), `landmarks` (3), `commissions` (3) | the opening tour, the sweeps, the debug jump, save write-back, the script map, opcodes, doors, ADD_NPC, DAMAGE, the demo, the ending, the journal and landmarks, PoR's commissions |
-| Character rules | `chargen` (4), `training` (3), `abilities` (3), `joining` (2), `import` (1), `spellrules` (7), `temple` (4), `money` (3), `treasure` (1), `randitem` (1), `coabtreasure` (2), `camp` (4) | creation and its draws, training, paladin abilities, joining, PoR import into CotAB, the spell books, the temple, money, the treasure split, random items, camp |
+| Character rules | `chargen` (4), `training` (3), `abilities` (3), `joining` (2), `import` (1), `spellrules` (7), `temple` (4), `money` (3), `treasure` (1), `randitem` (1), `coabtreasure` (2), `camp` (4), `fix` (4) | creation and its draws, training, paladin abilities, joining, PoR import into CotAB, the spell books, the temple, money, the treasure split, random items, camp, the camp's Fix |
 | Effects and spells | `effectmap` (8), `effectkinds` (11), `porhandlers` (9), `itemfx` (3), `fxchain` (1), `spellmap` (5), `spells2` (7), `coabspells` (41), `spellpaths` (5), `specials` (9) | the handler maps against each game's data, the handlers as the original computes them, item handlers, spell kinds, bolts and clouds, monster specials |
 | Combat | `combat` (7), `casting` (35), `battlefield` (2), `battlemove` (6), `wildfield` (18), `mapfield` (4), `ux` (2) | battles, casting in both games, the battlefield generators against transcriptions, movement costs, the hit odds |
 | Sound | `sound` (2), `soundcut` (4), `coabsound` (1) | the driver against `tools/sound.py`, the cut-off by call site |
 | View | `drawnview` (13), `view` (2) | the drawn view's placements on made-up maps, the piece tables, the V9 reference frames |
 | Harness and dice | `dice` (5), `headless` (7), `vectors` (6) | the dice source (no gameplay draw bypasses it), tape recording and replay, the headless runner, the 549 test vectors |
+| The spec itself | `xref` (1) | every path [xref.md](xref.md) names exists |
 | Play-tests | `porplay` (1), `coabplay` (1) | §4 |
 | Storage and sync | `savefiles` (7), `server` (29), `sync` (14) | the save round trip and the sidecar, export and import, the server's API, sessions, quotas and headers, the admin command line, sync merging, deletions and the queue |
 

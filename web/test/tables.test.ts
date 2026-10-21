@@ -9,7 +9,8 @@ import { COAB_TABLES, POR_TABLES, type TableMap } from '../src/games/tables'
 import { ALIGNMENTS, CLASSES, COIN_VALUES, GENDERS, MONEY, RACES, STATUS, installNames } from '../src/data/character'
 import { COAB, POR, setGame } from '../src/games/profile'
 
-const image = (dir: string) => unexepack(new Uint8Array(readFileSync(join(dir, 'START.EXE')))).image
+// a describe that skips still collects its body: without the folder, an empty image (its tests do not run)
+const image = (dir: string) => (dir && existsSync(dir) ? unexepack(new Uint8Array(readFileSync(join(dir, 'START.EXE')))).image : new Uint8Array(0))
 const bytes = (t: Tables, at: number, n: number) => Array.from({ length: n }, (_, i) => t.b(at + i))
 const u32 = (t: Tables, o: number) => (t.w(o) | (t.w(o + 2) << 16)) >>> 0
 const pstr = (img: Uint8Array, m: TableMap, at: number) => String.fromCharCode(...img.subarray(m.ds + at + 1, m.ds + at + 1 + img[m.ds + at]))
