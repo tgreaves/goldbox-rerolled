@@ -803,7 +803,7 @@ Found while doing it (numbered AP, appendices):
 | AP8 | [host-contracts.md §6.3](B-model/host-contracts.md#63-the-generator-informative) (informative) | the reference generator's first values from a small seed are tiny (seed 1 answers its first requests with 1s), so a tape recorded with `--seed 1` starts with a run of ones; the vector generator mixes its seeds first | optional code change: the headless command line could mix its seed the same way |
 | AP9 | [expected-values.md §5.2](D-appendices/expected-values.md#52-thac0-ds3e3a) | the note on the bold cells was printed twice | **Resolved** (removed) |
 | AP10 | the README's index | [coab/camp.md](A-games/coab/camp.md) (written with UI5) was not listed | **Resolved** (commit `71a0840`) |
-| AP11 | `web/test/tables.test.ts` | without the game files it failed instead of skipping: a skipped `describe` still collects its body, which read `START.EXE` | **Resolved:** an empty image without the folder; without the game files 129 tests pass and 259 skip |
+| AP11 | `web/test/tables.test.ts` | without the game files it failed instead of skipping: a skipped `describe` still collects its body, which read `START.EXE` | **Resolved:** an empty image without the folder; without the game files the tests that need them skip |
 
 
 ---

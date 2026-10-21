@@ -43,8 +43,8 @@ counters, the south-edge exits: [open-questions.md](open-questions.md)).
 
 The reference implementation's tests (`web/test/`, vitest, run from `web/` with the game files in
 `POOLRAD` and `COAB`; without them the tests that need the files skip). On 2026-10-21 (commit
-`7711e75` and the next): **67 files, 388 tests, all passing** with both games' files; without them
-129 pass and 259 skip.
+after `7711e75`): **67 files, 389 tests, all passing** with both games' files; without them 130
+pass and 259 skip.
 
 | Area | Files (tests) | What they cover |
 |---|---|---|
@@ -56,7 +56,7 @@ The reference implementation's tests (`web/test/`, vitest, run from `web/` with 
 | Sound | `sound` (2), `soundcut` (4), `coabsound` (1) | the driver against `tools/sound.py`, the cut-off by call site |
 | View | `drawnview` (13), `view` (2) | the drawn view's placements on made-up maps, the piece tables, the V9 reference frames |
 | Harness and dice | `dice` (5), `headless` (7), `vectors` (6) | the dice source (no gameplay draw bypasses it), tape recording and replay, the headless runner, the 549 test vectors |
-| The spec itself | `xref` (1) | every path [xref.md](xref.md) names exists |
+| The spec itself | `xref` (2) | every path [xref.md](xref.md) names exists; [addresses.md](D-appendices/addresses.md)'s generated lists are current |
 | Play-tests | `porplay` (1), `coabplay` (1) | §4 |
 | Storage and sync | `savefiles` (7), `server` (29), `sync` (14) | the save round trip and the sidecar, export and import, the server's API, sessions, quotas and headers, the admin command line, sync merging, deletions and the queue |
 
