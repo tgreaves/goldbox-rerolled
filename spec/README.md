@@ -1,9 +1,9 @@
 # GoldBox Rerolled specification
 
-> **Status: being restructured.** Part A (the original games) is written; parts B, C and D and the
-> companion documents are stubs that list what each will contain. The plan and the coverage
-> matrix that scoped the work are in [AUDIT.md](AUDIT.md) (Phase 1, kept for provenance); step 1
-> of its work plan (this layout, the moves, links, simple fixes) is done.
+> **Status: parts A, B and C written; part D and the companion documents in progress.** Work-plan
+> steps 1–5 of [AUDIT.md](AUDIT.md) (the layout, part B, part C storage and sync, part C user
+> interface, the part A clean-up) are done; the appendices, the companion documents and the
+> clean-room runs remain. The audit is kept for provenance.
 
 This is the normative specification of **GoldBox Rerolled**, a reimplementation of SSI's Gold Box
 engine for the web browser. It is the **single source of truth**: a builder, human or AI, should be
@@ -68,6 +68,7 @@ the reference cannot differ silently.
 | Notation | Meaning |
 |---|---|
 | `seg:off`, `FUN_seg_off` | PoR: Ghidra address and function name in the merged image (`START.EXE` unpacked, `GAME.OVR` overlays merged by `tools/mergeovr.py`; load segment 0x1000; linear = seg·16 + off) |
+| linear `0x45FFD` | PoR: the same address as one number in the merged image, `(seg − 0x1000)·16 + off` (the form [D-appendices/addresses.md](D-appendices/addresses.md) and some part A files use) |
 | `0x2555D` | CotAB: offset in the engine image with overlays merged ([coab/README.md, "Working image"](A-games/coab/README.md#working-image)) |
 | `DS:x` | offset x in the game's data segment (PoR and CotAB have different DS bases) |
 | ECL `0x49F2` | an ECL (script) address: A space from 0x4900, B from 0x6B00 in PoR ([engine/ecl.md, "Memory map"](A-games/engine/ecl.md#memory-map-o-fun_2fea_06fb-read-fun_2fea_0e0c-write-fun_2fea_0c77)) |
@@ -125,12 +126,12 @@ repository's Markdown files.
 | File | Covers | Status |
 |---|---|---|
 | [containers.md](A-games/engine/containers.md) | EXEPACK, overlays, DAX archives, RLE | complete |
-| [graphics.md](A-games/engine/graphics.md) | image blocks, record shapes, animation, sprites, transparency, font, screen layout | partial: `x, y` and `cga_map` of the image header undecoded |
+| [graphics.md](A-games/engine/graphics.md) | image blocks, record shapes, animation, sprites, transparency, font, screen layout | complete |
 | [maps-and-view.md](A-games/engine/maps-and-view.md) | GEO maps, coordinates, movement, wall sets, the drawn 3D view, the overhead map | complete |
-| [records.md](A-games/engine/records.md) | character, monster, item and effect records; ITEMS; random items; inventory, readying, derived statistics | partial: the effect record layout is I; data dumps to move to appendices (D5) |
+| [records.md](A-games/engine/records.md) | character, monster, item and effect records; ITEMS; random items; inventory, readying, derived statistics | complete |
 | [savegame.md](A-games/engine/savegame.md) | save slot files and the world state | complete |
 | [ecl.md](A-games/engine/ecl.md) | the ECL script VM: encoding, memory map, opcodes, CALL targets | complete |
-| [main-loop.md](A-games/engine/main-loop.md) | engine and data, the main adventure loop, command menu, moving and doors, area entry, built-in screens | partial: starting a new game is I |
+| [main-loop.md](A-games/engine/main-loop.md) | engine and data, the main adventure loop, command menu, moving and doors, area entry, built-in screens | complete |
 | [input-and-menus.md](A-games/engine/input-and-menus.md) | input widgets, start-up sequence, party screen, Modify, combat-icon editor | complete |
 | [chargen-and-progression.md](A-games/engine/chargen-and-progression.md) | character creation, experience, levels, training, saving throws, thief skills | complete |
 | [camp-and-time.md](A-games/engine/camp-and-time.md) | encamp, magic, memorise, scribe, rest, the game clock | complete |
@@ -141,7 +142,7 @@ repository's Markdown files.
 | [combat-ai.md](A-games/engine/combat-ai.md) | computer-controlled combatants: targets, morale, spells and items, weapons, movement | complete |
 | [combat-visuals.md](A-games/engine/combat-visuals.md) | what a battle draws: poses, missiles, sparkle, skull, side panel, palette | complete |
 | [spells.md](A-games/engine/spells.md) | the spell table, casting, memorisation, per-spell effects | complete |
-| [effects.md](A-games/engine/effects.md) | effect types 1–139: events, handlers, durations, item effects | partial: a few types undeciphered (§3); its port status moves to part B |
+| [effects.md](A-games/engine/effects.md) | effect types 1–139: events, handlers, durations, item effects | complete |
 | [sound.md](A-games/engine/sound.md) | the sound driver: bytecode, timer, PC speaker and Tandy, effects and call sites | complete |
 
 "Complete" means a builder can implement the subject from the file; open points are listed in
@@ -159,8 +160,8 @@ the port move to part C, data dumps to appendices, game text to addresses).
 
 ### Curse of the Azure Bonds ([A-games/coab/](A-games/coab/README.md))
 
-Differences from the engine files above. Status **partial** throughout: complete as a diff, but
-the "Port" sections are to move to part B.
+Differences from the engine files above: read engine/X.md, then coab/X.md. Status **complete as a
+set of differences** throughout; how the port realises them is in parts B and C.
 
 | File | Covers |
 |---|---|
@@ -211,16 +212,16 @@ The port's own design (work-plan steps 3 and 4).
 
 | File | Covers | Status |
 |---|---|---|
-| [addresses.md](D-appendices/addresses.md) | index of routines and tables, both games (informative) | stub |
-| [strings.md](D-appendices/strings.md) | game messages by id and address (D1) | stub |
-| [port-data.md](D-appendices/port-data.md) | data the port authors (normative) | stub |
-| [expected-values.md](D-appendices/expected-values.md) | dumps of game-file values for checking (informative) | stub |
-| [glossary.md](D-appendices/glossary.md) | terms | stub |
+| [addresses.md](D-appendices/addresses.md) | index of routines and tables, both games (informative) | partial: every routine part A cites; tables to come |
+| [strings.md](D-appendices/strings.md) | game messages by id and address (D1) | partial: addresses being confirmed |
+| [port-data.md](D-appendices/port-data.md) | data the port authors (normative) | partial |
+| [expected-values.md](D-appendices/expected-values.md) | dumps of game-file values for checking (informative) | partial |
+| [glossary.md](D-appendices/glossary.md) | terms | partial: every term part A uses |
 | [test-vectors.md](D-appendices/test-vectors.md) | dice tapes and expected outputs | stub |
 
 ## Companion documents
 
-- [CONFORMANCE.md](CONFORMANCE.md): a self-audit for a finished build (stub).
+- [CONFORMANCE.md](CONFORMANCE.md): a self-audit for a finished build (partial: the user interface checklist).
 - [CLEANROOM.md](CLEANROOM.md): how to run a build by a fresh builder who has only the spec and the
   game files (stub).
 - [VALIDATION.md](VALIDATION.md): the record of cross-checks, test suites and clean-room runs; kept
