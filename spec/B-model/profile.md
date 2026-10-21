@@ -215,7 +215,7 @@ The dialog that shows the ending is part C ([C-port/app-flow.md](../C-port/app-f
 
 ### 4.1 CotAB's presentation differences
 
-*Informative.* Moved from [coab/assets.md §9](../A-games/coab/assets.md#9-port-checklist-summary-of-differences),
+*Informative.* Moved from [coab/assets.md §9](../A-games/coab/assets.md#9-summary-of-differences),
 the CotAB research's checklist; each item is now profile data or a part A fact:
 
 1. New families: SKY overlays and the three-band EGA background (`view.ground`, `view.skyArt`);
