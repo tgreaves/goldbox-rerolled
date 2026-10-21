@@ -670,7 +670,7 @@ export const COAB_STRINGS: Strings = {
 export type MenuId =
   | 'main'
   | 'camp' | 'magic' | 'alter' | 'orderSelect' | 'orderPlace' | 'campFaster' | 'campSlower' | 'campSpeedExit' | 'rest'
-  | 'yesNo' | 'listExit'
+  | 'yesNo' | 'listExit' | 'shopLeaveYesNo' | 'templeLeaveYesNo' | 'treasureLeaveYesNo'
   | 'shop' | 'shopNoPool' | 'temple' | 'templeNoPool' | 'templeHeal'
   | 'treasureMoney' | 'treasureItems' | 'treasureNone' | 'treasureDetect' | 'treasureExit' | 'take'
   | 'appraiseGems' | 'appraiseJewelry' | 'appraiseExit' | 'sell' | 'sellKeep'
@@ -699,6 +699,9 @@ export const POR_MENUS: Menus = {
   campSpeedExit: 0x31275, // FUN_3f81_1a97
   rest: 0x3bb39, // duration prompt; FUN_4b46_0721
   yesNo: 0x44b4a, // FUN_53aa_10d1
+  shopLeaveYesNo: 0x1fbb7, // "~Yes ~No" after shopGoBack; FUN_2f70_053e
+  templeLeaveYesNo: 0x1ddc5, // after templeGoBack; FUN_2d14_0d09
+  treasureLeaveYesNo: 0x1eef4, // after treasureGoBack; FUN_2e08_0ecd
   listExit: 0x44834, // the vertical list's bottom line; FUN_53aa_0d9a
   shop: 0x1fb74, // pool holds money; FUN_2f70_053e
   shopNoPool: 0x1fb9b, // FUN_2f70_053e
@@ -782,6 +785,9 @@ export const COAB_MENUS: Menus = {
   campSpeedExit: 0x318e9, // 0x3191B
   rest: 0x415aa, // duration prompt; 0x415F1
   yesNo: 0x52a2d, // 0x52A54
+  shopLeaveYesNo: 0x1f6c0, // "~Yes ~No" after shopGoBack; 0x1f747
+  templeLeaveYesNo: 0x1d405, // after templeGoBack; 0x1d489
+  treasureLeaveYesNo: 0x1e74a, // after treasureGoBack; 0x1e7a3
   listExit: 0x52709, // the vertical list's bottom line; 0x5270F
   shop: 0x1f67d, // pool holds money; 0x1F747
   shopNoPool: 0x1f6a4, // 0x1F747

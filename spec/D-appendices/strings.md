@@ -509,7 +509,8 @@ original does (**O**, 2026-10-21):
 | `orderSelect`, `orderPlace` | Order: "Select Exit", "Place Exit" (`DS:0584`, CotAB `DS:04A6`, + 0x29·*k*) | 0x0CD44, 0x0CD6D | `FUN_3f81_1780` | 0x0B086, 0x0B0AF | 0x31604 |
 | `campFaster`, `campSlower`, `campSpeedExit` | camp speed: " Faster" (speed > 0), " Slower" (< 9), " Exit" | 0x31265, 0x3126D, 0x31275 | `FUN_3f81_1a97` | 0x318D9, 0x318E1, 0x318E9 | 0x3191B |
 | `rest` | duration prompt: start, days, hours, minutes, more, less, exit | 0x3BB39 | `FUN_4b46_0721` | 0x415AA | 0x415F1 |
-| `yesNo` | every Yes/No question | 0x44B4A | `FUN_53aa_10d1` | 0x52A2D | 0x52A54 |
+| `yesNo` | every other Yes/No question | 0x44B4A | `FUN_53aa_10d1` | 0x52A2D | 0x52A54 |
+| `shopLeaveYesNo`, `templeLeaveYesNo`, `treasureLeaveYesNo` | the leave questions' own "~Yes ~No" (the ECL `~` rule), after `shopGoBack`, `templeGoBack`, `treasureGoBack` | 0x1FBB7, 0x1DDC5, 0x1EEF4 | `FUN_2f70_053e`, `FUN_2d14_0d09`, `FUN_2e08_0ecd` | 0x1F6C0, 0x1D405, 0x1E74A | 0x1F747, 0x1D489, 0x1E7A3 |
 | `listExit` | a vertical list's " Exit" (every list the port ends with Exit) | 0x44834 | `FUN_53aa_0d9a` | 0x52709 | 0x5270F |
 | `shop`, `shopNoPool` | shop, with and without money in the pool | 0x1FB74, 0x1FB9B | `FUN_2f70_053e` | 0x1F67D, 0x1F6A4 | 0x1F747 |
 | `temple`, `templeNoPool` | temple, the same | 0x1DD7F, 0x1DDA7 | `FUN_2d14_0d09` | 0x1D3BF, 0x1D3E7 | 0x1D489 |

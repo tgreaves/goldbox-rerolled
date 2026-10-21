@@ -98,6 +98,7 @@ const KEYS: Record<string, Record<string, string>> = {
   por: {
     main: 'ACVESL', camp: 'SVMRAE', magic: 'CMSDRE', alter: 'ODSIPE', orderSelect: 'SE', orderPlace: 'PE',
     campFaster: 'F', campSlower: 'S', campSpeedExit: 'E', rest: 'RYHMIDE', yesNo: 'YN', listExit: 'E',
+    shopLeaveYesNo: 'YN', templeLeaveYesNo: 'YN', treasureLeaveYesNo: 'YN',
     shop: 'BVTPSAE', shopNoPool: 'BVPAE', temple: 'HVTPSAE', templeNoPool: 'HVPAE', templeHeal: 'HE',
     treasureMoney: 'VTPS', treasureItems: 'VTP', treasureNone: 'VPE', treasureDetect: 'DE', treasureExit: 'E', take: 'MIE',
     appraiseGems: 'G', appraiseJewelry: 'J', appraiseExit: 'E', sell: 'S', sellKeep: 'SK',

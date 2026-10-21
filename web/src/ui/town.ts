@@ -16,6 +16,10 @@ import { appraiseGem, appraiseJewel, COINS, coinPrompt, coinValue, keepAsItem, m
 import { msg, menu, ask, type MenuOpts } from '../games/strings'
 import { yes, list } from './camp'
 
+/** A leave question with its routine's own "~Yes ~No" (the ECL menu rule, strings.md §4.1). */
+const leaveYes = async (ui: Pick<TownUi, 'menu'>, prompt: string, id: 'shopLeaveYesNo' | 'templeLeaveYesNo' | 'treasureLeaveYesNo') =>
+  (await ask((l, o) => ui.menu(l, o), menu(id), { prompt })) === 'Y'
+
 export interface TownUi {
   engine: Engine
   menu(items: string[], opts?: MenuOpts): Promise<number>
@@ -132,7 +136,7 @@ export async function shop(ui: TownUi) {
     else if (o === 'P' || o === 'S') await pooling(ui, o === 'P' ? 'pool' : 'share')
     else if (o === 'A') await appraise(ui)
     else {
-      if (e.money.some((v) => v > 0) && await yes(ui, `${msg('shopLeave').trim()} ${msg('shopGoBack')}`)) continue
+      if (e.money.some((v) => v > 0) && await leaveYes(ui, `${msg('shopLeave').trim()} ${msg('shopGoBack')}`, 'shopLeaveYesNo')) continue
       e.money = [0, 0, 0, 0, 0, 0, 0]
       ui.print('', true)
       return
@@ -166,7 +170,7 @@ export async function temple(ui: TownUi) {
     else if (o === 'P' || o === 'S') await pooling(ui, o === 'P' ? 'pool' : 'share')
     else if (o === 'A') await appraise(ui)
     else {
-      if (e.money.some((v) => v > 0) && await yes(ui, `${msg('templeLeave').trim()} ${msg('templeGoBack')}`)) continue
+      if (e.money.some((v) => v > 0) && await leaveYes(ui, `${msg('templeLeave').trim()} ${msg('templeGoBack')}`, 'templeLeaveYesNo')) continue
       e.money = [0, 0, 0, 0, 0, 0, 0]
       ui.print('', true)
       return
@@ -297,7 +301,7 @@ export async function treasure(ui: TownUi) {
       }
     } else if (o === 'P' || o === 'S') { if (t) await pooling(ui, o === 'P' ? 'pool' : 'share') }
     else {
-      if ((e.money.some((v) => v > 0) || e.treasure.length) && await yes(ui, `${msg('treasureLeft').trim()} ${msg('treasureGoBack')}`)) continue
+      if ((e.money.some((v) => v > 0) || e.treasure.length) && await leaveYes(ui, `${msg('treasureLeft').trim()} ${msg('treasureGoBack')}`, 'treasureLeaveYesNo')) continue
       e.treasure = []
       ui.print('', true)
       return
