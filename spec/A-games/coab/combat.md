@@ -1,5 +1,10 @@
 # CotAB combat: differences from Pool of Radiance
 
+> **Status: complete as a set of differences.** Normative. Part A of the
+> [specification](../../README.md): Curse of the Azure Bonds. Evidence marks as in the README. The
+> engine model's combat procedures, one per subject with each game's parameters, are
+> [B-model/procedures.md §15](../../B-model/procedures.md#15-combat-procedures) (notes in its §17).
+
 Differences from [engine/battlefield.md](../engine/battlefield.md) and [engine/combat-rules.md](../engine/combat-rules.md); anything not listed works as there. Addresses are CotAB image
 offsets ([README.md, "Working image"](README.md#working-image)); DS = image 0xABE0.
 
@@ -50,8 +55,7 @@ for dy in -2..2: for dx in -6..6:              // 0x2555D
 - North-east corner 0x25386: as PoR except cell (0, 6) with N = 0 and g7 = 1: E = 0 and g8 ≠ 0 → 0x0C
   (as PoR), **E = 0 and g8 = 0 → 0x08** (0x25467: piece 7; PoR 0x04, its piece 3 at PoR image
   0x25373), E ≠ 0 → 0x04 (as PoR). The case: open north and east, a wall running north from the
-  square's north-east corner and ending there, the east square's north open. In the port:
-  `R.mapField.cornerWallEnd`.
+  square's north-east corner and ending there, the east square's north open. (Part B's parameter `cornerWallEnd`.)
 - `mapbyte(x, y)` 0x53E45: the square's byte in GEO plane 2 (`DS:7220` + 0x200 + y·16 + x). Outside
   0–15 it is 0 in areas 0 and 10 (DS:8B78, the current area), else the coordinate moves to the far edge
   (above 15 → 0, below 0 → 15); the wall routines 0x53C13 and 0x53D42 start with the same rule. Bit 0x40
@@ -112,7 +116,7 @@ All loops are Pascal `for` loops over bytes; the grid stride is 50 (`mul 0x32`).
 The same course as PoR's river (`FUN_34c7_0bde`), different cells, fords and no sure crossing:
 
 - chance: 0; flag 0x20 → 35; flag 0x10 → 75 (later wins); runs if d100 ≤ chance (as PoR)
-- start column `c` = 34 − 5d4 (one call `roll(5, 4)`; the port draws five d4), then decreased while
+- start column `c` = 34 − 5d4 (one call `roll(5, 4)`; on the dice tape five d4 requests, as part B's `RiverCourse`), then decreased while
   `(c + 2) mod 7 > 0` (12, 19 or 26; as PoR). The start is saved in a local that nothing reads.
 - for row 0–24, while `c` ≤ 49:
   - (row, c) = **0x3B + d2** (left half of the water, 0x3C or 0x3D)
@@ -124,8 +128,8 @@ The same course as PoR's river (`FUN_34c7_0bde`), different cells, fords and no 
 
 Quirk (O, follows from the loop): the ford's lower cell (row + 1, c + 1) is the next row's left half,
 which the next iteration overwrites with 0x3C/0x3D. So 0x41 never survives; a ford is the single cell
-0x40 in place of a right half. The water cells cost 4 to enter, not blocked (cell table byte 0; the
-port reads only "blocked or not", [tables.md](tables.md) §3.12).
+0x40 in place of a right half. The water cells cost 4 to enter, not blocked (cell table byte 0, [tables.md](tables.md) §3.12;
+the cost rule is [B-model/procedures.md §15.5](../../B-model/procedures.md#155-battlefield-movement)).
 
 Against PoR's river (`FUN_34c7_0bde`, [engine/battlefield.md, "River pass"](../engine/battlefield.md#river-pass-o-fun_34c7_0bde)): PoR's banks are fixed cells (0x32,
 0x33), its ford replaces both cells of the row (0x34, 0x35) and repeats on the next row (an odd count
@@ -217,10 +221,7 @@ they depict).
 
 Cells 0x00–0x19 are the map-area set (DungCom), as PoR's.
 
-### Port
-
-Moved to part B: the two generators as one parametric procedure each,
-[B-model/procedures.md §15.4](../../B-model/procedures.md#154-battlefields) (notes in its §17).
+The engine model's generators: [B-model/procedures.md §15.4](../../B-model/procedures.md#154-battlefields).
 
 ## Casting (O)
 
@@ -238,11 +239,12 @@ PoR's casting in combat ([engine/combat-rules.md, "Cast"](../engine/combat-rules
 | acceptance `FUN_3334_02eb` | 0x23471 | same, spell 3 hard-coded (Cure Light Wounds), priority DS:37E9, hostile DS:37EA |
 | patient finder `FUN_3aae_1bf8` | 0x2C34E | same (directions DS:2696/269F, side +0x197, HP +0x1A4 against max +0x78, bodies DS:6E6C + 7n, count DS:6EAB, statuses 6–8 excluded, HP below 8) |
 
-- **Miscast** (0x45373, new): before the loop, a caster with effect 0x4A (has-effect 0xED:0x9D) who rolls 1 on 1d2 (0xE3:0x4D) "miscasts": `0x4A3FD`("miscasts", spell), which in combat shows "*name* Casts a Spell" and "Spell: *spell*" as for any cast (the verb is shown only outside combat), then nothing: no target, no effect, **not forgotten** (so the earlier note "loses the spell" in [spells.md](spells.md) was wrong). Checked for every cast, from an item too, in and out of combat. Who carries 0x4A in CotAB is ? (its handler 0x28A5E is empty and nothing in the code adds it, [effects.md](effects.md)); I: data (monster records or saves).
+- **Miscast** (0x45373, new): before the loop, a caster with effect 0x4A (has-effect 0xED:0x9D) who rolls 1 on 1d2 (0xE3:0x4D) "miscasts": `0x4A3FD`("miscasts", spell), which in combat shows "*name* Casts a Spell" and "Spell: *spell*" as for any cast (the verb is shown only outside combat), then nothing: no target, no effect, **not forgotten** (so the earlier note "loses the spell" in [spells.md](spells.md) was wrong). Checked for every cast, from an item too, in and out of combat. Who carries 0x4A (O, data): only the cursed **Robe of Vermin** (ITEM6 record 64, its third item: type 66, +0x3D = 0x4A, +0x3E = 0x80, the item kind that grants effect +0x3D while readied, [effects.md](effects.md) §6); no monster record, save or spell carries it, and its handler 0x28A5E is empty.
 - **Feeblemind** (effect 68, 0x288E5, the third "lost a spell" string at 0x288D9): INT +0x13 and WIS +0x15 := 7, "is stupid"; in combat (DS:4FD3 = 5) rec[1] = 0 and, with a spell queued, "lost a spell", the spell forgotten from the feebleminded character (0x2896F) and rec[0] = 0. So a caster feebleminded while casting loses the spell and the rest of its casting this round.
 - **Event 21** (0x2209E): fired at a turn's start only when rec[0] = 0, so not on the turn a queued spell goes off.
 
-### Port
+The engine model's casting parameters: [B-model/procedures.md §15.1](../../B-model/procedures.md#151-casting).
 
-Moved to part B: casting's parameters, [B-model/procedures.md §15.1](../../B-model/procedures.md#151-casting)
-(notes in its §17).
+## Open
+
+- ~~Who carries effect 0x4A (the miscast)~~ answered: the Robe of Vermin ("Casting").
