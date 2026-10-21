@@ -179,14 +179,14 @@ How one engine runs every game from data (work-plan step 2).
 
 | File | Covers | Status |
 |---|---|---|
-| [profile.md](B-model/profile.md) | the game profile, field by field | stub |
-| [records-and-tables.md](B-model/records-and-tables.md) | field maps, table maps, records kept native | stub |
-| [script-vm-map.md](B-model/script-vm-map.md) | ECL memory regions, canonical numbering, opcode variants | stub |
-| [procedures.md](B-model/procedures.md) | each parametric rules procedure once, with each game's source | stub |
-| [vocabularies.md](B-model/vocabularies.md) | effect, item and spell behaviours, monster specials | stub |
-| [host-contracts.md](B-model/host-contracts.md) | the engine-to-screen interfaces, the dice source, the headless harness | stub |
-| [files-and-detection.md](B-model/files-and-detection.md) | required and kept files, detection, stores | stub |
-| [adding-a-game.md](B-model/adding-a-game.md) | the method for a new game | stub |
+| [profile.md](B-model/profile.md) | the game profile, field by field | complete |
+| [records-and-tables.md](B-model/records-and-tables.md) | field maps, table maps, records kept native | complete |
+| [script-vm-map.md](B-model/script-vm-map.md) | ECL memory regions, canonical numbering, opcode variants | complete |
+| [procedures.md](B-model/procedures.md) | each parametric rules procedure once, with each game's source | complete |
+| [vocabularies.md](B-model/vocabularies.md) | effect, item and spell behaviours, monster specials | complete |
+| [host-contracts.md](B-model/host-contracts.md) | the engine-to-screen interfaces, the dice source, the headless harness | complete |
+| [files-and-detection.md](B-model/files-and-detection.md) | required and kept files, detection, stores | complete |
+| [adding-a-game.md](B-model/adding-a-game.md) | the method for a new game | complete |
 
 ## Part C: GoldBox Rerolled ([C-port/](C-port/))
 
@@ -194,7 +194,7 @@ The port's own design (work-plan steps 3 and 4).
 
 | File | Covers | Status |
 |---|---|---|
-| [overview.md](C-port/overview.md) | requirements, constraints, conformance | stub |
+| [overview.md](C-port/overview.md) | requirements, constraints, conformance | complete |
 | [app-flow.md](C-port/app-flow.md) | games screen, import, title, party screen, play, demo, ending | stub |
 | [ui-contract.md](C-port/ui-contract.md) | layouts, panels, command bar, input map, text log (D4) | stub |
 | [screens.md](C-port/screens.md) | every screen's states, inputs and texts | stub |
@@ -202,9 +202,9 @@ The port's own design (work-plan steps 3 and 4).
 | [combat-ui.md](C-port/combat-ui.md) | the battle screen | stub |
 | [rendering.md](C-port/rendering.md) | pixel scaling, frames, the font, icons, palette | stub |
 | [audio.md](C-port/audio.md) | device choice, the cut-off rule, Tandy | stub |
-| [storage.md](C-port/storage.md) | browser storage, the `.GBR` sidecar, ZIP export and import | stub |
-| [accounts-and-sync.md](C-port/accounts-and-sync.md) | the optional server and sync | stub |
-| [pwa-and-build.md](C-port/pwa-and-build.md) | the offline app, the single-file build, the version line | stub |
+| [storage.md](C-port/storage.md) | browser storage, the `.GBR` sidecar, ZIP export and import | complete |
+| [accounts-and-sync.md](C-port/accounts-and-sync.md) | the optional server and sync | complete |
+| [pwa-and-build.md](C-port/pwa-and-build.md) | the offline app, the single-file build, the version line | complete |
 | [departures.md](C-port/departures.md) | each IMP id → the section that specifies it | stub |
 
 ## Part D: appendices ([D-appendices/](D-appendices/))
