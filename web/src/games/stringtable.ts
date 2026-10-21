@@ -126,6 +126,67 @@ export type StringId =
   | 'deadForever'
   | 'drainKilled'
   | 'isCured'
+  | 'howMuch'
+  | 'noGems'
+  | 'fineCollection'
+  | 'gemOne'
+  | 'pieceOfJewelry'
+  | 'gemsCount'
+  | 'piecesOfJewelry'
+  | 'gemValued'
+  | 'gp'
+  | 'jewelValued'
+  | 'youCan'
+  | 'shopOverloaded'
+  | 'shopNoMoney'
+  | 'notBlind'
+  | 'notDiseased'
+  | 'notPoisoned'
+  | 'notDead'
+  | 'notCursed'
+  | 'notStoned'
+  | 'cureAnyway'
+  | 'willOnlyCost'
+  | 'goldPieces'
+  | 'payForCure'
+  | 'templeNoMoney'
+  | 'templeCured'
+  | 'take'
+  | 'makesCamp'
+  | 'camp'
+  | 'quitToDos'
+  | 'castAny'
+  | 'memorizeAny'
+  | 'scribeAny'
+  | 'noCastHere'
+  | 'noCondition'
+  | 'noSpells'
+  | 'combatOnlySpell'
+  | 'loseIt'
+  | 'memorizeThese'
+  | 'memorizeThese2'
+  | 'cannotMemorize'
+  | 'scribeThese'
+  | 'scribeThese2'
+  | 'noScrolls'
+  | 'knowSpell'
+  | 'scribingSpell'
+  | 'cannotScribe'
+  | 'funky'
+  | 'noSpellEffects'
+  | 'restTime'
+  | 'alter'
+  | 'selected'
+  | 'dropFromParty'
+  | 'bidsFarewell'
+  | 'dumpedInDitch'
+  | 'sighOfRelief'
+  | 'partyKilled'
+  | 'cantModify'
+  | 'goldForYour'
+  | 'illGiveYou'
+  | 'mustBeReadied'
+  | 'moveLeft'
 
 export type Strings = Partial<Record<StringId, number>>
 
@@ -239,6 +300,67 @@ export const POR_STRINGS: Strings = {
   deadForever: 0x2932b, // energy drain; FUN_3723_2122
   drainKilled: 0x29348, // energy drain; FUN_3723_2122
   isCured: 0x431d8, // cure; FUN_5216_1081
+  howMuch: 0x3cfa1, // money: amount (pool, take); FUN_4c2d_0ceb
+  noGems: 0x3dbb0, // appraise; FUN_4c2d_19b2
+  fineCollection: 0x3dbf3, // appraise; FUN_4c2d_19b2
+  gemOne: 0x3dbc3, // appraise; FUN_4c2d_19b2
+  pieceOfJewelry: 0x3dbce, // appraise; FUN_4c2d_19b2
+  gemsCount: 0x3dbc8, // appraise; FUN_4c2d_19b2
+  piecesOfJewelry: 0x3dbe0, // appraise; FUN_4c2d_19b2
+  gemValued: 0x3dc35, // appraise; FUN_4c2d_19b2
+  gp: 0x3dc4b, // appraise; FUN_4c2d_19b2
+  jewelValued: 0x3dc6a, // appraise; FUN_4c2d_19b2
+  youCan: 0x3dc5f, // appraise; FUN_4c2d_19b2
+  shopOverloaded: 0x1f92e, // shop Buy, treasure Take; FUN_2f70_0239
+  shopNoMoney: 0x1fa4f, // shop Buy; FUN_2f70_0361
+  notBlind: 0x1d36c, // temple; FUN_2d14_0249
+  notDiseased: 0x1d40f, // temple; FUN_2d14_02ed
+  notPoisoned: 0x1d86e, // temple; FUN_2d14_0751
+  notDead: 0x1d638, // temple; FUN_2d14_0510
+  notCursed: 0x1d95e, // temple; FUN_2d14_083a
+  notStoned: 0x1da4a, // temple; FUN_2d14_0928
+  cureAnyway: 0x1d140, // temple; FUN_2d14_0013
+  willOnlyCost: 0x1d1b6, // temple; FUN_2d14_00bf
+  goldPieces: 0x1d1c7, // temple; FUN_2d14_00bf
+  payForCure: 0x1d1d5, // temple; FUN_2d14_00bf
+  templeNoMoney: 0x1d1e3, // temple; FUN_2d14_00bf
+  templeCured: 0x1d1f5, // temple; FUN_2d14_00bf
+  take: 0x1eda0, // treasure; FUN_2e08_0d38
+  makesCamp: 0x31633, // camp; FUN_3f81_1e6f
+  camp: 0x3166b, // camp; FUN_3f81_1e6f
+  quitToDos: 0x31672, // camp Save; FUN_3f81_1e6f
+  castAny: 0x2fb49, // spell activity; FUN_3f81_036c
+  memorizeAny: 0x2fb59, // spell activity; FUN_3f81_036c
+  scribeAny: 0x2fb69, // spell activity; FUN_3f81_036c
+  noCastHere: 0x2fb12, // spell activity; FUN_3f81_036c
+  noCondition: 0x2fb32, // spell activity; FUN_3f81_036c
+  noSpells: 0x2fc99, // Cast; FUN_3f81_04a1
+  combatOnlySpell: 0x3f0de, // Cast outside combat; FUN_4e53_0c20
+  loseIt: 0x3f0f8, // Cast outside combat; FUN_4e53_0c20
+  memorizeThese: 0x300cf, // Memorize; FUN_3f81_090a
+  memorizeThese2: 0x30102, // Memorize; FUN_3f81_090a
+  cannotMemorize: 0x300e7, // Memorize; FUN_3f81_090a
+  scribeThese: 0x302c9, // Scribe; FUN_3f81_0b5b
+  scribeThese2: 0x30355, // Scribe; FUN_3f81_0b5b
+  noScrolls: 0x302df, // Scribe; FUN_3f81_0b5b
+  knowSpell: 0x302f7, // Scribe; FUN_3f81_0b5b
+  scribingSpell: 0x30313, // Scribe; FUN_3f81_0b5b
+  cannotScribe: 0x30336, // Scribe; FUN_3f81_0b5b
+  funky: 0x306d0, // Display; FUN_3f81_0fbc
+  noSpellEffects: 0x307af, // Display; FUN_3f81_0fbc
+  restTime: 0x3ba43, // Rest; FUN_4b46_05f0
+  alter: 0x31420, // Alter; FUN_3f81_1c59
+  selected: 0x30f7e, // Alter Order; FUN_3f81_1780
+  dropFromParty: 0x310a2, // Alter Drop; FUN_3f81_18e5
+  bidsFarewell: 0x310b4, // Alter Drop; FUN_3f81_18e5
+  dumpedInDitch: 0x310c6, // Alter Drop; FUN_3f81_18e5
+  sighOfRelief: 0x310db, // Alter Drop; FUN_3f81_18e5
+  partyKilled: 0x1c366, // the party destroyed outside battles; FUN_29c3_2775
+  cantModify: 0x3385e, // Modify; FUN_417f_209f
+  goldForYour: 0x3a5da, // Sell; FUN_4894_1cee
+  illGiveYou: 0x3a5cb, // Sell; FUN_4894_1cee
+  mustBeReadied: 0x39803, // Use; FUN_4894_0ef8
+  moveLeft: 0x22a74, // battle step; FUN_320c_09df
 }
 
 export const COAB_STRINGS: Strings = {
@@ -354,4 +476,64 @@ export const COAB_STRINGS: Strings = {
   unaffected: 0x4cd83, // add-effect negated; 0x4cd91
   avoidsIt: 0x2824c, // save avoids; 0x28256
   isCured: 0x4c0f4, // cure; 0x4c0fd
+  howMuch: 0x42a80, // money: amount (pool, take); 0x42a9a
+  noGems: 0x435e6, // appraise; 0x436b8
+  fineCollection: 0x43629, // appraise; 0x436b8
+  gemOne: 0x435f9, // appraise; 0x436b8
+  pieceOfJewelry: 0x43604, // appraise; 0x436b8
+  gemsCount: 0x435fe, // appraise; 0x436b8
+  piecesOfJewelry: 0x43616, // appraise; 0x436b8
+  gemValued: 0x4366b, // appraise; 0x436b8
+  gp: 0x43681, // appraise; 0x436b8
+  jewelValued: 0x436a0, // appraise; 0x436b8
+  youCan: 0x43695, // appraise; 0x436b8
+  shopOverloaded: 0x1f3a1, // shop Buy, treasure Take; 0x1f3ac
+  shopNoMoney: 0x1f4c2, // shop Buy; 0x1f4d4
+  notBlind: 0x1c911, // temple; 0x1c92e
+  notDiseased: 0x1c9b4, // temple; 0x1c9d2
+  notPoisoned: 0x1cf18, // temple; 0x1cf3b
+  notDead: 0x1ccce, // temple; 0x1cce6
+  notCursed: 0x1d008, // temple; 0x1d024
+  notStoned: 0x1d0f4, // temple; 0x1d112
+  cureAnyway: 0x1c6e2, // temple; 0x1c6f5
+  willOnlyCost: 0x1c758, // temple; 0x1c7a1
+  goldPieces: 0x1c769, // temple; 0x1c7a1
+  payForCure: 0x1c777, // temple; 0x1c7a1
+  templeNoMoney: 0x1c785, // temple; 0x1c7a1
+  templeCured: 0x1c797, // temple; 0x1c7a1
+  take: 0x1e5f6, // treasure; 0x1e60e
+  makesCamp: 0x3217c, // camp; 0x321cb
+  camp: 0x321b4, // camp; 0x321cb
+  quitToDos: 0x321ba, // camp Save; 0x321cb
+  castAny: 0x3010d, // spell activity; 0x30140
+  memorizeAny: 0x3011d, // spell activity; 0x30140
+  scribeAny: 0x3012d, // spell activity; 0x30140
+  noCastHere: 0x300d6, // spell activity; 0x30140
+  noCondition: 0x300f6, // spell activity; 0x30140
+  noSpells: 0x3025d, // Cast; 0x30275
+  loseIt: 0x451f0, // Cast outside combat; 0x45251
+  memorizeThese: 0x306aa, // Memorize; 0x306f5
+  memorizeThese2: 0x306dd, // Memorize; 0x306f5
+  cannotMemorize: 0x306c2, // Memorize; 0x306f5
+  scribeThese: 0x308a9, // Scribe; 0x3094b
+  scribeThese2: 0x30935, // Scribe; 0x3094b
+  noScrolls: 0x308bf, // Scribe; 0x3094b
+  knowSpell: 0x308d7, // Scribe; 0x3094b
+  scribingSpell: 0x308f3, // Scribe; 0x3094b
+  cannotScribe: 0x30916, // Scribe; 0x3094b
+  funky: 0x30cb2, // Display; 0x30dda
+  noSpellEffects: 0x30dc5, // Display; 0x30dda
+  restTime: 0x414a8, // Rest; 0x414b5
+  alter: 0x31a97, // Alter; 0x31ad8
+  selected: 0x315f2, // Alter Order; 0x31604
+  dropFromParty: 0x31716, // Alter Drop; 0x31769
+  bidsFarewell: 0x31728, // Alter Drop; 0x31769
+  dumpedInDitch: 0x3173a, // Alter Drop; 0x31769
+  sighOfRelief: 0x3174f, // Alter Drop; 0x31769
+  partyKilled: 0x1b169, // the party destroyed outside battles; 0x1b1a8
+  cantModify: 0x39059, // Modify; 0x39080
+  goldForYour: 0x3fc9e, // Sell; 0x3fcf2
+  illGiveYou: 0x3fc8f, // Sell; 0x3fcf2
+  mustBeReadied: 0x3ea7e, // Use; 0x3eab3
+  moveLeft: 0x22824, // battle step; 0x22856
 }

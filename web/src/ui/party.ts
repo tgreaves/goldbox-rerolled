@@ -24,6 +24,7 @@ import { exportName, importsFrom, rosterFrom, saveFiles, savesFrom, unzip, zip, 
 import { parseSave, saveArea, saveBlock } from '../data/save'
 import type { Start } from './explore'
 import type { Dice } from '../rules/dice'
+import { msg } from '../games/strings'
 
 const MAX_PARTY = 6
 
@@ -152,7 +153,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
       }
       case 'M': {
         const c = byStem(cur).sav.slice()
-        if ((c[F.xp] | c[F.xp + 1] | c[F.xp + 2] | c[F.xp + 3]) !== 0) say(`${parseCharacter(c).name} can't be modified.`)
+        if ((c[F.xp] | c[F.xp + 1] | c[F.xp + 2] | c[F.xp + 3]) !== 0) say(`${parseCharacter(c).name}${msg('cantModify')}`)
         else if (await modify(c)) {
           await saveCharacter({ ...byStem(cur), sav: c })
           roster = await listCharacters()

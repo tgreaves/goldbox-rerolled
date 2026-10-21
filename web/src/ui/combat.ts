@@ -8,6 +8,7 @@ import { CombatView, type Figure, type Sprite } from '../render/combatview'
 import { F } from '../games/fields'
 import type { SoundMode } from '../games/sound'
 import { Line, cycle, fight, footprint, type AimEntry, type Battle, type CombatUi, type Fighter, type Flight, type SpriteFrame } from '../rules/combat'
+import { msg } from '../games/strings'
 
 export interface BattleScreen {
   engine: Engine
@@ -283,7 +284,7 @@ export async function runBattle(s: BattleScreen) {
         },
       })
       if (menu) void s.menu(menu.items, { prompt: menu.prompt }).then((i) => done({ choice: i }, true))
-      else void s.menu(['END MOVE', 'UNDO'], { prompt: `Move/Attack, Move Left = ${left}` }).then((i) => done(i === 0 ? 'end' : 'undo', true))
+      else void s.menu(['END MOVE', 'UNDO'], { prompt: `${msg('moveLeft')}${left}` }).then((i) => done(i === 0 ? 'end' : 'undo', true))
     })
 
   const ui: CombatUi = {

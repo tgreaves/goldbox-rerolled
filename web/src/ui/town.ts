@@ -13,6 +13,7 @@ import { heal as healChar } from '../rules/camp'
 
 const memorisedReady = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
 import { appraiseGem, appraiseJewel, COINS, coinValue, keepAsItem, moneyOf, pay, poolAll, receive, share, take, takeOne } from '../rules/money'
+import { msg } from '../games/strings'
 
 export interface TownUi {
   engine: Engine
@@ -50,7 +51,7 @@ async function takeMoney(ui: TownUi) {
     if (!kinds.length) return
     const k = await ui.menu([...kinds.map((i) => `${e.money[i]} ${COINS[i].toUpperCase()}`), 'EXIT'], { prompt: 'Take which?', vertical: true })
     if (k >= kinds.length) return
-    ui.print(`How much ${COINS[kinds[k]]}?`, false)
+    ui.print(`${msg('howMuch')}${COINS[kinds[k]]}?`, false)
     const n = await ui.inputNumber()
     const t = e.items!
     const m = take(e.cur, e.itemsOf(e.cur), e.money, kinds[k], n, t)
@@ -64,17 +65,17 @@ async function appraise(ui: TownUi) {
   const e = ui.engine, t = e.items!
   const { c, items } = cur(e)
   const m = moneyOf(c)
-  if (!m[5] && !m[6]) { ui.print('No Gems or Jewelry', false); return }
-  ui.print(`You have a fine collection of: ${m[5]} Gems, ${m[6]} pieces of Jewelry`, true)
+  if (!m[5] && !m[6]) { ui.print(msg('noGems'), false); return }
+  ui.print(`${msg('fineCollection')} ${m[5]}${msg(m[5] === 1 ? 'gemOne' : 'gemsCount')}, ${m[6]}${msg(m[6] === 1 ? 'pieceOfJewelry' : 'piecesOfJewelry')}`, true)
   const opts = [...(m[5] ? ['GEMS'] : []), ...(m[6] ? ['JEWELRY'] : []), 'EXIT']
   const pick = opts[await ui.menu(opts)]
   if (pick === 'EXIT') return
   const kind = pick === 'GEMS' ? 5 : 6
   takeOne(c, kind)
   const value = kind === 5 ? appraiseGem(e.roll(1, 100)) : appraiseJewel(e.roll(1, 100), (n) => e.rand(n))
-  ui.print(kind === 5 ? `The Gem is Valued at ${value} gp.` : `The Jewel is Valued at ${value} gp.`, false)
+  ui.print(`${msg(kind === 5 ? 'gemValued' : 'jewelValued')}${value}${msg('gp')}`, false)
   const canKeep = items.length < 16 && canTakeItem(c, items, keepProbe()) === ''
-  const choice = await ui.menu(canKeep ? ['SELL', 'KEEP'] : ['SELL'], { prompt: 'You can :' })
+  const choice = await ui.menu(canKeep ? ['SELL', 'KEEP'] : ['SELL'], { prompt: msg('youCan').trimEnd() })
   if (canKeep && choice === 1) {
     keepAsItem(items, kind, value)
     recalc(c, items, t)
@@ -118,8 +119,8 @@ export async function shop(ui: TownUi) {
         if (i >= stock.length) break
         const it = stock[i], buyer = cur(e)
         const why = canTakeItem(buyer.c, buyer.items, it)
-        if (why) { ui.print(why === 'Overloaded' ? 'OverLoaded' : why, false); continue }
-        if (!pay(buyer.c, e.money, it.value, t, buyer.items)) { ui.print('Not enough money.', false); continue }
+        if (why) { ui.print(why === msg('takeOverloaded') ? msg('shopOverloaded') : why, false); continue }
+        if (!pay(buyer.c, e.money, it.value, t, buyer.items)) { ui.print(msg('shopNoMoney'), false); continue }
         const copy = it.copy()
         buyer.items.push(copy)
         recalc(buyer.c, buyer.items, t)
@@ -187,17 +188,17 @@ async function heal(ui: TownUi) {
   const s = list[i], kind = s.kind
   const status = c[F.status]
   const reason = {
-    blind: has([33]) ? '' : 'is not blind.',
-    disease: has(DISEASES) ? '' : 'is not Diseased.',
+    blind: has([33]) ? '' : msg('notBlind'),
+    disease: has(DISEASES) ? '' : msg('notDiseased'),
     clw: '', csw: '', ccw: '', heal: '',
-    poison: has([55]) ? '' : 'is not poisoned.',
-    raise: status === 6 || status === 1 ? '' : 'is not dead.',
-    curse: items.some((x) => x.cursed) || has([36]) ? '' : 'is not cursed.',
-    stone: status === 7 ? '' : 'is not stoned.',
+    poison: has([55]) ? '' : msg('notPoisoned'),
+    raise: status === 6 || status === 1 ? '' : msg('notDead'),
+    curse: items.some((x) => x.cursed) || has([36]) ? '' : msg('notCursed'),
+    stone: status === 7 ? '' : msg('notStoned'),
   }[kind]
-  if (reason && !await yes(ui, `${name} ${reason} cast cure anyway:`)) return
-  if (!await yes(ui, `${s.name} will only cost ${s.gp} gold pieces. pay for cure?`)) return
-  if (!pay(c, e.money, s.gp, t, items)) { ui.print('Not enough money.', false); return }
+  if (reason && !await yes(ui, `${name} ${reason} ${msg('cureAnyway').trimEnd()}`)) return
+  if (!await yes(ui, `${s.name}${msg('willOnlyCost')}${s.gp}${msg('goldPieces')} ${msg('payForCure').trimEnd()}`)) return
+  if (!pay(c, e.money, s.gp, t, items)) { ui.print(msg('templeNoMoney'), false); return }
   // the cures go through the heal routine (PoR FUN_2d14_0401 → FUN_5216_175d, CotAB 0x1CB35 → 0x4CE85):
   // nothing for the dead, the stoned or (PoR) mummy rot, though the fee is paid; someone unconscious is revived
   const hp = (n: number) => { healChar(c, fx, n, false) }
@@ -220,7 +221,7 @@ async function heal(ui: TownUi) {
     case 'stone': if (!reason) { c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = 1 } break // PoR 0x1DAD7: Okay, in play, 1 HP
   }
   recalc(c, items, t)
-  ui.print(`${name} is cured.`, false)
+  ui.print(`${name} ${msg('templeCured')}`, false)
   ui.refresh()
 }
 
@@ -274,7 +275,7 @@ export async function treasure(ui: TownUi) {
     if (o === 'VIEW') await ui.view('treasure')
     else if (o === 'TAKE') {
       const kinds = [...(money ? ['MONEY'] : []), ...(items ? ['ITEMS'] : [])]
-      const k = kinds.length === 1 ? kinds[0] : kinds[await ui.menu([...kinds, 'EXIT'], { prompt: 'Take:' })]
+      const k = kinds.length === 1 ? kinds[0] : kinds[await ui.menu([...kinds, 'EXIT'], { prompt: msg('take').trimEnd() })]
       if (k === 'MONEY') await takeMoney(ui)
       else if (k === 'ITEMS' && t) {
         for (;;) {
@@ -283,7 +284,7 @@ export async function treasure(ui: TownUi) {
           if (i >= e.treasure.length) break
           const it = e.treasure[i], who = cur(e)
           const why = canTakeItem(who.c, who.items, it)
-          if (why) { ui.print('OverLoaded', false); continue }
+          if (why) { ui.print(msg('shopOverloaded'), false); continue }
           e.treasure.splice(i, 1)
           who.items.push(it)
           recalc(who.c, who.items, t)

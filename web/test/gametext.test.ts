@@ -55,6 +55,9 @@ export function addressed(g: GameProfile): [string, number][] {
   }
   for (const [t, h] of Object.entries(g.effects.handlers)) walk(`effects.${t}`, h, false)
   for (const [t, h] of Object.entries(g.effects.items)) walk(`items.${t}`, h, false)
+  for (const [t, a] of Object.entries(g.effects.names)) out.push([`effectNames.${t}`, a])
+  g.title.credits.lines.forEach(([, , , a], i) => out.push([`credits.${i}`, a]))
+  if (g.ecl.wipeBanner !== null) out.push(['ecl.wipeBanner', g.ecl.wipeBanner])
   for (const [t, h] of Object.entries(g.spells.handlers)) walk(`spells.${t}`, h, false)
   return out
 }

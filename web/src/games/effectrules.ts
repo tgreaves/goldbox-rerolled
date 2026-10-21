@@ -29,6 +29,8 @@ export interface EffectRules {
    * with a duration left, whatever the new one's, while a permanent old record stays beside the new one
    */
   replaces: 'longerOrPermanent' | 'anyTimed'
+  /** the camp Display window's fixed names by effect type: addresses of the game's strings (PoR FUN_3f81_0fbc, CotAB 0x30DDA) */
+  names: Record<number, number>
   /** effect types whose presence stops unforced healing (PoR FUN_5216_175d: mummy rot 0x32; CotAB 0x4CE85: none) */
   healBlock: number[]
 }
@@ -198,6 +200,8 @@ export const POR_EFFECTS: EffectRules = {
     9: { b: 'unreadyEnds', type: 23 }, // 137 Spiritual Hammer (317a)
   },
   replaces: 'longerOrPermanent',
+  names: { 4: 0x306d8, 7: 0x306f9, 27: 0x3071f, 31: 0x3072c, 35: 0x30735, 44: 0x3073c, 50: 0x3074a, 54: 0x30760, 55: 0x30769,
+    59: 0x30772, 61: 0x3077f, 71: 0x3078f, 72: 0x30799, 89: 0x307a5 },
   healBlock: [0x32],
 }
 
@@ -309,5 +313,7 @@ export const COAB_EFFECTS: EffectRules = {
     0x0d: { b: 'recomputeStats', stats: [0, 1] },
   },
   replaces: 'anyTimed', // 0x4CE0A: found, and its duration word > 0
+  names: { 4: 0x30cba, 7: 0x30cc6, 27: 0x30cd2, 31: 0x30cdb, 35: 0x30ce4, 44: 0x30ced, 50: 0x30cfb, 54: 0x30d0b, 55: 0x30d1c,
+    59: 0x30d25, 61: 0x30d32, 63: 0x30d42, 68: 0x30d61, 69: 0x30d6b, 71: 0x30d80, 72: 0x30d8a, 73: 0x30d96, 77: 0x30db3, 89: 0x30dbb },
   healBlock: [], // 0x4CE85: the 0x32 test is gone (0x32 is the Hot Fire Shield in CotAB)
 }

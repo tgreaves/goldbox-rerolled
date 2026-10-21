@@ -10,6 +10,7 @@ import { charMap } from '../data/ttf'
 import { blit, sizeCanvas } from '../render/upscale'
 import { reducedMotion } from './settings'
 import { initSound, play, unlockAudio } from '../audio/sfx'
+import { textOrNull } from '../data/gametext'
 
 /** The configuration file's long-intro flag (PoR POOL.CFG line 5, CotAB CURSE.CFG line 4: 'F'). */
 function longIntro(files: GameFiles): boolean {
@@ -89,7 +90,10 @@ export function showTitle(app: HTMLElement, files: GameFiles, next: () => void) 
     const r = files.record('8X8D1', 201)
     if (!r) return
     const font = parseFont(r).glyphs, map = charMap()
-    for (const [row, col, colour, text] of files.game.title.credits.lines) {
+    for (const [row, col, colour, at] of files.game.title.credits.lines) {
+      // the line read from the game's files (spec/D-appendices/strings.md); without START.EXE, none
+      const text = textOrNull(at)
+      if (text === null) continue
       g.fillStyle = `rgb(${EGA[colour].join(',')})`
       ;[...text].forEach((ch, i) => {
         const bits = font[map.get(ch.charCodeAt(0)) ?? 0x20]

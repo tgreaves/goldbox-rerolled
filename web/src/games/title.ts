@@ -23,8 +23,9 @@ export interface TitleScript {
     /** PoR: rope boxes (the game's border tiles) as cells x1, y1, x2, y2; CotAB: the screen frame
      *  (games/frametiles.ts) with divider rows */
     frame: { boxes: [number, number, number, number][] } | { screen: { dividers: number[] } }
-    /** row, column, colour, text (the font has capitals only) */
-    lines: [number, number, number, string][]
+    /** row, column, colour, and the image address of the line's string (the font has capitals only;
+     *  spec/A-games/por/title-and-credits.md, CotAB 0x182AD) */
+    lines: [number, number, number, number][]
   }
 }
 
@@ -37,17 +38,17 @@ export const POR_TITLE: TitleScript = {
     frame: { boxes: [[1, 1, 38, 3], [1, 5, 38, 23]] },
     // FUN_290c_0206
     lines: [
-  [1, 5, 10, 'scenario created by:'], [1, 26, 14, 'tsr, inc.'], [2, 15, 10, 'jim ward'],
-  [3, 2, 10, 'david cook,steve winter,mike breault'],
-  [5, 1, 10, 'game created by:'], [5, 18, 14, 'ssi special projects'], [6, 14, 11, 'version 1.3'],
-  [7, 2, 14, 'programming:'], [7, 20, 14, 'original'], [8, 2, 11, 'scot bayless'], [8, 20, 14, 'programming:'],
-  [9, 2, 11, 'brad myers'], [9, 20, 11, 'keith brors'], [10, 2, 11, 'russ brown'], [10, 20, 11, 'brad myers'],
-  [11, 2, 11, 'ted greer'],
-  [13, 2, 14, 'graphic arts:'], [13, 20, 14, 'encounter coding:'], [14, 2, 11, 'tom wahl'], [14, 20, 11, 'paul murray'],
-  [15, 2, 11, 'fred butts'], [15, 20, 11, 'russ brown'], [16, 2, 11, 'darla marasco'], [16, 20, 11, 'victor penman'],
-  [17, 2, 11, 'susan halbleib'], [17, 20, 11, 'dave shelley'],
-  [19, 2, 14, 'project manager'], [19, 20, 14, 'developer:'], [20, 2, 11, 'victor penman'], [20, 20, 11, 'george mac donald'],
-  [22, 2, 14, 'testing:'], [22, 11, 11, 'joel billings,steve salyer'], [23, 2, 11, 'james kucera,robert daly,rick white'],
+  [1, 5, 10, 0x1910b], [1, 26, 14, 0x19120], [2, 15, 10, 0x1912a],
+  [3, 2, 10, 0x19133],
+  [5, 1, 10, 0x19158], [5, 18, 14, 0x19169], [6, 14, 11, 0x1917e],
+  [7, 2, 14, 0x1918a], [7, 20, 14, 0x19197], [8, 2, 11, 0x191a0], [8, 20, 14, 0x1918a],
+  [9, 2, 11, 0x191ad], [9, 20, 11, 0x191b8], [10, 2, 11, 0x191c4], [10, 20, 11, 0x191ad],
+  [11, 2, 11, 0x191cf],
+  [13, 2, 14, 0x191d9], [13, 20, 14, 0x191e7], [14, 2, 11, 0x191f9], [14, 20, 11, 0x19202],
+  [15, 2, 11, 0x1920e], [15, 20, 11, 0x191c4], [16, 2, 11, 0x19219], [16, 20, 11, 0x19227],
+  [17, 2, 11, 0x19235], [17, 20, 11, 0x19244],
+  [19, 2, 14, 0x19251], [19, 20, 14, 0x19261], [20, 2, 11, 0x19227], [20, 20, 11, 0x1926c],
+  [22, 2, 14, 0x1927e], [22, 11, 11, 0x19287], [23, 2, 11, 0x192a2],
 ],
   },
 }
@@ -66,18 +67,18 @@ export const COAB_TITLE: TitleScript = {
     frame: { screen: { dividers: [3, 8] } }, // 0x1403: the screen frame (0x1330) plus rows 3 and 8
     // 0x182AD
     lines: [
-      [1, 2, 10, 'based on the tsr novel "azure bonds"'],
-      [2, 6, 10, 'by:'], [2, 9, 11, 'kate novak'], [2, 20, 10, 'and'], [2, 24, 11, 'jeff grubb'],
-      [4, 10, 10, 'scenario created by:'], [5, 11, 14, 'tsr, inc.'], [5, 21, 10, 'and'], [5, 25, 14, 'ssi'],
-      [6, 14, 11, 'jeff grubb'], [7, 11, 11, 'george mac donald'],
-      [9, 1, 10, 'game created by:'], [9, 18, 14, 'ssi special projects'],
-      [11, 2, 14, 'project leader:'], [12, 2, 11, 'george mac donald'],
-      [14, 2, 14, 'programming:'], [15, 2, 11, 'scot bayless'], [16, 2, 11, 'russ brown'], [17, 2, 11, 'michael mancuso'],
-      [19, 2, 14, 'development:'], [20, 2, 11, 'david shelley'], [21, 2, 11, 'michael mancuso'], [22, 2, 11, 'oran kangas'],
-      [11, 22, 14, 'graphic arts:'], [12, 22, 11, 'tom wahl'], [13, 22, 11, 'fred butts'], [14, 22, 11, 'susan manley'],
-      [15, 22, 11, 'mark johnson'], [16, 22, 11, 'cyrus lum'],
-      [18, 22, 14, 'playtesting:'], [19, 22, 11, 'jim jennings'], [20, 22, 11, 'james kucera'], [21, 22, 11, 'rick white'],
-      [22, 22, 11, 'robert daly'],
+      [1, 2, 10, 0x1811f],
+      [2, 6, 10, 0x18144], [2, 9, 11, 0x18148], [2, 20, 10, 0x18153], [2, 24, 11, 0x18157],
+      [4, 10, 10, 0x18162], [5, 11, 14, 0x18177], [5, 21, 10, 0x18153], [5, 25, 14, 0x18181],
+      [6, 14, 11, 0x18157], [7, 11, 11, 0x18185],
+      [9, 1, 10, 0x18197], [9, 18, 14, 0x181a8],
+      [11, 2, 14, 0x181bd], [12, 2, 11, 0x18185],
+      [14, 2, 14, 0x181cd], [15, 2, 11, 0x181da], [16, 2, 11, 0x181e7], [17, 2, 11, 0x181f2],
+      [19, 2, 14, 0x18202], [20, 2, 11, 0x1820f], [21, 2, 11, 0x181f2], [22, 2, 11, 0x1821d],
+      [11, 22, 14, 0x18229], [12, 22, 11, 0x18237], [13, 22, 11, 0x18240], [14, 22, 11, 0x1824b],
+      [15, 22, 11, 0x18258], [16, 22, 11, 0x18265],
+      [18, 22, 14, 0x1826f], [19, 22, 11, 0x1827c], [20, 22, 11, 0x18289], [21, 22, 11, 0x18296],
+      [22, 22, 11, 0x182a1],
     ],
   },
 }

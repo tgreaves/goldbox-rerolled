@@ -4,7 +4,7 @@
 
 import { R, classLevel } from '../games/rules'
 import { installNames } from '../data/character'
-import { installText } from '../data/gametext'
+import { installText, text } from '../data/gametext'
 import { msg } from '../games/strings'
 import { canonical, native, viewRead, type EclVariant } from '../games/ecl'
 import { game } from '../games/profile'
@@ -1273,7 +1273,7 @@ export class Engine {
     for (const t of said) this.io.print(t, false)
     if (!this.nodes.some((c) => c[F.inPlay] !== 0)) {
       const banner = game().ecl.wipeBanner
-      if (banner) this.io.print(banner, false)
+      if (banner !== null) this.io.print(text(banner), false)
       await this.io.engine('party dead')
       this.quit = true
       return

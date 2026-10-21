@@ -8,6 +8,8 @@ import { parseCharacter } from '../data/character'
 import type { Spell } from '../data/spells'
 import { clearPending, freeSlots, knows, memorise, memorised, preparation, readableScrolls, restStep, startRest, isScroll } from '../rules/camp'
 import { castOutside, targetKind, forget } from '../rules/magic'
+import { msg, type StringId } from '../games/strings'
+import { text } from '../data/gametext'
 
 export interface CampUi {
   engine: Engine
@@ -28,12 +30,8 @@ export interface CampUi {
 const nameOf = (c: Uint8Array) => parseCharacter(c).name
 const yes = async (ui: CampUi, prompt: string) => (await ui.menu(['YES', 'NO'], { prompt })) === 0
 
-/** Fixed names in the Display window (FUN_3f81_0fbc). */
-const EFFECT_NAMES: Record<number, string> = {
-  4: 'Studying Manual of Bodily Health', 7: 'Training with Manual of Bodily Health', 27: 'Feather Fall', 31: 'Helpless',
-  35: 'Prayer', 44: 'Cause Disease', 50: 'Dreaded Mummy Disease', 54: 'Repulsed', 55: 'Poisoned', 59: 'Regenerating',
-  61: 'Fire Resistance', 71: 'Invisible', 72: 'Camouflaged', 89: 'Displaced',
-}
+/** the Display window's fixed names (PoR FUN_3f81_0fbc, CotAB 0x30DDA): the game's string for an effect type */
+const effectName = (type: number) => { const a = game().effects.names[type]; return a === undefined ? '' : text(a) }
 const SPELL_NAMED = new Set([1, 2, 5, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 20, 21, 22, 23, 24, 25, 28, 29, 32, 33, 34, 36, 37, 38, 39, 41, 42, 45, 46, 49, 51, 52, 53])
 
 /**
@@ -46,14 +44,14 @@ export async function camp(ui: CampUi): Promise<boolean> {
   let quit = false
   const state = { heal: 0 }
   for (const c of e.party()) clearPending(c, e.itemsOf(c), e.items)
-  ui.print('The party makes camp...', true)
+  ui.print(msg('makesCamp'), true)
   for (;;) {
-    const o = await ui.menu(['SAVE', 'VIEW', 'MAGIC', 'REST', 'ALTER', 'FIX', 'EXIT'], { prompt: 'Camp:' })
+    const o = await ui.menu(['SAVE', 'VIEW', 'MAGIC', 'REST', 'ALTER', 'FIX', 'EXIT'], { prompt: msg('camp').trimEnd() })
     if (o === 0) {
       // Save, then "Quit TO DOS" Yes/No, asked even after a cancelled save (PoR FUN_3f81_1e6f at
       // 0x31766, CotAB 0x322D0); Yes ends the game
       await ui.save()
-      if (await yes(ui, 'Quit TO DOS')) { quit = true; break }
+      if (await yes(ui, msg('quitToDos').trimEnd())) { quit = true; break }
     } else if (o === 1) await ui.view()
     else if (o === 2) { if (await magic(ui, state)) break }
     else if (o === 3) { if (await rest(ui, state)) break }
@@ -79,28 +77,29 @@ async function magic(ui: CampUi, state: { heal: number }): Promise<boolean> {
   }
 }
 
-function activity(ui: CampUi, what: 'cast any spells' | 'memorize spells' | 'scribe any scrolls'): boolean {
+/** the spell-activity check (FUN_3f81_036c): `what` is the activity's line */
+function activity(ui: CampUi, what: StringId & ('castAny' | 'memorizeAny' | 'scribeAny')): boolean {
   const e = ui.engine, c = e.cur
-  if (what === 'cast any spells' && e.read(0x49e5) !== 0) { ui.print('cannot cast spells in this area', false); return false }
-  if (c[F.status] === 1 || ![0, 1].includes(c[F.status])) { ui.print(`${nameOf(c)} is in no condition to ${what}`, false); return false }
+  if (what === 'castAny' && e.read(0x49e5) !== 0) { ui.print(msg('noCastHere'), false); return false }
+  if (c[F.status] === 1 || ![0, 1].includes(c[F.status])) { ui.print(`${nameOf(c)} ${msg('noCondition')}${msg(what)}`, false); return false }
   return true
 }
 
 /** Cast (FUN_3f81_04a1), also the explore-mode Cast command. */
 export async function cast(ui: CampUi) {
   const e = ui.engine, st = e.spells!
-  if (!activity(ui, 'cast any spells')) return
+  if (!activity(ui, 'castAny')) return
   for (;;) {
     const c = e.cur
     const ready = memorised(c).filter((v) => v > 0 && v < 0x80)
-    if (!ready.length) { ui.print(`${nameOf(c)} has no spells memorized`, false); return }
+    if (!ready.length) { ui.print(`${nameOf(c)} ${msg('noSpells')}`, false); return }
     const list = ready.map((id) => st.get(id)!).filter(Boolean)
     const i = await ui.menu([...list.map((s) => s.name.toUpperCase()), 'EXIT'], { prompt: 'Spells in Memory:', vertical: true, notes: list.map(spellText) })
     if (i >= list.length) return
     const s = list[i]
     if (s.side === 0) {
-      ui.print(`${s.name} is a combat-only spell...`, false)
-      if (await yes(ui, 'Lose it?')) forget(c, s.id)
+      ui.print(`${s.name} ${msg('combatOnlySpell')}`, false)
+      if (await yes(ui, msg('loseIt').trimEnd())) forget(c, s.id)
       continue
     }
     const kind = targetKind(s)
@@ -120,13 +119,13 @@ export async function cast(ui: CampUi) {
 /** Memorize (FUN_3f81_090a). */
 async function memorize(ui: CampUi) {
   const e = ui.engine, st = e.spells!
-  if (!activity(ui, 'memorize spells')) return
+  if (!activity(ui, 'memorizeAny')) return
   if (ui.memorizePanel) return ui.memorizePanel()
   const c = e.cur
   const pending = () => memorised(c).filter((v) => v >= 0x80).map((v) => st.get(v)!.name)
   if (pending().length) {
     ui.print(`Spells to be memorized: ${pending().join(', ')}`, true)
-    if (await yes(ui, 'Memorize These Spells?')) return
+    if (await yes(ui, msg('memorizeThese').trimEnd())) return
     for (let k = 0; k < F.memorisedCount; k++) if (c[F.memorised + k] >= 0x80) c[F.memorised + k] = 0
   }
   let picked = false
@@ -134,7 +133,7 @@ async function memorize(ui: CampUi) {
     const levels = Array.from({ length: R.spells.levels }, (_, i) => i + 1)
     const row = (cls: number) => levels.map((l) => (slots(c, cls, l) ? String(freeSlots(c, cls, l, st)) : '-')).join(' ')
     const has = casterClasses().filter((k) => levels.some((l) => slots(c, k.cls, l)))
-    if (!has.length) { ui.print(`${nameOf(c)} cannot memorize any spells`, false); return }
+    if (!has.length) { ui.print(`${nameOf(c)} ${msg('cannotMemorize')}`, false); return }
     ui.print(`${nameOf(c)} can memorize:${has.map((k) => `  ${k.name} Spells: ${row(k.cls)}`).join('')}`, true)
     const book: Spell[] = st.spells.filter((s) => bookSpell(s) && knows(c, s.id))
     const short = (cls: number) => casterClasses().find((k) => k.cls === cls)?.short ?? ''
@@ -144,36 +143,36 @@ async function memorize(ui: CampUi) {
   }
   if (picked && pending().length) {
     ui.print(`Spells to be memorized: ${pending().join(', ')}`, true)
-    if (!await yes(ui, 'Memorize these spells?')) for (let k = 0; k < F.memorisedCount; k++) if (c[F.memorised + k] >= 0x80) c[F.memorised + k] = 0
+    if (!await yes(ui, msg('memorizeThese2').trimEnd())) for (let k = 0; k < F.memorisedCount; k++) if (c[F.memorised + k] >= 0x80) c[F.memorised + k] = 0
   }
 }
 
 /** Scribe (FUN_3f81_0b5b): mark scroll spells to be copied while resting. */
 async function scribe(ui: CampUi) {
   const e = ui.engine, st = e.spells!, t = e.items!
-  if (!activity(ui, 'scribe any scrolls')) return
+  if (!activity(ui, 'scribeAny')) return
   const c = e.cur, items = e.itemsOf(c)
   const marked = () => items.filter((it) => isScroll(it, t)).flatMap((it) => it.props.filter((p) => p > 0x80).map((p) => st.get(p)!.name))
   if (marked().length) {
     ui.print(`Spells to be scribed: ${marked().join(', ')}`, true)
-    if (await yes(ui, 'Scribe These Spells?')) return
+    if (await yes(ui, msg('scribeThese').trimEnd())) return
     for (const it of items) if (isScroll(it, t)) for (let j = 0; j < 3; j++) it.raw[0x3c + j] &= 0x7f
   }
   for (;;) {
     const scrolls = readableScrolls(c, items, e.effectsOf(c), t)
     const entries = scrolls.flatMap((it) => it.props.map((p, j) => ({ it, j, id: p & 0x7f, mark: p > 0x80 })).filter((x) => x.id > 0))
-    if (!entries.length) { ui.print(`${nameOf(c)} has no copyable scrolls`, false); break }
+    if (!entries.length) { ui.print(`${nameOf(c)} ${msg('noScrolls')}`, false); break }
     const i = await ui.menu([...entries.map((x) => `${st.get(x.id)!.name.toUpperCase()}${x.mark ? ' (MARKED)' : ''}`), 'EXIT'], { prompt: 'Spells on Scrolls:', vertical: true })
     if (i >= entries.length) break
     const x = entries[i], s = st.get(x.id)!
-    if (knows(c, x.id)) ui.print('You already know that spell', false)
-    else if (entries.some((y) => y.mark && y.id === x.id)) ui.print('You are already scibing that spell', false)
-    else if (!slots(c, s.cls, s.level)) ui.print('You can not scribe that spell.', false)
+    if (knows(c, x.id)) ui.print(msg('knowSpell'), false)
+    else if (entries.some((y) => y.mark && y.id === x.id)) ui.print(msg('scribingSpell'), false)
+    else if (!slots(c, s.cls, s.level)) ui.print(msg('cannotScribe'), false)
     else x.it.raw[0x3c + x.j] |= 0x80
   }
   if (marked().length) {
     ui.print(`Spells to be scribed: ${marked().join(', ')}`, true)
-    if (!await yes(ui, 'Scribe these spells?')) for (const it of items) if (isScroll(it, t)) for (let j = 0; j < 3; j++) it.raw[0x3c + j] &= 0x7f
+    if (!await yes(ui, msg('scribeThese2').trimEnd())) for (const it of items) if (isScroll(it, t)) for (let j = 0; j < 3; j++) it.raw[0x3c + j] &= 0x7f
   }
 }
 
@@ -183,7 +182,7 @@ export function effectNames(e: Engine, c: Uint8Array): string[] {
   if (!st) return []
   return [...new Set(e.effectsOf(c).map((f) => {
     if (SPELL_NAMED.has(f.type)) return st.spells.find((s) => s.effect === f.type)?.name ?? ''
-    return EFFECT_NAMES[f.type] ?? ''
+    return effectName(f.type)
   }).filter(Boolean))]
 }
 
@@ -193,11 +192,11 @@ function display(ui: CampUi) {
   const fx = e.effectsOf(e.cur)
   const names = fx.map((f) => {
     if (SPELL_NAMED.has(f.type)) {
-      return st.spells.find((s) => s.effect === f.type)?.name ?? `Funky--${f.type}`
+      return st.spells.find((s) => s.effect === f.type)?.name ?? `${msg('funky')}${f.type}`
     }
-    return EFFECT_NAMES[f.type] ?? ''
+    return effectName(f.type)
   }).filter(Boolean)
-  ui.print(`Display: ${names.length ? names.join(', ') : '<No Spell Effects>'}`, true)
+  ui.print(`Display: ${names.length ? names.join(', ') : msg('noSpellEffects').trim()}`, true)
 }
 
 /** Rest (FUN_3f81_077a, FUN_4b46_0721, FUN_4b46_0c9a). Returns true when interrupted. */
@@ -208,7 +207,7 @@ export async function rest(ui: CampUi, state: { heal: number }): Promise<boolean
   // duration prompt: days capped at 99
   for (;;) {
     const d = Math.floor(minutes / 1440), h = Math.floor((minutes % 1440) / 60), m = minutes % 60
-    const label = `Rest Time: ${String(d).padStart(2, '0')}:${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+    const label = `${msg('restTime')} ${String(d).padStart(2, '0')}:${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
     const o = await ui.menu(['REST', 'DAYS +', 'DAYS -', 'HOURS +', 'HOURS -', 'MINS +', 'MINS -', 'EXIT'], { prompt: label })
     if (o === 0) break
     if (o === 7) return false
@@ -248,7 +247,7 @@ async function fix(ui: CampUi, state: { heal: number }): Promise<boolean> {
   const e = ui.engine, st = e.spells!, t = e.items!
   const cure = st.get(3)
   if (!cure) return false
-  if (e.read(0x49e5) !== 0) { ui.print('cannot cast spells in this area', false); return false }
+  if (e.read(0x49e5) !== 0) { ui.print(msg('noCastHere'), false); return false }
   const party = () => e.party()
   const healers = () => party().filter((c) => c[F.status] === 0 && c[F.levels] > 0 && knows(c, cure.id) && c[F.clericSlots] > 0)
   const wounded = () => party().filter((c) => [0, 1, 4, 5].includes(c[F.status]) && c[F.hp] < c[F.maxHp])
@@ -293,25 +292,25 @@ async function fix(ui: CampUi, state: { heal: number }): Promise<boolean> {
 async function alter(ui: CampUi) {
   const e = ui.engine
   for (;;) {
-    const o = await ui.menu(['ORDER', 'DROP', 'SPEED', 'ICON', 'PICS', 'EXIT'], { prompt: 'Alter:' })
+    const o = await ui.menu(['ORDER', 'DROP', 'SPEED', 'ICON', 'PICS', 'EXIT'], { prompt: msg('alter').trimEnd() })
     if (o === 0) {
       const party = e.party()
       const i = await ui.menu([...party.map((c) => nameOf(c).toUpperCase()), 'EXIT'], { prompt: 'Party Order: Select' })
       if (i >= party.length) continue
-      const p = await ui.menu(['UP', 'DOWN', 'EXIT'], { prompt: `${nameOf(party[i])} has been selected` })
+      const p = await ui.menu(['UP', 'DOWN', 'EXIT'], { prompt: `${nameOf(party[i])} ${msg('selected')}` })
       if (p < 2) e.moveMember(i, p === 0 ? -1 : 1)
       ui.refresh()
     } else if (o === 1) {
       const c = e.cur
       if (e.party().length === 1) { ui.print('The last character cannot leave the party here.', false); continue }
-      if (await yes(ui, 'Drop from party?')) {
-        ui.print(c[F.inPlay] ? `${nameOf(c)} bids you farewell` : `${nameOf(c)} is dumped in a ditch`, false)
+      if (await yes(ui, msg('dropFromParty').trimEnd())) {
+        ui.print(`${nameOf(c)} ${msg(c[F.inPlay] ? 'bidsFarewell' : 'dumpedInDitch')}`, false)
         e.dropMember(c)
         ui.refresh()
-      } else ui.print('Breathes A sigh of relief', false)
+      } else ui.print(msg('sighOfRelief'), false)
     } else if (o === 2) {
       for (;;) {
-        const k = await ui.menu(['FASTER', 'SLOWER', 'EXIT'], { prompt: `Game Speed = ${e.speed} (0=fastest 9=slowest)` })
+        const k = await ui.menu(['FASTER', 'SLOWER', 'EXIT'], { prompt: `${msg('gameSpeed')}${e.speed}${msg('speedRange')}` })
         if (k === 0) e.speed = Math.max(0, e.speed - 1)
         else if (k === 1) e.speed = Math.min(9, e.speed + 1)
         else break

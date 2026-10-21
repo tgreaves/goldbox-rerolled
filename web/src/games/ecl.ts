@@ -36,7 +36,7 @@ export interface EclMap {
    *  clears (CotAB DS:8B87: 0x18B39, 0x20390) */
   loadPastEnd: boolean
   /** shown before "The entire party is killed!" when DAMAGE kills everyone (PoR "The END!", 0x1C667) */
-  wipeBanner: string | null
+  wipeBanner: number | null
   /** where a new game's scripts start: ECL block and record */
   start: { block: number; area: number }
   /** a save whose area is 0 starts here, with that area's script loaded (CotAB 1; PoR has an area 0) */
@@ -78,7 +78,7 @@ export const POR_ECL: EclMap = {
   refreshAfterPicture: false,
   damageDespiteSave: 0,
   loadPastEnd: false,
-  wipeBanner: 'The END!',
+  wipeBanner: 0x1c35d, // "The END!" (FUN_29c3_2775)
   start: { block: 3, area: 0 },
   areaZero: null,
   twoSlotSkipsFF: false,

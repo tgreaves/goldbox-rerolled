@@ -520,7 +520,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     },
     async engine(what, info) {
       if (what === 'blocked') return note('Blocked.')
-      if (what === 'party dead') { print('The entire party is killed!', true); return gameOver() } // FUN_29c3_2775
+      if (what === 'party dead') { print(msg('partyKilled'), true); return gameOver() } // FUN_29c3_2775
       if (what === 'combat') {
         townMode = 'camp'
         const combatCanvas = app.querySelector<HTMLCanvasElement>('.combatview')!
@@ -955,7 +955,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           const c = engine.cur
           const before = engine.money[i]
           message = take(c, engine.itemsOf(c), engine.money, i, n, t) || `${nameOf(c)} takes ${before - engine.money[i]} ${COINS[i]}.`
-          if (message === 'Overloaded') message = 'OverLoaded'
+          if (message === msg('moneyOverloaded') || message === msg('takeOverloaded')) message = msg('shopOverloaded')
           drawRoster()
         } else if (d.share) { share(members().map((c) => ({ c, items: engine.itemsOf(c) })), engine.money, t); message = engine.money.some((v) => v > 0) ? `Shared; what nobody could carry is still here.` : 'Shared.'; drawRoster() }
         else if (d.pool) { poolAll(members().map((c) => ({ c, items: engine.itemsOf(c) })), engine.money, t); message = 'The party\'s coins are pooled here.'; drawRoster() }
@@ -973,7 +973,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           const [i, k] = d.give.split(':').map(Number)
           const it = engine.treasure[i], c = members()[k], items = engine.itemsOf(c)
           const why = canTakeItem(c, items, it)
-          if (why) message = why === 'Overloaded' ? 'OverLoaded' : why
+          if (why) message = why === msg('takeOverloaded') ? msg('shopOverloaded') : why
           else { engine.treasure.splice(i, 1); items.push(it); recalc(c, items, t); message = `${nameOf(c)} takes ${t.name(it)}.`; drawRoster() }
         } else if (d.propose) split = propose()
         else if (d.splitCancel) split = null
@@ -1055,8 +1055,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         else if (d.buy) {
           const it = engine.treasure[Number(d.buy)], buyer = engine.cur, items = engine.itemsOf(buyer)
           const why = canTakeItem(buyer, items, it)
-          if (why) message = why === 'Overloaded' ? 'OverLoaded' : why
-          else if (!pay(buyer, engine.money, it.value, t, items)) message = 'Not enough money.'
+          if (why) message = why === msg('takeOverloaded') ? msg('shopOverloaded') : why
+          else if (!pay(buyer, engine.money, it.value, t, items)) message = msg('shopNoMoney')
           else {
             const copy = it.copy()
             items.push(copy)
@@ -1223,7 +1223,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           print(`${nameOf(c)} has been dropped.`, false)
         }
       } else if (o === 'MODIFY') {
-        if ((c[F.xp] | c[F.xp + 1] | c[F.xp + 2] | c[F.xp + 3]) !== 0) print(`${nameOf(c)} can't be modified.`, false)
+        if ((c[F.xp] | c[F.xp + 1] | c[F.xp + 2] | c[F.xp + 3]) !== 0) print(`${nameOf(c)}${msg('cantModify')}`, false)
         else if (await tools.modify(c)) { if (engine.items) recalc(c, engine.itemsOf(c), engine.items); print(`${nameOf(c)} has been modified.`, false) }
       } else if (o === 'TRAIN') {
         const chk = checkTraining(t, c, engine.read(0x6da8))
@@ -1303,7 +1303,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const store = opts.mode === 'shop' || opts.mode === 'temple'
       if (opts.confirm === 'drop') actions = `<p>Your ${escape(t.name(it))} will be gone forever. Drop It?</p>
         <button data-a="drop-yes">Yes</button><button data-a="cancel">No</button>`
-      else if (opts.confirm === 'sell') actions = `<p>I'll give you ${sellOffer(it)} gold pieces for your ${escape(t.name(it))}. Is It a Deal?</p>
+      else if (opts.confirm === 'sell') actions = `<p>${escape(msg('illGiveYou'))}${sellOffer(it)}${escape(msg('goldForYour'))}${escape(t.name(it))}. Is It a Deal?</p>
         <button data-a="sell-yes">Yes</button><button data-a="cancel">No</button>`
       else if (opts.confirm === 'id') actions = `<p>For 200 gold pieces I'll identify your ${escape(t.name(it))}. Is It a Deal?</p>
         <button data-a="id-yes">Yes</button><button data-a="cancel">No</button>`
@@ -1491,7 +1491,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       } else if (a === 'use' || a.startsWith('use-')) {
         // Use outside combat (FUN_4894_1a8a); it does not end anything (spec/A-games/engine/town.md, "Items menu")
         const st = engine.spells
-        if (!it.ready) { again({ selected: keep, message: 'Must be Readied' }); return }
+        if (!it.ready) { again({ selected: keep, message: msg('mustBeReadied') }); return }
         if (!st) return
         const scroll = isScroll(it, t)
         const u: UseStep = opts.use ?? { scroll, ids: itemSpells(it, scroll) }
@@ -1510,7 +1510,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           if (!a.startsWith('use-on-')) { again({ selected: keep, confirm: 'use', use: u }); return }
           targets = [engine.party()[Number(a.slice(7))]]
         }
-        print(`${c.name} uses an item`, false)
+        print(`${c.name} ${msg('usesItem')}`, false)
         void castOutside(engine, node, s, targets, true).then((out) => {
           spendUse(items, it, u.scroll, s.id)
           for (const m of out) print(m, false)
