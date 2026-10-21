@@ -49,7 +49,7 @@ const POR_HANDLERS: Record<number, HandlerSpec> = {
   3: { b: 'vsTargetType', bonus: [[4, 2]] }, // 013b
   4: { b: 'expireInto', msg: 'starts to train', type: 7, duration: 43200, power: 0xff, flag: 1 }, // 0x373AF
   6: { b: 'vsTargetType', bonus: [[10, 1], [9, 2], [12, 2], [4, 3]], dmgType: 9 }, // 01c3 flaming weapon
-  7: { b: 'statUp', stat: 4, msg: 'is hardier', at: 20, effect: 62, duration: 60 }, // 0x37463
+  7: { b: 'statUp', stat: 4, msg: 'is hardier', at: 20, effect: 62, duration: 60, power: 0xff, hpFrom: 15, fighter: 2, fighterOnlyFrom: 17 }, // 0x37463
   ...each([8, 45], { b: 'saveVsAlignment', alignments: [2, 5, 8], save: 2 }), // 0377 Protection from Evil
   ...each([9, 46], { b: 'saveVsAlignment', alignments: [0, 3, 6], save: 2 }), // 03ac Protection from Good
   10: { b: 'resist', type: 2, save: 3, onRemoval: 1 }, // 03e1 Resist Cold
@@ -111,7 +111,7 @@ const POR_HANDLERS: Record<number, HandlerSpec> = {
   79: { b: 'hitDamage', count: 2, sides: 10, dmgType: 9, active: 1, keep: 1 }, // 1a19 fire on hit
   80: { b: 'hitDamage', count: 1, sides: 4, dmgType: 0x10, active: 1, keep: 1 }, // 1a4c acid on hit
   81: { b: 'fearAura', saveType: 4, hdUpTo: [3, 5], effects: [52, 2], power: 0x0c, msgs: ['is paralyzed with fear', 'is weakened by fear'] }, // 0x38CDA
-  82: { b: 'paralysingAura', bonus: 1, raceBonus: [7, 2], effect: 52, roll: [1, 4], power: 0x0c, msg: 'is Paralyzed' }, // 0x38DD8
+  82: { b: 'paralysingAura', bonus: 1, crowd: 6, raceBonus: [7, 2], effect: 52, roll: [1, 4], power: 0x0c, msg: 'is Paralyzed' }, // 0x38DD8
   83: { b: 'stoneGaze', reflectable: 127, word: 0x76, save: 1, status: 7, msg: 'is Stoned' }, // 0x38EDD (word 0x76 "Mirror")
   84: { b: 'charmGaze', spell: 10, save: 4, bonus: -2, effect: 11, power: 0x0c }, // 0x390A7
   85: { b: 'drainOnHit', levels: 1 }, // 23a4

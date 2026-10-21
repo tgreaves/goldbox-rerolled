@@ -190,7 +190,7 @@ character.
 ### 3.5 Effects that last, end or re-arm
 
 - **`expireInto`** (`type`, `duration`, `power`, `flag`, `msg`?) [removal] — `msg`, then `type` added raw. PoR 4 (0x373AF), 59 (1472).
-- **`statUp`** (`stat`, `msg`, `at`, `effect`, `duration`) [removal] — `msg`, the stat + 1; from `at`, `effect` raw for `duration` (flag 1). PoR 7 (0x37463).
+- **`statUp`** (`stat`, `msg`, `at`, `effect`, `duration`, `power`, `hpFrom`, `fighter`, `fighterOnlyFrom`) [removal] — `msg`, the stat + 1; from `at`, `effect` raw for `duration` (power `power`, flag 1) and nothing more; otherwise from `hpFrom` the hit-point gain of [engine/effects.md](../A-games/engine/effects.md) row 7 (byte sums over the class levels, class `fighter` by stat − `hpFrom`, the others 2 or 1; none from `fighterOnlyFrom` without a `fighter` level), added to max HP and HP. PoR 7 (0x37463).
 - **`restoreStrength`** (`types`) [removal] — an active STR record (power < 0x80) restores the STR it holds; the strongest other record of `types` then takes over ([procedures.md §12.3](procedures.md#123-the-strength-spells)). PoR 12, 38 (04ba).
 - **`restoreStat`** (`stat`) [removal] — the stat := the power. PoR 14 Friends (05d6).
 - **`poisonTick`** (`duration`, `power`) [removal] — re-armed for `duration`; then above 1 HP, 1 point of damage (type 0). PoR 15 (05eb).
@@ -220,7 +220,7 @@ character.
 - **`confusion`** (`flee`, `berserk`) [21] — d100: 1–10 the record goes, forced to flee (record +0x10 = 1), computer control, morale 0xB3, no target, `flee` added for 10 with "runs away"; 11–60 "is confused", the turn ends; 61–80 `berserk` added for 1 with power the side and "goes berserk", then run at once; 81–100 "is enraged"; then a save vs spell at −2 removes the record. CotAB 35 (0x27D29).
 - **`runsAway`** [removal] — morale 0xB3 → 0 and computer control off; no longer forced to flee. CotAB 142 (0x29C82).
 - **`fearAura`** (`saveType`, `hdUpTo`, `effects`, `power`, `msgs`) [8] — each enemy in sight in play that fails a save vs `saveType`: by hit dice, up to `hdUpTo[i]` gets `effects[i]` raw with `msgs[i]`. PoR 81 (0x38CDA).
-- **`paralysingAura`** (`bonus`, `raceBonus` [race, n], `effect`, `roll`, `power`, `msg`) [8] — everyone else's records of this type go; then each enemy in play saves vs 0 at `bonus` (+ n for that race) or gets `effect` for `roll` rounds with `msg`. PoR 82 (0x38DD8).
+- **`paralysingAura`** (`bonus`, `crowd`, `raceBonus` [race, n], `effect`, `roll`, `power`, `msg`) [8] — everyone else's records of this type go; then each enemy in play saves vs 0 at `bonus` if its side has `crowd` or more in play (`DS:6814[side]`), + n for that race, or gets `effect` for `roll` rounds with `msg`. PoR 82 (0x38DD8).
 - **`breakSpell`** (`msg`, `sayOn`?, `acWorse`?, `acFloor`?) [11, 15] — a spell being cast is lost, with `msg` (only on `sayOn`); with `acWorse`, on 11 the rear AC that much worse (no worse than `acFloor`) and the front AC the same. PoR 21 Silence, 30 Stinking Cloud (0x3793F, 0x37C95).
 - **`feeblemind`** [direct] — INT and WIS := 7, "is stupid"; in combat the spell being cast is lost ("lost a spell", forgotten). CotAB 68 (0x288E5).
 
@@ -407,7 +407,7 @@ Hexadecimal values are effect types, item types, name words, flags and masks; ot
 | 4 | `expireInto` msg "starts to train"; type 7; duration 43200; power 0xFF; flag 1 | `attackerClass` flag 1; roll -7 |
 | 5 | `none` | same |
 | 6 | `vsTargetType` bonus [[10, 1], [9, 2], [12, 2], [4, 3]]; dmgType 9 | same |
-| 7 | `statUp` stat 4; msg "is hardier"; at 20; effect 0x3E; duration 60 | `acBoth` add 2; cap 0x3C |
+| 7 | `statUp` stat 4; msg "is hardier"; at 20; effect 0x3E; duration 60; power 0xFF; hpFrom 15; fighter 2; fighterOnlyFrom 17 | `acBoth` add 2; cap 0x3C |
 | 8 | `saveVsAlignment` alignments [2, 5, 8]; save 2 | same |
 | 9 | `saveVsAlignment` alignments [0, 3, 6]; save 2 | same |
 | 10 | `resist` type 2; save 3; onRemoval 1 | same |
@@ -482,7 +482,7 @@ Hexadecimal values are effect types, item types, name words, flags and masks; ot
 | 79 | `hitDamage` count 2; sides 10; dmgType 9; active 1; keep 1 | same |
 | 80 | `hitDamage` count 1; sides 4; dmgType 0x10; active 1; keep 1 | same |
 | 81 | `fearAura` saveType 4; hdUpTo [3, 5]; effects [0x34, 2]; power 0x0C; msgs ["is paralyzed with fear", "is weakened by fear"] | `halve` |
-| 82 | `paralysingAura` bonus 1; raceBonus [7, 2]; effect 0x34; roll [1, 4]; power 0x0C; msg "is Paralyzed" | `fireColdSave` |
+| 82 | `paralysingAura` bonus 1; crowd 6; raceBonus [7, 2]; effect 0x34; roll [1, 4]; power 0x0C; msg "is Paralyzed" | `fireColdSave` |
 | 83 | `stoneGaze` reflectable 0x7F; word 0x76; save 1; status 7; msg "is Stoned" | `gazeStone` spell 65; word 0x76 |
 | 84 | `charmGaze` spell 10; save 4; bonus -2; effect 0x0B; power 0x0C | `absorbElectricity` |
 | 85 | `drainOnHit` levels 1 | `piercingOne` |
@@ -761,7 +761,7 @@ Inferred or open in the port (I / ?): Strength's bonus when no class applies (0,
 - ~~PoR 82's save bonus from DS:6814[side] and the creature classes behind PoR's +0x9F values 4, 9,
   10, 12~~ answered in part A ([engine/effects.md §3](../A-games/engine/effects.md#3-formulas-creature-classes-odd-cases-and-hasteslow)):
   the +1 applies only when the saver's side has 6 or more combatants in play, which `paralysingAura`
-  does not test (a code task, AUDIT §6.9 PA3); the class values are parameters already.
+  now tests (`crowd`, AUDIT §6.9 PA3 resolved); the class values are parameters already.
 - The three CotAB spell handlers that call the area template (0x48A8C, 0x49522, 0x496D1) are those of
   84 Fear, 92 Cone of Cold and 98, the kinds `scare` and `beam`; the template's unset-memory cases are
   the port's choices (§5).

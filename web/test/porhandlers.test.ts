@@ -100,4 +100,50 @@ describe('PoR effect handlers as the original', () => {
     await handle(g.h, 75, g.e, g.holder, 15, false) // 2 more: 1 is not above 2, the record goes
     expect([g.victim[F.hp], g.fxs.get(g.holder)!.length, g.fxs.get(g.victim)!.length, g.recs.get(g.holder)![0x10]]).toEqual([16, 0, 0, 1])
   })
+
+  /** 7's removal on a character with these class levels (index 0–7), CON, max HP and rolled HP */
+  async function trained(levels: Record<number, number>, con: number, maxHp: number, rolled: number) {
+    const x = new Uint8Array(F.size)
+    for (const [i, L] of Object.entries(levels)) x[F.levels + Number(i)] = L
+    x[F.stat[4]] = con; x[F.maxHp] = maxHp; x[F.hp] = maxHp - 3; x[F.hpRolled] = rolled
+    const fxs: Effect[] = [], said: string[] = []
+    const h = { effectsOf: () => fxs, print: (t: string) => said.push(t), name: () => 'X' } as unknown as FxHost
+    await handle(h, 7, eff(7), x, 0, true)
+    return { con: x[F.stat[4]], maxHp: x[F.maxHp], hp: x[F.hp], fxs, said }
+  }
+
+  it('7 raises CON and gives the hit points the original computes (0x37463)', async () => {
+    // fighter 5, CON 15 → 16: a = 60 − 50 = 10, b = 5·(16 − 15) = 5, + 2
+    expect(await trained({ 2: 5 }, 15, 60, 50)).toMatchObject({ con: 16, maxHp: 62, hp: 59, said: ['X is hardier'] })
+    // magic-user 4, CON 15 → 16: b = 4·2 = 8, a = 9, + 1
+    expect(await trained({ 5: 4 }, 15, 30, 21)).toMatchObject({ con: 16, maxHp: 31, hp: 28 })
+    // CON 14 → 15: b = 4·1, a = 9, + 2
+    expect(await trained({ 5: 4 }, 14, 30, 21)).toMatchObject({ con: 15, maxHp: 32, hp: 29 })
+    // CON 16 → 17 with no fighter level: no gain; with one, fighter 3 and cleric 3: b = 3·2 + 3·2 = 12, a = 25, + 2
+    expect(await trained({ 5: 4 }, 16, 30, 21)).toMatchObject({ con: 17, maxHp: 30 })
+    expect(await trained({ 0: 3, 2: 3 }, 16, 45, 20)).toMatchObject({ con: 17, maxHp: 47, hp: 44 })
+    // below 15 nothing but the CON
+    expect(await trained({ 2: 5 }, 12, 60, 50)).toMatchObject({ con: 13, maxHp: 60, hp: 57 })
+    // 20: effect 62 (dur 60, power FF, flag 1) and no hit points
+    const r = await trained({ 2: 5 }, 19, 60, 50)
+    expect([r.con, r.maxHp, r.fxs]).toEqual([20, 60, [{ type: 62, duration: 60, power: 0xff, flag: 1 }]])
+  })
+
+  it('82 gives the +1 save only to a side of 6 or more in play, +2 to humans (0x38DD8, DS:6814)', async () => {
+    const run = async (size: number, race = 1) => {
+      const owner = new Uint8Array(F.size), foes = Array.from({ length: size }, () => new Uint8Array(F.size))
+      owner[F.inPlay] = 1
+      for (const f of foes) { f[F.inPlay] = 1; f[F.side] = 1; f[F.race] = race }
+      const bonuses: number[] = []
+      const h = {
+        all: () => [owner, ...foes], effectsOf: () => [], enemiesNear: () => foes,
+        save: (_x: Uint8Array, _t: number, b: number) => { bonuses.push(b); return true },
+      } as unknown as FxHost
+      await handle(h, 82, eff(82), owner, 8, false)
+      return bonuses
+    }
+    expect(await run(5)).toEqual([0, 0, 0, 0, 0])
+    expect(await run(6)).toEqual(Array(6).fill(1))
+    expect(await run(2, 7)).toEqual([2, 2])
+  })
 })

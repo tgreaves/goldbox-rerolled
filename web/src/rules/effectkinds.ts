@@ -87,13 +87,35 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (p.msg) say(h, c, p.msg as string)
     addRaw(h, c, num(p, 'type'), num(p, 'duration'), num(p, 'power'), num(p, 'flag'))
   },
-  /** 7 training complete (removal, 0x37463): `msg`, the stat +1; from `at`, effect `effect` for `duration` (flag 1) */
+  /**
+   * 7 training complete (removal, 0x37463; spec/A-games/engine/effects.md row 7, §3): `msg`, the stat +1;
+   * from `at`, effect `effect` for `duration` (power `power`, flag 1) and nothing more. Otherwise, from
+   * `hpFrom` (CON 15), the hit points the higher stat gives, as the original computes them, in bytes:
+   * a = max HP − the rolled HP; b = Σ over the class levels L > 0 of L·(stat − `hpFrom`) for class
+   * `fighter`, L·2 for any other above `hpFrom`, L·1 at it; b = 1 if 0; a div b is added to max HP and HP,
+   * unless the stat is `fighterOnlyFrom` (17) or more and the character has no `fighter` level.
+   */
   statUp(h, _e, c, removal, p) {
     if (!removal) return
     const k = F.stat[num(p, 'stat')]
     say(h, c, p.msg as string)
-    c[k]++
-    if (c[k] >= num(p, 'at')) addRaw(h, c, num(p, 'effect'), num(p, 'duration'), 0, 1)
+    c[k] = (c[k] + 1) & 0xff
+    const v = c[k]
+    if (v >= num(p, 'at')) { addRaw(h, c, num(p, 'effect'), num(p, 'duration'), num(p, 'power'), 1); return }
+    const from = num(p, 'hpFrom'), fighter = num(p, 'fighter')
+    if (v < from) return
+    const a = (c[F.maxHp] - c[F.hpRolled]) & 0xff
+    let b = 0
+    for (let i = 0; i < 8; i++) {
+      const L = (c[F.levels + i] << 24) >> 24 // a signed byte (jle)
+      if (L <= 0) continue
+      b = (b + L * (i === fighter ? v - from : v > from ? 2 : 1)) & 0xff
+    }
+    if (b === 0) b = 1
+    const gain = Math.trunc(a / b) & 0xff
+    if (v >= num(p, 'fighterOnlyFrom') && ((c[F.levels + fighter] << 24) >> 24) <= 0) return
+    c[F.maxHp] = (c[F.maxHp] + gain) & 0xff
+    c[F.hp] = (c[F.hp] + gain) & 0xff
   },
   /** 8, 9, 45, 46 Protection from Evil / Good [11, 12] (0377, 03ac): the current character of an `alignments` alignment saves `save` better (on 12) */
   saveVsAlignment(h, _e, _c, _r, p, event) {
@@ -418,14 +440,16 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   },
   /**
    * 82 paralysing aura [8] (0x38DD8): everyone else's records of the type go; then each active enemy saves
-   * vs 0 at `bonus` (+`raceBonus` [race, n]) or, `msg`, gets `effect` for `roll` [n, d] rounds (power `power`)
+   * vs 0 at `bonus` when its side has `crowd` or more combatants in play (DS:6814[side]), +`raceBonus`
+   * [race, n], or, `msg`, gets `effect` for `roll` [n, d] rounds (power `power`)
    */
   paralysingAura(h, _e, c, _r, p, _ev, type) {
     for (const o of h.all()) for (const e of h.effectsOf(o).filter((x) => x.type === type && o !== c)) h.effectsOf(o).splice(h.effectsOf(o).indexOf(e), 1)
     const [race, more] = list(p, 'raceBonus'), [n, d] = list(p, 'roll')
     for (const e of h.enemiesNear(c, 255)) {
       if (!e[F.inPlay]) continue
-      const bonus = num(p, 'bonus') + (e[F.race] === race ? more : 0)
+      const side = h.all().filter((o) => o[F.inPlay] && o[F.side] === e[F.side]).length
+      const bonus = (side >= num(p, 'crowd') ? num(p, 'bonus') : 0) + (e[F.race] === race ? more : 0)
       if (!h.save(e, 0, bonus)) { say(h, e, p.msg as string); addRaw(h, e, num(p, 'effect'), h.roll(n, d), num(p, 'power'), 0) }
     }
   },
