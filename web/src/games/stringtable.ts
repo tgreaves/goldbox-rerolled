@@ -670,7 +670,7 @@ export const COAB_STRINGS: Strings = {
 export type MenuId =
   | 'main'
   | 'camp' | 'magic' | 'alter' | 'orderSelect' | 'orderPlace' | 'campFaster' | 'campSlower' | 'campSpeedExit' | 'rest'
-  | 'yesNo' | 'listExit' | 'shopLeaveYesNo' | 'templeLeaveYesNo' | 'treasureLeaveYesNo'
+  | 'yesNo' | 'listExit' | 'portrait' | 'shopLeaveYesNo' | 'templeLeaveYesNo' | 'treasureLeaveYesNo'
   | 'shop' | 'shopNoPool' | 'temple' | 'templeNoPool' | 'templeHeal'
   | 'treasureMoney' | 'treasureItems' | 'treasureNone' | 'treasureDetect' | 'treasureExit' | 'take'
   | 'appraiseGems' | 'appraiseJewelry' | 'appraiseExit' | 'sell' | 'sellKeep'
@@ -763,6 +763,7 @@ export const POR_MENUS: Menus = {
   partyBegin: 0x0cf53, // FUN_417f_0161
   partyExit: 0x0cf7d, // FUN_417f_0161
   modify: 0x33885, // FUN_417f_209f
+  portrait: 0x34bc8, // creation: "Head Body Keep", the portrait picker; FUN_417f_33e7 (CotAB has no portraits)
   iconMain: 0x0cfa8, // the icon editor's menus, DS:07BF + 0x29·level (level 1); FUN_417f_382d
   iconHeadWeapon: 0x0cfd1, // level 2; FUN_417f_382d
   iconParts: 0x0cffa, // level 3 (xxxx: Hair or Face); FUN_417f_382d

@@ -106,11 +106,12 @@ const KEYS: Record<string, Record<string, string>> = {
     doneGuard: 'G', doneDelayQuit: 'DQ', doneBandage: 'B', doneSpeedExit: 'SE', battleSlower: 'S', battleFaster: 'F', battleSpeedExit: 'E', aim: 'CE',
     encounterParlay: 'CWFP', encounterAdvance: 'CWFA', parlay: 'HSNMA', doorBash: 'B', doorPick: 'P', doorKnock: 'K', doorExit: 'E',
     itemReady: 'R', itemUse: 'U', itemTrade: 'T', itemDrop: 'D', itemHalve: 'H', itemJoin: 'J', itemSell: 'S', itemId: 'I',
-    viewTrade: 'T', viewDrop: 'D', viewExit: 'E', modify: 'KE',
+    viewTrade: 'T', viewDrop: 'D', viewExit: 'E', modify: 'KE', portrait: 'HBK',
     iconMain: 'P12SE', iconHeadWeapon: 'HWE', iconParts: 'WBSALE', iconEdit: 'NPKE', iconSmall: 'S', iconLarge: 'L', iconHair: 'H', iconFace: 'F',
   },
 }
 KEYS.coab = { ...KEYS.por, camp: 'SVMRAFE', rest: 'RDHMASE' }
+delete KEYS.coab.portrait // CotAB has no portraits
 /** the party screen's functions: one string each, its first letter the key */
 const ENTRIES: Record<string, string> = { partyCreate: 'C', partyDrop: 'D', partyModify: 'M', partyTrain: 'T', partyChangeClass: 'H', partyView: 'V', partyAdd: 'A',
   partyRemove: 'R', partyLoad: 'L', partySave: 'S', partyBegin: 'B', partyExit: 'E' }

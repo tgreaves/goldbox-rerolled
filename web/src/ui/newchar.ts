@@ -16,6 +16,11 @@ import {
 import type { Dice } from '../rules/dice'
 import { escape, onClose } from './sheet'
 import { word } from '../games/strings'
+import { game } from '../games/profile'
+
+/** The portrait picker's words, PoR's "Head Body Keep" (FUN_417f_33e7); a game without one (CotAB has
+ *  no portraits) keeps the port's. */
+const portraitWord = (key: string, port: string) => (game().menus.portrait !== undefined ? word('portrait', key).text : port)
 import { F } from '../games/fields'
 
 const STATS = ['STR', 'INT', 'WIS', 'DEX', 'CON', 'CHA']
@@ -108,8 +113,8 @@ export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, dic
           <div class="nc-portrait">
             <canvas class="pixel portrait" width="88" height="88"></canvas>
             <div class="iconctl">
-              <span>Head</span><button type="button" data-x="ph-">◀</button><output>${c[F.head]}</output><button type="button" data-x="ph+">▶</button>
-              <span>Body</span><button type="button" data-x="pb-">◀</button><output>${c[F.body]}</output><button type="button" data-x="pb+">▶</button>
+              <span>${escape(portraitWord('H', 'Head'))}</span><button type="button" data-x="ph-">◀</button><output>${c[F.head]}</output><button type="button" data-x="ph+">▶</button>
+              <span>${escape(portraitWord('B', 'Body'))}</span><button type="button" data-x="pb-">◀</button><output>${c[F.body]}</output><button type="button" data-x="pb+">▶</button>
             </div>
           </div>
           <div class="nc-icon">
