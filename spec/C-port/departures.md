@@ -64,6 +64,7 @@ implementation's: *done*, or what remains.
 | IMP-064 | the cards in a row | [ui-contract.md §3](ui-contract.md#3-screen-classes) | setting | Party: Row across the top (default) / Column beside the view (the original's arrangement) | done |
 | IMP-065 | reorder by dragging | [ui-contract.md §8.4](ui-contract.md#84-drags) | required | — | done |
 | IMP-066 | slides cut short | [ui-contract.md §8.1](ui-contract.md#81-exploring-nothing-pending-no-dialog-no-script-running), [exploration-view.md §3.4](exploration-view.md#34-slides) | required (with the WebGL view) | — | done |
+| IMP-077 | EGA drawing only | [rendering.md §3](rendering.md#3-palettes) | required | — | done |
 | IMP-069 | CotAB's ground in the 3D view | [exploration-view.md §3.2](exploration-view.md#32-textures-and-colours) | optional (D6) | — | done |
 | IMP-074 | the demo on the party screen | [app-flow.md §6](app-flow.md#6-the-demo) | required | — | done |
 
@@ -91,6 +92,7 @@ implementation's: *done*, or what remains.
 | IMP-058 | the numbers explained, the rules reference | [screens.md §3](screens.md#3-the-character-sheet), [§10](screens.md#10-rules-reference), [combat-ui.md §6](combat-ui.md#6-aiming-and-targets), [§7](combat-ui.md#7-information), [port-data.md §1](../D-appendices/port-data.md#1-spell-notes), [§2](../D-appendices/port-data.md#2-rules-reference), [§9](../D-appendices/port-data.md#9-interface-tooltips) | required | done |
 | IMP-062 | casting from the sheet | [screens.md §3.5](screens.md#35-spells-casting-outside-battles) | required | done |
 | IMP-068 | CotAB's code wheel asks nothing | [coab/ecl.md](../A-games/coab/ecl.md), [app-flow.md §4](app-flow.md#4-the-title) | required | done |
+| IMP-076 | PoR's translation-wheel screen not shown | [title-and-credits.md](../A-games/por/title-and-credits.md), [app-flow.md §4](app-flow.md#4-the-title) | required | done |
 | IMP-073 | the party screen's groups | [app-flow.md §5](app-flow.md#5-the-party-screen) | required | done |
 
 ## 4. Combat
@@ -122,18 +124,16 @@ implementation's: *done*, or what remains.
 
 ## 6. Departures without an IMP row
 
-Found while writing part C (2026-10-21); each needs either a row in the register or a change of the
-port ([AUDIT.md](../AUDIT.md) §6.9):
-
-| Departure | Where | Finding |
-|---|---|---|
-| PoR's translation-wheel screen is not shown (the original shows it and, in this release, accepts any word) | [app-flow.md §4](app-flow.md#4-the-title) | UI3 |
-| only the EGA video mode is drawn (no CGA, no Tandy video) | [rendering.md §3](rendering.md#3-palettes) | UI6 |
-| camp Save does not ask "Quit TO DOS" afterwards; the party screen's Exit goes to the title, not DOS (there is no DOS) | [screens.md §6.1](screens.md#61-the-camp-menu), [app-flow.md §5](app-flow.md#5-the-party-screen) | UI6 |
-| the battle's View keeps the normal palette (the original swaps it as on the battlefield) | [combat-ui.md](combat-ui.md), Open | UI6 |
+None. The five found while writing part C (2026-10-21, [AUDIT.md](../AUDIT.md) §6.9 UI3, UI6) were
+settled: PoR's translation wheel is IMP-076 and the EGA-only drawing IMP-077; Ctrl-S and camp Save's
+"Quit TO DOS" are now as the original ([audio.md §2](audio.md#2-device-choice),
+[screens.md §6.1](screens.md#61-the-camp-menu)); the battle's View is not a departure (the original
+restores the normal palette for the View screen in battle, [combat-ui.md](combat-ui.md), Open). The
+party screen's Exit goes to the games screen instead of DOS, as there is no DOS
+([app-flow.md §5](app-flow.md#5-the-party-screen)).
 
 ## Validation
 
-- Every IMP id of the register appears in §1–§5 (74 ids, 77 rows; IMP-009 unassigned), checked by
+- Every IMP id of the register appears in §1–§5 (76 ids, 79 rows; IMP-009 unassigned), checked by
   listing `^| IMP-` in [IMPROVEMENTS.md](../../IMPROVEMENTS.md) (2026-10-21).
 - [CONFORMANCE.md](../CONFORMANCE.md), "Departures".

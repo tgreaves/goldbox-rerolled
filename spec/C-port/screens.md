@@ -100,7 +100,9 @@ coins. **Close**. (In play the full sheet, §3, is used.)
 
 The original's editor ([input-and-menus.md §3.2](../A-games/engine/input-and-menus.md#32-combat-icon-editor-fun_417f_382d-also-from-camp-alter-o))
 as one panel "Combat icon" (IMP-017): the old and new icons, each in the ready and action poses
-("old: ready, action", "new: ready, action"); Head ◀ ▶ (0–13), Weapon ◀ ▶ (0–31), Size (Small/Large);
+("old: ready, action", "new: ready, action"), drawn in the battle palette as the original's editor
+swaps EGA registers 0 and 8 while it runs ([combat-visuals.md, "Palette"](../A-games/engine/combat-visuals.md#palette-o));
+Head ◀ ▶ (0–13), Weapon ◀ ▶ (0–31), Size (Small/Large);
 the six parts and the Colour 1 / Colour 2 swatches for the selected part; **Exit** (E) restores,
 **Keep** (K, main) keeps.
 
@@ -357,8 +359,12 @@ game, IMP-048). Save is the slot menu; View the sheet (§3); Exit leaves. The ca
 character. Without `START.EXE` and `ITEMS`: "The camp needs START.EXE and ITEMS: re-import the
 *FOLDER* folder."
 
-Note: the original PoR menu has no Fix and asks "Quit TO DOS" after Save; CotAB's own camp menu has
-Fix ("Save View Magic Rest Alter Fix Exit", CotAB image 0x0B00A). See [§6.9](#69-fix).
+After Save (or a cancelled save) comes the original's question "Quit TO DOS" YES NO (*game text*;
+PoR `FUN_3f81_1e6f`, CotAB 0x322D0): Yes ends the game there and goes to the party screen, the port's
+way out (there is no DOS); No goes back to the camp menu.
+
+Note: the original PoR menu has no Fix; CotAB's own camp menu has Fix ("Save View Magic Rest Alter
+Fix Exit", CotAB image 0x0B00A). See [§6.9](#69-fix).
 
 ### 6.2 Magic
 

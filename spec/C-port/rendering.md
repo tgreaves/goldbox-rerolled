@@ -61,7 +61,7 @@ stretched by the layout to its region. The **Graphics** setting (IMP-047,
   9 `5555FF`, 10 `55FF55`, 11 `55FFFF`, 12 `FF5555`, 13 `FF55FF`, 14 `FFFF55`, 15 `FFFFFF`. Every picture
   index maps through it ([graphics.md, "Image block"](../A-games/engine/graphics.md#image-block-o)).
   Only EGA is drawn: the original's CGA and Tandy video modes (CGA maps through the image header's
-  `cga_map`) are not offered.
+  `cga_map`) are not offered (IMP-077).
 - **The battle palette**: colours 0 and 8 swapped, as the original's combat screen sets the EGA
   palette registers ([combat-visuals.md, "Palette"](../A-games/engine/combat-visuals.md#palette-o)).
   Used for the battlefield's tiles, icons and sprites.

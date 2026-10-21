@@ -88,7 +88,7 @@ Columns 23–38, from row 1: the combatant's name; "Hitpoints" (colour 10) with 
 
 ## Palette (O)
 
-Drawing the combat screen frame (`FUN_10ba_2b88`, at battle start and after casting or using an item) calls `FUN_577f_00e3`: on EGA (`DS:4A1E` = 1) palette register 0 := colour 8 and register 8 := colour 0 (`FUN_1464_2a0d(reg, colour)`, INT 10h AX=1000h; colours ≥ 8 are sent as colour + 8, the intensity bit). Black shows as dark grey and dark grey as black: dungeon floors are dark grey, the mortar between stones black. The cleanup `FUN_320c_0000` → `FUN_577f_0105` restores both registers. The combat-icon editor (`FUN_417f_382d`) and the View screen (`FUN_4894_0ab3`) swap and restore the same way.
+Drawing the combat screen frame (`FUN_10ba_2b88`, at battle start and after casting or using an item) calls `FUN_577f_00e3`: on EGA (`DS:4A1E` = 1) palette register 0 := colour 8 and register 8 := colour 0 (`FUN_1464_2a0d(reg, colour)`, INT 10h AX=1000h; colours ≥ 8 are sent as colour + 8, the intensity bit). Black shows as dark grey and dark grey as black: dungeon floors are dark grey, the mortar between stones black. The cleanup `FUN_320c_0000` → `FUN_577f_0105` restores both registers. The combat-icon editor (`FUN_417f_382d`) swaps on entry (0x3504A) and restores when the icon is accepted (0x35718), in any game mode. The View screen (`FUN_4894_0ab3`) does the reverse, in combat only (game mode `DS:49F3` = 5): it restores the normal palette on entry (0x39401) and swaps back on leaving (0x39650), so a character viewed in battle is shown in the normal palette (O).
 
 ## Cursor tile (O)
 

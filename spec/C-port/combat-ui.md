@@ -222,5 +222,7 @@ IMP-054. The original's hidden controls, made visible:
 ## Open
 
 - The info box and the turn strip use colours outside EGA ([ui-contract.md](ui-contract.md), Open).
-- The original swaps the palette for the View screen in battle too; the port's sheet keeps the normal
-  palette (cosmetic).
+- ~~The battle's View and the palette~~: the original's View screen restores the normal palette in
+  battle (`FUN_4894_0ab3` at 0x393FA: in game mode 5 it calls the restore `FUN_577f_0105`, and swaps
+  back on leaving at 0x39649, **O**), so the port's sheet in the normal palette is as the original
+  (UI6, 2026-10-21).

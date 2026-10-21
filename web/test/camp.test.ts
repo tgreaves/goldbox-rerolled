@@ -104,3 +104,29 @@ describe.skipIf(!have)('camp Alter', () => {
     expect(refreshed).toBeGreaterThan(1) // after the editor, and on leaving camp
   })
 })
+
+describe.skipIf(!have)('camp Save', () => {
+  it('asks "Quit TO DOS" after Save, even a cancelled one; Yes ends the game (FUN_3f81_1e6f)', async () => {
+    const { camp } = await import('../src/ui/camp')
+    const m = new Map<string, Uint8Array>()
+    for (const n of readdirSync(dir)) if (wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(join(dir, n))))
+    const files = new GameFiles(m)
+    const io = { print: () => {}, menu: async () => 0, refresh: async () => {}, pause: async () => {}, sound: () => {},
+      picture: () => {}, sprite: () => {}, engine: async () => {}, inputNumber: async () => 0, inputText: async () => '' } as unknown as Io
+    const dat = files.get('SAVGAMA.DAT')!
+    const e = new Engine(files, io, 2)
+    e.loadSave(dat, parseSave(dat).party.map((s) => files.get(`${s}.SAV`)!))
+    const run = async (answers: string[]) => {
+      const prompts: string[] = []
+      let saves = 0
+      const ui = {
+        engine: e, print: () => {}, refresh: () => {}, pause: async () => {},
+        menu: async (items: string[], o?: { prompt?: string }) => { prompts.push(o?.prompt ?? ''); return items.indexOf(answers.shift()!) },
+        view: async () => {}, save: async () => { saves++ }, stopper: () => ({ stopped: () => false, done: () => {} }),
+      }
+      return { quit: await camp(ui as never), prompts, saves }
+    }
+    expect(await run(['SAVE', 'YES'])).toEqual({ quit: true, prompts: ['Camp:', 'Quit TO DOS'], saves: 1 })
+    expect(await run(['SAVE', 'NO', 'EXIT'])).toEqual({ quit: false, prompts: ['Camp:', 'Quit TO DOS', 'Camp:'], saves: 1 })
+  })
+})

@@ -50,7 +50,7 @@ quotes a game text it marks it *game text* and points here.
 | "Breathes A sigh of relief" | 0x310DB | 0x3174F | alter drop: no |
 | "Game Speed =" | 0x31240 | 0x318B4 | speed prompt |
 | " (0=fastest 9=slowest)" | 0x3124E | 0x318C2 | speed prompt, end |
-| "Quit TO DOS" | 0x31672 | 0x321BA | camp save: quit question (not shown by the port) |
+| "Quit TO DOS" | 0x31672 | 0x321BA | camp save: quit question |
 | "cannot cast spells in this area" | 0x2FB12 | 0x300D6 | spell activity refused |
 | "is in no condition to" | 0x2FB32 | 0x300F6 | spell activity refused |
 | "has no spells memorized" | 0x2FC99 | 0x3025D | cast: none |

@@ -4,7 +4,7 @@ import type { GameFiles } from '../store/gamefiles'
 import { parseCharacter } from '../data/character'
 import type { StoredCharacter } from '../store/user'
 import { escape, onClose } from './sheet'
-import { toImageData, EGA, type Picture } from '../data/image'
+import { toImageData, EGA, COMBAT_EGA, type Picture } from '../data/image'
 import { blit, sizeCanvas } from '../render/upscale'
 import { Tables, abilityRange, combatStats, hpMax, hpMin, modifyStep } from '../rules/chargen'
 import { buildIcon } from '../render/icon'
@@ -60,12 +60,13 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, dice: 
     return createCharacter(dialog, files, dice, t)
   }
 
+  /** an icon in the battle palette: the original's editor swaps EGA registers 0 and 8 while it runs (0x3504A) */
   function paintIcon(canvas: HTMLCanvasElement, p: Picture | null) {
     const w = Number(canvas.getAttribute('width')), h = Number(canvas.getAttribute('height'))
     const g2 = sizeCanvas(canvas, w, h)
-    g2.fillStyle = '#000'
+    g2.fillStyle = `rgb(${COMBAT_EGA[0].join(',')})`
     g2.fillRect(0, 0, w, h)
-    if (p) blit(g2, toImageData(p), 0, 0)
+    if (p) blit(g2, toImageData(p, COMBAT_EGA), 0, 0)
   }
 
   /** Combat icon editor (FUN_417f_382d), as one panel; returns false if cancelled. */

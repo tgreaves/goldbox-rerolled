@@ -577,7 +577,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         // the camp screen shows PIC<block> #29, the campfire, animated (FUN_10ba_27d9 in game mode 2)
         townMode = 'camp'
         showPicture({ pic: 29 })
-        try { await camp(campUi) } finally { townMode = null; showPicture(null) }
+        let quit = false
+        try { quit = await camp(campUi) } finally { townMode = null; showPicture(null) }
+        // "Quit TO DOS": the game ends there; the port's way out is the party screen (spec/C-port/screens.md §6.1)
+        if (quit) { engine.quit = true; setTimeout(leave, 0) }
         return
       }
       if (what === 'shop' || what === 'temple' || what === 'treasure') {

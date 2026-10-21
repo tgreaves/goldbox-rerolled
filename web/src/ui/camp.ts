@@ -36,17 +36,25 @@ const EFFECT_NAMES: Record<number, string> = {
 }
 const SPELL_NAMED = new Set([1, 2, 5, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 20, 21, 22, 23, 24, 25, 28, 29, 32, 33, 34, 36, 37, 38, 39, 41, 42, 45, 46, 49, 51, 52, 53])
 
-/** The camp screen (FUN_3f81_1e6f). Sets engine.campInterrupted when a rest was interrupted. */
-export async function camp(ui: CampUi) {
+/**
+ * The camp screen (FUN_3f81_1e6f). Sets engine.campInterrupted when a rest was interrupted. Resolves
+ * true when the player answered Yes to "Quit TO DOS" after Save (the game is to end there).
+ */
+export async function camp(ui: CampUi): Promise<boolean> {
   const e = ui.engine
-  if (!e.items || !e.spells) { ui.print(`The camp needs START.EXE and ITEMS: re-import the ${game().folder} folder.`, false); return }
+  if (!e.items || !e.spells) { ui.print(`The camp needs START.EXE and ITEMS: re-import the ${game().folder} folder.`, false); return false }
+  let quit = false
   const state = { heal: 0 }
   for (const c of e.party()) clearPending(c, e.itemsOf(c), e.items)
   ui.print('The party makes camp...', true)
   for (;;) {
     const o = await ui.menu(['SAVE', 'VIEW', 'MAGIC', 'REST', 'ALTER', 'FIX', 'EXIT'], { prompt: 'Camp:' })
-    if (o === 0) await ui.save()
-    else if (o === 1) await ui.view()
+    if (o === 0) {
+      // Save, then "Quit TO DOS" Yes/No, asked even after a cancelled save (PoR FUN_3f81_1e6f at
+      // 0x31766, CotAB 0x322D0); Yes ends the game
+      await ui.save()
+      if (await yes(ui, 'Quit TO DOS')) { quit = true; break }
+    } else if (o === 1) await ui.view()
     else if (o === 2) { if (await magic(ui, state)) break }
     else if (o === 3) { if (await rest(ui, state)) break }
     else if (o === 4) await alter(ui)
@@ -55,6 +63,7 @@ export async function camp(ui: CampUi) {
   }
   for (const c of e.party()) clearPending(c, e.itemsOf(c), e.items)
   ui.refresh()
+  return quit
 }
 
 /** Magic menu; returns true when a rest was interrupted. */

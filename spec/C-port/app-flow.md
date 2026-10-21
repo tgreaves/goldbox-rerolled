@@ -145,8 +145,8 @@ CotAB [coab/assets.md §7](../A-games/coab/assets.md#7-start-up-title-copy-prote
   advances by itself when its time is up. After the last screen: the **party screen**. The first key
   or tap unlocks the sound.
 - **Not shown**: the original's copy-protection checks (PoR's translation wheel, which the PoR
-  binary accepts anything at, [title-and-credits.md](../A-games/por/title-and-credits.md); CotAB's,
-  IMP-068) and CotAB's start-up menu (Play / Demo, IMP-074).
+  binary accepts anything at, IMP-076, [title-and-credits.md](../A-games/por/title-and-credits.md);
+  CotAB's, IMP-068) and CotAB's start-up menu (Play / Demo, IMP-074).
 
 ## 5. The party screen
 
