@@ -125,7 +125,7 @@ export const POR_SPELLS: SpellRules = {
 /**
  * CotAB's table (DS:72BA): ids 1–56 are PoR's spells, most with the same handler (spec/A-games/coab/spells.md
  * §2, "same"); 57–67 keep PoR's item spells where the record matches; 58 and 66–100 are its own.
- * Every id is transcribed (spec/A-games/coab/spells.md §2 and its port status, which lists what is inferred).
+ * Every id is transcribed (spec/A-games/coab/spells.md §2; what is inferred: spec/B-model/vocabularies.md §8.3).
  */
 const POR_HANDLERS_1_57 = Object.fromEntries(Object.entries(POR_SPELLS.handlers).filter(([id]) => Number(id) <= 57 || [60, 61, 62, 63, 64, 65].includes(Number(id))))
 
