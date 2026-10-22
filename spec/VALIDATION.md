@@ -89,6 +89,14 @@ Also run before every commit: `npx tsc --noEmit -p .`, `npm run build`, and
   them (`drawnview.test.ts`).
 - **Game text** (`web/test/text-hashes.json`): the SHA-256 of every string read by address (PoR 403,
   CotAB 430).
+- **The original in DOSBox Staging** (2026-10-22): PoR run unattended (`SDL_VIDEODRIVER=dummy`, the
+  game's folder copied and mounted as `C:`, keys typed by DOSBox's `AUTOTYPE` from a batch file under
+  250 characters, `start sting`), observed through the saves it writes (the clock A 0x49C6–0x49CC, each
+  member's HP). From save A with the game speed set to 0 and the rest-encounter chance (code 0x9A42)
+  patched: the heal counter `DS:6DD8` adds up across rests in one camp and starts again with a camp; the
+  rest-encounter counter `DS:49FB` carries over between rests and camps. Both as camp-and-time.md and the
+  port. Not reachable from save A (no shop): the Sell, Share and Appraise checks; not observable (no
+  debugger, no screenshots): register 0x035F, reference frames.
 - **The interface** was checked against part C in headless Chromium (2026-10-21; each part C file's
   "Validation" section says what): every screen class, PoR's game-file save A, the games screen, the
   import, the party screen, the play screen, the panels. Again on 2026-10-22 (Playwright with Chrome,
