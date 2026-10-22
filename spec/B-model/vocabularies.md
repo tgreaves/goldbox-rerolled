@@ -768,5 +768,6 @@ Inferred or open in the port (I / ?): Strength's bonus when no class applies (0,
 - The three CotAB spell handlers that call the area template (0x48A8C, 0x49522, 0x496D1) are those of
   84 Fear, 92 Cone of Cold and 98, the kinds `scare` and `beam`; the template's unset-memory cases are
   the port's choices (§5).
-- The set-status routine's redraws after the fall (PoR `FUN_10ba_17e3`, the roster `FUN_10ba_0767`;
-  CotAB 0x4E8BF, 0x4D7E8) are the host's screen refresh; `FUN_10ba_17e3` / 0x4E8BF is not identified (?).
+- The set-status routine's redraws after the fall (PoR `FUN_10ba_17e3` clearing the message area, the
+  roster `FUN_10ba_0767`; CotAB 0x4E8BF, 0x4D7E8) are presentation: the port keeps a text log and
+  refreshes its own panels (part C), so nothing of them is in the procedure.

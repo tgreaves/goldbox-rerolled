@@ -169,8 +169,8 @@ in CotAB those are a dead type and Giant bane.
 
 The set-status routine is 0x4AAC4 (`4aab:0014`, stub `e3:25`; char, status, msg), PoR's `FUN_3723_0058`
 step for step: the message (0x4AAEE), the 6/7/8 test, status +0x195, in-play +0x196 and HP +0x1A4 := 0,
-going down (0x4AB2D), event 13, the fall (`121:75`), the pause, 0x4E8BF (?) and, unless DS:4FD3 = 5,
-0x4D7E8 for the current character (DS:6520). Handler 130 (0x29993) repeats its steps inline from status
+going down (0x4AB2D), event 13, the fall (`121:75`), the pause, the message area cleared (0x4E8BF, PoR's
+`FUN_10ba_17e3` on DS:4FD3) and, unless DS:4FD3 = 5, the roster (0x4D7E8, **I**) for the current character (DS:6520). Handler 130 (0x29993) repeats its steps inline from status
 8 without the message or the test (0x299F4).
 
 ## Open
