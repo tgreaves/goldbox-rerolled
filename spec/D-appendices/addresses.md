@@ -843,8 +843,8 @@ when its table column or sentence names CotAB.
 | 0x1F01E | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1F03F | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1F04F | coab/ecl | coab/ecl: Start-up menu and demo |  |
-| 0x1F0F6 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
-| 0x1F531 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x1F0F6 | coab/ecl, B/procedures | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x1F531 | coab/ecl, B/procedures | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1FA02 | coab/ecl, B/script-vm-map | coab/ecl: Engine entry points | `FUN_2fea_0000` |
 | 0x1FB38 | coab/ecl | coab/ecl: Engine entry points | `FUN_2fea_0136` |
 | 0x1FBB8 | coab/ecl | coab/ecl: Engine entry points | `FUN_2fea_01b6` |

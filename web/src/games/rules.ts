@@ -157,6 +157,12 @@ export interface GameRules {
    * missile flies as (`flight`: the arrow by direction, the thrown weapon and the flask cycles of COMSPR
    * 3 and 4, the sling stone of 8; anything else 7)
    */
+  /**
+   * A shop's price factor (CotAB 0x1F0F6 listing, 0x1F531 Buy): the script variable `variable` (canonical
+   * address) names a shift of the item's value, `shifts` factor → bits (negative: right); a factor not
+   * listed prices at the value (IMP-078); null: the value itself (PoR, whose engine never reads 0x6E6D)
+   */
+  shopPrice: { variable: number; shifts: Record<number, number> } | null
   itemTypes: {
     arrows: number; quarrels: number; holyWater: number; oil: number; elfBonus: number[]
     /** the name word (item +0x2F) of a Bag of Holding, whose readying lightens the load by 5 000; null: none does */
@@ -339,6 +345,7 @@ export const POR_RULES: GameRules = {
   backstab: { armour: 50, weapons: [7, 8, 35, 36, 37], notLarge: false, minus: 0 }, // Leather Armor; Club, Dagger, the swords
   // FUN_10ba_0bb8 (0x18A0, 0x18BD), FUN_3334_128d (0x24644), the name 0x1239–0x126A, the elf bonus
   // 0xD1B–0xD48, the flight FUN_3aae_26b0 (0x2D190)
+  shopPrice: null,
   itemTypes: {
     arrows: 0x49, quarrels: 0x1c, holyWater: 0x55, oil: 0x56, elfBonus: [36, 37, 41, 42, 43, 44],
     bagOfHolding: 0xba, // 0x18DA
@@ -416,6 +423,7 @@ export const COAB_RULES: GameRules = {
   backstab: { armour: null, weapons: [0x61, 7, 8, 35, 36, 37], notLarge: true, minus: 1 }, // 0x2CE27, 0x2A74C
   // 0x4DDB8, 0x2466C, the name 0x4D70D–0x4D748, the elf bonus 0x4D1EE (not the Drow Long Sword 97), the
   // flight 0x2D141: the Dart of Hornets Nest (100) flies as an arrow, the Staff Sling (101) and Spine (98) as a stone
+  shopPrice: { variable: 0x6e6d, shifts: { 1: -4, 2: -3, 4: -2, 8: -1, 32: 1, 64: 2, 128: 3 } }, // B + 0x6DA (ECL 0x7F6D)
   itemTypes: {
     arrows: 0x49, quarrels: 0x1c, holyWater: 0x55, oil: 0x56, elfBonus: [36, 37, 41, 42, 43, 44],
     // the bag's flag is cleared (0x4DC9E) and never set, so the − 5 000 at 0x4DFEE never runs

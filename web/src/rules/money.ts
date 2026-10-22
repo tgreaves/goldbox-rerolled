@@ -4,6 +4,7 @@ import { COIN_VALUES } from '../data/character'
 import { Item, ITEM_SIZE, type ItemTables } from '../data/items'
 import { capacity, recalc } from './equip'
 import { F } from '../games/fields'
+import { R } from '../games/rules'
 import { msg } from '../games/strings'
 
 export const COINS = ['copper', 'silver', 'electrum', 'gold', 'platinum', 'gems', 'jewelry']
@@ -15,6 +16,23 @@ export const moneyOf = (c: Uint8Array) => [0, 1, 2, 3, 4, 5, 6].map((i) => get(c
 const encumbrance = (c: Uint8Array) => c[F.load] | (c[F.load + 1] << 8)
 
 /** Coin value in gp, rounded to nearest (gems and jewelry excluded). */
+/**
+ * What a shop asks for an item (R.shopPrice; CotAB 0x1F0F6, 0x1F531): its value shifted by the price
+ * factor the scripts set, as a 16-bit word; the value itself without a factor or for one not listed (IMP-078)
+ */
+export function shopPrice(read: (a: number) => number, value: number): number {
+  const sp = R.shopPrice
+  const k = sp ? sp.shifts[read(sp.variable)] : undefined
+  if (k === undefined) return value
+  return (k < 0 ? value >> -k : value << k) & 0xffff
+}
+
+/** The shop's listing (PoR 0x1F768, CotAB 0x1F0E2) gives a stock item of value 0 the value 1, kept in the stock. */
+export function priceStock(stock: Item[]): Item[] {
+  for (const it of stock) if (it.value === 0) { it.raw[0x3a] = 1; it.raw[0x3b] = 0 }
+  return stock
+}
+
 export function coinValue(m: number[]): number {
   return Math.floor((m[0] * UNITS[0] + m[1] * UNITS[1] + m[2] * UNITS[2] + m[3] * UNITS[3] + m[4] * UNITS[4] + UNITS[3] / 2) / UNITS[3])
 }

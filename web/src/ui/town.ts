@@ -12,7 +12,7 @@ import { castOutside } from '../rules/magic'
 import { heal as healChar } from '../rules/camp'
 
 const memorisedReady = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
-import { appraiseGem, appraiseJewel, COINS, coinPrompt, coinValue, keepAsItem, moneyOf, pay, poolAll, receive, share, take, takeOne } from '../rules/money'
+import { appraiseGem, appraiseJewel, COINS, coinPrompt, coinValue, keepAsItem, moneyOf, pay, poolAll, priceStock, receive, share, shopPrice, take, takeOne } from '../rules/money'
 import { msg, menu, ask, type MenuOpts } from '../games/strings'
 import { yes, list } from './camp'
 
@@ -118,13 +118,14 @@ export async function shop(ui: TownUi) {
     if (o === 'B' && ui.buy) await ui.buy()
     else if (o === 'B') {
       for (;;) {
-        const stock = e.treasure
-        const i = await list(ui, stock.map((it) => `${t.name(it)} — ${it.value} gp`), { prompt: `${cur(e).name} buys:` })
+        const stock = priceStock(e.treasure)
+        const price = (it: Item) => shopPrice((a) => e.read(a), it.value)
+        const i = await list(ui, stock.map((it) => `${t.name(it)} — ${price(it)} gp`), { prompt: `${cur(e).name} buys:` })
         if (i >= stock.length) break
         const it = stock[i], buyer = cur(e)
         const why = canTakeItem(buyer.c, buyer.items, it)
         if (why) { ui.print(why === msg('takeOverloaded') ? msg('shopOverloaded') : why, false); continue }
-        if (!pay(buyer.c, e.money, it.value, t, buyer.items)) { ui.print(msg('shopNoMoney'), false); continue }
+        if (!pay(buyer.c, e.money, price(it), t, buyer.items)) { ui.print(msg('shopNoMoney'), false); continue }
         const copy = it.copy()
         buyer.items.push(copy)
         recalc(buyer.c, buyer.items, t)

@@ -342,6 +342,19 @@ raise 5 500, curse 3 500, stone 2 000. CotAB: the same with heal 5 000 after ccw
 `effects.ids` (`blind`, `poisoned` with `slowPoison` and `poisonTick`, `cursed`, Raise Dead's
 `animated` and `poisoned`; CotAB's Heal also `stat.feebleminded`), the diseases START.EXE's table.
 
+### 9.1 Shop prices
+
+**Original:** PoR's shop charges an item's value ([engine/town.md](../A-games/engine/town.md)); CotAB's
+listing (0x1F0F6) and Buy (0x1F531) shift it by a factor the scripts set ([coab/ecl.md](../A-games/coab/ecl.md), 0x7F6D).
+Parameter `shopPrice` `{ variable, shifts }` or null: the price is the value shifted by `shifts`[the word
+at `variable`] bits (negative: right), as a 16-bit word; a factor not in `shifts` prices at the value
+(IMP-078: the original's Buy leaves the price unset); null, the value.
+
+| Game | Values |
+|---|---|
+| PoR | null |
+| CotAB | variable 0x6E6D (ECL 0x7F6D), shifts 1: −4, 2: −3, 4: −2, 8: −1, 32: 1, 64: 2, 128: 3 |
+
 ## 10. Class abilities
 
 **Original:** CotAB's paladin, View menu 0x3D530 + 0x35F0 … ([coab/records.md §10](../A-games/coab/records.md#10-creation-effects-and-paladin-abilities-o)).

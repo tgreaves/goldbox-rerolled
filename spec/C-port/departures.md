@@ -28,6 +28,7 @@ implementation's: *done*, or what remains.
 | IMP-075 | [combat-ai.md, "Spells and items"](../A-games/engine/combat-ai.md#spells-and-items-o-fun_3334_02ebc-spell-pri) | required | done |
 | IMP-067 | [effects.md](../A-games/engine/effects.md) types 85/86 | required | done |
 | IMP-070 | [coab/records.md §7.2](../A-games/coab/records.md#72-engine-conversion-o-323c14b3-caller-323c23f82481) | required | done |
+| IMP-078 | [coab/ecl.md](../A-games/coab/ecl.md) 0x7F6D; [B-model/procedures.md §9.1](../B-model/procedures.md#91-shop-prices) | required | done |
 | IMP-034 | [effects.md](../A-games/engine/effects.md) effect 0x28 | required | done |
 
 ## 2. Interface and presentation

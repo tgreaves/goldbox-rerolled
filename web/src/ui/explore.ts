@@ -38,7 +38,7 @@ import { effectsFile } from '../data/effects'
 import { canTakeItem, capacity, ready, readyItem, recalc, unready, unreadyItem } from '../rules/equip'
 import { WorldHost } from '../rules/worldfx'
 import { drop, halve, join, scribing, trade, unavailable } from '../rules/inventory'
-import { moneyPrompt, COINS, coinValue, dropMoney, moneyOf, pay, poolAll, receive, sellOffer, share, take, tradeMoney } from '../rules/money'
+import { moneyPrompt, COINS, coinValue, dropMoney, moneyOf, pay, poolAll, receive, priceStock, sellOffer, share, shopPrice, take, tradeMoney } from '../rules/money'
 import { shop, temple, treasure, type TownUi } from './town'
 import { proposeSplit } from '../rules/treasure'
 import { camp, effectNames, type CampUi } from './camp'
@@ -1031,13 +1031,14 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const render = () => {
         const buyer = engine.cur, items = engine.itemsOf(buyer), name = parseCharacter(buyer).name
         const gold = coinValue(moneyOf(buyer)), pooled = coinValue(engine.money)
-        const stock = engine.treasure.map((it, i) => ({ it, i })).filter(({ it }) =>
+        const stock = priceStock(engine.treasure).map((it, i) => ({ it, i })).filter(({ it }) =>
           (filter === 'all' || kind(it) === filter) && (!onlyUsable || ((t.baseOf(it)?.classes ?? 0) & buyer[F.itemMask]) !== 0))
         const rows = stock.map(({ it, i }) => {
           const usable = ((t.baseOf(it)?.classes ?? 0) & buyer[F.itemMask]) !== 0
-          const why = canTakeItem(buyer, items, it) || (it.value > gold && it.value > pooled ? 'Not enough money' : '')
+          const cost = shopPrice((a) => engine.read(a), it.value)
+          const why = canTakeItem(buyer, items, it) || (cost > gold && cost > pooled ? 'Not enough money' : '')
           return `<tr class="${usable ? '' : 'unusable'}"><td>${escape(t.name(it))}${usable ? '' : '<small class="cant">not for this class</small>'}</td>
-            <td class="num">${it.value}</td><td class="num">${it.weight * Math.max(1, it.count)}</td><td class="cmp">${usable ? escape(compare(buyer, items, it)) : ''}</td>
+            <td class="num">${cost}</td><td class="num">${it.weight * Math.max(1, it.count)}</td><td class="cmp">${usable ? escape(compare(buyer, items, it)) : ''}</td>
             <td><button data-buy="${i}" ${why ? `disabled title="${escape(why)}"` : ''}>Buy</button></td></tr>`
         }).join('')
         dialog.innerHTML = `<h2>Buy</h2>
@@ -1061,7 +1062,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           const it = engine.treasure[Number(d.buy)], buyer = engine.cur, items = engine.itemsOf(buyer)
           const why = canTakeItem(buyer, items, it)
           if (why) message = why === msg('takeOverloaded') ? msg('shopOverloaded') : why
-          else if (!pay(buyer, engine.money, it.value, t, items)) message = msg('shopNoMoney')
+          else if (!pay(buyer, engine.money, shopPrice((a) => engine.read(a), it.value), t, items)) message = msg('shopNoMoney')
           else {
             const copy = it.copy()
             items.push(copy)

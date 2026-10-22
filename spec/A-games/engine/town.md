@@ -122,7 +122,7 @@ Buy and the temple read G(character) as u16 and both setters take a u16, so valu
 
 1. Mode 1; pool cleared; the stock names are built.
 2. Menu for the current character: "Buy View Take Pool Share Appraise Exit" when the pool holds money, else "Buy View Pool Appraise Exit". Home/End select the previous/next character.
-3. **B**uy (`FUN_2f70_0361`): pick a stock item (B or Enter); price = item[0x3A]; pay as above; the copy goes to the buyer (`FUN_2f70_0239`: "OverLoaded" if the character cannot carry it, and the money is not taken); loop.
+3. **B**uy (`FUN_2f70_0361`): pick a stock item (B or Enter); the listing first sets item[0x3A] := 1 on a stock item of value 0 (0x1F768, O; CotAB 0x1F0E2); price = item[0x3A] (CotAB: shifted by the price factor, [coab/ecl.md](../coab/ecl.md) 0x7F6D); pay as above; the copy goes to the buyer (`FUN_2f70_0239`: "OverLoaded" if the character cannot carry it, and the money is not taken); loop.
 4. **V**iew: the character screen, whose items menu offers **S**ell and **I**d in this mode.
 5. **T**ake, **P**ool, **S**hare, **A**ppraise as described in Money and Appraise.
 6. **E**xit with money in the pool: "As you Leave the Shopkeeper says, "Excuse me but you have Left Some Money here." Do you want to go back and get your Money?" Yes stays; No leaves and the pool is lost.
