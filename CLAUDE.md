@@ -47,6 +47,8 @@ came first and is playable; Curse of the Azure Bonds (CotAB) is being added. The
 
 - No `Co-Authored-By` lines and no mention of Claude or other AI tools in commit messages.
 - A commit only after `npm run build` succeeds and the tests pass (`web/`, see below).
+- Standing rule (Tristan, 2026-10-22): **always** keep the spec, `IMPROVEMENTS.md` and the README(s) up to date
+  with every change, in the same commit; check all three before committing, even for a fidelity fix.
 - One commit per step of a plan, with a message saying what changed and why; push to `main`.
 - Keep the spec, `docs/multi-game.md`, the READMEs and `IMPROVEMENTS.md` in step with the code.
 
@@ -98,7 +100,7 @@ close disassemblers (REA's Ghidra sessions) after use, no unbounded background j
 
 - Pool of Radiance plays start to finish; Curse of the Azure Bonds is playable at an early stage
   (all 8 steps of `docs/multi-game.md` done, dual-classing included), not yet played through in a
-  browser. About 400 tests pass; long headless playthroughs (24 × 1000 steps) show no failures.
+  browser. About 420 tests pass; long headless playthroughs (24 × 1000 steps) show no failures.
 - The spec is the normative source (decisions D1–D6 in `spec/README.md`); steps 1–7 of its work plan
   (`spec/AUDIT.md` §8) are done. Step 8, the clean-room rebuilds that validate it, is **on hold** by
   Tristan's choice (token and session limits): do not start one unasked.
