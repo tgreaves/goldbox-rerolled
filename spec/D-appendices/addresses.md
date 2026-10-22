@@ -920,6 +920,9 @@ when its table column or sentence names CotAB.
 | 0x239BD | coab/combat | coab/combat: The computer's probe on clouds |  |
 | 0x23A4E | coab/combat | coab/combat: The computer's probe on clouds |  |
 | 0x23A51 | coab/combat | coab/combat: The computer's probe on clouds |  |
+| 0x23A91 | coab/combat | coab/combat: The computer's movement |  |
+| 0x23CDD | coab/combat | coab/combat: The computer's movement |  |
+| 0x23D8C | coab/combat | coab/combat: The computer's movement |  |
 | 0x23E57 | coab/spells | coab/spells: 1. Dispatch and shared helpers |  |
 | 0x24434 | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x2443F | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
@@ -1473,6 +1476,7 @@ when its table column or sentence names CotAB.
 | 0x54CA5 | coab/effects | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
 | 0x54D4C | coab/effects | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
 | 0x54EF1 | coab/effects | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
+| 0x5504A | coab/combat | coab/combat: The computer's movement |  |
 | 0x553D8 | coab/effects | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x556B0 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x557AC | coab/assets | coab/assets: 8. Config, video, palette, sound |  |

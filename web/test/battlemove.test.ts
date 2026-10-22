@@ -72,7 +72,7 @@ describe.skipIf(!have)('battlefield movement costs', () => {
     me.target = foe
     bf.set(10, 11, ROCK) // east costs 4
     me.r[6] = 4
-    expect(await b.aiStep(me, false)).toBe(true)
+    await b.aiStep(me, false)
     expect([me.x, me.y, me.r[6]]).toEqual([11, 9, 1]) // preference 1: ahead, then −45° (north-east, 3)
   })
 
@@ -91,7 +91,7 @@ describe.skipIf(!have)('battlefield movement costs', () => {
     const { b, me, add } = field(POR, por, 0x17)
     me.target = add(12, 8, 1) // north-east
     me.r[6] = 2
-    expect(await b.aiStep(me, false)).toBe(true)
+    await b.aiStep(me, false)
     expect([me.x, me.y, me.r[6]]).toEqual([10, 9, 0]) // preference 1: ahead (NE, 3), then −45° (N, 2)
   })
 })

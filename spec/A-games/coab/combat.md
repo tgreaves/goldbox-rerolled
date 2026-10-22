@@ -230,6 +230,13 @@ Cells 0x00–0x19 are the map-area set (DungCom), as PoR's.
 
 The engine model's generators: [B-model/procedures.md §15.4](../../B-model/procedures.md#154-battlefields).
 
+## The computer's movement (O, 0x23A91)
+
+The step routine is PoR's `FUN_3334_07f2` with its stall rules (DS:4808/4809 for PoR's DS:443C/443D,
+0x23CDD–0x23D8C), and the direction test 0x5504A is PoR's `FUN_56c1_057b` byte for byte but its two
+tables (DS:2696/269F), so the base direction is PoR's cone search
+([engine/combat-ai.md, "Movement"](../engine/combat-ai.md#movement-o-fun_3334_07f2-probe-fun_3334_0675)).
+
 ## The computer's probe on clouds (O, 0x237FB)
 
 The probe classifies the cell through 0x563B4 (`121:70`): 0x1E sets a gas flag, 0x1C a kill-cloud flag.

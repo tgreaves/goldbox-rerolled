@@ -21,6 +21,29 @@ import { Tables } from './chargen'
 
 const DX = [0, 1, 1, 1, 0, -1, -1, -1], DY = [-1, -1, 0, 1, 1, 1, 0, -1]
 
+/**
+ * Whether (x2, y2) lies in the 90° cone of direction d from (x1, y1) (FUN_56c1_057b, 0x4718B; CotAB the
+ * same): false off the battlefield (x 0..49, y 0..24); true on the mover's square or on n, the square
+ * next to it in direction d; else, with (dx, dy) from n: N dy ≤ −|dx|, E dx ≥ |dy|, S dy ≥ |dx|,
+ * W −dx ≥ |dy|, and the diagonals their closed quadrant from n (NE dx ≥ 0 and dy ≤ 0, …)
+ */
+export function inCone(x1: number, y1: number, x2: number, y2: number, d: number): boolean {
+  if (x1 < 0 || x1 > 49 || y1 < 0 || y1 > 24 || x2 < 0 || x2 > 49 || y2 < 0 || y2 > 24) return false
+  const nx = x1 + DX[d], ny = y1 + DY[d]
+  if ((x1 === x2 && y1 === y2) || (nx === x2 && ny === y2)) return true
+  const dx = x2 - nx, dy = y2 - ny
+  switch (d) {
+    case 0: return dy <= -Math.abs(dx)
+    case 1: return dx >= 0 && dy <= 0
+    case 2: return dx >= Math.abs(dy)
+    case 3: return dx >= 0 && dy >= 0
+    case 4: return dy >= Math.abs(dx)
+    case 5: return dx <= 0 && dy >= 0
+    case 6: return -dx >= Math.abs(dy)
+    default: return dx <= 0 && dy <= 0
+  }
+}
+
 export interface Fighter {
   c: Uint8Array
   /** the 22-byte combat record */
@@ -536,7 +559,7 @@ export class Battle implements FxHost {
     const f = this.of(c)
     if (!f) return null
     const L = this.fighters.filter((o) => this.inPlay(o) && (o === f || this.seesF(f, o)))
-      .map((o) => ({ o, d: o === f ? 0 : this.dist(f, o), dir: o === f ? 0 : Math.max(0, this.dirTo(f, o)) }))
+      .map((o) => ({ o, d: o === f ? 0 : this.dist(f, o), dir: o === f ? 0 : this.stepDir(f, o) }))
     for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
       const a = L[i], b = L[j]
       if (b.d < a.d || (b.d === a.d && b.dir < a.dir && b.dir % 2 <= a.dir % 2)) { L[i] = b; L[j] = a }
@@ -566,9 +589,15 @@ export class Battle implements FxHost {
     const dx = Math.sign(x - a.x), dy = Math.sign(y - a.y)
     return Math.max(0, DX.findIndex((v, i) => v === dx && DY[i] === dy))
   }
+  /** The direction from a towards b (FUN_3aae_263d, 0x2D11D): the first d of 0–7 whose cone holds b (inCone). */
   dirTo(a: Fighter, b: Fighter) {
+    for (let d = 0; d < 8; d++) if (inCone(a.x, a.y, b.x, b.y, d)) return d
+    return 0
+  }
+  /** the sign-wise direction between squares (the berserk list's direction, I) */
+  stepDir(a: Fighter, b: Fighter) {
     const dx = Math.sign(b.x - a.x), dy = Math.sign(b.y - a.y)
-    return DX.findIndex((x, i) => x === dx && DY[i] === dy)
+    return Math.max(0, DX.findIndex((x, i) => x === dx && DY[i] === dy))
   }
 
   // ------------------------------------------------------------ setup
@@ -1470,9 +1499,11 @@ export class Battle implements FxHost {
       const still = Math.max(Math.abs(e.x - nx), Math.abs(e.y - ny)) <= 1
       if (still || this.helpless(e.c) || !this.canTarget(e, f)) continue
       if (this.e.effectsOf(e.c).some((x) => ids().noOpportunity.includes(x.type))) continue
-      let toward = (this.dirTo(e, f) - e.r[9] + 8) % 8
-      if (toward > 4) toward = 8 - toward
-      if (!(s8(e.r[3]) > 0 || e.r[0xf] === 0 || toward <= 2)) continue
+      // FUN_3aae_08b2 0x2B5A7–0x2B63F: with initiative left or nobody engaging it, else when the mover is
+      // in the cone of a direction within 2 of its facing
+      let toward = false
+      for (let k = -2; k <= 2 && !toward; k++) toward = inCone(e.x, e.y, f.x, f.y, (e.r[9] + k + 8) % 8)
+      if (!(s8(e.r[3]) > 0 || e.r[0xf] === 0 || toward)) continue
       const hand = e.c[F.attacksLeft + 1] > 0 ? 2 : 1
       if (e.c[F.attacksLeft - 1 + hand] <= 0) e.c[F.attacksLeft - 1 + hand] = 1
       const keep = e.target
@@ -2115,9 +2146,10 @@ export class Battle implements FxHost {
     if (await this.aiCast(f)) return
     this.chooseWeapon(f)
     await fire(this, c, 14) // FUN_3334_0b3c: the gaze, breath and spit specials first (spec/A-games/engine/combat-ai.md)
+    this.aiLast = 8; this.aiStalls = 0 // 0x23E82
     for (let tries = 0; tries < 20 && s8(f.r[3]) > 0 && this.inPlay(f); tries++) {
-      while (f.r[0x14] && f.r[6] > 1 && s8(f.r[3]) > 0 && s8(f.r[3]) < 20) {
-        if (!(await this.aiStep(f, true))) break
+      while (f.r[0x14] && f.r[6] > 0 && s8(f.r[3]) > 0 && s8(f.r[3]) < 20) { // 0x23ED0
+        await this.aiStep(f, true)
         if (!this.inPlay(f)) return
       }
       if (!this.inPlay(f) || s8(f.r[3]) <= 0) return
@@ -2132,7 +2164,7 @@ export class Battle implements FxHost {
           const goal = this.findTarget(f)
           if (!goal) { this.finishRound(f); return }
           f.target = goal
-          if (!(await this.aiStep(f, false))) { this.finishRound(f); return }
+          await this.aiStep(f, false) // 0x240BC: its own outcome; the loop goes on
           continue
         }
         t = near[this.e.roll(1, near.length) - 1]
@@ -2181,33 +2213,61 @@ export class Battle implements FxHost {
     return rule.save === null || !this.saveSync(f.c, rule.save, 0)
   }
 
-  /** One AI step towards the target, or away when fleeing (FUN_3334_07f2). */
-  async aiStep(f: Fighter, fleeing: boolean): Promise<boolean> {
-    if (f.r[6] < 2 || s8(f.r[3]) <= 0) return false
-    if (f.c[F.cls] === 5 && !fleeing) return false
+  /** this turn's last AI step direction (DS:443C, 8: none) and its stalls (DS:443D; CotAB DS:4808/4809) */
+  private aiLast = 8
+  private aiStalls = 0
+
+  /**
+   * One AI step towards the target, or away when fleeing (FUN_3334_07f2; CotAB 0x23A91, the same): no
+   * movement or initiative left, or a magic-user not fleeing, finish the round; fleeing re-rolls R[0x15]
+   * (1d2). The base direction's preferences are tried; off the field a fleer tries to escape. A stall is
+   * no direction working, or a step reversing the last one (it is still taken): R[0x15] := R[0x15] mod 6
+   * + 1; at the 2nd the target goes and another is sought (none: finish the round), at the 3rd the
+   * movement ends (0x23D27–0x23DD6). No direction working also ends this call without a step.
+   */
+  async aiStep(f: Fighter, fleeing: boolean): Promise<void> {
+    if (f.r[6] < 2 || s8(f.r[3]) <= 0 || (f.c[F.cls] === 5 && !fleeing)) { this.finishRound(f); return }
     let base: number
     if (fleeing) {
+      f.r[0x15] = this.e.roll(1, 2) // 0x23C0D
       const face = [7, 2, 3, 6][this.e.facing]
       base = this.side(f) === 0 ? (face + 4) % 8 : face
     } else {
-      if (!f.target) return false
+      if (!f.target) { this.finishRound(f); return }
       base = this.dirTo(f, f.target)
     }
     const PREFS = [[0, -1, -2, 1, 2], [0, 1, 2, -1, -2], [-1, 1, 0, -2, 2], [1, -1, 0, 2, -2], [0, -1, -2, -3, 4], [0, 1, 2, 3, 4]]
-    for (const off of PREFS[(f.r[0x15] || 1) - 1]) {
-      const d = (base + off + 8) % 8
+    const pref = PREFS[(f.r[0x15] || 1) - 1]
+    let k = 0, d = 0
+    for (; k < 5; k++) {
+      d = (base + pref[k] + 8) % 8
       const nx = f.x + DX[d], ny = f.y + DY[d]
-      if (this.bf.get(ny, nx) === 0) { if (fleeing) { await this.flee(f); return false } continue }
+      if (this.bf.get(ny, nx) === 0) {
+        if (fleeing) { await this.flee(f); f.r[6] = 0; f.r[0x14] = 0; return } // 0x23CC2
+        continue
+      }
       if (this.occupied(nx, ny, f.size, f) || !this.passable(nx, ny, f.size)) continue
       // the probe (FUN_3334_0675, CotAB 0x237FB) refuses a direction whose byte (or cost) is as much as
       // the movement left, or whose cost is more; then a cloud square the mover may not enter (its
       // save, if any, is rolled only here); the next preference is tried
       if (this.moveTest(nx, ny, d) >= f.r[6] || this.stepCost(nx, ny, d) > f.r[6]) continue
       if (this.cloudRefuses(f, this.bf.get(ny, nx))) continue
-      await this.stepF(f, d) // paced there, as for the player
-      return true
+      break
     }
-    return false
+    const none = k === 5
+    if (none || (d + 4) % 8 === this.aiLast) {
+      this.aiStalls++
+      f.r[0x15] = ((f.r[0x15] || 1) % 6) + 1
+      if (this.aiStalls > 1) {
+        f.target = null
+        if (this.aiStalls > 2) { f.r[6] = 0; return }
+        f.target = this.findTarget(f) // the finder (0xFF, 1, 0)
+        if (!f.target) { this.finishRound(f); return }
+      }
+    }
+    if (none) return
+    this.aiLast = d
+    await this.stepF(f, d) // paced there, as for the player
   }
 
   /** Morale (FUN_3334_10d7); true if the creature surrendered (ends the turn). */

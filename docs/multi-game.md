@@ -356,7 +356,12 @@ spell ids; the debug jump took CotAB's areas 25–27 for PoR's wilderness; grab 
 walled off from the party, and with everyone on Quick nobody reaches anybody: the placement's scan is now
 the original's (2026-10-22: the ring wall check from the side's own square, rows 0–5, the next ring at once
 for a candidate outside both ways, the first line's limit and the second-line skip, spec/A-games/engine/combat-rules.md
-"Placement"); one stalemate at New Phlan (15,10) remains in an 8 × 1000 run, so its cause is elsewhere. Not covered: rendering, the DOM panels (the
+"Placement"), and so is the computer's movement (2026-10-22: the base direction by cones, the stall rules,
+spec/A-games/engine/combat-ai.md "Movement"). The stalemates that remain (about one in 8 × 1000 steps in each
+game) are the original's own: its movement has no path finding (`FUN_3334_07f2` tries five directions
+around the target's and gives up after three stalls), and a battle goes on while any combatant of a side
+is in play (`FUN_10ba_23db`), so a side-0 helper left alone behind a wall keeps it going after the party
+falls (the New Phlan tavern brawl, seed 1 step 421). The harness calls them off and lists them. Not covered: rendering, the DOM panels (the
 treasure split, Buy, Memorize), the town and overland menus beyond random play, anything past
 where random play gets (CotAB: Tilverton and the jumped-to areas).
 
