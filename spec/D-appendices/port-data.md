@@ -162,6 +162,42 @@ PoR's lists with these changes:
 
 - **combat**, **keys**: PoR's.
 
+### 2.3 Secret of the Silver Blades
+
+`SOTSB_RULES_TEXT`. The numbers are SotSB's own, and `test/rulestext.test.ts` checks them against the
+profile and the game's tables:
+- the level limits against the experience table;
+- the paladin's and ranger's minimums against `classMins`;
+- the extra attacks, the starting money and the cast limits against `R`;
+- the difficulty names against the Level menu (0xE272);
+- the bundle limit against `R.itemJoin`.
+
+- **basics**: PoR's without "Commissions and the journal", with two entries replaced, then five more:
+
+| Entry | Text |
+|---|---|
+| Experience and levels | Experience comes from defeated monsters and treasure. With enough, train at a training hall (it costs money) to gain a level. |
+| Resting and spells | PoR's, then: Clerics reach sixth-level spells (WIS 17 for sixth-level slots), magic-users seventh-level (INT 12 for sixth, 14 for seventh). |
+| Level limits | Cleric 15, fighter 15, paladin 15, ranger 15, magic-user 15, thief 18; demi-humans lower in some classes. |
+| Difficulty | Camp → Alter → Level: Novice, Squire, Veteran (a new game's), Adept or Champion. Monsters have half their hit points at Novice, the usual at Veteran and half again at Champion. |
+| The temple | The temples heal, cure and raise without asking a price. Elves cannot be raised from the dead. |
+| The vault | The vault keeps money and items for the party between visits: an item dropped there is deposited (Deposit), and View and Take bring things back. |
+| Scroll bundles | Join on a scroll ties scrolls into a bundle of up to 10; Halve splits a bundle in two. A bundle of n scrolls weighs n × n. |
+
+- **classes**: CotAB's, with five entries replaced, then two more:
+
+| Entry | Text |
+|---|---|
+| Races | Humans: any class, no racial level limits. Dwarves, elves, gnomes, half-elves and halflings: infravision, resistances, level limits in some classes (elves and half-elves as magic-users too); elves cannot be raised from the dead. Half-elves may be rangers. |
+| Cleric | Heals and protects: cleric spells (all known; chosen at camp), blunt weapons only, any armour. Wisdom 13+ gives extra spells. Clerics do not turn undead in this game. |
+| Fighter | The best at fighting: best THAC0, most hit points, any weapon and armour, exceptional strength, 3 attacks per 2 rounds from level 7 and 2 a round from level 13. |
+| Paladin | CotAB's, with "(3 attacks per 2 rounds from level 7, 2 from 13)" and "Cleric spells from level 9, cast at the full paladin level." |
+| Ranger | CotAB's, with "(3 attacks per 2 rounds from level 8, 2 from 15)". |
+| Money | A new character starts with nothing but a thief's 2d6 gold pieces. |
+| Importing | Characters from Curse of the Azure Bonds can be imported from the party screen; their items stay behind, and they start with no money and no spells memorised. |
+
+- **combat**, **keys**: PoR's.
+
 ## 3. Landmark patterns
 
 `landmarks` (`LandmarkRules`): what the area map's landmarks look for in a square's script text

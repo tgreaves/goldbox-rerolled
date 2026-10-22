@@ -2,7 +2,7 @@
 // The record, tables, script VM, saves, presentation and sound, its own rules, spells and effects (2026-10-22),
 // each read in its binary; playable at an early stage (docs/multi-game.md lists what remains).
 import type { GameProfile } from './types'
-import { COAB_RULES_TEXT } from './rulestext'
+import { SOTSB_RULES_TEXT } from './rulestext'
 import { SOTSB_EFFECTS } from './effectrules'
 import { SOTSB_SPELLS } from './spellrules'
 import { COAB_LANDMARKS } from './landmarkrules'
@@ -57,7 +57,7 @@ export const SOTSB: GameProfile = {
   effects: SOTSB_EFFECTS,
   // PROGRAM has no ending in SotSB (spec/A-games/sotsb/ecl.md, PROGRAM)
   ending: { cs: 0, steps: [], after: null },
-  rulesText: COAB_RULES_TEXT,
+  rulesText: SOTSB_RULES_TEXT,
   // Add's "Curse": CotAB's .GUY characters (spec/A-games/sotsb/records.md §6)
   imports: SOTSB_IMPORTS,
   playable: true,

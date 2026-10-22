@@ -65,3 +65,30 @@ export const COAB_RULES_TEXT: RulesText = {
   combat: POR_COMBAT,
   keys: KEYS,
 }
+
+// SotSB: spec/A-games/sotsb/ (tables §3, chargen-and-progression §1–5, camp §2 and §4a, combat §5,
+// records §3.2 and §5); the numbers are checked against the profile and the game's tables (test/rulestext.test.ts)
+export const SOTSB_RULES_TEXT: RulesText = {
+  basics: [
+    ...replace(replace(replace(POR_BASICS, 'Commissions and the journal', null),
+      'Experience and levels', ['Experience and levels', 'Experience comes from defeated monsters and treasure. With enough, train at a training hall (it costs money) to gain a level.']),
+      'Resting and spells', ['Resting and spells', 'Spells are memorised in camp and need rest to learn: the more spells, the longer. Resting also heals 1 hit point a day per character. Monsters may interrupt. Clerics reach sixth-level spells (WIS 17 for sixth-level slots), magic-users seventh-level (INT 12 for sixth, 14 for seventh).']),
+    ['Level limits', 'Cleric 15, fighter 15, paladin 15, ranger 15, magic-user 15, thief 18; demi-humans lower in some classes.'],
+    ['Difficulty', 'Camp → Alter → Level: Novice, Squire, Veteran (a new game\'s), Adept or Champion. Monsters have half their hit points at Novice, the usual at Veteran and half again at Champion.'],
+    ['The temple', 'The temples heal, cure and raise without asking a price. Elves cannot be raised from the dead.'],
+    ['The vault', 'The vault keeps money and items for the party between visits: an item dropped there is deposited (Deposit), and View and Take bring things back.'],
+    ['Scroll bundles', 'Join on a scroll ties scrolls into a bundle of up to 10; Halve splits a bundle in two. A bundle of n scrolls weighs n × n.'],
+  ],
+  classes: [
+    ...replace(replace(replace(replace(replace(COAB_RULES_TEXT.classes,
+      'Races', ['Races', 'Humans: any class, no racial level limits. Dwarves, elves, gnomes, half-elves and halflings: infravision, resistances, level limits in some classes (elves and half-elves as magic-users too); elves cannot be raised from the dead. Half-elves may be rangers.']),
+      'Cleric', ['Cleric', 'Heals and protects: cleric spells (all known; chosen at camp), blunt weapons only, any armour. Wisdom 13+ gives extra spells. Clerics do not turn undead in this game.']),
+      'Fighter', ['Fighter', 'The best at fighting: best THAC0, most hit points, any weapon and armour, exceptional strength, 3 attacks per 2 rounds from level 7 and 2 a round from level 13.']),
+      'Paladin', ['Paladin', 'A holy fighter: STR 12, INT 9, WIS 13, CON 9 and CHA 17 at least, lawful good only. Fights as a fighter (3 attacks per 2 rounds from level 7, 2 from 13) and is protected from evil. Lays on hands once a day (2 hit points a level) and cures disease once a week, more often from levels 6 and 11 (both on the character sheet). Cleric spells from level 9, cast at the full paladin level. Will not join a party with an evil member, nor take one in.']),
+      'Ranger', ['Ranger', 'A woodland fighter: STR 13, INT 13, WIS 14, CON 14 at least, good alignment. Fights as a fighter (3 attacks per 2 rounds from level 8, 2 from 15) and adds the ranger level to damage against giant-class creatures. Druid spells from level 8 (cast at level − 7), magic-user spells from level 9 (level − 8). Three rangers at most in a party.']),
+    ['Money', 'A new character starts with nothing but a thief\'s 2d6 gold pieces.'],
+    ['Importing', 'Characters from Curse of the Azure Bonds can be imported from the party screen; their items stay behind, and they start with no money and no spells memorised.'],
+  ],
+  combat: POR_COMBAT,
+  keys: KEYS,
+}
