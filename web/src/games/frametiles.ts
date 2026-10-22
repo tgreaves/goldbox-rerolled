@@ -5,7 +5,7 @@ import { T } from './tables'
 /** The colour a game's frame tiles leave undrawn (−1: none). */
 export function frameMask(): number {
   const f = game().view.frame
-  return 'tables' in f ? f.tables.mask : -1
+  return 'tables' in f ? f.tables.mask : 'bars' in f ? f.bars.mask : -1
 }
 
 export interface ScreenFrame {
@@ -20,6 +20,11 @@ export function borderTiles(img: Uint8Array | null): { tl: number; t: number; tr
     const { corner: c, vertical: v, horizontal: h } = f.rope
     return { tl: c, t: h, tr: c, l: v, r: v, bl: c, b: h, br: c }
   }
+  if ('bars' in f) {
+    // the rows run the whole width, so the corners are row tiles
+    const { horizontal: h, vertical: v } = f.bars
+    return { tl: h, t: h, tr: h, l: v, r: v, bl: h, b: h, br: h }
+  }
   if (!img) return null
   const read = (ref: { at: number }, i: number) => f.tables.tile0 + img[T.ds + ref.at + i]
   const most = (ref: { at: number }, n: number) => {
@@ -32,9 +37,21 @@ export function borderTiles(img: Uint8Array | null): { tl: number; t: number; tr
     r: most(T.frameRight, 24), bl: read(T.frameBottom, 0), b: most(T.frameBottom, 40), br: read(T.frameBottom, 39) }
 }
 
-/** The full-screen frame (CotAB 0x1330), with divider rows (0x1403); null for a game without one. */
+/** The full-screen frame (CotAB 0x1330, SotSB 0x19D0), with divider rows (0x1403, 0x1A90); null for a game without one. */
 export function screenFrame(img: Uint8Array | null, dividers: number[] = []): ScreenFrame | null {
   const f = game().view.frame
+  if ('bars' in f) {
+    const b = f.bars
+    const row = (r: number) => r === 0 || r === 23 || dividers.includes(r)
+    return {
+      at(col, r) {
+        if (row(r)) return b.horizontal
+        if (col !== 0 && col !== 39) return -1
+        // a divider's caps are drawn after the frame's, the one below last (0x1A90)
+        return row(r - 1) ? b.below : row(r + 1) ? b.above : b.vertical
+      },
+    }
+  }
   if (!('tables' in f) || !img) return null
   const read = (ref: { at: number }, i: number) => f.tables.tile0 + img[T.ds + ref.at + i]
   return {

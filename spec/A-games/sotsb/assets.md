@@ -112,11 +112,20 @@ colour 14 (yellow), rows 3–21 (O; the texts are read by address, D1). CotAB us
 - Font: 8X8D5 #201, PoR's and CotAB's font (O, byte compare).
 - 8X8D1 #202 (bank 4, ids 0x100–0x164): 0–3 facing arrows, 4–19 the overhead map's wall masks and
   20–30 PoR's rope frame, all byte-identical to PoR's tiles (O); 31–48 large digits and punctuation
-  (`.` `/` 0–9 `:` `;` `<` `=` `>` `?`, **I**, art), 49–51 blank, 52–59 coloured frame pieces, 60–100
-  brown, white and blue pieces (**?**: their screens).
-- The credits frame 0x1BBA clears the screen, draws tile 0x137 (#202 tile 55) along rows 1 and 23,
-  and edge tiles 0x43–0x45 on the rows between (**I** for which bank those are). The other frame
-  routines are not traced (**?**).
+  (`.` `/` 0–9 `:` `;` `<` `=` `>` `?`, **I**, art), 49–51 blank, 52–55 the frame's bars (below), 56–59
+  coloured frame pieces, 60–100 brown, white and blue pieces (**?**: their screens).
+- **Frames: fixed tiles, no tables** (O). The frame routines draw glyphs 0x134–0x137 (#202 tiles 52–55)
+  through the tile call `20c:2f(column, row, glyph, 0, 0)` (CotAB's `19c:2a`), with no table read:
+  - the screen frame 0x19D0: rows 0 and 23 tile 55 (a horizontal bar) across all 40 columns; columns 0
+    and 39 on rows 1–22 tile 53 (a vertical bar), with tile 52 on row 1 (the bar's top end, under a row)
+    and 54 on row 22 (its bottom end, over a row);
+  - a divider 0x1A90(row): tile 55 across the row, then in columns 0 and 39 tile 54 on the row above and
+    52 on the row below;
+  - 0x1B26 redraws the columns from row 2 (tile 53, 54 on row 22) and the bottom row;
+  - the credits frame 0x1BBA clears the screen, draws rows 1 and 23 in tile 55 and the columns between
+    with 52 on row 2 and 54 on row 22 (glyph 0xF1 + 0x43 … 0x45).
+  The rows run the whole width, so a corner is a row tile. The colour left undrawn is CotAB's (13, **I**:
+  the same tile call); tiles 52–55 hold no colour 13. Tiles 56–100: **?** (their screens).
 
 ## 6. Configuration, video and sound
 
@@ -192,7 +201,7 @@ arguments). It plays only at the title, song 0 (0x1D673), and only when the devi
   and the credits by address; BIGPIC ids from 0x70; the background as CotAB's (SKY #250–252, the sky
   table `DS:0AA8`); `BLADES.CFG`'s lines (§6.1).
 - **Sound effects**: CotAB's driver at its new place (`sound` in the profile: the segment of image
-  0x7E40, the tables CS:0x04A0 and CS:0x0508), and the device mapping (AdLib plays effects on the
+  0x7E40, its data and code shifts, the tables CS:0x04A0 and CS:0x0508; done), and the device mapping (AdLib plays effects on the
   speaker).
 - **A gap: the title music.** The port plays effects only ([C-port/audio.md](../../C-port/audio.md)); it
   has no song player. Playing SotSB's music means either documenting the GLBR parts format and the
@@ -202,8 +211,8 @@ arguments). It plays only at the title, song 0 (0x1D673), and only when the devi
 
 ## Open
 
-- The walls' screen origin in the 3D view (§2); the palette changes (§6.2); the frame routines other
-  than the credits' and the roles of 8X8D1 #202 tiles 31–100 (§5).
+- The walls' screen origin in the 3D view (§2); the palette changes (§6.2); the roles of 8X8D1 #202
+  tiles 31–51 and 56–100 (§5).
 - When the set-up questions are asked (§6.1); the meaning of BLADES.CFG lines 6–17.
 - The song driver: how it picks its output, the GLBR parts format, the song list (§6.3).
 - The effect bytecode compared in full after normalising its pointers (§6.3).

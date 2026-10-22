@@ -424,7 +424,9 @@ scrolls; the vault (`VAULT.DAT`, `data/vault.ts`, the vault screen in `ui/town.t
 `ecl.combatVault`); the engine's messages and menus traced to their routines (`games/stringtable.ts`, pieces
 joined); random treasure as data: the builder's name words, shapes, weights, values and scroll lists moved from
 `rules/randitem.ts` into `TreasureRules` (`SOTSB_TREASURE`, the new `T.scrollSpells`; spec/B-model/procedures.md
-§14). Tests: `test/bundles.test.ts`, `test/vault.test.ts`, `test/sotsbtreasure.test.ts`.
+§14); the sound driver's data and code shifts and effect tables (`games/sound.ts`); the frame as fixed bars
+(`view.frame.bars`, no frame tables) and the overland tables marked absent. Tests: `test/bundles.test.ts`,
+`test/vault.test.ts`, `test/sotsbtreasure.test.ts`, `test/sotsbsound.test.ts`, the frame test in `test/tables.test.ts`.
 
 ## Backlog
 

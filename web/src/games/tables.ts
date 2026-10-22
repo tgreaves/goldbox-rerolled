@@ -191,7 +191,8 @@ export const COAB_TABLES: TableMap = {
 }
 
 // spec/A-games/sotsb/tables.md §2 (DS = paragraph 0x0DE2): O where the reading code was found, else a
-// data match (I). Not found yet (?): the frame tables, the overland cursor and terrain, marked absent
+// data match (I). Absent: the frame tables (SotSB draws fixed tiles, 0x19D0), the overland cursor and terrain
+// (no overland map, no wilderness battlefields)
 export const SOTSB_TABLES: TableMap = {
   ds: 0xde20,
   classBits: t(0x4c92), trainerBits: t(0x4c99), hitDiceCount: t(0x09b0), hitDiceSides: t(0x09b7), hitDiceStop: t(0x4ca9),

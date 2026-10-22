@@ -24,8 +24,11 @@ export interface ViewArt {
   /** areas that are the tile wilderness (PoR's 25–27; spec/A-games/engine/overland.md) */
   tileOverland: number[]
   /** window and screen frames, from 8X8D1 #202: PoR's fixed rope tiles (frame style 0 of
-   *  FUN_13f1_0000), or CotAB's frame tables (T.frameTop …), whose values count from tile `tile0` */
+   *  FUN_13f1_0000), CotAB's frame tables (T.frameTop …), whose values count from tile `tile0`, or SotSB's
+   *  bars: whole rows of `horizontal` (top, bottom, dividers), columns of `vertical`, with `below` in the
+   *  column's cell under a row and `above` in the cell over one */
   frame: { rope: { corner: number; vertical: number; horizontal: number } } | { tables: { tile0: number; mask: number } }
+    | { bars: { horizontal: number; vertical: number; below: number; above: number; mask: number } }
   /** pictures in the sky of the view, by day (sky colour `daySky`) where the party's square has event
    *  bit 7 clear: for a facing (0 N … 3 E … 6 W, ×2) and hours, a SKY record at view cell
    *  (col0 + col·hour, row0 + row·hour), 8-pixel cells from the view's top left; masked colour 13 */
@@ -68,11 +71,11 @@ export const COAB_VIEW: ViewArt = {
 }
 
 // spec/A-games/sotsb/assets.md §2–3, §5: the background is CotAB's routine (0x59FEB, the same SKY records and
-// rules); PICTURE ids from 0x70 load BIGPIC; no overland picture (no record 121); 8X8D1 #202 tiles 20–30 are
-// PoR's rope frame (the frame tables are not found yet, so the rope stands in, I); the font in 8X8D5 #201
+// rules); PICTURE ids from 0x70 load BIGPIC; no overland picture (no record 121); the frame drawn with fixed
+// tiles, no tables (0x19D0, 0x1A90: glyphs 0x134–0x137, 8X8D1 #202 tiles 52–55; §5); the font in 8X8D5 #201
 export const SOTSB_VIEW: ViewArt = {
   ...COAB_VIEW,
   bigFrom: 0x70, overlandPicture: null,
-  frame: { rope: { corner: 20, vertical: 21, horizontal: 22 } },
+  frame: { bars: { horizontal: 55, vertical: 53, below: 52, above: 54, mask: 13 } },
   font: { file: '8X8D5', record: 201 },
 }

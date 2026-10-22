@@ -67,8 +67,8 @@ table grew.
 | `gasCloud`, `killCloud` | 27D9, 27DD | **349F, 34A3** | | (11, 7 context matches) | O | |
 | `furnishDx`, `furnishDy` | 034B, 034F | **03BF, 03C3** | | | I | at the same distance after the placement tables as in CotAB |
 | `placeRing` … `placeAllow` | 02DC–0310 | **0350, 0360, 0370, 0374, 037C, 0384** | as CotAB | 0x2C24D, 0x2C26C (`placeAllow`, row 12) | O | CotAB's values |
-| `frameTop` … `frameDivider` | 0B50–0C0B | ? | | | ? | no data match; SotSB's frame drawing not read |
-| `cursorX`, `cursorY`, `placeTerrain` | 0A4A, 0A6A, 0354 | ? | | | ? | the overland map's tables: not found; the overland is not yet researched |
+| `frameTop` … `frameDivider` | 0B50–0C0B | absent | | 0x19D0, 0x1A90 | O | none: the frame routines draw fixed tiles ([assets.md §5](assets.md#5-fonts-tiles-frames)); the profile's `view.frame` is `bars` |
+| `cursorX`, `cursorY`, `placeTerrain` | 0A4A, 0A6A, 0354 | absent | | | I | none: SotSB has no overland map picture (no BIGPIC #121, [assets.md §3](assets.md#3-bigpic-and-picture-o)) and no wilderness battlefields (no WILDCOM), which these serve |
 | `randomItems` | 082E | **0A28** | u16 words, record *m* from word *m* (7 records, *m* = 1 + 8*j*) | 0x4FE65, 0x4FE9A, 0x4FEB9, 0x4FEE2 (the builder's copy) | O | the PoR form; [records.md §3.1](records.md#31-random-treasure-items-o-type-choice-0x1fb2f0x1fe2b-builder-0x4f6d2) |
 | `scrollSpells` | – | **580C** | bytes: the cleric lists at +0x00 … +0x32, 10 a level, the magic-user lists at +0x50 … +0x92, 11 a level; entry 1 at offset + 1 | 0x4FC38 … 0x4FDA5 | O | new: PoR and CotAB compute a scroll's spell id (d*s* + offset) |
 
@@ -110,7 +110,7 @@ export const SOTSB_TABLES_DRAFT = {
   fanDx1: t(0x0a1a), fanDy1: t(0x0a22), fanDx2: t(0x0a0a), fanDy2: t(0x0a12),
   gasCloud: t(0x349f), killCloud: t(0x34a3), furnishDx: t(0x03bf), furnishDy: t(0x03c3), viewPieces: t(0x0ad8),
   placeRing: t(0x0350, 4), placeOrient: t(0x0360, 4), placeVec: t(0x0370), placeOriginX: t(0x0374), placeOriginY: t(0x037c), placeAllow: t(0x0384, 12),
-  // ? frameTop … frameDivider, cursorX, cursorY, placeTerrain
+  // absent: frameTop … frameDivider (fixed tiles), cursorX, cursorY, placeTerrain (no overland)
 }
 ```
 
@@ -127,6 +127,5 @@ Seen on the way, for the rules research to follow:
 
 ## Open
 
-- The frame, overland-cursor and terrain tables.
 - Byte 0 of the spell records (the spell class) and the meaning of `hitDiceCount`'s cleric 2.
 - Each **I** row's reader.

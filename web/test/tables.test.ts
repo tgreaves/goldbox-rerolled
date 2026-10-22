@@ -7,7 +7,7 @@ import { unexepack } from '../src/data/exepack'
 import { Tables } from '../src/rules/chargen'
 import { COAB_TABLES, POR_TABLES, type TableMap } from '../src/games/tables'
 import { ALIGNMENTS, CLASSES, COIN_VALUES, GENDERS, MONEY, RACES, STATUS, installNames } from '../src/data/character'
-import { COAB, POR, setGame } from '../src/games/profile'
+import { COAB, POR, SOTSB, setGame } from '../src/games/profile'
 
 // a describe that skips still collects its body: without the folder, an empty image (its tests do not run)
 const image = (dir: string) => (dir && existsSync(dir) ? unexepack(new Uint8Array(readFileSync(join(dir, 'START.EXE')))).image : new Uint8Array(0))
@@ -91,6 +91,16 @@ describe('frame tiles', () => {
     expect(borderTiles(img)).toEqual({ tl: 30, t: 31, tr: 32, l: 32, r: 32, bl: 31, b: 31, br: 33 })
     const sf = screenFrame(img, [3, 8])!
     expect([sf.at(5, 3), sf.at(5, 5), sf.at(0, 23)]).toEqual([31, -1, 31])
+    setGame(POR)
+  })
+  it('SotSB draws bars of fixed tiles, capped where a column meets a row (0x19D0, 0x1A90)', async () => {
+    const { borderTiles, screenFrame, frameMask } = await import('../src/games/frametiles')
+    setGame(SOTSB)
+    expect(borderTiles(null)).toEqual({ tl: 55, t: 55, tr: 55, l: 53, r: 53, bl: 55, b: 55, br: 55 })
+    expect(frameMask()).toBe(13)
+    const sf = screenFrame(null, [16])!
+    expect([0, 1, 2, 15, 16, 17, 22, 23].map((r) => sf.at(0, r))).toEqual([55, 52, 53, 54, 55, 52, 54, 55])
+    expect([sf.at(39, 1), sf.at(20, 16), sf.at(20, 5)]).toEqual([52, 55, -1])
     setGame(POR)
   })
 })
