@@ -2146,6 +2146,9 @@ export class Battle implements FxHost {
     if (await this.aiCast(f)) return
     this.chooseWeapon(f)
     await fire(this, c, 14) // FUN_3334_0b3c: the gaze, breath and spit specials first (spec/A-games/engine/combat-ai.md)
+    // FUN_3334_000f 0x23507: the finder (0xFF, 1, 0); none, or no initiative left: finish the round
+    f.target = this.findTarget(f, false, true)
+    if (!f.target || s8(f.r[3]) <= 0) { this.finishRound(f); return }
     this.aiLast = 8; this.aiStalls = 0 // 0x23E82
     for (let tries = 0; tries < 20 && s8(f.r[3]) > 0 && this.inPlay(f); tries++) {
       while (f.r[0x14] && f.r[6] > 0 && s8(f.r[3]) > 0 && s8(f.r[3]) < 20) { // 0x23ED0
@@ -2161,7 +2164,7 @@ export class Battle implements FxHost {
       if (!t) {
         const near = this.enemiesWithin(f, reach).filter((e) => this.canTarget(f, e))
         if (!near.length) {
-          const goal = this.findTarget(f)
+          const goal = this.findTarget(f) // the finder (0xFF, 0, 0), 0x240AC
           if (!goal) { this.finishRound(f); return }
           f.target = goal
           await this.aiStep(f, false) // 0x240BC: its own outcome; the loop goes on
@@ -2192,13 +2195,14 @@ export class Battle implements FxHost {
    * Target finder (FUN_3aae_37e4): keep a valid target, else a random enemy (terrain ignored on a second
    * pass); with forceNew always a new one, in sight, in one pass.
    */
-  findTarget(f: Fighter, forceNew = false): Fighter | null {
+  findTarget(f: Fighter, forceNew = false, skipCheck = false): Fighter | null {
     if (!forceNew && f.target && this.inPlay(f.target) && this.side(f.target) !== this.side(f) && this.canTarget(f, f.target)) return f.target
     for (const pass of forceNew ? [0] : [0, 1]) {
       const list = this.enemies(f).filter((e) => pass === 1 || this.seesF(f, e))
       for (let i = 0; i < 20 && list.length; i++) {
         const t = list[this.e.roll(1, list.length) - 1]
-        if (this.canTarget(f, t)) return t
+        // skipCheck (FUN_3aae_37e4's third argument): the second pass takes a pick that fails Can target
+        if (this.canTarget(f, t) || (skipCheck && pass === 1)) return t
       }
     }
     return null
@@ -2261,7 +2265,7 @@ export class Battle implements FxHost {
       if (this.aiStalls > 1) {
         f.target = null
         if (this.aiStalls > 2) { f.r[6] = 0; return }
-        f.target = this.findTarget(f) // the finder (0xFF, 1, 0)
+        f.target = this.findTarget(f, false, true) // the finder (0xFF, 1, 0), 0x23DB2
         if (!f.target) { this.finishRound(f); return }
       }
     }

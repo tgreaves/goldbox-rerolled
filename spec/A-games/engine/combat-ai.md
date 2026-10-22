@@ -41,7 +41,7 @@ A fleeing creature still goes through item use, queued spell, turn undead and sp
 2. Up to 2 passes × 20 tries: n = `2433(char, range)`, pick `roll(1, n)` (uniformly random, not the nearest). Accept if Can target passes, or skipCheck and grid[6] set. A rejected entry is zeroed; a pass ends when all are zero.
 3. Pass 2 sets grid[6] = 1 (terrain ignored), only when forceNew = 0. Clear grid[6]; return whether a target was found.
 
-AI melee uses (char, 0xFF, 1, 0) (`FUN_3334_01c7`); spells use (caster, spell range, 0, 1).
+Calls: the turn before the melee loop (0x23507) and the stall re-target (0x23DB2) use (char, 0xFF, 1, 0); the melee loop's step towards a target when none is in reach (0x240AC) uses (char, 0xFF, 0, 0); spells use (caster, spell range, 0, 1). CotAB the same (0x232BB, 0x23D5F, 0x240C8) (O).
 
 So with skipCheck = 1 the AI always finds some enemy on the field to walk towards, in sight or not.
 
