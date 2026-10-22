@@ -16,19 +16,57 @@ export interface NamedFile { name: string; data: Uint8Array }
  * original files stay byte-for-byte the original format.
  */
 export const SIDECAR_FORMAT = 'goldbox-rerolled-save'
+/** the sidecar version this build writes and fully knows (storage.md §6) */
+export const SIDECAR_VERSION = 1
+
+/**
+ * What a sidecar holds beyond the fields this build knows (storage.md §6): `rest`, every other field,
+ * written back unchanged; `version`, the version it was written with, when newer than SIDECAR_VERSION
+ * (then kept, so the newer build that wrote it reads its own fields again)
+ */
+export interface SidecarExtra { rest: Record<string, unknown>; version?: number }
 
 export function sidecar(g: SavedGame): NamedFile | null {
-  if (!g.known?.length) return null
-  const json = JSON.stringify({ format: SIDECAR_FORMAT, version: 1, known: g.known })
+  const rest = g.sidecar?.rest ?? {}
+  if (!g.known?.length && !Object.keys(rest).length) return null
+  const version = Math.max(SIDECAR_VERSION, g.sidecar?.version ?? 0)
+  const json = JSON.stringify({ ...rest, format: SIDECAR_FORMAT, version, known: g.known ?? [] })
   return { name: `SAVGAM${g.slot}.GBR`, data: new TextEncoder().encode(json) }
 }
 
-export function readSidecar(d: Uint8Array | undefined): string[] | undefined {
-  if (!d) return undefined
+/**
+ * A sidecar read by the rule of storage.md §6: the fields this build knows (`known`), the others kept
+ * (`extra.rest`), and the version when newer than this build's; a missing or older version reads as now.
+ * Not a sidecar of this port, or unreadable: nothing.
+ */
+export function parseSidecar(d: Uint8Array | undefined): { known?: string[]; extra?: SidecarExtra } {
+  if (!d) return {}
   try {
-    const v = JSON.parse(new TextDecoder().decode(d)) as { format?: string; known?: unknown }
-    return v.format === SIDECAR_FORMAT && Array.isArray(v.known) ? v.known.filter((x): x is string => typeof x === 'string') : undefined
-  } catch { return undefined }
+    const v = JSON.parse(new TextDecoder().decode(d)) as Record<string, unknown>
+    if (!v || typeof v !== 'object' || v.format !== SIDECAR_FORMAT) return {}
+    const { format: _f, version, known, ...rest } = v
+    const knownList = Array.isArray(known) ? known.filter((x): x is string => typeof x === 'string') : undefined
+    const newer = typeof version === 'number' && version > SIDECAR_VERSION ? version : undefined
+    const extra = Object.keys(rest).length || newer !== undefined ? { rest, version: newer } : undefined
+    return { known: knownList, extra }
+  } catch { return {} }
+}
+
+/** `known` and `sidecar` of a SavedGame from its .GBR file */
+export function parseSidecarFields(d: Uint8Array | undefined): { known?: string[]; sidecar?: SidecarExtra } {
+  const { known, extra } = parseSidecar(d)
+  return { known, sidecar: extra }
+}
+
+export function readSidecar(d: Uint8Array | undefined): string[] | undefined {
+  return parseSidecar(d).known
+}
+
+/** The note for a save whose sidecar a newer build wrote (storage.md §6); null when it is not newer. */
+export function newerSidecarNote(extra: SidecarExtra | undefined): string | null {
+  return extra?.version !== undefined && extra.version > SIDECAR_VERSION
+    ? `This save's port data (${'.GBR'}) comes from a newer GoldBox Rerolled: what this version does not know is kept as it is.`
+    : null
 }
 
 /** The exported ZIP's name for slot x of the active game (storage.md §7.1): `poolrad-save-A.zip`, `curse-save-A.zip`. */
@@ -68,7 +106,7 @@ export function savesFrom(files: NamedFile[]): { games: SavedGame[]; missing: st
     const first = chars[0]?.sav
     const leader = first ? String.fromCharCode(...first.subarray(F.name + 1, F.name + 1 + first[F.name])) : 'empty'
     games.push({ slot: m[1], dat, chars: chars.map((c) => ({ sav: c.sav!, itm: c.itm, spc: c.spc })),
-      label: `${leader}'s party (imported)`, savedAt: Date.now(), known: readSidecar(byName.get(`SAVGAM${m[1]}.GBR`)) })
+      label: `${leader}'s party (imported)`, savedAt: Date.now(), ...parseSidecarFields(byName.get(`SAVGAM${m[1]}.GBR`)) })
   }
   return { games, missing }
 }

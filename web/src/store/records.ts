@@ -3,7 +3,7 @@
 // own extensions (PoR .ITM/.SPC/.CHA, CotAB .SWG/.FX/.GUY), so the server stays game-neutral.
 import { game } from '../games/profile'
 import { parseSave } from '../data/save'
-import { readSidecar, sidecar } from './savefiles'
+import { parseSidecarFields, sidecar } from './savefiles'
 import type { SavedGame, StoredCharacter } from './user'
 
 export type Kind = 'saves' | 'characters' | 'conflicts' | 'docs'
@@ -47,7 +47,7 @@ export function recToSave(r: Rec): SavedGame | null {
   if (!dat) return null
   const chars = members.map((m) => ({ sav: file(`${m}.SAV`)!, itm: file(`${m}.${S.items}`), spc: file(`${m}.${S.effects}`) }))
   if (chars.some((c) => !c.sav)) return null
-  return { slot, dat, chars, label: String(r.meta.label ?? ''), savedAt: Number(r.meta.savedAt ?? 0), known: readSidecar(file(`SAVGAM${slot}.GBR`)) }
+  return { slot, dat, chars, label: String(r.meta.label ?? ''), savedAt: Number(r.meta.savedAt ?? 0), ...parseSidecarFields(file(`SAVGAM${slot}.GBR`)) }
 }
 
 /** A roster character as a DOS install keeps it: <stem>.CHA (CotAB .GUY) with its item and effect files. */

@@ -7,6 +7,7 @@ import { game } from '../games/profile'
 import { localChanged } from './changes'
 import { charToRec, recToChar, recToSave, saveToRec, splitKey, type Rec } from './records'
 import type { LocalSide } from './sync'
+import type { SidecarExtra } from './savefiles'
 
 const CHARS = 'characters'
 const META = 'meta'
@@ -46,7 +47,7 @@ function run<T>(store: string, mode: IDBTransactionMode, f: (s: IDBObjectStore) 
 const buf = (u?: Uint8Array) => (u ? u.slice().buffer : undefined)
 const arr = (b?: ArrayBuffer) => (b ? new Uint8Array(b) : undefined)
 
-interface StoredSave { dat: ArrayBuffer; chars: { sav: ArrayBuffer; itm?: ArrayBuffer; spc?: ArrayBuffer }[]; label: string; savedAt: number; known?: string[] }
+interface StoredSave { dat: ArrayBuffer; chars: { sav: ArrayBuffer; itm?: ArrayBuffer; spc?: ArrayBuffer }[]; label: string; savedAt: number; known?: string[]; sidecar?: SidecarExtra }
 
 async function readChar(stem: string): Promise<StoredCharacter | null> {
   const v = await run<{ sav: ArrayBuffer; itm?: ArrayBuffer; spc?: ArrayBuffer } | undefined>(CHARS, 'readonly', (s) => s.get(stem))
@@ -105,15 +106,17 @@ export interface SavedGame {
   savedAt: number
   /** commissions the clerk has offered (port-only: the original does not record them, IMP-023) */
   known?: string[]
+  /** the sidecar's fields this build does not know, and its version if newer (storage.md §6), kept for writing back */
+  sidecar?: SidecarExtra
 }
 
 async function readSave(key: string, slot: string): Promise<SavedGame | null> {
   const v = await run<StoredSave | undefined>(SAVES, 'readonly', (s) => s.get(key))
   if (!v) return null
-  return { slot, dat: new Uint8Array(v.dat), label: v.label, savedAt: v.savedAt, known: v.known,
+  return { slot, dat: new Uint8Array(v.dat), label: v.label, savedAt: v.savedAt, known: v.known, sidecar: v.sidecar,
     chars: v.chars.map((c) => ({ sav: new Uint8Array(c.sav), itm: arr(c.itm), spc: arr(c.spc) })) }
 }
-const putSave = (key: string, g: SavedGame) => run(SAVES, 'readwrite', (s) => s.put({ dat: buf(g.dat), label: g.label, savedAt: g.savedAt, known: g.known,
+const putSave = (key: string, g: SavedGame) => run(SAVES, 'readwrite', (s) => s.put({ dat: buf(g.dat), label: g.label, savedAt: g.savedAt, known: g.known, sidecar: g.sidecar,
   chars: g.chars.map((c) => ({ sav: buf(c.sav), itm: buf(c.itm), spc: buf(c.spc) })) }, key))
 
 export async function listSaves(): Promise<SavedGame[]> {

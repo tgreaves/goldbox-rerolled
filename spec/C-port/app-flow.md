@@ -225,7 +225,7 @@ replaces the original's start-up menu and its 30-second timer (IMP-074).
 | Start | From | Engine | First note |
 |---|---|---|---|
 | **new** | Begin adventuring | `newGame(party)`: fresh variables, the party copied in, the profile's start block and record, each member's item and effect files attached | "A new game: Begin Adventuring from the party screen." |
-| **load** | a save chosen in Load | `loadSave(dat, party)` and the member files; the save's journal finds (`known`) restored | "Loaded: *label*." (`slot *x*, *label*`, `autosave, *label*`, `conflict copy of …`, `game-file save *x*`) |
+| **load** | a save chosen in Load | `loadSave(dat, party)` and the member files; the save's journal finds (`known`) restored, and its sidecar's other fields kept for writing back | "Loaded: *label*." (`slot *x*, *label*`, `autosave, *label*`, `conflict copy of …`, `game-file save *x*`), then, for a sidecar from a newer build, the version note ([storage.md §6](storage.md#6-journal-finds-and-the-gbr-sidecar)) |
 | **continue** | Continue | as load, with the autosave | "Loaded: autosave, *label*." |
 
 Then play begins (`start()`: the area's entry, [main-loop.md](../A-games/engine/main-loop.md)) and

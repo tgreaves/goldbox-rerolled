@@ -2,7 +2,8 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { charStem, crc32, rosterFrom, saveFiles, savesFrom, unzip, zip } from '../src/store/savefiles'
+import { charStem, crc32, newerSidecarNote, parseSidecarFields, rosterFrom, saveFiles, savesFrom, sidecar, SIDECAR_FORMAT, SIDECAR_VERSION, unzip, zip } from '../src/store/savefiles'
+import type { SavedGame } from '../src/store/user'
 import { parseSave } from '../src/data/save'
 import { GameFiles, wanted } from '../src/store/gamefiles'
 import { Engine, type Io } from '../src/vm/engine'
@@ -117,5 +118,38 @@ describe('export name', () => {
     setGame(COAB)
     try { expect(exportName('C')).toBe('curse-save-C.zip') } finally { setGame(POR) }
     expect(exportName('A')).toBe('poolrad-save-A.zip')
+  })
+})
+
+describe('the .GBR sidecar version rule (storage.md §6)', () => {
+  const g = (extra?: Partial<SavedGame>): SavedGame => ({ slot: 'B', dat: new Uint8Array(4), chars: [], label: '', savedAt: 0, known: ['journal:3'], ...extra })
+  const json = (o: unknown) => new TextEncoder().encode(JSON.stringify(o))
+  const back = (f: { data: Uint8Array } | null) => JSON.parse(new TextDecoder().decode(f!.data))
+  it('keeps the fields it does not know and writes them back unchanged', () => {
+    const read = parseSidecarFields(json({ format: SIDECAR_FORMAT, version: 1, known: ['tale:2'], notes: { a: 1 }, flags: [7] }))
+    expect(read.known).toEqual(['tale:2'])
+    expect(back(sidecar(g(read)))).toEqual({ format: SIDECAR_FORMAT, version: 1, known: ['tale:2'], notes: { a: 1 }, flags: [7] })
+    expect(newerSidecarNote(read.sidecar)).toBeNull()
+  })
+  it('loads a newer version, keeps that version and its fields, and says so', () => {
+    const read = parseSidecarFields(json({ format: SIDECAR_FORMAT, version: SIDECAR_VERSION + 1, known: ['proc:1'], future: 'x' }))
+    expect(read.known).toEqual(['proc:1'])
+    expect(newerSidecarNote(read.sidecar)).toMatch(/newer GoldBox Rerolled/)
+    const out = back(sidecar(g(read)))
+    expect(out.version).toBe(SIDECAR_VERSION + 1)
+    expect(out.future).toBe('x')
+  })
+  it('reads a missing or older version as now, silently', () => {
+    for (const v of [undefined, 0]) {
+      const read = parseSidecarFields(json({ format: SIDECAR_FORMAT, version: v, known: ['journal:1'] }))
+      expect(read.known).toEqual(['journal:1'])
+      expect(read.sidecar).toBeUndefined()
+      expect(newerSidecarNote(read.sidecar)).toBeNull()
+      expect(back(sidecar(g(read))).version).toBe(SIDECAR_VERSION)
+    }
+  })
+  it("ignores a file that is not this port's sidecar", () => {
+    expect(parseSidecarFields(json({ format: 'other', known: ['x'] }))).toEqual({ known: undefined, sidecar: undefined })
+    expect(parseSidecarFields(new TextEncoder().encode('not json'))).toEqual({})
   })
 })

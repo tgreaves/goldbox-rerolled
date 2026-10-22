@@ -72,7 +72,7 @@ account with it). `<items>`, `<effects>`, `<roster>` are the active game's `save
 | `meta.savedAt` | when the save was made, ms |
 | `meta.members` | the members' stems in party order: the stem table of the `.DAT` where each matches the stem rule, otherwise `CHRDAT<slot><i>` |
 | `meta.modifiedAt` | added by the push ([§5.5](#55-push)) |
-| files | `SAVGAM<slot>.DAT`; for each member `m`: `m.SAV`, and `m.<items>`, `m.<effects>` when the character has them; `SAVGAM<slot>.GBR` when the save has journal finds ([storage.md §6](storage.md#6-journal-finds-and-the-gbr-sidecar)) |
+| files | `SAVGAM<slot>.DAT`; for each member `m`: `m.SAV`, and `m.<items>`, `m.<effects>` when the character has them; `SAVGAM<slot>.GBR` when the save has journal finds or kept sidecar fields ([storage.md §6](storage.md#6-journal-finds-and-the-gbr-sidecar)) |
 
 The files are the game's own, byte for byte: a version folder copied into a DOSBox game folder
 loads there. Reading a record back needs `SAVGAM<slot>.DAT` (`slot` from `meta.slot` when it is

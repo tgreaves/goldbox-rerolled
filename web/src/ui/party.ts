@@ -200,20 +200,20 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
         nav.play({ kind: 'new', party: party.map(byStem) })
         return
       case 'O': // the autosave (IMP-060)
-        if (auto) nav.play({ kind: 'load', dat: auto.dat, party: auto.chars, label: `autosave, ${auto.label}`, known: auto.known })
+        if (auto) nav.play({ kind: 'load', dat: auto.dat, party: auto.chars, label: `autosave, ${auto.label}`, known: auto.known, sidecar: auto.sidecar })
         return
       case 'L': {
         // browser saves first, then the saves that came with the game files
         const saves = (await listSaves()).map((g) => ({ title: `${g.slot}: ${g.label}`, note: new Date(g.savedAt).toLocaleString(),
-          start: { kind: 'load' as const, dat: g.dat, party: g.chars, label: `slot ${g.slot}, ${g.label}`, known: g.known } }))
+          start: { kind: 'load' as const, dat: g.dat, party: g.chars, label: `slot ${g.slot}, ${g.label}`, known: g.known, sidecar: g.sidecar } }))
         if (auto) saves.unshift({ title: `Autosave: ${auto.label}`, note: new Date(auto.savedAt).toLocaleString(),
-          start: { kind: 'load' as const, dat: auto.dat, party: auto.chars, label: `autosave, ${auto.label}`, known: auto.known } })
+          start: { kind: 'load' as const, dat: auto.dat, party: auto.chars, label: `autosave, ${auto.label}`, known: auto.known, sidecar: auto.sidecar } })
         // conflict copies the sync kept (IMP-072): the version that lost when two devices saved the same slot
         for (const c of await listConflicts().catch(() => [])) {
           if (!c.save) continue
           const g = c.save, where = c.ofId === 'AUTO' ? 'autosave' : `slot ${c.ofId}`
           saves.push({ title: `${c.ofId === 'AUTO' ? 'Autosave' : c.ofId} (conflict copy, ${c.from === 'browser' ? "this browser's" : "another device's"}): ${g.label}`, note: new Date(g.savedAt).toLocaleString(),
-            start: { kind: 'load' as const, dat: g.dat, party: g.chars, label: `conflict copy of ${where}, ${g.label}`, known: g.known } })
+            start: { kind: 'load' as const, dat: g.dat, party: g.chars, label: `conflict copy of ${where}, ${g.label}`, known: g.known, sidecar: g.sidecar } })
         }
         for (const slot of 'ABCDEFGHIJ') {
           const dat = files.get(`SAVGAM${slot}.DAT`)
@@ -223,7 +223,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
           if (chars.some((c) => !c.sav)) continue
           const names = chars.map((c) => parseCharacter(c.sav).name)
           saves.push({ title: `${slot} (game files): ${names[0]}'s party`, note: `block ${saveBlock(sv)} area ${saveArea(sv)}`,
-            start: { kind: 'load', dat, party: chars, label: `game-file save ${slot}`, known: undefined } })
+            start: { kind: 'load', dat, party: chars, label: `game-file save ${slot}`, known: undefined, sidecar: undefined } })
         }
         if (!saves.length) { say('There are no saved games.'); break }
         const i = await pick('Load saved game', saves.map((g) => `${g.title} — ${g.note}`))

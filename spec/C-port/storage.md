@@ -126,6 +126,7 @@ seeding; deleting the database clears it, so seeding runs again.
   label: string             // shown on Load (§5)
   savedAt: number           // when it was written, ms since 1970
   known?: string[]          // journal finds and commission offers (§6)
+  sidecar?: { rest: object; version?: number }   // the .GBR's other fields and a newer version, kept (§6)
 }
 ```
 
@@ -229,14 +230,23 @@ original files are never extended, and the original game never opens this one.
 | Field | Type | Rule |
 |---|---|---|
 | `format` | string | `"goldbox-rerolled-save"`; a file with any other value (or not JSON) is ignored |
-| `version` | number | `1`. Not checked on reading |
+| `version` | number | `1` (`SIDECAR_VERSION`), the version the writer knows; see the version rule below |
 | `known` | string[] | the `known` list; elements that are not strings are dropped on reading |
 
-- It is written only when `known` is not empty: a save without finds has no `.GBR`, and a save
-  without one (or with an unreadable one) loads with an empty list.
+- It is written only when `known` is not empty or there are kept fields (below): a save without
+  finds has no `.GBR`, and a save without one (or with an unreadable one) loads with an empty list.
 - **Matching** is by name only: `SAVGAM<x>.GBR` belongs to the `SAVGAM<x>.DAT` with the same slot
   letter in the same set of files (one ZIP, one choice of files, one server record).
-- Unknown fields are ignored on reading; a writer writes exactly the three fields above.
+
+**The version rule.** A reader takes every field it knows (`format`, `version`, `known`) and keeps
+every other field as it is. A missing `version`, or one not above the reader's own, reads as the
+reader's. One above it is still loaded, never refused: the play screen's log says once, after
+"Loaded: …", "This save's port data (.GBR) comes from a newer GoldBox Rerolled: what this version
+does not know is kept as it is." The kept fields and a newer version travel with the saved game
+(the stored save's `sidecar`, [§3.3](#33-stored-saves); the load and every save made from it) and are
+written back unchanged, the known fields after them and `version` the larger of the two, so data
+that a newer build wrote survives a save in an older one. The original files are untouched either
+way.
 
 ## 7. Export and import
 
@@ -373,5 +383,4 @@ first value listed). "Synced" keys travel with an account
 
 ## Open
 
-- The sidecar's `version` is never checked; a version 2 needs a reading rule (read what is
-  understood, or refuse) before it is introduced.
+- ~~The sidecar's `version`~~: the version rule (§6), 2026-10-22.

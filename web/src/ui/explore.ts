@@ -27,6 +27,7 @@ import type { Dice } from '../rules/dice'
 import { drawMap, landmarkAt } from './areamap'
 import type { GeoMap } from '../data/geo'
 import { listCharacters, listSaves, saveCharacter, writeAutosave, writeSave } from '../store/user'
+import { newerSidecarNote, type SidecarExtra } from '../store/savefiles'
 import { report, revealedBy, type State } from '../rules/commissions'
 import { JOURNAL, journalReveals, revealNote, roman } from '../rules/journal'
 import { spellText } from '../rules/spelltext'
@@ -74,7 +75,7 @@ const escape = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};
 type CharFiles = { sav: Uint8Array; itm?: Uint8Array; spc?: Uint8Array }
 export type Start =
   | { kind: 'new'; party: CharFiles[] }
-  | { kind: 'load'; dat: Uint8Array; party: CharFiles[]; label: string; known?: string[] }
+  | { kind: 'load'; dat: Uint8Array; party: CharFiles[]; label: string; known?: string[]; sidecar?: SidecarExtra }
   /** the game's demo (games/startup.ts), from the party screen: its script with its own NPCs; nothing is saved */
   | { kind: 'demo'; demo: DemoMode }
 
@@ -628,7 +629,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const members = engine.party()
     if (!members.length || engine.quit || engine.demo) return // the demo saves nothing
     try {
-      await writeAutosave({ slot: 'A', dat: engine.toSave(members.map((_, n) => `CHRDATA${n + 1}`)), savedAt: Date.now(), known: [...known],
+      await writeAutosave({ slot: 'A', dat: engine.toSave(members.map((_, n) => `CHRDATA${n + 1}`)), savedAt: Date.now(), known: [...known], sidecar: sidecarExtra,
         label: `${parseCharacter(members[0]).name}'s party, block ${engine.block} area ${engine.area} (${why})`,
         chars: members.map((c) => ({ sav: c.slice(), itm: itemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })) })
       autosavedAt = `${engine.block}:${engine.area}`
@@ -648,7 +649,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const stems = members.map((_, n) => `CHRDAT${slot}${n + 1}`)
     const label = `${parseCharacter(members[0]).name}'s party, block ${engine.block} area ${engine.area}`
     await writeSave({ slot, dat: engine.toSave(stems), label, savedAt: Date.now(),
-      chars: members.map((c) => ({ sav: c.slice(), itm: itemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })), known: [...known] })
+      chars: members.map((c) => ({ sav: c.slice(), itm: itemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })), known: [...known], sidecar: sidecarExtra })
     note(`Game saved in slot ${slot}.`)
   }
 
@@ -1833,6 +1834,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   // ------------------------------------------------------------ commissions
   /** commissions the clerk has offered, and whether the proclamation wall was read (IMP-023) */
   const known = new Set<string>(start.kind === 'load' ? start.known ?? [] : [])
+  /** the loaded sidecar's fields this build does not know, written back with every save (storage.md §6) */
+  const sidecarExtra = start.kind === 'load' ? start.sidecar : undefined
   const commissionReport = () => report((a) => engine.read(a), known)
   function commissionsDue(): boolean {
     if (!game().commissions) return false
@@ -2163,5 +2166,6 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
   if (start.kind === 'new') note('A new game: Begin Adventuring from the party screen.')
   else note(`Loaded: ${start.label}.`)
+  if (start.kind === 'load') { const n = newerSidecarNote(start.sidecar); if (n) note(n) }
   act(() => engine.start())
 }
