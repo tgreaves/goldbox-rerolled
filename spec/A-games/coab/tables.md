@@ -187,4 +187,4 @@ Moved to part B, now that the profile holds each point:
 - The WIS bonus-spell routine (call 0x50AF6) is not re-derived for CotAB (§3.5, **?**).
 - The service each temple price belongs to comes from code order (§3.11, **I**).
 - The sound driver's effect data at the −0xBD shift is not compared (§2, **?**).
-- Bit 0x80 in the `ITEMS` class masks has no class that sets it (§2, **?**).
+- ~~Bit 0x80 in the `ITEMS` class masks~~: inert, O ([records.md §3](records.md#3-items-diff-vs-enginerecordsmd-item-record-item-types)).

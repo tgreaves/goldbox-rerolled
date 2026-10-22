@@ -300,5 +300,5 @@ profile.
 
 ## Open
 
-- The meaning of `misc83`, `misc86`, `misc87` (copied by the CotAB converter) and of byte 1 of a
+- The meaning of `misc83`, `misc86`, `misc87` in PoR (copied by the CotAB converter, and never read in CotAB, O) and of byte 1 of a
   battlefield cell are **?** in part A; the maps only locate them.

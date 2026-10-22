@@ -69,7 +69,11 @@ Read from the CotAB image (2026-10-20). CotAB Ghidra-style `SSSS:OOOO` is the im
 | 682A | 6FC1 | saveType |
 | – | 6FC2 | new: the save succeeded |
 
-Damage types: 1 fire, 2 cold, 4 electricity, 8 magic, 0x10 acid, new 0x20 breath (I), 0x40 (?).
+Damage types: 1 fire, 2 cold, 4 electricity, 8 magic, 0x10 acid, new 0x20 breath and 0x40 (O, every
+write to DS:6FAF read): 0x20 is set only with an element by the breaths 88, 90 and 128 (0x499EC, 0x49CBB,
+0x49E96) and tested only by 73 (0x28A28, "is unaffected"); 0x40 is set by `slay` (0x48580, for its event-9
+probe) and Fumble (0x48D79, for its save), and tested only by 133's last branch (0x29AB8), which runs at
+event 6 alone, so it never meets either (dead, O).
 
 ## 4. Monster-class flags char+0x14B (O; 0 in every player character)
 
@@ -183,6 +187,5 @@ texts is in the image. Its types 85 and 86 are other handlers (§2), so PoR's dr
 
 ## Open
 
-- Damage type 0x20 (breath, **I**) and 0x40 (**?**), §3.
 - The area template's two uninitialised values (the range of the sight cut, the direction without a
   creature on the first line), §7: **?** in the original, the build's choice stated there.

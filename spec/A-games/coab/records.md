@@ -185,7 +185,7 @@ All have base = current stats, 300 pp and nothing else, no items (no `.SWG` file
 - **Record: unchanged, 63 bytes, same fields** (O): loaders read 0x3F-byte blocks (`323c:2ec3`, monster `323c:350f`, treasure `1885:1c84`); next pointer +0x2A (`323c:2f5c`); recalc reads type +0x2E, readied +0x34, weight +0x37, count +0x39 (`4d05:0c9c..0d85`); cursed +0x36 and readied in the class check (`5047:057c`). Shipped `ITEM2.DAX` records decode to "Banded Mail +1 (300, 3000 gp)", "Long Sword +1 (75, 2000)", scrolls with three spell ids at 0x3C–0x3E, "Ioun Stone" with handler 136 at 0x3E (O, data).
 - **Storage**: per character in `<stem>.SWG` (roster `NAME.SWG`, save `CHRDAT<x><n>.SWG`), not inside the `.SAV` (O, §1). The shipped party has none.
 - **`ITEMS`** (O, `26a5:0665..06d2`): open, Seek(2) over the u16 header (0x7600, same as PoR), BlockRead 0x810 into `DS:5D10`; type t at `DS:5D10 + 16t` (PoR `DS:5582`), same 16 fields. File identical in size (2050). Differences from PoR:
-  - byte 13 (class mask) gains bit 0x80 on 76 types (no class sets 0x80 in `DS:3EA2`, so no effect, ?);
+  - byte 13 (class mask) gains bit 0x80 on 76 types, inert (O: the five readers 0x2485C, 0x24912, 0x3F54A, 0x509CA, 0x516DF AND it with char+0x12B, which is built only from `DS:3EA2` = 2, 0x10, 8, 0x40, 0x40, 1, 4, 0x20, 2, 2 at 0x378D7 and 0x50978);
   - 8 dagger: range 1 → 0; 9 dart: flags 0x10 → 0x1A (DEX to-hit, launcher); 44 short bow, 73 arrow: mask 0x48 → 0xCC (thieves may use them);
   - 60–62 scrolls: hands 2 → 0; 61 MU scroll mask 0x01 → 0x05 (thieves); 66 robe mask 0x7F → 0x01 (Robe of Powerlessness/Vermin, MU only); 83 mask 0 → 0xFF; 84/87/89 mask 0x08 → 0xC8;
   - new types (names from shipped instances, I): 94 Drow Mace (slot 0, hands 0, 1d6+1/1d6, bashing), 95 Elfin Chain Mail and 96 Drow Chain Mail (slot 2, AC byte 183 = AC 5), 97 Drow Long Sword (1d8/1d12), 98 Spine (thrown, RoF 12/2, range 18), 99 Ring of Wizardry (slot 9, MU), 100 Dart of Hornets Nest (RoF 28/2, range 6), 101 Staff Sling (2 hands, range 24).
@@ -269,7 +269,7 @@ The player picks "Pool" in Add; the file (`*.cha`, or a PoR save-slot `*.sav`) m
    | 7 human | 3–18 | 3–18 | 100 / 50 | 3–18 | 3–18 | 3–18 | 3–18 | 3–18 |
 
    (Race 0 row is `0 5 10 0 5 5 10 15 5 10 10 15 20 10 12 12`.)
-3. C[0x1C] = P[0x16] (STR%, **not clamped**). Then **Bug (O, `323c:1922..196c`)**: `if limit.STR%max[sex] > C[0x10] then C[0x10] = limit.STR%max[sex]` — it compares the cap with **base STR** and writes the cap into base STR. Since every cap > 0 exceeds 18, base STR becomes the cap for human (M 100, F 50), half-orc (99 / 75), and male dwarf 99, elf 75, gnome 50, half-elf 90; female dwarves/elves/gnomes/half-elves and halflings are unaffected. Current STR (+0x11, copied in step 2) stays correct. The next `4aab:18d9(char, 0)` (STR items/effects changing, e.g. the Strength-related cases in `3d53:1c90..1e97`, effect handlers in `43f7`) would copy it into current STR (I). Example: PoR THRENDER GRONE (dwarf, STR 17) → base STR 99. A port should clamp C[0x1C] instead (Fix), or keep the bug behind a flag (`convert_por(faithful=True)` in the script).
+3. C[0x1C] = P[0x16] (STR%, **not clamped**). Then **Bug (O, `323c:1922..196c`)**: `if limit.STR%max[sex] > C[0x10] then C[0x10] = limit.STR%max[sex]` — it compares the cap with **base STR** and writes the cap into base STR. Since every cap > 0 exceeds 18, base STR becomes the cap for human (M 100, F 50), half-orc (99 / 75), and male dwarf 99, elf 75, gnome 50, half-elf 90; female dwarves/elves/gnomes/half-elves and halflings are unaffected. Current STR (+0x11, copied in step 2) stays correct. The next `4aab:18d9(char, 0)` copies it into current STR (O for the callers): readying or putting away an item of kind 5 (0x3F29A), Enlarge (0x4606E) or Reduce (0x46115) cast, the Strength handler (0x46D74, I), or the removal of an effect 0x0C, 0x26 or 0x92 (0x4AD01), timing out included; no training, level, load or save path recomputes STR, and nothing resets base STR. Until then the imported character's STR is right. Example: PoR THRENDER GRONE (dwarf, STR 17) → base STR 99. A port should clamp C[0x1C] instead (Fix), or keep the bug behind a flag (`convert_por(faithful=True)` in the script).
 4. C[0x1D] = P[0x16].
 5. C[0x73] = P[0x2D]; C[0x75] = P[0x2F]; C[0x76] (u16) = P[0x30]; C[0x78] = P[0x32].
 6. C[0x79..0xB0] = P[0x33..0x6A] (56 known-spell flags); C[0x9C] = 0 — spell 36 (Animate Dead) is forgotten.
@@ -335,9 +335,12 @@ Strings at 0x36848 + 0x35AE: "Add from where? ", "Curse Pool Hillsfar Exit", "Ad
 
 ## 11. Open
 
-- 0xF6, 0xF9, 0xFA, 0x14B, 0x192 meanings (copied, rarely read).
-- 0x191 exact use (I: once-per-period ability counter).
-- Exact effect of the base-STR bug in play (which events call `4aab:18d9` for an imported character before anything resets base STR) — trace `3d53:1c90..1e97` and the `43f7` callers.
-- Bit 0x80 added to ITEMS class masks.
+- ~~0xF6, 0xF9, 0xFA, 0x14B, 0x191, 0x192~~ answered (O, every `es:[di+disp]` access): 0xF6, 0xF9, 0xFA
+  (`misc83/86/87`) are written only by the PoR import (0x33EA4, 0x33EE3, 0x33EF8) and never read; 0x14B,
+  the monster-class flags, is only read (handlers 4, 18, 26, 134, 145); 0x191 is the paladin's Cure
+  Disease uses (1 at creation 0x3764E, (level − 1) div 5 + 1 at the week's refill 0x29C79, offered while
+  > 0 at 0x40BC4, one off a use at 0x40E37); 0x192 bit 0 is set by the Hillsfar transfer when its record's
+  +0x26 ≠ 0 (0x34569) and read by the scripts through B-view entry 0xE4 (0x20357).
+- ~~The base-STR bug in play~~ and ~~bit 0x80 in the class masks~~: answered in §7.2 step 3 and §3.
 - Druid slots at 0x132 (no druid in play).
 - The Hillsfar transfer (§7.5) beyond its structure: `323c:248b..2801` not traced.

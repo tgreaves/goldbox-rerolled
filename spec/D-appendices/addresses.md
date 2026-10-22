@@ -866,6 +866,7 @@ when its table column or sentence names CotAB.
 | 0x200F3 | coab/ecl, B/script-vm-map | coab/ecl: Engine entry points | `FUN_2fea_06fb` |
 | 0x2014E | coab/ecl | coab/ecl: B as a view of the current character |  |
 | 0x201B4 | coab/ecl, B/script-vm-map | coab/ecl: Engine entry points | `FUN_2fea_07bc` |
+| 0x20357 | coab/records | coab/records: 11. Open |  |
 | 0x20390 | coab/ecl, B/script-vm-map | coab/ecl: B as a view of the current character |  |
 | 0x2051F | coab/ecl, B/script-vm-map | coab/ecl: Engine entry points | `FUN_2fea_0a74` |
 | 0x20722 | coab/assets, coab/ecl, B/script-vm-map | coab/assets: Background: the main change | `FUN_2fea_0c77` |
@@ -920,6 +921,8 @@ when its table column or sentence names CotAB.
 | 0x24533 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x2459C | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x2466C | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
+| 0x2485C | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
+| 0x24912 | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x24C90 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x24CD6 | coab/combat | coab/combat: Map-area generator | `FUN_34c7_0221` |
 | 0x24D63 | coab/combat, B/procedures | coab/combat: Furnishing |  |
@@ -992,6 +995,7 @@ when its table column or sentence names CotAB.
 | 0x2896F | coab/combat | coab/combat: Casting |  |
 | 0x28986 | B/vocabularies | B/vocabularies: 3.2 Attack and damage modifiers |  |
 | 0x28A22 | B/vocabularies | B/vocabularies: 3.3 Damage resistances and immunities |  |
+| 0x28A28 | coab/effects | coab/effects: 3. Globals |  |
 | 0x28A5E | coab/combat, coab/effects | coab/combat: Casting |  |
 | 0x28A6A | B/vocabularies | B/vocabularies: 3.2 Attack and damage modifiers |  |
 | 0x28AC2 | B/vocabularies | B/vocabularies: 3.2 Attack and damage modifiers |  |
@@ -1010,6 +1014,7 @@ when its table column or sentence names CotAB.
 | 0x299F4 | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x29A23 | coab/spells, B/vocabularies | coab/spells: 2. Per spell id |  |
 | 0x29AA0 | B/vocabularies | B/vocabularies: 3.3 Damage resistances and immunities |  |
+| 0x29AB8 | coab/effects | coab/effects: 3. Globals |  |
 | 0x29ACC | B/vocabularies | B/vocabularies: 3.2 Attack and damage modifiers |  |
 | 0x29B05 | B/vocabularies | B/vocabularies: 3.3 Damage resistances and immunities |  |
 | 0x29B1C | B/vocabularies | B/vocabularies: 3.1 Markers and turn control |  |
@@ -1100,6 +1105,9 @@ when its table column or sentence names CotAB.
 | 0x33CE2 | coab/records | coab/records: 7.2 Engine conversion |  |
 | 0x33E47 | coab/effects | coab/effects: 9. No level drain |  |
 | 0x33E5B | coab/effects | coab/effects: 9. No level drain |  |
+| 0x33EA4 | coab/records | coab/records: 11. Open |  |
+| 0x33EE3 | coab/records | coab/records: 11. Open |  |
+| 0x33EF8 | coab/records | coab/records: 11. Open |  |
 | 0x33F00 | coab/records | coab/records: 7.2 Engine conversion |  |
 | 0x340E4 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x342F5 | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) |  |
@@ -1158,6 +1166,7 @@ when its table column or sentence names CotAB.
 | 0x371F6 | coab/records | coab/records: 10. Creation effects and paladin abilities |  |
 | 0x37647 | coab/records | coab/records: 10. Creation effects and paladin abilities |  |
 | 0x3764E | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
+| 0x378D7 | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x388DB | B/procedures | B/procedures: 3. Starting money |  |
 | 0x389B7 | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x389EA | B/procedures | B/procedures: 3. Starting money |  |
@@ -1185,8 +1194,9 @@ when its table column or sentence names CotAB.
 | 0x3D530 | coab/chargen-and-progression, coab/records, B/procedures | coab/chargen-and-progression: The former class afterwards |  |
 | 0x3D87C | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
 | 0x3F034 | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
-| 0x3F1C0 | coab/records | coab/records: 7.2 Engine conversion |  |
+| 0x3F29A | coab/records | coab/records: 7.2 Engine conversion |  |
 | 0x3F40D | coab/effects | coab/effects: 6. Item kinds 0x3F034 |  |
+| 0x3F54A | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x3F57D | coab/effects | coab/effects: 6. Item kinds 0x3F034 |  |
 | 0x3F9A2 | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
 | 0x3F9A8 | coab/chargen-and-progression, coab/spells, B/procedures | coab/chargen-and-progression: The former class afterwards | `FUN_4894_1a8a` |
@@ -1232,13 +1242,16 @@ when its table column or sentence names CotAB.
 | 0x45A94 | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers |  |
 | 0x45C10 | coab/spells | coab/spells: 1. Dispatch and shared helpers |  |
 | 0x45F75 | B/vocabularies | B/vocabularies: 4.2 Shared kinds |  |
+| 0x4606E | coab/records | coab/records: 7.2 Engine conversion |  |
 | 0x460AA | B/vocabularies | B/vocabularies: 4.2 Shared kinds |  |
+| 0x46115 | coab/records | coab/records: 7.2 Engine conversion |  |
 | 0x4614A | B/vocabularies | B/vocabularies: 4.2 Shared kinds |  |
 | 0x466B8 | B/vocabularies | B/vocabularies: 4.2 Shared kinds |  |
 | 0x4675B | coab/spells, B/vocabularies | coab/spells: 4. Quirks of the original | `FUN_4e53_1b11` |
 | 0x46B40 | coab/spells | coab/spells: 2. Per spell id |  |
 | 0x46BCB | B/vocabularies | B/vocabularies: 4.2 Shared kinds |  |
 | 0x46BF8 | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
+| 0x46D74 | coab/records | coab/records: 7.2 Engine conversion |  |
 | 0x46FA7 | coab/spells | coab/spells: 1. Dispatch and shared helpers |  |
 | 0x47096 | coab/spells | coab/spells: 2. Per spell id |  |
 | 0x47154 | B/vocabularies | B/vocabularies: 4.3 The battle's kinds |  |
@@ -1261,6 +1274,7 @@ when its table column or sentence names CotAB.
 | 0x48240 | B/vocabularies | B/vocabularies: 4.3 The battle's kinds |  |
 | 0x4848A | B/vocabularies | B/vocabularies: 4.2 Shared kinds |  |
 | 0x4856D | B/vocabularies | B/vocabularies: 4.2 Shared kinds |  |
+| 0x48580 | coab/effects | coab/effects: 3. Globals |  |
 | 0x4862B | B/vocabularies | B/vocabularies: 4.3 The battle's kinds |  |
 | 0x487DD | B/vocabularies | B/vocabularies: 4.3 The battle's kinds |  |
 | 0x488A1 | B/vocabularies | B/vocabularies: 4.3 The battle's kinds |  |
@@ -1268,6 +1282,7 @@ when its table column or sentence names CotAB.
 | 0x48A8C | coab/effects, B/vocabularies | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
 | 0x48BB2 | B/vocabularies | B/vocabularies: 4.2 Shared kinds |  |
 | 0x48D66 | B/vocabularies | B/vocabularies: 4.3 The battle's kinds |  |
+| 0x48D79 | coab/effects | coab/effects: 3. Globals |  |
 | 0x48F05 | coab/spells, B/vocabularies | coab/spells: 4. Quirks of the original |  |
 | 0x494C0 | B/vocabularies | B/vocabularies: 4.3 The battle's kinds |  |
 | 0x494EB | coab/spells | coab/spells: 2. Per spell id |  |
@@ -1276,9 +1291,12 @@ when its table column or sentence names CotAB.
 | 0x496D1 | coab/effects, B/vocabularies | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
 | 0x497CE | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x499CD | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
+| 0x499EC | coab/effects | coab/effects: 3. Globals |  |
 | 0x49B5E | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x49C94 | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
+| 0x49CBB | coab/effects | coab/effects: 3. Globals |  |
 | 0x49E74 | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
+| 0x49E96 | coab/effects | coab/effects: 3. Globals |  |
 | 0x4A001 | B/vocabularies | B/vocabularies: 3.9 Monster specials (event 14) |  |
 | 0x4A121 | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x4A214 | B/vocabularies | B/vocabularies: 3.9 Monster specials (event 14) |  |
@@ -1290,6 +1308,7 @@ when its table column or sentence names CotAB.
 | 0x4AB2D | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x4AB77 | coab/effects, coab/spells | coab/effects: 1. Dispatch | `FUN_5216_0000` |
 | 0x4ABBA | coab/effects, B/procedures | coab/effects: 1. Dispatch | `FUN_5216_0026` |
+| 0x4AD01 | coab/records | coab/records: 7.2 Engine conversion |  |
 | 0x4AD0A | coab/effects | coab/effects: 1. Dispatch |  |
 | 0x4AD2A | coab/effects | coab/effects: 1. Dispatch | `FUN_5216_0160` |
 | 0x4AEC4 | coab/effects, B/vocabularies | coab/effects: 1. Dispatch | `FUN_5216_02fa` |
@@ -1363,7 +1382,9 @@ when its table column or sentence names CotAB.
 | 0x508C4 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x50929 | coab/chargen-and-progression, coab/records | coab/chargen-and-progression: The former class afterwards |  |
 | 0x50952 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
+| 0x50978 | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x5098A | coab/records | coab/records: 2.2 Recomputed on load/import |  |
+| 0x509CA | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x509EC | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x50A10 | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
 | 0x50A3B | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
@@ -1380,6 +1401,7 @@ when its table column or sentence names CotAB.
 | 0x51521 | coab/chargen-and-progression | coab/chargen-and-progression: The change (0x51521) |  |
 | 0x515F9 | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x51691 | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
+| 0x516DF | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x5171A | coab/chargen-and-progression | coab/chargen-and-progression: Where |  |
 | 0x51776 | coab/chargen-and-progression | coab/chargen-and-progression: Allowed classes (0x511AE) |  |
 | 0x517D2 | coab/chargen-and-progression, coab/ecl | coab/chargen-and-progression: The change (0x51521) |  |
