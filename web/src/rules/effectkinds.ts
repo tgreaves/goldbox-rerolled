@@ -670,6 +670,11 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (!removal || !h.inCombat()) return
     h.clearCloud?.(c, eff.power, num(p, 'cell'), txt(p, 'msg'))
   },
+  /** SotSB 100 removal (0x301E1): in combat, the owner's delayed blast zone numbered power >> 4 goes off (Battle.blastZone) */
+  delayedBlast(h, eff, c, removal, p) {
+    if (!removal || !h.inCombat()) return
+    h.blastZone?.(c, eff.power, p)
+  },
   /** 13 [15] (0x276C9): the count runs out, then death */
   suffocate(h, eff, c, _r, p) {
     if (eff.power === 0) h.setStatus(c, 6, `${h.name(c)} ${txt(p, 'msg')}`)

@@ -264,7 +264,11 @@ export const SOTSB_SPELLS: SpellRules = {
     75: { k: 'raise', statuses: [6, 1], races: [1], removes: [0x37], msg: is(0x4be62) }, // 4be69: not an elf (race 1)
     76: { ...COAB_SPELLS.handlers[76], probe: 0xff, immuneFlag: 8, msg: is(0x4bf1c), unaffected: UNAFFECTED }, // 4bf22
     78: { k: 'none' }, // 4bffb: empty
-    83: { k: 'teleport', heldBy: 0, releases: [], msg: 0x4c1c0 }, // 4c1ca (I: rewritten on the battlefield routines; no holds to release)
+    83: { k: 'teleport', heldBy: 0, releases: [], msg: 0x4c1c0 }, // 4c1ca: the caster to the aimed square, "teleports" (no holds released)
+    // 4cd49 Feeblemind: the spell save (+0xEC) moved by the class byte, hit dice and race; a class not listed
+    // is not affected; then the effect's record runs at once, else "is unaffected" (0x4CD3E); the save put back
+    93: { k: 'apply', save: 4, saveRules: [{ classes: [0, 8, 12], add: -1 }, { classes: [4], hd: [[8, 8, 1], [9, 127, 2]] },
+      { classes: [3], hd: [[9, 127, 4]] }, { classes: [5, 13, 15, 16], race: [6, 4, 2] }, { classes: [9, 10, 11], add: 2 }], unaffected: [IS, 0x4cd3e] },
     84: { ...COAB_SPELLS.handlers[84], effect: 0x6f, msg: 0x4c253, unaffected: UNAFFECTED }, // 4c263
     85: { k: 'flameShield', prompt: 0x4c393, abort: 0x4c3b4, aiPick: { d: 10, above: 5 }, // 4c3c9
       options: [{ name: 'Hot', effects: [[0x32, is(0x4c3a9)], [0x70, 0]] }, { name: 'Cold', effects: [[0x36, 0], [0x70, 0]] }] },
@@ -279,7 +283,10 @@ export const SOTSB_SPELLS: SpellRules = {
     113: { k: 'stoneToFlesh', msg: is(0x4d2b5), notMsg: is(0x4d2c8) }, // 4d2d5
     114: { k: 'saveOrStatus', probeType: 0x40, probe: 0xff, saveType: 4, status: 7, msg: is(0x4d4c8) }, // 4d4d8 Flesh to Stone
     // 4d590 Delayed Blast Fireball (?: when its zone goes off is not read; the port's choice: Fireball's blast at once)
-    115: { ...COAB_SPELLS.handlers[47] },
+    // 4d590: the delay asked (CS:5D4F, up to 50 segments); none: Apply at once (0x48846, L d6 + L, type 9);
+    // else the zone (list DS:8D8D) and effect 100, which goes off as 0x301E1
+    115: { ...COAB_SPELLS.handlers[47], k: 'delayedBlast', amount: { n: 'L', d: 6, plus: 'L' }, prompt: 0x4d54f, most: 50,
+      cell: 0x1a, owner: 0x64, not: [0x1d, 0x1b, 0x1a], msg: 0x4d571 },
     116: { k: 'apply', msg: is(0x103fd) }, // 4d838 Mass Invisibility
     117: { k: 'stun', bands: [[1, 30, 4, 4], [31, 60, 2, 4], [61, 90, 1, 4]], msg: is(0x11003) }, // 4d8ed Power Word Stun
   },

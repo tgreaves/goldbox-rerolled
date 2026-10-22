@@ -433,9 +433,10 @@ joined); random treasure as data: the builder's name words, shapes, weights, val
 (`test/sotsbplay.test.ts`, 8 × 300 steps by default, `SOTSB_PLAY_…`) runs from the shipped save through
 movement, scripts, battles, camp, shops, the temple and the vault with no failure; in Chrome the title
 music plays, save A loads, the opening's equipment comes as treasure and the party walks. The shop's
-Identify fee is profile data (`R.identifyFee`: SotSB 100, its line at 0x456C0). Still open: Delayed Blast
-Fireball's delay (it goes off at once, I), the finder's forced target (effect 0x5B), spells 0, 42, 83, 93
-not re-read, effects 15, 80, 94, 110's details; SotSB's temple (it asks no price); join for scroll
+Identify fee is profile data (`R.identifyFee`: SotSB 100, its line at 0x456C0). Delayed Blast Fireball
+(the delay, its zone and effect 100's explosion), Feeblemind's class rules and effects 15, 94, 110 are
+SotSB's own (2026-10-22); spells 0, 9, 42, 83 and effect 80 re-read as mapped. Still open: the finder's
+first-entry pick for a holder of 0x5B (DS:8E23 not traced, ?), the zone lifts' body cells; SotSB's temple (it asks no price); join for scroll
 bundles; the vault on the server; the `.WHO` loader's paladin uses; the Rules reference text (CotAB's)
 and no journal; the main menu's new Move command; a browser play-through.
 

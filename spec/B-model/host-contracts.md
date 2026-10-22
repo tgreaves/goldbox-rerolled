@@ -170,7 +170,7 @@ travelling, the character sheet), whose combat-only parts answer as "not in comb
 | `attack(a, t)` | one attack sequence | nothing |
 | `weapon(c)`, `weaponKind(type)` | the readied weapon, or the ammunition the current attacker fires; ITEMS byte 7 | the readied weapon; the same |
 | `sparkle?`, `announce?`, `fly?`, `flyCells?` | the presentation of §4.2 | absent: lines printed plainly |
-| `clearCloud?`, `aimed`, `cellOf?`, `aimSpell?`, `pickTarget?`, `castAs?`, `boltHit?`, `bolt?`, `fan?` | the battlefield (clouds, the aimed square, cells, the target hook, the computer's cast, the bolt, the area template) | absent |
+| `clearCloud?`, `blastZone?`, `aimed`, `cellOf?`, `aimSpell?`, `pickTarget?`, `castAs?`, `boltHit?`, `bolt?`, `fan?` | the battlefield (clouds and the delayed blast, the aimed square, cells, the target hook, the computer's cast, the bolt, the area template) | absent |
 | `choose?(prompt, items)`, `ask?(prompt)` | the combat menu and confirm | the script host's menu (Yes/No for `ask`) |
 
 ## 6. Randomness: the dice source

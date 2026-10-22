@@ -442,7 +442,7 @@ const SOTSB_IDS: EffectIds = {
  * the same procedure, with SotSB's numbers and lines; types 114–119 are not filled, 120 is the item path.
  */
 const SOTSB_HANDLERS: Record<number, HandlerSpec> = {
-  ...each([5, 12, 14, 16, 19, 24, 38, 55, 59, 72, 76, 84, 85, 87, 100, 101, 102, 109], { b: 'none' }), // empty (0x30A2F and the like)
+  ...each([5, 12, 14, 16, 19, 24, 38, 55, 59, 72, 76, 84, 85, 87, 101, 102, 109], { b: 'none' }), // empty (0x30A2F and the like)
   1: { b: 'rollMorale', roll: 1, morale: 5 }, // 0x2D3D9
   2: { b: 'rollMorale', roll: -1, morale: -5 }, // 0x2D3F1
   3: { b: 'snakes', msg: 0x2d417 }, // 0x2D42F
@@ -523,6 +523,8 @@ const SOTSB_HANDLERS: Record<number, HandlerSpec> = {
   93: { b: 'immune', mask: 1, say: 0 }, // 0x2FFFE
   94: { b: 'conSave', saveTypes: [4, 2, 0], bands: [[4, 1], [7, 2], [11, 3], [14, 4], [18, 5]], top: 20 }, // 0x3001F
   95: { b: 'blocks', types: [11, 53], pct: 90 }, // 0x300A7
+  // 0x301E1: the owner's delayed blast (list DS:8D8D) goes off, "Delayed Blast Fireball goes off"
+  100: { b: 'delayedBlast', cell: 0x1a, radius: 3, saveType: 4, dmgType: 9, msg: 0x301c1 },
   96: { b: 'blocks', types: [11, 53] }, // 0x300D5
   97: { b: 'conSave', saveTypes: [4, 2], bands: [[4, 1], [7, 2], [11, 3], [14, 4], [18, 5]] }, // 0x300F4 (in no event list)
   98: { b: 'immune', mask: 2, say: 0 }, // 0x30175

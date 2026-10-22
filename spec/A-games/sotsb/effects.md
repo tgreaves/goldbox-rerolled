@@ -241,8 +241,7 @@ poison on hit 0x2EB97, the hold on hit 0x2D144, the weapon of 0x2E4B1, deflectio
   and the **item kinds** (0 generic, 1 Ring of Wizardry as CotAB's, I; 3, 5 STR; 9 the hammer) as §1, §2, §4.
 - **ids**: going down, helpless, morale and flight as §1; the reflecting gazer 0x3B (0x2E967); the STR set
   0x71 (§5); the rest CotAB's (I: detect and read magic, the diseases of Cure Disease, `noOpportunity`).
-- **Handlers**, O unless said: empty 5, 12, 14, 16, 19, 24, 38, 55, 59, 72, 76, 84, 85, 87, 101, 102, 109
-  (and 100, below). PoR's or CotAB's behaviours with SotSB's numbers and lines: 1, 2 Bless and Curse;
+- **Handlers**, O unless said: empty 5, 12, 14, 16, 19, 24, 38, 55, 59, 72, 76, 84, 85, 87, 101, 102, 109. PoR's or CotAB's behaviours with SotSB's numbers and lines: 1, 2 Bless and Curse;
   3 snakes; 4 an attacker with class flag 1 at −7; 6 electricity negated; 7 a target whose immunity byte
   (+0x15E) has 4, +1; 8/45, 9/46 Protection from Evil and Good (also roll −2); 10, 20 Resist Cold and Fire;
   11 charmed; 15 the poison's damage, when called (argument 0) and not on removal: re-armed (0x2D1D0, unless
@@ -286,13 +285,23 @@ poison on hit 0x2EB97, the hold on hit 0x2D144, the weapon of 0x2E4B1, deflectio
   4d8 acid, half on a save vs breath); 83, 104 (0x4D9AE, by the record's type) "breathes cold" (0x22, width 3,
   length 7) or "breathes Fire" (0x21, width 3, length 9), CotAB's area breath with the own-side test, 3 uses;
   107 berserk.
-- **100** Delayed Blast Fireball going off (0x301E1, event 19, its zone list DS:8D8D): not transcribed (?);
-  the port's spell 115 is Fireball at once ([spells.md §4](spells.md)).
+- **100** Delayed Blast Fireball going off (0x301E1, `delayedBlast`; spells.md 115 lays it): on removal
+  only, in combat only (DS:67E7 = 5). The owner's zone in list DS:8D8D with +0x1C = power div 16 (none:
+  nothing); L = (former levels count, 164:57) × magic-user former level (+0x11D) + its level (+0x116); the
+  aimed square := the zone's; the area routine 186:3e(square, radius 3, 0xFF, 1) lists the targets (DS:86D2,
+  I: the same area as Fireball's); the view on the square (18b:61), 151:98(0x17) (I: a sound), the burst frames with
+  "Delayed Blast Fireball goes off" (CS:3091, image 0x301C1) in the first; the zone lifted: laid, its square
+  goes back to its kept cell (+8), or where a body record lies (DS:868E, 7 bytes each, DS:86CD of them) to
+  0x1C if the **owner's** status (+0x1A6) is 7, else 0x1E (Bug: the owner's status, not the body's; the
+  port's shared lift puts the port's body cell back, as for every zone); unlinked, freed, the zones drawn
+  again (0x3D20D). Then damage type 9, one roll L d6 + L, and for each target save vs 4 (no bonus), damage
+  mode 2 (half on a save); the damage type 0 after (O).
 
 The cloud rules (`R.clouds`): the gas cell 0x1D, the kill cell 0x1B, immune [0x1F, 0x63] (§6), the rules
 profile's.
 
 ## Open
 
-- 100's delayed blast (§7).
+- The body cells of SotSB's zone lifts (0x1C / 0x1E by the owner's status, 91 and 100): the port keeps one
+  body cell for every game.
 - The computer's movement probe on clouds (CotAB 0x237FB) with SotSB's cells.

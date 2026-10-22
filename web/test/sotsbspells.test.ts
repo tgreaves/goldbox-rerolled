@@ -9,6 +9,7 @@ import { Engine, type Io } from '../src/vm/engine'
 import { Battle, type CombatUi, type Fighter } from '../src/rules/combat'
 import { Battlefield, ROWS, COLS, type CellInfo } from '../src/rules/battlefield'
 import { addRaw, fx } from '../src/rules/effects'
+import { BEHAVIOURS } from '../src/rules/effectkinds'
 import { POR, SOTSB, setGame, wants, type GameProfile } from '../src/games/profile'
 import { F } from '../src/games/fields'
 import { SHARED_KINDS } from '../src/rules/spellkinds'
@@ -31,7 +32,8 @@ function field(files: GameFiles) {
   const dice: number[] = []
   e.roll = (n: number) => dice.length ? dice.shift()! : n
   const printed: string[] = []
-  const ui = { print: (t: string) => printed.push(t), redraw: () => {}, pause: async () => {}, sound: () => {}, menu: async () => 0, confirm: async () => false } as unknown as CombatUi
+  const choices: number[] = []
+  const ui = { print: (t: string) => printed.push(t), redraw: () => {}, pause: async () => {}, sound: () => {}, menu: async () => choices.shift() ?? 0, confirm: async () => false } as unknown as CombatUi
   const bf = new Battlefield(false)
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) bf.set(r, c, 1)
   const b = new Battle(e, ui, bf, cells)
@@ -56,7 +58,7 @@ function field(files: GameFiles) {
     try { await b.applySpell(f, e.spells!.get(id)!, L, targets) } finally { fx.spell = 0 }
   }
   const has = (f: Fighter, type: number) => b.effectsOf(f.c).filter((x) => x.type === type)
-  return { e, b, add, printed, dice, cast, has }
+  return { e, b, bf, add, printed, dice, choices, cast, has }
 }
 
 const sotsb = process.env.SOTSB ?? ''
@@ -139,5 +141,58 @@ describe.skipIf(!have)('SotSB spells (SOTSB_SPELLS)', () => {
     printed.length = 0
     await cast(mage, 10, 5, [p])
     expect(printed).not.toContain('P is Unaffected')
+  })
+
+  it('Feeblemind (93, 0x4CD49): the save by class (a class not listed is unaffected), the save byte put back', async () => {
+    const { e, add, cast, has, dice, printed } = game()
+    const mage = add(5, 5, 0, 'MAGE')
+    const a = add(6, 5, 1, 'A'), z = add(7, 5, 1, 'Z'), o = add(8, 5, 1, 'O')
+    a.c[F.cls] = 0; z.c[F.cls] = 9; o.c[F.cls] = 1
+    const effect = e.spells!.get(93)!.effect
+    dice.push(16); await cast(mage, 93, 12, [a]) // 15 − 1 = 14: saved
+    dice.push(16); await cast(mage, 93, 12, [z]) // 15 + 2 = 17: not saved
+    await cast(mage, 93, 12, [o])
+    expect([has(a, effect).length, has(z, effect).length, has(o, effect).length]).toEqual([0, 1, 0])
+    expect(printed).toContain('O is unaffected')
+    expect([a.c[F.saves + 4], z.c[F.saves + 4], o.c[F.saves + 4]]).toEqual([15, 15, 15])
+  })
+
+  it('Delayed Blast Fireball (115, 0x4D590): no delay is Fireball at once, L d6 + L', async () => {
+    const { b, add, cast, dice, choices, has } = game()
+    const mage = add(5, 5, 0, 'MAGE'), t = add(9, 5, 1, 'T')
+    const hits: [number, number, boolean][] = []
+    b.damageSync = (_c, d, mode, saved) => { hits.push([d, mode, saved]) }
+    choices.push(0); dice.push(20)
+    await cast(mage, 115, 10, [t])
+    expect(hits).toEqual([[30, 2, false]])
+    expect([b.clouds.length, has(mage, 0x64).length]).toEqual([0, 0])
+  })
+
+  it('Delayed Blast Fireball: a delay lays the zone and effect 100; going off, radius 3, one roll, half on a save', async () => {
+    const { b, bf, add, cast, dice, choices, has, printed } = game()
+    const mage = add(5, 5, 0, 'MAGE'), t = add(9, 5, 1, 'T'), u = add(10, 5, 1, 'U'), far = add(14, 5, 1, 'FAR')
+    mage.c[F.levels + 5] = 10
+    choices.push(2) // 20 segments: (20 + 5) div 10 = 2
+    await cast(mage, 115, 10, [t])
+    expect(has(mage, 0x64).map((x) => [x.duration, x.power, x.flag])).toEqual([[2, 10, 1]])
+    expect([b.clouds.length, bf.get(5, 9)]).toEqual([1, 0x1a])
+    expect(printed).toContain('MAGE Sets a delayed blast fireball.')
+    const hits: [string, number, number, boolean][] = []
+    b.damageSync = (c, d, mode, saved) => { hits.push([b.name(c), d, mode, saved]) }
+    dice.push(20, 20, 1) // 10d6 = 20, then T saves, U does not
+    BEHAVIOURS.delayedBlast(b, has(mage, 0x64)[0], mage.c, true, SOTSB.effects.handlers[100], 0, 100)
+    expect(hits).toEqual([['T', 30, 2, true], ['U', 30, 2, false]])
+    expect([b.clouds.length, bf.get(5, 9)]).toEqual([0, 1])
+    expect(printed).toContain('Delayed Blast Fireball goes off')
+    void [u, far]
+  })
+
+  it('Delayed Blast Fireball: the cell kept is the last other zone\'s when none lies on the square (Bug kept)', async () => {
+    const { b, bf, add, cast, choices } = game()
+    const mage = add(5, 5, 0, 'MAGE'), t = add(9, 5, 1, 'T'), u = add(12, 8, 1, 'U')
+    bf.set(8, 12, 3)
+    for (const x of [t, u]) { choices.push(1); await cast(mage, 115, 10, [x]) }
+    // the second zone's square held cell 3, but it keeps the first zone's 1
+    expect([b.clouds.map((z) => z.cells[0].old), bf.get(8, 12)]).toEqual([[1, 1], 0x1a])
   })
 })

@@ -66,6 +66,8 @@ export interface FxHost {
   fly?(from: Uint8Array, to: Uint8Array, kind: 'gaze' | 'spit'): void
   /** the owner's cloud zone numbered power >> 4 of the cells `cell` (default 0x1E) lifts, `say` first; true if there was one (combat only) */
   clearCloud?(c: Uint8Array, power: number, cell?: number, say?: string): boolean
+  /** the owner's delayed blast zone numbered power >> 4 goes off (SotSB 0x301E1; combat only) */
+  blastZone?(c: Uint8Array, power: number, p: Record<string, unknown>): void
   /** make t the combatant's target (combat record +0xA; combat only) */
   setTarget?(c: Uint8Array, t: Uint8Array): void
   // the battlefield, for the monster specials of event 14 (rules/specials.ts; combat only)

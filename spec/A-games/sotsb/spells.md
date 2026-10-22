@@ -67,8 +67,8 @@ pieces (§1) (O); "same, calls differ" = the same constants, one or two more cal
 | 3, 4, 13, 15, 20, 28, 31, 37, 39, 44, 47, 51, 58, 60, 64, 65, 66, 68, 71, 72, 74, 87, 92, 97, 100 | | same, as CotAB to the instruction's shape (O) |
 | 1, 2, 5, 6, 7, 8, 11, 14, 16, 17, 18, 19, 21, 22, 23, 24, 25, 29, 30, 32, 33, 38, 40, 43, 45, 48, 49, 50, 52, 53, 54, 55, 57, 61, 62, 69, 73, 77, 79, 80, 81, 82, 88, 89, 94, 95, 99 | | same (O) |
 | 67, 76, 86 | 4badf, 4bf22, 4c57c | same constants, calls differ (I: not read) |
-| 0 | 48a53 | the out-of-combat target hook: one constant more than CotAB's (I: not read) |
-| 9 | 4989e | Burning Hands: one more damage-type constant (9) than CotAB (I) |
+| 0 | 48a53 | the out-of-combat target hook: one constant more than CotAB's, a presentation argument; the procedure is CotAB's (O, re-read 2026-10-22) |
+| 9 | 4989e | Burning Hands: one more constant than CotAB, the damage type 9 (fire) passed to Apply; damage L, as the port's map (O, re-read) |
 | 34 | 4a1c5 | Stinking Cloud: zone cell 0x1D (CotAB 0x1E); the occupant check 0x51512 |
 | 35 | 4a62c | Strength: one constant fewer than CotAB (I: not read) |
 | 91 | 4c739 | Cloudkill: cell 0x1B (CotAB 0x1C), Stinking Cloud's 0x1D for the shared test |
@@ -78,17 +78,17 @@ pieces (§1) (O); "same, calls differ" = the same constants, one or two more cal
 | 27 | 49f73 | **changed** Snake Charm: tests in play and effect 0x33 (CotAB 0x0E) before Apply "is Charmed" (I: not traced further) |
 | 36, 90 | 4a84e | **new** Heal (36; 90 shares the handler although its name row is "Barkskin", O): the four diseases DS:1B3E [31, 34, 43, 44] each removed first-of-type, "is cured" and STR recomputed if any went (0x4A7BD); 0x21 removed: "is no longer blind"; 0x44 removed: "regains intellect", INT and WIS recomputed; then 1d4: heal (max HP − HP − d) unless HP + d > max (then 0), unforced: "is Healed" (HP ends at max − 1d4, CotAB's temple Heal quirk) |
 | 41, 46 | 4ab37 | **changed** Dispel Magic: CotAB's, with the cells 0x1B (Cloudkill), 0x1D (Stinking Cloud) and 0x1A (the delayed blast) (I: the square order and the zone lists not re-read) |
-| 42 | 4aef6 | **changed** Prayer: Apply with the caster level, "is Affected by Prayer"; CotAB's save constant (4) gone (I) |
+| 42 | 4aef6 | **changed** Prayer: Apply with power caster level + (caster's side << 4), "is Affected by Prayer"; CotAB's save constant (4) gone (O, re-read: CotAB's `applyTo` caster with `sideShift` 4) |
 | 56 | 4b702 | **new** Harm: the first target gets 0x22 (disease) through add-effect, "is Diseased"; then damage HP − 1d4 (type 0), so HP ends at 1d4 (a target with HP ≤ 1d4: the word wraps, I) |
 | 59 | 4b82f | **changed** Giant Strength (item): STR 21 if it beats the base, "gains Giant Strength", raw **0x71** (CotAB 0x92) for 1d4 × 10 + 40, flag 1, STR recomputed |
 | 63 | 4b9c8 | **new** (item; CotAB's 63 another): the character becomes 1d4 years younger, not below 18: "is now 18 years old" or "becomes younger" (I: the age word) |
 | 70 | 4bc7e | **changed** Sticks to Snakes: the first target's hit dice (+0xEE) ≥ 6: "smashes them flat"; else "turns sticks into snakes", Apply (effect 3, the caster level) and handler 3 at once |
 | 75 | 4be69 | **changed** Raise Dead: status 6 or 1, race (+0x6B) not 1 (the elf in SotSB's numbering), the base CON tested; removes 0x37 only (CotAB 0x20 and 0x37), Okay and in play, CON recomputed, HP 1, "is raised" |
 | 78 | 4bffb | **changed** Faerie Fire: an empty handler (nothing happens, O) |
-| 83 | 4c1ca | **changed** Dimension Door: rewritten on the battlefield routines (0x5CA98, 0x5C362, 0x5CF6A, 0x5CA20, 0x5CA48, 0x5C7C9): the caster "teleports" to the aimed square (I: CotAB's `teleport` kind) |
+| 83 | 4c1ca | **changed** Dimension Door: rewritten on the battlefield routines (0x5CA98, 0x5C362, 0x5CF6A, 0x5CA20, 0x5CA48, 0x5C7C9): the caster "teleports" to the aimed square; no holds are released (O, re-read: the port's `teleport` kind) |
 | 84 | 4c263 | **changed** Fear: adds **0x6F** where CotAB adds 0x8E (the run-away handler, [effects.md](effects.md)) |
 | 85 | 4c3c9 | **changed** Fire Shield: **0x70** where CotAB has 0x8F |
-| 93 | 4cd49 | **changed** Feeblemind: the race and the classes (+0xEE, hit dice by class bands, I) decide who is affected; Apply, handler 0x44 at once; else "is unaffected"; writes +0xEC |
+| 93 | 4cd49 | **changed** Feeblemind: the spell save (+0xEC) is changed for the cast and put back after, by the target's class (+0x6C): 0, 8, 12 −1; 4 +1 at 8 hit dice (+0xEE), +2 from 9; 3 +4 from 9 hit dice; 5, 13, 15, 16 +4 for race (+0x6B) 6, else +2; 9, 10, 11 +2; any other class is not affected. An affected target: Apply, then its first 0x44 record's handler at once; none (saved or not affected): "is unaffected" (CS:54FE, image 0x4CD3E). Classes 0, 8 and 12 leave the "affected" local unset (Bug; the port: affected) (O) |
 | 96 | 4ceff | **new** Charm Person or Mammal: Charm Person's procedure (10), "is not Charmed" for a refusal |
 | 98 | 4d015 | **new** Cure Light Wounds (druid): heal 1d8 unforced, then 0x555D5 (I: the line) |
 | 101–109 | 4970d | empty handlers (the slots have no spell) |
@@ -97,7 +97,7 @@ pieces (§1) (O); "same, calls differ" = the same constants, one or two more cal
 | 112 | 4d27c | **new** Globe of Invulnerability: Apply "is Protected" |
 | 113 | 4d2d5 | **new** Stone to Flesh: a stoned (status 7) target: Okay, in play, HP 1, "is no longer a statue"; in combat (DS:67E7 = 5) put back on the battlefield; else "is not stoned."; a further branch: "is Unaffected", or Apply (I) |
 | 114 | 4d4d8 | **new** Flesh to Stone: the event-9 probe, a save vs 4; failed: status 7 "is turned to stone" (set-status) |
-| 115 | 4d590 | **new** Delayed Blast Fireball: asks "Blast Delay in segments (1-50)? ", lays a cell-0x1A zone (an effect added raw, 100, flag 1, holds the delay; the zone's +0x1A/+0x1B/+0x1C its square and count, as CotAB's clouds), "Sets a delayed blast fireball." (I: when it goes off, effects.md) |
+| 115 | 4d590 | **new** Delayed Blast Fireball: L = the caster level for 0x73; "Blast Delay in segments (1-50)? " (CS:5D4F, image 0x4D54F) read as a number, digits only, up to 50 (0x4E8AC), whoever casts (a monster too); n = (segments + 5) div 10. n = 0: Apply (0x48846) with L d6 + L, damage type 9, an empty line (CS:5D70): a Fireball at once. Otherwise a 30-byte zone at the end of list DS:8D8D: owner (+0) the caster, +0x1C k = the caster's zones in the list, the last node not counted, +0x1A/+0x1B the aimed square (DS:8D8B/8D8C); effect 100 added raw (145:4d) for n, power (k << 4) + L, flag 1; laid (+0x11) when the square's cell (18b:4d) is above 0 with a move byte below 0xFF (DS:1A9E + 4·cell). The kept cell (+8) is the square's, but the walk of the list's other zones writes each one's +8 into it first, stopping at one laid on the same square whose +8 is not 0x1D, 0x1B or 0x1A: with none, the last other zone's, wherever it lies (Bug). Laid: the square := 0x1A. Then "Sets a delayed blast fireball." (CS:5D71) with the pause, the square drawn (O); going off: [effects.md](effects.md) 100 |
 | 116 | 4d838 | **new** Mass Invisibility: every target (in combat the targets around the aim, 0x556D0) gets Apply "is Invisible (spell)" |
 | 117 | 4d8ed | **new** Power Word Stun: by the target's HP: 1–30 → 4d4, 31–60 → 2d4, 61–90 → 1d4 rounds, more → nothing; added through add-effect with "is STUNNED" (I: the effect type) |
 
@@ -114,17 +114,19 @@ Slay Living's `immuneFlag` and probe 0xFF (76), Sticks to Snakes' `castMsg` (70)
 [2, 4] (35: paladins no longer), the clouds' cells (34, 91, 41/46), 0x6F, 0x70, 0x71 (84, 85, 59). Durations:
 §2. Read for this: 10, 12, 13, 26, 27, 35, 36, 56, 59, 63, 67, 70, 75, 76, 84, 85, 110, 111, 113, 117 (O).
 
-The port's choices where the original is not followed (I or ?): 83 Dimension Door keeps CotAB's `teleport`
-with no holds to release (its new battlefield routines not read); 93 Feeblemind keeps CotAB's procedure
-(the race and class bands not read); 115 Delayed Blast Fireball goes off at once as a Fireball (§3: when
-its zone goes off is not read, ?), without asking the delay; Enlarge's add-effect power and flag are the raw
+Also read: 0, 9, 42, 83 (as the port maps them), 93 Feeblemind (`apply` with `saveRules`: per class list a
+save change, by hit dice bands and by race; a class in none is not affected) and 115 Delayed Blast Fireball
+(the battle kind `delayedBlast`; the delay is a menu, IMP-080; effect 100 `delayedBlast` goes off as
+effects.md 100) (O).
+
+The port's choices where the original is not followed (I or ?): 93's classes 0, 8 and 12 are affected
+(the original leaves its flag unset); Enlarge's add-effect power and flag are the raw
 add's (I); Heal's three removals are silent before its own lines (I: whether 0x51D17 says "is Cured" there
-too); Stone to Flesh's last branches (an Apply) are left out; 0, 9 and 42 are CotAB's (not re-read).
+too); Stone to Flesh's last branches (an Apply) are left out.
 
 ## Open
 
-- The handlers marked I in §3 (0, 9, 27, 35, 41/46, 42, 67, 76, 83, 86, 93, 110, 113, 115, 117): read them as CotAB's
+- The handlers marked I in §3 (27, 35, 41/46, 67, 76, 86, 110, 113, 117): read them as CotAB's
   were (coab/spells.md §2), with their constants.
-- When a delayed blast fireball goes off, and its damage.
 - Why id 90 (named Barkskin) shares Heal's handler.
 - Spells 57, 59–65, 95, 97, 99 (the item and unnamed ids): which items cast them (ITEMS +0x3D).

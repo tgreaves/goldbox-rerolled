@@ -1727,10 +1727,8 @@ export class Battle implements FxHost {
       }
       const p = await pickOne(true, area)
       if (!p) return null
-      const centre = { x: p.x, y: p.y }
-      this.aimed = centre
-      return this.fighters.filter((o) => this.inPlay(o) && footprint(o.size).some(([dx, dy]) =>
-        this.cost(centre.x, centre.y, o.x + dx, o.y + dy) <= 2 * radius + 1 && this.sees(centre.x, centre.y, o.x + dx, o.y + dy)))
+      this.aimed = { x: p.x, y: p.y }
+      return this.inArea(p.x, p.y, radius)
     }
     const out: Fighter[] = []
     const pool = spellSpec(s.id).pool as { size: import('../games/spellrules').Term; by: 'sizeFlags' | 'hitDice'; costs: number[]; other: number } | undefined
@@ -1763,6 +1761,36 @@ export class Battle implements FxHost {
       out.push(p.f)
     }
     return out.length ? out : null
+  }
+
+  /** whoever is in play with a square within `radius` of the centre (cost 2·radius + 1) and in its sight */
+  inArea(x: number, y: number, radius: number) {
+    return this.fighters.filter((o) => this.inPlay(o) && footprint(o.size).some(([dx, dy]) =>
+      this.cost(x, y, o.x + dx, o.y + dy) <= 2 * radius + 1 && this.sees(x, y, o.x + dx, o.y + dy)))
+  }
+
+  /**
+   * A delayed blast going off (SotSB effect 100 at 0x301E1, on removal in combat): the owner's zone of
+   * `cell` numbered power div 16 (none: nothing); L = the owner's magic-user level, its former one added
+   * where former levels count (+0x116, +0x11D); the area round the zone's square (186:3e, radius
+   * `radius`), "goes off" (`msg`) with the view on the square, the zone lifted (its old cell back, a
+   * body's where one lies), then one roll of L d6 + L of type `dmgType`, each target saving against
+   * `saveType` for half; the damage type 0 again after
+   */
+  blastZone(c: Uint8Array, power: number, p: Record<string, unknown>) {
+    const cell = p.cell as number
+    const z = this.clouds.find((o) => o.cell === cell && o.owner === c && o.n === power >> 4)
+    if (!z) return
+    const L = (s8(c[F.levels + 5]) + (formerLevelsCount(c) ? s8(c[F.prevLevels + 5]) : 0)) & 0xff
+    this.aimed = { x: z.x, y: z.y }
+    const targets = this.inArea(z.x, z.y, p.radius as number)
+    this.ui.look?.(this.aimed)
+    this.print(textOf(p.msg))
+    this.clearCloud(c, power, cell)
+    fx.dmgType = p.dmgType as number
+    const dmg = (this.e.roll(L, 6) + L) & 0xff
+    for (const t of targets) this.damageSync(t.c, dmg, 2, this.saveSync(t.c, p.saveType as number, 0))
+    fx.dmgType = 0
   }
 
   /** Spell effects in combat (spec/A-games/engine/spells.md, "Per spell"): the kind the game gives the spell id. */
@@ -1820,14 +1848,36 @@ export class Battle implements FxHost {
       // `saveShift` (CotAB Feeblemind 0x49562): the first target's save byte `save` moved by its class
       // (`byClass`, else `other`) while the spell resolves, then put back
       const shift = p.saveShift as { save: number; byClass: Record<number, number>; other: number } | undefined
-      const st = shift && targets[0] ? targets[0].c : null, at = shift ? F.saves + shift.save : 0, kept = st ? st[at] : 0
+      // `saveRules` (SotSB Feeblemind 0x4CD49): the first rule naming the first target's class byte moves
+      // its save byte `save` by `add`, plus each `hd` band [lowest, highest, n] its hit dice fall in, plus
+      // `race` [race, n, else]; a class no rule names is not affected (no Apply). Either way, unless the
+      // spell's effect is then on it (its record runs at once), "is" `unaffected`; the save is put back
+      const rules = p.saveRules as { classes: number[]; add?: number; hd?: [number, number, number][]; race?: [number, number, number] }[] | undefined
+      const st = (shift || rules) && targets[0] ? targets[0].c : null
+      const at = F.saves + ((shift?.save ?? (p.save as number | undefined)) ?? 0), kept = st ? st[at] : 0
+      let skip = false
       if (st && shift) st[at] = (kept + (shift.byClass[st[F.cls]] ?? shift.other)) & 0xff
-      for (const t of targets) {
+      if (st && rules) {
+        const r = rules.find((x) => x.classes.includes(st[F.cls]))
+        if (!r) skip = true
+        else {
+          let add = r.add ?? 0
+          const hd = s8(st[F.hitDice])
+          for (const [lo, hi, n] of r.hd ?? []) if (hd >= lo && hd <= hi) add += n
+          if (r.race) add += st[F.race] === r.race[0] ? r.race[1] : r.race[2]
+          st[at] = (kept + add) & 0xff
+        }
+      }
+      for (const t of skip ? [] : targets) {
         const d = p.rollDuration ? amount(p.rollDuration as Amount, L, (n, k) => this.e.roll(n, k)).total : dur
         if (!(await this.spellTouch(f.c, s, t))) { this.print(`${name(f.c)} misses`); continue }
         await this.addSpellEffect(t, s, p, this.spellSave(t, s), d, L, s.effect, (p.flag as number | undefined) ?? 0)
       }
-      if (p.runAfter) await this.runAfter(p.runAfter === 'first' ? targets.slice(0, 1) : targets, s.effect)
+      if (rules && st) {
+        const e = this.e.effectsOf(st).find((x) => x.type === s.effect)
+        if (e) await runEffect(this, s.effect, e, st)
+        else this.print(line(name(st), textOf(p.unaffected)))
+      } else if (p.runAfter) await this.runAfter(p.runAfter === 'first' ? targets.slice(0, 1) : targets, s.effect)
       if (st) st[at] = kept
     },
     /**
@@ -2105,6 +2155,45 @@ export class Battle implements FxHost {
       this.ui.redraw()
       if (p.dedupe) for (let i = 1; i < occ.length; i++) for (let j = 0; j < occ.length; j++) if (j !== i && occ[j] === occ[i]) occ[i] = null
       for (const o of occ) if (o) await this.cloudCheck(o)
+    },
+    /**
+     * A delayed blast (SotSB Delayed Blast Fireball 0x4D590): `prompt` asks the delay in segments, up to
+     * `most`, of whoever casts it (a monster too: the keyboard is read, quirk kept); the port offers the
+     * values that give each outcome (IMP-080). n = (segments + 5) div 10. Zero: the `damage` kind at
+     * once. Otherwise a zone in the list of `cell`: its number the caster's zones in the list, the last
+     * one not counted (as `cloud`), the effect `owner` added raw for n, power (number << 4) + L, flag 1;
+     * the aimed square laid with `cell` if it holds a cell other than 0 that is not a wall. The cell kept
+     * for it is the square's, but each other zone of the list read before overwrites it with that zone's,
+     * until one laid on the same square whose kept cell is not one of `not` (so with none such, the last
+     * other zone's, wherever it lies: Bug kept). Then `msg` with the pause and the field drawn; effect
+     * `owner` going off is `blastZone`
+     */
+    async delayedBlast(x, p) {
+      const { f, L } = x, c = f.c
+      const steps = Array.from({ length: Math.floor((p.most as number) / 10) + 1 }, (_, i) => 10 * i)
+      const i = await this.ui.menu(steps.map(String), { prompt: textOf(p.prompt) })
+      const n = Math.floor(((i < 0 ? 0 : steps[i]) + 5) / 10)
+      if (n === 0) { await Battle.spellKinds.damage.call(this, x, p); return }
+      const cell = p.cell as number
+      const list = this.clouds.filter((z) => z.cell === cell)
+      let k = 0
+      for (const z of list.slice(0, -1)) if (z.owner === c) k++
+      k &= 0xff
+      addRaw(this, c, p.owner as number, n, ((k << 4) + L) & 0xff, 1)
+      const { x: ax, y: ay } = this.aimed
+      const v = this.bf.get(ay, ax)
+      const laid = v > 0 && (this.cells[v]?.move ?? 0xff) < 0xff
+      let old = v
+      for (const q of list) {
+        const t = q.cells[0]
+        if (!t) continue
+        old = t.old
+        if (t.laid && q.x === ax && q.y === ay && !(p.not as number[]).includes(t.old)) break
+      }
+      this.clouds.push({ owner: c, n: k, cell, x: ax, y: ay, cells: [{ x: ax, y: ay, old, laid }], resisted: false })
+      if (laid) this.bf.set(ay, ax, cell)
+      this.print(`${name(c)} ${msgOf(p)}`)
+      this.ui.redraw()
     },
     /**
      * Dispel Magic (PoR 2385, CotAB 0x47154): the shared part on the effects; then with `zones` (CotAB,

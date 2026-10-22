@@ -1396,6 +1396,7 @@ when its table column or sentence names CotAB.
 | 0x4CAB2 | coab/effects | coab/effects: 1. Dispatch |  |
 | 0x4CC3C | coab/combat, B/procedures | coab/combat: Casting |  |
 | 0x4CC8A | coab/combat | coab/combat: Casting |  |
+| 0x4CD49 | B/vocabularies | B/vocabularies: 4.3 The battle's kinds |  |
 | 0x4CD91 | coab/spells, B/procedures | coab/spells: 1. Dispatch and shared helpers | `FUN_5216_1656` |
 | 0x4CE0A | B/procedures | B/procedures: 12.1 Adding and removing effects |  |
 | 0x4CE85 | coab/camp, coab/spells, coab/tables, B/procedures | coab/camp: 1. Fix | `FUN_5216_175d` |
