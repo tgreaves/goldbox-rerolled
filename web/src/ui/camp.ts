@@ -267,7 +267,7 @@ async function fix(ui: CampUi, state: { heal: number }): Promise<boolean> {
   return r.interrupted
 }
 
-/** Alter (FUN_3f81_1c59, CotAB 0x31AD0): Order, Drop, Speed, Icon, Pics. */
+/** Alter (FUN_3f81_1c59, CotAB 0x31AD0): Order, Drop, Speed, Icon, Pics (SotSB: Level for Pics). */
 async function alter(ui: CampUi) {
   const e = ui.engine
   for (;;) {
@@ -304,6 +304,14 @@ async function alter(ui: CampUi) {
       // Icon: the editor on the selected character, then the screen redrawn (PoR 0x314FE → FUN_417f_382d,
       // CotAB 0x31B6D → its editor in overlay 0x3685)
       if (ui.iconEditor && (await ui.iconEditor(e.cur))) ui.refresh()
+    }
+    else if (o === 'L' && R.difficulty) {
+      // Level (SotSB, spec/A-games/sotsb/camp.md): the difficulty variable 0-4, Novice ... Champion;
+      // the original opens the menu on the current level (the port names it in the prompt); any other answer keeps it
+      const d = R.difficulty, w = menu('alterLevel'), cur = e.read(d.variable)
+      const k = await ask((l, op) => ui.menu(l, op), w, { prompt: w[cur]?.text ?? '' })
+      const i = w.findIndex((x) => x.key[0] === k)
+      if (i >= 0) e.write(d.variable, i)
     }
     else if (o === 'P') ui.print('Monster pictures and portraits are always shown here.', false)
     else return

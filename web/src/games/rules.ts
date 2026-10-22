@@ -106,9 +106,16 @@ export interface GameRules {
     learn: { classes: number[]; spellClass: 'cleric' | 'druid'; all: boolean }[]
     /** a readied item with this effect byte (+0x3E) doubles the magic-user slots of levels 1..levels */
     doubler: { effect: number; levels: number } | null
+    /**
+     * after the source of class `after` (and its WIS bonus), a pool's spell level is cleared when an
+     * ability (0 STR … 5 CHA) is below `atLeast` (SotSB: the WIS bonus routine 0x56E15, cleric 6 and 7
+     * need WIS 17 and 18; after the magic-user's rows 0x56987 → 0x56E3E, magic-user 6 and 7 INT 12 and
+     * 14); PoR and CotAB none
+     */
+    limits: { after: number; pool: 'cleric' | 'druid' | 'mu'; level: number; stat: number; atLeast: number }[]
   }
-  /** base class → the level above which it gets 3 attacks per 2 rounds */
-  extraAttacks: Record<number, number>
+  /** base class → the levels above which it gets one half-attack more, from 2 (each step: 3, then 4) */
+  extraAttacks: Record<number, number[]>
   /** how a level's hit points are rolled, per class (PoR: the class's dice every level, at least 2/3 of
    *  a die at level 1; CotAB FUN 0x3b230: the dice at level 1 and `laterDice` after, the best of `rolls`
    *  rolls, and from the stop level (T.hitDiceStop) a fixed amount that replaces the sum so far) */
@@ -117,8 +124,12 @@ export interface GameRules {
    *  that ability below 17, at 17 and at 18 or more (18/xx counts as 18) */
   levelLimits: { race: number; cls: number; by: 0 | 1; limits: [number, number, number] }[]
   /** starting money in one coin (index into the money words): the class dice × 10 shared over the
-   *  classes (PoR, gold), or a fixed amount (CotAB 300 platinum; the dice are still rolled, then dropped) */
-  startMoney: { coin: number; fixed: number | null }
+   *  classes (PoR, gold), or a fixed amount (CotAB 300 platinum; the dice are still rolled, then dropped),
+   *  or (`byClass`) only these classes' own dice, summed as they are, and no table dice at all (SotSB
+   *  0x3B1F1: 2d6 for a thief, nothing for anyone else) */
+  startMoney: { coin: number; fixed: number | null; byClass?: Record<number, [count: number, sides: number]> }
+  /** a new character's first-level cleric slots (PoR and CotAB 1; SotSB 2, 0x3B15F) */
+  startClericSlots: number
   /** the temple's healing services in the order of the game's name table (T.templeNames), with
    *  their prices (immediates in the game's code, not a table) */
   /** the temple's services in menu order; `spell`: the service runs that spell's handler on the character (Remove Curse: PoR FUN_4e53_2540, CotAB 0x47575) */
@@ -134,9 +145,10 @@ export interface GameRules {
    * (`race`, checked by 0x51822), and the ability rule of the eligibility test 0x511AE: every ability
    * whose class minimum (T.classMins) is at least `primeFrom` must be at least `oldAtLeast` for the
    * current class and `newAtLeast` for the new one. Former dual-class levels count once the new
-   * class's level has passed them (FUN 0x51841). Null: the game has no dual-classing (PoR).
+   * class's level has passed them (FUN 0x51841). `spells`: what a new magic-user knows (CotAB 0x515F9,
+   * SotSB 0x578B6). Null: the game has no dual-classing (PoR).
    */
-  dualClass: { race: number; primeFrom: number; oldAtLeast: number; newAtLeast: number } | null
+  dualClass: { race: number; primeFrom: number; oldAtLeast: number; newAtLeast: number; spells: number[] } | null
   /**
    * The recalculation after creation and training (PoR FUN_51cf_0000, CotAB 0x50836):
    * `attacksReset`: the fighter's attacks are set back to 2 below the extra-attack level (PoR); CotAB
@@ -149,10 +161,20 @@ export interface GameRules {
    * The backstab (PoR FUN_3aae_2574, CotAB 0x2CE27; damage PoR FUN_3aae_0191, CotAB 0x2A6E2): `armour`, the
    * one body armour a thief may wear (null: any, CotAB reads the slot but never tests it); `weapons`,
    * the weapon types allowed (no weapon always is); `notLarge`, the target must not be large
-   * (size flags & 0x7F ≤ 1); damage × ((thief level − `minus`) div 4 + 2), the level with its former
-   * dual-class part.
+   * (size flags & 0x7F ≤ 1); `reach`: the target no further than this (SotSB 0x33889: the distance below 2;
+   * null: no test); damage × ((thief level − `minus`) div 4 + 2), the level with its former dual-class part.
    */
-  backstab: { armour: number | null; weapons: number[]; notLarge: boolean; minus: number }
+  backstab: { armour: number | null; weapons: number[]; notLarge: boolean; minus: number; reach: number | null }
+  /** a cleric may turn undead, in the battle menu and on the computer's turn (SotSB has no Turn: 0x28886, 0x29592) */
+  turnUndead: boolean
+  /**
+   * the difficulty level (SotSB, combat.md §5): the script variable (engine numbering) the camp's Alter →
+   * Level sets (0 Novice … 4 Champion; the menu `menu`), its value in a new game, and LOAD_MONSTER's scale
+   * of a side-1 monster's HP and max HP, × (level + 2) div 4 (1 when that is 0); null: none (PoR, CotAB)
+   */
+  difficulty: { variable: number; start: number } | null
+  /** script variables (engine numbering) a new game sets after clearing them (SotSB 0x2CB1D: the map flag, the difficulty) */
+  newGame: [address: number, value: number][]
   /**
    * Item types (ITEMS) the shared procedures name: the launchers' ammunition (the recalculation's
    * char+0xF8 / +0xFC), holy water (the computer's weapon score against undead), flasks of oil and the
@@ -167,10 +189,16 @@ export interface GameRules {
    */
   shopPrice: { variable: number; shifts: Record<number, number> } | null
   itemTypes: {
-    arrows: number; quarrels: number; holyWater: number; oil: number; elfBonus: number[]
+    arrows: number; quarrels: number; holyWater: number | null; oil: number | null; elfBonus: number[]
     /** the name word (item +0x2F) of a Bag of Holding, whose readying lightens the load by 5 000; null: none does */
     bagOfHolding: number | null
     flight: { arrow: number[]; thrown: number[]; flask: number[]; stone: number[] }
+    /**
+     * the name's plural rule beyond the word masks (PoR 0x1239, CotAB 0x4D70D, SotSB 0x53224): `oil` takes
+     * its plural on word 3, not word 1; `firstWord`, types plural on word 1; `ammo`, types plural on any
+     * word (`at` null) or only on word `at`, unless word 3 is `except` ("Silver")
+     */
+    plural: { oil: number | null; firstWord: number[]; ammo: number[]; at: number | null; except: number }
   }
   /** thief skills (PoR FUN_51cf_0329, CotAB 0x50F5A): the level (with former dual-class levels in
    *  CotAB), a bonus on every skill (CotAB: an uninitialised variable that holds 7 from the saves
@@ -199,7 +227,27 @@ export interface GameRules {
    * estimate's first value (CotAB: 14, an uninitialised variable, I). Pool of Radiance has no Fix: its
    * profile gives CotAB's procedure its own cure (IMP-048).
    */
-  fix: { cures: { spell: number; level: number; dice: number; sides: number; bonus: number; minutes: number; base: number; group: number; weight: number }[]; start: number }
+  fix: {
+    cures: { spell: number; level: number; dice: number; sides: number; bonus: number; minutes: number; base: number; group: number; weight: number }[]; start: number
+    /**
+     * SotSB's condition pass (0x387CE, spec/A-games/sotsb/camp.md §3), none in PoR and CotAB: the spells
+     * memorised by Okay members (0x3802C) are counted per entry; after the rest, each member in party order
+     * takes each entry in turn while its count lasts: `needs` an effect (or `status` a status), `removes`
+     * effects (and the disease types with `diseases`), then what `cure` does beyond that, and the message
+     * (its string address) after the name. `used`: the count goes down; `marks`: the member is marked
+     * (cureDisease only when it removed one); `unlessMarked`: skipped for a marked member; `on: 'selected'`:
+     * removes from, and names, the selected character instead (Bug, 0x38CC0); raiseDead: `notRaces`, and
+     * `fighters`, the classes whose CON bonus counts by CON − 14
+     */
+    conditions: {
+      spells: number[]; cure: FixCure; msg: number; needs: number | null; status: number | null; removes: number[]; diseases: boolean
+      used: boolean; marks: boolean; unlessMarked: boolean; on?: 'selected'; notRaces?: number[]; fighters?: number[]
+    }[]
+  }
+  /** the set-status routine's event after going down (PoR FUN_3723_0058 and CotAB 0x4AAC4 fire 13; SotSB 0x508C0 none) */
+  setStatusEvent: number | null
+  /** how many disease effect types T.diseases lists from entry 1 (PoR and CotAB 6; SotSB 4, DS:1B3D) */
+  diseaseCount: number
   /** CotAB's paladin abilities from the View menu (0x3D530 + 0x35F0 …): Lay on Hands heals 2 × level once a
    *  day (effect 0x8C), Cure Disease has uses that a weekly effect 0x8D refills to (level − 1) div 5 + 1 */
   paladin: { layOnHands: { perLevel: number; effect: number; minutes: number }; cureDisease: { effect: number; minutes: number; levelsPerUse: number; initial: number } } | null
@@ -236,7 +284,7 @@ export interface GameRules {
    * `placeFlags`, whenever the map flag (ECL, engine numbering) is 0, the terrain flags of the overland
    * place (ECL `place`) from T.placeTerrain (CotAB 0x25CC0: A 0x1CC = 0 → WILDCOM and 0x25C58)
    */
-  wildBattle: { kind: 'overlandTile' } | { kind: 'placeFlags'; mapFlag: number; place: number }
+  wildBattle: { kind: 'overlandTile' } | { kind: 'placeFlags'; mapFlag: number; place: number } | { kind: 'none' }
   /**
    * Movement on the battlefield (spec/B-model/procedures.md §15.5): a step onto a cell costs the cell's
    * move byte (T.battleCells byte 0) × 3 half-squares diagonally, × 2 straight. `test`: what the Move
@@ -275,8 +323,9 @@ export interface GameRules {
    * list loses the queued spell when damage interrupts it: 'current', the current character's (PoR's
    * FUN_10ba_148b takes no character: during an attack that is the attacker, a bug), or 'target', the
    * interrupted caster's (CotAB's 0xED:0x66 takes it). `miscast`: a caster with effect `effect` who
-   * rolls 1 on 1d`sides` "miscasts": the spell does not go off and stays memorised (CotAB 0x45373);
-   * null: no such check. `aiFirstSlot`: the first memorised slot the computer's spell choice reads
+   * rolls 1 on 1d`sides` "miscasts": the spell does not go off and stays memorised (CotAB 0x45373); with
+   * `sides` null, other than from an item, nothing is cast, silently: no line, nothing forgotten (SotSB
+   * 0x48D64); null: no such check. `aiFirstSlot`: the first memorised slot the computer's spell choice reads
    * (PoR FUN_3334_0545 from 0; CotAB 0x236E4 from 1, so slot 0 is never chosen). `aiItemSpell`: the
    * computer's item choice (PoR FUN_3334_03e4, CotAB 0x2356A) judges an item's power item[0x3D] as the
    * spell id it gives, less `minus` above `above` (both 0x38, 0x17; CotAB's Use then casts the power as
@@ -286,7 +335,7 @@ export interface GameRules {
    * caster's own side
    */
   casting: {
-    lostFrom: 'current' | 'target'; miscast: { effect: number; sides: number } | null; aiFirstSlot: number; aiItemSpell: { above: number; minus: number }
+    lostFrom: 'current' | 'target'; miscast: { effect: number; sides: number | null } | null; aiFirstSlot: number; aiItemSpell: { above: number; minus: number }
     aiPick: { tries: number; areaCheck: boolean }
     /**
      * Who may cast a spell of each spell class, the filter of every player spell list (CotAB 0x43F8E,
@@ -307,6 +356,9 @@ export interface GameRules {
     scrollReaders: { classes: number[]; thief: { cls: number; above: number; chance: number } } | null
   }
 }
+
+/** a condition Fix's second pass cures (SotSB 0x387CE) */
+export type FixCure = 'heal' | 'stoneToFlesh' | 'neutralizePoison' | 'raiseDead' | 'removeCurse' | 'cureDisease' | 'cureBlindness'
 
 export type TempleService = 'blind' | 'disease' | 'clw' | 'csw' | 'ccw' | 'heal' | 'poison' | 'raise' | 'curse' | 'stone'
 
@@ -336,8 +388,10 @@ export const POR_RULES: GameRules = {
     wisBonus: [[12, 1], [13, 1], [14, 2], [15, 2], [16, 3]], // 0x41E9F–0x41F42
     learn: [{ classes: [0], spellClass: 'cleric', all: false }],
     doubler: null,
+    limits: [],
   },
-  extraAttacks: { 2: 6 },
+  extraAttacks: { 2: [6] },
+  startClericSlots: 1,
   hitPoints: { laterDice: null, rolls: 1, firstLevelMin: [2, 3], fixed: null },
   // spec/A-games/engine/chargen-and-progression.md; races 1 dwarf, 2 elf, 3 gnome, 4 half-elf, 5 halfling; classes 0 cleric, 2 fighter
   levelLimits: [
@@ -350,7 +404,12 @@ export const POR_RULES: GameRules = {
   casterGate: null,
   dualClass: null,
   recalc: { attacksReset: true, classMask: false },
-  backstab: { armour: 50, weapons: [7, 8, 35, 36, 37], notLarge: false, minus: 0 }, // Leather Armor; Club, Dagger, the swords
+  backstab: { armour: 50, weapons: [7, 8, 35, 36, 37], notLarge: false, minus: 0, reach: null }, // Leather Armor; Club, Dagger, the swords
+  turnUndead: true,
+  difficulty: null,
+  newGame: [],
+  setStatusEvent: 13,
+  diseaseCount: 6,
   // FUN_10ba_0bb8 (0x18A0, 0x18BD), FUN_3334_128d (0x24644), the name 0x1239–0x126A, the elf bonus
   // 0xD1B–0xD48, the flight FUN_3aae_26b0 (0x2D190)
   shopPrice: null,
@@ -358,6 +417,7 @@ export const POR_RULES: GameRules = {
     arrows: 0x49, quarrels: 0x1c, holyWater: 0x55, oil: 0x56, elfBonus: [36, 37, 41, 42, 43, 44],
     bagOfHolding: 0xba, // 0x18DA
     flight: { arrow: [9, 21, 28, 31, 73], thrown: [2, 7, 20], flask: [85, 86], stone: [47] },
+    plural: { oil: 0x56, firstWord: [], ammo: [0x49, 0x1c], at: null, except: 0xb1 },
   },
   bolt: { lightning: 8, skipLast: false, mapAreaOnly: false, noRepeatBounce: false, chargeSinceLast: false },
   wildBattle: { kind: 'overlandTile' },
@@ -385,7 +445,7 @@ export const POR_RULES: GameRules = {
   startEffects: { race: { 1: [0x5a, 0x61, 0x1a, 0x2f], 2: [0x6b], 3: [0x61, 0x12, 0x2f, 0x30], 4: [0x7c], 5: [0x5a, 0x61] }, cls: {} },
   paladin: null,
   // no Fix in PoR: CotAB's procedure (0x320D8) with PoR's one cure, Cure Light Wounds (IMP-048)
-  fix: { cures: [{ spell: 3, level: 1, dice: 1, sides: 8, bonus: 0, minutes: 15, base: 240, group: 0, weight: 27 }], start: 14 },
+  fix: { cures: [{ spell: 3, level: 1, dice: 1, sides: 8, bonus: 0, minutes: 15, base: 240, group: 0, weight: 27 }], start: 14, conditions: [] },
   join: { pcs: 6, members: 8, maxRangers: null, evil: [], paladins: false },
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
     { kind: 'ccw', gp: 600 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 }, { kind: 'curse', gp: 3500, spell: 43 }, { kind: 'stone', gp: 2000 }],
@@ -408,8 +468,10 @@ export const COAB_RULES: GameRules = {
     wisBonus: [[12, 1], [13, 1], [14, 2], [15, 2], [16, 3], [17, 4]], // 0x50AF6: WIS 18 also a fourth-level slot (0x50C4B)
     learn: [{ classes: [0, 3], spellClass: 'cleric', all: false }, { classes: [4], spellClass: 'druid', all: true }],
     doubler: { effect: 0x81, levels: 3 }, // Ring of Wizardry (0x507C3)
+    limits: [],
   },
-  extraAttacks: { 2: 6, 3: 6, 4: 7 }, // fighter > 6, paladin > 6, ranger > 7 (§3.3)
+  extraAttacks: { 2: [6], 3: [6], 4: [7] }, // fighter > 6, paladin > 6, ranger > 7 (§3.3)
+  startClericSlots: 1,
   // §3.4: fixed from the stop level: fighter and paladin 3, cleric, ranger and thief 2, magic-user 1 (druid, monk: 2, I)
   hitPoints: { laterDice: 1, rolls: 2, firstLevelMin: null, fixed: [2, null, 3, 3, 2, 1, 2, null] }, // 0x3B2ED: druid and monk get nothing set, the sum kept
   // §3.2: PoR's, plus elf and half-elf magic-users by INT and half-elf rangers as fighters (classes 4 ranger, 5 MU)
@@ -427,9 +489,14 @@ export const COAB_RULES: GameRules = {
   // no cleric or magic-user level, paladin below 9 and ranger below 8
   casterGate: { atLeast: { 0: 1, 5: 1, 3: 9, 4: 8 }, level: 6 },
   // 0x511AE: abilities with a class minimum of 9 or more, 15 for the old class and 17 for the new
-  dualClass: { race: 7, primeFrom: 9, oldAtLeast: 15, newAtLeast: 17 },
+  dualClass: { race: 7, primeFrom: 9, oldAtLeast: 15, newAtLeast: 17, spells: [11, 18, 12, 21] },
   recalc: { attacksReset: false, classMask: true }, // 0x50836
-  backstab: { armour: null, weapons: [0x61, 7, 8, 35, 36, 37], notLarge: true, minus: 1 }, // 0x2CE27, 0x2A74C
+  backstab: { armour: null, weapons: [0x61, 7, 8, 35, 36, 37], notLarge: true, minus: 1, reach: null }, // 0x2CE27, 0x2A74C
+  turnUndead: true,
+  difficulty: null,
+  newGame: [],
+  setStatusEvent: 13,
+  diseaseCount: 6,
   // 0x4DDB8, 0x2466C, the name 0x4D70D–0x4D748, the elf bonus 0x4D1EE (not the Drow Long Sword 97), the
   // flight 0x2D141: the Dart of Hornets Nest (100) flies as an arrow, the Staff Sling (101) and Spine (98) as a stone
   shopPrice: { variable: 0x6e6d, shifts: { 1: -4, 2: -3, 4: -2, 8: -1, 32: 1, 64: 2, 128: 3 } }, // B + 0x6DA (ECL 0x7F6D)
@@ -438,6 +505,7 @@ export const COAB_RULES: GameRules = {
     // the bag's flag is cleared (0x4DC9E) and never set, so the − 5 000 at 0x4DFEE never runs
     bagOfHolding: null,
     flight: { arrow: [9, 21, 100, 28, 31, 73], thrown: [2, 7, 20], flask: [85, 86], stone: [101, 47, 98] },
+    plural: { oil: 0x56, firstWord: [], ammo: [0x49, 0x1c], at: null, except: 0xb1 },
   },
   bolt: { lightning: 7, skipLast: true, mapAreaOnly: true, noRepeatBounce: true, chargeSinceLast: true }, // 0x478F6, 0x479B4
   // 0x25D56: the grid builder takes the map generator only when A 0x1CC (ECL 0x4BE6, the engine's 0x49E6)
@@ -484,13 +552,116 @@ export const COAB_RULES: GameRules = {
   // slot of levels 1/4/5, base 4 h (level 1) or 6 h (4 or 5), weights 0x1B, 0x22, 0x4E
   fix: { cures: [{ spell: 3, level: 1, dice: 1, sides: 8, bonus: 0, minutes: 15, base: 240, group: 0, weight: 27 },
     { spell: 58, level: 4, dice: 2, sides: 8, bonus: 1, minutes: 60, base: 360, group: 1, weight: 34 },
-    { spell: 71, level: 5, dice: 3, sides: 8, bonus: 3, minutes: 75, base: 360, group: 1, weight: 78 }], start: 14 },
+    { spell: 71, level: 5, dice: 3, sides: 8, bonus: 3, minutes: 75, base: 360, group: 1, weight: 78 }], start: 14, conditions: [] },
   // 0x50C6B: dwarves, halflings or the Girdle of the Dwarves (effect 6): CON 4–6 +1 … 18 +5; everyone CON 19+ +1 … +4.
   // Added to the stored save number, which makes the save harder (the shipped TRAVIS: 12 + 4 = 16; I: a bug)
   saveCon: { save: 0, races: [1, 5], itemEffect: 6, from: 4, bands: [[6, 1], [10, 2], [13, 3], [17, 4], [18, 5]], all: [[20, 1], [22, 2], [24, 3], [25, 4]] },
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
     { kind: 'ccw', gp: 600 }, { kind: 'heal', gp: 5000 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 },
     { kind: 'curse', gp: 3500, spell: 43 }, { kind: 'stone', gp: 2000 }],
+}
+
+/**
+ * Secret of the Silver Blades (spec/A-games/sotsb/chargen-and-progression.md, camp.md, combat.md,
+ * tables.md): CotAB's procedures over seven classes (no monk), six races renumbered (1 elf, 2 half-elf,
+ * 3 dwarf, 4 gnome, 5 halfling, 6 human) and seven spell levels; where SotSB was not read the value is
+ * CotAB's and marked I.
+ */
+export const SOTSB_RULES: GameRules = {
+  ...COAB_RULES,
+  // 117 records (DS:449D), names at DS:34AE; spell classes 0 cleric, 1 druid, 3 magic-user, 4 item (the
+  // caster-level routine 0x559E6 and the list filter 0x477F4); levels to 7
+  spells: { records: 117, named: 117, book: 117, levels: 7, cleric: 0, druid: 1, magicUser: 3, item: 4, itemSpell: { mask: 0x7f, above: 0xff, minus: 0 } /* I: CotAB's */ },
+  raceMenu: [1, 2, 3, 4, 5, 6], // 0x39AAE: the race names 1–6 in table order
+  startSpells: [11, 18, 19, 21], // creation 0x3B1C8: Detect Magic, Read Magic, Shield, Sleep (PoR's)
+  startClericSlots: 2, // 0x3B15F
+  startMoney: { coin: 3, fixed: null, byClass: { 6: [2, 6] } }, // 0x3B1F1: 2d6 gold for a thief, else nothing (DS:5589 has no reader)
+  slots: {
+    clear: true,
+    sources: [
+      { cls: 0, table: 'clericSlots', from: 2, first: true, add: true, columns: [1, 2, 3, 4, 5, 6, 7].map((level) => ({ pool: 'cleric' as const, level })) },
+      { cls: 3, table: 'paladinSlots', from: 9, first: false, add: true, columns: [1, 2, 3, 4, 5, 6, 7].map((level) => ({ pool: 'cleric' as const, level })) },
+      { cls: 4, table: 'rangerSlots', from: 8, first: false, add: true, columns: [{ pool: 'druid', level: 1 }, { pool: 'druid', level: 2 }, { pool: 'druid', level: 3 }, { pool: 'mu', level: 1 }, { pool: 'mu', level: 2 }] },
+      { cls: 5, table: 'muSlots', from: 2, first: true, add: true, columns: [1, 2, 3, 4, 5, 6, 7].map((level) => ({ pool: 'mu' as const, level })) },
+    ],
+    wisdom: 'afterCleric',
+    wisBonus: [[12, 1], [13, 1], [14, 2], [15, 2], [16, 3], [17, 4]], // 0x56CAC
+    learn: [{ classes: [0, 3], spellClass: 'cleric', all: false }, { classes: [4], spellClass: 'druid', all: true }],
+    doubler: null, // I: no Ring of Wizardry doubling read in SotSB's slot routine
+    limits: [
+      { after: 0, pool: 'cleric', level: 6, stat: 2, atLeast: 17 }, { after: 0, pool: 'cleric', level: 7, stat: 2, atLeast: 18 }, // 0x56E15
+      { after: 5, pool: 'mu', level: 6, stat: 1, atLeast: 12 }, { after: 5, pool: 'mu', level: 7, stat: 1, atLeast: 14 }, // 0x56987 → 0x56E3E
+    ],
+  },
+  extraAttacks: { 2: [6, 12], 3: [6, 12], 4: [7, 14] }, // 0x56A64–0x56AAB: 3, then 4 half-attacks
+  hitPoints: { laterDice: 1, rolls: 2, firstLevelMin: null, fixed: [2, null, 3, 3, 2, 1, 2] }, // 0x3DB21; a level-1 cleric's 2 dice are T.hitDiceCount's
+  // CotAB's rows re-keyed to SotSB's race numbers (I: DS:4D9D holds CotAB's rows of the same races)
+  levelLimits: [
+    { race: 3, cls: 2, by: 0, limits: [7, 8, 9] }, { race: 1, cls: 2, by: 0, limits: [5, 6, 7] },
+    { race: 4, cls: 2, by: 0, limits: [5, 5, 6] }, { race: 2, cls: 2, by: 0, limits: [6, 7, 8] },
+    { race: 5, cls: 2, by: 0, limits: [4, 5, 6] }, { race: 2, cls: 0, by: 0, limits: [5, 5, 5] },
+    { race: 1, cls: 5, by: 1, limits: [9, 10, 11] }, { race: 2, cls: 4, by: 0, limits: [6, 7, 8] },
+    { race: 2, cls: 5, by: 1, limits: [6, 7, 8] },
+  ],
+  // 0x559E6: cleric, or paladin at its full level; druid: ranger − 7; magic-user (class 3): magic-user, or ranger − 8
+  casterTerms: { 0: [{ cls: 0, minus: 0 }, { cls: 3, minus: 0 }], 1: [{ cls: 4, minus: 7 }], 3: [{ cls: 5, minus: 0 }, { cls: 4, minus: 8 }] },
+  casterGate: { atLeast: { 0: 1, 5: 1, 4: 8 }, level: 6 }, // no cleric, no magic-user and a ranger below 8
+  dualClass: { race: 6, primeFrom: 9, oldAtLeast: 15, newAtLeast: 17, spells: [11, 18, 12, 21] }, // 0x57417; 0x578B6: Enlarge
+  backstab: { armour: null, weapons: [3, 4, 17, 18, 19], notLarge: true, minus: 1, reach: 1 }, // 0x337E3, 0x33889
+  turnUndead: false, // 0x28886 (no "Turn"), 0x29592 (no turn step)
+  difficulty: { variable: 0x4af4, start: 2 }, // A word 0x3E8 (ECL 0x4CF4); LOAD_MONSTER 0x1DF9C
+  newGame: [[0x49e6, 1], [0x4af4, 2]], // 0x2CB28: the map flag A 0x1CC; 0x2CB1D: Veteran
+  setStatusEvent: null, // 0x50929: no event 13
+  diseaseCount: 4, // DS:1B3D[1..4]
+  // the listing 0x24E90 and Buy read B + 0x6DA with CotAB's shifts (O): shopPrice is CotAB's
+  // ITEMS reordered (the rows compared with CotAB's; the readers): arrows 0x1E and quarrels 0x0C (the
+  // recalculation 0x54DE3, readying 0x44417, selling 0x45327); no holy-water score in the computer's
+  // weapon choice; the elf's +1 for 18, 19 and 22–26 (0x52CD8); no Bag of Holding step; the flight
+  // 0x33913: arrow 0x42, 5, 7, 0x0C, 0x1E, thrown 2, 3, 6, the sling stone 0x1C, 0x1D, no flask group;
+  // the plural 0x53224: word 1 of type 0x49, ammunition 0x1E, 5, 0x0C on word 3 unless word 3 is "Silver" (0x5D)
+  itemTypes: {
+    arrows: 0x1e, quarrels: 0x0c, holyWater: null, oil: null, elfBonus: [18, 19, 22, 23, 24, 25, 26],
+    bagOfHolding: null,
+    flight: { arrow: [0x42, 5, 7, 0x0c, 0x1e], thrown: [2, 3, 6], flask: [], stone: [0x1c, 0x1d] },
+    plural: { oil: null, firstWord: [0x49], ammo: [0x1e, 5, 0x0c], at: 3, except: 0x5d },
+  },
+  wildBattle: { kind: 'none' }, // 0x2B939 is empty and the map flag is always set: every battle on a map area
+  // the probe 0x29D53, 0x29DE5; the gas cell 0x1D and the kill cell 0x1B, gas immunity 0x1F and 0x63
+  // (spec/A-games/sotsb/effects.md); the kill bands and poison CotAB's (I)
+  clouds: {
+    gas: { cell: 0x1d, immune: [0x1f, 0x63], probe: { immune: [0x1e, 0x3f, 0x39, 0x63], turned: true, save: 0 }, roundEnd: false, apply: true },
+    kill: { cell: 0x1b, save: 0, bands: [[0, 4, null], [5, 5, -4], [6, 6, 0]], poison: 0x37, probe: { immune: [0x63], turned: true, save: null, below: 7 } },
+  },
+  casting: {
+    ...COAB_RULES.casting,
+    miscast: { effect: 0x44, sides: null }, // 0x48D64: no die, silently nothing
+    // 0x477F4: CotAB's filter keyed by SotSB's classes (the thief above 10 in the cast list, 0x47959, is not expressed: I)
+    allowed: { 0: { stat: 2, above: 8, any: [[0, 0], [3, 8]], armoured: null }, 1: { stat: 2, above: 8, any: [[4, 6]], armoured: null },
+      3: { stat: 1, above: 8, any: null, armoured: { race: 6, any: [[4, 8]], formerWith: 5 } } },
+  },
+  // 0x39BAF (by race, SotSB's numbers), 0x39669 (paladin, ranger, cleric/ranger)
+  startEffects: { race: { 1: [0x5f], 2: [0x12], 3: [0x2f, 0x1a, 0x61], 4: [0x30, 0x07, 0x61], 5: [0x61] }, cls: { 3: [8], 4: [0x69], 10: [0x69] } },
+  paladin: { layOnHands: { perLevel: 2, effect: 0x6d, minutes: 1440 }, cureDisease: { effect: 0x6e, minutes: 10080, levelsPerUse: 5, initial: 1 } }, // 0x46597, 0x4673A
+  saveCon: { save: 0, races: [3, 5], itemEffect: 6, from: 4, bands: [[6, 1], [10, 2], [13, 3], [17, 4], [18, 5]], all: [[20, 1], [22, 2], [24, 3], [25, 4]] }, // CotAB's, races renumbered (I)
+  // 0x3802C: Cure Light (3) and the druid's (98) 1d8, Serious 2d8+1, Critical 3d8+3, Heal (36) 4d8+5; 0x382A1
+  // (I for the grouping): 15/30/60/75/90 minutes per slot, base 240, 360, 480
+  fix: {
+    cures: [{ spell: 3, level: 1, dice: 1, sides: 8, bonus: 0, minutes: 15, base: 240, group: 0, weight: 27 },
+      { spell: 98, level: 1, dice: 1, sides: 8, bonus: 0, minutes: 30, base: 240, group: 0, weight: 27 },
+      { spell: 58, level: 4, dice: 2, sides: 8, bonus: 1, minutes: 60, base: 360, group: 1, weight: 34 },
+      { spell: 71, level: 5, dice: 3, sides: 8, bonus: 3, minutes: 75, base: 360, group: 1, weight: 78 },
+      { spell: 36, level: 6, dice: 4, sides: 8, bonus: 5, minutes: 90, base: 480, group: 2, weight: 90 }],
+    start: 14,
+    // 0x387CE, in this order; its messages CS 0x38746–0x387C0; the effects SotSB's numbers
+    conditions: [
+      { spells: [36], cure: 'heal', msg: 0x38746, needs: 0x44, status: null, removes: [0x44, 0x21], diseases: true, used: true, marks: true, unlessMarked: false },
+      { spells: [113], cure: 'stoneToFlesh', msg: 0x38750, needs: null, status: 7, removes: [], diseases: false, used: true, marks: false, unlessMarked: false },
+      { spells: [67], cure: 'neutralizePoison', msg: 0x38769, needs: 0x37, status: null, removes: [0x37, 0x16, 0x0f], diseases: false, used: true, marks: false, unlessMarked: false },
+      { spells: [75], cure: 'raiseDead', msg: 0x38777, needs: null, status: 6, removes: [0x37], diseases: false, used: true, marks: false, unlessMarked: false, notRaces: [1, 2], fighters: [2, 3, 4] },
+      { spells: [43, 89], cure: 'removeCurse', msg: 0x38795, needs: 0x24, status: null, removes: [], diseases: false, used: true, marks: false, unlessMarked: false },
+      { spells: [39], cure: 'cureDisease', msg: 0x387ac, needs: null, status: null, removes: [], diseases: true, used: false, marks: true, unlessMarked: true },
+      { spells: [37], cure: 'cureBlindness', msg: 0x387c0, needs: 0x21, status: null, removes: [0x21], diseases: false, used: false, marks: false, unlessMarked: true, on: 'selected' }],
+  },
 }
 
 /** The active game's rules; start-up (setGame) switches them. */

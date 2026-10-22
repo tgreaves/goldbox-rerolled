@@ -75,9 +75,11 @@ export class ItemTables {
     let mask = 0
     for (let n = 1; n <= 3; n++) if (word[n] && (identified || !((r[0x35] >> (3 - n)) & 1))) mask |= 1 << (n - 1)
     const count = it.count
-    const { oil, arrows, quarrels } = R.itemTypes
+    // the plural rule (R.itemTypes.plural; PoR 0x1239, CotAB 0x4D70D, SotSB 0x53224)
+    const { oil, firstWord, ammo, at, except } = R.itemTypes.plural
     const pluralHere = (n: number) => (1 << (n - 1)) === mask || (n === 1 && mask > 4 && it.type !== oil) ||
-      (n === 2 && !(mask & 1)) || (n === 3 && it.type === oil) || ((it.type === arrows || it.type === quarrels) && word[3] !== 0xb1)
+      (n === 1 && firstWord.includes(it.type)) || (n === 2 && !(mask & 1)) || (n === 3 && it.type === oil) ||
+      ((at === null || n === at) && ammo.includes(it.type) && word[3] !== except)
     let s = count > 0 ? `${count} ` : ''
     let plural = false
     for (let n = 3; n >= 1; n--) {

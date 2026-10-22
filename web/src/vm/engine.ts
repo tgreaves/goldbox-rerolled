@@ -184,6 +184,7 @@ export class Engine {
   /** A new game: fresh variables, the given party, block 3 area 0 (New Phlan), as after "Begin". */
   newGame(party: Uint8Array[]) {
     this.A.fill(0); this.B.fill(0); this.C.fill(0)
+    for (const [a, v] of R.newGame) this.write(a, v) // SotSB 0x2CB1D, 0x2CB28: the difficulty, the map flag
     this.nodes = party.map((c) => c.slice())
     this.cur = this.savedCur = this.nodes[0]
     this.B[PARTY_SIZE - B0] = this.nodes.length
@@ -1061,18 +1062,9 @@ export class Engine {
     const count = Math.max(n, 1)
     const items = this.files.record(`MON${game().ecl.monsterFile ?? this.block}ITM`, id)
     const spc = this.files.record(`MON${game().ecl.monsterFile ?? this.block}SPC`, id)
-    const scale = game().ecl.difficultyHp
     for (let i = 0; i < count && this.monsters < 63; i++) {
       const m = this.monsterRecord(raw)
-      if (scale && m[F.side] === 1) {
-        // SotSB 0x1DF9F: the difficulty level's (level + 2) / 4 of HP and maximum HP, at least 1 each
-        const level = this.read(scale.variable)
-        if (level < scale.below) {
-          m[F.hp] = Math.floor((m[F.hp] * (level + 2)) / 4) & 0xff
-          m[F.maxHp] = Math.floor((m[F.maxHp] * (level + 2)) / 4) & 0xff
-          if (!m[F.hp] || !m[F.maxHp]) { m[F.hp] = 1; m[F.maxHp] = 1 }
-        }
-      }
+      this.scaleForDifficulty(m)
       m[F.iconSlot] = this.iconSlot
       this.nodes.push(m)
       this.inventory.set(m, parseItems(items))
@@ -1082,6 +1074,20 @@ export class Engine {
     }
     this.iconSlot++
     this.monstersLoaded = true
+  }
+
+  /**
+   * The difficulty (R.difficulty; SotSB LOAD_MONSTER 0x1DF9F–0x1E036): a side-1 monster's HP and max HP
+   * × (level + 2) div 4 as bytes, for a level 0–4; both 1 when either comes to 0.
+   */
+  private scaleForDifficulty(m: Uint8Array) {
+    const d = R.difficulty
+    if (!d || m[F.side] !== 1) return
+    const lv = this.read(d.variable)
+    if (lv > 4) return
+    m[F.hp] = Math.floor((m[F.hp] * (lv + 2)) / 4) & 0xff
+    m[F.maxHp] = Math.floor((m[F.maxHp] * (lv + 2)) / 4) & 0xff
+    if (!m[F.hp] || !m[F.maxHp]) { m[F.hp] = 1; m[F.maxHp] = 1 }
   }
 
   /** A record as stored in MON<block>CHA, the record's size taken (CotAB's loader 0x3565C). */

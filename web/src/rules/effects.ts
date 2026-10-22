@@ -6,6 +6,7 @@ import type { Effect } from '../data/effects'
 import type { Item } from '../data/items'
 import { F } from '../games/fields'
 import { game } from '../games/profile'
+import { R } from '../games/rules'
 import { behave, effectiveStat, itemBehave } from './effectkinds'
 import type { Tables } from './chargen'
 import { derive, xpFor } from './training'
@@ -139,7 +140,8 @@ export function goingDown(h: FxHost, c: Uint8Array) {
 /**
  * The set-status routine's rules part (PoR FUN_3723_0058, CotAB 0x4AAC4): the message, printed first;
  * unless the character is already dead, stoned or gone (6–8), the status, out of play with HP 0, going
- * down and event 13. True when the status was set; the host then draws the fall (FUN_577f_0e11).
+ * down and the game's event (R.setStatusEvent: 13; SotSB 0x508C0 none). True when the status was set;
+ * the host then draws the fall (FUN_577f_0e11).
  */
 export function setStatusOf(h: FxHost, c: Uint8Array, status: number, msg: string): boolean {
   if (msg) h.print(msg)
@@ -148,7 +150,8 @@ export function setStatusOf(h: FxHost, c: Uint8Array, status: number, msg: strin
   c[F.inPlay] = 0
   c[F.hp] = 0
   goingDown(h, c)
-  void fire(h, c, 13)
+  const ev = R.setStatusEvent // 13 (PoR, CotAB); SotSB 0x50929 fires none
+  if (ev !== null) void fire(h, c, ev)
   return true
 }
 

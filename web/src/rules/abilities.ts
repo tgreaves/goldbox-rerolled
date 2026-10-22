@@ -28,11 +28,11 @@ export function abilities(e: Engine, c: Uint8Array, inCombat: boolean): Ability[
 
 export const abilityName: Record<Ability, string> = { layOnHands: 'Lay on Hands', cureDisease: 'Cure Disease' }
 
-/** The disease effects (T.diseases, entries 1–6; CotAB DS:082A holds the same six). */
-export function diseases(e: Engine): number[] {
-  const img = e.startImage
-  return img ? Array.from({ length: 6 }, (_, i) => img[T.ds + T.diseases.at + 1 + i]) : []
+/** The disease effects (T.diseases, entries 1–R.diseaseCount; PoR and CotAB six, SotSB four at DS:1B3D). */
+export function diseaseTypes(img: Uint8Array | null | undefined): number[] {
+  return img && T.diseases.at >= 0 ? Array.from({ length: R.diseaseCount }, (_, i) => img[T.ds + T.diseases.at + 1 + i]) : []
 }
+export const diseases = (e: Engine): number[] => diseaseTypes(e.startImage)
 
 export function diseased(e: Engine, t: Uint8Array): boolean {
   const ds = diseases(e)

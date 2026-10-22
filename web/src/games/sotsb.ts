@@ -15,7 +15,7 @@ import { SOTSB_FIELDS } from './fields'
 import { SOTSB_TABLES } from './tables'
 import { SOTSB_ECL } from './ecl'
 import { SOTSB_FILES } from './files'
-import { COAB_RULES } from './rules'
+import { SOTSB_RULES } from './rules'
 import { SOTSB_STRINGS, SOTSB_MENUS } from './stringtable'
 
 export const SOTSB: GameProfile = {
@@ -36,8 +36,8 @@ export const SOTSB: GameProfile = {
   tables: SOTSB_TABLES,
   ecl: SOTSB_ECL,
   saves: SOTSB_FILES,
-  // not yet researched (?): CotAB's rules, spells, effects, treasure and landmarks stand in
-  rules: COAB_RULES,
+  // SotSB's rules (games/rules.ts SOTSB_RULES); CotAB's spells, effects, treasure and landmarks stand in where not yet read (?)
+  rules: SOTSB_RULES,
   journal: null,
   spellNotes: {},
   view: SOTSB_VIEW,

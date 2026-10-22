@@ -198,7 +198,8 @@ export const SOTSB_TABLES: TableMap = {
   genderNames: t(0x0e52, 7), coinNames: t(0x0e60, 11), coinValues: t(0x0b40, 4),
   frameTop: absent, frameBottom: absent, frameLeft: absent, frameRight: absent, frameDivider: absent,
   cursorX: absent, cursorY: absent, placeTerrain: absent,
-  templeNames: t(0x014c, 41), diseases: absent, randomItems: absent, sky: t(0x0aa8), itemWords: t(0x0f22, 21), wallDx: t(0x1a90), wallDy: t(0x1a99),
+  // diseases: DS:1B3D[1..4], read by Cure Disease and Fix (0x226AC, 0x3885E; I: the temple's too)
+  templeNames: t(0x014c, 41), diseases: t(0x1b3d), randomItems: absent, sky: t(0x0aa8), itemWords: t(0x0f22, 21), wallDx: t(0x1a90), wallDy: t(0x1a99),
   battleCells: t(0x1a9e, 4), headRecords: absent, bodyRecords: absent, spellNames: t(0x34ae, 35), spellRecords: t(0x449d, 16),
   overlandMap: absent, overlandSpecials: absent, overlandColumns: absent,
   thac0: t(0x4c0c, 19), thiefBase: t(0x4cad, 8), thiefRace: t(0x4d3d, 8), thiefDex: t(0x4d48, 5), raceLimits: t(0x4d9d, 16),

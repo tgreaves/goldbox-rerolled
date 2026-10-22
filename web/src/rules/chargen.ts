@@ -123,11 +123,14 @@ export function rollAbilities(t: Tables, dice: Dice, c: Uint8Array) {
   c[F.baseMove] = 12
   // gold, level-1 spell slots and known spells
   let gold = 0, classes = 0
+  const m = R.startMoney
   for (let k = 0; k < F.classCount; k++) {
     if (!c[F.levels + k]) continue
-    if (k === 0) c[F.clericSlots] = 1
+    if (k === 0) c[F.clericSlots] = R.startClericSlots
     else if (k === 5) c[F.muSlots] = 1
-    gold += dice.roll(t.b(T.startGold.at + k * T.startGold.row), t.b(T.startGold.at + k * T.startGold.row + 1))
+    // the class's money dice (T.startGold), or with `byClass` only those classes' own (SotSB 0x3B1F1)
+    if (m.byClass) { const d = m.byClass[k]; if (d) gold += dice.roll(d[0], d[1]) }
+    else gold += dice.roll(t.b(T.startGold.at + k * T.startGold.row), t.b(T.startGold.at + k * T.startGold.row + 1))
     classes++
     if (k === 0) {
       wisdomBonus(c)
@@ -136,7 +139,7 @@ export function rollAbilities(t: Tables, dice: Dice, c: Uint8Array) {
       for (const id of R.startSpells) c[F.known + id] = 1
     }
   }
-  const m = R.startMoney, g = m.fixed ?? Math.floor((gold * 10) / classes)
+  const g = m.fixed ?? (m.byClass ? gold & 0xff : Math.floor((gold * 10) / classes))
   c[F.money + 2 * m.coin] = g & 0xff
   c[F.money + 2 * m.coin + 1] = g >> 8
   // hit points (FUN_417f_4235, FUN_417f_3f31)

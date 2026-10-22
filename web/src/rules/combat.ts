@@ -897,7 +897,7 @@ export class Battle implements FxHost {
         ...(this.e.itemsOf(c).length ? of(menu('battleUse'), { U: 'u' }) : []),
         ...(canCast ? of(menu('battleCast'), { C: 'c' }) : []),
         // a cleric, or a dual-class former one whose levels count (CotAB 0x225D4)
-        ...(classLevel(c, 0) > 0 && !f.r[0x11] ? of(menu('battleTurn'), { T: 't' }) : []),
+        ...(R.turnUndead && classLevel(c, 0) > 0 && !f.r[0x11] ? of(menu('battleTurn'), { T: 't' }) : []),
         // IMP-054: with the live command prompt the Done choices sit in the same row
         ...(flat ? doneRow() : of(menu('battleQuickDone'), { Q: 'q', D: 'd' })),
       ]
@@ -1346,6 +1346,7 @@ export class Battle implements FxHost {
     const w = this.weaponOf(c)
     if (w && !rule.weapons.includes(w.type)) return false
     if (rule.notLarge && (t.c[F.sizeFlags] & 0x7f) > 1) return false
+    if (rule.reach !== null && this.dist(a, t) > rule.reach) return false // SotSB 0x33889: within reach
     return t.r[0xf] > 1 && this.dirTo(a, t) === t.r[9]
   }
 
@@ -1608,9 +1609,13 @@ export class Battle implements FxHost {
     const c = f.c, fromItem = !!how.fromItem, auto = !!how.auto, announce = how.announce ?? true
     const L = casterLevel(c, s, fromItem)
     const mis = R.casting.miscast
-    if (mis && this.e.effectsOf(c).some((x) => x.type === mis.effect) && this.e.roll(1, mis.sides) === 1) {
-      this.announceCast(c, s) // "miscasts", which in combat reads "Casts a Spell" (0x4A3FD)
-      return
+    if (mis && this.e.effectsOf(c).some((x) => x.type === mis.effect)) {
+      // SotSB 0x48D64 (no die): other than from an item, nothing at all, nothing forgotten
+      if (mis.sides === null) { if (!fromItem) return }
+      else if (this.e.roll(1, mis.sides) === 1) {
+        this.announceCast(c, s) // "miscasts", which in combat reads "Casts a Spell" (0x4A3FD)
+        return
+      }
     }
     let targets: Fighter[] | null = null
     for (;;) {
@@ -2144,7 +2149,7 @@ export class Battle implements FxHost {
     if (f.r[0]) { await this.castSpell(f, this.e.spells!.get(f.r[0])!, { auto: true }); this.endTurnF(f); return }
     // CotAB 0x2330B also takes a former cleric level above the change level (+0xE6)
     const former0 = F.prevLevels >= 0 && F.hpLevel >= 0 && s8(c[F.prevLevels]) > s8(c[F.hpLevel])
-    if ((s8(c[F.levels]) > 0 || former0) && !f.r[0x11] && this.enemiesWithin(f, 255).some((e) => e.c[F.undead] > 0 && !e.r[0x10])) { await this.turnUndead(f); return }
+    if (R.turnUndead && (s8(c[F.levels]) > 0 || former0) && !f.r[0x11] && this.enemiesWithin(f, 255).some((e) => e.c[F.undead] > 0 && !e.r[0x10])) { await this.turnUndead(f); return }
     if (await this.aiCast(f)) return
     this.chooseWeapon(f)
     await fire(this, c, 14) // FUN_3334_0b3c: the gaze, breath and spit specials first (spec/A-games/engine/combat-ai.md)

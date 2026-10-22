@@ -9,7 +9,8 @@ import { F } from '../games/fields'
 import type { Item } from '../data/items'
 import { canTakeItem, recalc } from '../rules/equip'
 import { castOutside, spellOn } from '../rules/magic'
-import { heal as healChar } from '../rules/camp'
+import { diseaseTypes } from '../rules/abilities'
+import { heal as healChar, raiseDeadHp } from '../rules/camp'
 
 const memorisedReady = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
 import { appraiseGem, appraiseJewel, COINS, coinPrompt, coinValue, keepAsItem, moneyOf, pay, poolAll, priceStock, receive, share, shopPrice, take, takeOne } from '../rules/money'
@@ -152,8 +153,7 @@ function services(img: Uint8Array) {
     return { ...x, name: String.fromCharCode(...img.subarray(o + 1, o + 1 + img[o])) }
   })
 }
-/** the disease effect types (T.diseases, entries 1–6) */
-const diseases = (img: Uint8Array) => Array.from({ length: 6 }, (_, i) => img[T.ds + T.diseases.at + 1 + i])
+const diseases = diseaseTypes
 
 /** Temple (FUN_2d14_0d09). */
 export async function temple(ui: TownUi) {
@@ -232,7 +232,7 @@ async function heal(ui: TownUi) {
   ui.refresh()
 }
 
-/** Raise Dead (FUN_2d14_0510): HP 1, CON −1, maximum HP loss by class levels and CON. */
+/** Raise Dead (FUN_2d14_0510): HP 1, CON −1, maximum HP loss by class levels and CON (rules/camp.ts). */
 function raiseDead(e: Engine, c: Uint8Array) {
   const fx = e.effectsOf(c)
   const I = game().effects.ids
@@ -240,19 +240,7 @@ function raiseDead(e: Engine, c: Uint8Array) {
   c[F.hp] = 1
   c[F.status] = 0
   c[F.inPlay] = 1 // back in play (PoR 0x1D739, CotAB 0x1CDCF)
-  if (c[F.stat[4]] > 0) { c[F.stat[4]]--; c[F.baseStat[4]] = c[F.stat[4]] }
-  const con = c[F.stat[4]]
-  if (con < 14) return
-  const b = Math.max(0, c[F.maxHp] - c[F.hpRolled])
-  let t = 0
-  for (let k = 0; k < F.classCount; k++) {
-    const L = c[F.levels + k]
-    if (L <= 0) continue
-    t += k === 2 ? L * (con - 14) : con > 15 ? 2 * L : L
-  }
-  const loss = t > 0 ? Math.floor(b / t) : b
-  // PoR 0x1D84B, CotAB 0x1CEF6: with CON 17 or more only a fighter loses them (a byte subtraction)
-  if (con < 17 || c[F.levels + 2] > 0) c[F.maxHp] = (c[F.maxHp] - loss) & 0xff
+  raiseDeadHp(c, [2], true)
 }
 
 /** Treasure screen (FUN_2e08_0ecd), after a fight or a scripted TREASURE without monsters. */

@@ -107,7 +107,10 @@ export async function castOutside(e: Engine, caster: Uint8Array, s: Spell, targe
   const first = targets[0]
   // CotAB 0x45373 (R.casting.miscast): a caster with the effect who rolls 1 miscasts; nothing else, the spell kept
   const mis = R.casting.miscast
-  if (mis && e.effectsOf(caster).some((x) => x.type === mis.effect) && e.roll(1, mis.sides) === 1) return [`${name(caster)} ${msg('miscasts')} ${s.name}.`]
+  if (mis && e.effectsOf(caster).some((x) => x.type === mis.effect)) {
+    if (mis.sides === null) { if (!fromItem) return [] } // SotSB 0x48D64: silently nothing, the spell kept
+    else if (e.roll(1, mis.sides) === 1) return [`${name(caster)} ${msg('miscasts')} ${s.name}.`]
+  }
   if (!fromItem) forget(caster, s.id)
   if (s.name) out.push(`${name(caster)} ${msg('casts')} ${s.name}.`)
   const dur = duration(e, s, L)

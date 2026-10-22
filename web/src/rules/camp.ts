@@ -9,6 +9,10 @@ import { WorldHost } from './worldfx'
 import { F } from '../games/fields'
 import { game } from '../games/profile'
 import { msg } from '../games/strings'
+import { text } from '../data/gametext'
+import { parseCharacter } from '../data/character'
+import { spellOn } from './magic'
+import { diseases } from './abilities'
 
 // ------------------------------------------------------------------ clock
 /** Clock words in ECL array A: segment, minute, ten-minutes, hour, day, month, year. */
@@ -210,6 +214,63 @@ export async function restStep(e: Engine, r: RestState, camp: { heal: number }):
 }
 
 /**
+ * SotSB's condition pass of Fix (0x387CE, spec/A-games/sotsb/camp.md §3; R.fix.conditions): after the rest,
+ * before the hit points are shared, each member in party order takes each entry while its count lasts.
+ * Effects go through their removal as the original's 145:2A does (I: its callbacks). The original runs the
+ * pass again after a second, shorter rest (0x38D11 → 0x384BC); the port does not (I).
+ */
+async function fixConditions(e: Engine, conds: number[]): Promise<string[]> {
+  const out: string[] = [], host = new WorldHost(e, (m) => out.push(m))
+  const has = (c: Uint8Array, t: number) => e.effectsOf(c).some((x) => x.type === t)
+  const drop = async (c: Uint8Array, t: number) => { const x = e.effectsOf(c).find((f) => f.type === t); if (x) { await removeEffect(host, c, x); return true } return false }
+  const name = (c: Uint8Array) => parseCharacter(c).name
+  for (const c of e.party()) {
+    let marked = false
+    for (const [i, k] of R.fix.conditions.entries()) {
+      if (conds[i] <= 0 || (k.unlessMarked && marked)) continue
+      if (k.needs !== null && !has(c, k.needs)) continue
+      if (k.status !== null && c[F.status] !== k.status) continue
+      if (k.notRaces?.includes(c[F.race])) continue
+      const who = k.on === 'selected' ? e.cur : c
+      let removed = false
+      for (const t of k.removes) removed = (await drop(who, t)) || removed
+      if (k.diseases) for (const t of diseases(e)) removed = (await drop(who, t)) || removed
+      if (k.cure === 'cureDisease' && !removed) continue
+      if (k.cure === 'stoneToFlesh') { c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = 1 } // 0x388E1
+      else if (k.cure === 'neutralizePoison') { if (c[F.hp] === 0) c[F.hp] = 1; c[F.inPlay] = 1; c[F.status] = 0 } // 0x3894A
+      else if (k.cure === 'raiseDead') { c[F.hp] = 1; c[F.status] = 0; c[F.inPlay] = 1; raiseDeadHp(c, k.fighters ?? [2], false) } // 0x38A30
+      else if (k.cure === 'removeCurse') out.push(...(await spellOn(e, c, k.spells[0]))) // 0x38BB9: the spell's handler on the member
+      if (k.marks) marked = true
+      out.push(`${name(who)} ${text(k.msg)}`)
+      if (k.used) conds[i]--
+    }
+  }
+  return out
+}
+
+/**
+ * Raise Dead's loss (the temple's, PoR FUN_2d14_0510 to 0x1D84B, CotAB to 0x1CEF6; SotSB's Fix 0x38A4B): CON −1 (and the base CON with
+ * `setBase`), then with CON 14 or more the maximum HP above the rolled HP, divided by the CON bonus's
+ * units (`fighters`' levels × (CON − 14), the others' levels, twice above CON 15), is lost; with CON 17 or
+ * more only by a fighter (a byte subtraction). I (SotSB): a non-fighter whose fighter level is above the
+ * dual-class level byte would lose it too; the port leaves that out.
+ */
+export function raiseDeadHp(c: Uint8Array, fighters: number[], setBase: boolean) {
+  if (c[F.stat[4]] > 0) { c[F.stat[4]]--; if (setBase) c[F.baseStat[4]] = c[F.stat[4]] }
+  const con = c[F.stat[4]]
+  if (con < 14) return
+  const b = Math.max(0, c[F.maxHp] - c[F.hpRolled])
+  let t = 0
+  for (let k = 0; k < F.classCount; k++) {
+    const L = c[F.levels + k]
+    if (L <= 0) continue
+    t += fighters.includes(k) ? L * (con - 14) : con > 15 ? 2 * L : L
+  }
+  const loss = t > 0 ? Math.floor(b / t) : b
+  if (con < 17 || c[F.levels + 2] > 0) c[F.maxHp] = (c[F.maxHp] - loss) & 0xff
+}
+
+/**
  * Heal (FUN_5216_175d, CotAB 0x4CE85): statuses Okay, Animated, Unconscious, Dying; the game's blocking
  * effects (`effects.healBlock`: PoR's mummy rot) stop it unless forced. Then, for someone out of play
  * (char in-play byte 0): Dying becomes Unconscious, and outside combat an Unconscious character is
@@ -257,9 +318,13 @@ export async function fix(e: Engine, camp: { heal: number }): Promise<{ messages
   const cureRoll = (k: (typeof cures)[number]) => e.roll(k.dice, k.sides) + k.bonus
   // 0x31CC2: the memorised cures, member by member, slot by slot
   let pool = 0
+  const conds = R.fix.conditions.map(() => 0)
   for (const c of e.party()) {
     if (!okay(c)) continue
-    for (const v of memorised(c)) { const k = cures.find((x) => x.spell === v); if (k) pool = (pool + cureRoll(k)) & 0xffff }
+    for (const v of memorised(c)) {
+      const k = cures.find((x) => x.spell === v); if (k) pool = (pool + cureRoll(k)) & 0xffff
+      const j = R.fix.conditions.findIndex((x) => x.spells.includes(v)); if (j >= 0) conds[j]++ // SotSB 0x3802C
+    }
   }
   // 0x31E8D: the slots to learn again, the longest member's rest, and the estimate it is shortened by.
   // The per-level minutes are kept from the last Okay member: a member who is not Okay counts them again
@@ -289,6 +354,7 @@ export async function fix(e: Engine, camp: { heal: number }): Promise<{ messages
   }
   // 0x31D7D: one cure per cleric slot of its level, all of the first cure, then the next
   cures.forEach((k, i) => { for (let n = 0; n < count[i]; n++) pool = (pool + cureRoll(k)) & 0xffff })
+  if (conds.some((n) => n > 0)) messages.push(...(await fixConditions(e, conds)))
   // 0x32020: shared out in party order; the amount reaches the heal routine as a byte (0x32096)
   for (const c of e.party()) {
     let need = (c[F.maxHp] - c[F.hp]) & 0xffff

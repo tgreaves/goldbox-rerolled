@@ -161,8 +161,10 @@ export function derive(t: Tables, c: Uint8Array, items?: Item[], itemTables?: It
   }
   c[F.thac0Base] = thac
   c[F.hitDice] = high & 0xff
-  const extra = (lv: (k: number) => number) => Object.entries(R.extraAttacks).some(([k, above]) => lv(Number(k)) > above)
-  if (extra((k) => s8(c[F.levels + k]))) c[F.attacksBase] = 3
+  // half-attacks: 2, one more for each extra-attack level passed (CotAB 0x50836: 3; SotSB 0x56A64: 3, then 4)
+  const steps = (lv: (k: number) => number) => Math.max(0, ...Object.entries(R.extraAttacks).map(([k, above]) => above.filter((a) => lv(Number(k)) > a).length))
+  const extraNow = steps((k) => s8(c[F.levels + k]))
+  if (extraNow) c[F.attacksBase] = 2 + extraNow
   else if (rc.attacksReset) c[F.attacksBase] = 2
   computeSlots(t, c, items)
   saves(t, c, items)
@@ -180,7 +182,8 @@ export function derive(t: Tables, c: Uint8Array, items?: Item[], itemTables?: It
   if (formerLevelsCount(c)) {
     // 0x50A10: the former levels give their attacks, THAC0 and thief skills too
     const prev = (k: number) => s8(c[F.prevLevels + k])
-    if (extra(prev)) c[F.attacksBase] = 3
+    const extraPrev = steps(prev)
+    if (extraPrev) c[F.attacksBase] = 2 + extraPrev
     for (let k = 0; k < F.classCount; k++) c[F.thac0Base] = Math.max(c[F.thac0Base], t.b(T.thac0.at + k * T.thac0.row + prev(k)))
     if (prev(6) > 0) thiefSkills(t, c, items)
   }
@@ -218,6 +221,7 @@ function computeSlots(t: Tables, c: Uint8Array, items?: Item[]) {
       })
     }
     if (src.cls === 0 && sl.wisdom === 'afterCleric') wisdomBonus(c)
+    for (const lim of sl.limits) if (lim.after === src.cls && pool[lim.pool] >= 0 && c[F.stat[lim.stat]] < lim.atLeast) c[pool[lim.pool] + lim.level - 1] = 0
   }
   for (const l of sl.learn) {
     if (!l.classes.some((k) => c[F.levels + k] > 0)) continue

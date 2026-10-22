@@ -671,7 +671,7 @@ export const COAB_STRINGS: Strings = {
  */
 export type MenuId =
   | 'main'
-  | 'camp' | 'magic' | 'alter' | 'orderSelect' | 'orderPlace' | 'campFaster' | 'campSlower' | 'campSpeedExit' | 'rest'
+  | 'camp' | 'magic' | 'alter' | 'alterLevel' | 'orderSelect' | 'orderPlace' | 'campFaster' | 'campSlower' | 'campSpeedExit' | 'rest'
   | 'yesNo' | 'listExit' | 'portrait' | 'shopLeaveYesNo' | 'templeLeaveYesNo' | 'treasureLeaveYesNo'
   | 'shop' | 'shopNoPool' | 'temple' | 'templeNoPool' | 'templeHeal'
   | 'treasureMoney' | 'treasureItems' | 'treasureNone' | 'treasureDetect' | 'treasureExit' | 'take'
@@ -906,9 +906,9 @@ export const SOTSB_STRINGS: Strings = {
   scrollOops: 0x44ec0,
 }
 
-// the same for the menus; not found: main, alter, battleTurn, partyBegin, modify
+// the same for the menus; not found: main, battleTurn, partyBegin, modify
 export const SOTSB_MENUS: Menus = {
-  camp: 0xe1f7, magic: 0xe220, orderSelect: 0xe48e, orderPlace: 0xe4b7, campFaster: 0x37d66, campSlower: 0x37d6e,
+  camp: 0xe1f7, magic: 0xe220, alter: 0xe249, alterLevel: 0xe272, orderSelect: 0xe48e, orderPlace: 0xe4b7, campFaster: 0x37d66, campSlower: 0x37d6e,
   campSpeedExit: 0x243c0, rest: 0x46f2a, yesNo: 0x4c3c2, shopLeaveYesNo: 0x231e5, templeLeaveYesNo: 0x231e5,
   treasureLeaveYesNo: 0x231e5, listExit: 0x243c0, shop: 0x2557a, shopNoPool: 0x255a1, temple: 0x2319f,
   templeNoPool: 0x231c7, templeHeal: 0x22f9b, treasureMoney: 0x243d3, treasureItems: 0x243e8, treasureNone: 0x243b1,

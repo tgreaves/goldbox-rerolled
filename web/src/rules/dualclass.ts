@@ -96,7 +96,7 @@ export function changeClass(t: Tables, c: Uint8Array, k: number, items?: Item[],
   if (k === 0) c[F.clericSlots] = 1
   else if (k === 5) {
     c[F.muSlots] = 1
-    for (const id of R.startSpells) c[F.known + id] = 1
+    for (const id of R.dualClass?.spells ?? R.startSpells) c[F.known + id] = 1
   }
   c[F.cls] = k
   for (let i = 0; i < F.memorisedCount; i++) c[F.memorised + i] = 0

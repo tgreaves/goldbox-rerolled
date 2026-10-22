@@ -88,12 +88,6 @@ export interface EclMap {
    * its icon parts (PoR). The random portrait follows T.npcHeads/npcBodies*.
    */
   addNpc: { enemyId: number | null; tag: 'random' | 'monster'; loaderRolls: boolean; iconPicture: boolean }
-  /**
-   * LOAD_MONSTER scales a loaded record of side 1 by the difficulty level, the word at `variable` (canonical
-   * address), when below `below`: HP and maximum HP := byte × (level + 2) div 4, both made 1 if either becomes 0
-   * (SotSB 0x1DF9F–0x1E036; ECL 0x4CF4, Alter's Level); null: no scaling (PoR, CotAB)
-   */
-  difficultyHp: { variable: number; below: number } | null
   /** DESTROY_ITEMS puts a readied item away through the ready routine first (SotSB 0x21276 → 0x4431F: "It's
    *  Cursed!" for a cursed one, else unreadied with its item handler), each member current meanwhile */
   destroyUnreadies: boolean
@@ -153,7 +147,6 @@ export const POR_ECL: EclMap = {
   pauseMs: 225,
   quitProgram: null,
   addNpc: { enemyId: 0x18, tag: 'random', loaderRolls: true, iconPicture: false },
-  difficultyHp: null,
   destroyUnreadies: false,
   monsterFile: null,
   findSpellFirst: 1,
@@ -202,7 +195,6 @@ export const COAB_ECL: EclMap = {
   // 0x1B61A → 0x3593D: the record as stored (0x3565C rolls nothing), char[0x126] = id, CPIC record id as
   // the combat icon, no side, no portrait
   addNpc: { enemyId: null, tag: 'monster', loaderRolls: false, iconPicture: true },
-  difficultyHp: null,
   destroyUnreadies: false, // 0x1BB49: the items freed at once
   monsterFile: null,
   findSpellFirst: 1, // 0x1B6E7
@@ -257,7 +249,6 @@ export const SOTSB_ECL: EclMap = {
   pauseMs: 100, // I
   quitProgram: null,
   addNpc: { enemyId: null, tag: 'monster', loaderRolls: false, iconPicture: true }, // I: as CotAB
-  difficultyHp: { variable: 0x4af4, below: 5 }, // ECL 0x4CF4 (a new game sets 2, 0x2CB1D: × 1)
   destroyUnreadies: true,
   monsterFile: 1,
   findSpellFirst: 0,
