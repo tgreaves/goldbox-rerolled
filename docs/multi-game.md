@@ -406,7 +406,7 @@ classes 0, 1, 3, 4; the races renumbered; seven-column slot sources and the WIS 
 (`wildBattle` none); the silent no-cast effect (`casting.miscast.sides` null); the difficulty (`difficulty`,
 `newGame`: monsters' HP scaled as they load, Alter → Level in camp); Fix's Heal and its condition pass
 (`fix.conditions`). Each as data for the shared procedures (spec/B-model/procedures.md §1, §3, §7, §12.4,
-§15). Still to do (I): the target finder's forced target, the "Lose it?" question, the thief's magic-user
+§15). Still to do (I): the target finder's first-entry pick (effect 0x5B, combat.md §9), the "Lose it?" question, the thief's magic-user
 list above level 10, Fix's second rest, training fees and thief skills re-read. Tests: `test/sotsbrules.test.ts`.
 
 *Spells and effects (2026-10-22)*: SotSB's own maps, each handler read. `SOTSB_SPELLS` (ids 0–117: CotAB's

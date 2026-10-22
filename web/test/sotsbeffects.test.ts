@@ -36,8 +36,8 @@ function world() {
     attack: async () => {}, weapon: () => null, weaponKind: () => 0,
   }
   const h = base as FxHost
-  const run = (type: number, holder: Uint8Array, event: number, power = 0) =>
-    BEHAVIOURS[SOTSB.effects.handlers[type].b](h, { type, duration: 0, power, flag: 0 }, holder, false, SOTSB.effects.handlers[type], event, type)
+  const run = (type: number, holder: Uint8Array, event: number, power = 0, removal = false) =>
+    BEHAVIOURS[SOTSB.effects.handlers[type].b](h, { type, duration: 0, power, flag: 0 }, holder, removal, SOTSB.effects.handlers[type], event, type)
   return { h, add, dice, printed, targets, saves, run, setCurrent: (c: Uint8Array | null) => { current = c } }
 }
 
@@ -115,5 +115,29 @@ describe('SotSB effects (SOTSB_EFFECTS)', () => {
     fx.round = 2; dice.push(100, 20) // (11 − 1) × 10 = 100 %, then 4d8 = 20
     await run(81, s, 14)
     expect(t[F.hp]).toBe(40)
+  })
+
+  it('15 (0x2D705): when called, not on removal, re-armed as 0x1A for 10 at its power; 1 point above 1 HP', () => {
+    const { h, add, run } = world()
+    const c = add('P', 0, { hp: 20 })
+    run(15, c, 0, 0x33, true)
+    expect([h.effectsOf(c).length, c[F.hp]]).toEqual([0, 20])
+    run(15, c, 0, 0x33)
+    expect([h.effectsOf(c).map((e) => [e.type, e.duration, e.power, e.flag]), c[F.hp]]).toEqual([[[0x1a, 10, 0x33, 1]], 19])
+  })
+
+  it('94 (0x3001F): saves 4, 2, 0 better by CON 4–20 in bands; none outside them', () => {
+    const { add, run } = world()
+    const c = add('D', 0)
+    const at = (con: number, type = 4) => { c[F.stat[4]] = con; fx.save = 0; fx.saveType = type; run(94, c, 12); return fx.save }
+    expect([3, 4, 6, 7, 10, 11, 13, 14, 17, 18, 20, 21, 25].map((n) => at(n))).toEqual([0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 0, 0])
+    expect([at(18, 0), at(18, 2), at(18, 1)]).toEqual([5, 5, 0])
+  })
+
+  it('110 (0x308B4): the paladin\'s uses back on removal, (level − 1) idiv 5 + 1, level 0 giving 1', () => {
+    const { add, run } = world()
+    const c = add('PAL', 0)
+    const at = (lv: number) => { c[F.levels + 3] = lv; c[F.abilityUses] = 0; run(110, c, 0, 0, true); return c[F.abilityUses] }
+    expect([0, 1, 5, 6, 11].map(at)).toEqual([1, 1, 1, 2, 3])
   })
 })

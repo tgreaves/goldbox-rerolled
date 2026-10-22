@@ -56,9 +56,14 @@ export function useAbility(h: FxHost, e: Engine, c: Uint8Array, a: Ability, t: U
   return [`${name(t)}${msg('diseaseCured')}`]
 }
 
-/** The weekly effect's removal (0x27350 + 0x28EF): the uses back to (level − 1) div 5 + 1. */
-export function refillUses(c: Uint8Array) {
+/**
+ * The weekly effect's removal (CotAB 0x29C3F, SotSB 0x308B4): the uses back to (level − 1) div 5 + 1.
+ * CotAB divides unsigned, which faults at level 0 (the port gives 0); with `signed` (SotSB's idiv) the
+ * quotient truncates toward zero, so level 0 gives 1.
+ */
+export function refillUses(c: Uint8Array, signed = false) {
   const p = R.paladin
   if (!p || F.abilityUses < 0) return
-  c[F.abilityUses] = Math.floor((classLevel(c, 3) - 1) / p.cureDisease.levelsPerUse) + 1
+  const q = (classLevel(c, 3) - 1) / p.cureDisease.levelsPerUse
+  c[F.abilityUses] = ((signed ? Math.trunc(q) : Math.floor(q)) + 1) & 0xff
 }

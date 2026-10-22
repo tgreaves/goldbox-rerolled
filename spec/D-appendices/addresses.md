@@ -1111,6 +1111,7 @@ when its table column or sentence names CotAB.
 | 0x3059B | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x3065C | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x306E2 | B/vocabularies | B/vocabularies: 3.2 Attack and damage modifiers |  |
+| 0x308B4 | B/vocabularies | B/vocabularies: 3.5 Effects that last, end or re-arm |  |
 | 0x30B17 | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x30CAC | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x30DDA | B/vocabularies | B/vocabularies: 2. The effect system (`EffectRules`) |  |

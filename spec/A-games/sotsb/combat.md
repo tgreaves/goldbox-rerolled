@@ -152,10 +152,13 @@ unless word 3 is 0x5D ("Silver") (**O**).
   fastest enemy (`c9:8e`) against half its own movement (`151:101`, signed): no faster enemy → R[0x14]
   := 1 (flee) with **no removal** (CotAB removed 0x4A and 0x4B); else an INT (+0x13) above 5
   surrenders ("Surrenders", the take-off routine `151:cf`).
-- **The target finder, 0x34C51** (I: read in part): CotAB's 0x2E394 with one addition: a chooser with
-  effect **0x5B** whose combatant at slot DS:8DC9 is the one picked, on the first pass's first try
-  (counter 0x13), takes it (0x34D47–0x34D85). (I: a forced target, such as a taunt or charm; the slot's
-  meaning is not traced.)
+- **The target finder, 0x34C51** (I: read in part): CotAB's 0x2E394 with one addition (0x34D47–0x34D96):
+  on the first try (the counter, 20 down, at 0x13), a chooser holding effect **0x5B** (151:ac) takes the
+  candidate list's entry 1 instead of a roll (145:43) when DS:8E23 is the combatant whose index is at
+  DS:8DC9 (O). 0x5B is the Cloudkill owner's record (its table handler, filled at 0x30A9C, is the kill zone
+  lift 0x2FD7E, [effects.md](effects.md)); DS:8DC9 is written only by the sweep (0x31FA6, "sweeps" at CS:0F3F,
+  image 0x31F9F): the index of the sweep's first target (18b:7a at 0x320EE) (O). What DS:8E23 holds there
+  is not traced (?), so the purpose is unknown (I: a quirk joining a Cloudkill caster to the last sweep).
 
 ## 10. No turning undead (O)
 
@@ -208,7 +211,7 @@ moraleRemoves: [], fleeRemoves: [],
 the difficulty (`R.difficulty`, `newGame`, the monster scaling in the engine's monster loader, Alter →
 Level), `setStatusEvent` null, `turnUndead` false, `casting.miscast` { 0x44, sides null }, `backstab.reach`
 1, `wildBattle` none, the renumbered item types and plural rule (`itemTypes`), the clouds' SotSB numbers.
-Not done: the finder's forced target (effect 0x5B, **I**); the kill
+Not done: the finder's first-entry pick (effect 0x5B, §9: DS:8E23 not traced, **?**); the kill
 cloud's bands and poison are CotAB's (**I**). Tests: `test/sotsbrules.test.ts`.
 
 - **Difficulty**: a new rule (`R.difficulty`: the variable ECL 0x4CF4, the five names, the start value 2,

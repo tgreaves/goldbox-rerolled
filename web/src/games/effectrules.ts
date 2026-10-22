@@ -454,7 +454,7 @@ const SOTSB_HANDLERS: Record<number, HandlerSpec> = {
   10: { b: 'resist', type: 2, save: 3 }, // 0x2D5BD Resist Cold
   11: { b: 'charmed', morale: 100 }, // 0x2D5E8
   13: { b: 'saveExceptType', mask: 8, save: 1, roll: -1 }, // 0x2D6DC
-  15: { b: 'poisonTick', duration: 10, power: 0xff }, // 0x2D705 (? it re-arms as 0x1A, read so)
+  15: { b: 'poisonTick', duration: 10, keepPower: 1, as: 0x1a, onCall: 1 }, // 0x2D705: called (arg 0), not removed; in no event list
   17: { b: 'shield', ac: 0x39, save: 1, spell: 15 }, // 0x2D795
   18: { b: 'blocks', types: [11, 53], pct: 30 }, // 0x2D7CE
   20: { b: 'resist', type: 1, save: 3 }, // 0x2D7FA Resist Fire
@@ -521,7 +521,7 @@ const SOTSB_HANDLERS: Record<number, HandlerSpec> = {
   91: { b: 'liftZone', cell: 0x1b, msg: 0x2fd63 }, // 0x2FD7E: the kill zones (list DS:8D95)
   92: { b: 'blocks', types: [0x6f] }, // 0x2FFE6
   93: { b: 'immune', mask: 1, say: 0 }, // 0x2FFFE
-  94: { b: 'conSave', saveTypes: [4, 2, 0], bands: [[4, 1], [7, 2], [11, 3], [14, 4], [18, 5]] }, // 0x3001F (none above 20: ?)
+  94: { b: 'conSave', saveTypes: [4, 2, 0], bands: [[4, 1], [7, 2], [11, 3], [14, 4], [18, 5]], top: 20 }, // 0x3001F
   95: { b: 'blocks', types: [11, 53], pct: 90 }, // 0x300A7
   96: { b: 'blocks', types: [11, 53] }, // 0x300D5
   97: { b: 'conSave', saveTypes: [4, 2], bands: [[4, 1], [7, 2], [11, 3], [14, 4], [18, 5]] }, // 0x300F4 (in no event list)
@@ -531,7 +531,7 @@ const SOTSB_HANDLERS: Record<number, HandlerSpec> = {
   105: { b: 'rangerVsGiants', flag: 8, adjacent: 1 }, // 0x306E2
   107: { b: 'berserk', say: 0, restore: 1 }, // 0x30767
   108: { b: 'startInvisible', effect: 0x19 }, // 0x30887
-  110: { b: 'refillUses' }, // 0x308B4 (I: the paladin's uses at +0x6D)
+  110: { b: 'refillUses', signed: 1 }, // 0x308B4: the paladin's uses (+0x6D), (level − 1) idiv 5 + 1
   111: { b: 'runsAway' }, // 0x30905
   112: { b: 'zap', msg: 0x3094a }, // 0x30956
   113: { b: 'saysOnRun', msg: [0xfe6d, 0x1110d] }, // 0x309ED "gains Giant Strength"

@@ -181,7 +181,7 @@ character.
 - **`weakTo`** (`saveOn`, `double`, `saved`) [12, 20] — damage of `saveOn`: save += 2; else damage of `double`: × 2 as a byte (with `saved` only when the save failed). CotAB 50, 54 (0x28562, 0x28593: 54 reads DS:5D0B instead of the saved flag, 0 in combat, **?** a bug; the profile gives it saved 0).
 - **`fireColdSave`** [5, 6] — fire or cold: a save vs spell; saved and the spell's save byte (record +8) set: none, else half. CotAB 82 (0x28CE0).
 - **`absorbElectricity`** [6] — electricity negated and HP += 8 past the maximum (byte; a 1d8 is rolled and dropped, **I**: a bug). CotAB 84 (0x28D31).
-- **`conSave`** (`saveTypes`, `bands` [[CON, n]]) [12] — a save of a type in `saveTypes` gets the bonus of the highest band reached by CON (none below the first). PoR 90, 97 (24d9, 268a).
+- **`conSave`** (`saveTypes`, `bands` [[CON, n]], `top`?) [12] — a save of a type in `saveTypes` gets the bonus of the highest band reached by CON (none below the first; with `top`, none above it). PoR 90, 97 (24d9, 268a); SotSB 94 (0x3001F, `top` 20).
 - **`vulnerableTo`** (`item`, `roll` [n, d, add], `diceOn`?, `keep`?) [5, 6] — the current character's weapon of ITEMS type `item` (holy water, oil) does `roll` (counting dice with `keep`) + add as a byte; with `diceOn`, damage of that type then gains the dice count as a byte. PoR 117, 122 (2b20, 2d38).
 - **`unlessKilledBy`** (`mask`, `effect`, `roll` [n, d]) [13] — unless the killing damage had a type in `mask`: `effect` raw for `roll` (flag 1). PoR 100 troll (27d9).
 
@@ -197,7 +197,7 @@ character.
 - **`statUp`** (`stat`, `msg`, `at`, `effect`, `duration`, `power`, `hpFrom`, `fighter`, `fighterOnlyFrom`) [removal] — `msg`, the stat + 1; from `at`, `effect` raw for `duration` (power `power`, flag 1) and nothing more; otherwise from `hpFrom` the hit-point gain of [engine/effects.md](../A-games/engine/effects.md) row 7 (byte sums over the class levels, class `fighter` by stat − `hpFrom`, the others 2 or 1; none from `fighterOnlyFrom` without a `fighter` level), added to max HP and HP. PoR 7 (0x37463).
 - **`restoreStrength`** (`types`) [removal] — an active STR record (power < 0x80) restores the STR it holds; the strongest other record of `types` then takes over ([procedures.md §12.3](procedures.md#123-the-strength-spells)). PoR 12, 38 (04ba).
 - **`restoreStat`** (`stat`) [removal] — the stat := the power. PoR 14 Friends (05d6).
-- **`poisonTick`** (`duration`, `power`) [removal] — re-armed for `duration`; then above 1 HP, 1 point of damage (type 0). PoR 15 (05eb).
+- **`poisonTick`** (`duration`, `power` or `keepPower`, `as`?, `onCall`?) [removal] — re-armed for `duration` (power `power`, or the record's with `keepPower`; as type `as` where given) unless re-arming is off; then above 1 HP, 1 point of damage (type 0). With `onCall` it acts when called, not on removal. PoR 15 (05eb); SotSB 15 (0x2D705: on call, as 0x1A).
 - **`poisonEnds`** (`poison`, `msg`, `also`, `removesPoison`?) [removal] — still poisoned (`poison`): status 6 with `msg` (with `removesPoison` the first poison record then goes, SotSB 0x2D8AA); then `also` goes without re-arming. PoR 22 Slow Poison (0x379A5).
 - **`loseStrength`** (`duration`, `floor`, `msg`, `helpless`) [removal, direct] — on removal re-armed for `duration` (nothing when suppressed); above `floor` STR: `msg` and STR − 1; else `helpless` raw, permanent. PoR 43 (0x3830E).
 - **`loseHp`** (`duration`, `helpless`) [removal, direct] — re-armed for `duration`; below 2 HP `helpless` once, else 1 point of damage. PoR 44 (1168).
@@ -214,7 +214,7 @@ character.
 - **`escapes`** (`msg`, `status`) [13] — no removal callback, `msg`, status `status`, out of play. PoR 103 (0x39AEF).
 - **`collapse`** (`msg`, `move`) [removal] — unless suppressed: `msg` and status 6; the side back from the power's high nibble, computer control, not undead, sweep := the fighter level, base movement `move`, morale 0xB3 → 0, monster type 0. PoR 32 Animate Dead (0x37D4B).
 - **`suffocate`** [15] — power 0: status 6 "Suffocates", else power − 1. CotAB 13 (0x276C9).
-- **`refillUses`** [removal] — the paladin's Cure Disease uses refilled ([procedures.md §10](procedures.md#10-class-abilities)). CotAB 141 (0x29C3F).
+- **`refillUses`** (`signed`?) [removal] — the paladin's Cure Disease uses refilled ([procedures.md §10](procedures.md#10-class-abilities)); with `signed` the division truncates toward zero (level 0 gives 1). CotAB 141 (0x29C3F); SotSB 110 (0x308B4, `signed`).
 - **`liftZone`** (`cell`) [removal] — in combat, the owner's cloud zone of `cell` squares numbered power >> 4 lifts with "The air clears a little..." when there is one: the old cells back (a body's cell where one lies), the other zones of the same list drawn again. PoR 40 (0x37EF3, cell 0x1E); CotAB 91 (0x28E09, cell 0x1C).
 
 ### 3.6 Charm, morale and control

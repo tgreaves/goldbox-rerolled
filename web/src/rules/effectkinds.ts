@@ -142,9 +142,15 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   restoreStrength(h, eff, c, removal, p) { if (removal) restoreStr(h, c, eff, list(p, 'types')) },
   /** 14 Friends (removal, 05d6): the stat back to the power */
   restoreStat(_h, eff, c, removal, p) { if (removal) c[F.stat[num(p, 'stat')]] = eff.power },
-  /** 15 slow poison's damage (removal, 05eb): re-armed for `duration` (power `power`) unless suppressed; then above 1 HP, 1 point (type 0) */
-  poisonTick(h, _e, c, removal, p, _ev, type) {
-    if (removal && rearm(h, c, type, num(p, 'duration'), num(p, 'power')) && c[F.hp] > 1) { fx.dmgType = 0; h.damage(c, 1, 0, false) }
+  /**
+   * 15 slow poison's damage (removal, 05eb): re-armed for `duration` (power `power`, or with `keepPower`
+   * the record's) unless suppressed, as `as` where given; then above 1 HP, 1 point (type 0). With
+   * `onCall` it acts when called, not on removal (SotSB 0x2D705, re-armed as 0x1A)
+   */
+  poisonTick(h, eff, c, removal, p, _ev, type) {
+    if (removal === !!p.onCall) return
+    const power = p.keepPower ? eff.power : num(p, 'power')
+    if (rearm(h, c, p.as !== undefined ? num(p, 'as') : type, num(p, 'duration'), power) && c[F.hp] > 1) { fx.dmgType = 0; h.damage(c, 1, 0, false) }
   },
   /** 17 Shield [6, 11, 12] (064e): AC no worse than `ac` (11), the save +`save` (12), the spell `spell` (Magic Missile) does nothing (6) */
   shield(_h, _e, c, _r, p, event) {
@@ -505,11 +511,16 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (event === 8) eff.power &= ~bit
     else if (event === 16 && !(eff.power & bit)) { fx.roll = -1; eff.power |= bit }
   },
-  /** 90, 97 [12] (24d9, 268a): a save of a type in `saveTypes` better by CON: the bonus of the highest `bands` [CON, n] reached (none below) */
+  /**
+   * 90, 97 [12] (24d9, 268a): a save of a type in `saveTypes` better by CON: the bonus of the highest
+   * `bands` [CON, n] reached (none below); with `top`, none above it either (SotSB 94 0x3001F: there, below
+   * the first band or above `top`, an uninitialised local is added, Bug; the port adds 0)
+   */
   conSave(_h, _e, c, _r, p) {
     if (!list(p, 'saveTypes').includes(fx.saveType)) return
     let b = 0
-    for (const [con, n] of p.bands as number[][]) if (c[F.stat[4]] >= con) b = n
+    const con = c[F.stat[4]]
+    if (p.top === undefined || con <= num(p, 'top')) for (const [lo, n] of p.bands as number[][]) if (con >= lo) b = n
     fx.save += b
   },
   /** 91 [6] (0x39786): the spell `spell` (Magic Missile) does nothing, "is unaffected"; else damage of `mask` none */
@@ -629,7 +640,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (t && h.itemsOf(t).some((it) => it.ready && named(it))) fx.untargetable = true
   },
   /** CotAB 141 (removal, 0x29C3F): the paladin's weekly Cure Disease uses back (rules/abilities.ts) */
-  refillUses(_h, _e, c, removal) { if (removal) refillUses(c) },
+  refillUses(_h, _e, c, removal, p) { if (removal) refillUses(c, !!p.signed) },
 
   // ---------------------------------------------------------------- first transcribed from CotAB
 
