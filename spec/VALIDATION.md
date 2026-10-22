@@ -98,7 +98,9 @@ Also run before every commit: `npx tsc --noEmit -p .`, `npm run build`, and
   port. Screen frames come from a small resident program started before the game (F12, typed by
   AUTOTYPE, writes the EGA planes and palette to a file once DOS is idle): 7 frames of the 3D view in
   save A's area equal the reference's drawn view exactly (0 of 7 744 pixels differing each), and showed
-  the view at pixels 24–111, not 16–103 as graphics.md had it. Not run: the Sell, Share and Appraise
+  the view at pixels 24–111, not 16–103 as graphics.md had it. CotAB the same way (save A, Tilverton's room at (7,13): 7 frames, four
+  facings, a step into a wall): the wall set, the cobbled ground (SKY #252) and the view at 24–111, exact;
+  its outdoor sky and clouds not yet seen. Not run: the Sell, Share and Appraise
   checks (no shop from save A; decided not worth a route); register 0x035F (no debugger).
 - **The interface** was checked against part C in headless Chromium (2026-10-21; each part C file's
   "Validation" section says what): every screen class, PoR's game-file save A, the games screen, the
