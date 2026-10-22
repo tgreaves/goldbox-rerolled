@@ -2,7 +2,7 @@
 // exploring, camping or travelling (FUN_4b46_0000 → FUN_5216_0026), and when items are used from the
 // character sheet. Combat-only parts (records, distance, attacks) answer as "not in combat".
 import type { Engine } from '../vm/engine'
-import { damageText, fire, fx, type FxHost } from './effects'
+import { damageText, fire, fx, setStatusOf, type FxHost } from './effects'
 import { recalc } from './equip'
 import { heal as healChar } from './camp'
 import { F } from '../games/fields'
@@ -30,10 +30,7 @@ export class WorldHost implements FxHost {
   rec() { return 0 }
   setRec() {}
   setStatus(c: Uint8Array, status: number, msg: string) {
-    if ([6, 7, 8].includes(c[F.status])) return
-    if (msg) this.print(msg)
-    c[F.status] = status
-    if (status !== 0 && status !== 1) { c[F.inPlay] = 0; c[F.hp] = 0; this.e.io.sound(5, 'full') } // FUN_577f_0e11 outside combat
+    if (setStatusOf(this, c, status, msg)) this.e.io.sound(5, 'full') // FUN_577f_0e11 outside combat
   }
   /** FUN_5216_1344 outside combat: no dying count, 0 HP is unconscious, past −9 is dead */
   damage(c: Uint8Array, dmg: number, mode: number, saved: boolean) {
@@ -46,7 +43,12 @@ export class WorldHost implements FxHost {
     this.print(damageText(this.name(c), d, fx.dmgType)) // FUN_5216_1344 prints outside combat too
     const left = c[F.hp] - d
     if (left > 0) { c[F.hp] = left; return }
-    this.setStatus(c, left < -9 ? 6 : 4, left < -9 ? `${this.name(c)} ${msg('fallKilled')}` : `${this.name(c)} ${msg('fallDown')}`)
+    // FUN_5216_1344 (CotAB 0x4CAB2) sets the status itself: not the set-status routine, no going down, no event 13
+    if ([6, 7, 8].includes(c[F.status])) return
+    this.print(left < -9 ? `${this.name(c)} ${msg('fallKilled')}` : `${this.name(c)} ${msg('fallDown')}`)
+    c[F.status] = left < -9 ? 6 : 4
+    c[F.inPlay] = 0; c[F.hp] = 0
+    this.e.io.sound(5, 'full')
   }
   save(c: Uint8Array, type: number, bonus: number) {
     fx.saved = true // CotAB DS:6FC2, as the combat save

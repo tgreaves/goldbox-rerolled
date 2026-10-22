@@ -12,7 +12,7 @@ import { F } from '../games/fields'
 import { R, classLevel, formerLevelsCount } from '../games/rules'
 import { T } from '../games/tables'
 import { Item as ItemRecord, ITEM_SIZE } from '../data/items'
-import { addEffect, addRaw, deflect, drain, fire, fx, handle, has, healedLine, ids, negate, rearm, removeEffect, removeFirst, removeType, restoreStr, runEffect, setStr, strDec, strKey, type FxHost } from './effects'
+import { addEffect, addRaw, deflect, drain, fx, handle, has, healedLine, ids, negate, rearm, removeEffect, removeFirst, removeType, restoreStr, runEffect, setStr, strDec, strKey, type FxHost } from './effects'
 import { refillUses } from './abilities'
 import { strDamageBonus } from './equip'
 import { thiefSkills } from './chargen'
@@ -862,8 +862,9 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   quarrelSlays(h, _e, c, _r, p) {
     const a = h.current(), w = a ? h.weapon(a) : null
     if (!w || w.type !== num(p, 'type') || w.raw[0x31] !== num(p, 'word')) return
+    // 0x29993 inline: status 8, out of play, going down, event 13, the fall: the set-status routine's
+    // steps but the message and the 6–8 test, which cannot matter for a target in play (I)
     h.setStatus(c, 8, '')
-    return fire(h, c, 13)
   },
   /** 131 [14] (0x4A001): adjacent, d100 ≤ pct: "Breathes Fire", fire damage, half on a save vs breath; the turn ends */
   async breatheFire(h, _e, c, _r, p) {

@@ -376,7 +376,7 @@ Defined by [procedures.md](../B-model/procedures.md#15-combat-procedures).
 | `E-spell-coab-2` | (206 characters) | 4 draws | `{"damage":[[1,23,false],[2,23,true],[3,23,false]],"hp":[200,177,189,177],"cells":[],"effects":[[],[],[],[]]}` |
 | `E-spell-coab-3` | `{"fighters":[{"x":2,"y":5,"side":0},{"x":6,"y":6,"side":1,"saves":[30,30,30,30,30]},{"x":5,"y":6,"side":1,"saves":[1,1,1,1,1]}],"walls":[[5,5]],"spells":[{"caster":0,"id":34,"level":4,"aim":[5,5]}]}` | 3 draws | `{"damage":[],"hp":[200,200,200],"cells":[[6,5,30],[5,6,30],[6,6,30]],"effects":[[[40,4,4,1]],[[31,3,255,0]],[[30,1,255,0]]]}` |
 | `E-spell-coab-4` | (208 characters) | 0 draws | (186 characters) |
-| `E-spell-coab-5` | `{"fighters":[{"x":2,"y":5,"side":0},{"x":11,"y":10,"side":1,"saves":[30,30,30,30,30]}],"spells":[{"caster":0,"id":34,"level":4,"aim":[10,10]},{"caster":0,"id":91,"level":9,"aim":[10,10]}]}` | 2 draws | (193 characters) |
+| `E-spell-coab-5` | `{"fighters":[{"x":2,"y":5,"side":0},{"x":11,"y":10,"side":1,"saves":[30,30,30,30,30]}],"spells":[{"caster":0,"id":34,"level":4,"aim":[10,10]},{"caster":0,"id":91,"level":9,"aim":[10,10]}]}` | 2 draws | (180 characters) |
 
 #### `combat.attack` (E)
 

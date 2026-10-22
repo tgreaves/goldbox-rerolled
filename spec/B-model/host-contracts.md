@@ -158,7 +158,7 @@ travelling, the character sheet), whose combat-only parts answer as "not in comb
 | `current()` | the current combatant (DS:5D92) | the engine's current character |
 | `endTurn(c)` | ends its turn | nothing |
 | `rec(c, i)`, `setRec(c, i, v)` | combat record byte *i* (clearing +0x0A clears the target) | 0, nothing |
-| `setStatus(c, status, msg)` | unless already 6, 7 or 8: the message, the status; any status other than 0 and 1 takes it out of play with 0 HP and the fall | the same; the fall is sound 5 |
+| `setStatus(c, status, msg)` | the set-status routine (PoR `FUN_3723_0058`, CotAB 0x4AAC4): the message; unless already 6, 7 or 8, the status, out of play with 0 HP, going down (`effects.ids.goingDown`, `downRejoins`), event 13, then the fall | the same; the fall is sound 5 |
 | `damage(c, dmg, mode, saved)` | the damage routine of part A (event 6, then event 20 when not saved; mode 1 none on a save, 2 half) | the same without the dying count: 0 HP or below is unconscious ("goes down"), below −9 dead ("is killed"); the damage line is printed outside combat too |
 | `save(c, type, bonus)` | the save routine (1 fails, 20 succeeds, else d20 + item bonus + bonus, event 12, against the stored save; sets `saved`) | the same |
 | `heal(c, n, force)` | the heal procedure in combat (no revive) | the heal procedure (revives the unconscious) |

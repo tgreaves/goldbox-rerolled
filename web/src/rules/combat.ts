@@ -6,7 +6,7 @@ import type { Spell } from '../data/spells'
 import type { Effect } from '../data/effects'
 import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, wildField, type Battlefield, type CellInfo } from './battlefield'
 import { dexMissile, recalc } from './equip'
-import { fx, fire, damageText, healedLine, addEffect, addRaw, ids, removeEffect, removeFirst, removeOne, removeType, runEffect, type FxHost } from './effects'
+import { fx, fire, damageText, healedLine, addEffect, addRaw, goingDown, ids, setStatusOf, removeEffect, removeFirst, removeOne, removeType, runEffect, type FxHost } from './effects'
 import { heal as healChar, isScroll } from './camp'
 import { amount, castShared, line, msgOf, spellSpec, term, textOf } from './spellkinds'
 import type { Amount, SpellSpec } from '../games/spellrules'
@@ -232,10 +232,9 @@ export class Battle implements FxHost {
   rec(c: Uint8Array, i: number) { return this.of(c)?.r[i] ?? 0 }
   setRec(c: Uint8Array, i: number, v: number) { const f = this.of(c); if (f) { f.r[i] = v & 0xff; if (i === 0xa && !v) f.target = null } }
   setStatus(c: Uint8Array, status: number, msg: string) {
-    if ([6, 7, 8].includes(c[F.status])) return
-    if (msg) this.print(msg)
-    c[F.status] = status
-    if (status !== 0 && status !== 1) { c[F.inPlay] = 0; c[F.hp] = 0; const f = this.of(c); if (f) this.downF(f) }
+    if (!setStatusOf(this, c, status, msg)) return
+    const f = this.of(c)
+    if (f) this.downF(f)
   }
   setTarget(c: Uint8Array, t: Uint8Array) { const f = this.of(c); if (f) f.target = this.of(t) }
   damage(c: Uint8Array, dmg: number, mode: number, saved: boolean) { this.damageSync(c, dmg, mode, saved) }
@@ -1363,19 +1362,9 @@ export class Battle implements FxHost {
       c[F.hp] = 0
       c[F.inPlay] = 0
       this.print(c[F.status] === 4 ? `${name(c)} ${msg('goesDown')}` : c[F.status] === 5 ? `${name(c)} ${msg('goesDown')} ${msg('andIsDying')}` : `${name(c)} ${msg('isKilled')}`)
-      // FUN_5216_100a (CotAB 0x4C05B) removes the first record of each listed type through FUN_5216_0026
-      // (a null record: the first of the type), so removal callbacks run (a grab frees its victim, a charm
-      // ends); the callbacks' synchronous part runs here, the record goes at once
-      const list = this.e.effectsOf(c)
-      for (const type of ids().goingDown) {
-        const e = list.find((x) => x.type === type)
-        if (!e) continue
-        void removeEffect(this, c, e)
-        const j = list.indexOf(e)
-        if (j >= 0) list.splice(j, 1)
-      }
-      const back = ids().downRejoins
-      if (back && list.some((x) => x.type === back.effect) && c[F.morale] === back.morale) c[F.side] = 0
+      // FUN_5216_100a removes through FUN_5216_0026 (a null record: the first of the type), so removal
+      // callbacks run (a grab frees its victim, a charm ends)
+      goingDown(this, c)
       void fire(this, c, 13)
       this.downF(t)
     } else c[F.hp] = left

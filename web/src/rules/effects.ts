@@ -32,7 +32,7 @@ export interface FxHost {
   /** combat record byte */
   rec(c: Uint8Array, i: number): number
   setRec(c: Uint8Array, i: number, v: number): void
-  /** set status with a message, unless already dead/stoned/gone (FUN_3723_0058) */
+  /** the set-status routine (FUN_3723_0058, CotAB 0x4AAC4): `setStatusOf`, then the host's fall */
   setStatus(c: Uint8Array, status: number, msg: string): void
   /** damage (FUN_5216_1344) */
   damage(c: Uint8Array, dmg: number, mode: number, saved: boolean): void
@@ -113,6 +113,40 @@ export const fx = {
 
 /** the active game's named effect types (games/effectrules.ts `ids`) */
 export const ids = () => game().effects.ids
+
+/**
+ * Going down (PoR FUN_5216_100a, CotAB 0x4C05B): the first record of each `goingDown` type, in order,
+ * through the removal routine (its callbacks' synchronous part runs here, the record goes at once);
+ * then (`downRejoins`) one holding the effect with that morale byte goes back to side 0.
+ */
+export function goingDown(h: FxHost, c: Uint8Array) {
+  const list = h.effectsOf(c)
+  for (const type of ids().goingDown) {
+    const e = list.find((x) => x.type === type)
+    if (!e) continue
+    void removeEffect(h, c, e)
+    const j = list.indexOf(e)
+    if (j >= 0) list.splice(j, 1)
+  }
+  const back = ids().downRejoins
+  if (back && list.some((x) => x.type === back.effect) && c[F.morale] === back.morale) c[F.side] = 0
+}
+
+/**
+ * The set-status routine's rules part (PoR FUN_3723_0058, CotAB 0x4AAC4): the message, printed first;
+ * unless the character is already dead, stoned or gone (6–8), the status, out of play with HP 0, going
+ * down and event 13. True when the status was set; the host then draws the fall (FUN_577f_0e11).
+ */
+export function setStatusOf(h: FxHost, c: Uint8Array, status: number, msg: string): boolean {
+  if (msg) h.print(msg)
+  if ([6, 7, 8].includes(c[F.status])) return false
+  c[F.status] = status
+  c[F.inPlay] = 0
+  c[F.hp] = 0
+  goingDown(h, c)
+  void fire(h, c, 13)
+  return true
+}
 
 export const has = (h: FxHost, c: Uint8Array, t: number) => h.effectsOf(c).some((e) => e.type === t)
 

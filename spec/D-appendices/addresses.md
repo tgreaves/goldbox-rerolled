@@ -994,7 +994,7 @@ when its table column or sentence names CotAB.
 | 0x29873 | B/vocabularies | B/vocabularies: 3.8 On-hit effects |  |
 | 0x298ED | B/vocabularies | B/vocabularies: 3.8 On-hit effects |  |
 | 0x29973 | B/vocabularies | B/vocabularies: 3.3 Damage resistances and immunities |  |
-| 0x29993 | B/vocabularies | B/vocabularies: 3.8 On-hit effects |  |
+| 0x29993 | coab/effects, B/vocabularies | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x299F4 | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x29A23 | coab/spells, B/vocabularies | coab/spells: 2. Per spell id |  |
 | 0x29AA0 | B/vocabularies | B/vocabularies: 3.3 Damage resistances and immunities |  |
@@ -1262,6 +1262,9 @@ when its table column or sentence names CotAB.
 | 0x4A3FD | coab/combat | coab/combat: Casting |  |
 | 0x4A4FF | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers | `FUN_4e53_3413` |
 | 0x4AA3A | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
+| 0x4AAC4 | coab/effects, B/host-contracts, B/vocabularies | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
+| 0x4AAEE | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
+| 0x4AB2D | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x4AB77 | coab/effects, coab/spells | coab/effects: 1. Dispatch | `FUN_5216_0000` |
 | 0x4ABBA | coab/effects, B/procedures | coab/effects: 1. Dispatch | `FUN_5216_0026` |
 | 0x4AD0A | coab/effects | coab/effects: 1. Dispatch |  |
@@ -1297,7 +1300,7 @@ when its table column or sentence names CotAB.
 | 0x4CD91 | coab/spells, B/procedures | coab/spells: 1. Dispatch and shared helpers | `FUN_5216_1656` |
 | 0x4CE0A | B/procedures | B/procedures: 12.1 Adding and removing effects |  |
 | 0x4CE85 | coab/camp, coab/spells, coab/tables, B/procedures | coab/camp: 1. Fix | `FUN_5216_175d` |
-| 0x4D7E8 | coab/camp, coab/ecl | coab/camp: 1. Fix |  |
+| 0x4D7E8 | coab/camp, coab/ecl, coab/effects, B/vocabularies | coab/camp: 1. Fix |  |
 | 0x4DC70 | coab/ecl, coab/records | coab/ecl: Start-up menu and demo | `FUN_10ba_0bb8` |
 | 0x4DCA5 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x4DCEC | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
@@ -1312,6 +1315,7 @@ when its table column or sentence names CotAB.
 | 0x4E381 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x4E570 | coab/combat | coab/combat: Casting | `FUN_10ba_148b` |
 | 0x4E5EC | coab/ecl | coab/ecl: Opcodes |  |
+| 0x4E8BF | coab/effects, B/vocabularies | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x4F395 | coab/ecl, coab/effects | coab/ecl: Opcodes |  |
 | 0x4F5B4 | coab/effects | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x4F758 | coab/effects | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |

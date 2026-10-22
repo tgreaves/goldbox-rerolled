@@ -167,6 +167,12 @@ computer's morale check (0x2443F; PoR `FUN_3334_10d7`, [engine/combat-ai.md, "Mo
 after R[0x14] := 0. A creature that turns to flee there loses 0x4A and 0x4B as in PoR (0x2459C), though
 in CotAB those are a dead type and Giant bane.
 
+The set-status routine is 0x4AAC4 (`4aab:0014`, stub `e3:25`; char, status, msg), PoR's `FUN_3723_0058`
+step for step: the message (0x4AAEE), the 6/7/8 test, status +0x195, in-play +0x196 and HP +0x1A4 := 0,
+going down (0x4AB2D), event 13, the fall (`121:75`), the pause, 0x4E8BF (?) and, unless DS:4FD3 = 5,
+0x4D7E8 for the current character (DS:6520). Handler 130 (0x29993) repeats its steps inline from status
+8 without the message or the test (0x299F4).
+
 ## Open
 
 - Damage type 0x20 (breath, **I**) and 0x40 (**?**), §3.

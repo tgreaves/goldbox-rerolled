@@ -55,6 +55,21 @@ describe.skipIf(!por || !existsSync(por))('PoR: going down (FUN_5216_100a)', () 
     expect(left).toEqual([54, 13]) // one 54 of two; 13 is not in PoR's list
   })
 
+  it('the set-status routine (FUN_3723_0058): message first, then going down, unless already 6–8', () => {
+    const files = load(por, POR)
+    const { b, c, left } = battle(files, 1, [54, 13])
+    const said: string[] = []
+    b.print = (t: string) => { said.push(t) }
+    b.setStatus(c, 7, 'X is stoned')
+    expect([c[F.status], c[F.inPlay], c[F.hp]]).toEqual([7, 0, 0])
+    expect(left()).toEqual([13])
+    addRaw(b, c, 54, 10, 0xff, 0)
+    b.setStatus(c, 6, 'again')
+    expect(c[F.status]).toBe(7)
+    expect(left()).toEqual([13, 54]) // already stoned: nothing taken
+    expect(said).toEqual(['X is stoned', 'again'])
+  })
+
   it('the morale check (FUN_3334_10d7) first takes off the first 74 (grab) and 75 (blood drain)', async () => {
     const files = load(por, POR)
     const { b, f, left } = battle(files, 0, [74, 13, 75, 74])

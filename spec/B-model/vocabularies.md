@@ -746,8 +746,8 @@ Not yet, or approximated:
   nearest-combatant search (11c:3e) takes the first of equal distance (I).
 - 130 takes the target out of play through the host's status call. `e3:66` is the going-down removal
   0x4C05B ([coab/effects.md §8](../A-games/coab/effects.md#8-going-down-0x4c05b-e366-4aab15ab-char-o)),
-  the profile's `effects.ids.goingDown` and `downRejoins` (2026-10-22), which the port runs after the
-  battle's "goes down" lines but not yet in the host's status call, as the original's set-status routine does.
+  the profile's `effects.ids.goingDown` and `downRejoins` (2026-10-22), run after the battle's "goes down"
+  lines and by the host's status call, as the original's set-status routine (0x4AAC4) does.
 
 Done since (checked 2026-10-21): the three spell handlers that call the area template (0x48A8C,
 0x49522, 0x496D1) are those of 84, 92 and 98, transcribed as the kinds `scare` and `beam` (§4.3); the
@@ -768,5 +768,5 @@ Inferred or open in the port (I / ?): Strength's bonus when no class applies (0,
 - The three CotAB spell handlers that call the area template (0x48A8C, 0x49522, 0x496D1) are those of
   84 Fear, 92 Cone of Cold and 98, the kinds `scare` and `beam`; the template's unset-memory cases are
   the port's choices (§5).
-- The host's status call (PoR `FUN_3723_0058`, CotAB's set-status routine) does not yet remove the
-  going-down effects or fire event 13 as the original's does (§8.2).
+- The set-status routine's redraws after the fall (PoR `FUN_10ba_17e3`, the roster `FUN_10ba_0767`;
+  CotAB 0x4E8BF, 0x4D7E8) are the host's screen refresh; `FUN_10ba_17e3` / 0x4E8BF is not identified (?).
