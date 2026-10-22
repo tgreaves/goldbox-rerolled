@@ -2125,6 +2125,15 @@ export class Battle implements FxHost {
     return null
   }
 
+  /** The AI probe's cloud test (R.clouds `probe`): true when the mover may not step onto a `cell` square. */
+  cloudRefuses(f: Fighter, cell: number): boolean {
+    const { gas, kill } = R.clouds
+    const rule = cell === gas.cell ? gas.probe : kill && cell === kill.cell ? kill.probe : null
+    if (!rule || (rule.below !== undefined && s8(f.c[F.hitDice]) >= rule.below)) return false
+    if (this.e.effectsOf(f.c).some((x) => rule.immune.includes(x.type)) || (rule.turned && f.r[0x10])) return false
+    return rule.save === null || !this.saveSync(f.c, rule.save, 0)
+  }
+
   /** One AI step towards the target, or away when fleeing (FUN_3334_07f2). */
   async aiStep(f: Fighter, fleeing: boolean): Promise<boolean> {
     if (f.r[6] < 2 || s8(f.r[3]) <= 0) return false
@@ -2143,10 +2152,11 @@ export class Battle implements FxHost {
       const nx = f.x + DX[d], ny = f.y + DY[d]
       if (this.bf.get(ny, nx) === 0) { if (fleeing) { await this.flee(f); return false } continue }
       if (this.occupied(nx, ny, f.size, f) || !this.passable(nx, ny, f.size)) continue
-      if (this.bf.get(ny, nx) === R.clouds.gas.cell && !this.e.effectsOf(f.c).some((x) => R.clouds.gas.probe.includes(x.type))) continue
       // the probe (FUN_3334_0675, CotAB 0x237FB) refuses a direction whose byte (or cost) is as much as
-      // the movement left, or whose cost is more; the next preference is tried
+      // the movement left, or whose cost is more; then a cloud square the mover may not enter (its
+      // save, if any, is rolled only here); the next preference is tried
       if (this.moveTest(nx, ny, d) >= f.r[6] || this.stepCost(nx, ny, d) > f.r[6]) continue
+      if (this.cloudRefuses(f, this.bf.get(ny, nx))) continue
       await this.stepF(f, d) // paced there, as for the player
       return true
     }

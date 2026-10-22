@@ -194,7 +194,9 @@ watch, because each is an alternative path in code:
    records and the current-stat routine's types (null for PoR, which has no such routine); the AI's
    gas probe is `R.clouds.gas.probe`. `test/effectmap.test.ts` checks every id is a type of its game's
    table. CotAB's lists read in its binary (2026-10-22): `goingDown` is its own (0x4C05B, with the
-   berserk NPC's return, `downRejoins`), `helpless` and `noOpportunity` are PoR's (0x4DC2B, 0x2B08D).
+   berserk NPC's return, `downRejoins`), `helpless` and `noOpportunity` are PoR's (0x4DC2B, 0x2B08D);
+   the AI's cloud probe is `R.clouds` `probe` data (CotAB 0x237FB: two more exemptions, turned undead,
+   a save on gas, and a kill-cloud probe PoR lacks).
 3. ~~Functions inside profiles~~: done 2026-10-20 (the character view's reads are declarative entries,
    the kept files a list of patterns); profiles now hold only data.
 4. ~~Procedure keys named after games~~: done 2026-10-20 (the item handlers as a map, `R.bolt` flags,

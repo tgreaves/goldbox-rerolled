@@ -631,11 +631,16 @@ cast, 0 at round end) ([engine/spells.md, "Stinking Cloud"](../A-games/engine/sp
   (signed): the first band `[lowest, highest, bonus]` that holds them; a band with bonus null dies
   without a save, else a failed save vs `save` at that bonus: "is Poisoned", `poison` added raw
   (permanent, power 0xFF), then status 6 "is killed". Checked at every check, round end included.
+- `probe` `{ immune, turned, save, below? }` in `gas` and `kill`: the computer's movement probe (PoR
+  `FUN_3334_0675`, CotAB 0x237FB), after a step has passed the cost test, refuses a `cell` square
+  unless the mover holds an effect of a type in `immune`, or (`turned`) its combat record +0x10 is set
+  (turned, forced to flee), or (`save` not null) it saves vs `save`, the probe's own draw; with
+  `below`, only a mover whose hit dice (signed) are below it is refused.
 
 | Game | Values |
 |---|---|
-| PoR | gas { 0x1E, immune [0x1E, 0x1F, 0x20, 0x6F, 0x7D], roundEnd true, apply false }; kill null |
-| CotAB | gas { 0x1E, immune [0x1F, 0x20, 0x6F, 0x7D], roundEnd false, apply true }; kill { 0x1C, save 0, bands [0–4 no save], [5, −4], [6, 0], poison 0x37 } (hit dice 7 and up, or below 0, unaffected) |
+| PoR | gas { 0x1E, immune [0x1E, 0x1F, 0x20, 0x6F, 0x7D], probe { [0x20, 0x1E, 0x6F, 0x7D], turned false, save null }, roundEnd true, apply false }; kill null |
+| CotAB | gas { 0x1E, immune [0x1F, 0x20, 0x6F, 0x7D], probe { [0x20, 0x1E, 0x6F, 0x7D, 0x81, 0x3F], turned true, save 0 }, roundEnd false, apply true }; kill { 0x1C, save 0, bands [0–4 no save], [5, −4], [6, 0], poison 0x37, probe { [0x81, 0x6F, 0x85, 0x7D], turned true, save null, below 7 } } (hit dice 7 and up, or below 0, unaffected) |
 
 The clouds' squares and zones are the spell kind `cloud` ([vocabularies.md §4.3](vocabularies.md#43-the-battles-kinds)).
 

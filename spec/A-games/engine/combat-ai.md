@@ -125,7 +125,7 @@ Missile users never shoot with an enemy adjacent; they switch to melee. A cursed
 | 5 | 0, −1, −2, −3, 4 |
 | 6 | 0, +1, +2, +3, 4 |
 
-   Probe: fail off the arena (a fleeing creature then makes the escape roll, [combat-rules.md, "Fleeing (O, `FUN_3aae_0c6a`)"](combat-rules.md#fleeing-o-fun_3aae_0c6a)), on an occupied cell, or when the cell cost byte ≥ R[6]; need = the byte × 2 (straight) or × 3 (diagonal) half-squares, refused when more than R[6], and a refused direction passes to the next try; a Stinking Cloud cell (0x1E) is refused unless the creature has effect 0x20, 0x1E, 0x6F or 0x7D (vulnerable creatures avoid clouds, G).
+   Probe: fail off the arena (a fleeing creature then makes the escape roll, [combat-rules.md, "Fleeing (O, `FUN_3aae_0c6a`)"](combat-rules.md#fleeing-o-fun_3aae_0c6a)), on an occupied cell, or when the cell cost byte ≥ R[6]; need = the byte × 2 (straight) or × 3 (diagonal) half-squares, refused when more than R[6], and a refused direction passes to the next try; then a Stinking Cloud cell (0x1E) is refused unless the creature has effect 0x20, 0x1E, 0x6F or 0x7D (0x23A84–0x23AE4, O; vulnerable creatures avoid clouds, G).
 4. Backtracking: if no direction works, or the chosen one reverses the previous step, a stall counter + 1 and p = p mod 6 + 1; at 2 stalls the target is dropped, at 3 the movement ends.
 5. The step itself goes through attacks of opportunity (`FUN_3aae_08b2`) and `FUN_3aae_0712` (guards), then the Stinking Cloud check.
 

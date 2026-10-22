@@ -25,6 +25,9 @@ export interface SpellRules {
 
 /** A number worked out from a wilderness field's terrain flags: `base`, then each step whose flag is set,
  *  in order (`=` sets, `+` adds); `under`: a result below its first number becomes its second */
+/** the computer's movement probe on a cloud square (`clouds`): who may step there */
+export interface CloudProbe { immune: number[]; turned: boolean; save: number | null; below?: number }
+
 export interface FlagValue { base: number; steps: [flag: number, op: '=' | '+', n: number][]; under?: [number, number] }
 /** a cell drawn from a run: `base` + 1d`sides` (`sides` 0: `base`, no die) */
 export type CellDie = [base: number, sides: number]
@@ -235,11 +238,13 @@ export interface GameRules {
    * failure (PoR). `kill` (CotAB): a creature on a `cell` square dies by its hit dice: `bands`
    * [lowest, highest, save bonus or null for no save] (saves vs `save`), "is Poisoned" (`poison` added
    * raw), then status 6 "is killed"; null: the game has no such cloud. `probe`: the computer's movement
-   * probe (PoR FUN_3334_0675, CotAB 0x237FB) steps onto a `cell` square only under one of these
+   * probe (PoR FUN_3334_0675, CotAB 0x237FB), once a step is affordable, refuses a `cell` square unless
+   * the mover holds one of `immune`, or (`turned`) was turned and must flee (combat record +0x10), or
+   * saves vs `save` (null: no save); the kill cloud's only when its hit dice are below `below`
    */
   clouds: {
-    gas: { cell: number; immune: number[]; probe: number[]; roundEnd: boolean; apply: boolean }
-    kill: { cell: number; save: number; bands: [number, number, number | null][]; poison: number } | null
+    gas: { cell: number; immune: number[]; probe: CloudProbe; roundEnd: boolean; apply: boolean }
+    kill: { cell: number; save: number; bands: [number, number, number | null][]; poison: number; probe: CloudProbe } | null
   }
   /**
    * Casting in combat, one procedure (spec/A-games/engine/combat-rules.md "Cast", spec/A-games/coab/combat.md "Casting"): the cast
@@ -337,7 +342,7 @@ export const POR_RULES: GameRules = {
   },
   // FUN_34c7_0810, then the finishing pass FUN_34c7_0000
   mapField: { cornerWallEnd: 0x04, finishing: true, furnish: null },
-  clouds: { gas: { cell: 0x1e, immune: [0x1e, 0x1f, 0x20, 0x6f, 0x7d], probe: [0x20, 0x1e, 0x6f, 0x7d], roundEnd: true, apply: false }, kill: null }, // FUN_5216_0ae7
+  clouds: { gas: { cell: 0x1e, immune: [0x1e, 0x1f, 0x20, 0x6f, 0x7d], probe: { immune: [0x20, 0x1e, 0x6f, 0x7d], turned: false, save: null }, roundEnd: true, apply: false }, kill: null }, // FUN_5216_0ae7
   // FUN_3aae_02f9 → FUN_10ba_148b; FUN_3334_0545; FUN_3334_03e4 (3334:04D6)
   casting: { lostFrom: 'current', miscast: null, aiFirstSlot: 0, aiItemSpell: { above: 0x38, minus: 0x17 }, allowed: null, scrollReaders: null },
   thief: { dualClass: false, bonus: 0, clampWithBonus: false, gloves: null, gauntlets: null },
@@ -415,7 +420,7 @@ export const COAB_RULES: GameRules = {
   // tables (RandCom 0) on d10 ≤ 5 and chairs (RandCom 1) beside them on d10 ≤ 9 (spec/A-games/coab/combat.md)
   mapField: { cornerWallEnd: 0x08, finishing: false, furnish: { flag: 0x40, blank: [0x17, 0x36], table: [0x1a, 10, 5], chair: [0x1b, 10, 9] } },
   // 0x4B8F7: no 0x1E immunity; HD 0–4 die, 5 save at −4, 6 save, 7 and up (and below 0) unaffected
-  clouds: { gas: { cell: 0x1e, immune: [0x1f, 0x20, 0x6f, 0x7d], probe: [0x20, 0x1e, 0x6f, 0x7d] /* ?: PoR's, not read at 0x237FB */, roundEnd: false, apply: true }, kill: { cell: 0x1c, save: 0, bands: [[0, 4, null], [5, 5, -4], [6, 6, 0]], poison: 0x37 } },
+  clouds: { gas: { cell: 0x1e, immune: [0x1f, 0x20, 0x6f, 0x7d], probe: { immune: [0x20, 0x1e, 0x6f, 0x7d, 0x81, 0x3f], turned: true, save: 0 }, roundEnd: false, apply: true }, kill: { cell: 0x1c, save: 0, bands: [[0, 4, null], [5, 5, -4], [6, 6, 0]], poison: 0x37, probe: { immune: [0x81, 0x6f, 0x85, 0x7d], turned: true, save: null, below: 7 } } }, // probe 0x238EE, 0x239BD
   // 0x2AAB4 / 0x4CC8A forget(target, spell); 0x45373 effect 0x4A, 1d2; 0x236E4 slots 1–0x53
   casting: { lostFrom: 'target', miscast: { effect: 0x4a, sides: 2 }, aiFirstSlot: 1, aiItemSpell: { above: 0x38, minus: 0x17 }, // 0x23651
     // 0x43F8E: cleric spells WIS > 8 and a cleric or a paladin above 8; druid spells WIS > 8 and a ranger

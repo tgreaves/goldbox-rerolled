@@ -223,6 +223,18 @@ Cells 0x00–0x19 are the map-area set (DungCom), as PoR's.
 
 The engine model's generators: [B-model/procedures.md §15.4](../../B-model/procedures.md#154-battlefields).
 
+## The computer's probe on clouds (O, 0x237FB)
+
+The probe classifies the cell through 0x563B4 (`121:70`): 0x1E sets a gas flag, 0x1C a kill-cloud flag.
+After the cost test (0x238DA), a **gas** square (0x238EE–0x239BA) is refused unless the mover has
+effect 0x20, 0x1E, 0x6F, 0x7D, 0x81 (magic resistance) or 0x3F (minor globe), or its combat record
+(+0x18D) has +0x10 set (turned, forced to flee), or it saves vs 0 (the save routine `e3:48`, a draw of
+the probe's own). A **kill-cloud** square (0x239BD–0x23A4E) is refused to a mover whose hit dice (+0xE5,
+signed) are below 7 unless it has 0x81, 0x6F or 0x85, or is turned, or has 0x7D; no save. A refused
+square's cost becomes the movement + 1, which the final test (0x23A51) refuses. PoR's probe has only
+the first four gas exemptions ([engine/combat-ai.md, "Movement"](../engine/combat-ai.md#movement-o-fun_3334_07f2-probe-fun_3334_0675));
+the procedure is [B-model/procedures.md §15.3](../../B-model/procedures.md#153-clouds).
+
 ## Casting (O)
 
 PoR's casting in combat ([engine/combat-rules.md, "Cast"](../engine/combat-rules.md#cast-o-fun_3aae_2414var-result-auto-spell)), routine for routine, with three changes.

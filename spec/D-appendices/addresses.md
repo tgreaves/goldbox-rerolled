@@ -897,6 +897,11 @@ when its table column or sentence names CotAB.
 | 0x236E4 | coab/combat | coab/combat: Casting |  |
 | 0x237FB | coab/combat, B/procedures | coab/combat: Cell table | `FUN_3334_0675` |
 | 0x238DA | coab/combat, B/procedures | coab/combat: Cell table |  |
+| 0x238EE | coab/combat | coab/combat: The computer's probe on clouds |  |
+| 0x239BA | coab/combat | coab/combat: The computer's probe on clouds |  |
+| 0x239BD | coab/combat | coab/combat: The computer's probe on clouds |  |
+| 0x23A4E | coab/combat | coab/combat: The computer's probe on clouds |  |
+| 0x23A51 | coab/combat | coab/combat: The computer's probe on clouds |  |
 | 0x23E57 | coab/spells | coab/spells: 1. Dispatch and shared helpers |  |
 | 0x24434 | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x2445C | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
@@ -1399,6 +1404,7 @@ when its table column or sentence names CotAB.
 | 0x557AC | coab/assets | coab/assets: 8. Config, video, palette, sound |  |
 | 0x5580C | coab/assets | coab/assets: 8. Config, video, palette, sound |  |
 | 0x55BB5 | coab/effects | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
+| 0x563B4 | coab/combat | coab/combat: The computer's probe on clouds |  |
 | 0x5671C | coab/spells | coab/spells: 2. Per spell id |  |
 | 0x56C4C | coab/assets | coab/assets: 2. Inventory |  |
 | 0x56C50 | coab/assets, coab/ecl, B/script-vm-map | coab/assets: 2. Inventory |  |
