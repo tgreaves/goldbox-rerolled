@@ -397,9 +397,11 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     const chars = party.map((c) => ({ sav: c.slice(), itm: characterItemsFile(e.itemsOf(c)), spc: effectsFile(e.effectsOf(c)) }))
     const n = load(dat, chars, o.seed * 1000 + step)
     const again = n.toSave(stems)
-    // bytes 0x3204-0x3205 are the wall ahead and the square's event, which the loader does not read
-    // (the map is loaded again from the saved GEO number, and on the overland map there is none)
-    const diff = dat.findIndex((v, i) => again[i] !== v && i !== 0x3204 && i !== 0x3205)
+    // the position block's wall ahead and square event (0x3204-0x3205 with the code buffer, SotSB's
+    // 0x1404-0x1405 without it), which the loader does not read (the map is loaded again from the
+    // saved GEO number, and on the overland map there is none)
+    const sq = 0x1401 + L.codeSize + 3
+    const diff = dat.findIndex((v, i) => again[i] !== v && i !== sq && i !== sq + 1)
     if (diff >= 0) fail(`a save loaded and saved again differs at byte ${diff.toString(16)}: ${dat[diff]} then ${again[diff]}`)
     n.party().forEach((c, i) => {
       if (c.some((v, k) => chars[i].sav[k] !== v)) fail(`${nameOf(c)}'s record changes in a save and load`)

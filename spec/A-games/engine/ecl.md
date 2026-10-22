@@ -49,7 +49,7 @@ instruction := opcode:u8 operand*
 operand     := kind:u8 payload
 ```
 
-The reader fills an operand table: kind at `DS:7005+i`, first payload byte **LO** at `DS:7085+i`, second byte **HI** at `DS:7045+i`. The three tables are 0x40 bytes apart, so an instruction can carry up to 63 operands (I; CotAB has a 33-way `ON_GOTO`, [coab/ecl.md](../coab/ecl.md)). String operands are decoded into their own buffers, numbered by string operand within the call (`DS:6FC8 + k·0x100`, k = 1, 2, …).
+The reader fills an operand table: kind at `DS:7005+i`, first payload byte **LO** at `DS:7085+i`, second byte **HI** at `DS:7045+i`. The three tables are 0x40 bytes apart with slot 0 unused, so an instruction can carry **64** operands: operand 64's kind and HI land in the next table's unused slot 0 and read back whole (its LO one byte past the LO table); a 65th would overwrite operand 1's HI (O for SotSB's ON_GOTO 0x1F8B5, HI at DS:9029 + i, LO at DS:9069 + i, which ECL2 #51 at 0x8728 uses with 64 targets; CotAB has a 33-way `ON_GOTO`, [coab/ecl.md](../coab/ecl.md)). String operands are decoded into their own buffers, numbered by string operand within the call (`DS:6FC8 + k·0x100`, k = 1, 2, …).
 
 | kind | Payload | Value as a number (`FUN_2fea_0136`) | As a string |
 |---|---|---|---|

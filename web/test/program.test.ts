@@ -54,3 +54,22 @@ describe.skipIf(!have)('an NPC leaving through LOAD_CHARACTER (0x19F92)', () => 
     expect(await run(false)).toEqual({ n: 6, gone: false })
   })
 })
+
+describe.skipIf(!have)('ON_GOTO with 64 targets (SotSB ECL2 #51 0x8728)', () => {
+  it('takes the 64th target: the operand tables hold 64 operands, as the original\'s (0x1F8B5)', async () => {
+    const m = new Map<string, Uint8Array>()
+    for (const n of readdirSync(dir)) if (wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(join(dir, n))))
+    const files = new GameFiles(m)
+    const io = { print: () => {}, menu: async () => 0, refresh: async () => {}, pause: async () => {}, sound: () => {},
+      picture: () => {}, sprite: () => {}, engine: async () => {}, inputNumber: async () => 0, inputText: async () => '' } as unknown as Io
+    const dat = files.get('SAVGAMA.DAT')!
+    const e = new Engine(files, io, 1)
+    e.loadSave(dat, parseSave(dat).party.map((s) => files.get(`${s}.SAV`)!))
+    const at = 0x9920, exit = at + 2 * 2 + 3 * 64 + 1 // just after the instruction: an EXIT
+    const ops = [0x25, 0x00, 63, 0x00, 64]
+    for (let k = 0; k < 64; k++) ops.push(0x01, k === 63 ? exit & 0xff : 0, k === 63 ? exit >> 8 : 0)
+    ops.push(0x00)
+    ops.forEach((b, i) => e.write(at + i, b))
+    await e.run(at) // the 64th target, not a jump to 0 (which throws)
+  })
+})

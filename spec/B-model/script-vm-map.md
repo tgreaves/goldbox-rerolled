@@ -191,8 +191,9 @@ table (the PoR handlers' reader calls, **O**): 0 operands for 0x00, 0x0D, 0x13, 
 0x29; variadic: 0x15 (3 fixed, the count in operand 3), 0x25, 0x26 and 0x2B (2 fixed, the count in
 operand 2). A game's `operands` overrides entries as `opcode → [fixed, count operand index]`:
 CotAB 0x34 → 2, 0x3E → 0, 0x3F → 1, 0x40 → 1 (the handlers' reader counts, **O**, 0x1FA02). A count
-operand that is not an immediate ends the walk there. Operand slots MUST hold at least 63 operands
-(CotAB has a 33-way ON_GOTO).
+operand that is not an immediate ends the walk there. Operand slots MUST hold 64 operands (the
+original's tables, 0x40 bytes apart with slot 0 unused, read 64 back whole: [engine/ecl.md](../A-games/engine/ecl.md);
+SotSB's ECL2 #51 has a 64-way ON_GOTO at 0x8728, CotAB a 33-way one).
 
 ### 5.4 Behaviour flags of shared opcodes
 

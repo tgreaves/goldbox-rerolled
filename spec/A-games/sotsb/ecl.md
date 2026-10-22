@@ -299,6 +299,10 @@ writes as data (0x100 and 0x119 differ), the second leave flag as profile data (
 - The scripts of ECL2 #49–51 load WALLDEF2 records 1 and 2 where record 1 holds two sets and there is no
   record 2: what the original's loader does with the missing record is not traced (**?**; the port leaves
   the slot as it is).
+- **ON_GOTO** (0x1F8B5) with **64 targets** (ECL2 #51 0x8728, by the square's event & 63): the handler reads
+  index and count first, backs up a byte and re-reads the targets into operand slots 1–64; the 64th is
+  whole because the tables are 0x40 bytes apart with slot 0 unused ([engine/ecl.md](../engine/ecl.md),
+  the operand table). The port's slots held 63, so square events 63 jumped to 0 (fixed).
 
 ## Open
 

@@ -150,9 +150,12 @@ export class Engine {
   mapDirty = true
   private stop = false
   private pc = CODE
-  private kind = new Uint8Array(64)
-  private lo = new Uint8Array(64)
-  private hi = new Uint8Array(64)
+  // operand slots 1..64: the original's kind, HI and LO tables are 0x40 bytes apart with slot 0 unused,
+  // so operand 64 lands in the next table's slot 0 and reads back whole (SotSB ON_GOTO 0x1F8B5: HI at
+  // DS:9029 + i, LO at DS:9069 + i; ECL2 #51 0x8728 has 64 targets)
+  private kind = new Uint8Array(65)
+  private lo = new Uint8Array(65)
+  private hi = new Uint8Array(65)
   private sbuf: string[] = new Array(33).fill('')
   private opstr = new Map<number, string>()
   private readonly files: GameFiles
