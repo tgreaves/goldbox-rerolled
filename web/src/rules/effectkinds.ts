@@ -34,6 +34,12 @@ const txt = (p: HandlerSpec, k: string) => lineText(p[k] as number | number[])
 /** a roll; with `keep`, through the dice routine that records the count (PoR FUN_5216_0e2e → DS:681C, CotAB 0x4BE7C) */
 const rollKeeping = (h: FxHost, n: number, d: number, keep: unknown) => { if (keep) fx.dice = n; return h.roll(n, d) }
 const flags = (c: Uint8Array | null) => (c && F.classFlags >= 0 ? c[F.classFlags] : 0)
+/** the flag byte a behaviour tests: `field` names it (SotSB's immunity byte +0x15E), else the class flags */
+const flagsOf = (c: Uint8Array | null, p: HandlerSpec) => {
+  if (p.field === undefined) return flags(c)
+  const at = (F as unknown as Record<string, number>)[p.field as string]
+  return c && at >= 0 ? c[at] : 0
+}
 /** the record's name equals one of the game's name strings at these addresses (Pascal string compare) */
 const nameIs = (c: Uint8Array, names: number[]) => { const n = String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name])); return names.some((a) => textOrNull(a) === n) }
 /** a spell record byte (DS:37DC + 16·id: +1 level, +8 save effect), when START.EXE is there */
@@ -167,10 +173,16 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     h.setRec(c, 1, 0); h.setRec(c, 2, 0)
     if (p.acWorse !== undefined && event === 11) { c[F.acRear] = Math.max(num(p, 'acFloor'), c[F.acRear] - num(p, 'acWorse')); c[F.ac] = c[F.acRear] }
   },
-  /** 22 Slow Poison (removal, 0x379A5): still poisoned (`poison`), `msg` and status 6; then `also` (the poison's damage) goes silently */
+  /**
+   * 22 Slow Poison (removal, 0x379A5): still poisoned (`poison`), `msg` and status 6 (with `removesPoison`,
+   * SotSB 0x2D8AA, the poison's first record then goes); then `also` (the poison's damage) goes silently
+   */
   async poisonEnds(h, _e, c, removal, p) {
     if (!removal) return
-    if (has(h, c, num(p, 'poison'))) h.setStatus(c, 6, `${h.name(c)} ${txt(p, 'msg')}`)
+    if (has(h, c, num(p, 'poison'))) {
+      h.setStatus(c, 6, `${h.name(c)} ${txt(p, 'msg')}`)
+      if (p.removesPoison) await removeFirst(h, c, num(p, 'poison'))
+    }
     await removeType(h, c, num(p, 'also'), true)
   },
   /**
@@ -578,10 +590,14 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (w && w.raw[0x2e] === num(p, 'item')) fx.dmg = (rollKeeping(h, n, d, p.keep) + add) & 0xff
     if (p.diceOn !== undefined && fx.dmgType & num(p, 'diceOn')) fx.dmg = (fx.dmg + fx.dice) & 0xff
   },
-  /** 119 [5] (2b7d): no weapon or one of plus 0 does nothing, unless the attacker is race 0 with `hd` hit dice or more */
+  /**
+   * 119 [5] (2b7d): no weapon or one of plus 0 does nothing, unless the attacker is race 0 with `hd` hit
+   * dice or more; with `monsterFrom` (SotSB 103, 0x30683) a race from it on counts as race 0
+   */
   needsEnchantment(h, _e, _c, _r, p) {
     const a = h.current(), w = a ? h.weapon(a) : null
-    if ((!w || w.raw[0x32] === 0) && a && (a[F.race] > 0 || a[F.hitDice] < num(p, 'hd'))) fx.dmg = 0
+    const person = (r: number) => r > 0 && (p.monsterFrom === undefined || s8(r) < num(p, 'monsterFrom'))
+    if ((!w || w.raw[0x32] === 0) && a && (person(a[F.race]) || a[F.hitDice] < num(p, 'hd'))) fx.dmg = 0
   },
   /**
    * 121 acid spit [14] (0x39E4C): an active target closer than `range`, d100 ≤ `pct`: the turn ends, "Spits
@@ -625,10 +641,10 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (eff.power > left) { eff.power -= left; return end() }
     return removeFirst(h, c, type).then(end)
   },
-  /** 4 [16] (0x274AF): an attacker of the flagged class misses more (Dispel Evil's defence) */
-  attackerClass(h, _e, _c, _r, p) { if (flags(h.current()) & num(p, 'flag')) fx.roll += num(p, 'roll') },
-  /** 18, 26 [10] (0x2779A, 0x27A4B): against a target of the flagged class, a better roll */
-  targetClass(h, _e, c, _r, p) { if (flags(h.targetOf(c)) & num(p, 'flag')) fx.roll += num(p, 'roll') },
+  /** 4 [16] (0x274AF): an attacker of the flagged class (or `field` byte) misses more (Dispel Evil's defence) */
+  attackerClass(h, _e, _c, _r, p) { if (flagsOf(h.current(), p) & num(p, 'flag')) fx.roll += num(p, 'roll') },
+  /** 18, 26 [10] (0x2779A, 0x27A4B): against a target of the flagged class (or `field` byte), a better roll */
+  targetClass(h, _e, c, _r, p) { if (flagsOf(h.targetOf(c), p) & num(p, 'flag')) fx.roll += num(p, 'roll') },
   /** 7 [11] (0x2752F): AC front and rear better by `add`, never past `cap` */
   acBoth(_h, _e, c, _r, p) {
     const add = num(p, 'add'), cap = num(p, 'cap')
@@ -665,9 +681,17 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   },
   /** CotAB 27 [7] (0x273C1, as 31, 51–53): ends the turn whenever it runs; with `event` (PoR 31, 51–53, 3723_133f) only on that event */
   endTurn(h, _e, c, _r, p, event) { if (p.event === undefined || event === p.event) h.endTurn(c) },
-  /** 28 [5, 6] Mirror Image (0x27A8F): 1d((pw>>4)+1) > 1 against a single-target spell; pw − 1 per image */
+  /**
+   * 28 [5, 6] Mirror Image (0x27A8F): 1d((pw>>4)+1) > 1 against a single-target spell; pw − 1 per image.
+   * SotSB (0x2DBB3): with `weapons` an attack (no spell) too, and with `spellByte` only a spell whose record
+   * has that byte set
+   */
   mirrorImage(h, eff, c, _r, p, _ev, type) {
-    if (!(h.roll(1, (eff.power >> 4) + 1) > 1 && fx.spell > 0 && !fx.area)) return
+    if (!(h.roll(1, (eff.power >> 4) + 1) > 1)) return
+    if (fx.spell > 0) {
+      if (fx.area) return
+      if (p.spellByte !== undefined && spellByte(h, fx.spell, num(p, 'spellByte')) === 0) return
+    } else if (!p.weapons) return
     negate(0)
     say(h, c, txt(p, 'msg'))
     eff.power = (eff.power - 1) & 0xff
@@ -724,11 +748,11 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     h.print(`${h.name(c)} ${txt(p, 'msg')}${h.name(t)}`)
     return hold(h, c, t, num(p, 'held'), num(p, 'marker'))
   },
-  /** 60 [5] (0x28628): no weapon or plus 0 does nothing, a plus below `full` half */
+  /** 60 [5] (0x28628): no weapon or plus 0 does nothing, a plus below `full` half (with `none`, SotSB 0x2EA60: nothing) */
   magicWeapons(h, _e, _c, _r, p) {
     const a = h.current(), w = a ? h.weapon(a) : null
     if (!w || w.raw[0x32] === 0) fx.dmg = 0
-    else if (s8(w.raw[0x32]) < num(p, 'full')) fx.dmg = (fx.dmg & 0xff) >> 1
+    else if (s8(w.raw[0x32]) < num(p, 'full')) fx.dmg = p.none ? 0 : (fx.dmg & 0xff) >> 1
   },
   /** 63 [6, 9] Minor Globe (0x2871A): a resolving spell below the level is negated */
   minorGlobe(h, _e, _c, _r, p) {
@@ -736,10 +760,10 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     const lvl = spellByte(h, fx.spell, 1)
     if (lvl !== null && s8(lvl) < num(p, 'below')) negate(0)
   },
-  /** 68 (direct) Feeblemind (0x288E5): INT and WIS 7; in combat the spell being cast is lost */
+  /** 68 (direct) Feeblemind (0x288E5): INT and WIS 7 (`to`: SotSB 0x2F2EC 3); in combat the spell being cast is lost */
   feeblemind(h, _e, c, _r, p) {
-    c[F.stat[1]] = 7
-    c[F.stat[2]] = 7
+    c[F.stat[1]] = (p.to as number | undefined) ?? 7
+    c[F.stat[2]] = (p.to as number | undefined) ?? 7
     say(h, c, txt(p, 'msg'))
     if (!h.inCombat()) return
     h.setRec(c, 1, 0)
@@ -863,12 +887,18 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     // steps but the message and the 6–8 test, which cannot matter for a target in play (I)
     h.setStatus(c, 8, '')
   },
-  /** 131 [14] (0x4A001): adjacent, d100 ≤ pct: "Breathes Fire", fire damage, half on a save vs breath; the turn ends */
+  /**
+   * 131 [14] (0x4A001): adjacent, d100 ≤ pct: "Breathes Fire", fire damage, half on a save vs breath; the
+   * turn ends. SotSB 67 (0x2F1C4): no `hook` (the current target), no `pct`, damage type `dmgType`, only
+   * from round 1 to the breather's `untilRoundOf` byte; 80 (0x2F8BC): the hook and no `adjacent` test;
+   * neither ends the turn (`endsTurn` 0)
+   */
   async breatheFire(h, _e, c, _r, p) {
-    const t = await hookTarget(h, c, num(p, 'hook'))
-    if (h.roll(1, 100) > num(p, 'pct') || !t || h.distance(c, t) >= 2) return
-    fx.dmgType = 1
-    h.endTurn(c)
+    if (p.untilRoundOf !== undefined && (fx.round === 0 || c[(F as unknown as Record<string, number>)[p.untilRoundOf as string]] < fx.round)) return
+    const t = p.hook !== undefined ? await hookTarget(h, c, num(p, 'hook')) : h.targetOf(c)
+    if ((p.pct !== undefined && h.roll(1, 100) > num(p, 'pct')) || !t || (p.adjacent !== 0 && h.distance(c, t) >= 2)) return
+    fx.dmgType = (p.dmgType as number | undefined) ?? 1
+    if (p.endsTurn !== 0) h.endTurn(c)
     say(h, c, txt(p, 'msg'))
     h.fly?.(c, t, 'spit')
     h.damage(t, num(p, 'dmg'), 2, h.save(t, 3, 0))
@@ -892,9 +922,11 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     for (const t of list(p, 'types')) negate(t)
     if (p.mask !== undefined && fx.dmgType & num(p, 'mask')) negate(0)
   },
-  /** 134 [4] (0x29ACC): against a target of the flagged class (giants), + the holder's ranger level */
+  /** 134 [4] (0x29ACC): against a target of the flagged class (giants), + the holder's ranger level; with `adjacent` (SotSB 105, 0x306E2) only next to it */
   rangerVsGiants(h, _e, c, _r, p) {
-    if (flags(h.targetOf(c)) & num(p, 'flag')) fx.dmg = (fx.dmg + c[F.levels + 4]) & 0xff
+    const t = h.targetOf(c)
+    if (p.adjacent && !(t && h.distance(c, t) <= 1)) return
+    if (flags(t) & num(p, 'flag')) fx.dmg = (fx.dmg + c[F.levels + 4]) & 0xff
   },
   /** 136 [7] (0x29B1C): no movement this turn; with `moveRate` (PoR 58 [18], 1452) the movement rate 0 too */
   noMove(h, _e, c, _r, p) { h.setRec(c, 6, 0); if (p.moveRate && fx.rateIsMove) fx.rate = 0 },
@@ -947,6 +979,140 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     const a = h.current() ?? c
     for (const t of list(p, 'removes')) await removeFirst(h, a, t)
   },
+
+  // ---------------------------------------------------------------- first transcribed from SotSB
+  // (spec/A-games/sotsb/effects.md §3, image offsets; the handler segment 0x2D13). Each does all its parts
+  // whatever the event, as the original does; the event lists decide where it runs.
+
+  /** 13 [11, 12] (0x2D6DC): the save + `save` unless the damage type has `mask` (magic); the roll by `roll` */
+  saveExceptType(_h, _e, _c, _r, p) {
+    if (!(fx.dmgType & num(p, 'mask'))) fx.save += num(p, 'save')
+    fx.roll += num(p, 'roll')
+  },
+  /**
+   * 64, 86, 88 [2, 3] (0x2EB97, 0x2D144): the current character's target saves vs `save` at `bonus` (with
+   * `bonusFrom`, an effect of that type on it adds its power to a bonus of 0 or more, a negative bonus
+   * becomes 0); `effect` is added through the add-effect routine (`duration`, `power`, `flag`), the save
+   * negating, with `said`; with `status`, a target that now holds it takes that status with `msg`
+   */
+  async effectOnHit(h, _e, _c, _r, p) {
+    const t = h.targetOf(h.current()!)
+    if (!t) return
+    let bonus = (p.bonus as number | undefined) ?? 0
+    const from = p.bonusFrom !== undefined ? h.effectsOf(t).find((x) => x.type === num(p, 'bonusFrom')) : undefined
+    if (from) bonus = bonus < 0 ? 0 : bonus + from.power
+    const saved = h.save(t, num(p, 'save'), bonus)
+    const said = p.said !== undefined ? txt(p, 'said') : ''
+    await addEffect(h, t, num(p, 'effect'), num(p, 'duration'), num(p, 'power'), num(p, 'flag'), 1, saved, false, said)
+    if (p.status !== undefined && has(h, t, num(p, 'effect'))) h.setStatus(t, num(p, 'status'), `${h.name(t)} ${txt(p, 'msg')}`)
+  },
+  /** 65 [2, 3] (0x2ECA9): the holder's target saves vs `save` or takes status `status` with `msg` */
+  statusOnHit(h, _e, c, _r, p) {
+    const t = h.targetOf(c)
+    if (t && !h.save(t, num(p, 'save'), 0)) h.setStatus(t, num(p, 'status'), `${h.name(t)} ${txt(p, 'msg')}`)
+  },
+  /**
+   * 66 [4] swallow whole (0x2ED56): an attack roll of `minRoll` or more (a natural 20 counts 100): the
+   * target `msg`, then off the field with status 6 and no body (the take-off routine's steps inline: no
+   * event 13), "is killed"; then d100 ≤ `pct` the swallower `belches`, else the victim `digested`
+   */
+  swallow(h, _e, c, _r, p) {
+    const t = h.targetOf(c)
+    if (s8(fx.roll) < num(p, 'minRoll') || !t || !t[F.inPlay]) return
+    say(h, t, txt(p, 'msg'))
+    const killed = `${h.name(t)} ${txt(p, 'killed')}`
+    if (h.takeOff) h.takeOff(t, 6, killed); else h.setStatus(t, 6, killed)
+    if (h.roll(1, 100) <= num(p, 'pct')) say(h, c, txt(p, 'belches'))
+    else say(h, t, txt(p, 'digested'))
+  },
+  /**
+   * 70 [14] gaze (0x2F414): the hook for spell `hook` must find a target within `range`; "gazes...", the
+   * spell bolt; a failed save vs `save` adds `effect` (`roll` [n, d, add] rounds, power the gazer's side,
+   * flag 1) through the add-effect routine with `msg`
+   */
+  async gazeEffect(h, _e, c, _r, p) {
+    const t = await hookTarget(h, c, num(p, 'hook'))
+    if (!t || h.distance(c, t) >= num(p, 'range')) return
+    say(h, c, txt(p, 'gazes'))
+    const a = h.cellOf?.(c), b = h.cellOf?.(t)
+    if (a && b) h.flyCells?.(a, b, 18, 4, 45)
+    else h.fly?.(c, t, 'gaze')
+    if (h.save(t, num(p, 'save'), 0)) return
+    const [n, d, add] = list(p, 'roll')
+    await addEffect(h, t, num(p, 'effect'), h.roll(n, d) + add, c[F.side], 1, 1, false, false, txt(p, 'msg'))
+  },
+  /** 69 [1, 15] (0x2F3B4): an attacker of a flagged class (`flag` mask) without `detect` cannot target, its roll by `roll` */
+  unseenByClass(h, _e, _c, _r, p) {
+    const a = h.current()
+    if (!(flags(a) & num(p, 'flag')) || (a && has(h, a, num(p, 'detect')))) return
+    fx.untargetable = true
+    fx.roll += num(p, 'roll')
+  },
+  /** 75 [4, 10] (0x2F5C7): against a target with `flag` in its `field` byte, the damage `dice` [n, d] + the STR bonus, the roll by `roll` */
+  baneByFlag(h, _e, c, _r, p) {
+    if (!(flagsOf(h.targetOf(c), p) & num(p, 'flag'))) return
+    const [n, d] = list(p, 'dice')
+    fx.dmg = (strDamageBonus(c) + rollKeeping(h, n, d, 1)) & 0xff
+    fx.roll += num(p, 'roll')
+  },
+  /**
+   * 79 [6, 9] (0x2F7B9): damage of both `heal` bits (magical fire) heals as much ("is Healed", up to the
+   * maximum); of `slow` (electricity) adds `effect` (`duration`, power 0xFF) raw, "is Slowed"; either way,
+   * and for anything else, the damage or the effect being added is negated
+   */
+  healsOrSlowed(h, _e, c, _r, p) {
+    const heal = num(p, 'heal')
+    if ((fx.dmgType & heal) === heal) {
+      say(h, c, txt(p, 'healed'))
+      c[F.hp] = Math.min(c[F.maxHp], (c[F.hp] + fx.dmg) & 0xff)
+    } else if (fx.dmgType & num(p, 'slow')) {
+      addRaw(h, c, num(p, 'effect'), num(p, 'duration'), 0xff, 0)
+      say(h, c, txt(p, 'slowed'))
+    }
+    negate(0)
+  },
+  /**
+   * 81 [14] spit (0x2F9EC): the hook for spell `hook`; within `range` squares the chance is `first` % in
+   * round 0, else (`range` − distance) × `per` %; with a target and d100 within it "Spits...", the flight,
+   * `roll` [n, d] of `dmgType`, half on a save vs `save`; otherwise (a chance but no hit) `misses`
+   */
+  async spitByRange(h, _e, c, _r, p) {
+    fx.dmgType = num(p, 'dmgType')
+    const t = await hookTarget(h, c, num(p, 'hook'))
+    const d = t ? h.distance(c, t) : 0xff
+    const chance = d > num(p, 'range') ? 0 : fx.round === 0 ? num(p, 'first') : ((num(p, 'range') - d) * num(p, 'per')) & 0xff
+    if (chance === 0) return
+    if (!t || h.roll(1, 100) > chance) { say(h, c, txt(p, 'misses')); return }
+    say(h, c, txt(p, 'msg'))
+    h.fly?.(c, t, 'spit')
+    const [n, k] = list(p, 'roll')
+    const dmg = rollKeeping(h, n, k, 1)
+    h.damage(t, dmg, 2, h.save(t, num(p, 'save'), 0))
+  },
+  /**
+   * 82 [8] (0x2FB66): each combatant of the other side without any of `immune`, below `hd` hit dice, gets
+   * `effect` (power 0xFF, flag 1) through the add-effect routine with `msg`; one that holds it flees
+   * (computer control, morale 0xB3, no target, combat record +0x10)
+   */
+  async terrifyAura(h, _e, c, _r, p) {
+    const effect = num(p, 'effect')
+    for (const o of h.all()) {
+      if (o[F.side] === c[F.side] || list(p, 'immune').some((t) => has(h, o, t)) || s8(o[F.hitDice]) >= num(p, 'hd')) continue
+      await addEffect(h, o, effect, 0, 0xff, 1, 1, false, false, txt(p, 'msg'))
+      if (!has(h, o, effect)) continue
+      o[F.quick] = 1
+      if (o[F.morale] <= 0x7f) o[F.morale] = 0xb3
+      h.setRec(o, 0xa, 0)
+      h.setRec(o, 0x10, 1)
+    }
+  },
+  /** 90 [5] (0x2FD17): the current character's weapon whose item type has `mask` in its ITEMS kind byte does nothing */
+  noDamageFromKind(h, _e, _c, _r, p) {
+    const a = h.current(), w = a ? h.weapon(a) : null
+    if (w && h.weaponKind(w.raw[0x2e]) & num(p, 'mask')) fx.dmg = 0
+  },
+  /** 113 (a direct run, 0x309ED): `msg`, nothing more (Giant Strength's line; the stat is the stat routine's) */
+  saysOnRun(h, _e, c, removal, p) { if (!removal) say(h, c, txt(p, 'msg')) },
 }
 
 /** Run a profile-named item behaviour (rules/effects.ts itemHandler). */

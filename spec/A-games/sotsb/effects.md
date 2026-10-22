@@ -67,7 +67,11 @@ damage-type set-up).
 | 21 | 35 | 35 |
 | 22 | 39, 42, 74 | 138 |
 
-Event 15 takes CotAB's 16's turn-start types too (25, 37, 47, 48, 69, 89; I: the two lists merged).
+Event 15 has CotAB's 16's types too (25, 37, 47, 48, 69, 89) in the one case (0x5124C–0x512F4), and is fired at the
+turn's start (0x284EC, before 21 at 0x28507). Event 16 is still fired, on the target by the to-hit routine
+(0x51946, after 10 on the attacker at 0x5193A), but has no case: Invisibility's −4 and the like no longer
+reach the attack roll (O). The to-hit routine sets the roll (DS:87DF) after event 11 has run (0x51918), so
+the roll changes of event-11 handlers (4, 8, 9, 13, 47, 48) are lost, as in the port's order (O).
 
 ## 3. Handlers by type
 
@@ -77,7 +81,9 @@ CotAB names 136, 137, 142. Each row gives the CotAB type whose handler the SotSB
 routines it calls (mapped between the games), its constants and the events it answers (O: the same calls and
 constants; I: a close match, the score after it; ?: the best of weak matches, or a tie between handlers of the
 same shape); "same number" where SotSB keeps CotAB's number. A match names CotAB's procedure; its parameters
-(the damage type of a resist, a monster class, a text) are to be read per type.
+(the damage type of a resist, a monster class, a text) are to be read per type. Each handler has since been read
+(2026-10-22): where the reading differs from the match below (4 is CotAB's 4, 7 a target test of the immunity
+byte, 42 Slow's rate, 32 Dispel Evil's touch …), §7 is normative.
 
 | type | handler | events | CotAB's handler |
 |---|---|---|---|
@@ -223,42 +229,64 @@ CotAB's 0x4B8F7 with SotSB's cells: on the gas cell a creature with neither **0x
 "chokes and gags from nausea" (0x1F, 1d4, its handler at once); on the kill cell the hit-dice bands as CotAB's,
 "is Poisoned" (0x37 raw) and status 6 "is killed", the save at −4 in the second band.
 
-## 7. The profile's effect rules (draft)
+## 7. The port's effect rules (2026-10-22)
 
-```ts
-// web/src/games/effectrules.ts, SotSB (spec/A-games/sotsb/effects.md)
-const SOTSB_IDS: EffectIds = {
-  ...COAB_IDS,
-  goingDown: [3, 11, 21, 23, 27, 30, 31, 51, 52, 53, 91, 106, 107, 111], // 0x51CA9: DS:0A9A[1..14]
-  downRejoins: { effect: 0x4d, morale: 0xb3 },
-  moraleRemoves: [], fleeRemoves: [], // 0x51D0B is empty; the flight removes nothing
-  helpless: [0x1f, 0x33, 0x34, 0x35], // 0x539D5
-  stat: { strAdd: 0x26, strSet: [0x71, 0x0c], feebleminded: 0x44, chaAdd: 0x0e, regenerate: 0x3e },
-}
-export const SOTSB_EFFECTS: EffectRules = {
-  events: {
-    1: [25, 37, 69], 2: [65, 86, 88], 3: [64, 65, 86, 88], 4: [29, 66, 75, 105, 32],
-    5: [28, 41, 60, 90, 103, 112], 6: [6, 10, 17, 20, 28, 61, 63, 57, 73, 79, 93, 98],
-    7: [3, 27, 31, 51, 52, 53], 8: [56, 82, 89, 108], 9: [18, 28, 63, 76, 79, 92, 95, 96, 99],
-    10: [1, 2, 7, 26, 33, 36, 49, 75], 11: [4, 8, 9, 13, 17, 30, 33, 45, 46, 47, 48, 71, 74],
-    12: [8, 9, 10, 13, 17, 20, 33, 36, 45, 46, 49, 50, 54, 61, 78, 94],
-    14: [58, 67, 70, 80, 81, 83, 104, 107], 15: [3, 5, 11, 21, 27, 30, 77, 106, 25, 37, 47, 48, 69, 89],
-    17: [1, 2, 11], 18: [39, 42], 19: [11, 23, 56, 100], 20: [50, 54], 21: [35], 22: [39, 42, 74],
-  },
-  removalStat: { 0x0e: [5], 0x0c: [0], 0x26: [0], 0x71: [0] },
-  items: { 0: { b: 'grantEffect' }, 1: { b: 'doubleSlots' }, 3: { b: 'recomputeStats', stats: [0] },
-    5: { b: 'recomputeStats', stats: [0] }, 9: { b: 'unreadyEnds', type: 0x17 } },
-  // handlers: CotAB's behaviours under SotSB's numbers, as §3 (to be confirmed per type before use)
-  ...
-}
-```
+`web/src/games/effectrules.ts` `SOTSB_EFFECTS`, each handler read at its routine. The globals: DS:87D2 save,
+87D3 the effect being added, 87D4 damage, 87D5 damage type, 87D6/87D7 rates, 87D8 spell, 87D9 dice count,
+87DB untargetable, 87DC no re-arm, 87DD area, 87DF attack roll, 87E2 morale, 87E3 a combatant pointer,
+87E7 save type, 87E8 the save succeeded (CotAB DS:6FAC… + 0x1826). Negate 0x2D1AF, re-arm 0x2D1D0, the
+poison on hit 0x2EB97, the hold on hit 0x2D144, the weapon of 0x2E4B1, deflection 0x2E438.
 
-The cloud rules (`R.clouds`): the gas cell 0x1D, the kill cell 0x1B, immune [0x1F, 0x63].
+- **Events**, **area** (the set at CS:0267 in 0x50B47: 21, 45, 46, 49; radius 6 for 49), **removalStat**
+  and the **item kinds** (0 generic, 1 Ring of Wizardry as CotAB's, I; 3, 5 STR; 9 the hammer) as §1, §2, §4.
+- **ids**: going down, helpless, morale and flight as §1; the reflecting gazer 0x3B (0x2E967); the STR set
+  0x71 (§5); the rest CotAB's (I: detect and read magic, the diseases of Cure Disease, `noOpportunity`).
+- **Handlers**, O unless said: empty 5, 12, 14, 16, 19, 24, 38, 55, 59, 72, 76, 84, 85, 87, 101, 102, 109
+  (and 100, below). PoR's or CotAB's behaviours with SotSB's numbers and lines: 1, 2 Bless and Curse;
+  3 snakes; 4 an attacker with class flag 1 at −7; 6 electricity negated; 7 a target whose immunity byte
+  (+0x15E) has 4, +1; 8/45, 9/46 Protection from Evil and Good (also roll −2); 10, 20 Resist Cold and Fire;
+  11 charmed; 15 the poison's damage (? 0x2D705 re-arms as type 0x1A, the port re-arms 15); 17 Shield;
+  18 Sleep and Charm blocked 30 %; 21 Silence; 22 Slow Poison's end (the poison's record removed after the
+  death); 23 the Spiritual Hammer (item type 6, words 6 and 0x79, its effect 0x17 through the generic item
+  handler); 25 Invisibility; 26 a target with class flag 0x80, +1; 27, 31, 51–53, 106 end the turn; 28 Mirror
+  Image, which also takes a weapon attack and a spell only when its record's +0x0E is set; 29 Ray of
+  Enfeeblement; 30 Stinking Cloud (says whenever a spell is lost); 32 Dispel Evil's touch (removes 4 and
+  0x20 from the current character); 33, 36, 71, 78 penalties; 34 runs 43 and 44; 35 Confusion (flight 0x6F,
+  berserk 0x4D); 37 not ready; 39 Haste, 42 Slow; 40, 91 the gas and kill zones lift (cells 0x1D, 0x1B);
+  41 Protection from Normal Missiles; 43, 44 disease; 47, 48 attackers with class flag 4 or 0x20, −4; 49
+  Prayer; 50, 54 fire and cold weakness; 56 a granted invisibility each round's end; 57, 63 spells of level
+  4 and 3 or less negated; 60 plus 3 weapons only (below 3: nothing, not half); 61 strong fire resistance;
+  62 regeneration; 73, 93, 98 acid (0x20), fire, cold negated; 74 AC +2 both; 77 berserk ("goes berserk");
+  89 displacement; 92 Fear (0x6F) blocked; 94, 97 CON save bands (? none above CON 20); 95, 96 Sleep and Charm
+  blocked (90 %, always); 99 poison and Hold blocked, saves vs 0 made; 103 a plus-0 weapon does nothing
+  unless its wielder is race 0 or 7 and above with 4 hit dice; 105 + the ranger level against a giant
+  (class flag 8) next to it; 107 berserk (side restored); 108 invisible again each round's start; 110 the
+  paladin's uses (I: +0x6D from a level formula, the port's refill); 111 runs away; 112 zap; 113 "gains
+  Giant Strength".
+- **New procedures** ([vocabularies §3.10](../../B-model/vocabularies.md#310-first-transcribed-from-sotsb)):
+  13 save +1 unless magic, roll −1; 64, 86 poison on hit (save vs 0 at 0 or −2, an effect 0x40 adding its
+  power, "is POISONED", then status 6 "is killed"); 65 save vs 1 or stone; 66 swallow whole (a natural 20:
+  "is swallowed whole", off the field, "is killed", then "belches in satisfaction" or "is digested
+  instantly"); 69 attackers with class flags 0x45 without 0x18 cannot target, −4; 75 6d6 + STR against a
+  target with immunity bit 1, +1; 79 magical fire heals, electricity slows (0x2A for 3), everything else
+  negated; 82 enemies below 5 hit dice without 0x5C or 0x6F are terrified (0x6F) and flee; 88 save vs 0 or
+  held (0x34 for 10); 90 bashing weapons do nothing.
+- **Monster specials [14]**: 58 the stone gaze (hook 0x3D; the gazer with 0x3B and a target with 0x48
+  reflects it); 67 "Breathes Fire" on the current target from round 1 to the breather's +0x121, 8 fire
+  (0x21), the turn not ended; 70 the confusion gaze (hook 0x44, adjacent, save vs 4, 0x23 for 1d10 + 2,
+  "stares blankly"); 80 "Breathes Fire" (hook 0x44, 7, the turn not ended; I: 0x56428 and 0x5C929 not read,
+  no distance test); 81 the spit (hook 0x3D, within 11 squares, 10 % in round 0, else (11 − distance) × 10 %,
+  4d8 acid, half on a save vs breath); 83, 104 (0x4D9AE, by the record's type) "breathes cold" (0x22, width 3,
+  length 7) or "breathes Fire" (0x21, width 3, length 9), CotAB's area breath with the own-side test, 3 uses;
+  107 berserk.
+- **100** Delayed Blast Fireball going off (0x301E1, event 19, its zone list DS:8D8D): not transcribed (?);
+  the port's spell 115 is Fireball at once ([spells.md §4](spells.md)).
+
+The cloud rules (`R.clouds`): the gas cell 0x1D, the kill cell 0x1B, immune [0x1F, 0x63] (§6), the rules
+profile's.
 
 ## Open
 
-- §3's rows marked I and ?: read each handler (the parameters of the matched behaviours, and the types whose
-  match is weak: 32, 65, 66, 67, 70, 75, 79, 82, 88, 92, 93, 95–100, 103, 105, 108, 110).
-- What runs at events 13 and 16 now (nothing in the switch; their callers may be gone).
-- The monster specials (event 14: 58, 67, 70, 80, 81, 83, 104, 107) against CotAB's `rules/specials.ts`.
+- 15's re-arm as 0x1A (0x2D713), 80's two unread calls, 94's upper CON bound, 110's formula, 100's delayed blast
+  (§7).
 - The computer's movement probe on clouds (CotAB 0x237FB) with SotSB's cells.

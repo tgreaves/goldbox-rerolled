@@ -117,7 +117,7 @@ item +0x3E past PoR's 139 has no handler in PoR's table (its entries from 140 ar
 
 ## 3. Effect behaviours
 
-118 effect behaviours. Each entry: the name, its parameters, [events], what it does, and the
+130 effect behaviours. Each entry: the name, its parameters, [events], what it does, and the
 original handlers it transcribes (PoR handler segment 3723 offsets or image offsets; CotAB image
 offsets). "Target" is the holder's combat target (combat record +0x0A); "attacker" is the current
 character.
@@ -135,8 +135,8 @@ character.
 - **`rollMorale`** (`roll`, `morale`) [10, 17] — the attack roll += `roll` (10); the morale += `morale`, lowered no further than 0 (17). PoR 1 Bless, 2 Curse (010d, 011d).
 - **`vsTargetType`** (`bonus` [[type, n]], `dmgType`?) [4, 10] — against a target whose monster type matches an entry: roll += n (10), damage += n (other events); with `dmgType` the damage type is set whatever the target. PoR 3, 6 (013b, 01c3).
 - **`namedFoe`** (`who` target or attacker, `monsterType`, `size`?, `sizeMask`?, `roll`, `names`) [10, 16] — against `who` of that monster type, with size flags & `sizeMask` (default all) = `size` when given, and named one of `names` (game text): roll += `roll`. PoR 18, 26 on the target (0679 DS:342, 0947 DS:382); 47, 48 on the attacker (11f9 DS:402, 0x384A6).
-- **`targetClass`** (`flag`, `roll`) [10] — a target with that monster-class flag (`classFlags`): roll += `roll`. CotAB 18, 26 (0x2779A, 0x27A4B).
-- **`attackerClass`** (`flag`, `roll`) [16] — an attacker with that class flag: roll += `roll`. CotAB 4 (0x274AF).
+- **`targetClass`** (`flag`, `roll`, `field`?) [10] — a target with that monster-class flag (`classFlags`; with `field` that byte of the record, SotSB 7's immunity byte +0x15E): roll += `roll`. CotAB 18, 26 (0x2779A, 0x27A4B).
+- **`attackerClass`** (`flag`, `roll`, `field`?) [16] — an attacker with that class flag (or `field` byte): roll += `roll`. CotAB 4 (0x274AF).
 - **`attackerKind`** (`types`, `size`, `roll`) [16] — an attacker of a monster type in `types` with size flags & 0x7F = `size`: roll += `roll`. CotAB 47, 48 (0x284A3, 0x284F2).
 - **`untargetableBy`** (`type`, `detect`, `roll`) [1] — an attacker of monster type `type`: untargetable unless it has effect `detect`; roll += `roll` either way. CotAB 69 (0x28986).
 - **`unseen`** (`detect`, `roll`) [1, 16] — untargetable (1) by an attacker without effect `detect`; roll += `roll` (16). PoR 25 Invisibility (0918).
@@ -151,7 +151,7 @@ character.
 - **`acBoth`** (`add`, `cap`) [11] — both ACs better by `add`, never past `cap`. CotAB 7 (0x2752F).
 - **`bane`** (`type`, `roll`, `dmg`) [4, 10] — against a target of monster type `type`: roll += `roll`, damage += `dmg` (byte). CotAB 76 (0x28AC2).
 - **`giantBane`** (`type`) [4, 10, 13] — against a target of monster type `type`: damage := 3·1d12 + 4 + the STR damage bonus (byte, **I**), roll += 2. CotAB 75 (0x28A6A).
-- **`rangerVsGiants`** (`flag`) [4] — a target with that class flag: damage += the holder's ranger level (byte). CotAB 134 (0x29ACC).
+- **`rangerVsGiants`** (`flag`, `adjacent`?) [4] — a target with that class flag: damage += the holder's ranger level (byte); with `adjacent` only next to it. CotAB 134 (0x29ACC); SotSB 105 (0x306E2, adjacent).
 - **`extraDamage`** (`lacks`, `sides`) [4] — a target without any effect of `lacks`: damage += 1d`sides`. CotAB 103 (0x293AD).
 - **`displaced`** (`bit`) [8, 16] — combat start clears power bit `bit`; the first attack roll after (16) misses and sets it. PoR 89 (2490).
 - **`attackRate`** (`mul`? or `div`, `ages`?, `msg`?) [18] — the rate × `mul` or div `div`; with `ages`, the first call sets that power bit, says `msg` and adds a year to the age. PoR 39 Haste, 42 Slow (0x37E7B, 10c1).
@@ -165,8 +165,8 @@ character.
 - **`halveByPlus`** [5] — an attacker's magic weapon (plus > 0): half. PoR 116 (2ae6).
 - **`halfForWord`** (`word`) [5] — no weapon: nothing; a weapon of plus 0: half when its name word +0x31 is `word` (Silver), else nothing. PoR 123 (2d88).
 - **`needsMagicOrWord`** (`word`) [5] — no weapon, or one of plus 0 not named `word`: no damage. PoR 96 (264b).
-- **`needsEnchantment`** (`hd`) [5] — no weapon or one of plus 0: no damage, unless the attacker is race 0 with `hd` hit dice or more. PoR 119 (2b7d).
-- **`magicWeapons`** (`full`) [5] — no weapon or plus 0: no damage; plus below `full`: half. CotAB 60 (0x28628).
+- **`needsEnchantment`** (`hd`, `monsterFrom`?) [5] — no weapon or one of plus 0: no damage, unless the attacker is race 0 (with `monsterFrom`, or of that race or above) with `hd` hit dice or more. PoR 119 (2b7d); SotSB 103 (0x30683, monsterFrom 7).
+- **`magicWeapons`** (`full`, `none`?) [5] — no weapon or plus 0: no damage; plus below `full`: half (with `none`: no damage). CotAB 60 (0x28628); SotSB 60 (0x2EA60, none).
 - **`piercingOne`** [5] — a piercing weapon (ITEMS kind 1, **I**): damage 1. CotAB 85 (0x28D64).
 - **`resist`** (`type`, `save`, `onRemoval`?) [every event] — damage of `type` halved as a byte and save += `save`, both only when the damage type has `type`; not on removal unless `onRemoval`. PoR 10, 20 (03e1, 06e4, onRemoval); CotAB 20 (0x277D0).
 - **`resistPerDie`** (`type`, `per`, `save`?, `magic`?) [every event] — damage of `type`: for each die of the dice count, damage := (damage − `per`) as a byte, raised back to the count when below it; with `save` the save += `save`, and with `magic` damage without that bit is negated. PoR 61 (1490: per 2, save 4, magic 8), 113 (2a28: per 1).
@@ -189,7 +189,7 @@ character.
 
 - **`warded`** (`words`, `pairs`) [0] — a target with a readied item named one of `words` (+0x31), or with name words (+0x30, +0x31) one of `pairs`, cannot be attacked. PoR 126 (2e37: Mirror, Holy Symbol).
 - **`imageLost`** [5, 6] — against a single-target spell (spell ≠ 0, not an area), 1d(power + 1) > 1: no damage, "lost an image", power − 1, the record goes at 0. PoR 28 (0x37BF0).
-- **`mirrorImage`** [5, 6] — 1d((power >> 4) + 1) > 1 against a single-target spell: negated, "lost an image", power − 1 (byte), the first record goes at 0. CotAB 28 (0x27A8F).
+- **`mirrorImage`** (`weapons`?, `spellByte`?) [5, 6] — 1d((power >> 4) + 1) > 1 against a single-target spell: negated, "lost an image", power − 1 (byte), the first record goes at 0. CotAB 28 (0x27A8F). SotSB 28 (0x2DBB3) also against an attack with no spell (`weapons`), and a spell only when its record byte `spellByte` (+0x0E) is set.
 
 ### 3.5 Effects that last, end or re-arm
 
@@ -198,7 +198,7 @@ character.
 - **`restoreStrength`** (`types`) [removal] — an active STR record (power < 0x80) restores the STR it holds; the strongest other record of `types` then takes over ([procedures.md §12.3](procedures.md#123-the-strength-spells)). PoR 12, 38 (04ba).
 - **`restoreStat`** (`stat`) [removal] — the stat := the power. PoR 14 Friends (05d6).
 - **`poisonTick`** (`duration`, `power`) [removal] — re-armed for `duration`; then above 1 HP, 1 point of damage (type 0). PoR 15 (05eb).
-- **`poisonEnds`** (`poison`, `msg`, `also`) [removal] — still poisoned (`poison`): status 6 with `msg`; then `also` goes without re-arming. PoR 22 Slow Poison (0x379A5).
+- **`poisonEnds`** (`poison`, `msg`, `also`, `removesPoison`?) [removal] — still poisoned (`poison`): status 6 with `msg` (with `removesPoison` the first poison record then goes, SotSB 0x2D8AA); then `also` goes without re-arming. PoR 22 Slow Poison (0x379A5).
 - **`loseStrength`** (`duration`, `floor`, `msg`, `helpless`) [removal, direct] — on removal re-armed for `duration` (nothing when suppressed); above `floor` STR: `msg` and STR − 1; else `helpless` raw, permanent. PoR 43 (0x3830E).
 - **`loseHp`** (`duration`, `helpless`) [removal, direct] — re-armed for `duration`; below 2 HP `helpless` once, else 1 point of damage. PoR 44 (1168).
 - **`runTypes`** (`types`) [as listed] — the behaviours of `types` run with this record. PoR 34 Cause Disease (0bcf).
@@ -226,7 +226,7 @@ character.
 - **`fearAura`** (`saveType`, `hdUpTo`, `effects`, `power`, `msgs`) [8] — each enemy in sight in play that fails a save vs `saveType`: by hit dice, up to `hdUpTo[i]` gets `effects[i]` raw with `msgs[i]`. PoR 81 (0x38CDA).
 - **`paralysingAura`** (`bonus`, `crowd`, `raceBonus` [race, n], `effect`, `roll`, `power`, `msg`) [8] — everyone else's records of this type go; then each enemy in play saves vs 0 at `bonus` if its side has `crowd` or more in play (`DS:6814[side]`), + n for that race, or gets `effect` for `roll` rounds with `msg`. PoR 82 (0x38DD8).
 - **`breakSpell`** (`msg`, `sayOn`?, `acWorse`?, `acFloor`?) [11, 15] — a spell being cast is lost, with `msg` (only on `sayOn`); with `acWorse`, on 11 the rear AC that much worse (no worse than `acFloor`) and the front AC the same. PoR 21 Silence, 30 Stinking Cloud (0x3793F, 0x37C95).
-- **`feeblemind`** [direct] — INT and WIS := 7, "is stupid"; in combat the spell being cast is lost ("lost a spell", forgotten). CotAB 68 (0x288E5).
+- **`feeblemind`** (`to`?) [direct] — INT and WIS := 7 (or `to`: SotSB 0x2F2EC 3), "is stupid"; in combat the spell being cast is lost ("lost a spell", forgotten). CotAB 68 (0x288E5).
 
 ### 3.7 Holding, draining, engulfing
 
@@ -261,11 +261,28 @@ Gazes, breaths and spits that act before the monster's attacks; those that need 
 - **`charmGaze`** (`spell`, `save`, `bonus`, `effect`, `power`) [14] — at an active target, "Gazes..." with spell `spell` resolving; a failed save vs `save` at `bonus` adds `effect` (power side << 7 | `power`, flag 1, negating save) and runs it. PoR 84 (0x390A7).
 - **`spitOnce`** (`pct`, `range`, `roll`, `dmgType`, `save`, `also`, `keep`) [14] — an active target closer than `range`, d100 ≤ `pct`: the turn ends, "Spits Acid", `roll` of `dmgType` halved by a save vs `save`; then this record and `also` go. PoR 121 (0x39E4C).
 - **`spitAcid`** (`range`, `pct`, `hook`) [14] — the hook (spell `hook`) picks the target; within `range`, d100 ≤ `pct`: "Spits Acid", the spitter's maximum HP, half on a save vs breath; else "Spits Acid and Misses". CotAB 86 (0x49B5E).
-- **`breatheFire`** (`pct`, `dmg`, `hook`) [14] — the hook picks the target; d100 ≤ `pct` and adjacent: fire, the turn ends, "Breathes Fire", `dmg` halved by a save vs breath. CotAB 131 (0x4A001).
+- **`breatheFire`** (`pct`?, `dmg`, `hook`?, `dmgType`?, `adjacent`?, `endsTurn`?, `untilRoundOf`?) [14] — the hook picks the target (none: the holder's target); d100 ≤ `pct` (none: always) and adjacent (`adjacent` 0: anywhere): damage type `dmgType` (default fire), the turn ends (not with `endsTurn` 0), "Breathes Fire", `dmg` halved by a save vs breath; with `untilRoundOf` only from round 1 up to that record byte. CotAB 131 (0x4A001); SotSB 67 (0x2F1C4: no hook, 8, 0x21, until the attacks byte +0x121), 80 (0x2F8BC: hook 0x44, 7, 0x21).
 - **`gazeHold`** (`minutes`, `hook`, `effect`) [14] — no target, then the hook picks one; "gazes..."; a failed save vs petrification gives `effect` raw for `minutes` (power 0xFF), "is paralyzed". CotAB 126 (0x4A214).
 - **`gazeStone`**, **`eyeRays`**, **`breathBolt`**, **`breathArea`**, **`throwLightning`** — §5.
+- **`gazeEffect`** (`hook`, `range`, `save`, `effect`, `roll` [n, d, add], `gazes`, `msg`) [14] — the hook must find a target closer than `range`; "gazes...", the spell bolt; a failed save vs `save` adds `effect` (`roll` rounds, power the gazer's side, flag 1) through the add-effect procedure with `msg`. SotSB 70 (0x2F414: Confusion 0x23 for 1d10 + 2, "stares blankly").
+- **`spitByRange`** (`hook`, `range`, `first`, `per`, `roll`, `dmgType`, `save`, `msg`, `misses`) [14] — damage type `dmgType`; the hook picks the target; within `range` squares the chance is `first` % in round 0, else (`range` − distance) × `per` %; a target and d100 within it: "Spits...", the flight, `roll` (counting dice), half on a save vs `save`; a chance but no hit: `misses`. SotSB 81 (0x2F9EC).
 
-### 3.10 Item behaviours
+### 3.10 First transcribed from SotSB
+
+Each does all its parts whatever the event, as the original's routine does (spec/A-games/sotsb/effects.md §3).
+
+- **`saveExceptType`** (`mask`, `save`, `roll`) [11, 12] — save += `save` unless the damage type has `mask`; roll += `roll`. SotSB 13 (0x2D6DC).
+- **`effectOnHit`** (`save`, `bonus`?, `bonusFrom`?, `effect`, `duration`, `power`, `flag`, `said`?, `status`?, `msg`?) [2, 3] — the attacker's target saves vs `save` at `bonus` (an effect `bonusFrom` on it: its power added, a negative bonus 0); `effect` through the add-effect procedure, the save negating, with `said`; with `status`, a target now holding it takes that status with `msg`. SotSB 64, 86 (0x2EB97: poison, "is POISONED", "is killed"), 88 (0x2D144: held 0x34 for 10).
+- **`statusOnHit`** (`save`, `status`, `msg`) [2, 3] — the holder's target saves vs `save` or takes status `status` with `msg`. SotSB 65 (0x2ECA9, stone).
+- **`swallow`** (`minRoll`, `pct`, `msg`, `killed`, `belches`, `digested`) [4] — an attack roll of `minRoll` or more (0x4B: only a natural 20, which counts 100): the target `msg`, taken off the field with status 6 and no body, "is killed"; d100 ≤ `pct` the swallower `belches`, else the victim `digested`. SotSB 66 (0x2ED56).
+- **`unseenByClass`** (`flag`, `detect`, `roll`) [1, 15] — an attacker with a class flag in `flag` and without `detect`: untargetable, roll += `roll`. SotSB 69 (0x2F3B4).
+- **`baneByFlag`** (`field`?, `flag`, `dice`, `roll`) [4, 10] — a target with `flag` (in `field`): damage := `dice` (counting) + the STR damage bonus, roll += `roll`. SotSB 75 (0x2F5C7, 6d6 against the immunity byte's 1).
+- **`healsOrSlowed`** (`heal`, `healed`, `slow`, `effect`, `duration`, `slowed`) [6, 9] — damage with all of `heal`'s bits heals as much (`healed`, up to the maximum); with `slow`, `effect` raw for `duration` (`slowed`); then whatever the type the damage or the effect being added is negated. SotSB 79 (0x2F7B9: magical fire, electricity).
+- **`terrifyAura`** (`immune`, `hd`, `effect`, `msg`) [8] — each combatant of the other side holding none of `immune`, below `hd` hit dice: `effect` (power 0xFF, flag 1) through the add-effect procedure with `msg`; one that holds it flees (computer control, morale 0xB3, no target, record +0x10 = 1). SotSB 82 (0x2FB66).
+- **`noDamageFromKind`** (`mask`) [5] — the attacker's weapon whose ITEMS kind byte has `mask` (0x80 bashing) does nothing. SotSB 90 (0x2FD17).
+- **`saysOnRun`** (`msg`) — run at once (not on removal): `msg`. SotSB 113 (0x309ED, "gains Giant Strength").
+
+### 3.11 Item behaviours
 
 Seven item behaviours, called after readying (`ready`) or putting away an item with +0x3E ≥ 0x80;
 +0x3D is the item's value (an effect type, a stat, an alignment and damage).
@@ -404,14 +421,14 @@ line (**?**). The current combatant is never listed.
 - **`throwLightning`** (`rounds`, `spell`, `count`, `sides`, `len`, `save`) — in rounds below `rounds` only: "throws lightning"; the hook aims (without a target the aim stays on the thrower's own square, which the first bolt then hits, **O**); invisibility goes; the flight; the aimed square takes a bolt hit of `count`d`sides` (counting dice), then a bolt of `len` squares from there with a fresh roll, saves vs `save`; the turn ends. CotAB 132 (0x4A121).
 - **`breathArea`** (`uses`, `dmgType`, `spell`, `width`, `len`, `ownSide`, `msg`) — round 0 sets the power to `uses`; none left: nothing; damage type `dmgType`; the hook must find a target; the template lists who is hit; with `ownSide` the breath is held back when anyone listed is not on the side opposite the breather's; "*name* `msg`", one frame of COMSPR cycle 18 flies to the first listed (30 ms); each listed takes the breather's maximum HP, half on a save vs breath; power − 1; the turn ends. CotAB 90 (0x49C94), 128 (0x49E74).
 - **`eyeRays`** (`shots`, `ranges`, `saves`, `statuses`, `frames`, `wound`, `spells`) — the target is cleared and a new one found (the finder over the whole field, forcing a new target); then up to `shots` times while there is a target: the first unused ray whose range reaches it: disintegrate, stone, death (a save of `saves[i]` or status `statuses[i]`: "is disintergrated" (sic), "is Stoned", "is killed") and wounding (`wound` = count, sides, plus, no save, "wounds you"); each with one frame of COMSPR cycle `frames[i]` + 13 flying to the target (30 ms), the finder keeping or replacing the target after it; with no ray in reach, the first unused of `spells` is cast as the computer casts. Each kind once a turn. CotAB 87 (0x2E842).
-- **`gazeStone`** (`spell`, `word`) — the target is cleared and the hook picks one; none: nothing. "gazes..." and the spell bolt (cycle 18, 4 frames, 45 ms); with effect 0x7F on the gazer, the target's first readied item named `word` in any of its three name words reflects it back and the gazer is the victim; the victim saves vs petrification or is stoned. CotAB 83 (0x497CE).
+- **`gazeStone`** (`spell`, `word`, `mirrorEffect`?) — the target is cleared and the hook picks one; none: nothing. "gazes..." and the spell bolt (cycle 18, 4 frames, 45 ms); with the effect `ids.gazeReflectable` on the gazer (CotAB 0x7F, SotSB 0x3B), the target's first readied item named `word` in any of its three name words (with `mirrorEffect`, the effect of that type on the target, SotSB 0x48) reflects it back and the gazer is the victim; the victim saves vs petrification or is stoned. CotAB 83 (0x497CE); SotSB 58 (0x2E892).
 
 ## 6. The effect handler maps
 
 *The two games' `effects.handlers` (kind **C**).* PoR's map covers its handler table's types 1–127
 (`FUN_5216_0000`); CotAB's covers 1–146 (DS:6FC0 + 4·type) and starts from PoR's entries, overriding
 the changed ones ("same" = PoR's entry with the same parameters). Type 147, the generic item handler,
-runs for items only (item map kind 0). Text parameters are quoted game text (see the introduction).
+runs for items only (item map kind 0). SotSB's map (types 1–113, 120 for items) is listed with its routines in [sotsb/effects.md §7](../A-games/sotsb/effects.md#7-the-ports-effect-rules-2026-10-22). Text parameters are quoted game text (see the introduction).
 Hexadecimal values are effect types, item types, name words, flags and masks; others are decimal.
 
 | Type | PoR | CotAB |

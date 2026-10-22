@@ -410,6 +410,16 @@ classes 0, 1, 3, 4; the races renumbered; seven-column slot sources and the WIS 
 §15). Still to do (I): the target finder's forced target, the "Lose it?" question, the thief's magic-user
 list above level 10, Fix's second rest, training fees and thief skills re-read. Tests: `test/sotsbrules.test.ts`.
 
+*Spells and effects (2026-10-22)*: SotSB's own maps, each handler read. `SOTSB_SPELLS` (ids 0–117: CotAB's
+handlers with SotSB's two-piece lines, the changed ones and the new kinds `healAll`, `harm`, `younger`,
+`stoneToFlesh`, `saveOrStatus`, `slayByPool`, `stun`, `none`; spec/A-games/sotsb/spells.md §4) and
+`SOTSB_EFFECTS` (its event lists as read, types 1–113 under SotSB's numbers, ten new behaviours named by
+what they do, the item kinds and `ids`; spec/A-games/sotsb/effects.md §7). The record's immunity byte
++0x15E is a field (`F.immunity`). Not transcribed: the Delayed Blast Fireball going off (effect 100,
+the port's spell 115 is Fireball at once). The rules profile (spell records 117, the cloud cells 0x1D and
+0x1B) is the rules' step. Tested: `test/sotsbspells.test.ts`, `test/sotsbeffects.test.ts`, the effect map
+test over SotSB's table and data.
+
 ## Backlog
 
 - ~~CotAB dual-classing~~: done 2026-10-21 ("Human Change Classes" 0x5135D in the training hall's

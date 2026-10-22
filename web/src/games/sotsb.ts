@@ -3,7 +3,7 @@
 // so far; the rules, spells and effects are CotAB's until SotSB's are read (?), so the game is not playable yet.
 import type { GameProfile } from './types'
 import { COAB_RULES_TEXT } from './rulestext'
-import { COAB_EFFECTS } from './effectrules'
+import { SOTSB_EFFECTS } from './effectrules'
 import { SOTSB_SPELLS } from './spellrules'
 import { COAB_LANDMARKS } from './landmarkrules'
 import { COAB_TREASURE } from './treasure'
@@ -53,7 +53,7 @@ export const SOTSB: GameProfile = {
   landmarks: COAB_LANDMARKS,
   debug: { jumps: [], finale: null },
   // the CotAB effect system with no camp Display names (they are addresses in CotAB's image)
-  effects: { ...COAB_EFFECTS, names: {} },
+  effects: SOTSB_EFFECTS,
   // PROGRAM has no ending in SotSB (spec/A-games/sotsb/ecl.md, PROGRAM)
   ending: { cs: 0, steps: [], after: null },
   rulesText: COAB_RULES_TEXT,

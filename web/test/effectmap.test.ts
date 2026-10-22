@@ -10,7 +10,7 @@ import { Item, ITEM_SIZE, parseItems } from '../src/data/items'
 import { fx, type FxHost } from '../src/rules/effects'
 import { parseEffects } from '../src/data/effects'
 import { SpellTables } from '../src/data/spells'
-import { COAB, POR, setGame, type GameProfile } from '../src/games/profile'
+import { COAB, POR, SOTSB, setGame, type GameProfile } from '../src/games/profile'
 import { BEHAVIOURS, ITEM_BEHAVIOURS } from '../src/rules/effectkinds'
 
 /** the effect type fields of the spell kinds' parameters (games/spellrules.ts) */
@@ -25,7 +25,8 @@ function spellParamTypes(g: GameProfile): number[] {
       else if (key === 'effects') for (const e of v as unknown[][]) out.push(e[0] as number) // Fire Shield's [type, line]
       else v.forEach((x) => walk(x))
     } else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) {
-      if (SPELL_EFFECT_KEYS.includes(k) && typeof x === 'number') out.push(x)
+      // SotSB's probe 0xFF (spells.md §3: the event-9 probe of Death Spell's kin) is no type: only "any" negates it
+      if (SPELL_EFFECT_KEYS.includes(k) && typeof x === 'number') { if (!(k === 'probe' && x === 0xff)) out.push(x) }
       else walk(x, k)
     }
   }
@@ -33,8 +34,11 @@ function spellParamTypes(g: GameProfile): number[] {
   return out
 }
 
-/** the types the original's handler table has: PoR FUN_5216_0000 1–127 (128–139 are item handlers); CotAB DS:6FC0 1–146 (147 runs for items only) */
-const TABLE: [GameProfile, number][] = [[POR, 127], [COAB, 146]]
+/**
+ * the types the original's handler table has: PoR FUN_5216_0000 1–127 (128–139 are item handlers); CotAB
+ * DS:6FC0 1–146 (147 runs for items only); SotSB DS:87E6 1–113 (114–119 not filled, 120 runs for items only)
+ */
+const TABLE: [GameProfile, number][] = [[POR, 127], [COAB, 146], [SOTSB, 113]]
 
 describe('effect handler maps', () => {
   afterAll(() => setGame(POR))
@@ -61,7 +65,7 @@ describe('effect handler maps', () => {
   })
 
   it('each game\'s item handlers name existing item behaviours', () => {
-    for (const g of [POR, COAB]) for (const [k, spec] of Object.entries(g.effects.items)) expect(ITEM_BEHAVIOURS[spec.b], `${g.id} item ${k}: ${spec.b}`).toBeTypeOf('function')
+    for (const g of [POR, COAB, SOTSB]) for (const [k, spec] of Object.entries(g.effects.items)) expect(ITEM_BEHAVIOURS[spec.b], `${g.id} item ${k}: ${spec.b}`).toBeTypeOf('function')
     expect(Object.keys(POR.effects.items).map(Number)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) // 128–139
   })
 
@@ -92,7 +96,7 @@ describe('effect handler maps', () => {
   })
 })
 
-const dirs: [GameProfile, string][] = [[POR, process.env.POOLRAD ?? ''], [COAB, process.env.COAB ?? '']]
+const dirs: [GameProfile, string][] = [[POR, process.env.POOLRAD ?? ''], [COAB, process.env.COAB ?? ''], [SOTSB, process.env.SOTSB ?? '']]
 for (const [g, dir] of dirs) {
   describe.skipIf(!dir || !existsSync(dir))(`${g.id}: the effect types its data can add`, () => {
     afterAll(() => setGame(POR))

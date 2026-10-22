@@ -1084,17 +1084,22 @@ when its table column or sentence names CotAB.
 | 0x2D141 | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x2D4D0 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x2D4FA | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x2DBB3 | B/vocabularies | B/vocabularies: 3.4 Targeting and protection |  |
 | 0x2E394 | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x2E582 | B/vocabularies | B/vocabularies: 3.7 Holding, draining, engulfing |  |
 | 0x2E842 | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
+| 0x2E892 | B/vocabularies | B/vocabularies: 5. Monster specials and the target hook |  |
+| 0x2EA60 | B/vocabularies | B/vocabularies: 3.3 Damage resistances and immunities |  |
 | 0x2EB16 | B/vocabularies | B/vocabularies: 3.7 Holding, draining, engulfing |  |
 | 0x2EC4C | B/vocabularies | B/vocabularies: 3.7 Holding, draining, engulfing |  |
 | 0x2ED5C | B/vocabularies | B/vocabularies: 3.7 Holding, draining, engulfing |  |
 | 0x2F185 | coab/combat | coab/combat: The former class in battle |  |
+| 0x2F1C4 | B/vocabularies | B/vocabularies: 3.9 Monster specials (event 14) |  |
 | 0x2F252 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x2F697 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x2F7FC | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x2F853 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x2F8BC | B/vocabularies | B/vocabularies: 3.9 Monster specials (event 14) |  |
 | 0x2FEA0 | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x2FEF5 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x2FF2B | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
@@ -1104,6 +1109,7 @@ when its table column or sentence names CotAB.
 | 0x30573 | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x3059B | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x3065C | coab/ecl | coab/ecl: Engine entry points |  |
+| 0x306E2 | B/vocabularies | B/vocabularies: 3.2 Attack and damage modifiers |  |
 | 0x30B17 | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x30CAC | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x30DDA | B/vocabularies | B/vocabularies: 2. The effect system (`EffectRules`) |  |

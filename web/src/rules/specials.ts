@@ -149,7 +149,8 @@ export async function eyeRays(h: FxHost, _e: Effect, c: Uint8Array, p: HandlerSp
  * CotAB 83 petrifying gaze (0x497CE): the target is cleared and the hook (spell `spell`) picks one;
  * none, nothing. "gazes..." and the spell bolt (cycle 18, 4 frames, 45 ms); with effect 0x7F the first
  * readied item of the target named `word` in any of its three name words (+0x2F…+0x31) reflects it
- * back; the victim saves vs petrification or is stoned.
+ * back; the victim saves vs petrification or is stoned. SotSB 58 (0x2E892): a target with the effect
+ * `mirrorEffect` (0x48) reflects it instead of an item.
  */
 export async function gazeStone(h: FxHost, _e: Effect, c: Uint8Array, p: HandlerSpec) {
   h.setRec(c, 0xa, 0)
@@ -161,7 +162,9 @@ export async function gazeStone(h: FxHost, _e: Effect, c: Uint8Array, p: Handler
   else h.fly?.(c, t, 'gaze')
   let victim = t
   const word = num(p, 'word')
-  if (has(h, c, ids().gazeReflectable) && h.itemsOf(t).some((it) => it.ready && [0x2f, 0x30, 0x31].some((k) => it.raw[k] === word))) {
+  const mirror = p.mirrorEffect !== undefined ? has(h, t, num(p, 'mirrorEffect'))
+    : h.itemsOf(t).some((it) => it.ready && [0x2f, 0x30, 0x31].some((k) => it.raw[k] === word))
+  if (has(h, c, ids().gazeReflectable) && mirror) {
     say(h, t, txt(p, 'reflects'))
     if (a && b) h.flyCells?.(b, a, 18, 4, 45)
     else h.fly?.(t, c, 'gaze')

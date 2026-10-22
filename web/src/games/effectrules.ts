@@ -417,3 +417,152 @@ export const COAB_EFFECTS: EffectRules = {
   healBlock: [], // 0x4CE85: the 0x32 test is gone (0x32 is the Hot Fire Shield in CotAB)
   ids: COAB_IDS,
 }
+
+// ---------------------------------------------------------------- Secret of the Silver Blades
+/** SotSB's "is " (DS:1B4D) and a word: its lines are built of DS pieces (spec/A-games/sotsb/spells.md §1) */
+const IS = 0xf96d
+
+/**
+ * SotSB's (spec/A-games/sotsb/effects.md §1): CotAB's with the renumbered types. Going down 0x51CA9
+ * (DS:0A99[1..14]); the morale check's removal 0x51D0B is empty and a flight removes nothing; helpless
+ * 0x539D5; the stat routine 0x51F80 with the STR set 0x71; the reflecting gazer 0x3B (0x2E967).
+ */
+const SOTSB_IDS: EffectIds = {
+  ...COAB_IDS,
+  gazeReflectable: 0x3b,
+  goingDown: [3, 11, 21, 23, 27, 30, 31, 51, 52, 53, 91, 106, 107, 111],
+  moraleRemoves: [], fleeRemoves: [],
+  helpless: [0x1f, 0x33, 0x34, 0x35],
+  stat: { strAdd: 0x26, strSet: [0x71, 0x0c], feebleminded: 0x44, chaAdd: 0x0e, regenerate: 0x3e },
+}
+
+/**
+ * SotSB's handlers by type (DS:87E6 + 4·type, filled at 0x30A9C; segment 0x2D13 unless said), each read
+ * at its routine (spec/A-games/sotsb/effects.md §3): a behaviour of PoR's or CotAB's where the routine is
+ * the same procedure, with SotSB's numbers and lines; types 114–119 are not filled, 120 is the item path.
+ */
+const SOTSB_HANDLERS: Record<number, HandlerSpec> = {
+  ...each([5, 12, 14, 16, 19, 24, 38, 55, 59, 72, 76, 84, 85, 87, 100, 101, 102, 109], { b: 'none' }), // empty (0x30A2F and the like)
+  1: { b: 'rollMorale', roll: 1, morale: 5 }, // 0x2D3D9
+  2: { b: 'rollMorale', roll: -1, morale: -5 }, // 0x2D3F1
+  3: { b: 'snakes', msg: 0x2d417 }, // 0x2D42F
+  4: { b: 'attackerClass', flag: 1, roll: -7 }, // 0x2D4C4
+  6: { b: 'immune', mask: 4, say: 0 }, // 0x2D4E7
+  7: { b: 'targetClass', field: 'immunity', flag: 4, roll: 1 }, // 0x2D506: the target's +0x15E & 4
+  ...each([8, 45], { b: 'saveVsAlignment', alignments: [2, 5, 8], save: 2 }), // 0x2D543 (the roll −2 too, on 11, where the to-hit roll is set after)
+  ...each([9, 46], { b: 'saveVsAlignment', alignments: [0, 3, 6], save: 2 }), // 0x2D580
+  10: { b: 'resist', type: 2, save: 3 }, // 0x2D5BD Resist Cold
+  11: { b: 'charmed', morale: 100 }, // 0x2D5E8
+  13: { b: 'saveExceptType', mask: 8, save: 1, roll: -1 }, // 0x2D6DC
+  15: { b: 'poisonTick', duration: 10, power: 0xff }, // 0x2D705 (? it re-arms as 0x1A, read so)
+  17: { b: 'shield', ac: 0x39, save: 1, spell: 15 }, // 0x2D795
+  18: { b: 'blocks', types: [11, 53], pct: 30 }, // 0x2D7CE
+  20: { b: 'resist', type: 1, save: 3 }, // 0x2D7FA Resist Fire
+  21: { b: 'breakSpell', msg: [IS, 0x10365] }, // 0x2D825 "is Silenced"
+  22: { b: 'poisonEnds', poison: 0x37, msg: 0x2d899, also: 15, removesPoison: 1 }, // 0x2D8AA
+  // 0x2D93A Spiritual Hammer: type 6, words 6 and 0x79, +1, effect 0x17, the generic item handler; "gains an item"
+  23: { b: 'conjuredItem', bytes: [[0x2e, 6], [0x30, 6], [0x31, 0x79], [0x32, 1], [0x3d, 0x17], [0x3e, 0x80]], match: [0x2e, 0x31], msg: [0xfe6d, 0x2d932] },
+  25: { b: 'invisibility', detect: 0x18 }, // 0x2DB33
+  26: { b: 'targetClass', flag: 0x80, roll: 1 }, // 0x2DB68
+  ...each([27, 31, 51, 52, 53, 106], { b: 'endTurn' }), // 0x2D3A4, 0x30749
+  28: { b: 'mirrorImage', msg: 0x2dba5, weapons: 1, spellByte: 0x0e }, // 0x2DBB3 (DS:44AB = the record's +0x0E)
+  29: { b: 'damageCut', part: 4 }, // 0x2DC8D
+  30: { b: 'breakSpell', msg: 0x2dcb3, acWorse: 2, acFloor: 0x32 }, // 0x2DCBF "is coughing"
+  32: { b: 'dispelEvil', flag: 1, removes: [4, 0x20], resists: 0x2dda7, msg: 0x2dd9a }, // 0x2DDBB
+  33: { b: 'penalty', roll: -4, ac: -4, save: -4 }, // 0x2DE81
+  34: { b: 'runTypes', types: [43, 44] }, // 0x2DEB2
+  35: { b: 'confusion', flee: 0x6f, berserk: 0x4d, fleeMsg: 0x2deef, confused: 0x2def9, berserkMsg: 0x2df05, enraged: 0x2df12 }, // 0x2DF1D
+  36: { b: 'penalty', roll: -4, save: -4 }, // 0x2E0E9
+  37: { b: 'notReady' }, // 0x2E102
+  39: { b: 'attackRate', ages: 0x10, msg: 0x2e12d, mul: 2 }, // 0x2E132 Haste
+  40: { b: 'liftZone', cell: 0x1d, msg: 0x2e1ab }, // 0x2E1C6: the gas zones (list DS:8D91)
+  41: { b: 'deflect', pct: 100, plainWeapon: 1 }, // 0x2E515
+  42: { b: 'attackRate', div: 2 }, // 0x2E559 Slow
+  43: { b: 'loseStrength', duration: 60, floor: 3, msg: [IS, 0x2e586], helpless: 0x1f }, // 0x2E58F
+  44: { b: 'loseHp', duration: 10, helpless: 0x1f }, // 0x2E624
+  47: { b: 'attackerClass', flag: 4, roll: -4 }, // 0x2E6CE
+  48: { b: 'attackerClass', flag: 0x20, roll: -4 }, // 0x2E6F3
+  49: { b: 'prayer', sideBit: 0x10, save: 1, roll: 1 }, // 0x2E718
+  50: { b: 'weakTo', saveOn: 2, double: 1, saved: 1 }, // 0x2E76D (DS:87E8)
+  54: { b: 'weakTo', saveOn: 1, double: 2, saved: 0 }, // 0x2E7A8 (DS:7523, as CotAB's DS:5D0B)
+  56: { b: 'grant', type: 25, duration: 1, power: 0x0c }, // 0x2E7EC
+  57: { b: 'minorGlobe', below: 5 }, // 0x2E838: a spell of level 4 or less
+  // the monster specials [14] (rules/specials.ts): the hook spell 0x3D or 0x44 (the AI's pick through DS:8A8E)
+  58: { b: 'gazeStone', spell: 0x3d, word: 0, mirrorEffect: 0x48, gazes: 0x2e869, reflects: 0x2e872, msg: 0x2e87f }, // 0x2E892
+  60: { b: 'magicWeapons', full: 3, none: 1 }, // 0x2EA60
+  61: { b: 'resistPerDie', type: 1, per: 2, magic: 8, save: 4 }, // 0x2EAA4
+  62: { b: 'regenerate', duration: 60, force: 0 }, // 0x2EB07
+  63: { b: 'minorGlobe', below: 4 }, // 0x2EB5C
+  // 0x2EB97 (64 bonus 0, 86 −2): a save vs 0, 0x40's power added; "is POISONED" (0x37), then "is killed"
+  64: { b: 'effectOnHit', save: 0, bonus: 0, bonusFrom: 0x40, effect: 0x37, duration: 0, power: 0xff, flag: 0, said: [IS, 0x10871], status: 6, msg: 0x2eb8d },
+  86: { b: 'effectOnHit', save: 0, bonus: -2, bonusFrom: 0x40, effect: 0x37, duration: 0, power: 0xff, flag: 0, said: [IS, 0x10871], status: 6, msg: 0x2eb8d },
+  65: { b: 'statusOnHit', save: 1, status: 7, msg: 0x2ec96 }, // 0x2ECA9
+  66: { b: 'swallow', minRoll: 0x4b, pct: 50, msg: 0x2ed0b, killed: 0x2ed1e, belches: 0x2ed28, digested: 0x2ed40 }, // 0x2ED56
+  67: { b: 'breatheFire', dmg: 8, dmgType: 0x21, untilRoundOf: 'attacksBase', endsTurn: 0, msg: 0x2f1b6 }, // 0x2F1C4
+  68: { b: 'feeblemind', to: 3, msg: 0x2f2d0, lost: 0x2f2df }, // 0x2F2EC
+  69: { b: 'unseenByClass', flag: 0x45, detect: 0x18, roll: -4 }, // 0x2F3B4
+  70: { b: 'gazeEffect', hook: 0x44, range: 2, save: 4, effect: 0x23, roll: [1, 10, 2], gazes: 0x2f3fc, msg: 0x2f405 }, // 0x2F414
+  71: { b: 'penalty', ac: -2 }, // 0x2F53F
+  73: { b: 'immune', mask: 0x20, say: 0 }, // 0x2F574
+  74: { b: 'acBoth', add: 2, cap: 0xff }, // 0x2F595
+  75: { b: 'baneByFlag', field: 'immunity', flag: 1, dice: [6, 6], roll: 1 }, // 0x2F5C7
+  77: { b: 'berserk', say: 1, restore: 0, msg: 0x2f630 }, // 0x2F63D
+  78: { b: 'penalty', save: 1 }, // 0x2F7A4
+  79: { b: 'healsOrSlowed', heal: 9, healed: [IS, 0xfa6d], slow: 4, effect: 0x2a, duration: 3, slowed: [IS, 0x10683] }, // 0x2F7B9
+  80: { b: 'breatheFire', hook: 0x44, dmg: 7, dmgType: 0x21, adjacent: 0, endsTurn: 0, msg: 0x2f8ae }, // 0x2F8BC
+  81: { b: 'spitByRange', hook: 0x3d, range: 11, first: 10, per: 10, roll: [4, 8], dmgType: 0x10, save: 3, msg: 0x2f9d2, misses: 0x2f9db }, // 0x2F9EC
+  82: { b: 'terrifyAura', immune: [0x5c, 0x6f], hd: 5, effect: 0x6f, msg: 0x2fb59 }, // 0x2FB66
+  // 0x4D9AE (the spell segment, both slots): by the record's type, cold or fire, 3 uses, the template
+  83: { b: 'breathArea', uses: 3, dmgType: 0x22, spell: 0x3d, width: 3, len: 7, ownSide: 1, msg: [0x4d9a4, 0x4d99a] },
+  104: { b: 'breathArea', uses: 3, dmgType: 0x21, spell: 0x3d, width: 3, len: 9, ownSide: 1, msg: [0x4d9a4, 0x4d99f] },
+  88: { b: 'effectOnHit', save: 0, effect: 0x34, duration: 10, power: 0x0c, flag: 0 }, // 0x2FCA3 → 0x2D144: held for 10
+  89: { b: 'displaced', bit: 0x10 }, // 0x2FCC4
+  90: { b: 'noDamageFromKind', mask: 0x80 }, // 0x2FD17 (ITEMS byte 7, DS:752B + 16·type)
+  91: { b: 'liftZone', cell: 0x1b, msg: 0x2fd63 }, // 0x2FD7E: the kill zones (list DS:8D95)
+  92: { b: 'blocks', types: [0x6f] }, // 0x2FFE6
+  93: { b: 'immune', mask: 1, say: 0 }, // 0x2FFFE
+  94: { b: 'conSave', saveTypes: [4, 2, 0], bands: [[4, 1], [7, 2], [11, 3], [14, 4], [18, 5]] }, // 0x3001F (none above 20: ?)
+  95: { b: 'blocks', types: [11, 53], pct: 90 }, // 0x300A7
+  96: { b: 'blocks', types: [11, 53] }, // 0x300D5
+  97: { b: 'conSave', saveTypes: [4, 2], bands: [[4, 1], [7, 2], [11, 3], [14, 4], [18, 5]] }, // 0x300F4 (in no event list)
+  98: { b: 'immune', mask: 2, say: 0 }, // 0x30175
+  99: { b: 'immunities', types: [0x37, 0x34], saveType: 0 }, // 0x30196
+  103: { b: 'needsEnchantment', hd: 4, monsterFrom: 7 }, // 0x30683
+  105: { b: 'rangerVsGiants', flag: 8, adjacent: 1 }, // 0x306E2
+  107: { b: 'berserk', say: 0, restore: 1 }, // 0x30767
+  108: { b: 'startInvisible', effect: 0x19 }, // 0x30887
+  110: { b: 'refillUses' }, // 0x308B4 (I: the paladin's uses at +0x6D)
+  111: { b: 'runsAway' }, // 0x30905
+  112: { b: 'zap', msg: 0x3094a }, // 0x30956
+  113: { b: 'saysOnRun', msg: [0xfe6d, 0x1110d] }, // 0x309ED "gains Giant Strength"
+}
+
+export const SOTSB_EFFECTS: EffectRules = {
+  // 0x50D26: events 13, 16 and 23 have no case (16 is still fired by the to-hit 0x51946: nothing runs)
+  events: {
+    0: [], 1: [25, 37, 69], 2: [65, 86, 88], 3: [64, 65, 86, 88], 4: [29, 66, 75, 105, 32],
+    5: [28, 41, 60, 90, 103, 112], 6: [6, 10, 17, 20, 28, 61, 63, 57, 73, 79, 93, 98],
+    7: [3, 27, 31, 51, 52, 53], 8: [56, 82, 89, 108], 9: [18, 28, 63, 76, 79, 92, 95, 96, 99],
+    10: [1, 2, 7, 26, 33, 36, 49, 75], 11: [4, 8, 9, 13, 17, 30, 33, 45, 46, 47, 48, 71, 74],
+    12: [8, 9, 10, 13, 17, 20, 33, 36, 45, 46, 49, 50, 54, 61, 78, 94],
+    14: [58, 67, 70, 80, 81, 83, 104, 107], 15: [3, 5, 11, 21, 27, 30, 77, 106, 25, 37, 47, 48, 69, 89],
+    17: [1, 2, 11], 18: [39, 42], 19: [11, 23, 56, 100], 20: [50, 54], 21: [35], 22: [39, 42, 74],
+  },
+  area: [21, 45, 46, 49], // 0x50B47: the set at CS:0267
+  areaRadius: { 49: 6 },
+  handlers: SOTSB_HANDLERS,
+  // remove 0x50966 (0x50A69–0x50A98): CHA after 0x0E, STR after 0x0C, 0x26, 0x71
+  removalStat: { 0x0e: [5], 0x0c: [0], 0x26: [0], 0x71: [0] },
+  // the item kinds 0x44133 (spec/A-games/sotsb/effects.md §4); kind 0 is the item path 120 (0x30A38)
+  items: {
+    0: { b: 'grantEffect', power: 0xff, flag: 1, outsideCombat: 1 },
+    1: { b: 'doubleSlots', levels: 3 }, // I: CotAB's Ring of Wizardry
+    3: { b: 'recomputeStats', stats: [0] },
+    5: { b: 'recomputeStats', stats: [0] },
+    9: { b: 'unreadyEnds', type: 0x17 },
+  },
+  replaces: 'anyTimed', // I: CotAB's add-effect routine (spells.md §1)
+  names: {},
+  healBlock: [],
+  ids: SOTSB_IDS,
+}
