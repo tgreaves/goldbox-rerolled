@@ -117,9 +117,10 @@ export function charStem(name: string): string {
 }
 
 /**
- * Characters from another game the active one takes (games/imports.ts; CotAB's "Pool" source): roster
- * files (<name>.CHA) with their effects when the stem matches the name, and save-slot files
- * (CHRDAT<x><n>.SAV) without (the original looks the effects up by the name's stem), converted.
+ * Characters from another game the active one takes (games/imports.ts; CotAB's "Pool" source, SotSB's
+ * "Curse"): roster files (<name>.CHA, <name>.GUY) with their effects when the import reads them and the stem
+ * matches the name, and save-slot files (CHRDAT<x><n>.SAV) without (the original looks the effects up by the
+ * name's stem), converted.
  */
 export function importsFrom(files: NamedFile[], t: Tables): { chars: StoredCharacter[]; from: string[] } {
   const byName = new Map(files.map((f) => [f.name.split('/').pop()!.toUpperCase(), f.data]))
@@ -127,11 +128,11 @@ export function importsFrom(files: NamedFile[], t: Tables): { chars: StoredChara
   for (const imp of game().imports) {
     for (const [name, data] of byName) {
       const roster = name.endsWith(`.${imp.roster}`)
-      if (!roster && !imp.saveSlot.test(name)) continue
+      if (!roster && !imp.saveSlot?.test(name)) continue
       if (!importable(imp, data)) continue
       const nm = String.fromCharCode(...data.subarray(1, 1 + data[0]))
       const stem = charStem(nm)
-      const spc = roster ? byName.get(`${stem}.SPC`) : undefined
+      const spc = roster && imp.effects ? byName.get(`${stem}.${imp.effects}`) : undefined
       const { sav, spc: fx } = convert(imp, data, spc, t)
       chars.push({ stem, sav, spc: fx })
       if (!from.includes(imp.label)) from.push(imp.label)

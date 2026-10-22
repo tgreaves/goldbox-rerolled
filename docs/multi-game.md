@@ -383,7 +383,7 @@ record (`view.font`, 8X8D5 #201), and the game text's merged image from a TPOV o
 messages and menus are CotAB's found by their text (176 and 79; the rest show their id). Tested:
 `test/sotsb.test.ts` (detection, the pre-made party, START.EXE's tables, the shipped save) and
 `test/sotsbsweep.test.ts` (every area from every third square: no interpreter errors). Still CotAB's, not
-researched (?): the landmarks; not done: the CotAB import, the title music (the OPL2 synthesiser is in; its sequencer waits on
+researched (?): the landmarks; not done: the title music (the OPL2 synthesiser is in; its sequencer waits on
 spec/A-games/sotsb/music.md). The shipped save is a start-of-game save (area 0): written back after the
 start-up's conversion (block 2, record 17, as the original does) it cannot equal the shipped bytes, and the
 bytes after each member's name are written 0 (as for PoR and CotAB).
@@ -425,8 +425,9 @@ scrolls; the vault (`VAULT.DAT`, `data/vault.ts`, the vault screen in `ui/town.t
 joined); random treasure as data: the builder's name words, shapes, weights, values and scroll lists moved from
 `rules/randitem.ts` into `TreasureRules` (`SOTSB_TREASURE`, the new `T.scrollSpells`; spec/B-model/procedures.md
 §14); the sound driver's data and code shifts and effect tables (`games/sound.ts`); the frame as fixed bars
-(`view.frame.bars`, no frame tables) and the overland tables marked absent. Tests: `test/bundles.test.ts`,
-`test/vault.test.ts`, `test/sotsbtreasure.test.ts`, `test/sotsbsound.test.ts`, the frame test in `test/tables.test.ts`.
+(`view.frame.bars`, no frame tables) and the overland tables marked absent; the CotAB import (Add's "Curse",
+`SOTSB_IMPORTS`: `.GUY` files through the converter 0x405E3 as data). Tests: `test/bundles.test.ts`,
+`test/vault.test.ts`, `test/sotsbtreasure.test.ts`, `test/sotsbsound.test.ts`, the frame test in `test/tables.test.ts`, `test/import.test.ts`.
 
 ## Backlog
 

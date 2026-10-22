@@ -515,19 +515,26 @@ more; the port does not (**I**).
 ## 13. Character import
 
 **Original:** CotAB's "Pool" import, the converter `323c:14b3` with `5047:03c6` after it
-([coab/records.md §7](../A-games/coab/records.md#7-por--cotab-transfer)). Module `imports`: a list of
-`CharacterImport`, empty for PoR.
+([coab/records.md §7](../A-games/coab/records.md#7-por--cotab-transfer)); SotSB's "Curse" import, the
+converter 0x405E3 and the loader's tail 0x40E44–0x4115A
+([sotsb/records.md §2, §6](../A-games/sotsb/records.md#6-importing-cotab-characters)). Module `imports`: a list
+of `CharacterImport`, empty for PoR.
 
-| Field | Meaning | CotAB |
-|---|---|---|
-| `from`, `label` | the source game's id, and its name for the player | `por`, Pool of Radiance |
-| `roster`, `saveSlot` | source files: roster characters by extension; save-slot characters by name pattern | `CHA`; `CHRDAT[A-J][0-9].SAV` |
-| `maxMorale` | the highest morale byte accepted (NPCs refused) | 0x7F |
-| `copy` | fields copied as they are, each with its byte count | below |
-| `clampStats` | stats clamped to the target's race limits | true |
-| `hpLevelFromHitDice` | the target's `hpLevel` := its `hitDice` | true |
-| `forget` | spell ids unlearned | [36] |
-| `keepEffects` | effect types kept from the source's effect file (when found by the name's stem) | 18, 26, 47, 48, 97, 107, 124 |
+| Field | Meaning | CotAB | SotSB |
+|---|---|---|---|
+| `from`, `label` | the source game's id, and its name for the player | `por`, Pool of Radiance | `coab`, Curse of the Azure Bonds |
+| `roster`, `saveSlot` | source files: roster characters by extension; save-slot characters by name pattern (null: none) | `CHA`; `CHRDAT[A-J][0-9].SAV` | `GUY`; null |
+| `effects` | the source's effect files by extension, found by the name's stem (null: not read) | `SPC` | null (no `.fx` name in the image, O) |
+| `maxMorale` | the highest morale byte accepted (NPCs refused) | 0x7F | 0xFF (**I**: no test seen) |
+| `copy` | fields copied as they are, each with its byte count | below | below |
+| `trimName` | the name's trailing spaces and one leading space removed | false | true (0x40604–0x406B9) |
+| `raceMap` | source race → target race (null: kept; unlisted → 0) | null | 0 → 7, 1 → 3, 2 → 1, 3 → 4, 4 → 2, 5 → 5, 6 → 7, 7 → 6 (0x40727) |
+| `stats` | how the abilities come over (step 3) | `race` | `strMax` |
+| `hpLevelFromHitDice` | the target's `hpLevel` := its `hitDice` | true | false (`hpLevel` copied) |
+| `forget` | spell ids unlearned | [36] | [36, 56, 63, 90, 96, 98, 100] (0x407F8) |
+| `recompute` | the class mask and the derived statistics worked out again (step 6) | true | false |
+| `keepEffects` | effect types kept from the source's effect file | 18, 26, 47, 48, 97, 107, 124 | none |
+| `grants` | `{ level, former, effect, abilityUses }`: an effect added for a level in class `level`, or for `misc86` = `former` while former levels count | none | ranger (4, 4) 0x69; paladin (3, 3) 8 with `abilityUses` := 1 (0x410DF–0x4115A) |
 
 CotAB's `copy` list (field, bytes): name 16, race 1, gender 1, thac0Base 1, cls 1, age 2, maxHp 1, sweep 1,
 sizeFlags 1, saves 5, baseMove 1, hitDice 1, drainLevels 1, drainHp 1, undead 1, thief 8, misc83 1,
@@ -537,21 +544,36 @@ xpBase 2, xpPerHp 1, head 1, body 1, iconHead 1, iconBody 1, iconSize 1, iconCol
 saveBonus 1, load 2, status 1, inPlay 1, side 1, thac0 1, ac 1, acRear 1, attacksLeft 2, dice 2, sides 2,
 bonus 2, hp 1, move 1.
 
+SotSB's (the converter's moves, sotsb/records.md §2): name 16, thac0Base, cls, age 2, maxHp, sweep, sizeFlags,
+saves 5, baseMove, hitDice, hpLevel, drainLevels, drainHp, thief 8, morale, npcShare, misc86, misc87, levels 7
+(no monk), prevLevels 7, gender, alignment, attacksBase 2, natDice 2, natSides 2, natBonus 2, acBase, strAdj,
+id, xp 4, itemMask, hpRolled, clericSlots 5, druidSlots 5, muSlots 5, xpBase 2, xpPerHp, head, body, iconHead,
+iconBody, iconSize, iconColours 6, classFlags, hands, saveBonus, status, inPlay, side, thac0, ac, acRear,
+attacksLeft 2, dice 2, sides 2, bonus 2, hp, move (1 byte where no count is given). Not moved: money,
+memorised spells, the study hours, undead, encumbrance, the quick flag, the icon slot; the readied-item
+pointers are moved (0x40CF5) but there are no items, so the port keeps none.
+
 A record is accepted when its size is the source game's record size and its morale ≤ `maxMorale`.
 Conversion:
 
 1. A blank target record; each `copy` field copied byte for byte through both games' field maps (a
    field −1 in either game is skipped).
 2. Known spells: `known + id` copied for ids 1 up to the smaller `knownCount`; then each `forget` id := 0.
-3. Each ability from the source; with `clampStats` raised to the race's minimum, then lowered to its
-   maximum (STR by sex: `raceLimits` + sex and + 2 + sex; others + 4 + 2*i* and + 5 + 2*i*). Exceptional
-   STR clamped to the race and sex cap (`raceLimits` + 4 + sex). The base abilities := the current ones.
-   (The original writes the cap into base STR instead; IMP-070 fixes it, [C-port/departures.md](../C-port/departures.md).)
+   With `trimName` the name trimmed; with `raceMap` the race mapped.
+3. Abilities. `race`: each from the source, raised to the race's minimum, then lowered to its maximum (STR
+   by sex: `raceLimits` + sex and + 2 + sex; others + 4 + 2*i* and + 5 + 2*i*); exceptional STR clamped to
+   the race and sex cap (`raceLimits` + 4 + sex); the base abilities := the current ones. (The original
+   writes the cap into base STR instead; IMP-070 fixes it, [C-port/departures.md](../C-port/departures.md).)
+   `strMax`: base and current abilities and both exceptional STR bytes copied; base STR lowered to the race
+   and sex maximum (`raceLimits` + 2 + sex) when above it (0x40E6A).
 4. With `hpLevelFromHitDice`: `hpLevel` := `hitDice`.
-5. Money: the target's `startMoney` when fixed (CotAB 300 platinum); no items (`itemCount` 0).
-6. `itemMask` := OR of `T.classBits` over the classes with a level; then the derived statistics
-   (THAC0, highest level, attacks, slots, saves, thief skills).
-7. Effects: the source's effect records of a `keepEffects` type, if its effect file was found.
+5. Money: the target's `startMoney` when fixed (CotAB 300 platinum; SotSB none); no items (`itemCount` 0).
+6. With `recompute`: `itemMask` := OR of `T.classBits` over the classes with a level; then the derived
+   statistics (THAC0, highest level, attacks, slots, saves, thief skills).
+7. Effects: the source's effect records of a `keepEffects` type, if its effect file was read; then each
+   `grants` entry whose class has a level, or whose `former` is `misc86` while former levels count (the
+   race that changes class, `dualClass.race`, with its current level above `hpLevel`; 0x573EB, **I** for
+   the race test there): the effect (permanent, power 0xFF), and `abilityUses` := 1.
 
 ## 14. Random treasure
 

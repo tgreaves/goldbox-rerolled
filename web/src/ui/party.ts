@@ -252,7 +252,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
         input.type = 'file'
         input.multiple = true
         const S = files.game.saves
-        input.accept = ['zip', 'dat', 'sav', S.items, S.effects, S.roster, 'txt', ...files.game.imports.flatMap((i) => [i.roster, 'spc'])].flatMap((x) => [`.${x.toLowerCase()}`, `.${x.toUpperCase()}`]).join(',')
+        input.accept = ['zip', 'dat', 'sav', S.items, S.effects, S.roster, 'txt', ...files.game.imports.flatMap((i) => [i.roster, ...(i.effects ? [i.effects] : [])])].flatMap((x) => [`.${x.toLowerCase()}`, `.${x.toUpperCase()}`]).join(',')
         const chosen = await new Promise<File[]>((resolve) => {
           input.addEventListener('change', () => resolve([...(input.files ?? [])]), { once: true })
           input.addEventListener('cancel', () => resolve([]), { once: true })

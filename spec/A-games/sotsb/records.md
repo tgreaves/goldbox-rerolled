@@ -270,6 +270,11 @@ CotAB's `*.guy` (0x3F5AD). A CotAB record (0x1A6 bytes read, 0x41067) goes throu
 0x405E3 (§2). The image has no `.swg` or `.fx` name, so a CotAB character's items and effects are
 not read (O: no such strings); money, memorised spells, encumbrance and the quick flag start at 0.
 
+*Port status:* `SOTSB_IMPORTS` (games/imports.ts) holds the converter as data, run by the shared import
+procedure ([B-model/procedures.md §13](../../B-model/procedures.md#13-character-import)); a `.GUY` file given
+to the party screen's import comes over as the original converts it. Tested on CotAB's pre-made party
+(`test/import.test.ts`).
+
 ## 7. Monsters
 
 `MON1CHA.DAX` (70 records of 439 bytes), `MON1ITM.DAX` (items, multiples of 63), `MON1SPC.DAX`

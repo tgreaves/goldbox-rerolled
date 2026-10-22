@@ -7,6 +7,7 @@ import { SOTSB_EFFECTS } from './effectrules'
 import { SOTSB_SPELLS } from './spellrules'
 import { COAB_LANDMARKS } from './landmarkrules'
 import { SOTSB_TREASURE } from './treasure'
+import { SOTSB_IMPORTS } from './imports'
 import { SOTSB_SOUND } from './sound'
 import { SOTSB_TITLE } from './title'
 import { SOTSB_STARTUP } from './startup'
@@ -57,8 +58,8 @@ export const SOTSB: GameProfile = {
   // PROGRAM has no ending in SotSB (spec/A-games/sotsb/ecl.md, PROGRAM)
   ending: { cs: 0, steps: [], after: null },
   rulesText: COAB_RULES_TEXT,
-  // SotSB's own CotAB import (spec/A-games/sotsb/records.md §6) is not expressed yet
-  imports: [],
+  // Add's "Curse": CotAB's .GUY characters (spec/A-games/sotsb/records.md §6)
+  imports: SOTSB_IMPORTS,
   playable: false,
   note: 'research under way: the files can be viewed, not yet played',
 }
