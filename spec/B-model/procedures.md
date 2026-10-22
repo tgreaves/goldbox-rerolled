@@ -371,6 +371,9 @@ at `variable`] bits (negative: right), as a 16-bit word; a factor not in `shifts
 | PoR | null |
 | CotAB | variable 0x6E6D (ECL 0x7F6D), shifts 1: −4, 2: −3, 4: −2, 8: −1, 32: 1, 64: 2, 128: 3 |
 
+Parameter `identifyFee`: what the shop's Identify charges in gold: PoR 200 (`FUN_4894_1f52`), CotAB 200
+(0x3FF59), SotSB 100 (its line "For 100 gold pieces…", 0x456C0).
+
 ## 10. Class abilities
 
 **Original:** CotAB's paladin, View menu 0x3D530 + 0x35F0 … ([coab/records.md §10](../A-games/coab/records.md#10-creation-effects-and-paladin-abilities-o)).

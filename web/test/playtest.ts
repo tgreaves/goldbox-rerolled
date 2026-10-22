@@ -13,7 +13,7 @@ import { Engine, type Io } from '../src/vm/engine'
 import { game, setGame, wants, type GameProfile } from '../src/games/profile'
 import { F } from '../src/games/fields'
 import { parseSave } from '../src/data/save'
-import { itemsFile } from '../src/data/items'
+import { characterItemsFile } from '../src/data/items'
 import { effectsFile } from '../src/data/effects'
 import { fight, footprint, type Battle, type CombatUi } from '../src/rules/combat'
 import { shop, temple, treasure, type TownUi } from '../src/ui/town'
@@ -394,7 +394,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     const stems = stemsOf()
     const dat = e.toSave(stems)
     if (dat.length !== L.saveSize) fail(`the save is ${dat.length} bytes, not ${L.saveSize}`)
-    const chars = party.map((c) => ({ sav: c.slice(), itm: itemsFile(e.itemsOf(c)), spc: effectsFile(e.effectsOf(c)) }))
+    const chars = party.map((c) => ({ sav: c.slice(), itm: characterItemsFile(e.itemsOf(c)), spc: effectsFile(e.effectsOf(c)) }))
     const n = load(dat, chars, o.seed * 1000 + step)
     const again = n.toSave(stems)
     // bytes 0x3204-0x3205 are the wall ahead and the square's event, which the loader does not read
@@ -403,7 +403,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     if (diff >= 0) fail(`a save loaded and saved again differs at byte ${diff.toString(16)}: ${dat[diff]} then ${again[diff]}`)
     n.party().forEach((c, i) => {
       if (c.some((v, k) => chars[i].sav[k] !== v)) fail(`${nameOf(c)}'s record changes in a save and load`)
-      if (itemsFile(n.itemsOf(c)).some((v, k) => chars[i].itm[k] !== v)) fail(`${nameOf(c)}'s items change in a save and load`)
+      if (characterItemsFile(n.itemsOf(c)).some((v, k) => chars[i].itm[k] !== v)) fail(`${nameOf(c)}'s items change in a save and load`)
       if (effectsFile(n.effectsOf(c)).some((v, k) => chars[i].spc[k] !== v)) fail(`${nameOf(c)}'s effects change in a save and load`)
     })
     if (n.party().length !== party.length) fail(`the party is ${n.party().length} after loading, not ${party.length}`)

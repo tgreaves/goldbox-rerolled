@@ -373,7 +373,7 @@ or TILES, an AdLib sound device. Next: the record and save layouts, the script V
 
 *Profile, steps 1–5 (2026-10-22)*, as CotAB's were: `games/sotsb.ts` with `SOTSB_FIELDS`, `SOTSB_TABLES`,
 `SOTSB_ECL`, `SOTSB_FILES`, the view, title, start-up menu and sound driver; detection by `BLADES.CFG`, else by
-the most marker files (SotSB shares GEO1 with PoR and SKY with CotAB); `playable: false` (the asset viewer).
+the most marker files (SotSB shares GEO1 with PoR and SKY with CotAB); `playable: false` at first (the asset viewer), `true` since the rules, spells, effects and data steps below.
 What it needed as data rather than code: `classCount` (7 class levels, no monk, in every level loop),
 `itemRecord` 67 and `codeSize` 0 (no script code in the save: the area's record is loaded again), the
 memorised view's range, the money words, B + 0x100's read and write, A 0x4BEA as the facing, the block's
@@ -428,6 +428,16 @@ joined); random treasure as data: the builder's name words, shapes, weights, val
 (`view.frame.bars`, no frame tables) and the overland tables marked absent; the CotAB import (Add's "Curse",
 `SOTSB_IMPORTS`: `.GUY` files through the converter 0x405E3 as data). Tests: `test/bundles.test.ts`,
 `test/vault.test.ts`, `test/sotsbtreasure.test.ts`, `test/sotsbsound.test.ts`, the frame test in `test/tables.test.ts`, `test/import.test.ts`.
+
+*Playable (2026-10-22)*: `playable: true`, marked early. A headless player like CotAB's
+(`test/sotsbplay.test.ts`, 8 × 300 steps by default, `SOTSB_PLAY_…`) runs from the shipped save through
+movement, scripts, battles, camp, shops, the temple and the vault with no failure; in Chrome the title
+music plays, save A loads, the opening's equipment comes as treasure and the party walks. The shop's
+Identify fee is profile data (`R.identifyFee`: SotSB 100, its line at 0x456C0). Still open: Delayed Blast
+Fireball's delay (it goes off at once, I), the finder's forced target (effect 0x5B), spells 0, 42, 83, 93
+not re-read, effects 15, 80, 94, 110's details; SotSB's temple (it asks no price); join for scroll
+bundles; the vault on the server; the `.WHO` loader's paladin uses; the Rules reference text (CotAB's)
+and no journal; the main menu's new Move command; a browser play-through.
 
 ## Backlog
 

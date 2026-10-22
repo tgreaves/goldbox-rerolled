@@ -100,15 +100,17 @@ close disassemblers (REA's Ghidra sessions) after use, no unbounded background j
 
 - Pool of Radiance plays start to finish; Curse of the Azure Bonds is playable at an early stage
   (all 8 steps of `docs/multi-game.md` done, dual-classing included), not yet played through in a
-  browser. About 420 tests pass; long headless playthroughs (24 × 1000 steps) show no failures.
+  browser. About 510 tests pass; long headless playthroughs (24 × 1000 steps) show no failures.
 - The spec is the normative source (decisions D1–D6 in `spec/README.md`); steps 1–7 of its work plan
   (`spec/AUDIT.md` §8) are done. Step 8, the clean-room rebuilds that validate it, is **on hold** by
   Tristan's choice (token and session limits): do not start one unasked.
 - Current focus: bug fixes and gaps (`spec/open-questions.md`, the backlog in `docs/multi-game.md`).
 - Not yet done: comparison with the original running in DOSBox; browser play-through of CotAB and
   of much of the newer UI.
-- Secret of the Silver Blades: research started 2026-10-22 (`spec/A-games/sotsb/`: records, tables, script
-  VM, assets); a first profile (`games/sotsb.ts`, viewable, not playable; its rules, spells and effects are
-  CotAB's until researched). Tests take `SOTSB` (the game folder) like POOLRAD and COAB.
+- Secret of the Silver Blades: researched 2026-10-22 (`spec/A-games/sotsb/`, every subject) and playable at
+  an early stage (`games/sotsb.ts`: its own rules, spells, effects, script variants, items, vault, CotAB
+  import, title music through the OPL2 synthesiser); headless playthroughs pass; its Rules reference text
+  is still CotAB's and it has no journal; open items in `docs/multi-game.md`. Tests take `SOTSB` (the game
+  folder) like POOLRAD and COAB.
 - `server/` (accounts and sync) is built but not deployed. It is meant to become a public service
   with open sign-up, so treat every change there as internet-facing (`docs/server.md`, "Running it publicly").

@@ -188,6 +188,8 @@ export interface GameRules {
    * listed prices at the value (IMP-078); null: the value itself (PoR, whose engine never reads 0x6E6D)
    */
   shopPrice: { variable: number; shifts: Record<number, number> } | null
+  /** what the shop's Identify charges, in gold (PoR FUN_4894_1f52, CotAB 0x3FF59: 200; SotSB 100, its line at 0x456C0) */
+  identifyFee: number
   itemTypes: {
     arrows: number; quarrels: number; holyWater: number | null; oil: number | null; elfBonus: number[]
     /** the name word (item +0x2F) of a Bag of Holding, whose readying lightens the load by 5 000; null: none does */
@@ -413,6 +415,7 @@ export const POR_RULES: GameRules = {
   // FUN_10ba_0bb8 (0x18A0, 0x18BD), FUN_3334_128d (0x24644), the name 0x1239–0x126A, the elf bonus
   // 0xD1B–0xD48, the flight FUN_3aae_26b0 (0x2D190)
   shopPrice: null,
+  identifyFee: 200,
   itemTypes: {
     arrows: 0x49, quarrels: 0x1c, holyWater: 0x55, oil: 0x56, elfBonus: [36, 37, 41, 42, 43, 44],
     bagOfHolding: 0xba, // 0x18DA
@@ -500,6 +503,7 @@ export const COAB_RULES: GameRules = {
   // 0x4DDB8, 0x2466C, the name 0x4D70D–0x4D748, the elf bonus 0x4D1EE (not the Drow Long Sword 97), the
   // flight 0x2D141: the Dart of Hornets Nest (100) flies as an arrow, the Staff Sling (101) and Spine (98) as a stone
   shopPrice: { variable: 0x6e6d, shifts: { 1: -4, 2: -3, 4: -2, 8: -1, 32: 1, 64: 2, 128: 3 } }, // B + 0x6DA (ECL 0x7F6D)
+  identifyFee: 200,
   itemTypes: {
     arrows: 0x49, quarrels: 0x1c, holyWater: 0x55, oil: 0x56, elfBonus: [36, 37, 41, 42, 43, 44],
     // the bag's flag is cleared (0x4DC9E) and never set, so the − 5 000 at 0x4DFEE never runs
@@ -569,6 +573,7 @@ export const COAB_RULES: GameRules = {
  */
 export const SOTSB_RULES: GameRules = {
   ...COAB_RULES,
+  identifyFee: 100, // "For 100 gold pieces I'll identify your …" (0x456C0)
   // 117 records (DS:449D), names at DS:34AE; spell classes 0 cleric, 1 druid, 3 magic-user, 4 item (the
   // caster-level routine 0x559E6 and the list filter 0x477F4); levels to 7
   spells: { records: 117, named: 117, book: 117, levels: 7, cleric: 0, druid: 1, magicUser: 3, item: 4, itemSpell: { mask: 0x7f, above: 0xff, minus: 0 } /* I: CotAB's */ },

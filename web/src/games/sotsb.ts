@@ -1,6 +1,6 @@
 // Secret of the Silver Blades (1990). Research: spec/A-games/sotsb/; status: docs/multi-game.md.
-// First profile (2026-10-22): the record, tables, script VM, saves, presentation and sound from the research
-// so far; the rules, spells and effects are CotAB's until SotSB's are read (?), so the game is not playable yet.
+// The record, tables, script VM, saves, presentation and sound, its own rules, spells and effects (2026-10-22),
+// each read in its binary; playable at an early stage (docs/multi-game.md lists what remains).
 import type { GameProfile } from './types'
 import { COAB_RULES_TEXT } from './rulestext'
 import { SOTSB_EFFECTS } from './effectrules'
@@ -60,6 +60,6 @@ export const SOTSB: GameProfile = {
   rulesText: COAB_RULES_TEXT,
   // Add's "Curse": CotAB's .GUY characters (spec/A-games/sotsb/records.md §6)
   imports: SOTSB_IMPORTS,
-  playable: false,
-  note: 'research under way: the files can be viewed, not yet played',
+  playable: true,
+  note: 'early: being built, expect gaps',
 }

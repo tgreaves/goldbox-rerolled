@@ -1606,7 +1606,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         again({ message: m || msg('sold') })
       } else if (a === 'id') again({ selected: keep, confirm: 'id' })
       else if (a === 'id-yes') {
-        if (!pay(node, engine.money, 200, t, items)) again({ selected: keep, message: msg('idNoMoney') })
+        if (!pay(node, engine.money, R.identifyFee, t, items)) again({ selected: keep, message: msg('idNoMoney') })
         else if (it.hidden === 0) again({ selected: keep, message: `${msg('nothingNew')}${t.name(it)}` })
         else { it.hidden = 0; again({ selected: keep, message: `${msg('looksLike')}${t.name(it)}` }) }
       } else if (a === 'halve') again({ selected: keep, message: halve(node, items, it, t) })

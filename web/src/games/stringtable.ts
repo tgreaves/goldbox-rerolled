@@ -922,7 +922,7 @@ export const SOTSB_STRINGS: Strings = {
 
 // the same for the menus; main, alter (Pics now Level), partyBegin and modify traced; SotSB has no Turn
 export const SOTSB_MENUS: Menus = {
-  main: 0x35803, alter: 0xe249, alterLevel: 0xe272, partyBegin: 0xe684, modify: 0xe77d,
+  main: 0x357fe, alter: 0xe249, alterLevel: 0xe272, partyBegin: 0xe684, modify: 0xe77d,
   // the vault 0x21EC5: "View", " Take" when it holds money or items, " Pool Exit"
   vaultView: 0x21c3a, vaultTake: 0x21c3f, vaultPoolExit: 0x21c45,
   itemDeposit: 0x439f4, // the items menu's Drop in the vault (0x4357E)
