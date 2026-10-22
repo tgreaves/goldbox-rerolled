@@ -548,8 +548,15 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
   startUnless(h, _e, c, _r, p) {
     if (!list(p, 'unless').some((t) => has(h, c, t))) addRaw(h, c, num(p, 'effect'), num(p, 'duration'), 0, 1)
   },
-  /** 103 vampire escape [13] (0x39AEF): no removal callback, `msg`, status `status` (fled), out of play */
-  escapes(h, eff, c, _r, p) { eff.flag = 0; say(h, c, txt(p, 'msg')); c[F.status] = num(p, 'status'); c[F.inPlay] = 0 },
+  /**
+   * 103 vampire escape [13] (0x39AEF): no removal callback, then the take-off routine with `msg` and status
+   * `status` (fled, 0x29B26). Fired only as the vampire goes down, already out of play, so the routine does
+   * nothing and it never escapes (Bug, O)
+   */
+  escapes(h, eff, c, _r, p) {
+    eff.flag = 0
+    h.takeOff?.(c, num(p, 'status'), `${h.name(c)} ${txt(p, 'msg')}`)
+  },
   /**
    * 105, 106 [6, 9] (2976, 2984 → FUN_3723_2915): an effect being added or magic damage is negated when
    * d100 ≤ `base` − 5 × (11 − the current character's best level of `classes`, at least 1)

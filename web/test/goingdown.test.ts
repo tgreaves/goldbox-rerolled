@@ -70,6 +70,26 @@ describe.skipIf(!por || !existsSync(por))('PoR: going down (FUN_5216_100a)', () 
     expect(said).toEqual(['X is stoned', 'again'])
   })
 
+  it('taking off the field (FUN_5216_0f06): HP kept when running, going down, nothing when out of play', () => {
+    const files = load(por, POR)
+    const { b, c, left } = battle(files, 1, [74, 13])
+    const said: string[] = []
+    b.print = (t: string) => { said.push(t) }
+    b.takeOff(c, 3, 'X Got Away')
+    expect([c[F.status], c[F.inPlay], c[F.hp]]).toEqual([3, 0, 10])
+    expect(left()).toEqual([13])
+    b.takeOff(c, 4, 'again')
+    expect(c[F.status]).toBe(3)
+    expect(said).toEqual(['X Got Away'])
+  })
+
+  it('a vampire (103) going down never escapes: the take-off finds it out of play', () => {
+    const files = load(por, POR)
+    const { left, c } = downed(files, 1, [103])
+    expect(c[F.status]).toBe(6)
+    expect(left).toEqual([103])
+  })
+
   it('the morale check (FUN_3334_10d7) first takes off the first 74 (grab) and 75 (blood drain)', async () => {
     const files = load(por, POR)
     const { b, f, left } = battle(files, 0, [74, 13, 75, 74])

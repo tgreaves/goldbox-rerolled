@@ -532,6 +532,13 @@ Fleeing is stepping off the arena (cell 0 in Move, or the AI moving a fleeing cr
 2. Else compare `own = movement(c)/2` with `fast` = the highest `movement/2` of all enemies in play (`FUN_3aae_2908`, no sight check; ECL 0x6E72 counts only for party-side combatants): fast < own → success; equal → d2 = 1 (50 %); greater → failure.
 3. Success: "Got Away", status Running (3), out of play, HP kept (`FUN_5216_0f06`). Failure: "Escape is blocked". Either way the turn ends.
 
+   `FUN_5216_0f06(char, status, msg)` (0x43066; CotAB 0x4BF57, stub `e3:5c`), taking a combatant off the
+   field (O): nothing at all, the message included, for one already out of play; else the view scrolls to
+   it (`577f_1298`), the message with its pause, in-play := 0, the status, HP := 0 unless the status is 3;
+   its icon taken off and the field redrawn (no fall, no skull), the turn ended (`FUN_10ba_2637`), then
+   going down (`FUN_5216_100a`, 0x43129). No event 13. Callers: this flight (0x2B7D1), the morale
+   surrender (0x245B1, status 4) and effect 103 (0x29B26); CotAB 0x2B2F2 and 0x245D9.
+
 Running party members count as survivors; the aftermath turns them back to Okay. If every party member still in the battle runs, the outcome is "fled" (0x81) and members left Dying, Unconscious or Dead are lost.
 
 ## Attacks per round (O, `FUN_3aae_0d23`)

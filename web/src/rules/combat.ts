@@ -1377,6 +1377,23 @@ export class Battle implements FxHost {
    * becomes 0x1F (kept 0x1E under a Stinking Cloud) and the old cell is remembered. A monster's body
    * goes again when the window is redrawn from the cells.
    */
+  /**
+   * A combatant leaves the field (PoR FUN_5216_0f06, CotAB 0x4BF57): nothing for one already out of play;
+   * else the message, out of play with the status, HP 0 unless running (3), its icon taken off with no
+   * fall, the turn ended, then going down. No event 13. The surrender, "Got Away" and the vampire's
+   * gaseous escape (PoR 103) go through it.
+   */
+  takeOff(c: Uint8Array, status: number, text: string) {
+    if (!c[F.inPlay]) return
+    this.print(text)
+    c[F.inPlay] = 0
+    c[F.status] = status
+    if (status !== 3) c[F.hp] = 0
+    const f = this.of(c)
+    if (f) { f.size = 0; this.ui.redraw(); this.endTurnF(f) }
+    goingDown(this, c)
+  }
+
   downF(t: Fighter) {
     this.endTurnF(t)
     if (t.size > 0) {
@@ -1464,11 +1481,8 @@ export class Battle implements FxHost {
       const fast = Math.max(0, ...this.enemies(f).map((e) => this.moveOf(e) >> 1))
       ok = fast < own || (fast === own && this.e.roll(1, 2) === 1)
     }
-    if (ok) {
-      this.print(`${name(f.c)} ${msg('gotAway')}`)
-      f.c[F.status] = 3; f.c[F.inPlay] = 0
-      f.size = 0
-    } else this.print(msg('escapeBlocked'))
+    if (ok) this.takeOff(f.c, 3, `${name(f.c)} ${msg('gotAway')}`) // 0x2B7D1
+    else this.print(msg('escapeBlocked'))
     this.endTurnF(f)
     this.ui.redraw()
   }
@@ -2186,9 +2200,7 @@ export class Battle implements FxHost {
       return false
     }
     if (c[F.stat[1]] > 5) {
-      this.print(`${name(c)} ${msg('surrenders')}`)
-      c[F.status] = 4; c[F.hp] = 0; c[F.inPlay] = 0
-      this.downF(f)
+      this.takeOff(c, 4, `${name(c)} ${msg('surrenders')}`) // 0x245B1
       return true
     }
     return false

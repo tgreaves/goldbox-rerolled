@@ -57,7 +57,7 @@ if m != 0 and m >= lost: return                        // passes on its own HP
 m = DS:6E2F (enemy side's HP %); event 17
 if m != 0 and m >= 100 − ECL 0x6DC6 and c[0x10E] != 0: return     // enemy side only: passes on the group's HP
 if fastest enemy (FUN_3aae_2908) <= own movement/2: R[0x14] = 1 (flee); remove 0x4A, 0x4B
-elif INT c[0x11] > 5: "Surrenders" → status Unconscious (4), HP 0, out of play (FUN_5216_0f06); end turn
+elif INT c[0x11] > 5: "Surrenders" → status Unconscious (4), HP 0, out of play, no fall, going down (FUN_5216_0f06); end turn
 else: fight on
 ```
 

@@ -182,7 +182,7 @@ Ev = hook events; R = removal/expiry callback (eff[4]=1); D = invoked directly b
 | 100 / 0x64 | troll death | 13 | unless the killing damage was Fire (6819&1) or Acid (&0x10): adds 102 (dur 3d6) | O | 3723_27d9 |
 | 101 / 0x65 | troll regen trigger | 5, 6 | if it has neither 98 nor 59: adds 59 (dur 3) | O | 3723_2814 |
 | 102 / 0x66 | troll revive | R | `1869(maxHP)`; if blocked, re-arms (dur 1) | O | 3723_2866 |
-| 103 / 0x67 | vampire escape | 13 | eff[4]=0; "Turns gaseous and escapes", status 3 (fled) via `5216_0f06` (HP kept) | O (disasm) | 0x39AEF |
+| 103 / 0x67 | vampire escape | 13 | eff[4]=0; "Turns gaseous and escapes", status 3 (fled) via `5216_0f06` (HP kept); but event 13 fires once the vampire is out of play, and `5216_0f06` does nothing then, so it never escapes (**Bug**) | O (disasm) | 0x39AEF |
 | 104 / 0x68 | missile deflection 60% | 5 | `0fac(60)` | O | 3723_2901 |
 | 105 / 0x69, 106 / 0x6A | magic resistance 50% / 15% | 6, 9 | `2915(base)` | O | 2976 / 2984 |
 | 107 / 0x6B | elf resistance | 9 | if d100 ≤ 90: blocks 53 (Sleep) and 11 (Charm) | O | 3723_2992 |
