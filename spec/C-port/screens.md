@@ -174,7 +174,7 @@ each with a quiet second line; **Back to the game** at the foot.
 | **Settings** | always | "speed, sound, font, borders, motion, text size, graphics" |
 | **Rules reference** | always | "classes, races, abilities, combat numbers, spells" |
 | **Debug** | always | "not part of the game" |
-| **Quit to the party screen** | always | none |
+| **Quit to the party screen** | always | asks Yes/No first ([app-flow.md §7](app-flow.md#7-play-new-game-load-continue)), except after the game ended or in the demo |
 
 A choice closes the menu and runs the entry: §8, §9, [accounts-and-sync.md §6](accounts-and-sync.md#6-the-account-section),
 the slot menu ([app-flow.md §7](app-flow.md#7-play-new-game-load-continue)), [ui-contract.md §9](ui-contract.md#9-settings),

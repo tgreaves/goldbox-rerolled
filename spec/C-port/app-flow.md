@@ -241,8 +241,10 @@ the game has not ended and it is not the demo, if the party's block and area dif
 autosave's ("new area") or 30 s have passed since the last attempt ("on the way"). A failed write is
 ignored. **Continue** on the party screen and the top of the Load list read it.
 
-**Leaving play**: ☰ → **Quit to the party screen** leaves at once, without a question and without
-saving (the last autosave is the way back, **Continue**). The view, its animation loop and the key
+**Leaving play**: ☰ → **Quit to the party screen** asks first, a panel "Quit" with "Quit to the party
+screen? The game was last saved automatically *n* s ago; anything since then is lost unless you save
+first." and **Yes** / **No** (No, Esc or ✕ go back to the game); Yes leaves without saving (the last
+autosave is the way back, **Continue**). A game already over, or the demo, leaves at once. The view, its animation loop and the key
 handlers stop; the party screen opens.
 
 **Script and engine errors** are notes ("Script error: *message*", "Combat error: *message*"); play
@@ -320,5 +322,4 @@ Reload.
 ## Open
 
 - ~~PoR's translation-wheel screen~~: settled as IMP-076 ([departures.md §6](departures.md#6-departures-without-an-imp-row)).
-- Quit to the party screen asks nothing; with the autosave written at most 30 s before, a few steps
-  can be lost. A confirmation is a design choice left open.
+- ~~Quit to the party screen asks nothing~~: it asks (Tristan, 2026-10-22).

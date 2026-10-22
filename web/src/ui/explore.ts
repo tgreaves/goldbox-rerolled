@@ -1993,7 +1993,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       case 'save': act(() => saveGame()); break
       case 'debug': debugMenu(); break
       case 'account': openAccount(dialog); break
-      case 'assets': leave(); break
+      case 'assets': quitAsk(); break
       case 'menu': mainMenu(); break
       case 'rules': void rulesReference(dialog, engine.spells); break
     }
@@ -2125,6 +2125,16 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   async function gameOver() {
     await menu(['CONTINUE'], { prompt: 'Press any key to continue' })
     leave()
+  }
+
+  /** Quit to the party screen, asked first: what happened since the last autosave or save is lost (a game already over, or the demo, goes at once). */
+  function quitAsk() {
+    if (engine.quit || engine.demo) { leave(); return }
+    const ago = Math.max(0, Math.round((Date.now() - lastAutosave) / 1000))
+    dialog.innerHTML = `<h2>Quit</h2><p>Quit to the party screen? The game was last saved automatically ${ago} s ago; anything since then is lost unless you save first.</p>
+      <form method="dialog" class="yn">${wordButton('value="y" class="primary"', word('yesNo', 'Y'))}${wordButton('value="n"', word('yesNo', 'N'))}</form>`
+    onClose(dialog, () => { if (dialog.returnValue === 'y') leave() })
+    dialog.showModal()
   }
 
   function leave() {
