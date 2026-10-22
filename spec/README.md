@@ -190,6 +190,9 @@ Research started (2026-10-22); to be written as differences, as CotAB's.
 | [tables.md](A-games/sotsb/tables.md) | the rules tables at the new DS base, PoR/CotAB → SotSB addresses; rule differences (levels to 15, seven spell levels, 116 spells) |
 | [ecl.md](A-games/sotsb/ecl.md) | the script VM: address spaces, opcodes (ADD_EP new), the character view, CALL targets, start-up |
 | [assets.md](A-games/sotsb/assets.md) | DAX families, the view's sky and ground, BIGPIC, title and start-up, BLADES.CFG, the sound effects and the title music driver |
+| [spells.md](A-games/sotsb/spells.md) | the spell handler table (ids 0–117), same, changed and new handlers against CotAB |
+| [effects.md](A-games/sotsb/effects.md) | the effect dispatcher, event lists, handler table (types 1–120, renumbered), item kinds, the effect id lists |
+| [music.md](A-games/sotsb/music.md) | the title music: the song driver, the GLBR parts and SLBR song files, the sequencer and its OPL2 writes |
 
 ## Part B: the engine model ([B-model/](B-model/))
 
