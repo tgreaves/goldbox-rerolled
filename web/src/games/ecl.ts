@@ -49,6 +49,10 @@ export interface EclMap {
   /** DAMAGE: flag bits that make a successful save still take the damage (CotAB 0x10, which is also
    *  part of the save bonus; 0x1B22A) */
   damageDespiteSave: number
+  /** DAMAGE's dice: `once`, one roll before the victims are chosen, the attack mode's next one after each
+   *  (PoR, CotAB); `perVictim`, a roll for each victim just before its save or attack, the victim pick
+   *  first (SotSB 0x208B2: 0x20973, 0x20A01, 0x20A69, 0x20B07) */
+  damageRolls: 'once' | 'perVictim'
   /** LOAD_CHARACTER past the end of the list sets a flag that the next B+0x100 read returns as 0 and
    *  clears (CotAB DS:8B87: 0x18B39, 0x20390) */
   loadPastEnd: boolean
@@ -84,6 +88,39 @@ export interface EclMap {
    * its icon parts (PoR). The random portrait follows T.npcHeads/npcBodies*.
    */
   addNpc: { enemyId: number | null; tag: 'random' | 'monster'; loaderRolls: boolean; iconPicture: boolean }
+  /**
+   * LOAD_MONSTER scales a loaded record of side 1 by the difficulty level, the word at `variable` (canonical
+   * address), when below `below`: HP and maximum HP := byte × (level + 2) div 4, both made 1 if either becomes 0
+   * (SotSB 0x1DF9F–0x1E036; ECL 0x4CF4, Alter's Level); null: no scaling (PoR, CotAB)
+   */
+  difficultyHp: { variable: number; below: number } | null
+  /** DESTROY_ITEMS puts a readied item away through the ready routine first (SotSB 0x21276 → 0x4431F: "It's
+   *  Cursed!" for a cursed one, else unreadied with its item handler), each member current meanwhile */
+  destroyUnreadies: boolean
+  /**
+   * CHECK_PARTY by the selector's offset s from B (SotSB 0x1F051: operand 1's address, or its value, − B):
+   * over the party, min, max and average (sum div count, signed) of a byte, written to operands 3, 4, 5, and
+   * a found flag to 6. `effect`: s for "anyone has effect operand 2" (min, max, average 0); `equals`: s →
+   * field, found = anyone whose byte equals operand 2 (min 0xFF, max 0, the average unset: 0 here);
+   * `bytes`: s → [field, index] read directly; `range`: s in from … to reads field + (s − from); `levels`:
+   * s → class, the level (or the former level when it is higher and counts), min and max only of those of at
+   * least operand 2. null: the shared PoR procedure
+   */
+  /** the digit of the monster files MON<n>CHA/ITM/SPC: null, the current block's (PoR, CotAB); SotSB always 1
+   *  ("MON" + the constant "1", 0x4150D) */
+  monsterFile: number | null
+  /** FIND_SPELL's index of the first memorised slot (CotAB 1: 0x1B6E7; SotSB 0: 0x20E4D, slots 0–0x4A) */
+  findSpellFirst: number
+  /** COMBAT with no monsters opens the vault ('vault' screen) when this A word is 1, cleared first, before the
+   *  shop and temple flags (SotSB 0x1F5C2: ECL 0x4CFC → 0x21C90, vault.dat's View, Take, Pool); null: no vault */
+  combatVault: number | null
+  checkParty: {
+    effect: number
+    equals: Record<number, keyof CharFields>
+    bytes: Record<number, [keyof CharFields, number]>
+    range: { from: number; to: number; field: keyof CharFields }
+    levels: Record<number, number>
+  } | null
 }
 
 /** One B-view read: a character field (element `index` of an array field; `signed` sign-extends a byte;
@@ -104,6 +141,7 @@ export const POR_ECL: EclMap = {
   callSounds: { by: { 8: 10, 10: 11 }, other: null },
   refreshAfterPicture: false,
   damageDespiteSave: 0,
+  damageRolls: 'once',
   loadPastEnd: false,
   wipeBanner: 0x1c35d, // "The END!" (FUN_29c3_2775)
   blockFile: { add: 0, divide: 1 },
@@ -115,6 +153,12 @@ export const POR_ECL: EclMap = {
   pauseMs: 225,
   quitProgram: null,
   addNpc: { enemyId: 0x18, tag: 'random', loaderRolls: true, iconPicture: false },
+  difficultyHp: null,
+  destroyUnreadies: false,
+  monsterFile: null,
+  findSpellFirst: 1,
+  combatVault: null,
+  checkParty: null,
 }
 
 // spec/A-games/coab/ecl.md, "B as a view of the current character"; B+0x100's "loaded past the end" flag is
@@ -142,6 +186,7 @@ export const COAB_ECL: EclMap = {
   callSounds: { by: { 8: 10, 10: 11 }, other: 10 }, // 0x069B0: DS:25C2 = 10, DS:25C4 = 11
   refreshAfterPicture: true, // PICTURE sets DS:8B7C (0x190EA)
   damageDespiteSave: 0x10,
+  damageRolls: 'once',
   loadPastEnd: true,
   wipeBanner: null,
   // the start-up code sets block 2 for a real game (spec/A-games/coab/assets.md); record 1 is block 2's first (I)
@@ -157,6 +202,12 @@ export const COAB_ECL: EclMap = {
   // 0x1B61A → 0x3593D: the record as stored (0x3565C rolls nothing), char[0x126] = id, CPIC record id as
   // the combat icon, no side, no portrait
   addNpc: { enemyId: null, tag: 'monster', loaderRolls: false, iconPicture: true },
+  difficultyHp: null,
+  destroyUnreadies: false, // 0x1BB49: the items freed at once
+  monsterFile: null,
+  findSpellFirst: 1, // 0x1B6E7
+  combatVault: null,
+  checkParty: null, // I: CotAB's 0x19CA4 (the port runs PoR's selectors)
 }
 
 // spec/A-games/sotsb/ecl.md: CotAB's spaces; the view follows the 439-byte record; PROTECTION reads nothing;
@@ -192,7 +243,8 @@ export const SOTSB_ECL: EclMap = {
   calls: { refresh: 0x2dcb, sound: 0xb203, frame: 0x6803 },
   callSounds: { by: { 8: 10, 10: 11 }, other: 10 }, // DS:19DA, 19DC (I: their values CotAB's)
   refreshAfterPicture: true, // I: as CotAB
-  damageDespiteSave: 0x10, // I: DAMAGE's handler grew, not read
+  damageDespiteSave: 0x10, // 0x2091A: flags & 0x10, as CotAB's
+  damageRolls: 'perVictim',
   loadPastEnd: true, // I
   wipeBanner: null,
   // 0x21934: a new game at record 17 (block 2); the demo at record 3 (block 1, games/startup.ts)
@@ -205,6 +257,20 @@ export const SOTSB_ECL: EclMap = {
   pauseMs: 100, // I
   quitProgram: null,
   addNpc: { enemyId: null, tag: 'monster', loaderRolls: false, iconPicture: true }, // I: as CotAB
+  difficultyHp: { variable: 0x4af4, below: 5 }, // ECL 0x4CF4 (a new game sets 2, 0x2CB1D: × 1)
+  destroyUnreadies: true,
+  monsterFile: 1,
+  findSpellFirst: 0,
+  combatVault: 0x4afc, // ECL 0x4CFC
+  // 0x1F051: s 0 (−0x7C00 = 0x8400) the effect; 0x72 race; 0x19 CHA; 0xA5–0xAC thief skills from +0xF3;
+  // 0x9F movement +0x1B6; 0xC9–0xD0 class levels (0xCD, 0xCE read no class: not listed)
+  checkParty: {
+    effect: 0x8400,
+    equals: { 0x72: 'race' },
+    bytes: { 0x19: ['stat', 5], 0x9f: ['move', 0] },
+    range: { from: 0xa5, to: 0xac, field: 'thief' },
+    levels: { 0xc9: 5, 0xca: 0, 0xcb: 6, 0xcc: 2, 0xcf: 3, 0xd0: 4 },
+  },
 }
 
 const SIZES: ['a' | 'b' | 'c' | 'code', number][] = [['a', 0x400], ['b', 0x400], ['c', 0x200], ['code', 0x1e00]]

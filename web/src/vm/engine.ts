@@ -23,7 +23,7 @@ import { unexepack } from '../data/exepack'
 import { randomTreasure } from '../rules/randitem'
 import { advanceClock, HOUR, MINUTE } from '../rules/camp'
 import { F } from '../games/fields'
-import { recalc } from '../rules/equip'
+import { recalc, unreadyItem } from '../rules/equip'
 import { WorldHost } from '../rules/worldfx'
 import { fire, fx } from '../rules/effects'
 import type { DemoMode } from '../games/startup'
@@ -777,6 +777,8 @@ export class Engine {
         this.readops(6)
         const sel = this.kind[1] === 1 ? this.addr(1) : this.val(1)
         const dest = [3, 4, 5, 6].map((i) => this.addr(i))
+        const cp = game().ecl.checkParty
+        if (cp) { this.checkPartyStats(cp, dest); break }
         let vals: number[]
         // selector 0: does anyone have effect e (FUN_10ba_2199)? Used with 0x13 Find Traps
         if (sel === 0) { const e = this.val(2) & 0xff; vals = [0, 0, 0, +this.nodes.some((c) => this.effectsOf(c).some((x) => x.type === e))] }
@@ -1011,16 +1013,66 @@ export class Engine {
     this.addMonsters(this.val(1), this.val(2), this.val(3))
   }
 
+  /** CHECK_PARTY by the selector's offset from B (SotSB 0x1F051, games/ecl.ts `checkParty`). */
+  private checkPartyStats(cp: NonNullable<ReturnType<typeof game>['ecl']['checkParty']>, dest: number[]) {
+    const s8 = (v: number) => (v << 24) >> 24
+    const s = this.kind[1] === 1 ? (this.addr(1) - B0) & 0xffff : (this.val(1) - game().ecl.b) & 0xffff
+    const v2 = this.val(2) & 0xff
+    const party = this.party()
+    const byteOf = (field: keyof typeof F, index: number) => {
+      const f = F[field] as number | number[]
+      return Array.isArray(f) ? f[index] : f + index
+    }
+    let min = 0xff, max = 0, sum = 0, count = 0, found = 0
+    // unsigned bytes against min 0xFF and max 0 (0x1F212); class levels signed, so min (0xFF = −1) moves only
+    // below −1 and stays 0xFF in play, and only levels of at least operand 2 count for min and max (0x1F3CF)
+    const stats = (val: (c: Uint8Array) => number, signed = false, from = 0) => {
+      for (const c of party) {
+        const v = val(c)
+        count++; sum += v
+        if (signed) {
+          if (v < from) continue
+          if (v < s8(min)) min = v & 0xff
+          if (v > s8(max)) max = v & 0xff
+        } else { if (v < min) min = v; if (v > max) max = v }
+      }
+    }
+    if (s === cp.effect) { found = +party.some((c) => this.effectsOf(c).some((x) => x.type === v2)); min = max = 0 }
+    else if (cp.equals[s]) { const off = byteOf(cp.equals[s], 0); found = +party.some((c) => c[off] === v2) }
+    else if (cp.bytes[s]) { const off = byteOf(...cp.bytes[s]); stats((c) => c[off]) }
+    else if (s >= cp.range.from && s <= cp.range.to) { const off = byteOf(cp.range.field, s - cp.range.from); stats((c) => c[off]) }
+    else if (cp.levels[s] !== undefined) {
+      const k = cp.levels[s], minLevel = s8(v2)
+      stats((c) => {
+        let L = s8(c[F.levels + k])
+        if (F.prevLevels >= 0 && s8(c[F.prevLevels + k]) > L && formerLevelsCount(c)) L = s8(c[F.prevLevels + k])
+        return L
+      }, true, minLevel)
+    } else return
+    const avg = count ? Math.trunc(sum / count) & 0xff : 0 // the 'equals' case leaves it unset (0 here)
+    ;[min & 0xff, max & 0xff, avg, s8(found) & 0xffff].forEach((v, i) => this.store(dest[i], v))
+  }
+
   /** LOAD_MONSTER: append copies of MON<block>CHA record `id` with their items and effects. */
   addMonsters(id: number, n: number, picture: number) {
     if (this.monsters >= 63) return
-    const raw = this.files.record(`MON${this.block}CHA`, id)
+    const raw = this.files.record(`MON${game().ecl.monsterFile ?? this.block}CHA`, id)
     if (!raw) return
     const count = Math.max(n, 1)
-    const items = this.files.record(`MON${this.block}ITM`, id)
-    const spc = this.files.record(`MON${this.block}SPC`, id)
+    const items = this.files.record(`MON${game().ecl.monsterFile ?? this.block}ITM`, id)
+    const spc = this.files.record(`MON${game().ecl.monsterFile ?? this.block}SPC`, id)
+    const scale = game().ecl.difficultyHp
     for (let i = 0; i < count && this.monsters < 63; i++) {
       const m = this.monsterRecord(raw)
+      if (scale && m[F.side] === 1) {
+        // SotSB 0x1DF9F: the difficulty level's (level + 2) / 4 of HP and maximum HP, at least 1 each
+        const level = this.read(scale.variable)
+        if (level < scale.below) {
+          m[F.hp] = Math.floor((m[F.hp] * (level + 2)) / 4) & 0xff
+          m[F.maxHp] = Math.floor((m[F.maxHp] * (level + 2)) / 4) & 0xff
+          if (!m[F.hp] || !m[F.maxHp]) { m[F.hp] = 1; m[F.maxHp] = 1 }
+        }
+      }
       m[F.iconSlot] = this.iconSlot
       this.nodes.push(m)
       this.inventory.set(m, parseItems(items))
@@ -1136,7 +1188,7 @@ export class Engine {
     const party = this.party()
     const how = game().ecl.addNpc
     if (party.length <= 7) {
-      const raw = this.files.record(`MON${this.block}CHA`, id)
+      const raw = this.files.record(`MON${game().ecl.monsterFile ?? this.block}CHA`, id)
       if (!raw) { this.io.print(msg('noMonster'), false); return }
       const c = how.loaderRolls ? this.monsterRecord(raw) : this.storedRecord(raw)
       c[F.id] = how.tag === 'random' ? this.rand(256) : id
@@ -1154,8 +1206,8 @@ export class Engine {
       const n = party.length
       this.nodes.splice(n, 0, c)
       this.B[PARTY_SIZE - B0] = n + 1
-      this.inventory.set(c, parseItems(this.files.record(`MON${this.block}ITM`, id)))
-      this.effects.set(c, parseEffects(this.files.record(`MON${this.block}SPC`, id)))
+      this.inventory.set(c, parseItems(this.files.record(`MON${game().ecl.monsterFile ?? this.block}ITM`, id)))
+      this.effects.set(c, parseEffects(this.files.record(`MON${game().ecl.monsterFile ?? this.block}SPC`, id)))
       this.cur = c
     }
     // the handler then writes to whoever is current (unchanged when the party was full)
@@ -1206,8 +1258,12 @@ export class Engine {
 
   private async combat() {
     this.readops(0)
+    const vault = game().ecl.combatVault
     if (!this.monstersLoaded && !this.duel) {
-      if (this.B[SHOP_FLAG - B0] === 1) {
+      if (vault !== null && this.read(vault) === 1) {
+        this.write(vault, 0)
+        await this.io.engine('vault') // SotSB 0x1F5C2 → 0x21C90
+      } else if (this.B[SHOP_FLAG - B0] === 1) {
         this.B[SHOP_FLAG - B0] = 0
         await this.io.engine('shop')
       } else if (this.B[TEMPLE_FLAG - B0] === 1) {
@@ -1283,7 +1339,8 @@ export class Engine {
     const [flags, count, sides, bonus, save] = [1, 2, 3, 4, 5].map((i) => this.val(i) & 0xff)
     const size = this.B[PARTY_SIZE - B0] & 0xff
     const roll = () => (this.roll(count, sides) & 0xff) + bonus // the dice sum is a byte
-    let dmg = roll()
+    const each = game().ecl.damageRolls === 'perVictim' // SotSB: a roll per victim, after the pick
+    let dmg = each ? 0 : roll()
     const despite = (flags & game().ecl.damageDespiteSave) !== 0
     const host = new WorldHost(this)
     const s8 = (v: number) => (v << 24) >> 24
@@ -1325,19 +1382,22 @@ export class Engine {
     const pick = flags & 0x40 ? 0 : this.roll(1, size || 1) // rolled even when it is not used
     if (!(flags & 0x80)) {
       for (let i = 0; i < flags; i++) {
+        if (each) dmg = roll()
         const c = member(this.roll(1, size || 1))
         if (c && hit(c)) hurt(c)
-        dmg = roll()
+        if (!each) dmg = roll()
       }
     } else {
       const b = flags & 0x1f, kind = save & 7
       const fate = (c: Uint8Array, k: number) => { if (!saved(c, k, b) || despite) hurt(c) }
       if (flags & 0x40) {
-        for (const c of [...this.nodes]) { if (flags & 0x20) hurt(c); else fate(c, kind) } // the whole list
+        for (const c of [...this.nodes]) { if (each) dmg = roll(); if (flags & 0x20) hurt(c); else fate(c, kind) } // the whole list
       } else if (save & 0x80) {
+        if (each) dmg = roll()
         if (kind === 0) hurt(this.cur)
         else fate(this.cur, kind - 1)
       } else {
+        if (each) dmg = roll()
         const c = member(pick)
         if (c) fate(c, kind)
       }
@@ -1378,7 +1438,7 @@ export class Engine {
         const party = this.party()
         let at = 0xff, who = party.length - 1
         for (let m = 0; m < party.length && at === 0xff; m++) {
-          for (let i = 1; i <= F.memorisedCount; i++) if (party[m][F.memorised + i - 1] === id) { at = i; who = m; break }
+          for (let i = 1; i <= F.memorisedCount; i++) if (party[m][F.memorised + i - 1] === id) { at = i - 1 + game().ecl.findSpellFirst; who = m; break }
         }
         this.store(this.addr(2), at)
         this.store(this.addr(3), who)
@@ -1404,11 +1464,23 @@ export class Engine {
       case 'destroyItems': { // every item of a type leaves the party
         this.readops(1)
         const type = this.val(1) & 0xff
+        const keep = this.cur
         for (const c of this.party()) {
           const items = this.itemsOf(c)
-          for (let k = items.length - 1; k >= 0; k--) if (items[k].type === type) items.splice(k, 1)
+          this.cur = c
+          for (let k = items.length - 1; k >= 0; k--) {
+            const it = items[k]
+            if (it.type !== type) continue
+            // SotSB 0x21276: a readied one is put away first ("It's Cursed!" and left readied if cursed)
+            if (game().ecl.destroyUnreadies && it.ready && this.items) {
+              const why = await unreadyItem(new WorldHost(this), c, items, it, this.items)
+              if (why) this.io.print(why, false)
+            }
+            items.splice(k, 1)
+          }
           if (this.items) recalc(c, items, this.items)
         }
+        this.cur = keep
         break
       }
     }

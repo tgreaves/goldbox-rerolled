@@ -865,8 +865,9 @@ export const COAB_MENUS: Menus = {
 
 // SotSB (spec/A-games/sotsb/): each CotAB message found by its text in SotSB's merged image (I: matched by text,
 // the copy each routine prints not traced; where the text occurs more than once, the first). Not found, so
-// shown as their id until traced: turnsUndead, isTurned, isDestroyed, nothingHappens, charmUnaffected, wonDuel, foundTreasure, duelistReceives, lostDuel, cursed, trainingCosts, getsBackUp, unCursed, miscasts, isCured, notBlind, notDiseased, notPoisoned, notDead, notCursed, notStoned, willOnlyCost, goldPieces, payForCure, templeNoMoney, templeCured, camp, memorizeThese, memorizeThese2, cannotMemorize, scribeThese, scribeThese2, scribingSpell, funky, noSpellEffects, alter, identifyFor, reviveMonster, reviveParty, takeWillYou
+// shown as their id until traced: turnsUndead, isTurned, isDestroyed, nothingHappens, charmUnaffected, wonDuel, foundTreasure, duelistReceives, lostDuel, trainingCosts, getsBackUp, unCursed, miscasts, isCured, notBlind, notDiseased, notPoisoned, notDead, notCursed, notStoned, willOnlyCost, goldPieces, payForCure, templeNoMoney, templeCured, camp, memorizeThese, memorizeThese2, cannotMemorize, scribeThese, scribeThese2, scribingSpell, funky, noSpellEffects, alter, identifyFor, reviveMonster, reviveParty, takeWillYou
 export const SOTSB_STRINGS: Strings = {
+  cursed: 0x442e2, // the ready routine 0x4431F (CS:0x1BD2), O
   cough: 0x514d0, nausea: 0x514e0, cloudPoisoned: 0x514fc, cloudKilled: 0x2eb8d, battleBegins: 0x2c551,
   teammateDying: 0x28ab9, continueBattle: 0x28ad0, gameSpeed: 0x37d41, speedRange: 0x37d4f, bandaged: 0x5611f,
   flee: 0x28cff, blocked: 0x28d05, notWithWeapon: 0x29080, attackAlly: 0x33bc5, aim: 0x33ce0, usesItem: 0x44ead,

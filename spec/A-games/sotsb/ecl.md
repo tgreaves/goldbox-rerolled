@@ -84,12 +84,59 @@ way). Against CotAB:
 | 0x38 | PROGRAM | 1 | 1 | only 0 and 9 handled (below) |
 | others | | as CotAB | | the same counts for 0x00–0x40 (O, every handler read) |
 
-Handlers whose code differs from CotAB's beyond the compiler's one-instruction epilogue, **not yet
-read** (**?**): 0x0B LOAD_MONSTER (357 instructions against 306), 0x0E PICTURE, 0x1E CHECK_PARTY (352
-against 199), 0x20 NEW_ECL, 0x21/0x37 LOAD_AREA and LOAD_WALLSETS (one handler, 168 against 131), 0x24
-COMBAT, 0x27 TREASURE (576 against 389), 0x2E DAMAGE, 0x39 WHO, 0x3B FIND_SPELL, 0x3D REDRAW_SCREEN,
-0x40 DESTROY_ITEMS. The others have CotAB's shape (I: same operand use and calls, not compared line by
-line).
+Handlers whose code differs from CotAB's beyond the compiler's one-instruction epilogue were each
+compared with CotAB's instruction by instruction (2026-10-22, [below](#handlers-read-o)); the others have
+CotAB's shape (I: same operand use and calls, not compared line by line).
+
+### Handlers read (O)
+
+- **0x0B LOAD_MONSTER** (0x1DF3E): CotAB's, plus, for a loaded record whose side (+0x1A8) is 1 and while
+  the difficulty level, the A word ECL **0x4CF4**, is below 5: HP (+0x1B5) and maximum HP (+0x70) := byte ×
+  (level + 2) div 4, both set to 1 if either becomes 0 (0x1DF9F–0x1E036; a new game sets the level to 2,
+  0x2CB1D, so × 1; Alter's Level changes it, 0x37D38). A record with an undead byte (+0xF2) also counts in
+  DS:A4D5, which nothing reads (cleared by CLEAR_MONSTERS, 0x1EE4E). The monster files are always
+  **`MON1`**`CHA`/`ITM`/`SPC`: the loader builds "MON" + the constant "1" + the kind (0x4150D), whatever
+  the block.
+- **0x1E CHECK_PARTY** (0x1F051): s := operand 1 (its address with kind 1, else its value) − 0x7C00 (B);
+  min := 0xFF, max := 0, sum := count := 0, found := 0; then by s, over the party list:
+  0x8400 (s of 0): found := anyone has the effect of operand 2 (the search stops at the first), and min,
+  max and average := 0 (0x6EF:4C4 clears three bytes); **0x72** (race, +0x6B): found := anyone of race
+  operand 2, min and max as initialised, the average left unset (**Bug**: a stack byte); **0x19** (CHA,
+  +0x1B), **0x9F** (movement, +0x1B6) and **0xA5–0xAC** (thief skill s − 0xA4 at +0xF2 + that, the port's
+  `thief` + (s − 0xA5)): unsigned min and max, the sum, the count; **0xC9–0xD0** (class levels: C9 5, CA 0,
+  CB 6, CC 2, CF 3, D0 4; CD and CE take a class index from an unset stack byte, **Bug**): the level +0x111
+  + k, or the former level +0x118 + k when it is higher and former levels count (0x51841), summed and
+  counted for everyone, but min and max only over levels of at least operand 2 and compared **signed**, so
+  min (0xFF, −1) never moves for a real level (**Bug**). Then (0x1EFF1) operand 3 := min, 4 := max, 5 :=
+  sum div count (signed), 6 := found (signed). The scripts use 0x72 (race 3, dwarves), 0xA7 (the third
+  thief skill) and 0xD0. The port: `checkParty` in the profile (the unset average as 0).
+- **0x24 COMBAT** (0x1F590): with no monsters, first **the vault**: if the A word ECL **0x4CFC** is 1 it is
+  cleared and the vault opens (0x21C90: `vault.dat`'s View, Take, Pool, Exit; the bank of ECL1 #33 sets the
+  word before `COMBAT` for its Deposit and Withdraw, 0x8D74); else the shop and temple flags and the treasure
+  as CotAB's. Around each screen a sound driver call (`7e4:20` with DS:19C4, or `7e4:cb`, by DS:741C;
+  presentation). The port: `combatVault` (the 'vault' screen of the host).
+- **0x27 TREASURE** (0x1F96D): CotAB's but for the random item's **type choice**, a new nested table of
+  dice bands (0x1FB5F–0x1FE22: d10, d3, d4, d20, d8, d6 … on the first d100's bands; not transcribed here:
+  it is the profile's random-treasure data, `games/treasure.ts`).
+- **0x2E DAMAGE** (0x208B2): CotAB's flags (0x10 still takes a saved victim's damage, 0x2091A), but the
+  dice are **rolled for each victim**, just before its save or attack: the victim pick (d *party size*,
+  unless 0x40) first, then per victim the damage roll (0x20973 in the everyone loop, 0x20A01 the current
+  character, 0x20A69 the picked one, 0x20B07 each attack), where CotAB rolls once before choosing. When
+  nobody is left in play: "The entire party is killed!" (CS:0x2D66) and a 3-second wait. The port:
+  `damageRolls: 'perVictim'`.
+- **0x3B FIND_SPELL** (0x20DEA): CotAB's, counting the memorised slots **from 0** (0 … 0x4A) where CotAB's
+  count from 1; not found: 0xFF. A debug line (gated by DS:67EF) is not shown. The port: `findSpellFirst`.
+- **0x40 DESTROY_ITEMS** (0x211F8): each member is made current in turn, and a readied item of the type is
+  first put away through the ready routine 0x4431F ("It's Cursed!" for a cursed one, which stays readied;
+  else unreadied with its item handler), then freed; the current character restored. The port:
+  `destroyUnreadies`.
+- **0x20 NEW_ECL** (0x1E75C): CotAB's; the branch for a failed load (stop without the area change, the old
+  record put back) is dead, as the loader 0x25C3C retries until it has the record and returns 1.
+- **0x0E PICTURE** (0x1E3D8): ids from **0x70** are BIGPIC (CotAB 0x78; the profile's `bigFrom`); id 0x79
+  skips one display flag (an empty procedure, 0x35EC0). **0x21/0x37** (0x1E7CF): CotAB's LOAD_AREA without
+  its overland picture call; LOAD_WALLSETS as [below](#found-while-running-the-scripts-in-the-port-2026-10-22).
+  **0x39 WHO** and **0x3D REDRAW_SCREEN** differ only in display flags (DS:A4D4, DS:A4D1; the demo flag
+  DS:67E9 skips a redraw). None of these four changes the game.
 
 ### 0x41 ADD_EP (O, 0x21324)
 
@@ -255,8 +302,11 @@ writes as data (0x100 and 0x119 differ), the second leave flag as profile data (
 
 ## Open
 
-- The changed handlers listed under [Opcodes](#opcodes) (CHECK_PARTY, TREASURE, LOAD_MONSTER, LOAD_AREA,
-  COMBAT, DAMAGE …) are not yet read (**?**).
+- ~~The changed handlers~~: read ([Handlers read](#handlers-read-o)); TREASURE's type table is left to the
+  random-treasure data.
+- **The end of the game** (O): no PROGRAM ends it. Once the Dreadlord is destroyed (ECL3), the well of ECL1
+  #34 (0x99B7) prints "BRAVE WARRIORS, YOU HAVE DEFEATED THE DREADLORD…" once (A 0x4C5F bit 4) and play goes
+  on; the profile's ending is empty.
 - What `19d:0`(1) does for the demo, and DS:7420's values 1 and 2 (**?**).
 - The meanings of the new record bytes the view reaches (+0x1B, +0x70, +0x1B5) wait for SotSB's record
   map (**?**).

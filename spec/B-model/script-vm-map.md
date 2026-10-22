@@ -233,11 +233,20 @@ holds "The END!" as a string (the code task of [AUDIT.md](../AUDIT.md) §6.8, C2
 | `endingProgram` | the PROGRAM operand that plays the ending; null: none | 8 | 8 |
 | `wallSetNone` | LOAD_WALLSETS operands meaning "no set" (one-slot mode: the slot emptied; two-slot: left) | [0xFF] | [0xFF] |
 | `addExperience` | ADD_EP `{ party, one, gains, classes }` (the lines; the share amount ÷ the number of the first `classes` class levels above 0, to those in play); null: no such opcode | null | null |
+| `damageRolls` | DAMAGE's dice: `once` (before the victims, the attack mode's next after each) or `perVictim` (before each victim's save or attack, the pick first) | once | once |
+| `difficultyHp` | LOAD_MONSTER's scaling of a side-1 record by the difficulty word `{ variable, below }`: HP and max HP × (level + 2) div 4, at least 1; null: none | null | null |
+| `monsterFile` | the MON<n> file digit; null: the block's | null | null |
+| `findSpellFirst` | FIND_SPELL's index of the first memorised slot | — | 1 |
+| `destroyUnreadies` | DESTROY_ITEMS puts a readied item away (its handler, "It's Cursed!") before freeing it | false | false |
+| `combatVault` | COMBAT with no monsters opens the vault when this A word is 1 (cleared first); null: none | null | null |
+| `checkParty` | CHECK_PARTY by the selector's offset from B: `{ effect, equals, bytes, range, levels }` (spec/A-games/sotsb/ecl.md, "Handlers read"); null: the shared PoR selectors | null | null |
 
 SotSB (spec/A-games/sotsb/ecl.md): `areaZero` 17 with `areaZeroBlock` 2 (0x21934), `blockFile` { 1, 2 }
 (0x26763 → 0x6EB0: two values a file), no `endingProgram`, `wallSetNone` [0xFF, 0x7F] (0x1E812–0x1E949),
-`addExperience` { 0x212D4, 0x21300, 0x21311, 6 } (0x21324), and the variants `nothing` for PROTECTION
-(0x3C) and `addExperience` for 0x41.
+`addExperience` { 0x212D4, 0x21300, 0x21311, 6 } (0x21324), the variants `nothing` for PROTECTION
+(0x3C) and `addExperience` for 0x41; `damageRolls` perVictim (0x208B2), `difficultyHp` { 0x4AF4 (ECL 0x4CF4),
+5 } (0x1DF9F), `monsterFile` 1 (0x4150D), `findSpellFirst` 0 (0x20E4D), `destroyUnreadies` (0x21276),
+`combatVault` 0x4AFC (ECL 0x4CFC, 0x1F5C2) and `checkParty` (0x1F051).
 
 PROGRAM's other operands are the engine's: 0 the party screen (training), `endingProgram` the ending, 9 camp (the
 script then continues where it was); any other is handed to the host as `program n`

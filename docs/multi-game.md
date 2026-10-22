@@ -389,6 +389,15 @@ spec/A-games/sotsb/music.md). The shipped save is a start-of-game save (area 0):
 start-up's conversion (block 2, record 17, as the original does) it cannot equal the shipped bytes, and the
 bytes after each member's name are written 0 (as for PoR and CotAB).
 
+*The script VM's changed handlers (2026-10-22)*, read against CotAB's (spec/A-games/sotsb/ecl.md, "Handlers
+read") and made profile data in `SOTSB_ECL`: LOAD_MONSTER always loads `MON1` and scales a monster's HP by
+the difficulty level (ECL 0x4CF4); CHECK_PARTY by B offset (race, CHA, movement, thief skills, class levels);
+COMBAT opens the vault (ECL 0x4CFC, the bank's Deposit and Withdraw; the host's 'vault' screen); DAMAGE rolls
+per victim; FIND_SPELL counts from slot 0; DESTROY_ITEMS puts readied items away first. NEW_ECL, PICTURE,
+LOAD_AREA, WHO and REDRAW_SCREEN need nothing new; TREASURE's type table belongs to the random-treasure
+data. The game has no ending program: the well's epilogue (ECL1 #34) and play goes on.
+`test/sotsbvm.test.ts`.
+
 ## Backlog
 
 - ~~CotAB dual-classing~~: done 2026-10-21 ("Human Change Classes" 0x5135D in the training hall's
