@@ -1814,6 +1814,8 @@ export class Battle implements FxHost {
         this.print(line(name(targets[0].c), textOf(p.immuneMsg)))
         return
       }
+      // `castMsg` (SotSB Sticks to Snakes 0x4BC7E): a line on the first target before the effect
+      if (p.castMsg !== undefined && targets[0]) this.print(line(name(targets[0].c), textOf(p.castMsg)))
       if (p.casterEffect !== undefined) await addEffect(this, f.c, p.casterEffect as number, dur, 0, 0, 0, false, false, '')
       // `saveShift` (CotAB Feeblemind 0x49562): the first target's save byte `save` moved by its class
       // (`byClass`, else `other`) while the spell resolves, then put back
@@ -2005,18 +2007,30 @@ export class Battle implements FxHost {
         await addEffect(this, t.c, p.effect as number, dur, 0, 0, 1, saved, false, msgOf(p))
       }
     },
-    /** Charm Person (11dd): power L + the caster's side × `sideMul`, run at once; only man-sized or smaller */
+    /**
+     * Charm Person (11dd): power L + the caster's side × `sideMul`, run at once; only man-sized or smaller;
+     * with `refuse` (SotSB 0x498D1) instead a race of `race` or above without the immunity flag
+     * `unlessFlag` is refused, with `unaffected`
+     */
     async charm({ f, s, L, dur, targets }, p) {
       const t = targets[0]
       if (!t) return
-      if (t.c[F.monsterType] > 1 || t.c[F.sizeFlags] > 1) { this.print(`${name(t.c)} ${msg('charmUnaffected')}`); return } // as Hold Person (4e53:11f3)
+      const r = p.refuse as { race: number; unlessFlag: number } | undefined
+      const refused = r ? t.c[F.race] >= r.race && !(F.immunity >= 0 && t.c[F.immunity] & r.unlessFlag) : t.c[F.monsterType] > 1 || t.c[F.sizeFlags] > 1
+      if (refused) { this.print(p.unaffected !== undefined ? line(name(t.c), textOf(p.unaffected)) : `${name(t.c)} ${msg('charmUnaffected')}`); return } // as Hold Person (4e53:11f3)
       await addEffect(this, t.c, s.effect, dur, (L + this.side(f) * (p.sideMul as number)) & 0xff, 1, 1, this.spellSave(t, s), true, msgOf(p))
     },
-    /** Snake Charm (190f): ignores targeting; creatures of `monsterType` while the caster's HP lasts */
+    /**
+     * Snake Charm (190f): ignores targeting; creatures of `monsterType` (or, SotSB 0x49F73, with the
+     * class flag `classFlag`, in play and not already holding `effect`) while the caster's HP lasts
+     */
     async charmByHp({ f, L }, p) {
       let pool = f.c[F.hp]
       for (const t of this.fighters) {
-        if (t.c[F.monsterType] !== (p.monsterType as number) || t.c[F.hp] > pool) continue
+        const kind = p.classFlag !== undefined
+          ? (t.c[F.classFlags] & (p.classFlag as number)) !== 0 && t.c[F.inPlay] !== 0 && !this.e.effectsOf(t.c).some((x) => x.type === (p.effect as number))
+          : t.c[F.monsterType] === (p.monsterType as number)
+        if (!kind || t.c[F.hp] > pool) continue
         pool -= t.c[F.hp]
         await addEffect(this, t.c, p.effect as number, 0, L, 0, 0, false, false, msgOf(p))
       }

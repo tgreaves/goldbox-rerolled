@@ -48,6 +48,10 @@ export interface CharFields {
   /** CotAB: monster-class flags (0 in player characters; spec/A-games/coab/effects.md §4): 1 evil/extraplanar,
    *  2 kobold/goblin kind, 4 orc/goblin kind, 8 giant class (−1 in PoR, which names the monsters instead) */
   classFlags: number
+  /** SotSB: a second flag byte next to them, read by the spells and the cloud check (spec/A-games/sotsb/spells.md):
+   *  2 may be charmed though a monster (0x498FC), 8 immune to death magic (Slay Living 0x4BF4F, Death Spell
+   *  0x4D1A5); −1 in PoR and CotAB */
+  immunity: number
   /** levels lost to energy drain, and the max HP they took (Restoration and training give them back);
    *  CotAB: the converter copies PoR 0x74/0x75 here (I) */
   drainLevels: number
@@ -151,7 +155,7 @@ export const POR_FIELDS: CharFields = {
   size: 0x11d, name: 0x00, stat: range(0x10, 1), baseStat: range(0x10, 1), strPct: 0x16, baseStrPct: 0x16,
   memorised: 0x17, memorisedCount: 21, studyHours: 0x2c, thac0Base: 0x2d, race: 0x2e, cls: 0x2f, age: 0x30,
   maxHp: 0x32, known: 0x32, knownCount: 56, sweep: 0x6b, sizeFlags: 0x6c, saves: 0x6d, baseMove: 0x72,
-  hitDice: 0x73, hpLevel: -1, abilityUses: -1, classFlags: -1, drainLevels: 0x74, drainHp: 0x75, undead: 0x76, thief: 0x77, effects: 0x7f, misc83: 0x83, misc86: 0x86, misc87: 0x87, morale: 0x84, npcShare: 0x85,
+  hitDice: 0x73, hpLevel: -1, abilityUses: -1, classFlags: -1, immunity: -1, drainLevels: 0x74, drainHp: 0x75, undead: 0x76, thief: 0x77, effects: 0x7f, misc83: 0x83, misc86: 0x86, misc87: 0x87, morale: 0x84, npcShare: 0x85,
   money: 0x88, levels: 0x96, classCount: 8, prevLevels: -1, gender: 0x9e, monsterType: 0x9f, alignment: 0xa0,
   attacksBase: 0xa1, natDice: 0xa3, natSides: 0xa5, natBonus: 0xa7, acBase: 0xa9, strAdj: 0xaa, id: 0xab,
   xp: 0xac, itemMask: 0xb0, hpRolled: 0xb1, clericSlots: 0xb2, druidSlots: -1, muSlots: 0xb5, slotLevels: 3,
@@ -166,7 +170,7 @@ export const COAB_FIELDS: CharFields = {
   size: 0x1a6, name: 0x00, stat: range(0x11, 2), baseStat: range(0x10, 2), strPct: 0x1c, baseStrPct: 0x1d,
   memorised: 0x1e, memorisedCount: 84, studyHours: 0x72, thac0Base: 0x73, race: 0x74, cls: 0x75, age: 0x76,
   maxHp: 0x78, known: 0x78, knownCount: 100, sweep: 0xdd, sizeFlags: 0xde, saves: 0xdf, baseMove: 0xe4,
-  hitDice: 0xe5, hpLevel: 0xe6, abilityUses: 0x191, classFlags: 0x14b, drainLevels: 0xe7, drainHp: 0xe8, undead: 0xe9, thief: 0xea, effects: 0xf2, misc83: 0xf6, misc86: 0xf9, misc87: 0xfa, morale: 0xf7, npcShare: 0xf8,
+  hitDice: 0xe5, hpLevel: 0xe6, abilityUses: 0x191, classFlags: 0x14b, immunity: -1, drainLevels: 0xe7, drainHp: 0xe8, undead: 0xe9, thief: 0xea, effects: 0xf2, misc83: 0xf6, misc86: 0xf9, misc87: 0xfa, morale: 0xf7, npcShare: 0xf8,
   money: 0xfb, levels: 0x109, classCount: 8, prevLevels: 0x111, gender: 0x119, monsterType: 0x11a, alignment: 0x11b,
   attacksBase: 0x11c, natDice: 0x11e, natSides: 0x120, natBonus: 0x122, acBase: 0x124, strAdj: 0x125, id: 0x126,
   xp: 0x127, itemMask: 0x12b, hpRolled: 0x12c, clericSlots: 0x12d, druidSlots: 0x132, muSlots: 0x137, slotLevels: 5,
@@ -183,7 +187,7 @@ export const SOTSB_FIELDS: CharFields = {
   size: 0x1b7, name: 0x00, stat: range(0x11, 2), baseStat: range(0x10, 2), strPct: 0x1c, baseStrPct: 0x1d,
   memorised: 0x1e, memorisedCount: 75, studyHours: 0x69, thac0Base: 0x6a, race: 0x6b, cls: 0x6c, age: 0x6e,
   maxHp: 0x70, known: 0x70, knownCount: 116, sweep: 0xe6, sizeFlags: 0xe7, saves: 0xe8, baseMove: 0xed,
-  hitDice: 0xee, hpLevel: 0xef, abilityUses: 0x6d, classFlags: 0x15d, drainLevels: 0xf0, drainHp: 0xf1, undead: 0xf2, thief: 0xf3, effects: 0xfb, misc83: -1, misc86: 0x101, misc87: 0x102, morale: 0xff, npcShare: 0x100,
+  hitDice: 0xee, hpLevel: 0xef, abilityUses: 0x6d, classFlags: 0x15d, immunity: 0x15e, drainLevels: 0xf0, drainHp: 0xf1, undead: 0xf2, thief: 0xf3, effects: 0xfb, misc83: -1, misc86: 0x101, misc87: 0x102, morale: 0xff, npcShare: 0x100,
   money: 0x103, levels: 0x111, classCount: 7, prevLevels: 0x118, gender: 0x11f, monsterType: -1, alignment: 0x120,
   attacksBase: 0x121, natDice: 0x123, natSides: 0x125, natBonus: 0x127, acBase: 0x129, strAdj: 0x12a, id: 0x12b,
   xp: 0x12c, itemMask: 0x130, hpRolled: 0x131, clericSlots: 0x132, druidSlots: 0x139, muSlots: 0x147, slotLevels: 7,

@@ -101,43 +101,25 @@ pieces (§1) (O); "same, calls differ" = the same constants, one or two more cal
 | 116 | 4d838 | **new** Mass Invisibility: every target (in combat the targets around the aim, 0x556D0) gets Apply "is Invisible (spell)" |
 | 117 | 4d8ed | **new** Power Word Stun: by the target's HP: 1–30 → 4d4, 31–60 → 2d4, 61–90 → 1d4 rounds, more → nothing; added through add-effect with "is STUNNED" (I: the effect type) |
 
-## 4. The profile's spell map (draft)
+## 4. The port's spell map (2026-10-22)
 
-`web/src/games/spellrules.ts` would take CotAB's map for the ids marked "same", and for the others (kinds as
-the port names them; parameters to be confirmed where marked I above):
+`web/src/games/spellrules.ts` `SOTSB_SPELLS`: CotAB's entries with SotSB's lines (the DS pieces of §1 as
+lists of addresses, read at each handler; the code-segment strings at their image addresses), then the
+changed and new ids of §3 as kinds ([B-model/vocabularies.md §4.2](../../B-model/vocabularies.md#42-shared-kinds)):
+`healAll` (36, 90), `harm` (56), `younger` (63), `stoneToFlesh` (113), `saveOrStatus` (111, 114),
+`slayByPool` (110: costs by hit dice 1, 2, 8, 8, 16, 16, at 6 by max HP ≤ 0x33 16 else 20, then 20, 20,
+past that 0xA2), `stun` (117), `none` (78, 101–109); new parameters: Charm's `refuse` (10, 96), Snake Charm's
+`classFlag` (27), Slow Poison's `direct` (26), Enlarge's `viaAdd` and its table (12: L 0 and past 11 give 23),
+Slay Living's `immuneFlag` and probe 0xFF (76), Sticks to Snakes' `castMsg` (70), Strength's `pctClasses`
+[2, 4] (35: paladins no longer), the clouds' cells (34, 91, 41/46), 0x6F, 0x70, 0x71 (84, 85, 59). Durations:
+§2. Read for this: 10, 12, 13, 26, 27, 35, 36, 56, 59, 63, 67, 70, 75, 76, 84, 85, 110, 111, 113, 117 (O).
 
-```ts
-// SotSB: CotAB's handlers but these (spec/A-games/sotsb/spells.md §3)
-const SOTSB_SPELL_CHANGES = {
-  10: { k: 'charm', race: 7, msg: /* "is Charmed" */ 0, unaffected: /* "is Unaffected" */ 0 },
-  12: { k: 'strength', table: 'enlarge', overBase: true, via: 'addEffect', effect: 0x0c },
-  26: { k: 'slowPoison', revive: 'direct' },
-  36: { k: 'healAll', diseases: [31, 34, 43, 44], blind: 0x21, feeble: 0x44, dice: [1, 4], to: 'maxLess' },
-  56: { k: 'harm', effect: 0x22, dice: [1, 4] },
-  59: { k: 'strength', str: 21, raw: 0x71, duration: { n: 1, d: 4, times: 10, plus: 40 } },
-  63: { k: 'younger', dice: [1, 4], floor: 18 },
-  75: { k: 'raise', statuses: [6, 1], races: [1], removes: [0x37] },
-  78: { k: 'none' },
-  84: { k: 'scare', effect: 0x6f },
-  85: { k: 'flameShield', effect: 0x70 },
-  90: { k: 'healAll' /* the Heal handler */ },
-  96: { k: 'charm', race: 7 },
-  98: { k: 'heal', amount: { n: 1, d: 8 } },
-  110: { k: 'slay', pool: { n: 4, d: 20 }, status: 6 },
-  111: { k: 'saveOrElse', probe: true, save: 4, status: 6 },
-  112: { k: 'apply' },
-  113: { k: 'stoneToFlesh' },
-  114: { k: 'saveOrElse', probe: true, save: 4, status: 7 },
-  115: { k: 'delayedBlast', cell: 0x1a, maxDelay: 50 },
-  116: { k: 'apply', all: true },
-  117: { k: 'stun', bands: [[1, 30, 4, 4], [31, 60, 2, 4], [61, 90, 1, 4]] },
-  ...Object.fromEntries([101, 102, 103, 104, 105, 106, 107, 108, 109].map((id) => [id, { k: 'none' }])),
-}
-```
-
-New kinds the port would need: `healAll` (Heal), `harm`, `younger`, `stoneToFlesh`, `delayedBlast`, `stun`, and
-the Death Spell pool on `slay`; `saveOrElse` takes the event-9 probe as a parameter. The texts are DS pieces,
-so the profile's message parameters become pairs (or the port's `say` joins "is " and a word).
+The port's choices where the original is not followed (I or ?): 83 Dimension Door keeps CotAB's `teleport`
+with no holds to release (its new battlefield routines not read); 93 Feeblemind keeps CotAB's procedure
+(the race and class bands not read); 115 Delayed Blast Fireball goes off at once as a Fireball (§3: when
+its zone goes off is not read, ?), without asking the delay; Enlarge's add-effect power and flag are the raw
+add's (I); Heal's three removals are silent before its own lines (I: whether 0x51D17 says "is Cured" there
+too); Stone to Flesh's last branches (an Apply) are left out; 0, 9 and 42 are CotAB's (not re-read).
 
 ## Open
 

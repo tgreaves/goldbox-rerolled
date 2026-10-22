@@ -4,7 +4,7 @@
 import type { GameProfile } from './types'
 import { COAB_RULES_TEXT } from './rulestext'
 import { COAB_EFFECTS } from './effectrules'
-import { COAB_SPELLS } from './spellrules'
+import { SOTSB_SPELLS } from './spellrules'
 import { COAB_LANDMARKS } from './landmarkrules'
 import { COAB_TREASURE } from './treasure'
 import { SOTSB_SOUND } from './sound'
@@ -49,7 +49,7 @@ export const SOTSB: GameProfile = {
   menus: SOTSB_MENUS,
   commissions: false,
   treasure: COAB_TREASURE,
-  spells: COAB_SPELLS,
+  spells: SOTSB_SPELLS,
   landmarks: COAB_LANDMARKS,
   debug: { jumps: [], finale: null },
   // the CotAB effect system with no camp Display names (they are addresses in CotAB's image)

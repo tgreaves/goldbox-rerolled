@@ -1364,6 +1364,7 @@ when its table column or sentence names CotAB.
 | 0x4B7B3 | coab/spells | coab/spells: 1. Dispatch and shared helpers |  |
 | 0x4B8F7 | coab/spells, B/procedures | coab/spells: 1. Dispatch and shared helpers | `FUN_5216_0ae7` |
 | 0x4BB2F | coab/spells | coab/spells: 2. Per spell id |  |
+| 0x4BC7E | B/vocabularies | B/vocabularies: 4.3 The battle's kinds |  |
 | 0x4BCF5 | coab/spells | coab/spells: 1. Dispatch and shared helpers | `FUN_5216_0cb7` |
 | 0x4BD60 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x4BDA1 | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers | `FUN_5216_0d63` |

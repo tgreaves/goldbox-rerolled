@@ -89,6 +89,15 @@ export function text(at: number): string {
   return current.read(at) ?? `#${at.toString(16).toUpperCase()}`
 }
 
+/**
+ * A line given as one address or as pieces joined (SotSB builds its lines from data-segment pieces, "is "
+ * and a word: spec/A-games/sotsb/spells.md §1); 0 or nothing: ''.
+ */
+export function lineText(at: number | number[] | undefined): string {
+  if (Array.isArray(at)) return at.map((a) => text(a)).join('')
+  return at ? text(at) : ''
+}
+
 /** the game's text at `at`, or null when it cannot be read (for comparisons such as monster names) */
 export function textOrNull(at: number): string | null {
   return current.read(at)

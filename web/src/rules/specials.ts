@@ -4,7 +4,7 @@
 // with its parameters (PoR's type 88 and CotAB's specials).
 // PoR: spec/A-games/engine/effects.md; CotAB: spec/A-games/coab/effects.md §2 and §7. CotAB addresses are image offsets.
 import type { Effect } from '../data/effects'
-import { text } from '../data/gametext'
+import { lineText, text } from '../data/gametext'
 import type { HandlerSpec } from '../games/effectrules'
 import { F } from '../games/fields'
 import { fx, has, ids, removeEffect, removeType, type FxHost } from './effects'
@@ -12,7 +12,7 @@ import { fx, has, ids, removeEffect, removeType, type FxHost } from './effects'
 const num = (p: HandlerSpec, k: string) => p[k] as number
 const say = (h: FxHost, c: Uint8Array, msg: string) => h.print(`${h.name(c)} ${msg}`)
 /** a text parameter: the address of the game's string (spec/D-appendices/strings.md) */
-const txt = (p: HandlerSpec, k: string) => text(p[k] as number)
+const txt = (p: HandlerSpec, k: string) => lineText(p[k] as number | number[])
 /** CotAB `e3:52` (0x4BE7C): a roll that also records the dice count (DS:6FB2) */
 const dice = (h: FxHost, count: number, sides: number) => { fx.dice = count; return h.roll(count, sides) & 0xff }
 

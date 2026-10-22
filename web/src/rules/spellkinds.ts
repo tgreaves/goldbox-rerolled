@@ -12,7 +12,7 @@ import { addEffect, addRaw, fire, fx, ids, removeEffect, removeFirst, removeOne,
 import { effectiveStat } from './effectkinds'
 import { F } from '../games/fields'
 import { msg } from '../games/strings'
-import { text } from '../data/gametext'
+import { lineText } from '../data/gametext'
 
 const u32 = (c: Uint8Array, o: number) => (c[o] | (c[o + 1] << 8) | (c[o + 2] << 16) | (c[o + 3] << 24)) >>> 0
 const setU32 = (c: Uint8Array, o: number, v: number) => { c[o] = v & 0xff; c[o + 1] = (v >> 8) & 0xff; c[o + 2] = (v >> 16) & 0xff; c[o + 3] = (v >>> 24) & 0xff }
@@ -54,9 +54,9 @@ export type SpellKind = (x: Cast, p: SpellSpec) => Promise<void>
 const s8 = (v: number) => (v << 24) >> 24
 const num = (p: SpellSpec, k: string, dflt = 0) => (p[k] as number | undefined) ?? dflt
 /** a spell's line (`msg`), read from the game's files; '' when it has none */
-export const msgOf = (p: SpellSpec) => (p.msg !== undefined ? text(p.msg) : '')
+export const msgOf = (p: SpellSpec) => lineText(p.msg)
 /** another text parameter of a spell (an address; 0 or absent: none) */
-export const textOf = (a: unknown) => (typeof a === 'number' && a ? text(a) : '')
+export const textOf = (a: unknown) => (typeof a === 'number' || Array.isArray(a) ? lineText(a as number | number[]) : '')
 
 /** FUN_4e53_228a, Cure Disease: each removal says "is Cured"; true if anything went. */
 export async function cureDisease(h: FxHost, t: Uint8Array): Promise<boolean> {
@@ -90,12 +90,16 @@ export function overBase(t: Uint8Array, str: number, pct: number): number | null
  * a STR above the base one adds the effect (the line, power the new STR, flag 1) and the current STR
  * is worked out again (0x4C389); otherwise `unaffected` is said, if given, and nothing is added.
  */
-async function strengthEffect(h: FxHost, t: Uint8Array, str: number, pct: number, effect: number, dur: number, msg: string, unaffected?: string, power?: number) {
+async function strengthEffect(h: FxHost, t: Uint8Array, str: number, pct: number, effect: number, dur: number, msg: string, unaffected?: string, power?: number, viaAdd = false) {
   if (game().spells.strength === 'overBase') {
     const pw = overBase(t, str, pct)
     if (pw === null) { if (unaffected) say(h, t, unaffected); return }
-    if (msg) say(h, t, msg)
-    addRaw(h, t, effect, dur, power ?? pw, 1)
+    // `viaAdd` (SotSB Enlarge 0x499AF): through the add-effect routine with its line (I: power and flag as the raw add's)
+    if (viaAdd) await addEffect(h, t, effect, dur, power ?? pw, 1, 0, false, false, msg)
+    else {
+      if (msg) say(h, t, msg)
+      addRaw(h, t, effect, dur, power ?? pw, 1)
+    }
     await effectiveStat(h, t, 0)
     return
   }
@@ -105,8 +109,105 @@ async function strengthEffect(h: FxHost, t: Uint8Array, str: number, pct: number
   h.recalc(t)
 }
 
+/** the creature's immunity flags (SotSB +0x15E, F.immunity) have `flag` */
+const immune = (t: Uint8Array, flag: number) => F.immunity >= 0 && (t[F.immunity] & flag) !== 0
+
 /** The kinds shared by the battle and the camp. */
 export const SHARED_KINDS: Record<string, SpellKind> = {
+  /** an empty handler (SotSB 78 Faerie Fire 0x4BFFB, 101–109 0x4970D): nothing happens */
+  async none() {},
+  /**
+   * Heal (SotSB 0x4A84E): the first of each of `diseases` removed ("cured", STR worked out again if any
+   * went), `blind` removed (`blindMsg`), `feeble` removed (`feebleMsg`, INT and WIS worked out again);
+   * then d = 1d`die`: unforced healing of max HP − HP − d, or nothing when HP + d is above the maximum,
+   * with the line when it healed (so HP ends at max − d, CotAB's temple Heal quirk)
+   */
+  async healAll({ h, targets: [t] }, p) {
+    if (!t) return
+    let any = false
+    fx.noRearm = true
+    for (const type of p.diseases as number[]) if (await removeFirst(h, t, type)) any = true
+    fx.noRearm = false
+    if (any) { say(h, t, textOf(p.curedMsg)); await effectiveStat(h, t, 0) }
+    if (await removeFirst(h, t, num(p, 'blind'))) say(h, t, textOf(p.blindMsg))
+    if (await removeFirst(h, t, num(p, 'feeble'))) { say(h, t, textOf(p.feebleMsg)); await effectiveStat(h, t, 1); await effectiveStat(h, t, 2) }
+    const d = h.roll(1, num(p, 'die'))
+    const n = t[F.hp] + d > t[F.maxHp] ? 0 : (t[F.maxHp] - t[F.hp] - d) & 0xff
+    if (h.heal(t, n, false)) say(h, t, msgOf(p))
+  },
+  /**
+   * Harm (SotSB 0x4B702): damage type `dmgType`; the first target gets `effect` through the add-effect
+   * routine (no line there) and the line; then damage HP − 1d`die` (type 0), so HP ends at 1d`die`
+   */
+  async harm({ h, targets: [t] }, p) {
+    if (!t) return
+    fx.dmgType = num(p, 'dmgType')
+    await addEffect(h, t, num(p, 'effect'), 0, 0, 0, 0, false, false, '')
+    say(h, t, msgOf(p))
+    const d = h.roll(1, num(p, 'die'))
+    h.damage(t, (t[F.hp] - d) & 0xff, 0, false)
+  },
+  /** SotSB 63 (0x4B9C8): 1d`die` years younger, not below `floor`: `floorMsg` at the floor, else the line */
+  async younger({ h, targets: [t] }, p) {
+    if (!t) return
+    const age = (t[F.age] | (t[F.age + 1] << 8)) - h.roll(1, num(p, 'die'))
+    const v = age < num(p, 'floor') ? num(p, 'floor') : age
+    t[F.age] = v & 0xff; t[F.age + 1] = (v >> 8) & 0xff
+    say(h, t, v === num(p, 'floor') && age < num(p, 'floor') ? textOf(p.floorMsg) : msgOf(p))
+  },
+  /**
+   * Stone to Flesh (SotSB 0x4D2D5): a stoned (status 7) first target is Okay and in play with 1 HP and the
+   * line, in a battle put back on the field; another is told `notMsg` (I: the rest of the original's
+   * branches, an Apply when the menu answers otherwise, not followed)
+   */
+  async stoneToFlesh({ h, targets: [t] }, p) {
+    if (!t) return
+    if (t[F.status] !== 7) { say(h, t, textOf(p.notMsg)); return }
+    t[F.status] = 0; t[F.inPlay] = 1; t[F.hp] = 1
+    say(h, t, msgOf(p))
+    if (h.inCombat()) h.revive(t, 1)
+  },
+  /**
+   * Disintegrate, Flesh to Stone (SotSB 0x4D211, 0x4D4D8): the event-9 probe (damage type `probeType`,
+   * damage `probe`: a handler that zeroes it vetoes); then a failed save vs `saveType` gives `status` with
+   * the line, through the set-status routine
+   */
+  async saveOrStatus({ h, targets: [t] }, p) {
+    if (!t) return
+    fx.dmgType = num(p, 'probeType'); fx.dmg = num(p, 'probe')
+    await fire(h, t, 9)
+    if (fx.dmg === 0) return
+    if (!h.save(t, num(p, 'saveType'), 0)) h.setStatus(t, num(p, 'status'), line(h.name(t), msgOf(p)))
+  },
+  /**
+   * Death Spell (SotSB 0x4D0E5): damage type `probeType`; a pool of `pool` dice; each target in order costs
+   * by its hit dice (`costs`[hd], past the list `other`; `hd6`: [max HP at most, cost, cost above] for hit
+   * dice 6) and, unless immune (`immuneFlag`), when the pool still covers it, pays and gets status 6 with
+   * the line (the set-status routine)
+   */
+  async slayByPool({ h, L, targets }, p) {
+    fx.dmgType = num(p, 'probeType')
+    let pool = amount(p.pool as Amount, L, h.roll.bind(h)).total
+    const costs = p.costs as number[], hd6 = p.hd6 as number[]
+    for (const t of targets) {
+      const hd = s8(t[F.hitDice])
+      const cost = hd === 6 && hd6 ? (t[F.maxHp] <= hd6[0] ? hd6[1] : hd6[2]) : hd >= 0 && hd < costs.length ? costs[hd] : num(p, 'other')
+      if (immune(t, num(p, 'immuneFlag')) || pool < cost) continue
+      pool -= cost
+      h.setStatus(t, 6, line(h.name(t), msgOf(p)))
+    }
+  },
+  /**
+   * Power Word Stun (SotSB 0x4D8ED): the first target's HP picks the dice of the rounds (`bands`: [lowest
+   * HP, highest, n, d]; none: 0, the effect then lasts for good as the original's); the spell's effect
+   * through the add-effect routine for that long, power L, with the line
+   */
+  async stun({ h, s, L, targets: [t] }, p) {
+    if (!t) return
+    const band = (p.bands as number[][]).find(([lo, hi]) => t[F.hp] >= lo && t[F.hp] <= hi)
+    const rounds = band ? h.roll(band[2], band[3]) : 0
+    await addEffect(h, t, num(p, 'effect', s.effect), rounds, L, 0, s.save, false, false, msgOf(p))
+  },
   /**
    * Enlarge (PoR 12a5, CotAB 0x45F75): the first target's STR and % by caster level (`levels`[L] =
    * [STR, %]); past the table `beyond` (CotAB 18/00, from its reset globals DS:4CCD/4CCE), or without
@@ -115,7 +216,7 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
   async enlarge({ h, L, dur, targets: [t] }, p) {
     const levels = p.levels as number[][]
     const [str, pct] = L < levels.length ? levels[L] : ((p.beyond as number[] | undefined) ?? levels[levels.length - 1])
-    if (t) await strengthEffect(h, t, str, pct, num(p, 'effect'), dur, msgOf(p), textOf(p.unaffected) || undefined)
+    if (t) await strengthEffect(h, t, str, pct, num(p, 'effect'), dur, msgOf(p), textOf(p.unaffected) || undefined, undefined, !!p.viaAdd)
   },
   /**
    * Reduce (PoR 136e, CotAB 0x460AA): on a failed save, ends one of the effect ("is Cured", or with
@@ -132,12 +233,16 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
     t[F.stat[5]] = Math.min(num(p, 'cap'), old + amount(p.amount as Amount, L, h.roll.bind(h)).total)
     await addEffect(h, t, num(p, 'effect'), dur, old || L, 1, 0, false, false, msgOf(p))
   },
-  /** Slow Poison (185b): only on a poisoned target that is not Animated */
+  /**
+   * Slow Poison (185b): only on a poisoned target that is not Animated; with `direct` (SotSB 0x49ED9) any
+   * poisoned target, set Okay and in play itself instead of through handler 0x4E
+   */
   async slowPoison({ h, dur, targets: [t] }, p) {
-    if (!t || t[F.status] === 1 || !h.effectsOf(t).some((x) => x.type === ids().poisoned)) return
+    if (!t || (!p.direct && t[F.status] === 1) || !h.effectsOf(t).some((x) => x.type === ids().poisoned)) return
     if (t[F.hp] === 0) t[F.hp] = 1
+    if (p.direct) { t[F.status] = 0; t[F.inPlay] = 1 }
     await addEffect(h, t, ids().slowPoison, dur, 0xff, 1, 0, false, false, msgOf(p))
-    h.revive(t, t[F.hp]) // handler 0x4E with arg 1, whatever the status
+    if (!p.direct) h.revive(t, t[F.hp]) // handler 0x4E with arg 1, whatever the status
     addRaw(h, t, ids().poisonTick, 10, 0xff, 1)
   },
   /**
@@ -219,6 +324,7 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
     if (!t) return
     fx.dmgType = num(p, 'probeType'); fx.dmg = num(p, 'probe')
     await fire(h, t, 9)
+    if (p.immuneFlag !== undefined && immune(t, num(p, 'immuneFlag'))) fx.dmg = 0 // SotSB 0x4BF4F
     if (fx.dmg === 0) { say(h, t, textOf(p.unaffected)); return }
     if (!h.save(t, num(p, 'saveType'), 0)) { h.setStatus(t, 6, line(h.name(t), msgOf(p))); return }
     fx.dmgType = num(p, 'dmgType')
@@ -234,7 +340,7 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
    * (IMP-071: the web menus always return a choice, so a player cannot reach the question)
    */
   async flameShield({ h, caster, dur }, p) {
-    const opts = p.options as { name: string; effects: [number, number][] }[]
+    const opts = p.options as { name: string; effects: [number, number | number[]][] }[]
     const ai = p.aiPick as { d: number; above: number }
     for (;;) {
       const k = caster[F.quick] || !h.choose ? (h.roll(1, ai.d) > ai.above ? 0 : 1) : await h.choose(textOf(p.prompt), opts.map((o) => o.name))
@@ -305,7 +411,7 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
         for (let k = 0; k < 6; k++) await effectiveStat(h, t, k)
       }
     } else it.raw[0x36] = 0
-    good(h, t, p.itemMsg !== undefined ? text(p.itemMsg as number) : msg('itemUnCursed'))
+    good(h, t, p.itemMsg !== undefined ? textOf(p.itemMsg) : msg('itemUnCursed'))
   },
   /** Restoration (2c43): one drained level back, to the class whose next level is cheapest */
   async restore({ h, e, targets: [t] }, p) {

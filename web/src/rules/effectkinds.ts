@@ -5,7 +5,7 @@
 // The handlers get (arg, effect, character): arg 1 is a removal. The originals do not know the event;
 // the PoR behaviours apply each part on the event it means something for, as the port always has.
 import type { Effect } from '../data/effects'
-import { text, textOrNull } from '../data/gametext'
+import { lineText, text, textOrNull } from '../data/gametext'
 import type { Item } from '../data/items'
 import type { HandlerSpec } from '../games/effectrules'
 import { F } from '../games/fields'
@@ -30,7 +30,7 @@ const num = (p: HandlerSpec, k: string) => p[k] as number
 const list = (p: HandlerSpec, k: string) => p[k] as number[]
 const say = (h: FxHost, c: Uint8Array, msg: string) => h.print(`${h.name(c)} ${msg}`)
 /** a text parameter: the address of the game's string (spec/D-appendices/strings.md) */
-const txt = (p: HandlerSpec, k: string) => text(p[k] as number)
+const txt = (p: HandlerSpec, k: string) => lineText(p[k] as number | number[])
 /** a roll; with `keep`, through the dice routine that records the count (PoR FUN_5216_0e2e → DS:681C, CotAB 0x4BE7C) */
 const rollKeeping = (h: FxHost, n: number, d: number, keep: unknown) => { if (keep) fx.dice = n; return h.roll(n, d) }
 const flags = (c: Uint8Array | null) => (c && F.classFlags >= 0 ? c[F.classFlags] : 0)
