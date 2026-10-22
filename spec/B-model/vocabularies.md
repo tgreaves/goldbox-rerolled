@@ -741,17 +741,14 @@ Not yet, or approximated:
 
 - The hook's picker 0x2C56C and the finder 0x2E394 are taken to be PoR's (I); the eye rays' spells go
   through the port's cast, which has 0x45251's own check since 2026-10-21 (with effect 0x4A, 1 in 2 "miscasts", 0x45373). The template's
-  sight range and side-line direction where the original reads unset memory (§7, ?). The three spell
-  handlers that use the template (0x48A8C, 0x49522, 0x496D1) are not ported. Berserk's
+  sight range and side-line direction where the original reads unset memory (§7, ?). Berserk's
   nearest-combatant search (11c:3e) takes the first of equal distance (I).
 - 130 takes the target out of play through the host's status call; CotAB's own death clean-up `e3:66`
   is not transcribed.
-- The ECL DAMAGE save (engine.ts) does not set DS:6FC2.
 
-Since then (checked 2026-10-21): the three spell handlers that call the area template (0x48A8C,
-0x49522, 0x496D1) are those of 84, 92 and 98, transcribed as the kinds `scare` and `beam` (§4.3), so
-the "not ported" note above is out of date; and the ECL DAMAGE save now sets DS:6FC2 (`fx.saved`) as
-the combat and world saves do.
+Done since (checked 2026-10-21): the three spell handlers that call the area template (0x48A8C,
+0x49522, 0x496D1) are those of 84, 92 and 98, transcribed as the kinds `scare` and `beam` (§4.3); the
+ECL DAMAGE save sets DS:6FC2 (`fx.saved`) as the combat and world saves do.
 
 ### 8.3 From coab/spells.md, "Port status"
 
