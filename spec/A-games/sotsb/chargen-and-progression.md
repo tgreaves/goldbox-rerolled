@@ -130,6 +130,13 @@ levelLimits: [ /* CotAB's rows, races renumbered: elf 1, half-elf 2, dwarf 3, gn
 
 ## 9. What the port needs beyond values
 
+*Port status (2026-10-22):* done except the thief's magic-user list: `startMoney.byClass`,
+`startClericSlots` 2, `extraAttacks` with two levels a class, `slots.limits`, `dualClass.spells`,
+seven spell levels and the classes 0, 1, 3, 4 (`SOTSB_RULES`, [B-model/procedures.md §1, §3, §7](../../B-model/procedures.md#1-spell-slots)).
+The start effects by race and class (0x39BAF, 0x39669) and the paladin's effects 0x6D and 0x6E (0x46597,
+0x4673A) are in the profile (**O**). Not done: the thief above 10 in the cast list (§6, **I**); training
+fees and halls and thief skills are CotAB's (**I**, not re-read). Tests: `test/sotsbrules.test.ts`.
+
 - **Starting money**: a per-class amount (2d6 gold for a thief, nothing otherwise) where `startMoney`
   has one coin and either a fixed amount or the table's dice.
 - **Extra attacks with two steps** (3 and 4 half-attacks): `extraAttacks` holds one level per class.

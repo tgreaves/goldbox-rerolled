@@ -45,21 +45,31 @@ sharing 0x38692) with more cures and a second pass for conditions:
 3. If the rest is not interrupted: the slots' cures (0x38161), then **the conditions** (0x387CE), then
    the sharing of the pool (0x38692), the roster redrawn, the rest vector restored; then a second
    estimate and silent rest (0x38D11, 0x384BC) and, if not interrupted, the conditions again.
-4. **The conditions** (0x387CE): each counted spell is spent on a member who needs it, one count each,
-   printing (CS strings 0x38746–0x387C0):
-   - Heal: removes feeblemind (effect 0x44), blindness (0x21) and the diseases (the list of four, §5
-     of [tables.md](tables.md)), "is healed";
-   - Stone to Flesh: status 7 → Okay, HP 1, "is changed back to flesh";
-   - Neutralize Poison: effect 0x37 → HP at least 1, 0x37, 0x16 and 0x0F removed, Okay, "is detoxified";
-   - Raise Dead: status 6 (dead), with tests on the race (+0x6B against 2 and 1, half-elf and elf;
-     **I**: elves are not raised), then Okay, HP 1 and maximum HP (+0x70) lowered (0x38B60–0x38B6D, **I**
-     for the amount), "has been raised from the dead";
-   - Remove Curse: effect 0x24 removed and the item curse lifted (`113:4d`), "is relieved of a curse";
-   - Cure Disease: the diseases removed, "is cured of disease";
-   - Cure Blindness: effect 0x21 removed, "regains sight".
+4. **The conditions** (0x387CE, **O**, read in full): for each member in party order (the list from
+   DS:7D3C, link +0x19D), with a per-member mark cleared, each test in this order, each only while its
+   count is above 0, printing the member's name and the message (CS strings 0x38746–0x387C0):
+   - Heal (count of 36), when the member has effect 0x44 (feeblemind): 0x44, 0x21 (blindness) and each
+     of the four diseases (DS:1B3D[1..4]) removed, the member marked, "is healed", the count − 1;
+   - Stone to Flesh (113), status 7: Okay, in play, HP 1, "is changed back to flesh", − 1 (0x388CC);
+   - Neutralize Poison (67), effect 0x37: HP 1 if 0; 0x37, 0x16 and 0x0F removed; in play, Okay, "is
+     detoxified", − 1 (0x38923);
+   - Raise Dead (75), status 6 and race (+0x6B) neither 2 nor 1 (half-elf, elf): 0x37 removed, HP 1,
+     Okay, in play, CON (+0x19) − 1 if above 0; with CON 14 or more the maximum HP above the rolled HP
+     (+0x70 − +0x131) divided by the CON units (each class with a level: fighter, paladin and ranger
+     level × (CON − 14), the others the level, twice above CON 15; bytes) is subtracted unless CON is
+     17 or more and the fighter level is not above 0 (and not above +0xEF); "has been raised from the
+     dead", − 1 (0x389DD–0x38B94);
+   - Remove Curse (43, 89), effect 0x24: the spell's handler `113:4d` on the member (DS:8C67), "is
+     relieved of a curse", − 1 (0x38B98);
+   - Cure Disease (39), unless marked: each disease removed; if any was, the member marked, `145:8e`
+     (the member, 0) and "is cured of disease"; **the count is not lowered** (0x38BF1);
+   - Cure Blindness (37), unless marked, when the member has 0x21: 0x21 removed **from the selected
+     character** (DS:7D38), "regains sight" with that character's name; the count is not lowered
+     (0x38C99, **Bug**: the member tested is not the one cured).
 
-   (**O** for the tests and messages; **I** for the exact order of members and whether a count is
-   spent when nothing needs it.)
+   A count is spent only on a member who needs it. The second pass (0x38D11) counts the members still
+   in need (dead and not elf or half-elf, petrified, cursed, poisoned, feebleminded, else blind, else
+   0x22) for the second estimate.
 
 What it comes to: SotSB's Fix also cures with the clerics' memorised condition spells, without casting
 or forgetting them (I: the slots stay, as CotAB's).
@@ -90,12 +100,17 @@ alterLevel: { variable: 0x4cf4, start: 2, menu: 0x0e272 },  // with the difficul
 
 ## 6. What the port needs beyond values
 
-- The Fix's condition pass (§3.4) as a procedure with its spells and effects as data, and the Heal cure.
-- Alter → Level and the difficulty variable ([combat.md §13](combat.md#13-what-the-port-needs-beyond-values)).
+*Port status (2026-10-22):* done. `rules.fix` holds the five cures and the condition pass as data
+(`fix.conditions`, [B-model/procedures.md §12.4](../../B-model/procedures.md#124-the-camps-fix);
+rules/camp.ts `fixConditions`, Raise Dead's loss shared with the temple); Alter → Level sets
+`R.difficulty`'s variable through the game's `alterLevel` menu (ui/camp.ts; the port names the
+current level in the prompt where the original highlights it). Not done: the second estimate, rest
+and condition pass (**I**); the fighter-level test against +0xEF in Raise Dead's loss (a non-fighter
+with a negative dual-class byte only). Tests: `test/sotsbrules.test.ts`.
 
 ## Open
 
 - The rest estimate's exact grouping (§3.2); the druid term's slot (+0x13A is the druid's second level
   by [records.md](records.md)'s map: ?).
-- Whether a condition count is spent without a patient; the members' order.
+- What `145:8e` does after Cure Disease (I: a recalculation); what effect 0x22 is.
 - Memorise and scribe with seven levels, the Pics choice's removal, read in full.

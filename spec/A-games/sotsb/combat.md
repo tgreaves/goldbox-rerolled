@@ -125,8 +125,12 @@ with:
 
 **Item types are renumbered throughout** (O for two of them): the recalculation takes the readied
 arrows by type **0x1E** (0x54DE3, into +0x191) and the quarrels by type **0x0C** (0x54DFF, into +0x195)
-(CotAB 0x49, 0x1C). The other item types the profile names (holy water, oil, the elf's weapons, the
-flight groups, the plural rule) are not re-read here (**?**).
+(CotAB 0x49, 0x1C), also readying (0x44417) and selling (0x45327). The others, from the ITEMS rows
+compared with CotAB's and the readers: no holy-water score in the computer's weapon choice and no oil
+type; the elf's +1 for types 18, 19 and 22–26 (0x52CD8); no Bag of Holding step; the flight groups
+(0x33913) arrow 0x42, 5, 7, 0x0C, 0x1E, thrown 2, 3, 6, sling stone 0x1C, 0x1D, no flask; the plural
+rule (0x53224): CotAB's, with word 1 of type 0x49 and, on word 3, the ammunition 0x1E, 5 and 0x0C
+unless word 3 is 0x5D ("Silver") (**O**).
 
 ## 8. The set-status routine and going down (O)
 
@@ -197,6 +201,13 @@ moraleRemoves: [], fleeRemoves: [],
 ```
 
 ## 13. What the port needs beyond values
+
+*Port status (2026-10-22):* done, as profile data and parameters ([B-model/procedures.md §15](../../B-model/procedures.md#15-combat-procedures)):
+the difficulty (`R.difficulty`, `newGame`, the monster scaling in the engine's monster loader, Alter →
+Level), `setStatusEvent` null, `turnUndead` false, `casting.miscast` { 0x44, sides null }, `backstab.reach`
+1, `wildBattle` none, the renumbered item types and plural rule (`itemTypes`), the clouds' SotSB numbers.
+Not done: the finder's forced target (effect 0x5B) and the "Lose it?" question (**I** both); the kill
+cloud's bands and poison are CotAB's (**I**). Tests: `test/sotsbrules.test.ts`.
 
 - **Difficulty**: a new rule (`R.difficulty`: the variable ECL 0x4CF4, the five names, the start value 2,
   the HP scale (difficulty + 2) / 4 for side-1 monsters at LOAD_MONSTER) and the Alter → Level menu.

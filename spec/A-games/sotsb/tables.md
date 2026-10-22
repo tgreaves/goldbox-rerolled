@@ -55,7 +55,7 @@ table grew.
 | `coinNames` | 0F95 | **0E60** | 11 | | I | |
 | `coinValues` | 0CA4 | **0B40** | u32 | | I | CotAB's values |
 | `templeNames` | 00E6 | **014C** | 41 | | I | the same ten services and Exit |
-| `diseases` | 00DF | ? | | | ? | not at the temple names' head as in CotAB. A list DS:1B3D[1..4] = 31, 34, 43, 44, read at 0x226AC, 0x22721, 0x229AC, 0x229CD (**I**: the disease types, CotAB's six without 50 and 57, which in CotAB are the Hot Fire Shield and engulf) |
+| `diseases` | 00DF | **1B3D** | 1-based, **4** entries (`diseaseCount`) | 0x226AC, 0x22721, 0x229AC, 0x229CD; Fix 0x3886B, 0x38C21 | O | not at the temple names' head as in CotAB: 31, 34, 43, 44, CotAB's six without 50 and 57 (which in CotAB are the Hot Fire Shield and engulf); Fix's Heal and Cure Disease remove them |
 | `spellNames` | 27E8 (41) | **34AE** | **35** bytes | | I | ids to **116** (CotAB 100); unused ids are named "spell *n*" |
 | `spellRecords` | 37DC | **449D** | 16 (`shl 4`) | 0x36676, 0x36E3D, 0x371EF | O | byte 1 the level: to 7; byte 0 (the spell class) takes other values than CotAB's (**?**) |
 | `itemWords` | 1057 | **0F22** | 21 | | I | |
@@ -99,7 +99,7 @@ export const SOTSB_TABLES_DRAFT = {
   classBits: t(0x4c92), trainerBits: t(0x4c99), hitDiceCount: t(0x09b0), hitDiceSides: t(0x09b7), hitDiceStop: t(0x4ca9),
   raceNames: t(0x0d71, 9), classNames: t(0x0b8b, 27), alignmentNames: t(0x0db9, 17), statusNames: t(0x0ead, 13),
   genderNames: t(0x0e52, 7), coinNames: t(0x0e60, 11), coinValues: t(0x0b40, 4),
-  templeNames: t(0x014c, 41), diseases: /* ? DS:1B3D[1..4] */ absent, randomItems: absent, sky: t(0x0aa8),
+  templeNames: t(0x014c, 41), diseases: t(0x1b3d) /* 4 entries */, randomItems: absent, sky: t(0x0aa8),
   itemWords: t(0x0f22, 21), wallDx: t(0x1a90), wallDy: t(0x1a99), battleCells: t(0x1a9e, 4),
   spellNames: t(0x34ae, 35), spellRecords: t(0x449d, 16),
   thac0: t(0x4c0c, 19), thiefBase: t(0x4cad, 8), thiefRace: t(0x4d3d, 8), thiefDex: t(0x4d48, 5), raceLimits: t(0x4d9d, 16),
@@ -126,6 +126,6 @@ Seen on the way, for the rules research to follow:
 
 ## Open
 
-- The frame, overland-cursor and terrain tables, `randomItems`, and the temple's disease list.
+- The frame, overland-cursor and terrain tables and `randomItems`.
 - Byte 0 of the spell records (the spell class) and the meaning of `hitDiceCount`'s cleric 2.
 - Each **I** row's reader.

@@ -391,12 +391,24 @@ bytes after each member's name are written 0 (as for PoR and CotAB).
 
 *The script VM's changed handlers (2026-10-22)*, read against CotAB's (spec/A-games/sotsb/ecl.md, "Handlers
 read") and made profile data in `SOTSB_ECL`: LOAD_MONSTER always loads `MON1` and scales a monster's HP by
-the difficulty level (ECL 0x4CF4); CHECK_PARTY by B offset (race, CHA, movement, thief skills, class levels);
+the difficulty level (ECL 0x4CF4, the rules profile's `difficulty`); CHECK_PARTY by B offset (race, CHA, movement, thief skills, class levels);
 COMBAT opens the vault (ECL 0x4CFC, the bank's Deposit and Withdraw; the host's 'vault' screen); DAMAGE rolls
 per victim; FIND_SPELL counts from slot 0; DESTROY_ITEMS puts readied items away first. NEW_ECL, PICTURE,
 LOAD_AREA, WHO and REDRAW_SCREEN need nothing new; TREASURE's type table belongs to the random-treasure
 data. The game has no ending program: the well's epilogue (ECL1 #34) and play goes on.
 `test/sotsbvm.test.ts`.
+
+*Rules (2026-10-22):* `SOTSB_RULES` (games/rules.ts) in place of CotAB's: seven spell levels and the spell
+classes 0, 1, 3, 4; the races renumbered; seven-column slot sources and the WIS and INT limits on levels
+6–7 (`slots.limits`); half-attacks in two steps (`extraAttacks` as lists); creation's two cleric slots and
+2d6 gold for a thief only (`startClericSlots`, `startMoney.byClass`); Enlarge only on dual-classing
+(`dualClass.spells`); the backstab's reach; no Turn Undead (`turnUndead`); no event 13 on a status change
+(`setStatusEvent`); four disease types; the item types and plural rule renumbered; no wilderness field
+(`wildBattle` none); the silent no-cast effect (`casting.miscast.sides` null); the difficulty (`difficulty`,
+`newGame`: monsters' HP scaled as they load, Alter → Level in camp); Fix's Heal and its condition pass
+(`fix.conditions`). Each as data for the shared procedures (spec/B-model/procedures.md §1, §3, §7, §12.4,
+§15). Still to do (I): the target finder's forced target, the "Lose it?" question, the thief's magic-user
+list above level 10, Fix's second rest, training fees and thief skills re-read. Tests: `test/sotsbrules.test.ts`.
 
 ## Backlog
 

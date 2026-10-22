@@ -1209,11 +1209,13 @@ when its table column or sentence names CotAB.
 | 0x389EA | B/procedures | B/procedures: 3. Starting money |  |
 | 0x38B07 | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
 | 0x38C70 | coab/records | coab/records: 2.1 Base vs current stats |  |
+| 0x38E56 | B/procedures | B/procedures: 12.4 The camp's Fix |  |
 | 0x39DFE | coab/README, coab/records | coab/README: Open |  |
 | 0x39E98 | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) |  |
 | 0x39EFD | coab/records | coab/records: 1. Files (diff vs engine/savegame.md "Files" and engine/input-and-menus.md "Character files") |  |
 | 0x3A275 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x3A468 | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers |  |
+| 0x3B0F0 | B/procedures | B/procedures: 3. Starting money |  |
 | 0x3B230 | B/procedures | B/procedures: 2. Hit points | `FUN_417f_29ae` |
 | 0x3B2ED | coab/tables, B/procedures | coab/tables: 3.4 Hit points |  |
 | 0x3B314 | coab/tables | coab/tables: 3.4 Hit points |  |
@@ -1349,7 +1351,7 @@ when its table column or sentence names CotAB.
 | 0x4A3FD | coab/combat | coab/combat: Casting |  |
 | 0x4A4FF | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers | `FUN_4e53_3413` |
 | 0x4AA3A | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
-| 0x4AAC4 | coab/effects, B/host-contracts, B/vocabularies | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
+| 0x4AAC4 | coab/effects, B/host-contracts, B/procedures, B/vocabularies | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x4AAEE | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x4AB2D | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x4AB77 | coab/effects, coab/spells | coab/effects: 1. Dispatch | `FUN_5216_0000` |
@@ -1389,7 +1391,7 @@ when its table column or sentence names CotAB.
 | 0x4CE0A | B/procedures | B/procedures: 12.1 Adding and removing effects |  |
 | 0x4CE85 | coab/camp, coab/spells, coab/tables, B/procedures | coab/camp: 1. Fix | `FUN_5216_175d` |
 | 0x4D1EE | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
-| 0x4D70D | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
+| 0x4D70D | coab/records, B/procedures | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x4D748 | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x4D7E8 | coab/camp, coab/ecl, coab/effects, B/vocabularies | coab/camp: 1. Fix |  |
 | 0x4DC70 | coab/ecl, coab/records | coab/ecl: Start-up menu and demo | `FUN_10ba_0bb8` |
@@ -1520,6 +1522,9 @@ when its table column or sentence names CotAB.
 | 0x5671C | coab/spells | coab/spells: 2. Per spell id |  |
 | 0x56C4C | coab/assets | coab/assets: 2. Inventory |  |
 | 0x56C50 | coab/assets, coab/ecl, B/script-vm-map | coab/assets: 2. Inventory |  |
+| 0x56E15 | B/procedures | B/procedures: 1. Spell slots |  |
+| 0x56E3E | B/procedures | B/procedures: 1. Spell slots |  |
+| 0x578B6 | B/procedures | B/procedures: 7. Creation and training values |  |
 | 0x579C5 | coab/assets | coab/assets: GEO and WALLDEF: unchanged |  |
 <!-- /generated:coab -->
 

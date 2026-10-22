@@ -31,6 +31,7 @@ Parameters (`slots`):
 | `wisdom` | `afterCleric`: the WIS bonus right after the source of class 0, so the paladin's rows (a later source) never get it (both games: PoR `FUN_51cf_01af`, CotAB 0x50568 → 0x50AF6, which returns at once without a cleric level) |
 | `learn[]` | `{ classes, spellClass, all }`: when any of `classes` has a level, the spells of `spellClass` become known: all of them (`all`), or those whose level has a slot |
 | `doubler` | `{ effect, levels }`: a readied item whose +0x3E equals `effect` doubles the magic-user slots of levels 1..`levels` (as a byte); null: none |
+| `limits[]` | `{ after, pool, level, stat, atLeast }`: right after the source of class `after` (and its WIS bonus), the pool's slots of spell `level` := 0 when ability `stat` is below `atLeast`; none in PoR and CotAB |
 
 Procedure:
 
@@ -47,6 +48,7 @@ for src in sources:
             slot := pool(col.pool)[col.level]
             slot := src.add ? (slot + v) as a byte : v
     if src.cls = 0 and wisdom = afterCleric: WIS bonus
+    for lim in limits with lim.after = src.cls: if stat[lim.stat] < lim.atLeast: pool(lim.pool)[lim.level] := 0
 for l in learn: if any class of l.classes has a level:
     for id in 1 .. spells.named with spell class l.spellClass (record byte 0):
         known[id] := 1 if l.all, or if the slots of its class and level (record byte 1) > 0
@@ -63,6 +65,7 @@ slots.
 | Game | Values |
 |---|---|
 | PoR | clear false; sources: cleric `clericSlots` from 2, first false, set, columns cleric 1–3; magic-user (5) `muSlots` from 2, first false, set, columns mu 1–3; wisdom afterCleric; learn: classes [0] cleric, with slots; doubler null |
+| SotSB | CotAB's with seven columns a row (cleric 1–7, paladin cleric 1–7, ranger druid 1–3 + mu 1–2, mu 1–7; [sotsb/chargen-and-progression.md §3](../A-games/sotsb/chargen-and-progression.md#3-spell-slots-the-wis-and-int-limits-o)); limits: after the cleric, cleric 6 needs WIS 17 and cleric 7 WIS 18 (0x56E15); after the magic-user, mu 6 needs INT 12 and mu 7 INT 14 (0x56E3E); doubler null (**I**: none found) |
 | CotAB | clear true; sources: cleric `clericSlots` from 2, first, add, cleric 1–5; paladin (3) `paladinSlots` from 9, add, cleric 1–5; ranger (4) `rangerSlots` from 8, add, columns druid 1, druid 2, druid 3, mu 1, mu 2; magic-user (5) `muSlots` from 2, first, add, mu 1–5; wisdom afterCleric; learn: classes [0, 3] cleric with slots, classes [4] druid all; doubler { effect 0x81, levels 3 } (Ring of Wizardry, 0x507C3) |
 
 *Known gap:* CotAB's cleric learning skips spell 36 (Animate Dead), which is class 3 in CotAB and
@@ -123,6 +126,11 @@ requested and summed (always, also when `fixed` is set: the original rolls and d
 word `coin` := `fixed`, or else ⌊sum × 10 / number of classes⌋. PoR: coin 3 (gold), fixed null.
 CotAB: coin 4 (platinum), fixed 300. A character imported into a game with `fixed` set gets that
 amount and nothing else (§13).
+
+`byClass` (class → [count, sides]), when set, replaces the table: only those classes roll, and the
+coin gets the sum as a byte, with no ×10 and no division. SotSB: coin 3 (gold), fixed null, byClass
+{ thief: 2d6 } (0x3B1F1; its `T.startGold` has no reader). The first-level cleric slots a new cleric
+gets are `startClericSlots` (PoR and CotAB 1; SotSB 2, 0x3B0F0).
 
 ## 4. Caster level
 
@@ -219,12 +227,18 @@ Values the original holds as code, the same procedure in both games (part A,
 | `startSpells` | spells a new magic-user knows (creation; CotAB's dual-classing too) | 11, 18, 19, 21 (Detect Magic, Read Magic, Shield, Sleep; creation, linear 0x334DF) | 11, 18, **12**, 21 (Detect Magic, Read Magic, Enlarge, Sleep; creation 0x389B7, dual-classing 0x515F9) |
 | `startEffects` | innate effects of a new character, permanent, power 0xFF, flag 0: by race, then by class id | race 1 [0x5A, 0x61, 0x1A, 0x2F], 2 [0x6B], 3 [0x61, 0x12, 0x2F, 0x30], 4 [0x7C], 5 [0x5A, 0x61]; class none | race 1 [0x61, 0x1A, 0x2F], 2 [0x6B], 3 [0x61, 0x12, 0x2F, 0x30], 4 [0x7C], 5 [0x61]; class 3 [8], 4 [0x86], 10 [0x86] |
 | `levelLimits` | demi-human limits: `{ race, cls, by, limits }`: the ability `by` (0 STR, 1 INT) sets the band: below 17, at 17, at 18 or more (18/xx counts as 18); no rule: no limit | dwarf F 7/8/9, elf F 5/6/7, gnome F 5/5/6, half-elf F 6/7/8, halfling F 4/5/6, half-elf C 5/5/5 (all by STR) | PoR's, plus elf MU by INT 9/10/11, half-elf ranger by STR 6/7/8, half-elf MU by INT 6/7/8 |
-| `extraAttacks` | base class → the level above which it gets 3 attacks per 2 rounds (`attacksBase` 3; below it 2 where `recalc.attacksReset`, §7.1) | fighter > 6 | fighter > 6, paladin > 6, ranger > 7 |
+| `extraAttacks` | base class → the levels above which it gets one more half-attack each (`attacksBase` 2 + the number passed; 2 where `recalc.attacksReset` and none is passed, §7.1) | fighter [6] | fighter [6], paladin [6], ranger [7] |
 | `trainingCost` | the training fee in gp | 1 000 | 1 000 |
 | `chaReaction` | the reaction value scripts read at B + 0x2CF, by CHA 0–25 | 0 0 0 0 5 10 15 20 25 25 25 25 25 30 35 40 50 55 60 60 60 60 60 60 60 60 | the same |
 
 The paladin's Cure Disease starts at `paladin.cureDisease.initial` uses when the class has a paladin
 part (§10).
+
+SotSB ([sotsb/chargen-and-progression.md](../A-games/sotsb/chargen-and-progression.md)): races
+renumbered (raceMenu 1–6, levelLimits keyed by the new numbers); startSpells PoR's (0x3B1C8) while
+`dualClass.spells` keeps CotAB's 11, 18, 12, 21 (0x578B6; PoR and CotAB: the dual-class spells, where
+the game has dual-classing, are `dualClass.spells`); extraAttacks fighter [6, 12], paladin [6, 12],
+ranger [7, 14] (0x56A64); training's other values CotAB's.
 
 ### 7.1 The recalculation
 
@@ -239,14 +253,15 @@ Parameters (`recalc`): `attacksReset` (below the extra-attack level the attacks 
 ```
 thac0Base := max over k = 0..7 of T.thac0[k · row + levels[k]]   (signed level; a class without a level reads its level-0 row)
 hitDice := max(hitDice, every levels[k])                          (raised, never lowered; a drain sets it itself)
-if some extraAttacks class k has levels[k] > its level: attacksBase := 3
+n := max over extraAttacks classes k of the number of its levels below levels[k]
+if n > 0: attacksBase := 2 + n
 else if attacksReset: attacksBase := 2
 spell slots (§1); saves (§6); thief skills (§5) when levels[thief] > 0
 if classMask:
     itemMask := Σ (byte) T.classBits[k] over k with levels[k] > 0, or 0 < prevLevels[k] < hitDice
     every readied item whose base classes ∧ itemMask = 0 and that is not cursed is put away
 if former levels count (§4):
-    if some extraAttacks class k has prevLevels[k] > its level: attacksBase := 3
+    n := the same over prevLevels; if n > 0: attacksBase := 2 + n
     thac0Base := max(thac0Base, max over k of T.thac0[k · row + prevLevels[k]])
     thief skills (§5) when prevLevels[thief] > 0
 ```
@@ -474,7 +489,28 @@ byte to the heal procedure, §12.2), the pool reduced when the heal does anythin
 
 CotAB: Cure Light Wounds (3) level 1, 1d8, 15 minutes, base 240, group 0, weight 27; Cure Serious
 Wounds (58) level 4, 2d8 + 1, 60, 360, group 1, 34; Cure Critical Wounds (71) level 5, 3d8 + 3, 75,
-360, group 1, 78; start 14. PoR (IMP-048): Cure Light Wounds alone, as CotAB's.
+360, group 1, 78; start 14. PoR (IMP-048): Cure Light Wounds alone, as CotAB's. SotSB (0x38E56):
+CotAB's three, Cure Light Wounds also as spell 98 (30 minutes), and Heal (36) level 6, 4d8 + 5, 90,
+480, group 2, 90.
+
+**The condition pass** (`fix.conditions`, SotSB 0x387CE; none in PoR and CotAB): the memorised scan
+(0x3802C) also counts, per entry, the memorised spells of its `spells`. After the rest and the slots'
+cures, before the sharing, every member in party order takes the entries in order while an entry's
+count is above 0: an entry applies when the member has the effect `needs` (if set), has status
+`status` (if set) and is not of a race in `notRaces`; it removes `removes` and, with `diseases`, the
+`T.diseases` types (from the selected character instead with `on: selected`, a **Bug** of 0x38CC0
+kept); then its `cure`: `stoneToFlesh` status 0, in play, HP 1; `neutralizePoison` HP 1 if 0, in play,
+status 0; `raiseDead` HP 1, status 0, in play, and the temple's CON and maximum-HP loss (§9) with
+`fighters` the classes counted by CON − 14 and the base CON untouched; `removeCurse` the spell's own
+handler on the member; `cureDisease` applies only when it removed one. A `marks` entry marks the
+member, an `unlessMarked` one is skipped for a marked member; then "*name* *message*", and the count
+goes down when `used`. SotSB, in order: Heal (36; needs 0x44, removes 0x44, 0x21 and the diseases,
+marks), Stone to Flesh (113; status 7), Neutralize Poison (67; needs 0x37, removes 0x37, 0x16, 0x0F),
+Raise Dead (75; status 6, not races 1 and 2, removes 0x37, fighters 2, 3, 4), Remove Curse (43, 89;
+needs 0x24), Cure Disease (39; not used up, unless marked, marks), Cure Blindness (37; needs 0x21,
+removes it from the selected character, not used up, unless marked). The original then counts the
+members still in need (0x38D11), rests again by a second estimate (0x384BC) and runs the pass once
+more; the port does not (**I**).
 
 ## 13. Character import
 
@@ -562,7 +598,7 @@ level and id, for a magic type its pick.
 | Parameter | Meaning | PoR | CotAB |
 |---|---|---|---|
 | `lostFrom` | whose memorised list loses the queued spell when damage interrupts a caster: `current`, the current character's (PoR's forget takes no character: during an attack that is the attacker, a bug kept), or `target`, the interrupted caster's | `current` | `target` |
-| `miscast` | `{ effect, sides }`: before a spell goes off (in and out of combat, from an item too), a caster with that effect who rolls 1 on 1d`sides` "miscasts": the spell does nothing and stays memorised; null: no check | null | { 0x4A, 2 } |
+| `miscast` | `{ effect, sides }`: before a spell goes off (in and out of combat, from an item too), a caster with that effect who rolls 1 on 1d`sides` "miscasts": the spell does nothing and stays memorised; `sides` null (SotSB { 0x44, null }, 0x48D64): no roll and no line, and only a spell not cast from an item does nothing; null: no check | null | { 0x4A, 2 } |
 | `aiFirstSlot` | the first memorised slot the computer's spell choice reads | 0 | 1 (slot 0 never chosen) |
 | `aiPick` | `{ tries, areaCheck }`: the computer's pick of a hostile spell's target: up to `tries` times the target finder; a pick is refused when the target is helpless and the spell's effect is a helpless one (`effects.ids.helpless`), or with `areaCheck` when an area spell would reach the caster's own side | { 20, true } (`FUN_3aae_1e16`) | { 1, false } (0x2C56C) |
 | `aiItemSpell` | `{ above, minus }`: the computer's item choice judges an item's power item[0x3D] as spell power − `minus` when above `above`, whatever the game's Use then casts | { 0x38, 0x17 } (`FUN_3334_03e4`) | { 0x38, 0x17 } (0x23651) |
@@ -674,7 +710,11 @@ unless the rule below applies; then
   wilderness field from the terrain flags `T.placeTerrain[ECL place & 0xFF]`;
 - otherwise the map-area generator; with no map at all, the wilderness field of tile 1.
 
+- `{ kind: none }` (SotSB 0x2B939, an empty procedure): no wilderness field; every battle takes the
+  map-area generator (a new game sets the map flag, `newGame`, §15.7).
+
 PoR: overlandTile. CotAB: placeFlags, mapFlag 0x49E6 (CotAB's 0x4BE6), place 0x4AA1 (CotAB's 0x4CA1).
+SotSB: none.
 
 **The overland tile's terrain flags** (PoR `FUN_34c7_08a4`, **O**, [engine/battlefield.md, "Terrain flags"](../A-games/engine/battlefield.md#terrain-flags-o-fun_34c7_08a4)):
 the first row whose tile ranges hold the tile gives the flags (none: 0, where the original returns an
@@ -768,7 +808,7 @@ found). The battle screen's planned walk and reachable squares (part C) use the 
 
 Parameters (`backstab`): `armour` (the one body-armour type allowed; null: no test), `weapons` (the
 weapon types allowed; no weapon always is), `notLarge` (the target's size flags & 0x7F must be ≤ 1),
-`minus`.
+`minus`, `reach` (the largest distance to the target; null: no test).
 
 A backstab when the attacker's thief level with its former part (§4) is above 0, the armour and
 weapon tests pass, the target is not large where `notLarge`, R[0xF] > 1 and the attacker stands
@@ -777,8 +817,20 @@ level.
 
 | Game | Values |
 |---|---|
-| PoR | armour 50 (Leather Armor), weapons 7, 8, 35, 36, 37, notLarge false, minus 0 |
-| CotAB | armour null, weapons 0x61, 7, 8, 35, 36, 37, notLarge true, minus 1 |
+| PoR | armour 50 (Leather Armor), weapons 7, 8, 35, 36, 37, notLarge false, minus 0, reach null |
+| CotAB | armour null, weapons 0x61, 7, 8, 35, 36, 37, notLarge true, minus 1, reach null |
+| SotSB | armour null, weapons 3, 4, 17, 18, 19 (ITEMS reordered), notLarge true, minus 1, reach 1 (0x33889) |
+
+### 15.7 Other combat and game values
+
+| Parameter | Meaning | PoR | CotAB | SotSB |
+|---|---|---|---|---|
+| `turnUndead` | the battle menu's Turn and the computer's turn-undead step exist | true | true | false (menu 0x28886; the computer's turn 0x29592) |
+| `setStatusEvent` | the event the set-status routine fires after going down; null: none | 13 (`FUN_3723_0058`) | 13 (0x4AAC4) | null (0x508C0) |
+| `difficulty` | `{ variable, start }`: an ECL variable (canonical) 0–4; a monster loaded for side 1 while it is 0–4 has HP and max HP × (value + 2) div 4 as bytes, both 1 when either comes to 0; camp's Alter offers Level (the game's `alterLevel` menu) to set it | null | null | { 0x4AF4 (SotSB's 0x4CF4), 2 } (LOAD_MONSTER 0x1DF9C) |
+| `newGame` | `[variable, value]` pairs written after a new game's fills | none | none | 0x49E6 := 1, 0x4AF4 := 2 (0x2CB1D, 0x2CB28) |
+| `diseaseCount` | how many disease types `T.diseases` lists from entry 1 | 6 | 6 | 4 (DS:1B3D) |
+| `itemTypes.plural` | the name's plural rule: `{ oil, firstWord, ammo, at, except }`: as PoR's (the one word shown; word 1 above mask 4 unless `oil`; word 2 without word 1; word 3 of `oil`), also word 1 of a `firstWord` type, and on word `at` (null: any) of an `ammo` type unless word 3 is `except` | { 0x56, [], [0x49, 0x1C], null, 0xB1 } (0x1239) | the same (0x4D70D) | { null, [0x49], [0x1E, 5, 0x0C], 3, 0x5D } (0x53224) |
 
 ## 16. Demo mode
 
