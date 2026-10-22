@@ -131,7 +131,9 @@ settled: PoR's translation wheel is IMP-076 and the EGA-only drawing IMP-077; Ct
 [screens.md §6.1](screens.md#61-the-camp-menu)); the battle's View is not a departure (the original
 restores the normal palette for the View screen in battle, [combat-ui.md](combat-ui.md), Open). The
 party screen's Exit goes to the games screen instead of DOS, as there is no DOS
-([app-flow.md §5](app-flow.md#5-the-party-screen)).
+([app-flow.md §5](app-flow.md#5-the-party-screen)); so does CotAB's return to DOS after the ending and
+its save question ([app-flow.md §8](app-flow.md#8-the-ending)), whose party screen leaves Begin out as
+the original switches its entry off (0x36DCD).
 
 ## Validation
 
