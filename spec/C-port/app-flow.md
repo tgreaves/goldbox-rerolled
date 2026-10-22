@@ -319,7 +319,6 @@ Reload.
 
 ## Open
 
-- PoR's translation-wheel screen is not shown although the original shows it (and accepts any word);
-  no IMP row covers it ([AUDIT.md](../AUDIT.md) §6.9, UI3).
+- ~~PoR's translation-wheel screen~~: settled as IMP-076 ([departures.md §6](departures.md#6-departures-without-an-imp-row)).
 - Quit to the party screen asks nothing; with the autosave written at most 30 s before, a few steps
   can be lost. A confirmation is a design choice left open.

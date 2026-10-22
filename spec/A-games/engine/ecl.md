@@ -351,8 +351,9 @@ After a 0x8000/0x8001 fight the aftermath awards `100 × char[0x73]` experience 
 - Meanings inferred (**I**): the CHA table at B 0x6DCF (reaction or loyalty), ECL 0x6DC8 (enemies
   defeated), monsters left in the party list after an avoided battle, the `88 13` prefix of every
   record (a C64 load address or marker).
-- ECL operand kinds other than 0/1/2/3/0x80/0x81 at ECL2/15 0x9B5B and ECL8/16 0x9B00 (never
-  executed in the sweep).
+- ~~ECL operand kinds other than 0/1/2/3/0x80/0x81 at ECL2/15 0x9B5B and ECL8/16 0x9B00~~: those
+  bytes are tables read by `GET_TABLE` (ECL2/15 0x9B1A; ECL8/16 at 0x9B18, 0x9B24), decoded as code by a
+  disassembler but never executed (O).
 - Block 1 area 24, second map (GEO 31): the open south-edge squares (4,15) and (11,15) have exit 255
   (Validation); to confirm in DOSBox.
 - Engine address 0x035F, which the overland scripts compare with their impassable-tile table, is

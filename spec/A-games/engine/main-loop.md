@@ -149,5 +149,4 @@ See [sound.md](sound.md). Effects are played by number with `FUN_18ae_00dc(n)` f
 
 ## Open
 
-- What re-runs the tower's `on_enter` after the ending (the walk back to New Phlan;
-  [open-questions.md](../../open-questions.md), "Smaller loose ends").
+- ~~What re-runs the tower's `on_enter` after the ending~~: nothing needs to; PROGRAM 8 returns and the script goes on with the walk back ([ecl.md](ecl.md), opcode 0x38).

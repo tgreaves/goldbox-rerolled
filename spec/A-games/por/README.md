@@ -52,8 +52,7 @@ engine's own variables are [engine/ecl.md, "Engine-visible variables"](../engine
 
 ## Open
 
-- What re-runs the tower's `on_enter` after the ending in the original (the walk back to New Phlan):
-  [open-questions.md](../../open-questions.md), "Smaller loose ends".
+- ~~What re-runs the tower's `on_enter` after the ending~~: nothing needs to; PROGRAM 8 returns and the script goes on ([engine/ecl.md](../engine/ecl.md), opcode 0x38).
 
 ## External reference
 

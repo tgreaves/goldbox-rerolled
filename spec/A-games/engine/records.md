@@ -434,8 +434,5 @@ kept ([spells.md, "Shared helpers"](spells.md#shared-helpers)).
   stack byte (**?**; a conforming build takes type 0, a blank item, "Type choice").
 - Confirm in DOSBox: random arrow and quarrel stacks weigh 40 per unit (400 per stack of 10) against
   4 for shop arrows.
-- Effects that write char[0x110]–[0x112] or [0x11C] directly (Shield, Cause Blindness) are undone
-  by a recalculation mid-combat unless the effect hook applies them again (event 11 follows the
-  recalculation before a melee to-hit roll, [effects.md](effects.md)); which ones are lost is not
-  checked.
+- ~~Effects that write char[0x110]–[0x112] or [0x11C] directly~~: nothing is lost for any to-hit roll: every weapon attack and touch spell recalculates the target and fires event 11 first, where Shield and Cause Blindness put their AC back (O, [open-questions.md](../../open-questions.md), "Items, shops, money").
 - The missile attack count's final conversion `FUN_3aae_0e52` (**I**, "Derived statistics").

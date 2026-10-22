@@ -23,4 +23,4 @@ A frame stays up while the timer (`FUN_1709_0c3f`) has advanced by at most (spee
 
 ## Open
 
-- What re-runs the tower's `on_enter` after the ending, in the original: [open-questions.md](../../open-questions.md), "Smaller loose ends".
+- ~~What re-runs the tower's `on_enter` after the ending~~: nothing needs to; PROGRAM 8 returns and the script goes on ([engine/ecl.md](../engine/ecl.md), opcode 0x38).
