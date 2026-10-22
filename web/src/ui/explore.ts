@@ -1799,8 +1799,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         <span class="muted">${escape(finale.note)}</span></p>` : ''}
       <ul class="debug">${game().debug.jumps.map((j, i) => `<li><button data-i="${i}">${escape(j.label)}</button></li>`).join('')}</ul>
       <form class="jump">
-        <label>Block <input name="block" type="number" min="1" max="8" value="${engine.block}"></label>
-        <label>Area <input name="area" type="number" min="0" max="63" value="${engine.area}"></label>
+        <label>Block <input name="block" type="number" min="1" value="${engine.block}"></label>
+        <label>Area <input name="area" type="number" min="0" value="${engine.area}"></label>
         <label>X <input name="x" type="number" min="0" max="43" value="0"></label>
         <label>Y <input name="y" type="number" min="0" max="35" value="0"></label>
         <label>Facing <select name="facing">${FACING.map((f, i) => `<option value="${i}">${f}</option>`).join('')}</select></label>

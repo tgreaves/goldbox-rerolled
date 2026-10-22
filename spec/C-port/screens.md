@@ -590,7 +590,8 @@ IMP-025, not part of the game. A panel "Debug" with "Not part of the game. Now: 
   its script at `ending` or `fight`, then re-enter the area unless the game ended; notes "Debug: the
   ending, as after *foe* falls." / "Debug: the battle with *foe*.";
 - the profile's jumps as buttons;
-- a jump form: Block (1–8), Area (0–63), X (0–43), Y (0–35), Facing, **Jump**; for a game with a tile
+- a jump form: Block (from 1), Area (from 0; no upper bound, as SotSB has areas past 63: the record
+  check below refuses what is not there), X (0–43), Y (0–35), Facing, **Jump**; for a game with a tile
   wilderness "For areas *list* (wilderness), X and Y are the area's own position (0–12 across)." A
   jump to an area that does not exist: "There is no area *a* in block *b*."; else "Debug: jumping to
   block *b*, area *a*." and the engine's `jump` ([B-model/host-contracts.md §3.1](../B-model/host-contracts.md#31-life-cycle));
