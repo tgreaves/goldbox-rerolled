@@ -4,7 +4,7 @@ import type { Engine } from '../vm/engine'
 import type { Item } from '../data/items'
 import type { Spell } from '../data/spells'
 import type { Effect } from '../data/effects'
-import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, wildField, type Battlefield, type CellInfo } from './battlefield'
+import { COLS, ROWS, cellTable, edgeClass, mapBattlefield, wildBattlefield, wildField, type Battlefield, type CellInfo } from './battlefield'
 import { dexMissile, recalc } from './equip'
 import { fx, fire, damageText, healedLine, addEffect, addRaw, goingDown, ids, setStatusOf, removeEffect, removeFirst, removeOne, removeType, runEffect, type FxHost } from './effects'
 import { heal as healChar, isScroll } from './camp'
@@ -14,7 +14,7 @@ import { spellText } from './spelltext'
 import { casterLevel, duration as spellDuration, forget, itemSpellId, mayCast, readsScroll } from './magic'
 import { F } from '../games/fields'
 import { R, classLevel, formerLevelsCount } from '../games/rules'
-import { T } from '../games/tables'
+import { T, type TableRef } from '../games/tables'
 import type { SoundMode } from '../games/sound'
 import { hasMsg, msg, menu, ask, type MenuOpts, type MenuWord } from '../games/strings'
 import { Tables } from './chargen'
@@ -573,7 +573,11 @@ export class Battle implements FxHost {
 
   // ------------------------------------------------------------ setup
   /** Combat records, placement (FUN_34c7_12e1, FUN_34c7_19f5). */
-  setup(partySize: number, facing: number, distance: number, inMapArea: boolean) {
+  /**
+   * `edges`: the map's edge class between squares (battlefield.ts `edgeClass`, FUN_34c7_01ad) in a map
+   * area; null in the wilderness (PoR DS:49FA > 1; CotAB DS:4FD3 = 3, the overland state, I)
+   */
+  setup(partySize: number, facing: number, distance: number, edges: ((x: number, y: number, d: number) => number) | null) {
     const party = this.e.nodes.slice(0, partySize)
     const monsters = this.e.nodes.slice(partySize)
     const all = [...party, ...monsters]
@@ -586,29 +590,22 @@ export class Battle implements FxHost {
       if (c[F.side] === 0 && r[0x13] && ((c[F.morale] & 0x7f) === 0 || (c[F.morale] & 0x7f) > 102)) c[F.morale] = Math.min(100, this.e.read(0x6dc6)) + 0x80
       this.fighters.push({ c, r, x: 0, y: 0, size: 0, index: i, monster: !!r[0x13], target: null })
     })
-    // placement
+    // placement (FUN_34c7_19f5): each side in its block of map squares, the party's at (0, 0), the
+    // enemy's `distance` squares ahead; the scan (FUN_34c7_1577, CotAB 0x26010) over the tables of START.EXE
+    const img = this.e.startImage
+    if (!img) throw new Error('placement needs START.EXE')
+    const tb = (ref: TableRef, i: number) => img[T.ds + ref.at + i]
+    const s8 = (v: number) => (v << 24) >> 24
     const FD = [facing, (facing + 2) % 4]
     const inPlay = [0, 1].map((s) => this.fighters.filter((f) => f.c[F.inPlay] && this.side(f) === s).length)
     const lim = inPlay.map((n) => Math.floor((n + 1) / 2))
     const blocks: [number, number][] = [[0, 0], [DX[facing * 2] * distance, DY[facing * 2] * distance]]
-    const T: [number, number][][] = [
-      [[1, 0], [1, 0], [1, 0], [2, 9], [3, 10], [4, 10]],
-      [[0, 2], [0, 3], [1, 4], [2, 5], [3, 6], [4, 7]],
-      [[0, 6], [0, 7], [1, 8], [1, 0], [1, 0], [1, 0]],
-      [[3, 6], [4, 7], [5, 8], [6, 9], [7, 10], [8, 10]],
-      [[0, 6], [0, 7], [1, 8], [2, 9], [3, 10], [4, 10]],
-    ]
     const used = new Set<string>()
-    const V: [number, number][] = [[-1, -1], [1, 0], [1, 1], [-1, 0]]
-    const D4 = [[0, 0, 1, 3], [1, 1, 0, 2], [2, 2, 1, 3], [3, 3, 2, 0]]
-    const RING_DIR = [[4, 6, 2], [6, 4, 0], [0, 6, 2], [2, 0, 4]] // ring 1–3 map directions per FD (S, W, E for FD0 …)
-    const ORIGIN0: [number, number][] = [[5, 3], [4, 2], [5, 2], [6, 3]]
-    const ORIGIN1: [number, number][] = [[3, 0], [8, 2], [7, 5], [2, 3]]
     const toArena = (col: number, row: number, bx: number, by: number) => [22 + col + 6 * bx + 5 * by, 10 + row + 5 * by]
-    const tryCell = (f: Fighter, s: number, t: number, col: number, row: number, bx: number, by: number) => {
-      if (row < 0 || row > 5 || col < 0 || col > 10) return false
-      const [mn, mx] = T[t][row]
-      if (col < mn || col > mx) return false
+    /** the cell test (FUN_34c7_1434): allowed for the ring's table (t = F, all for ring 1), unused, free and passable */
+    const tryCell = (f: Fighter, s: number, ring: number, col: number, row: number, bx: number, by: number) => {
+      const t = ring === 1 ? 4 : FD[s]
+      if (col < tb(T.placeAllow, t * 12 + row * 2) || col > tb(T.placeAllow, t * 12 + row * 2 + 1)) return false
       const [X, Y] = toArena(col, row, bx, by)
       const key = `${s}:${t}:${bx}:${by}:${col}:${row}`
       if (used.has(key)) return false
@@ -618,38 +615,57 @@ export class Battle implements FxHost {
       f.x = X; f.y = Y
       return true
     }
+    /** an edge of the side's own map square is a wall (FUN_34c7_01ad = 1); never in the wilderness */
+    const walled = (s: number, d: number) => !!edges && edges(this.e.x + blocks[s][0], this.e.y + blocks[s][1], d) === 1
+    /**
+     * The scan, a state machine as the original's (O): a line from its origin, then alternately along
+     * V[d4 + 1] and V[d4 + 3]; the count is raised before the candidate's tests. A line ends at a candidate
+     * outside the square (cols 0-10, rows 0-5) in exactly one axis, or when the count reaches `lim` in the
+     * scan's first line (cleared only when that line ends) or passes 11 in any other; the candidate that
+     * ends it is still tried. The party side facing east or west (F odd), ring 0, skips its second line
+     * in the wilderness or when an edge of its square towards placeRing[4F + 1..3] is not a wall. A
+     * candidate outside in both axes moves to the next ring at once: the square in the direction
+     * placeRing[4F + ring] from the side's own, unless that edge of the side's own square is a wall (a
+     * map area); no ring left: fail.
+     */
     const place = (f: Fighter) => {
-      const s = this.side(f)
-      const Fs = FD[s]
-      for (let ring = 0; ring < 4; ring++) {
-        let [bx, by] = blocks[s]
-        if (ring > 0) {
-          const d = RING_DIR[Fs][ring - 1]
-          bx += DX[d]; by += DY[d]
+      const s = this.side(f), Fs = FD[s]
+      let firstLine = true, phase = 1, step = 0, ring = 0, k = 0, count = 0
+      let [bx, by] = blocks[s]
+      let ox = 0, oy = 0, cx = 0, cy = 0
+      for (let guard = 0; guard < 4096; guard++) {
+        const d4 = tb(T.placeOrient, 4 * Fs + ring) >> 1
+        const vec = (j: number) => { const d = tb(T.placeVec, j % 4); return [DX[d], DY[d]] }
+        if (phase === 1) {
+          const [vx, vy] = vec(d4 + 2), o = 4 * (ring > 0 ? 1 : 0) + d4
+          ox = s8(tb(T.placeOriginX, o)) + step * vx; oy = s8(tb(T.placeOriginY, o)) + step * vy
+          cx = ox; cy = oy; k = 1; phase = 2; count = 1
+        } else if (phase === 2) {
+          const [vx, vy] = vec(d4 + 1)
+          cx = ox + k * vx; cy = oy + k * vy; phase = 3; count++
+        } else {
+          const [vx, vy] = vec(d4 + 3)
+          cx = ox + k * vx; cy = oy + k * vy; phase = 2; k++; count++
         }
-        const t = ring === 1 ? 4 : Fs
-        const d4 = D4[Fs][ring]
-        const [ox, oy] = ring === 0 ? ORIGIN0[d4] : ORIGIN1[d4]
-        const skipSecond = ring === 0 && Fs % 2 === 1 && !inMapArea
-        for (let step = 0; step < 12; step++) {
-          if (step === 1 && skipSecond) continue
-          const lx = ox + step * V[(d4 + 2) % 4][0], ly = oy + step * V[(d4 + 2) % 4][1]
-          if ((lx < 0 || lx > 10) && (ly < 0 || ly > 10)) break
-          let n = 0
-          for (let k = 0; ; k++) {
-            const cands: [number, number][] = k === 0 ? [[lx, ly]]
-              : [[lx + k * V[(d4 + 1) % 4][0], ly + k * V[(d4 + 1) % 4][1]], [lx + k * V[(d4 + 3) % 4][0], ly + k * V[(d4 + 3) % 4][1]]]
-            let outOne = false
-            for (const [cx, cy] of cands) {
-              n++
-              const outX = cx < 0 || cx > 10, outY = cy < 0 || cy > 10
-              if (outX !== outY) outOne = true
-              if (!outX && !outY && tryCell(f, s, t, cx, cy, bx, by)) return true
-              if (step === 0 ? n >= lim[s] : n > 11) { outOne = true; break }
-            }
-            if (outOne || k > 12) break
+        const outX = cx < 0 || cx > 10, outY = cy < 0 || cy > 5
+        const out = outX || outY, bothOut = outX && outY
+        if ((out && !bothOut) || (firstLine ? count >= lim[s] : count > 11)) { // the line ends (0x2646D)
+          step++
+          if (s === 0 && FD[0] % 2 === 1 && ring === 0 && step === 1 && [1, 2, 3].some((i) => !walled(0, tb(T.placeRing, 4 * FD[0] + i)))) step++
+          phase = 1; firstLine = false
+        }
+        if (bothOut) { // the next ring (0x26542)
+          phase = 0
+          while (ring < 3 && phase !== 1) {
+            ring++
+            const d = tb(T.placeRing, 4 * Fs + ring)
+            if (walled(s, d)) continue
+            bx = blocks[s][0] + DX[d]; by = blocks[s][1] + DY[d]; step = 0; phase = 1
           }
+          if (phase !== 1) return false
+          continue
         }
+        if (!out && tryCell(f, s, ring, cx, cy, bx, by)) return true
       }
       return false
     }
@@ -2573,7 +2589,8 @@ export async function fight(e: Engine, ui: CombatUi, onReady?: (b: Battle) => vo
   const b = new Battle(e, ui, bf, cellTable(img))
   const partySize = e.party().length
   const distance = Math.min(2, e.read(0x6dc1))
-  b.setup(partySize, e.facing, distance, !bf.outdoors) // a map area when the map generator built the field
+  // a map area when the map generator built the field: its edges between squares
+  b.setup(partySize, e.facing, distance, !bf.outdoors && e.geo ? edgeClass(e.geo, e.y) : null)
   onReady?.(b)
   const surprise = e.read(0x6dcb)
   e.write(0x6dcb, 0)

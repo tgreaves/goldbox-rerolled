@@ -353,8 +353,10 @@ healing an unconscious character left it out of play (both games); CotAB items c
 spell ids; the debug jump took CotAB's areas 25–27 for PoR's wilderness; grab and blood drain
 (PoR 74, 75) called their own removal for ever. Found, not changed: in large map-area battles
 (New Phlan's city watch, the Tilverton kennel) monsters placed in the neighbouring squares can be
-walled off from the party, and with everyone on Quick nobody reaches anybody: the placement's ring
-wall check is marked I in spec/A-games/engine/combat-rules.md ("Placement"), so this may be the original's own behaviour. Not covered: rendering, the DOM panels (the
+walled off from the party, and with everyone on Quick nobody reaches anybody: the placement's scan is now
+the original's (2026-10-22: the ring wall check from the side's own square, rows 0–5, the next ring at once
+for a candidate outside both ways, the first line's limit and the second-line skip, spec/A-games/engine/combat-rules.md
+"Placement"); one stalemate at New Phlan (15,10) remains in an 8 × 1000 run, so its cause is elsewhere. Not covered: rendering, the DOM panels (the
 treasure split, Buy, Memorize), the town and overland menus beyond random play, anything past
 where random play gets (CotAB: Tilverton and the jumped-to areas).
 

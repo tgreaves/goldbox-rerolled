@@ -140,6 +140,12 @@ the SHA-256 of each table's bytes is in [expected-values.md §7](expected-values
 | `furnishDx` | absent | – | DS:034B | 0x0AF2B | – | – | 4 sides, from 1 |
 | `furnishDy` | absent | – | DS:034F | 0x0AF2F | – | – | 4 sides, from 1 |
 | `viewPieces` | DS:0C8C | 0x0D44C | DS:0ADA | 0x0B6BA | – | 10 kinds × (3 bytes + 2 words) | 10 kinds × (3 bytes + 2 words) |
+| `placeRing` | DS:02D2 | 0x0CA92 | DS:02DC | 0x0AEBC | 4 | 4 orientations × 4 rings | 4 orientations × 4 rings |
+| `placeOrient` | DS:02E2 | 0x0CAA2 | DS:02EC | 0x0AECC | 4 | 4 orientations × 4 rings | 4 orientations × 4 rings |
+| `placeVec` | DS:02F2 | 0x0CAB2 | DS:02FC | 0x0AEDC | – | 4 line vectors | 4 line vectors |
+| `placeOriginX` | DS:02F6 | 0x0CAB6 | DS:0300 | 0x0AEE0 | – | 2 (ring 0, rings 1+) × 4 | 2 (ring 0, rings 1+) × 4 |
+| `placeOriginY` | DS:02FE | 0x0CABE | DS:0308 | 0x0AEE8 | – | 2 (ring 0, rings 1+) × 4 | 2 (ring 0, rings 1+) × 4 |
+| `placeAllow` | DS:0306 | 0x0CAC6 | DS:0310 | 0x0AEF0 | 12 | 5 × 6 rows × [first, last] | 5 × 6 rows × [first, last] |
 <!-- /generated:tables -->
 
 ## Routines part A cites
@@ -950,6 +956,7 @@ when its table column or sentence names CotAB.
 | 0x25CB8 | coab/combat | coab/combat: Battlefield |  |
 | 0x25CC0 | coab/README, coab/combat, coab/ecl, B/procedures | coab/README: Curse of the Azure Bonds (CotAB) | `FUN_34c7_1e31` |
 | 0x25D70 | coab/combat | coab/combat: Battlefield |  |
+| 0x26010 | coab/combat | coab/combat: Placement |  |
 | 0x2648E | coab/combat | coab/combat: Battlefield |  |
 | 0x268CB | coab/combat | coab/combat: Battlefield |  |
 | 0x2697F | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |

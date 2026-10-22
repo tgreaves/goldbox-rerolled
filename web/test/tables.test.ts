@@ -94,3 +94,23 @@ describe('frame tiles', () => {
     setGame(POR)
   })
 })
+
+// battle placement's scan tables (PoR FUN_34c7_1577, CotAB 0x26010): the same values in both games
+const PLACE = {
+  ring: [8, 4, 6, 2, 8, 6, 4, 0, 8, 0, 6, 2, 8, 2, 0, 4], orient: [0, 0, 2, 6, 2, 2, 0, 4, 4, 4, 2, 6, 6, 6, 4, 0], vec: [7, 2, 3, 6],
+  ox: [5, 4, 5, 6, 3, 8, 7, 2], oy: [3, 2, 2, 3, 0, 2, 5, 3],
+  allow: [1, 0, 1, 0, 1, 0, 2, 9, 3, 10, 4, 10, 0, 2, 0, 3, 1, 4, 2, 5, 3, 6, 4, 7, 0, 6, 0, 7, 1, 8, 1, 0, 1, 0, 1, 0, 3, 6, 4, 7, 5, 8, 6, 9, 7, 10, 8, 10, 0, 6, 0, 7, 1, 8, 2, 9, 3, 10, 4, 10],
+}
+for (const [dir, m, name] of [[por, POR_TABLES, 'PoR'], [coab, COAB_TABLES, 'CotAB']] as const) {
+  describe.skipIf(!dir || !existsSync(dir))(`${name} placement tables`, () => {
+    it('read the ring directions, orientations, vectors, origins and allowed columns', () => {
+      const t = new Tables(image(dir), m.ds)
+      expect(bytes(t, m.placeRing.at, 16)).toEqual(PLACE.ring)
+      expect(bytes(t, m.placeOrient.at, 16)).toEqual(PLACE.orient)
+      expect(bytes(t, m.placeVec.at, 4)).toEqual(PLACE.vec)
+      expect(bytes(t, m.placeOriginX.at, 8)).toEqual(PLACE.ox)
+      expect(bytes(t, m.placeOriginY.at, 8)).toEqual(PLACE.oy)
+      expect(bytes(t, m.placeAllow.at, 60)).toEqual(PLACE.allow)
+    })
+  })
+}

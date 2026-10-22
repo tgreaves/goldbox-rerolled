@@ -185,6 +185,13 @@ Plain ground (flags 0, 0x01: score 50) gets 2 % grass and bushes, 5 % tufts, 10 
 PoR's scatter (`FUN_34c7_0e9e`) rolls d255 against four values set by the flags, with cactus, marsh
 plants and puddles that CotAB's WildCom does not have.
 
+### Placement (O, 0x26010)
+
+PoR's scan (`FUN_34c7_1577`, [engine/combat-rules.md, "Placement"](../engine/combat-rules.md#placement-o-fun_34c7_19f5-fun_34c7_1577-fun_34c7_1434)), instruction for
+instruction, with CotAB's addresses: the side's block DS:4A1C/4A1E, its limit DS:4A20, its F DS:4A22, the
+side DS:4A2A, the party's square DS:7229/722A, the tables DS:02DC–0310, the edge class 0x25018. Its
+map-area test is `DS:4FD3` ≠ 3 (PoR `DS:49FA` ≤ 1).
+
 ### Cell table (O, DS:26A4, 4 bytes a cell)
 
 Byte 0: cost to enter, 1, 2 or 4, or 0xFF blocked (PoR: 1 or 0xFF, checked on every cell); a step costs

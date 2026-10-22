@@ -337,6 +337,12 @@ for (const k of ['fanDx1', 'fanDy1', 'fanDx2', 'fanDy2']) tb(k, null, [0, 8, '8 
 both('gasCloud', 1, 4, '4 squares, from 1')
 tb('killCloud', null, [1, 9, '9 squares, from 1'])
 for (const k of ['furnishDx', 'furnishDy']) tb(k, null, [1, 4, '4 sides, from 1'])
+both('placeRing', 0, 16, '4 orientations × 4 rings')
+both('placeOrient', 0, 16, '4 orientations × 4 rings')
+both('placeVec', 0, 4, '4 line vectors')
+both('placeOriginX', 0, 8, '2 (ring 0, rings 1+) × 4')
+both('placeOriginY', 0, 8, '2 (ring 0, rings 1+) × 4')
+both('placeAllow', 0, 60, '5 × 6 rows × [first, last]')
 
 /** A table's span with the lengths the game's rules give (temple services, spells) filled in. */
 export function spanOf(t: TableSpan, rules: { temple: unknown[]; spells: { named: number; records: number } }): TableSpan {

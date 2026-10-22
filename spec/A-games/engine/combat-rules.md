@@ -102,7 +102,7 @@ X = 22 + col + 6·bx + 5·by        Y = 10 + row + 5·by        // (bx, by) = sq
 1. Count combatants in play per side. Front-line length `lim[s] = (in_play[s] + 1) / 2`.
 2. Party block (0, 0). Enemy block = D squares in the facing direction, D = ECL 0x6DC1 (encounter distance 0–2, already clamped to the open squares ahead): `(dx8[f]·D, dy8[f]·D)` with `dx8 = 0,1,1,1,0,−1,−1,−1`, `dy8 = −1,−1,0,1,1,1,0,−1` (`DS:2736/273F`). Monsters therefore always start in front of the party, never at the sides or behind (G).
 3. Orientation per side: F0 = facing / 2 for the party, F1 = the opposite for the enemy.
-4. Allowed cells per side and ring: `allow[s][ring][row][col] = T[t][row].min ≤ col ≤ T[t][row].max`, with t = F[s] for rings 0, 2, 3 and t = 4 for ring 1. Table `DS:0306` (5 entries × 6 rows of [min, max]; [1, 0] = empty row):
+4. Allowed cells per side and ring: `allow[s][ring][row][col] = T[t][row].min ≤ col ≤ T[t][row].max`, with t = F[s] for rings 0, 2, 3 and t = 4 for ring 1. Table `DS:0306` (5 entries × 6 rows of [min, max]; [1, 0] = empty row; CotAB `DS:0310`, the same values; profile `T.placeAllow`):
 
 | t | row 0 | row 1 | row 2 | row 3 | row 4 | row 5 |
 |---|---|---|---|---|---|---|
@@ -120,14 +120,17 @@ X = 22 + col + 6·bx + 5·by        Y = 10 + row + 5·by        // (bx, by) = sq
    - Not found, party member: icon size 0, keeps its index, not removed.
 6. Rebuild the occupancy map `DS:60DB` (50 × 25 combatant indices) and screen positions (`FUN_577f_03a0`).
 
-**Scan for a free cell (`FUN_34c7_1577`).** Fills lines across the square, front line first:
+**Scan for a free cell (`FUN_34c7_1577`, 0x261E7; CotAB 0x26010, the same code).** Fills lines across the square, front line first; each call restarts it (O, the state machine below):
 
-- Line direction vectors on the slanted grid: `V0 = (−1,−1)` (map north), `V1 = (+1,0)`, `V2 = (+1,+1)` (map south), `V3 = (−1,0)`, with `d4 = DS:02E2[4·F + ring] / 2` selecting the orientation (`DS:02E2` = 00 00 02 06 | 02 02 00 04 | 04 04 02 06 | 06 06 04 00, indexed by F then ring).
+- Line direction vectors on the slanted grid: `V[j]` = the 8-way direction `DS:02F2[j]` = 7, 2, 3, 6, i.e. `V0 = (−1,−1)` (map north), `V1 = (+1,0)`, `V2 = (+1,+1)` (map south), `V3 = (−1,0)`, with `d4 = DS:02E2[4·F + ring] / 2` selecting the orientation, recomputed at every candidate (`DS:02E2` = 00 00 02 06 | 02 02 00 04 | 04 04 02 06 | 06 06 04 00, indexed by F then ring).
 - Line origin O (square-local): ring 0 columns {5, 4, 5, 6} and rows {3, 2, 2, 3} for d4 = 0–3; rings 1+: columns {3, 8, 7, 2}, rows {0, 2, 5, 3} (`DS:02F6`, `DS:02FE`).
-- Line `step` starts at O + step·V[(d4+2) mod 4]; candidates: the origin, then alternately origin + k·V[(d4+1) mod 4] and origin + k·V[(d4+3) mod 4] for k = 1, 2, …
-- A line ends when a candidate is outside 0–10 in exactly one axis, or when the count reaches `lim[s]` (first line) or exceeds 11 (later lines); the ending candidate is still tried if in range. So the front line holds at most `lim` combatants.
-- Party facing east or west (F odd), ring 0: the second line (step 1) is skipped (left empty) in the wilderness, or in a map area if any of the three neighbour squares in `DS:02D2` is open.
-- A candidate outside in both axes moves to the next ring (up to 3): the square behind (ring 1), then the two side squares (rings 2, 3), directions `DS:02D2[4·F + ring]` = F0: S, W, E; F1: W, S, N; F2: N, W, E; F3: E, N, S. In a map area a ring is skipped when the wall between squares is solid (`FUN_34c7_01ad` = 1; I: the check uses the previous ring's square, possibly a bug). No ring left: fail.
+- Line `step` starts at O + step·V[(d4+2) mod 4]; candidates: the origin (count := 1), then alternately origin + k·V[(d4+1) mod 4] and origin + k·V[(d4+3) mod 4] for k = 1, 2, …, the count raised for each before its tests.
+- A candidate is **outside** when its column is outside 0–10 or its row outside 0–5 (0x263FE).
+- A line ends (0x26429) when a candidate is outside in exactly one axis, or when the count reaches `lim[s]` in the scan's **first line** or exceeds 11 in any other. The first-line flag is set at the scan's start and cleared only when that line ends, so a ring entered before the first line ended still uses `lim`. The candidate that ends the line is still tried if it is not outside, so the front line holds `lim` combatants.
+- When a line ends: step + 1; then the party side only (`DS:4658` = 0), facing east or west (F odd), ring 0, at step 1: the second line is skipped (step + 1, left empty) in the wilderness, or in a map area when any of the three edges of the party's square towards `DS:02D2[4·F + 1..3]` is not a wall (0x2646D–0x2651B).
+- A candidate outside in **both** axes moves to the next ring at once, mid-line included (0x26542): the square behind (ring 1), then the two side squares (rings 2, 3), directions `DS:02D2[4·F + ring]` = F0: S, W, E; F1: W, S, N; F2: N, W, E; F3: E, N, S, each square the side's own square plus that direction. In a map area a ring is skipped when the edge of the **side's own square** (the party's map square plus the side's block offset) in that direction is a wall (`FUN_34c7_01ad` = 1; a door or open edge allows it). No ring left: fail.
+- The tables are START.EXE's (profile `T.placeRing`, `placeOrient`, `placeVec`, `placeOriginX/Y`, `placeAllow`; CotAB at DS:02DC, 02EC, 02FC, 0300, 0308, 0310, the same values).
+- The map-area test: PoR `DS:49FA` ≤ 1 (the area kind); CotAB `DS:4FD3` ≠ 3 (3 is the overland state, set when ECL 0x4BE6 = 0, [coab/assets.md](../coab/assets.md); I: that this is the same test as the map generator's ECL 0x4BE6).
 
 **Cell test (`FUN_34c7_1434`).** The allow bit is set; no other combatant on the whole footprint (`FUN_577f_0cb9`); the worst ground cell under the footprint is not 0 (off the arena) and not impassable (`DS:2744[4·cell]` ≠ 0xFF). On success the position (`DS:5F27/5F28 + 4i`) is written and the allow bit cleared.
 

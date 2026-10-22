@@ -432,13 +432,13 @@ Defined by [host-contracts.md](../B-model/host-contracts.md#8-the-headless-harne
 
 | Vector | Input | Tape | Output |
 |---|---|---|---|
-| `F-run-por-1` | (243 characters) | 3718 draws | 19287 bytes, SHA-256 `1bd6b9a1e2c2879bc5e7c1459c9ba9dc2fd5190849940a61c20fd64fea9b4e53` |
+| `F-run-por-1` | (243 characters) | 3214 draws | 17311 bytes, SHA-256 `21485a7e44111976477f94cba0955fc45ef0512ab1a145db2e9c8580e27059df` |
 | `F-run-por-2` | `{"script":{"game":"por","jump":[1,18,8,8,0],"commands":["f","f","r","f","f","l","f"],"answers":[0,0,0,0]}}` | 0 draws | 1782 bytes, SHA-256 `82882107ccd6e52b08a922f8dbb56e1f8c9f64d08478b29e9dc47100b8f811a9` |
 | `F-run-por-3` | (293 characters) | 3735 draws | 9018 bytes, SHA-256 `52558eac75dd17c459446ae212dd641e9b66707f996aa9a4fd17559ac1d8f25d` |
-| `F-run-por-4` | (281 characters) | 3820 draws | 12493 bytes, SHA-256 `d54028e92ed7d8e6f968c4b60a56a33543b20094a49b1262dcc077f8c631cdab` |
+| `F-run-por-4` | (281 characters) | 4700 draws | 15711 bytes, SHA-256 `17b06e88d44ea08a51e0d4d3c41223fa7f630b5d49b21d70327862bcfd596e2d` |
 | `F-run-coab-1` | `{"script":{"game":"coab","commands":["l","l","f","f","r","f","f","l","f","s","L"],"answers":[0,0,0,0,0,0]}}` | 0 draws | 4899 bytes, SHA-256 `489a0ab813ad7bf07eb0611985a76ddbedebb45b2f740a4f22c66e279ca38a1a` |
 | `F-run-coab-2` | (307 characters) | 0 draws | 2275 bytes, SHA-256 `1ad6253f6df396f8f91239b4f4c761706f692db54569ee4a9eb9b20e2b604cc3` |
-| `F-run-coab-3` | (335 characters) | 4272 draws | 13170 bytes, SHA-256 `b5c04430f23ec86d099dc0658e80fa03403a8ce113d576cb16e66cb889ae241c` |
+| `F-run-coab-3` | (335 characters) | 4357 draws | 13265 bytes, SHA-256 `ca24d91e13caa084fe62c6b12bc1aacc1aec85e25ab9dbc8b0c9110dbb2780f9` |
 
 #### `sound.driver` (F)
 

@@ -75,14 +75,14 @@ Also run before every commit: `npx tsc --noEmit -p .`, `npm run build`, and
   computer or random commands, shops, temples, treasure, camp, training), saving and loading back now
   and then, and checks the game's state after each step: 8 seeds of 300 steps per game by default
   (`porplay.test.ts`, `coabplay.test.ts`; more with `POR_PLAY_SEEDS`, `COAB_PLAY_SEEDS`).
-- **Test vectors** ([test-vectors.md](D-appendices/test-vectors.md)): 553, replayed against the
+- **Test vectors** ([test-vectors.md](D-appendices/test-vectors.md)): 565, replayed against the
   reference on every test run (`vectors.test.ts`):
 
   | Kind | Count | Procedures (vectors) |
   |---|---|---|
   | S (no game files) | 73 | the dice source (7 tape cases, 1 `Random`), the line walker (8), hit points (11), caster level (16), joining (14), the strength encoding (1), appraisal (2), terrain flags (2), wilderness battlefields (8), PoR's map battlefields (3) |
   | E (the executable) | 63 | the derived statistics (16), creation (11), training (8), dual-classing (4), coin values (2), sharing (3), CotAB's furnished map battlefields (3), spells on a battlefield (10), attacks (4), saving throws (2) |
-  | F (hashed) | 417 | random treasure (8), map battlefields of the games' own maps (6), headless runs and battles (7), the sound driver (87), the images (4), the tables (106), the DAX files (199) |
+  | F (hashed) | 429 | random treasure (8), map battlefields of the games' own maps (6), headless runs and battles (7), the sound driver (87), the images (4), the tables (118), the DAX files (199) |
 
 - **V9 frames** (`web/test/view-frames.json`): the SHA-256 of 1024 drawn-view frames (every square
   and facing) for each of eleven areas (PoR 6, CotAB 5), from the GOG files; the harness's frames equal

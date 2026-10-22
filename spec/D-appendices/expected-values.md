@@ -454,6 +454,12 @@ The bytes of each table the table map names, from `at` + *from* for *bytes* byte
 | PoR | `startGold` | 0 | 16 | `d80b831d196d6c4f647ecc0826de6d8c43007dc631d0d1b6a5f2c1bf0273d9b4` |
 | PoR | `saves` | 0 | 360 | `22ca3548b4a0a35ab14f03d8960d88deea34e5941fcd035fdca32d46eb13a07b` |
 | PoR | `gasCloud` | 1 | 4 | `41a2d45961e5cee85030438f783bb49ef9abb204cab02ef36435adbabede8cb4` |
+| PoR | `placeRing` | 0 | 16 | `6eb3511d57e7705f2de07752237987e7f1950a336634e19997ffdc919678827d` |
+| PoR | `placeOrient` | 0 | 16 | `7b5d1b03210c50346f68b248f36367eb1162fbc54b91e1fabc831e931869973b` |
+| PoR | `placeVec` | 0 | 4 | `7dde7343fca717d7417634c1786c932416c6248af5f33a5498095a64a4f7b3a4` |
+| PoR | `placeOriginX` | 0 | 8 | `a6b24dca1f0fc9b8f07c11f93d4f001a6dd0374db8ae1ea79f5e2b714d7bfbef` |
+| PoR | `placeOriginY` | 0 | 8 | `f3deb66fff4455ad854c22dad0fd504f5fda85fddfadaf2f644701d23cdb3752` |
+| PoR | `placeAllow` | 0 | 60 | `505c860b2f99dd4a28c048c0b26fa3fd368c829b332721591ae123c61b690949` |
 | CotAB | `classBits` | 0 | 8 | `28f184aa988e9a2a7232da0e3d7015772d7511312e3ddac1f53e7f702a9e6be5` |
 | CotAB | `trainerBits` | 0 | 8 | `f0ae14bd1af077753317f181d45a79a326e7380fcbf603f6ce8cedf00917f3f8` |
 | CotAB | `hitDiceCount` | 0 | 8 | `d3fe1dedaad1fa23e97734812216792967cd3fc05e4da3ec905abc57328b2047` |
@@ -511,6 +517,12 @@ The bytes of each table the table map names, from `at` + *from* for *bytes* byte
 | CotAB | `killCloud` | 1 | 9 | `ba551e82a756a0bd7da068f6ea745e9a914dc76d32a8714f04535b7b454bba45` |
 | CotAB | `furnishDx` | 1 | 4 | `199ef7c84450ff1d1df9a9ca42add325d5ad67f1a1b5ff952d61a309397dfc1e` |
 | CotAB | `furnishDy` | 1 | 4 | `d31878eb7602500a4cfbb48a94945810e716b11c38be43481788e01ef825512f` |
+| CotAB | `placeRing` | 0 | 16 | `6eb3511d57e7705f2de07752237987e7f1950a336634e19997ffdc919678827d` |
+| CotAB | `placeOrient` | 0 | 16 | `7b5d1b03210c50346f68b248f36367eb1162fbc54b91e1fabc831e931869973b` |
+| CotAB | `placeVec` | 0 | 4 | `7dde7343fca717d7417634c1786c932416c6248af5f33a5498095a64a4f7b3a4` |
+| CotAB | `placeOriginX` | 0 | 8 | `a6b24dca1f0fc9b8f07c11f93d4f001a6dd0374db8ae1ea79f5e2b714d7bfbef` |
+| CotAB | `placeOriginY` | 0 | 8 | `f3deb66fff4455ad854c22dad0fd504f5fda85fddfadaf2f644701d23cdb3752` |
+| CotAB | `placeAllow` | 0 | 60 | `505c860b2f99dd4a28c048c0b26fa3fd368c829b332721591ae123c61b690949` |
 
 #### DAX files
 

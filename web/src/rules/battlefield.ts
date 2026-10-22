@@ -270,10 +270,15 @@ function squareByte(geo: GeoMap, x: number, y: number, area: number): number {
  * furnishing (CotAB 0x24D63); after all squares the finishing pass (PoR). spec/A-games/engine/battlefield.md "Map-area
  * battlefields", spec/A-games/coab/combat.md "Map-area generator".
  */
-export function mapBattlefield(geo: GeoMap, X: number, Y: number, roll: Roll, area: number,
-  spec: MapFieldSpec = R.mapField, img: Uint8Array | null = null): Battlefield {
-  const bf = new Battlefield(false)
-  const DX = [0, 1, 1, 1, 0, -1, -1, -1], DY = [-1, -1, 0, 1, 1, 1, 0, -1]
+const DX8 = [0, 1, 1, 1, 0, -1, -1, -1], DY8 = [-1, -1, 0, 1, 1, 1, 0, -1]
+
+/**
+ * The edge class between a map square and its neighbour in 8-way direction d (PoR FUN_34c7_01ad over
+ * FUN_34c7_012b, CotAB 0x25018 / 0x24F96): 0 open, 1 wall, 3 door, either side's edge counting; off the
+ * map, open only east and west on the party's row `Y` (DS:6AAE), else a wall. Used by the map-area
+ * battlefield and by placement's ring test.
+ */
+export function edgeClass(geo: GeoMap, Y: number): (x: number, y: number, d: number) => number {
   const edge = (x: number, y: number, d: number): number => {
     if (x >= 0 && x <= 15 && y >= 0 && y <= 15) {
       if (geo.passage(x, y, d >> 1) === 0) return 1
@@ -282,7 +287,13 @@ export function mapBattlefield(geo: GeoMap, X: number, Y: number, roll: Roll, ar
     }
     return y === Y && (d === 2 || d === 6) ? 0 : 1
   }
-  const classify = (x: number, y: number, d: number) => edge(x, y, d) | edge(x + DX[d], y + DY[d], (d + 4) % 8)
+  return (x, y, d) => edge(x, y, d) | edge(x + DX8[d], y + DY8[d], (d + 4) % 8)
+}
+
+export function mapBattlefield(geo: GeoMap, X: number, Y: number, roll: Roll, area: number,
+  spec: MapFieldSpec = R.mapField, img: Uint8Array | null = null): Battlefield {
+  const bf = new Battlefield(false)
+  const classify = edgeClass(geo, Y)
   const fu = spec.furnish
   if (fu && !img) throw new Error('furnishing a map battlefield needs START.EXE')
   const s8 = (v: number) => (v << 24) >> 24

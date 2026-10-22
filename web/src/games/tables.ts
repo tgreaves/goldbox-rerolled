@@ -129,6 +129,20 @@ export interface TableMap {
   /** the drawn view's piece tables (spec/A-games/engine/maps-and-view.md, "Wall pieces"), contiguous:
    *  10 bytes first tile index, 10 widths, 10 heights (cells), 10 words base column, 10 words row */
   viewPieces: TableRef
+  /**
+   * Battle placement's scan (PoR FUN_34c7_1577, CotAB 0x26010; spec/A-games/engine/combat-rules.md
+   * "Placement"), by a side's orientation F and ring: `placeRing` [4·F + ring] the 8-way direction of the
+   * ring's square from the side's own (entry 0 unused) and, entries 1–3, the party's neighbours the second
+   * line's skip tests; `placeOrient` [4·F + ring] twice the line orientation d4; `placeVec` [d4] the 8-way
+   * direction of the line vector V[d4]; `placeOriginX` / `placeOriginY` [4·(ring > 0) + d4] s8 line
+   * origins; `placeAllow` [t] six rows of [first, last] allowed columns (t = F, all = 4 for ring 1)
+   */
+  placeRing: TableRef
+  placeOrient: TableRef
+  placeVec: TableRef
+  placeOriginX: TableRef
+  placeOriginY: TableRef
+  placeAllow: TableRef
 }
 
 export const POR_TABLES: TableMap = {
@@ -149,6 +163,7 @@ export const POR_TABLES: TableMap = {
   fanDx1: absent, fanDy1: absent, fanDx2: absent, fanDy2: absent,
   gasCloud: t(0x290d), killCloud: absent, furnishDx: absent, furnishDy: absent,
   viewPieces: t(0x0c8c),
+  placeRing: t(0x02d2, 4), placeOrient: t(0x02e2, 4), placeVec: t(0x02f2), placeOriginX: t(0x02f6), placeOriginY: t(0x02fe), placeAllow: t(0x0306, 12),
 }
 
 export const COAB_TABLES: TableMap = {
@@ -169,6 +184,7 @@ export const COAB_TABLES: TableMap = {
   fanDx1: t(0x0a22), fanDy1: t(0x0a2a), fanDx2: t(0x0a12), fanDy2: t(0x0a1a),
   gasCloud: t(0x27d9), killCloud: t(0x27dd), furnishDx: t(0x034b), furnishDy: t(0x034f),
   viewPieces: t(0x0ada),
+  placeRing: t(0x02dc, 4), placeOrient: t(0x02ec, 4), placeVec: t(0x02fc), placeOriginX: t(0x0300), placeOriginY: t(0x0308), placeAllow: t(0x0310, 12),
 }
 
 /** The active game's tables; start-up (setGame) switches them. */

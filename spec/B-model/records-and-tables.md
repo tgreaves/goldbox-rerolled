@@ -218,6 +218,7 @@ Addresses are DS offsets; "/ n" is the row size (decimal). "absent" is `at` = �
 | `fanDx1`, `fanDy1`, `fanDx2`, `fanDy2` | absent | DS:0A22, DS:0A2A, DS:0A12, DS:0A1A | 8 × s8 by direction: the area template's side-line offsets ([coab/effects.md §7](../A-games/coab/effects.md#7-the-target-hook-bolts-and-the-area-template-o-unless-marked)) |
 | `gasCloud` | DS:290D | DS:27D9 | direction indices, entries from 1: Stinking Cloud's 4 squares |
 | `killCloud` | absent | DS:27DD | direction indices, entries from 1: Cloudkill's 9 squares (overlapping `gasCloud`) |
+| `placeRing`, `placeOrient`, `placeVec`, `placeOriginX`, `placeOriginY`, `placeAllow` | DS:02D2, 02E2, 02F2, 02F6, 02FE, 0306 | DS:02DC, 02EC, 02FC, 0300, 0308, 0310 | battle placement's scan ([engine/combat-rules.md, "Placement"](../A-games/engine/combat-rules.md#placement-o-fun_34c7_19f5-fun_34c7_1577-fun_34c7_1434)): ring directions and line orientations [4·F + ring], the line vectors' 8-way directions [d4], s8 line origins [4·(ring > 0) + d4], allowed columns [t·12 + row·2] |
 | `furnishDx`, `furnishDy` | absent | DS:034B, DS:034F | s8, entries 1–4 (up, right, down, left): the chair cells beside a table |
 
 **O** for every row: each address is the table that the cited part A routine indexes, and the
