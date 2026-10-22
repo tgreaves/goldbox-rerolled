@@ -91,7 +91,7 @@ Each was an **I** or **?** in a part A file; the file now states it (AUDIT §6.9
 - ~~ECL 0x4AB3's arid-terrain change (I)~~ the river-pollution commission, rewarded ([engine/battlefield.md, "Terrain flags"](A-games/engine/battlefield.md#terrain-flags-o-fun_34c7_08a4)).
 
 Still open from that pass, each in its file's "Open" section: the fifth age threshold
-([chargen-and-progression.md](A-games/engine/chargen-and-progression.md#open)), the engine globals
-behind B 0x6B00/0x6C00 and the others in [ecl.md](A-games/engine/ecl.md#open), start-up step 9's
+([chargen-and-progression.md](A-games/engine/chargen-and-progression.md#open)), the remaining engine
+globals in [ecl.md](A-games/engine/ecl.md#open) (B 0x6B00/0x6C00 answered: the leave flags), start-up step 9's
 background call ([input-and-menus.md](A-games/engine/input-and-menus.md#open)), CotAB's WIS bonus
 routine ([coab/tables.md](A-games/coab/tables.md#open)).

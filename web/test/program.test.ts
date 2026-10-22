@@ -29,3 +29,28 @@ describe.skipIf(!have)('PROGRAM 8 in PoR', () => {
     expect(said.join(' ')).toMatch(/TYRANTHRAXUS HAS FINALLY BEEN DEFEATED/)
   })
 })
+
+describe.skipIf(!have)('an NPC leaving through LOAD_CHARACTER (0x19F92)', () => {
+  it('after B 0x6B00 and B 0x6C00 are set to 0, LOAD_CHARACTER with bit 7 drops that character', async () => {
+    const m = new Map<string, Uint8Array>()
+    for (const n of readdirSync(dir)) if (wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(join(dir, n))))
+    const files = new GameFiles(m)
+    const io = { print: () => {}, menu: async () => 0, refresh: async () => {}, pause: async () => {}, sound: () => {},
+      picture: () => {}, sprite: () => {}, engine: async () => {}, inputNumber: async () => 0, inputText: async () => '' } as unknown as Io
+    const dat = files.get('SAVGAMA.DAT')!
+    const stems = parseSave(dat).party
+    const run = async (flags: boolean) => {
+      const e = new Engine(files, io, 1)
+      e.loadSave(dat, stems.map((s) => files.get(`${s}.SAV`)!))
+      const leaving = e.party()[2]
+      const at = 0x9920 // over the loaded script, past its vectors: LOAD_CHARACTER #0x82, EXIT
+      ;[0x0a, 0x00, 0x82, 0x00].forEach((b, i) => e.write(at + i, b))
+      e.cur = leaving
+      if (flags) { e.write(0x6b00, 0); e.write(0x6c00, 0) }
+      await e.run(at)
+      return { n: e.party().length, gone: !e.party().includes(leaving) }
+    }
+    expect(await run(true)).toEqual({ n: 5, gone: true })
+    expect(await run(false)).toEqual({ n: 6, gone: false })
+  })
+})

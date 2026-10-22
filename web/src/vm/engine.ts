@@ -114,6 +114,11 @@ export class Engine {
   cur!: Uint8Array
   savedCur!: Uint8Array
   restoreCur = false
+  /**
+   * DS:84D3 / DS:84D2 (CotAB DS:8B6D / 8B6C): set by a script writing 0 to B 0x6B00 / B 0x6C00 (0x20931,
+   * 0x20A39); with both set, LOAD_CHARACTER with bit 7 drops the current character (0x19F92)
+   */
+  private leaveFlags = [false, false]
   block = 1
   area = 0
   geo: GeoMap | null = null
@@ -321,6 +326,7 @@ export class Engine {
   /** FUN_2fea_01b6 */
   private resetVm(keep: boolean) {
     this.stack = []
+    this.leaveFlags = [false, false] // 0x20066, 0x2006B
     this.clearFlags()
     this.vectors = [0, 1, 2, 3, 4].map((i) => {
       const save = this.pc
@@ -453,8 +459,18 @@ export class Engine {
   }
 
   /** FUN_2fea_0a74 */
+  /** The current character leaves the party (CotAB DROP_CHARACTER 0x3A275, PoR FUN_417f_3291(1, 0)); the one before becomes current. */
+  private leaveParty() {
+    const i = this.nodes.indexOf(this.cur)
+    if (i < 0 || i >= this.party().length) return
+    this.nodes.splice(i, 1)
+    this.B[PARTY_SIZE - B0] = Math.max(0, this.B[PARTY_SIZE - B0] - 1)
+    this.cur = this.nodes[Math.max(0, i - 1)] ?? this.cur
+    this.savedCur = this.cur
+  }
   private charWrite(k: number, v: number) {
     const c = this.cur
+    if (k === 0 && v === 0) this.leaveFlags[0] = true
     if (k >= 0x20 && k <= 0x70) c[F.memorised + k - 0x20 + game().ecl.memorisedView] = v & 0xff
     else if (k === 0xb8) c[F.morale] = (v > 0xb2 ? v - 0x32 : v) & 0xff
     else if ([0xbb, 0xbd, 0xbf, 0xc1, 0xc3].includes(k)) {
@@ -463,6 +479,7 @@ export class Engine {
     } else if (k === 0xf7) { c[F.xpBase] = v & 0xff; c[F.xpBase + 1] = v >> 8 }
     else if (k === 0xf9) c[F.xpPerHp] = v & 0xff
     else if (k === 0x100) {
+      if (v === 0) this.leaveFlags[1] = true
       if (v > 0x7f) {
         c[F.inPlay] = 0
         if (v === 0x87) c[F.status] = 7
@@ -622,6 +639,13 @@ export class Engine {
         const n = this.val(1) & 0x7f
         if (n < this.nodes.length) this.cur = this.nodes[n]
         this.loadedPastEnd = n >= this.nodes.length
+        // 0x19F92: with bit 7 and both leave flags, the current character leaves the party (an NPC's
+        // farewell, e.g. ECL3 #0 0xAD56): not restored at EXIT if it was the saved one (DS:4430 := 0)
+        if (this.val(1) & 0x80 && this.leaveFlags[0] && this.leaveFlags[1]) {
+          if (this.savedCur === this.cur) this.restoreCur = false
+          this.leaveParty()
+          this.leaveFlags = [false, false]
+        }
         break
       }
       case 0x0b: await this.loadMonster(); break
@@ -1326,17 +1350,7 @@ export class Engine {
         this.mapDirty = true
         await this.io.refresh()
         break
-      case 'dropCharacter': { // the current character leaves the party; the one before becomes current
-        this.readops(0)
-        const i = this.nodes.indexOf(this.cur)
-        if (i >= 0 && i < this.party().length) {
-          this.nodes.splice(i, 1)
-          this.B[PARTY_SIZE - B0] = Math.max(0, this.B[PARTY_SIZE - B0] - 1)
-          this.cur = this.nodes[Math.max(0, i - 1)] ?? this.cur
-          this.savedCur = this.cur
-        }
-        break
-      }
+      case 'dropCharacter': this.readops(0); this.leaveParty(); break
       case 'findEffect': { // EQ when the current character has the effect, else NE
         this.readops(1)
         const has = this.effectsOf(this.cur).some((x) => x.type === (this.val(1) & 0xff))

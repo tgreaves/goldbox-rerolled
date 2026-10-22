@@ -97,7 +97,7 @@ The B array keeps the C64 layout of the character record at 0x6B00. Some address
 
 | ECL address | Read returns | Write does |
 |---|---|---|
-| 0x6B00 | buffer | value 0 sets `DS:84D3` (**?**) |
+| 0x6B00 | buffer | value 0 sets `DS:84D3` (0x20931), the first of the two leave flags (O; see LOAD_CHARACTER) |
 | 0x6B18 | char[0x14] CON | — |
 | 0x6B20–0x6B70 | buffer (not mapped) | char[0x17 + (n − 0x6B20)] = low byte: memorised spells and spell-known flags |
 | 0x6B9B | char[0x6E] (second saving throw) | — |
@@ -108,7 +108,7 @@ The B array keeps the C64 layout of the character record at 0x6B00. Some address
 | 0x6BD8 | char[0xA0] alignment (signed) | — |
 | 0x6BF7 | word char[0xB8] (**?**) | same |
 | 0x6BF9 | char[0xBA] (**?**) | same |
-| 0x6C00 | 0x80 if char[0x10D] = 0 (cannot act), else 1 | v ≥ 0x80: char[0x10D] = 0, and v = 0x87 also sets status char[0x10C] = 7 (Stoned); v = 0 sets `DS:84D2` (**?**) |
+| 0x6C00 | 0x80 if char[0x10D] = 0 (cannot act), else 1 | v ≥ 0x80: char[0x10D] = 0, and v = 0x87 also sets status char[0x10C] = 7 (Stoned); v = 0 sets `DS:84D2` (0x20A39), the second leave flag (O; see LOAD_CHARACTER) |
 | 0x6C0C | 0x80 if char[0x10E] = 0 and char[0x10F] ≠ 0; 0x81 if char[0x10E] = 1; else 0 | 0 → [0x10E]=0,[0x10F]=0; 0x80 → 0,1; 0x81 → 1,1 |
 | 0x6C0D | undefined (the original returns an uninitialised word) | — |
 | 0x6C1B | char[0x11C] movement | — |
@@ -256,7 +256,7 @@ All of these walk the party list `DS:5D96`, which **also holds loaded monsters**
 
 | Op | Name | Operands | Semantics | |
 |---|---|---|---|---|
-| 0A | LOAD_CHARACTER | val 1 | current character = list entry (val & 0x7F), 0-based; unchanged past the end. Marks the engine to restore its own selection at EXIT/PROGRAM | O |
+| 0A | LOAD_CHARACTER | val 1 | current character = list entry (val & 0x7F), 0-based; unchanged past the end. Marks the engine to restore its own selection at EXIT/PROGRAM. With bit 7 set and both leave flags `DS:84D3`, `DS:84D2` set (B 0x6B00 and B 0x6C00 written 0), the current character **leaves the party** (`FUN_417f_3291(1, 0)`; if it is the saved one, DS:4430 := 0 so it is not restored), the roster is redrawn and both flags cleared (0x19F92–0x19FDB); the VM reset clears them too (0x20066). Scripts use it for an NPC's farewell (ECL3 #0 0xAD56, ECL1 #24 0xACC3); CotAB the same (DS:8B6D/8B6C, 0x18BCD) | O |
 | 1D | PARTY_STRENGTH | addr 1 | Σ over the list of `(HP + 5·max(char[0x111] − 60, 0) + 5·max(char[0x110] − 39, 0) + 8·MU level + 4·Cleric level) div 10`, in a byte that wraps | O |
 | 1E | CHECK_PARTY | op 1 selector, val 2 effect, addr 3–6 min, max, avg, found | selector 0: found = 1 if a member has effect val 2 (min/max/avg = 0). Selector address 0x6BA7: min/max/average of char[0x79] (find/remove traps); 0x6C1B: of movement char[0x11C]; found = 0. Other selectors write nothing | O |
 | 22 | PARTY_HAS_RANGER | addr 1, addr 2 | dest1 = 1 if any member's class is Ranger (4) or Cleric/Ranger (10); **dest2 is always 0**. Scripts feed both into SURPRISE | O |
@@ -344,10 +344,10 @@ After a 0x8000/0x8001 fight the aftermath awards `100 × char[0x73]` experience 
 
 ## Open
 
-- Engine globals written through B or A whose readers are not traced (**?**): `DS:84D3` (B 0x6B00
-  written 0), `DS:84D2` (B 0x6C00 written 0), char[0xB8] and char[0xBA] (B 0x6BF7, 0x6BF9), the
-  redraw of A 0x49FD/0x49FE (`DS:84E8`), the registers 0x03DE, 0x00B8, 0x00B9; and why ECL 0x6DE3
-  is cleared after every battle.
+- Engine globals written through B or A whose readers are not traced (**?**): char[0xB8] and
+  char[0xBA] (B 0x6BF7, 0x6BF9), the redraw of A 0x49FD/0x49FE (`DS:84E8`, set at 0x20B4F, tested at
+  0x1C961, I: the view redrawn), the registers 0x03DE, 0x00B8, 0x00B9. (`DS:84D3`/`DS:84D2` are the
+  leave flags of LOAD_CHARACTER; ECL 0x6DE3 is "the next battle gives no items", cleared after each.)
 - Meanings inferred (**I**): the CHA table at B 0x6DCF (reaction or loyalty), ECL 0x6DC8 (enemies
   defeated), monsters left in the party list after an avoided battle, the `88 13` prefix of every
   record (a C64 load address or marker).
