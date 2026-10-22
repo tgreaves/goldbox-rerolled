@@ -106,14 +106,14 @@ The B array keeps the C64 layout of the character record at 0x6B00. Some address
 | 0x6BB8 | char[0x84] NPC morale | char[0x84] = v (minus 0x32 if v > 0xB2) |
 | 0x6BBB, BD, BF, C1, C3 | money words char[0x88], [0x8A], [0x8C], [0x8E], [0x90] (copper … platinum) | same |
 | 0x6BD8 | char[0xA0] alignment (signed) | — |
-| 0x6BF7 | word char[0xB8] (**?**) | same |
-| 0x6BF9 | char[0xBA] (**?**) | same |
+| 0x6BF7 | word char[0xB8]: a monster's base experience, read only by the battle's experience routine `FUN_2e08_0000` (xp += char[0xB8] + char[0xBA] × char[0xB1], 0x1E147–0x1E178; written at 0x209F0) (O) | same |
+| 0x6BF9 | char[0xBA]: experience per hit point (above; written at 0x20A04) (O) | same |
 | 0x6C00 | 0x80 if char[0x10D] = 0 (cannot act), else 1 | v ≥ 0x80: char[0x10D] = 0, and v = 0x87 also sets status char[0x10C] = 7 (Stoned); v = 0 sets `DS:84D2` (0x20A39), the second leave flag (O; see LOAD_CHARACTER) |
 | 0x6C0C | 0x80 if char[0x10E] = 0 and char[0x10F] ≠ 0; 0x81 if char[0x10E] = 1; else 0 | 0 → [0x10E]=0,[0x10F]=0; 0x80 → 0,1; 0x81 → 1,1 |
 | 0x6C0D | undefined (the original returns an uninitialised word) | — |
 | 0x6C1B | char[0x11C] movement | — |
 | 0x6DB1, 0x6DB4 | position of the current character in the party (0-based) | — |
-| 0x6DCF | CHA table: CHA 3→0, 4→5, 5→10, 6→15, 7→20, 8–12→25, 13→30, 14→35, 15→40, 16→50, 17→55, 18–25→60 (**I**: reaction/loyalty %) | — |
+| 0x6DCF | CHA table: CHA 3→0, 4→5, 5→10, 6→15, 7→20, 8–12→25, 13→30, 14→35, 15→40, 16→50, 17→55, 18–25→60 (the current character's reaction adjustment: scripts add it to PARLAY results and random rolls before comparing, e.g. ECL4 0x9C73–0x9C79, ECL8 0x9EC6; O for its use) | — |
 | 0x6E12 | current block digit `DS:5376` | switch block (`FUN_1802_094a(3, v)`) |
 | 0x6E22, 0x6E24, 0x6E26 | buffer | v > 0x80: load wall set v & 0x7F into slot 1, 2, 3 (`FUN_55a0_0e08`) |
 | 0x6E3E | party size (same word as the buffer) | — |
@@ -142,7 +142,7 @@ Variables the engine itself reads or writes, so a reimplementation must give the
 | 0x6DA8 | trainable class mask for the training hall | [chargen-and-progression.md](chargen-and-progression.md) |
 | 0x6DC0, 0x6DC1 | encounter sprite maximum and current distance | below |
 | 0x6DC7 | outcome of the last `COMBAT`: 0 won, 0x80 party defeated, 0x81 party fled (`FUN_2e08_1527`, `FUN_2e08_04c9`) | [combat-rules.md](combat-rules.md) |
-| 0x6DC8 | after a battle: number of enemy-side combatants (char[0x10E] = 1) left unable to act, counted while `FUN_2e08_11ac` removes them (**I**: enemies defeated) | [combat-rules.md](combat-rules.md) |
+| 0x6DC8 | after a battle: number of enemy-side combatants (char[0x10E] = 1) left unable to act, counted while `FUN_2e08_11ac` removes them (enemies removed, killed or fled: scripts subtract it from their lair population counters, e.g. ECL4 0x9CD7, ECL8 0x9A13–0x9A26; O for its use) | [combat-rules.md](combat-rules.md) |
 | 0x6DC9 | set to ≥ 0xFF by `on_move` to cancel the move (the engine then resets it to 0) | [main-loop.md](main-loop.md) |
 | 0x6DCA | bit 0 = Search mode, bit 1 = Look requested | [main-loop.md](main-loop.md) |
 | 0x6DCB | SURPRISE result | below |
@@ -176,7 +176,7 @@ Variables the engine itself reads or writes, so a reimplementation must give the
 | 0x00B1, 0x00FB, 0x00FC | engine words `DS:6F6E`, `6F6A`, `6F6C` | ignored |
 | 0x033D | facing ×2 (0–7, so overland scripts can use 8 directions) | — |
 | anything else (e.g. 0x035F) | undefined (an uninitialised local); a conforming build reads 0 | ignored |
-| 0x03DE, 0x00B8, 0x00B9 | — | engine words (**?**) |
+| 0x03DE, 0x00B8, 0x00B9 | — | 0x03DE → DS:84CC (0x20BD3), read by CALL 0x3A04 (0x1C9AB) as the sound's choice: 8 plays DS:2628, 10 DS:262A; 0x00B8 → DS:84CE and 0x00B9 → DS:84D0 (0x20BE0–0x20BF5) are written and never read (O) |
 
 ## Flags and control flow (O)
 
@@ -338,23 +338,30 @@ After a 0x8000/0x8001 fight the aftermath awards `100 × char[0x73]` experience 
 - all 29 ECL records in the 8 blocks: enter the area, then from every square and facing (1,024 starts per area) attempt a move, running `on_move` and `on_step`, with menus answered at random
 - 29,696 runs: no decode errors and no missing handlers. With every menu answered "first option", 101 runs loop forever; each one checked is a genuine in-game loop (for example, re-opening the same empty cabinet in area 14 of block 3)
 - the variables the scripts touch were checked against the engine-visible table above; the remaining ones are script-private
-- with edge exits modelled (0x6DD5), 2 runs fail: block 1 area 24 on its second map (GEO 31) has open south-edge squares (4,15) and (11,15) whose exit table entry is 255. Walking off there would make the original try to load ECL record 255, and its loader retries forever (**I**: a bug in the original, or squares never reached in play; unconfirmed)
+- with edge exits modelled (0x6DD5), 2 runs fail: block 1 area 24 on its second map (GEO 31) has open south-edge squares (4,15) and (11,15) whose exit table entry is 255. Walking off there would make the original try to load ECL record 255, and its loader retries forever (0x20278 → 0x201FF: the DAX loader returns size 0 for a missing id); but both squares are closed on north, east and west in GEO 31's passability plane and open only to the south, so they cannot be entered and the case never arises in play (O)
 - the sweep starts every area from the shipped save's variables, so area-specific story state is not explored
 - not yet compared against the running original (DOSBox)
 
 ## Open
 
-- Engine globals written through B or A whose readers are not traced (**?**): char[0xB8] and
-  char[0xBA] (B 0x6BF7, 0x6BF9), the redraw of A 0x49FD/0x49FE (`DS:84E8`, set at 0x20B4F, tested at
-  0x1C961, I: the view redrawn), the registers 0x03DE, 0x00B8, 0x00B9. (`DS:84D3`/`DS:84D2` are the
-  leave flags of LOAD_CHARACTER; ECL 0x6DE3 is "the next battle gives no items", cleared after each.)
-- Meanings inferred (**I**): the CHA table at B 0x6DCF (reaction or loyalty), ECL 0x6DC8 (enemies
-  defeated), monsters left in the party list after an avoided battle, the `88 13` prefix of every
-  record (a C64 load address or marker).
+- ~~Engine globals written through B or A~~: char[0xB8], char[0xBA] (experience), the registers 0x03DE
+  (the CALL sound), 0x00B8 and 0x00B9 (write-only) are in the tables above (O). `DS:84E8`: any write to
+  A 0x49FD or 0x49FE (the sky indices) sets it (0x20B41–0x20B4F); the main loop (0x1C945–0x1C986) tests
+  it with DS:84E0, 84E3, 84E5 and 84E6 and, if any is set, redraws the view and sky (`FUN_54cf_016d`,
+  0x44E5D) and the position line under it (`FUN_10ba_290b`, 0x34AB), then clears them (O).
+  (`DS:84D3`/`DS:84D2` are the leave flags of LOAD_CHARACTER; ECL 0x6DE3 is "the next battle gives no
+  items", cleared after each.)
+- ~~The CHA table at B 0x6DCF, ECL 0x6DC8~~: the reaction adjustment and the enemies removed (tables
+  above, O for their use). ~~Monsters left in the party list after an avoided battle~~: CLEAR_MONSTERS
+  does not unlink them; the battle setup `FUN_34c7_12e1` (0x25F51) walks the whole list and gives every
+  entry past the party size (B +0x67C, ECL 0x6E3E) R[0x13] := 1, so monsters loaded but not fought take
+  part in the next battle, until an aftermath (`FUN_2e08_11ac`) removes them (O).
+- Meaning inferred (**I**): the `88 13` prefix of every record (0x1388 = 5000; the loader skips it and
+  no engine code reads it).
 - ~~ECL operand kinds other than 0/1/2/3/0x80/0x81 at ECL2/15 0x9B5B and ECL8/16 0x9B00~~: those
   bytes are tables read by `GET_TABLE` (ECL2/15 0x9B1A; ECL8/16 at 0x9B18, 0x9B24), decoded as code by a
   disassembler but never executed (O).
-- Block 1 area 24, second map (GEO 31): the open south-edge squares (4,15) and (11,15) have exit 255
-  (Validation); to confirm in DOSBox.
+- ~~Block 1 area 24, second map (GEO 31)~~: its south-edge squares with exit 255 cannot be entered
+  (Validation, O).
 - Engine address 0x035F, which the overland scripts compare with their impassable-tile table, is
   undefined in the original; a conforming build reads 0 (Engine registers).

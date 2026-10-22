@@ -180,10 +180,10 @@ The **A**rea command toggles `DS:6AAC`. While it is set, every redraw of the 3D 
 - **Squares.** Each square is drawn as tile `0x104 + mask` from the tile bank, where the mask has bit 0 for a wall on the north side, bit 1 east, bit 2 south and bit 3 west. A wall counts if its wall type (`FUN_55a0_047b`) is non-zero, so doors look the same as walls, and locked doors are not marked.
 - **Party.** Tile `0x100 + facing` at the party's square.
 - **No fog of war.** Every wall inside the window is shown, explored or not. The engine keeps no record of visited squares, and the save file has none.
-- **Edges.** Squares outside 0–15 show no walls, unless `DS:84DC` is neither 0 nor 10. In that case coordinates wrap (**I**: which areas set it).
+- **Edges.** The wall lookup `FUN_55a0_047b` (0x45E7B) first tests whether the square is on the map (`FUN_55a0_0e1f`, 0x45D1F: 0..15 on both axes); off it, it gives wall 0 in the areas with ECL record 0 or 10 (`DS:84DC`), and elsewhere wraps a coordinate above 15 to 0 and below 0 to 15, one map only (O, 0x45E91–0x45ECE). The overhead window, its left column x − 5 clamped to 0–5, never reaches past the map, so this matters to the 3D view looking across an edge.
 
 ## Open
 
-- Which areas make the overhead map wrap its coordinates ("Edges" above: `DS:84DC`, the current area id, neither 0 nor 10; **I**). `DS:84DC` is the ECL record number of the area, saved as A word 0x49F2; areas 0, 10 and 25–27 are special-cased in code.
+- ~~Which areas wrap the coordinates~~: every area but ECL records 0 and 10 of each block ("Edges" above, O).
 
 Answered since the first draft: the background (Background colours, above), the view drawn while `DS:6AAC` is set (Overhead map) and the tile bank loader (Tile bank).

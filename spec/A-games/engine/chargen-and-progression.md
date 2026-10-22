@@ -222,7 +222,7 @@ Gain = `max(1, Σ rolls / classes)` to the raw counter char[0xB1]; HP gain = `ma
 
 ## Derived statistics (O, `FUN_51cf_0000`, run after creation and training)
 
-- char[0x2D] = best over **all eight** classes of `DS:3C7C[class·11 + level]` (level read signed; a class without a level reads its level-0 row, 40 in every row) = **60 − base THAC0** (then adjusted by STR etc. into char[0x110], **I**)
+- char[0x2D] = best over **all eight** classes of `DS:3C7C[class·11 + level]` (level read signed; a class without a level reads its level-0 row, 40 in every row) = **60 − base THAC0**, which the derived statistics turn into char[0x110] (O, [records.md, "Derived statistics"](records.md#derived-statistics-o-fun_10ba_0bb8) steps 4, 6 and 7: +0x110 from +0x2D at 0x1A04–0x1A0B, bare hands then add STR to-hit at 0x1A33–0x1A48, a weapon resets it to +0x2D plus its DEX missile and STR terms)
 - char[0x73] = the highest class level, only ever raised (`41d56`: max of itself and each level; a level drain sets it itself)
 - Fighter level ≥ 7: char[0xA1] = 3 (3 attacks per 2 rounds), else 2 (half-attacks per round, **I**)
 - Cleric level ≥ 2: slots char[0xB2..0xB4] (spell levels 1–3) from `DS:40BC[level·3 + n]`, plus WIS bonus spells (`FUN_51cf_01af`); the cleric then knows every cleric spell of any level with a slot
@@ -267,4 +267,4 @@ Experience from battles (the monsters' award values, money and magic items conve
 ## Open
 
 - ~~The fifth u16 of each race's age thresholds~~: never read, O (above).
-- How char[0x2D] reaches char[0x110] beyond the derived statistics' STR step (**I**).
+- ~~How char[0x2D] reaches char[0x110]~~: the derived statistics (above, O).

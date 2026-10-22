@@ -71,6 +71,16 @@ A hard-coded range table maps the overland tile id to a flag byte. The names are
 | 0xE1–0xE4, 0xEA–0xED | 0xA0 |
 | anything else (including 0) | not set: the original returns an uninitialised byte; use 0 |
 
+The tiles behind the rows (**I**, from the SQRPACI art, record 1 = ids 1–128, record 2 = 129–255): grass
+and plain 1–2, 0x4F–0x5C; sand and desert (the 0x80, 0x81, 0x88 and 0x90 rows) 0x55–0x78, 0xE0,
+0xF4–0xF6; rivers 0x66–0x6C, 0x72 (on desert, the polluted river's frames), 0xB4–0xC8 (grass and woods),
+0xD1–0xD5 (hills); sea and lake 0x4E, 0xA8–0xB3 (coast), 0xDD–0xDE, 0xE1–0xE9, 0xF5 (with an islet);
+woods 0x3A–0x3F, 0x79–0xA7; hills and mountains 3–0x2C, 0xC9–0xD0, 0xEF–0xF0 (snowy peaks 0x0A–0x0F,
+0x1A–0x24); no road tiles. The site tiles 0xE8, 0xE9 and 0xF7 (a stone pyramid; 0xE9 in water, Yarash's
+in the marsh), 0xF8–0xFF (a ruined ring 0xF9/0xFB, cave mouths 0xFA/0xFC, a walled city by water 0xFD,
+a castle 0xFE, a walled town in woods 0xFF) are in no row but 0xFA/0xFC (0x04), so a battle on a site
+square takes the uninitialised value (use 0).
+
 The tests run in the order listed, so the first matching row wins. If the result has bit 0x80 and ECL word `A` 0x4AB3 (byte offset 0x366) is 0xFF, the value becomes `(flags + 0x80) | 1`, which clears 0x80 and sets 0x01. 0x4AB3 is the river-pollution commission's entry, 0xFF once it is rewarded ([por/commissions.md](../por/commissions.md#commission-table-ecl-0x4aa60x4abf)), so from then the arid tiles get plain ground as well (O, from the scripts).
 
 ### River pass (O, `FUN_34c7_0bde`)
@@ -142,7 +152,7 @@ The two-cell objects (trees, tall cactus) put the obstacle in the upper cell and
 - the walk stops at a cell whose sight byte exceeds the eye height, unless grid header byte 6 is set (then terrain is ignored; it is 0 after setup)
 - it also stops once the cost exceeds `2 × range + 1`
 
-Returns true if the target was reached, with `range` set to the cost; otherwise false, with (x1, y1) set to the blocking cell. The step direction (0–7) is kept from `DS:25C1[(sy + 1)·3 + sx + 1]` (**I**).
+Returns true if the target was reached, with `range` set to the cost; otherwise false, with (x1, y1) set to the blocking cell. The step direction is `DS:25C0[3·(sy + 1) + sx + 1]` = 7 0 1 / 6 8 2 / 5 4 3 (0 north, clockwise; 8 none), stored at record +0x19 (0x47008–0x47025, O).
 
 ## Map areas: squares → cells (`FUN_34c7_0810`)
 
@@ -238,6 +248,5 @@ finishing pass and no furnishing) is [B-model/procedures.md §15.4](../../B-mode
 
 ## Open
 
-- The overland tile ids behind the terrain-flag rows (which ids are roads, towns, water): the table
-  is complete as code; only the names are missing ([combat-rules.md, "Open"](combat-rules.md#open)).
-- The step direction table `DS:25C1` of the line of sight (**I**).
+- ~~The overland tile ids behind the terrain-flag rows~~: named from the art ("Terrain flags", I).
+- ~~The step direction table of the line of sight~~: `DS:25C0` (O, "Line of sight").

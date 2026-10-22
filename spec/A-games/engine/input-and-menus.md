@@ -23,7 +23,7 @@ Addresses are `seg:off` (linear = seg·16 + off). Colours are EGA indices; text 
 - Keys: a key (upper-cased) that equals **any** character of the items string selects that word and returns the key (so `1`/`2` are hotkeys in "color-1 color-2"); `,`/`.` move the highlight left/right (wrap); Space returns at once; Esc returns 0; Enter returns 0x0D only if `hlCol` or `normalCol` ≠ 0 (callers of horizontal menus act only on letters, so Enter is effectively ignored there, I).
 - `extKeys`: an extended key returns its scan code with `isExt = 1`; digits 1–9 then act as a keypad via `DS:288C` (1 End 0x4F, 2 Down 0x50, 3 PgDn 0x51, 4 Left 0x4B, 5 → 0x20, 6 Right 0x4D, 7 Home 0x47, 8 Up 0x48, 9 PgUp 0x49); `\` → 0x37.
 - An optional timeout (`DS:6B2E`, u32, hundredths of a second) returns the default key `DS:6B32` when it expires; a negative value disables it.
-- Extended keys pass through the table at `DS:285B` when the caller accepts them (cursor movement, **I**).
+- Extended keys return their scan code (`isExt`); the only translation is the keypad map `DS:288C` above (0x4415D, O). The bytes at DS:2850–286A (triples of −1, 0, 1; **I**: direction deltas), once taken for an extended-key table at `DS:285B`, have no reader (byte search, ?).
 - While waiting, the picture animation runs ([graphics.md, "Animation"](graphics.md#animation-o)).
 
 ### Yes/No `FUN_53aa_10d1(prompt, …)` (O)
@@ -46,7 +46,7 @@ Main program `1000:00F6` (O):
 
 | Step | What | Where |
 |---|---|---|
-| 1 | Read `POOL.CFG` (5 lines): line 1 `E` → EGA (`DS:4A1E`=1), `T` → Tandy (2), else CGA (0); line 2 `T`/`P`/other → `DS:5372` = 0/1/2 (sound device, I); line 3 → data path `DS:547C`; line 4 → save path `DS:537A`; line 5 `F` → `DS:49D1` = 1 (I: "fixed disk", enables the long intro). Shipped file: `E P C:\POOLRAD\ C:\POOLRAD\ F` | `142b` area, O |
+| 1 | Read `POOL.CFG` (5 lines): line 1 `E` → EGA (`DS:4A1E`=1), `T` → Tandy (2), else CGA (0); line 2 `T`/`P`/other → `DS:5372` = 0/1/2, the sound device: Tandy, PC speaker, none (O: the driver's play routine skips everything at 2, 0x8BBF; passed to the driver init `8ae:dc`, 0x8997; Ctrl-S toggles it with 2, 0x89F8–0x8A14); line 3 → data path `DS:547C`; line 4 → save path `DS:537A`; line 5 `F` → `DS:49D1` = 1, read only by the title routine `FUN_290c_0627` (0x19750), where it gates title record 2 and the credits (O; the name "fixed disk" I). Shipped file: `E P C:\POOLRAD\ C:\POOLRAD\ F` | `142b` area, O |
 | 2 | Allocate and clear the ECL arrays | `FUN_36c1_002d`, O/I |
 | 3 | If command-line argument 1 is `STING` (string at `1000:0000`) skip steps 4–6 (developer bypass) | `0x10102`, O |
 | 4 | Title: TITLE.DAX record **1** full screen at (0,0); wait **5 s** or a key; flush keys. If `DS:49D1` = 0 stop here (no record 2, no credits) | `FUN_290c_0627`, O |
@@ -178,6 +178,5 @@ Current HP always = max HP. No point budget: any stat can be set anywhere inside
   (DS:6A60–6A63), which `FUN_55a0_0174` fills; the redraw `FUN_54cf_016d` sets the sky from DS:0C26 every
   time and line, band and floor while DS:84E5 is set, which the VM reset does (0x2007A), so the start-up
   values last until the first reset (O; [maps-and-view.md](maps-and-view.md)). CotAB makes no such call.
-- Inferred (**I**): `POOL.CFG` line 2 as the sound device and line 5 as "fixed disk"; the extended-key
-  table `DS:285B`; Enter in horizontal menus being ignored by their callers; Modify's maximum-HP CON
+- Inferred (**I**): the name "fixed disk" of `POOL.CFG` line 5 (its use is O, step 1); Enter in horizontal menus being ignored by their callers; Modify's maximum-HP CON
   term; char[0x85] as the "modified" flag; the Drop message's test of char[0x10D].

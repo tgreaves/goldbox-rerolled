@@ -784,6 +784,10 @@ when its table column or sentence names CotAB.
 | 0x1B683 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x1B773 | coab/ecl, B/script-vm-map | coab/ecl: Opcodes | `FUN_29c3_2ccf` |
 | 0x1B7B2 | coab/ecl, B/script-vm-map | coab/ecl: CALL targets |  |
+| 0x1B7B9 | coab/assets | coab/assets: Background: the main change |  |
+| 0x1B7DA | coab/assets | coab/assets: Background: the main change |  |
+| 0x1B7EB | coab/assets | coab/assets: Background: the main change |  |
+| 0x1B7FF | coab/assets | coab/assets: Background: the main change |  |
 | 0x1B8E4 | coab/ecl | coab/ecl: Engine entry points | `FUN_29c3_2dd3` |
 | 0x1B92B | coab/ecl, B/profile, C/app-flow | coab/ecl: Opcodes |  |
 | 0x1B94E | coab/ecl | coab/ecl: Opcodes |  |
@@ -823,13 +827,23 @@ when its table column or sentence names CotAB.
 | 0x1C378 | coab/assets, coab/ecl | coab/assets: 7. Start-up, title, copy protection |  |
 | 0x1C422 | coab/assets | coab/assets: 7. Start-up, title, copy protection |  |
 | 0x1C5B3 | coab/assets | coab/assets: 7. Start-up, title, copy protection |  |
+| 0x1C987 | coab/tables | coab/tables: 3.11 Temple |  |
+| 0x1CA58 | coab/tables | coab/tables: 3.11 Temple |  |
+| 0x1CB07 | coab/tables | coab/tables: 3.11 Temple |  |
 | 0x1CB35 | coab/tables | coab/tables: 3.11 Temple |  |
+| 0x1CB53 | coab/tables | coab/tables: 3.11 Temple |  |
 | 0x1CB84 | coab/tables | coab/tables: 3.11 Temple |  |
+| 0x1CBA2 | coab/tables | coab/tables: 3.11 Temple |  |
 | 0x1CBD5 | coab/tables | coab/tables: 3.11 Temple |  |
 | 0x1CBF6 | coab/tables | coab/tables: 3.11 Temple |  |
 | 0x1CC34 | coab/tables | coab/tables: 3.11 Temple |  |
 | 0x1CCC5 | coab/tables | coab/tables: 3.11 Temple |  |
+| 0x1CD61 | coab/tables | coab/tables: 3.11 Temple |  |
+| 0x1CFA5 | coab/tables | coab/tables: 3.11 Temple |  |
+| 0x1D0CA | coab/tables | coab/tables: 3.11 Temple |  |
 | 0x1D0EB | B/procedures | B/procedures: 9. Temple |  |
+| 0x1D112 | coab/tables | coab/tables: 3.11 Temple |  |
+| 0x1D15E | coab/tables | coab/tables: 3.11 Temple |  |
 | 0x1D6E0 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x1D819 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1D912 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
@@ -856,7 +870,7 @@ when its table column or sentence names CotAB.
 | 0x1FA02 | coab/ecl, B/script-vm-map | coab/ecl: Engine entry points | `FUN_2fea_0000` |
 | 0x1FB38 | coab/ecl | coab/ecl: Engine entry points | `FUN_2fea_0136` |
 | 0x1FBB8 | coab/ecl | coab/ecl: Engine entry points | `FUN_2fea_01b6` |
-| 0x1FBDC | coab/ecl | coab/ecl: CALL targets |  |
+| 0x1FBDC | coab/assets, coab/ecl | coab/assets: Open |  |
 | 0x1FBF7 | coab/ecl | coab/ecl: Loading |  |
 | 0x1FC34 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1FC4A | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
@@ -877,10 +891,12 @@ when its table column or sentence names CotAB.
 | 0x20390 | coab/ecl, B/script-vm-map | coab/ecl: B as a view of the current character |  |
 | 0x2051F | coab/ecl, B/script-vm-map | coab/ecl: Engine entry points | `FUN_2fea_0a74` |
 | 0x20722 | coab/assets, coab/ecl, B/script-vm-map | coab/assets: Background: the main change | `FUN_2fea_0c77` |
-| 0x20749 | coab/ecl | coab/ecl: CALL targets |  |
+| 0x20749 | coab/assets, coab/ecl | coab/assets: Background: the main change |  |
 | 0x207A3 | coab/ecl | coab/ecl: B as a view of the current character |  |
 | 0x207EE | coab/ecl | coab/ecl: Engine registers |  |
 | 0x20846 | coab/ecl | coab/ecl: CALL targets |  |
+| 0x208C2 | coab/assets | coab/assets: Open |  |
+| 0x208D4 | coab/assets | coab/assets: Open |  |
 | 0x208DB | coab/ecl | coab/ecl: Engine registers |  |
 | 0x208E6 | coab/ecl, B/script-vm-map | coab/ecl: Engine entry points | `FUN_2fea_0e0c` |
 | 0x20981 | coab/ecl | coab/ecl: Engine registers |  |
@@ -1128,14 +1144,20 @@ when its table column or sentence names CotAB.
 | 0x342F5 | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) |  |
 | 0x34569 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x34573 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x345FD | coab/records | coab/records: 7.5 Hillsfar (brief, O for structure) |  |
+| 0x34611 | coab/records | coab/records: 7.5 Hillsfar (brief, O for structure) |  |
 | 0x34640 | coab/records | coab/records: 1. Files (diff vs engine/savegame.md "Files" and engine/input-and-menus.md "Character files") |  |
 | 0x34660 | coab/chargen-and-progression, coab/records | coab/chargen-and-progression: 1. The recalculation | `FUN_45c5_0aec` |
 | 0x34741 | coab/records | coab/records: 7.2 Engine conversion |  |
 | 0x34786 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x34795 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x347B8 | coab/records | coab/records: 7.2 Engine conversion |  |
+| 0x3482B | coab/records | coab/records: 7.5 Hillsfar (brief, O for structure) |  |
 | 0x3484B | coab/records | coab/records: 7.5 Hillsfar (brief, O for structure) |  |
+| 0x348F5 | coab/records | coab/records: 7.5 Hillsfar (brief, O for structure) |  |
+| 0x349F8 | coab/records | coab/records: 7.5 Hillsfar (brief, O for structure) |  |
 | 0x34A08 | coab/records | coab/records: 7.5 Hillsfar (brief, O for structure) |  |
+| 0x34BC1 | coab/records | coab/records: 7.5 Hillsfar (brief, O for structure) |  |
 | 0x34D87 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x351B7 | coab/records | coab/records: 1. Files (diff vs engine/savegame.md "Files" and engine/input-and-menus.md "Character files") |  |
 | 0x351D9 | coab/records | coab/records: 1. Files (diff vs engine/savegame.md "Files" and engine/input-and-menus.md "Character files") |  |
@@ -1210,7 +1232,9 @@ when its table column or sentence names CotAB.
 | 0x3D459 | coab/assets | coab/assets: 5. BIGPIC uses |  |
 | 0x3D530 | coab/chargen-and-progression, coab/records, B/procedures | coab/chargen-and-progression: The former class afterwards |  |
 | 0x3D87C | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
+| 0x3DBC7 | coab/assets | coab/assets: Open |  |
 | 0x3E0BA | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
+| 0x3ED5C | coab/assets | coab/assets: Open |  |
 | 0x3F034 | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x3F29A | coab/records | coab/records: 7.2 Engine conversion |  |
 | 0x3F40D | coab/effects | coab/effects: 6. Item kinds 0x3F034 |  |
@@ -1224,6 +1248,8 @@ when its table column or sentence names CotAB.
 | 0x3FADB | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: The former class afterwards |  |
 | 0x3FBE6 | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
 | 0x3FC17 | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
+| 0x409AC | coab/assets | coab/assets: Open |  |
+| 0x40AA9 | coab/assets | coab/assets: Open |  |
 | 0x40BC4 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x40E37 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x40EBE | coab/ecl | coab/ecl: Opcodes |  |
@@ -1392,6 +1418,7 @@ when its table column or sentence names CotAB.
 | 0x4F8C5 | coab/tables, B/procedures | coab/tables: 3.7a Caster level |  |
 | 0x4FA79 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x4FBB6 | coab/camp, coab/ecl | coab/camp: 1. Fix |  |
+| 0x4FE10 | coab/assets | coab/assets: Open |  |
 | 0x5047F | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation | `FUN_51cf_0000` |
 | 0x50480 | coab/effects, B/procedures | coab/effects: 6. Item kinds 0x3F034 |  |
 | 0x504AC | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
@@ -1451,6 +1478,7 @@ when its table column or sentence names CotAB.
 | 0x52D0A | coab/assets | coab/assets: Background: the main change |  |
 | 0x52D50 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x52D62 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x52D75 | coab/assets | coab/assets: Open |  |
 | 0x52DE0 | coab/assets | coab/assets: 4. Overland: no tile map |  |
 | 0x52E0A | coab/ecl | coab/ecl: Opcodes |  |
 | 0x52EEB | coab/assets | coab/assets: 2. Inventory |  |

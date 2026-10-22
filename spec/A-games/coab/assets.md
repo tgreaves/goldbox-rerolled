@@ -75,7 +75,7 @@ Colours (O, `RedrawView` **0x52D0A** = `ovr029:00BA`):
 - CGA, and only while `DS:8B81` ≠ 0: line/band/floor come from `DS:7603`/`DS:7602` through `0x52C64` (8 or 0x41 → 0, else 15), `0x52C98` (8 → 8, else 7) and `0x52CCC` (0x0B → 8, 6 → 1, 9/0xDB/other → 6). Same rules as PoR.
 - EGA/Tandy: `DS:7227` := 8, and `DS:7225`/`7226` are never written (BSS 0). They are hidden by the ground image anyway.
 - Area word +0x1F6 (**ECL 0x4BFB**) ≠ 0 → `DS:7228` := 0, which turns the overhead map off ("Not Here", as PoR 0x49FB).
-- ECL area variables are **0x4B00–0x4EFF**, stored as *words* at area + (addr−0x4B00)·2 (O, writer 0x20722). PoR uses 0x4900 bytes. Writing 0x4BFD/0x4BFE sets `DS:8B84` (I: redraw flag). Writing **0x4BE6** switches `DS:4FD3` between 3 (overland) and 4 (3D).
+- ECL area variables are **0x4B00–0x4EFF**, stored as *words* at area + (addr−0x4B00)·2 (O, writer 0x20722). PoR uses 0x4900 bytes. Writing 0x4BFD/0x4BFE sets `DS:8B84` (0x20749), PoR's DS:84E8: the main loop (0x1B7B9–0x1B7DA) tests it with DS:8B7C, 8B7F, 8B81 and 8B82 and, if any is set, redraws (DS:759A := 1, `10d:25`, `ed:d4`) and clears them all (0x1B7EB–0x1B7FF) (O). Writing **0x4BE6** switches `DS:4FD3` between 3 (overland) and 4 (3D).
 
 ### Sprites and pictures (O)
 - `Show3DSprite` **0x5354D** (`ovr030:074D`): frame 1–3, drawn at header (x+2, y+2) through the masked overlay, as in PoR.
@@ -180,6 +180,16 @@ There are no other palette writes and no port 3C0h access (O).
 Each difference above is profile data in part B: [B-model/profile.md §4.1](../../B-model/profile.md#41-cotabs-presentation-differences).
 
 ## Open
-- `DS:8B81` (CGA band recompute flag) and `DS:8B84` writers beyond the ECL hook; the `displayInput` timeout value for the demo prompt.
-- Who, if anyone, calls PlaySound(15) (watchdog), e.g. through a variable argument.
-- Exact roles of the frame routines `0x16C7`/`0x17BD` (`seg037` draw8x8_06/07: combat and other screens), not traced here.
+- ~~`DS:8B81` and `DS:8B84`~~: 8B81 is PoR's DS:84E5, set by the VM reset (0x1FBDC, after DS:7602 := 0x41
+  and DS:7603 := 9) and by script writes to registers 0xC059 and 0xC05F (0x208C2, 0x208D4), read only by
+  the band recompute (0x52D75) and only when DS:5000 = 0 (CGA); 8B84 is set only by writes to ECL
+  0x4BFD/0x4BFE (§5, O). The demo prompt's timeout is 30 s (§7 step 6).
+- ~~Who calls PlaySound(15)~~: nobody: all 55 far calls of 0x69B0 push a word of DS:25AC–25C8 (255 and
+  0–13); DS:25CC, which holds 15, is never referenced and no caller indexes the table (O, byte search).
+- ~~The frame routines `0x16C7`/`0x17BD`~~: 0x16C7 is the combat screen's frame: it clears the screen
+  (0x17FD with 0, 0, 0x27, 0x17), then draws rows 0 (DS:0B50) and 22 (DS:0BA0) and columns 0, 22 and 39
+  over rows 0–22 (DS:0C3D, 0C54, 0C6B) as tile 0x11E + v (white); its only caller is the combat screen
+  draw 0x4FE10 (`133:397`). 0x17BD is the outer frame (0x1330) plus row 2 from DS:0B78: the character
+  display 0x409AC calls it at 0x40AA9 outside combat with an argument other than 2 (in combat,
+  DS:4FD3 = 5, 0x1330 alone; with argument 2 `133:292`), and 0x3DBC7 at 0x3ED5C (an item-list screen,
+  I) (O).

@@ -369,7 +369,7 @@ Run after any change to items, money or effects (items menu, trade target, buyin
 13. **Rear AC** char[0x112] = body + misc + ring − 2 (no DEX, no shield, 2 worse).
 14. char[0x6B] = fighter level if race ≠ 0 and fighter level > 0, else 1.
 
-Hands-2 damage char[0x116/0x118/0x11A] always stays the natural second attack. Per-round attack counts are set at round start from char[0xA1]/[0xA2]; with a ranged weapon and ammunition (`FUN_10ba_2e8b`: thrown weapons are their own ammunition; slings need none) the missile attack count (×2 units) starts as max(2, `ITEMS[t][5]`), goes through effect hook 18 (Haste), and is then limited by the ammunition count (O, `FUN_3aae_0d23`; the final conversion `FUN_3aae_0e52` is not traced, I).
+Hands-2 damage char[0x116/0x118/0x11A] always stays the natural second attack. Per-round attack counts are set at round start from char[0xA1]/[0xA2]; with a ranged weapon and ammunition (`FUN_10ba_2e8b`: thrown weapons are their own ammunition; slings need none) the missile attack count (×2 units) starts as max(2, `ITEMS[t][5]`), goes through effect hook 18 (Haste), and is then limited by the ammunition count (O, `FUN_3aae_0d23`); the final conversion `FUN_3aae_0e52(n)` (0x2B932) gives (n + (DS:6DE3 & 1)) div 2 as a byte, DS:6DE3 being the round counter, so an odd rate rounds up on odd rounds (O).
 
 **AC per readied item** (`FUN_10ba_0282`), d = `ITEMS[t][6]`, p = item plus:
 - d < 0x80: nothing
@@ -428,11 +428,11 @@ kept ([spells.md, "Shared helpers"](spells.md#shared-helpers)).
 
 ## Open
 
-- Unlabelled character bytes; `ITEMS` byte 8 (0x80 on most weapons, no reader found); what types 0,
+- Unlabelled character bytes; ~~`ITEMS` byte 8~~ (0x80 on most weapons) is never read (O: no indexed access to DS:558A, nor to bytes 2–4 and 15); what types 0,
   60, 64–66, 80, 81, 83, 89, 94–96 and 127 were for (no instance in the shipped data).
 - The first random item of a `TREASURE` when its second d100 is 48–49: its type is an uninitialised
   stack byte (**?**; a conforming build takes type 0, a blank item, "Type choice").
 - Confirm in DOSBox: random arrow and quarrel stacks weigh 40 per unit (400 per stack of 10) against
   4 for shop arrows.
 - ~~Effects that write char[0x110]–[0x112] or [0x11C] directly~~: nothing is lost for any to-hit roll: every weapon attack and touch spell recalculates the target and fires event 11 first, where Shield and Cause Blindness put their AC back (O, [open-questions.md](../../open-questions.md), "Items, shops, money").
-- The missile attack count's final conversion `FUN_3aae_0e52` (**I**, "Derived statistics").
+- ~~The missile attack count's final conversion `FUN_3aae_0e52`~~: (n + round & 1) div 2 ("Derived statistics", O).

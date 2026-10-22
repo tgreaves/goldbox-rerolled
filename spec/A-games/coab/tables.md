@@ -164,7 +164,7 @@ Unchanged from PoR except the new Human paladin (17+1d4) and ranger (20+1d4) sta
 The gold dice DS:45B3 (same values as PoR) are still rolled, so the RNG is consumed, but the sum is never stored. Every new character gets `char+0x103 = 300`, the 5th coin word = **300 platinum**.
 
 ### 3.11 Temple (O)
-Services DS:00E6: Cure Blindness, Cure Disease, CLW, CSW, CCW, **Heal**, Neutralize Poison, Raise Dead, Remove Curse, Stone to Flesh, Exit. Price immediates in the temple code (1c691–1d15e): 1000, 1000, 100, 350, 600, **5000 (Heal)**, 5500, 1000, 3500, 2000. The service each price belongs to comes from code order, which matches PoR's prices (I).
+Services DS:00E6: Cure Blindness, Cure Disease, CLW, CSW, CCW, **Heal**, Neutralize Poison, Raise Dead, Remove Curse, Stone to Flesh, Exit. Price immediates in the temple code (1c691–1d15e): 1000, 1000, 100, 350, 600, **5000 (Heal)**, 5500, 1000, 3500, 2000. Each service is its own routine, which identifies its price (O): Cure Blindness 0x1C987 1000 (removes 0x21); Cure Disease 0x1CA58 1000; CLW 0x1CB07 100; CSW 0x1CB53 350; CCW 0x1CBA2 600; Heal 0x1CBF6 5000; Raise Dead 0x1CD61 5500 (removes 0x20, 0x37; HP 1, Okay, in play); Neutralize Poison 0x1CFA5 1000 (removes 0x37, 0x16, 0x0F); Remove Curse 0x1D0CA 3500 (`c2:4d`); Stone to Flesh 0x1D112 2000 (at 0x1D15E, the status 7 test). The profile's `temple` matches.
 
 **Heal** (O, image 0x1CBF6–0x1CCC5): asks to pay 5000 ("Y"), then heals (max HP − current HP − 1d4) as a byte (0x1CC34) through the heal routine `e3:84` (0x4CE85), whose sum is a byte too, so HP becomes max − 1d4 even from nearly full; Cure Light, Serious and Critical Wounds go through the same routine (0x1CB35, 0x1CB84, 0x1CBD5), so the Dead and Stoned gain nothing; removes effect 0x21 (blindness), the six disease effects of DS:00DF[1..6] (31, 34, 43, 44, 50, 57, the same list as PoR's DS:0113[1..6]) and 0x44 (feeblemind in CotAB, handler 0x288E5; ghoul paralysis is PoR's meaning of 0x44); then recomputes INT and WIS from their base values (`4aab:18D9`, stats 1 and 2: undoes feeblemind). PoR's temple has no Heal.
 
@@ -185,6 +185,6 @@ Moved to part B, now that the profile holds each point:
 ## Open
 
 - ~~The WIS bonus-spell routine (0x50AF6)~~: PoR's five steps plus WIS > 17 → a fourth-level slot (0x50C4B–0x50C60), O ([chargen-and-progression.md §1](chargen-and-progression.md#1-the-recalculation-o-0x50836)).
-- The service each temple price belongs to comes from code order (§3.11, **I**).
-- The sound driver's effect data at the −0xBD shift is not compared (§2, **?**).
+- ~~The service each temple price belongs to~~: each service's own routine (§3.11, O).
+- ~~The sound driver's effect data at the −0xBD shift~~: compared ([assets.md §8](assets.md#8-config-video-palette-sound)): both 21-entry effect tables (0x04A2, 0x054A) match PoR's after the shift; every differing byte in 0x1D8–0x1772 is a word shifted by −0xBD or the segment 0x08AE → 0x0699; 0x1773–0x182F, the driver's workspace, differs (I: not effect data) (O).
 - ~~Bit 0x80 in the `ITEMS` class masks~~: inert, O ([records.md §3](records.md#3-items-diff-vs-enginerecordsmd-item-record-item-types)).

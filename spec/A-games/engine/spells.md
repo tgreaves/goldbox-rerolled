@@ -216,6 +216,6 @@ L = caster level; "1st" = only the first target is used.
 
 - ~~Effect handlers~~ see [effects.md](effects.md)
 - ~~Haste/Slow~~ resolved: Haste (0x27) doubles attacks and movement, Slow (0x2A) halves them (combat code 0x31E9C/0x31EBF); the original character sheet shows them reversed (display bug)
-- Immediate effects (damage spells, cures) in `FUN_5216_1344`
+- ~~Immediate effects (damage spells, cures) in `FUN_5216_1344`~~: described in "Per spell" and [combat-rules.md, "Spell handlers in combat"](combat-rules.md); `FUN_5216_1344` is the damage routine of [effects.md](effects.md)
 - ~~Spell memorisation and learning rules, spell slots per level~~ see [camp-and-time.md](camp-and-time.md) and [chargen-and-progression.md](chargen-and-progression.md)
 - ~~Whether `FUN_5216_1656` scales spell durations~~: no, they are minutes ([camp-and-time.md](camp-and-time.md#open))

@@ -209,7 +209,7 @@ Order (O):
 3. Cleanup (`FUN_2e08_11ac`).
 4. If the party survived (or it was a duel): NPC shares (`FUN_2e08_12e8`), summary (`FUN_2e08_0916`), treasure menu (`FUN_2e08_0ecd`), then every item left in the treasure list is freed (lost). The money table `DS:67F4` is not cleared here (**?** whether coins left behind reappear in the next treasure).
 5. Party destroyed: ECL 0x6DC7 = 0x80, "The END!", "The monsters rejoice for the party has been destroyed", "Press any key to continue".
-6. Always: `DS:4A00` = 1 (**?**), and ECL 0x6E70, 0x6E71, 0x6E72, 0x6DE3, 0x6DE6 = 0. Scripts set them again before each `COMBAT`.
+6. Always: `DS:4A00` = 1 (0x1F6B1: the slow-text flag, below), and ECL 0x6E70, 0x6E71, 0x6E72, 0x6DE3, 0x6DE6 = 0. Scripts set them again before each `COMBAT`.
 
 #### Results (O, `FUN_2e08_04c9`)
 
@@ -269,7 +269,7 @@ No level-cap check here (training enforces caps, [chargen-and-progression.md](ch
 
 #### Cleanup (O, `FUN_2e08_11ac`)
 
-ECL 0x6DC8 = 0. Each entry that is a monster (R[0x13] = 1) or on side 1: if it is not in play, ECL 0x6DC8 + 1 (so 0x6DC8 counts enemies defeated or fled, I); then it is removed from the list with its items. Other entries just lose their combat record. A party member still charmed onto side 1 at this point is removed as an enemy (**?** whether the charm is undone first).
+ECL 0x6DC8 = 0. Each entry that is a monster (R[0x13] = 1) or on side 1: if it is not in play, ECL 0x6DC8 + 1 (so 0x6DC8 counts enemies defeated or fled, I); then it is removed from the list with its items. Other entries just lose their combat record. A party member still charmed onto side 1 at this point is removed as an enemy, with its items (**Bug**): nothing ends charm before the cleanup, Charm Person (11) being undone only by its removal handler, on expiry or going down (O for the cleanup test; I for the absence: no removal of type 11 found elsewhere).
 
 #### NPC shares (O, `FUN_2e08_12e8`)
 
@@ -601,7 +601,7 @@ Before a melee attack from the menu, the AI or a guard, `engage(attacker, target
 (CotAB's differs: [coab/combat.md, "The backstab"](../coab/combat.md#the-backstab-o-0x2ce27-damage-0x2a6e2).) All of:
 
 - attacker thief level c[0x9C] > 0
-- no body armour, or armour item type 50 (Leather Armor). G also lists elven chain; the code accepts only type 50 (**?** whether elven chain uses that type)
+- no body armour, or armour item type 50 (Leather Armor). G also lists elven chain; the code accepts only type 50, and PoR has no elven chain at all (no name word of the 255 at DS:10BC and no item in any ITEM*.DAX or MON*ITM.DAX is one, O; CotAB's Elfin Chain Mail and its own rule: [coab/combat.md](../coab/combat.md))
 - no weapon, or weapon type 7 (Club), 8 (Dagger), 35 (Broad Sword), 36 (Long Sword) or 37 (Short Sword)
 - target R[0xF] > 1 and the attacker stands straight behind the target's facing
 
@@ -778,8 +778,9 @@ A conforming build reproduces these unless part C specifies a departure (O unles
 
 ## Open
 
-- Where the treasure money table `DS:67F4` is cleared; `DS:4A00` set after every battle
-- Whether elven chain counts as leather for backstabs; whether charm is undone before the post-battle cleanup
-- Overland tile meanings (which ids are roads, towns, water), to label the terrain flag table ([battlefield.md](battlefield.md))
+- ~~Where the treasure money table `DS:67F4` is cleared~~: by FillChar(DS:67F4, 0x1C, 0) in CLEAR_MONSTERS (opcode 0x1C, 0x1AEA6), on entering a temple (0x1DE66) and a shop (0x1FC5C); never after a battle, whose aftermath adds to it (0x1E136) (O).
+- ~~`DS:4A00` set after every battle~~: the slow-text flag: its only reader, the text writer's character loop (0x777B), waits `Delay(DS:49E2 × 10)` ms a character while it is set; set by PRINT_CLEAR (0x1A64D) and ENCOUNTER_MENU (0x1BB39) while they print, after a battle (0x1F6B1) and at start-up (0x26FB1), and cleared when those two finish (0x1A6C6, 0x1C1CA), so after a battle the next text prints letter by letter (O). The port prints at once (part C).
+- ~~Whether elven chain counts as leather for backstabs~~: PoR has none (above, O). ~~Whether charm is undone before the post-battle cleanup~~: no ("Cleanup", **Bug**).
+- ~~Overland tile meanings~~: [battlefield.md, "Terrain flags"](battlefield.md#terrain-flags-o-fun_34c7_08a4) (I, from the art).
 
 Answered since the first draft: spell targeting and area templates ("Aim": the picker `FUN_3aae_1e16` and the scan `FUN_56c1_0909`; "Spell targets", `FUN_3aae_20c3`) and the per-spell effects in combat ("Spell handlers in combat"; [spells.md](spells.md), "Per spell").

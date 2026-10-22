@@ -304,7 +304,29 @@ Characters made or saved in CotAB are written as `.guy/.swg/.fx` (§1). A CotAB 
 
 ### 7.5 Hillsfar (brief, O for structure)
 
-Source 2: 0xBC-byte `*.hil`, name at +4, NPC test skipped. `323c:1f35` merges onto an existing `NAME.guy` (or a PoR `NAME.cha` converted as above) if one exists (`PlayerFileExists`, `323c:13ae`), raising stats to the Hillsfar values and creating items for Hillsfar gains (necklace/wand/ring entries built at `323c:2648..`); otherwise builds a new level-1 character. Not specified further (see `323c:248b..2801`; Open).
+Source 2: 0xBC-byte `*.hil`, name at +4, NPC test skipped. `323c:1f35` merges onto an existing `NAME.guy` (or a PoR `NAME.cha` converted as above) if one exists (`PlayerFileExists`, `323c:13ae`), raising stats to the Hillsfar values and creating items for Hillsfar gains (necklace/wand/ring entries built at `323c:2648..`); otherwise builds a new level-1 character. In image offsets (`323c:` is paragraph 0x323C): the merge
+`1f35` = 0x342F5, the loader and builders `248b..2801` = 0x3484B..0x34BC1 (O unless marked):
+
+- **Loader** 0x34660: "Put save disk in " plus the drive, "Loading...Please Wait" (0x345FD, 0x34611); the
+  record building (0x3482B, 0x348F5) clears the list pointers +0x14D, +0xF2, +0x18D, +0x189.
+- **Merge** 0x342F5 (H the Hillsfar record, C the character), each value raised, never lowered: STR,
+  base and current := H+0x14 if C+0x10 is lower; STR% +0x1C/+0x1D := H+0x15 if lower; INT, WIS, DEX,
+  CON, CHA: C+0x10+2k := H+0x15+k (k = 1..5), base and current, if lower; experience, dword +0x127 :=
+  H+0x2E if lower; money: if the coin total (`af:57`) is below the dword H+0x28, every coin is cleared
+  (`ba:4d`) and H+0x28 div 5 added (`ba:39`; I: gold to platinum); the word +0x76 := H+0x1E if lower
+  (I: age).
+- **Then set outright**: cleric +0x109 := (H+0xB7 > 0), magic-user +0x10E := (H+0xB8 > 0), fighter
+  +0x10B := (H+0xB9 > 0), thief +0x10F := (H+0xBA > 0); +0xE5 := 1; +0x192 bit 0 := (H+0x26 ≠ 0); ECL
+  0x7EA8 (B+0x550) := 0xFF; the party/training screen runs (`a7:39`, looping until DS:75A0, with
+  DS:4FE1 = 1); max HP +0x78 := H+0x21; +0x12C := +0x78 − `a7:3e`(char) (I); HP +0x1A4 := H+0x20.
+- **Items** 0x349F8 (built by `ed:fc`, added by `ed:70`), each only when its count byte is above 0:
+  H+0x1D → words 0x57, 0xA7, 0xA8 ("Chime of Vulnerability", I: name order), value 200 × count;
+  H+0x23 → "Wand of Magic Missiles"; H+0x86 → "Ring of Vulnerability"; H+0x87 → "Potion of Healing";
+  the count byte passes to the item (I: charges or count) and the first byte pushed is 0x46, 0x4F, 0x45,
+  0x46 (I: the item type).
+
+The port has no Hillsfar import; one would need only data: the 0xBC-byte record's field map (the
+offsets above), the raise-only and set-outright lists, the coin conversion and the four item templates.
 
 ---
 
@@ -343,4 +365,4 @@ Strings at 0x36848 + 0x35AE: "Add from where? ", "Curse Pool Hillsfar Exit", "Ad
   +0x26 ≠ 0 (0x34569) and read by the scripts through B-view entry 0xE4 (0x20357).
 - ~~The base-STR bug in play~~ and ~~bit 0x80 in the class masks~~: answered in §7.2 step 3 and §3.
 - Druid slots at 0x132 (no druid in play).
-- The Hillsfar transfer (§7.5) beyond its structure: `323c:248b..2801` not traced.
+- ~~The Hillsfar transfer (§7.5)~~: traced (O, with the I points there); not ported.
