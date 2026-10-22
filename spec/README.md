@@ -186,6 +186,10 @@ Research started (2026-10-22); to be written as differences, as CotAB's.
 | File | Covers |
 |---|---|
 | [README.md](A-games/sotsb/README.md) | identity (TPOV overlays, DS 0x0DE2), the working image, the DAX families and files, open questions |
+| [records.md](A-games/sotsb/records.md) | the 439-byte character record, items (67 bytes in files), effects, SAVGAM, the `.WHO` roster, `vault.dat`, the CotAB import |
+| [tables.md](A-games/sotsb/tables.md) | the rules tables at the new DS base, PoR/CotAB → SotSB addresses; rule differences (levels to 15, seven spell levels, 116 spells) |
+| [ecl.md](A-games/sotsb/ecl.md) | the script VM: address spaces, opcodes (ADD_EP new), the character view, CALL targets, start-up |
+| [assets.md](A-games/sotsb/assets.md) | DAX families, the view's sky and ground, BIGPIC, title and start-up, BLADES.CFG, the sound effects and the title music driver |
 
 ## Part B: the engine model ([B-model/](B-model/))
 

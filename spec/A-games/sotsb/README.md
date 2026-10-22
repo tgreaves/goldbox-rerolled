@@ -61,9 +61,7 @@ SotSB-specific tool yet.
 
 ## Open
 
-- The character record (439 bytes), SAVGAM (5 469 bytes) and where items are kept (no item file
-  beside the pre-made characters; **?**).
-- The ECL VM: address spaces, opcodes and CALL targets against CotAB's ([coab/ecl.md](../coab/ecl.md)).
-- The rules tables at the new DS base (as [coab/tables.md](../coab/tables.md)).
-- The AdLib sound driver; `vault.dat`; the CotAB character import; `BLADES.CFG`'s later lines.
+- The subjects so far are in [records.md](records.md), [tables.md](tables.md), [ecl.md](ecl.md) and
+  [assets.md](assets.md), each with its own "Open"; still to write: combat, spells and effects, camp
+  and training (as CotAB's files), and the title music ([assets.md](assets.md), the driver and its parts file).
 - The register of open questions: [open-questions.md](../../open-questions.md).
