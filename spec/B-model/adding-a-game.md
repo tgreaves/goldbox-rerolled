@@ -72,8 +72,8 @@ A new game's profile MUST pass, against the game's own files:
 or as a game's own procedure; a new game will meet them, and each is to become data or a parametric
 procedure:
 
-- **The ending**: PoR's sequence is its own procedure (`ending.por`) beside the generic steps
-  ([profile.md §3.5](profile.md#35-the-ending-endingscript)).
+- ~~**The ending**~~: done 2026-10-22, PoR's sequence is steps too, with pictures drawn at positions and
+  for party sizes ([profile.md §3.5](profile.md#35-the-ending-endingscript)).
 - ~~**Effect type numbers in shared code**~~: done 2026-10-22, the profile's `effects.ids`
   ([vocabularies.md](vocabularies.md), the effect rules table) names every type the shared procedures
   add, test or remove; a new game gives its own numbers. Three of CotAB's lists there (`goingDown`,

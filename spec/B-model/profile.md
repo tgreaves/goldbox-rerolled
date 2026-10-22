@@ -194,16 +194,23 @@ offset *o* is the string at **GAME.OVR file offset `cs` + *o***.
 | Field | Meaning | PoR | CotAB |
 |---|---|---|---|
 | `cs` | file offset in GAME.OVR of the overlay segment that holds the captions | 0x2069D (merged image 0x38040) | 0x2593F (merged image 0x3BF10) |
-| `por` | the procedure "dragon, party, Tyranthraxus" of [por/ending.md](../A-games/por/ending.md) with its three caption groups | groups (0x114, 0x138, 0x15D), (0x17B, 0x19F, 0x1C4, 0x1EB, 0x20B, 0x230), (0x239, 0x260, 0x288, 0x29B) | — |
-| `steps` | a list of steps: `text` (captions replacing the last ones), `picture` (PIC, BIGPIC or FINAL record, `animate` to run its frames), `wait` ("Press any key to continue.") | — | below |
+| `steps` | a list of steps: `text` (captions replacing the last ones), `picture`, `wait` ("Press any key to continue.") | below | below |
+
+A `picture` is record `record` of `file` (PIC, BIGPIC or FINAL) + the block number; `animate` runs its
+frames `loops` times (default ((10 − speed) × 5) / 2, `FUN_4804_0006`); with `at` [x, y] it is drawn
+there over the picture shown, else it replaces it and the window takes its size; with `fromParty` *n*
+it is drawn only for a party of at least *n*.
+
+PoR's steps (**O**, `FUN_4804_02a4`, [por/ending.md](../A-games/por/ending.md)): text 0x114, 0x138,
+0x15D; FINAL 1 at (0, 0); FINAL 2 at (16, 32) animated; FINAL 3 at (0, 0); FINAL 4 at (0, 88) from 2
+members, 5 at (104, 72) from 3, 6 at (0, 72) from 4; text 0x17B, 0x19F, 0x1C4, 0x1EB, 0x20B, 0x230;
+FINAL 7 at (16, 0) animated; text 0x239, 0x260, 0x288, 0x29B; FINAL 8 at (16, 0) animated once; wait.
 
 CotAB's steps (**O**, image 0x3D02C): text 0xC87, 0xCB6, 0xCEB, 0xD21; wait; text 0xD76, 0xDA7, 0xDE0,
 0xE15; PIC 0x4A animated; wait; text 0xE4F, 0xE81, 0xEBB, 0xEF2; PIC 0x4B animated; wait; text 0xEFF,
 0xF2D, 0xF62, 0xF95; PIC 0x4D animated; PIC 0x41; text 0xF9B, 0xFC2, 0xFF7, 0x102A; wait; BIGPIC 122;
 text 0x104E, 0x1083, 0x10BE, 0x10F4; wait.
 
-The `por` form is PoR's own procedure beside the generic steps: a known place where a game's
-procedure is not yet expressed as steps ([adding-a-game.md §4](adding-a-game.md#4-what-is-still-a-paired-procedure)).
 The dialog that shows the ending is part C ([C-port/app-flow.md](../C-port/app-flow.md)).
 
 ## 4. Per-game listing
@@ -240,4 +247,5 @@ the CotAB research's checklist; each item is now profile data or a part A fact:
 
 ## Open
 
-- PoR's ending is still a procedure of its own (`ending.por`), not a list of steps (§3.5).
+
+- None.

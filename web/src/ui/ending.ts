@@ -1,8 +1,6 @@
-// The ending (PROGRAM 8), from the game's ending script (games/ending.ts). PoR (FUN_4804_02a4): three
-// captions with the FINAL<block> pictures: record 1 and the animation in record 2 (the dragon's
-// death), record 3 with an extra figure for each party member past the first (records 4–6), then
-// Tyranthraxus speaking (record 7) and his fall (record 8). CotAB (0x3D02C): captions, PIC and BIGPIC
-// pictures, and "Press any key" between them. The captions are read from START.EXE.
+// The ending (PROGRAM 8), the game's ending script (games/ending.ts) step by step: captions, pictures
+// (PoR FUN_4804_02a4: FINAL<block> drawn at positions; CotAB 0x3D02C: PIC and BIGPIC), and "Press any
+// key" between them. The captions are read from GAME.OVR.
 import type { GameFiles } from '../store/gamefiles'
 import { parseRecord, toImageData, type Picture } from '../data/image'
 import { blit, sizeCanvas } from '../render/upscale'
@@ -62,34 +60,23 @@ export async function playEnding(dialog: HTMLDialogElement, files: GameFiles, bl
   const pressKey = () => new Promise<void>((resolve) => { skip = resolve })
 
   try {
-    if (script.steps) {
-      let shown = 120
-      for (const step of script.steps) {
-        if ('text' in step) say(step.text.map(caption))
-        else if ('wait' in step) await pressKey()
-        else {
-          const f = frames(step.picture.record, step.picture.file)
+    let shown = 120
+    for (const step of script.steps) {
+      if ('text' in step) say(step.text.map(caption))
+      else if ('wait' in step) await pressKey()
+      else {
+        const p = step.picture
+        if (p.fromParty !== undefined && partySize < p.fromParty) continue
+        const f = frames(p.record, p.file)
+        const [x, y] = p.at ?? [0, 0]
+        if (!p.at) {
           const w = f[0]?.picture.width ?? 120, h = f[0]?.picture.height ?? 120
           if (w !== shown) { sizeCanvas(canvas, w, h); shown = w }
-          if (step.picture.animate) await animate(step.picture.record, 0, 0, loops, step.picture.file)
-          else draw(f[0]?.picture, 0, 0)
         }
+        if (p.animate) await animate(p.record, x, y, p.loops ?? loops, p.file)
+        else draw(f[0]?.picture, x, y)
       }
-      return
     }
-    const PARTS = (script.por?.parts ?? []).map((g) => g.map(caption))
-    say(PARTS[0])
-    draw(frames(1)[0]?.picture, 0, 0)
-    await animate(2, 16, 32, loops)
-    draw(frames(3)[0]?.picture, 0, 0)
-    if (partySize > 1) draw(frames(4)[0]?.picture, 0, 88)
-    if (partySize > 2) draw(frames(5)[0]?.picture, 104, 72)
-    if (partySize > 3) draw(frames(6)[0]?.picture, 0, 72)
-    say(PARTS[1])
-    await animate(7, 16, 0, loops)
-    say(PARTS[2])
-    await animate(8, 16, 0, 1)
-    await pressKey()
   } finally {
     dialog.removeEventListener('keydown', key)
     dialog.classList.remove('ending-panel')

@@ -6,7 +6,7 @@ import { COAB_ENDING, POR_ENDING, type EndingScript } from '../src/games/ending'
 
 const captions = (dir: string, s: EndingScript) => {
   const img = new Uint8Array(readFileSync(join(dir, 'GAME.OVR')))
-  const offsets = [...(s.por?.parts.flat() ?? []), ...(s.steps ?? []).flatMap((x) => ('text' in x ? x.text : []))]
+  const offsets = s.steps.flatMap((x) => ('text' in x ? x.text : []))
   return offsets.map((o) => String.fromCharCode(...img.subarray(s.cs + o + 1, s.cs + o + 1 + img[s.cs + o])))
 }
 

@@ -155,7 +155,7 @@ watch, because each is an alternative path in code:
   behaviour. A behaviour that waits (an attack, a removal, an effect added through its event) is
   async; that replaces the list of PoR types that waited. The item handlers are a map by +0x3E &
   0x7F in both games (PoR's 128–139, CotAB's kinds).
-- `ending.por` (PoR's own ending procedure) next to the generic ending steps.
+- ~~`ending.por`~~: done 2026-10-22, PoR's ending is steps like CotAB's (pictures `at` a position, `fromParty`, `loops`).
 - `R.wildField` (2026-10-20): one wilderness driver (fill, then the passes the profile lists with their
   numbers; the flag arithmetic `FlagValue` and the river's course are shared data). The passes are
   named by what they do: one `river` for both games (PoR FUN_34c7_0bde, CotAB 0x25690: the cells, the
@@ -205,7 +205,7 @@ watch, because each is an alternative path in code:
 **Plan, in order:** ~~CotAB's changed and new spell handlers as kinds~~ (done); ~~PoR's effect handler map made
 explicit~~ (done); ~~PoR's effect handlers checked against the binary~~ (done, spec/A-games/engine/effects.md "Port
 status"); ~~profile functions replaced by data~~ (done); the paired procedures made parametric where
-the originals allow it (the PoR ending procedure); ~~named ids for effect types~~ (done 2026-10-22). When those are done, a third game should
+the originals allow it (~~the PoR ending procedure~~, done); ~~named ids for effect types~~ (done 2026-10-22). When those are done, a third game should
 need only its profile modules and any procedure the earlier games do not have.
 
 ## Order of work
