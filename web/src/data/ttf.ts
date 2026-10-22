@@ -65,7 +65,7 @@ function nameTable(family: string) {
 }
 
 /** A TrueType font from the game's font record. */
-export function buildTtf(record: Uint8Array, family = 'Pool of Radiance'): Uint8Array {
+export function buildTtf(record: Uint8Array, family = 'Gold Box'): Uint8Array {
   const font = parseFont(record)
   const map = charMap()
   const used = [...new Set(map.values())].sort((a, b) => a - b) // game glyph indexes in the font

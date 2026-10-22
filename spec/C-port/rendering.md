@@ -120,7 +120,7 @@ divider rows 3 and 8 from the divider table) ([app-flow.md §4](app-flow.md#4-th
 
 IMP-038. The interface's text uses the game's 8 × 8 font, `8X8D1` #201 (177 glyphs, capitals only,
 [graphics.md, "Font"](../A-games/engine/graphics.md#font-o)), turned into a TrueType font in the browser
-and installed as the family "Pool of Radiance" (for every game). The **Font** setting chooses
+and installed as the family "Gold Box" (for every game: the glyphs are each game's own). The **Font** setting chooses
 **Original 8×8** (default) or **Modern** (the system's sans-serif).
 
 **Glyph shapes** (normative): each lit horizontal run of pixels in a glyph row is one rectangle; a
@@ -184,6 +184,5 @@ icons are cached by the character's icon bytes.
 
 ## Open
 
-- The font family is named "Pool of Radiance" in every game (cosmetic).
 - The CotAB edge rule (the most common tile) approximates the original's knotted frame, which varies
   along each side; drawing the exact sequence needs fixed-size panels.

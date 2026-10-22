@@ -30,7 +30,7 @@ export async function installGameFont(files: GameFiles) {
   if (!rec) return
   try {
     const ttf = buildTtf(rec)
-    const face = new FontFace('Pool of Radiance', ttf.buffer as ArrayBuffer)
+    const face = new FontFace('Gold Box', ttf.buffer as ArrayBuffer) // the game's own glyphs (8X8D1 #201), one engine-level name for every game
     await face.load()
     document.fonts.add(face)
     available = true
