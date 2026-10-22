@@ -109,7 +109,7 @@ So the light-magenta areas of wall tiles (rooftops, gaps, the sky above walls) s
 
 - 320 × 200, EGA 16 colours; text on a **40 × 25 grid of 8 × 8 cells** using the font above
 - `FUN_1709_0626(text, colour, row, col)` prints one line; `FUN_1709_0768(text, …, top, left, bottom, right)` prints wrapped text in a box; `FUN_1709_0dd3(bottom, right, top, left)` clears a box
-- Exploration: 3D view = 11 × 11 tiles at tile (2, 2), i.e. pixels 16–103; text window = rows 17–22, columns 1–38 (text cursor `DS:5E25` row, `DS:5E24` column, reset to row 17 / column 1); event pictures (88 × 88) occupy the 3D view area
+- Exploration: 3D view = 11 × 11 tiles at tile (3, 3), i.e. pixels 24–111 on both axes (O: screen dumps of the original in DOSBox, 2026-10-22; earlier given as tile (2, 2)); text window = rows 17–22, columns 1–38 (text cursor `DS:5E25` row, `DS:5E24` column, reset to row 17 / column 1); event pictures (88 × 88) occupy the 3D view area
 - Colours used for text: 10 (light green) normal, 13 (light magenta) highlight/NPC, 14 (yellow) wounded, 15 (white) headings
 - Character sheet: name row 1, race/age row 3, alignment row 4, class row 5, stats rows 7–12, money from row 7 column 26, combat stats from row 17
 - Combat (O, `FUN_577f_03a0`, `FUN_577f_06e9`, icon draw `FUN_58af_04fc`): the battlefield window shows 7 × 7 cells (screen cell 0–6 on each axis, relative to the view origin at `DS:6716` +2/+3); a cell is 3 × 3 text cells (24 × 24 pixels), drawn at text column/row 3·x, 3·y, so the field covers 168 × 168 pixels at the left of the screen

@@ -55,7 +55,7 @@ Graphics = PoR image block (17-byte header, 4 bpp, default EGA palette), so `too
 - Renderer `Draw3dWorld` **0x53EC0** (`ovr031:0820`) against PoR `FUN_55a0_05fd`: the same routine instruction for instruction, with the same constants (column offsets, walk lengths, piece kinds), so the same drawing order ([engine/maps-and-view.md, "Drawing order"](../engine/maps-and-view.md#drawing-order-painters-algorithm)). The only differences: `div` for `idiv` in the facing arithmetic (the same results for facings 0–6) and the final copy to the screen (`0226:12E8`) (O, normalised listing compare). Its wall lookup **0x53D42** returns 0 outside the map in areas 0 and 10 (`DS:8B78`, the current area, as NEW_ECL sets it) and otherwise wraps by one map, as PoR's; the piece blitter **0x53AD4** draws through the tile stub `019c:002a` with the same flags (O). Piece blitter **0x53AD4** (`ovr031:0434`). Overhead map **0x536AF** (`ovr031:000F`): wall tile `0x104 + mask`, party arrow `0x100 + facing/2` (O, 0x537E4).
 
 ### Background: the main change (O, `0x53824` = `ovr031:0184`)
-`fill(col, y_px, w_cells, h_px, colour)` = `0226:1D67`. The view is 11 cells wide at cell column 2, screen y 16–103, so view rows 0–87:
+`fill(col, y_px, w_cells, h_px, colour)` = `0226:1D67`. The view is 11 cells wide at cell column 2, screen y 16–103 (**?**: PoR's view, given the same way, proved to be at pixels 24–111 in DOSBox screen dumps; CotAB's not yet checked), so view rows 0–87:
 
 | Mode (`DS:5000`, §8) | Bands | Overlays |
 |---|---|---|

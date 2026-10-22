@@ -108,8 +108,11 @@ recorded as hashes, never as pictures: `web/test/view-frames.json` holds, for ea
 in that order, facings N, E, S, W at each, the frames' index bytes concatenated) for eleven areas: the
 area of save A, and after a debug jump from it to (8, 8) facing north, PoR's areas 3/0 (New Phlan,
 closed edges), 1/18, 2/9, 6/1, 8/13 and CotAB's 3/16, 4/32, 5/50, 6/64. A clean-room build computes the
-same from the player's files. Frames of DOSBox screenshots of the original (the view at screen pixels
-16–103) would check the reference itself; none has been taken yet.
+same from the player's files. Frames of the original itself, its screen memory dumped in DOSBox Staging (the view at screen pixels
+24–111), check the reference: 7 frames of save A's area (block 2 area 20: (15,4) facing W, S, E, N; (14,4)
+W, W after a step into a wall, N) equal the reference's frames at the same squares, 0 of 7 744 pixels
+differing (2026-10-22, [VALIDATION.md §4](../VALIDATION.md#4-sweeps-play-tests-and-reference-hashes)).
+Other areas need routes from save A, as the original has no jump.
 
 ## 3. The WebGL view (optional)
 
@@ -384,4 +387,4 @@ A **refresh** (`Io.refresh`, after every move and turn, area entry, CALL refresh
 ## Open
 
 - §3.6's tolerance numbers are provisional, and its check is not automated.
-- Reference frames from the original itself (DOSBox) to check the reference's own frames (§2.3).
+- Reference frames from the original for areas other than save A's (§2.3; save A's match).
