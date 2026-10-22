@@ -101,6 +101,7 @@ the SHA-256 of each table's bytes is in [expected-values.md §7](expected-values
 | `templeNames` | DS:011A | 0x0C8DA | DS:00E6 | 0x0ACC6 | 41 | 10 × 41 (the services, then Exit) | 11 × 41 (the services, then Exit) |
 | `diseases` | DS:0113 | 0x0C8D3 | DS:00DF | 0x0ACBF | – | 6, from 1 | 6, from 1 |
 | `randomItems` | DS:0970 | 0x0D130 | DS:082E | 0x0B40E | – | 19 records × 8 u16, word m = 8j + 1 | 7 records × 8 u16, word m = 8j + 1 |
+| `scrollSpells` | absent | – | absent | – | – | – | – |
 | `sky` | DS:0C26 | 0x0D3E6 | DS:0A8A | 0x0B66A | – | 16 | 16 |
 | `itemWords` | DS:10BC | 0x0D87C | DS:1057 | 0x0BC37 | 21 | 255 words × 21, from word 1 | 255 words × 21, from word 1 |
 | `wallDx` | DS:2736 | 0x0EEF6 | DS:2696 | 0x0D276 | – | 9 directions | 9 directions |

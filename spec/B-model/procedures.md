@@ -555,31 +555,60 @@ Conversion:
 
 ## 14. Random treasure
 
-**Original:** PoR the TREASURE handler 29c3:19B0 and `FUN_4c2d_1010`; CotAB 0x1A5A3 and 0x42D97
+**Original:** PoR the TREASURE handler 29c3:19B0 and `FUN_4c2d_1010`; CotAB 0x1A5A3 and 0x42D97;
+SotSB 0x1FB2F and 0x4F6D2
 ([engine/records.md, "Random items"](../A-games/engine/records.md#random-items),
-[coab/records.md §8](../A-games/coab/records.md#8-random-treasure-items-o-builder-0x42d97-type-choice-0x1a5a30x1a6e2)).
+[coab/records.md §8](../A-games/coab/records.md#8-random-treasure-items-o-builder-0x42d97-type-choice-0x1a5a30x1a6e2),
+[sotsb/records.md §3.1](../A-games/sotsb/records.md#31-random-treasure-items-o-type-choice-0x1fb2f0x1fe2b-builder-0x4f6d2)).
 Module `treasure` (`TreasureRules`).
 
 **The `Pick` notation.** A pick is a number (that value), `prev` (the previous item's type in this
 TREASURE, 0 for the first), `roll` (the enclosing band's own die result), or `{ die, plus?, bands }`:
 roll 1d`die`, add `plus`, and take the first band `[high, pick]` with result ≤ high (the last band
 if none), then resolve its pick with that result as its own roll. `rollOverride` replaces a `roll`
-result (45 → 0x3B in both games).
+result (45 → 0x3B in PoR and CotAB).
 
 TREASURE with operand 0x80 + *n* makes *n* items: for each, the type := `type` resolved, then the
-record is built and **prepended** to the treasure list. The builder is part A's (`FUN_4c2d_1010`; its
-name words, weights, counts and value factors are the same constants in both games, **O**); the
-profile supplies:
+record (of the game's item size, `saves.itemRecord`) is built and **prepended** to the treasure list.
+The builder is one procedure (**O** in each game):
 
-| Field | Meaning | PoR | CotAB |
-|---|---|---|---|
-| `type` | the type choice | d100: ≤ 60 → (d100: ≤ 47 roll, ≤ 49 prev, ≤ 59 roll, ≤ 90 D10, ≤ 94 0x49, ≤ 97 0x5D, ≤ 100 0x4D); ≤ 85 0x3D; ≤ 92 0x3E; ≤ 98 (d16: ≤ 7 0x47, ≤ 9 0x46, 10 0x54, ≤ 12 0x4E, ≤ 14 0x4F, 15 0x5C, 16 0x43); ≤ 100 0x45 | d100: ≤ 60 → (d100: ≤ 47 roll, ≤ 49 0x3B, ≤ 59 roll, ≤ 90 D10, ≤ 94 0x49, ≤ 97 0x5D, ≤ 100 0x4D); ≤ 85 0x3D; ≤ 92 0x3E; ≤ 98 (d15: ≤ 9 0x47, 10 0x54, ≤ 15 0x4F); ≤ 100 0x3B |
-| (D10) | | d10: ≤ 4 0x24, ≤ 7 0x23, 8 0x22, 9 0x25, 10 0x26 | the same |
-| `plus` | the plus of weapons and armour: a die and bands | d20: ≤ 14 +1, ≤ 19 +2, 20 +3 | d20: ≤ 14 +1, ≤ 20 +2 |
-| `javelin` | `{ type, die, on, record }`: a javelin of `type` that rolls `on` on 1d`die` becomes random record `record` | 0x15, d5 = 5 → 0x90 (one word short of the Javelin of Lightning: the original's bug, kept) | 0x15, d5 = 5 → 0x31 |
-| `scrollLevelDie`, `scrollSpells` | a scroll's spells: each level 1d`die`, then per level [sides, offset]: id = 1d`sides` + offset | d3; MU [13, 8] [7, 28] [11, 44]; cleric [8, 0] [7, 21] [9, 35] | d5; MU [13, 8] [7, 28] [11, 44] [9, 80] [4, 90]; cleric [8, 0] [7, 21] [8, 36] [5, 65] [6, 70] |
-| `magic` | type → the random-item record (word index into `T.randomItems`; 0 a blank item), a pick | 0x47 (d11: ≤ 5 0x11, ≤ 8 0x01, 9 0x19, 10 0x51, 11 0); 0x46 (d10: ≤ 7 0x59, ≤ 10 0x89); 0x54 0x09; 0x4E (d3 + 1: 1 → 0, 2 → 0x41, 3 → 0x71, 4 → 0); 0x4F 0x39; 0x5C 0x61; 0x43 0x91; 0x45 (d10: 1 → 0x29, ≤ 6 0x79, ≤ 10 0x81); 0x3F 0x49 | 0x3F 0x29, 0x43 0x29, 0x4E 0x21, 0x4F 0x21, 0x54 0x09, 0x5C 0x09, 0x47 (d8: ≤ 5 0x11, ≤ 8 0x01) |
-| `plusTwo` | records whose plus and save bonus are 2 (else 1) | [0x61] (Cloak of Displacement) | none |
+1. Clear the record; +0x35 (mask) := 6, +0x2E := the type; m := 0.
+2. A type in `plusTypes`: the plus p := `plus` (a die and bands); a `javelin.type` then rolls
+   1d`javelin.die` and on `on` sets m := `record`. The type's `shape` (the first `shapes` entry listing
+   it, else the default): +0x32 := p, or `times` × p + `add`; +0x33 := `save` (else 0); +0x35 := `mask`
+   (else 6); the three words +0x2F, +0x30, +0x31, each a word number, `type`, `plus` (`plusName` + p),
+   or `byPlus[p]`. Weight +0x37 := the first `weights` entry listing the type, count +0x39 := `counts`
+   (else 0); an unlisted type `unlisted` [weight, count]. Value +0x3A := +0x32 × (`values`, else
+   `value`), 16-bit.
+3. A `scrolls` type: *n* := d3; the words (`count` = `countName` + *n*); +0x32 := 1, weight 25. For
+   each spell *i*: the level *L* := 1d(number of levels), then [sides, offset] := `spells[L]` and the id
+   := 1d`sides` + offset, or with `scrollTable` the byte of `T.scrollSpells` at offset + 1d`sides`;
+   +0x3B + *i* := the id; +0x35 := `mask` unless null; the value += `scrollValue` × *L*.
+4. Any other type: m := `magic` (a pick; no entry: 0, a blank item).
+5. m ≠ 0: copy random record m from `T.randomItems` (words *m* …): +0x2F … +0x31 the low bytes of
+   words m … m + 2; +0x32 := 1 and +0x33 := `magicSave` (both 2 for a `plusTwo` record); +0x37 word
+   m + 3; +0x39 := 0; +0x3A word m + 4; +0x3C … +0x3E the low bytes of words m + 5 … m + 7.
+
+The profile supplies (PoR's builder constants and CotAB's are the same; the full lists are the
+profile's, `games/treasure.ts`):
+
+| Field | Meaning | PoR | CotAB | SotSB |
+|---|---|---|---|---|
+| `type` | the type choice | d100: ≤ 60 → (d100: ≤ 47 roll, ≤ 49 prev, ≤ 59 roll, ≤ 90 D10, ≤ 94 0x49, ≤ 97 0x5D, ≤ 100 0x4D); ≤ 85 0x3D; ≤ 92 0x3E; ≤ 98 (d16: ≤ 7 0x47, ≤ 9 0x46, 10 0x54, ≤ 12 0x4E, ≤ 14 0x4F, 15 0x5C, 16 0x43); ≤ 100 0x45 | d100: ≤ 60 → (d100: ≤ 47 roll, ≤ 49 0x3B, ≤ 59 roll, ≤ 90 D10, ≤ 94 0x49, ≤ 97 0x5D, ≤ 100 0x4D); ≤ 85 0x3D; ≤ 92 0x3E; ≤ 98 (d15: ≤ 9 0x47, 10 0x54, ≤ 15 0x4F); ≤ 100 0x3B | [sotsb/records.md §3.1](../A-games/sotsb/records.md#31-random-treasure-items-o-type-choice-0x1fb2f0x1fe2b-builder-0x4f6d2) |
+| (D10) | | d10: ≤ 4 0x24, ≤ 7 0x23, 8 0x22, 9 0x25, 10 0x26 | the same | – |
+| `rollOverride` | | 45 → 0x3B | 45 → 0x3B | none |
+| `plusTypes` | the types with a plus | 1–0x3B, 0x49, 0x4D, 0x5D | as PoR | 1–0x25, 0x32, 0x3B, 0x46, 0x47 |
+| `plus` | the plus: a die and bands | d20: ≤ 14 +1, ≤ 19 +2, 20 +3 | d20: ≤ 14 +1, ≤ 20 +2 | d10: ≤ 6 +1, ≤ 9 +2, 10 +3 |
+| `plusName` | | 0xA1 | 0xA1 | 0x6E |
+| `shapes`, `shape` | names, mask, plus and save by type | [engine/records.md](../A-games/engine/records.md#random-items) (armour 0x32–0x3A mask 4, arrows, bracers `byPlus` and plus 2p + 2, ring); default [0, `plus`, `type`] | as PoR | sotsb/records.md §3.1 (0x1D, 0x1F, 0x20–0x24 mask 4; bracers 0x32 plus 4; ring 0x3B plus 1, save 1); default as PoR |
+| `weights`, `counts`, `unlisted` | weight per unit and count | PoR's table; type 9 count 5; unlisted [40, 10] | as PoR | SotSB's table; type 5 count 20; unlisted [4, 20] |
+| `values`, `value` | value per plus | 0x3B 2500, … 0x4D 3000; else 2000 | as PoR | 0x0C, 5, 0x1E 50; … 0x24 2500; else 1000 |
+| `javelin` | `{ type, die, on, record }` | 0x15, d5 = 5 → 0x90 (one word short of the Javelin of Lightning: the original's bug, kept) | 0x15, d5 = 5 → 0x31 | 7, d5 = 5 → 0x31 |
+| `scrolls` | per kind: type, words, spell lists [sides, offset] by level, mask | 0x3D [0, count, 0xD1], MU [13, 8] [7, 28] [11, 44]; 0x3E [0, count, 0xD0], cleric [8, 0] [7, 21] [9, 35]; mask null | MU [13, 8] [7, 28] [11, 44] [9, 80] [4, 90]; cleric [8, 0] [7, 21] [8, 36] [5, 65] [6, 70]; otherwise as PoR | 0x27 [count, 0x27, 0x28], 7 levels, mask 4; 0x28 [count, 0x27, 0x26], 6 levels, mask 0 (sotsb/records.md §3.1) |
+| `countName`, `scrollValue`, `scrollTable` | | 0xD1, 300, false | as PoR | 0x63, 150, true |
+| `magic` | type → the random-item record (word index into `T.randomItems`; 0 a blank item), a pick | 0x47 (d11: ≤ 5 0x11, ≤ 8 0x01, 9 0x19, 10 0x51, 11 0); 0x46 (d10: ≤ 7 0x59, ≤ 10 0x89); 0x54 0x09; 0x4E (d3 + 1: 1 → 0, 2 → 0x41, 3 → 0x71, 4 → 0); 0x4F 0x39; 0x5C 0x61; 0x43 0x91; 0x45 (d10: 1 → 0x29, ≤ 6 0x79, ≤ 10 0x81); 0x3F 0x49 | 0x3F 0x29, 0x43 0x29, 0x4E 0x21, 0x4F 0x21, 0x54 0x09, 0x5C 0x09, 0x47 (d8: ≤ 5 0x11, ≤ 8 0x01) | 0x34 0x21, 0x35 0x09, 0x2F (d8: ≤ 2 0x01, ≤ 4 0x11, ≤ 6 0x19, ≤ 8 0x29) |
+| `magicSave` | +0x33 of a record | 1 | 1 | 0 |
+| `plusTwo` | records whose plus and save bonus are 2 | [0x61] (Cloak of Displacement) | none | none |
 
 The dice requests come in the order the builder makes them: the type's dice, then for a weapon or
 armour the plus and (javelins) the javelin die, for a scroll the spell count (d3) and each spell's

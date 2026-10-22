@@ -54,6 +54,9 @@ export interface TableMap {
   diseases: TableRef
   /** random-item records: u16 words, record m from word m */
   randomItems: TableRef
+  /** scroll spell ids by spell level, read by the random-item builder at `at` + the profile's offset + a
+   *  die (SotSB DS:580C, cleric and magic-user lists; PoR and CotAB compute the id instead) */
+  scrollSpells: TableRef
   /** sky colours, 16 bytes */
   sky: TableRef
   /** item name words, Pascal strings; word 1 at `at`, `row` bytes each */
@@ -153,7 +156,7 @@ export const POR_TABLES: TableMap = {
   genderNames: t(0x0fec, 7), coinNames: t(0x0ffa, 11), coinValues: t(0x0d24, 4),
   frameTop: absent, frameBottom: absent, frameLeft: absent, frameRight: absent, frameDivider: absent,
   cursorX: absent, cursorY: absent, placeTerrain: absent,
-  templeNames: t(0x011a, 41), diseases: t(0x0113), randomItems: t(0x0970), sky: t(0x0c26), itemWords: t(0x10bc, 21), wallDx: t(0x2736), wallDy: t(0x273f),
+  templeNames: t(0x011a, 41), diseases: t(0x0113), randomItems: t(0x0970), scrollSpells: absent, sky: t(0x0c26), itemWords: t(0x10bc, 21), wallDx: t(0x2736), wallDy: t(0x273f),
   battleCells: t(0x2744, 4), headRecords: t(0x286f), bodyRecords: t(0x287d), spellNames: t(0x2912, 41), spellRecords: t(0x31fa, 16),
   overlandMap: t(0x3648), overlandSpecials: t(0x0c36, 6), overlandColumns: t(0x3c76),
   thac0: t(0x3c7c, 11), thiefBase: t(0x3cf3, 8), thiefRace: t(0x3d3b, 8), thiefDex: t(0x3d4e, 5), raceLimits: t(0x3da3, 16),
@@ -174,7 +177,7 @@ export const COAB_TABLES: TableMap = {
   genderNames: t(0x0f87, 7), coinNames: t(0x0f95, 11), coinValues: t(0x0ca4, 4),
   frameTop: t(0x0b50), frameBottom: t(0x0ba0), frameLeft: t(0x0be2), frameRight: t(0x0c0b), frameDivider: t(0x0b78),
   cursorX: t(0x0a4a), cursorY: t(0x0a6a), placeTerrain: t(0x0354),
-  templeNames: t(0x00e6, 41), diseases: t(0x00df), randomItems: t(0x082e), sky: t(0x0a8a), itemWords: t(0x1057, 21), wallDx: t(0x2696), wallDy: t(0x269f),
+  templeNames: t(0x00e6, 41), diseases: t(0x00df), randomItems: t(0x082e), scrollSpells: absent, sky: t(0x0a8a), itemWords: t(0x1057, 21), wallDx: t(0x2696), wallDy: t(0x269f),
   battleCells: t(0x26a4, 4), headRecords: absent, bodyRecords: absent, spellNames: t(0x27e8, 41), spellRecords: t(0x37dc, 16),
   overlandMap: absent, overlandSpecials: absent, overlandColumns: absent,
   thac0: t(0x3e3a, 13), thiefBase: t(0x3ec0, 8), thiefRace: t(0x3f20, 8), thiefDex: t(0x3f33, 5), raceLimits: t(0x3f88, 16),
@@ -188,8 +191,7 @@ export const COAB_TABLES: TableMap = {
 }
 
 // spec/A-games/sotsb/tables.md §2 (DS = paragraph 0x0DE2): O where the reading code was found, else a
-// data match (I). Not found yet (?): the frame tables, the overland cursor and terrain, randomItems and the
-// temple's disease list (I: DS:1B3D[1..4]), marked absent
+// data match (I). Not found yet (?): the frame tables, the overland cursor and terrain, marked absent
 export const SOTSB_TABLES: TableMap = {
   ds: 0xde20,
   classBits: t(0x4c92), trainerBits: t(0x4c99), hitDiceCount: t(0x09b0), hitDiceSides: t(0x09b7), hitDiceStop: t(0x4ca9),
@@ -199,7 +201,7 @@ export const SOTSB_TABLES: TableMap = {
   frameTop: absent, frameBottom: absent, frameLeft: absent, frameRight: absent, frameDivider: absent,
   cursorX: absent, cursorY: absent, placeTerrain: absent,
   // diseases: DS:1B3D[1..4], read by Cure Disease and Fix (0x226AC, 0x3885E; I: the temple's too)
-  templeNames: t(0x014c, 41), diseases: t(0x1b3d), randomItems: absent, sky: t(0x0aa8), itemWords: t(0x0f22, 21), wallDx: t(0x1a90), wallDy: t(0x1a99),
+  templeNames: t(0x014c, 41), diseases: t(0x1b3d), randomItems: t(0x0a28), scrollSpells: t(0x580c), sky: t(0x0aa8), itemWords: t(0x0f22, 21), wallDx: t(0x1a90), wallDy: t(0x1a99),
   battleCells: t(0x1a9e, 4), headRecords: absent, bodyRecords: absent, spellNames: t(0x34ae, 35), spellRecords: t(0x449d, 16),
   overlandMap: absent, overlandSpecials: absent, overlandColumns: absent,
   thac0: t(0x4c0c, 19), thiefBase: t(0x4cad, 8), thiefRace: t(0x4d3d, 8), thiefDex: t(0x4d48, 5), raceLimits: t(0x4d9d, 16),

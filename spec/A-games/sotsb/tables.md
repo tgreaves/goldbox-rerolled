@@ -69,7 +69,8 @@ table grew.
 | `placeRing` … `placeAllow` | 02DC–0310 | **0350, 0360, 0370, 0374, 037C, 0384** | as CotAB | 0x2C24D, 0x2C26C (`placeAllow`, row 12) | O | CotAB's values |
 | `frameTop` … `frameDivider` | 0B50–0C0B | ? | | | ? | no data match; SotSB's frame drawing not read |
 | `cursorX`, `cursorY`, `placeTerrain` | 0A4A, 0A6A, 0354 | ? | | | ? | the overland map's tables: not found; the overland is not yet researched |
-| `randomItems` | 082E | ? | | | ? | not found |
+| `randomItems` | 082E | **0A28** | u16 words, record *m* from word *m* (7 records, *m* = 1 + 8*j*) | 0x4FE65, 0x4FE9A, 0x4FEB9, 0x4FEE2 (the builder's copy) | O | the PoR form; [records.md §3.1](records.md#31-random-treasure-items-o-type-choice-0x1fb2f0x1fe2b-builder-0x4f6d2) |
+| `scrollSpells` | – | **580C** | bytes: the cleric lists at +0x00 … +0x32, 10 a level, the magic-user lists at +0x50 … +0x92, 11 a level; entry 1 at offset + 1 | 0x4FC38 … 0x4FDA5 | O | new: PoR and CotAB compute a scroll's spell id (d*s* + offset) |
 
 Tables CotAB had absent (`npcHeads`, the NPC bodies, `headRecords`, `bodyRecords`, `overlandMap`,
 `overlandSpecials`, `overlandColumns`) are not looked for here.
@@ -99,7 +100,7 @@ export const SOTSB_TABLES_DRAFT = {
   classBits: t(0x4c92), trainerBits: t(0x4c99), hitDiceCount: t(0x09b0), hitDiceSides: t(0x09b7), hitDiceStop: t(0x4ca9),
   raceNames: t(0x0d71, 9), classNames: t(0x0b8b, 27), alignmentNames: t(0x0db9, 17), statusNames: t(0x0ead, 13),
   genderNames: t(0x0e52, 7), coinNames: t(0x0e60, 11), coinValues: t(0x0b40, 4),
-  templeNames: t(0x014c, 41), diseases: t(0x1b3d) /* 4 entries */, randomItems: absent, sky: t(0x0aa8),
+  templeNames: t(0x014c, 41), diseases: t(0x1b3d) /* 4 entries */, randomItems: t(0x0a28), scrollSpells: t(0x580c), sky: t(0x0aa8),
   itemWords: t(0x0f22, 21), wallDx: t(0x1a90), wallDy: t(0x1a99), battleCells: t(0x1a9e, 4),
   spellNames: t(0x34ae, 35), spellRecords: t(0x449d, 16),
   thac0: t(0x4c0c, 19), thiefBase: t(0x4cad, 8), thiefRace: t(0x4d3d, 8), thiefDex: t(0x4d48, 5), raceLimits: t(0x4d9d, 16),
@@ -126,6 +127,6 @@ Seen on the way, for the rules research to follow:
 
 ## Open
 
-- The frame, overland-cursor and terrain tables and `randomItems`.
+- The frame, overland-cursor and terrain tables.
 - Byte 0 of the spell records (the spell class) and the meaning of `hitDiceCount`'s cleric 2.
 - Each **I** row's reader.

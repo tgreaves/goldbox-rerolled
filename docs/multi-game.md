@@ -91,7 +91,7 @@ and makes one active (`setGame`), switching the live objects the rest of the cod
 | `spellrules.ts` | spell handlers: every spell id's handler kind and parameters (as the original's handler table), the duration special cases | `game().spells` |
 | `landmarkrules.ts` | what the area map's landmarks look for in the script text (shopkeepers' lines, the temple's god, named places) | `game().landmarks` |
 | `effectrules.ts` | the effect system: event lists in the original's order, area effects, per-type handler map, item kinds | `game().effects` |
-| `treasure.ts` | random treasure: the type choice (nested dice bands), plus roll, scrolls, magic records | `game().treasure` |
+| `treasure.ts` | random treasure: the type choice (nested dice bands), plus roll, the builder's name words, shapes, weights and values, scrolls, magic records | `game().treasure` |
 | `view.ts` | the 3D view and screens: the drawn view's bands and closed-edge areas, floor and ground, BIGPIC, overland kind, frames, sun and clouds | `game().view` |
 | `title.ts`, `ending.ts`, `sound.ts` | title script and credits; ending script (captions read from GAME.OVR); sound driver location | `game().title` … |
 | `startup.ts` | the menu after the title (its title and choices read from START.EXE by offset, the timeouts in hundredths of a second and the key they answer) and the demo it runs: block, record, game speed and the demo mode's flags (key reads that never wait, no "Continue Battle:", no battle aftermath); `null` for a game without one (PoR) | `game().startMenu` |
@@ -383,8 +383,7 @@ record (`view.font`, 8X8D5 #201), and the game text's merged image from a TPOV o
 messages and menus are CotAB's found by their text (176 and 79; the rest show their id). Tested:
 `test/sotsb.test.ts` (detection, the pre-made party, START.EXE's tables, the shipped save) and
 `test/sotsbsweep.test.ts` (every area from every third square: no interpreter errors). Still CotAB's, not
-researched (?): the rules, spells, effects, treasure, landmarks; not done: the CotAB import, the vault, the
-67-byte item chain for arrows, the title music (the OPL2 synthesiser is in; its sequencer waits on
+researched (?): the landmarks; not done: the CotAB import, the title music (the OPL2 synthesiser is in; its sequencer waits on
 spec/A-games/sotsb/music.md). The shipped save is a start-of-game save (area 0): written back after the
 start-up's conversion (block 2, record 17, as the original does) it cannot equal the shipped bytes, and the
 bytes after each member's name are written 0 (as for PoR and CotAB).
@@ -419,6 +418,13 @@ what they do, the item kinds and `ids`; spec/A-games/sotsb/effects.md §7). The 
 the port's spell 115 is Fireball at once). The rules profile (spell records 117, the cloud cells 0x1D and
 0x1B) is the rules' step. Tested: `test/sotsbspells.test.ts`, `test/sotsbeffects.test.ts`, the effect map
 test over SotSB's table and data.
+
+*Data and files (2026-10-22).* Scroll bundles (type 0x49, `saves.bundleType`) read and written with their
+scrolls; the vault (`VAULT.DAT`, `data/vault.ts`, the vault screen in `ui/town.ts`, opened by COMBAT's
+`ecl.combatVault`); the engine's messages and menus traced to their routines (`games/stringtable.ts`, pieces
+joined); random treasure as data: the builder's name words, shapes, weights, values and scroll lists moved from
+`rules/randitem.ts` into `TreasureRules` (`SOTSB_TREASURE`, the new `T.scrollSpells`; spec/B-model/procedures.md
+§14). Tests: `test/bundles.test.ts`, `test/vault.test.ts`, `test/sotsbtreasure.test.ts`.
 
 ## Backlog
 

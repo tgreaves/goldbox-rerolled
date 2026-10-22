@@ -91,7 +91,7 @@ function tableSection(): string {
     const row = (g: 'por' | 'coab') => (MAPS[g] as unknown as Record<string, { at: number; row: number }>)[n].row
     const rows = [...new Set([row('por'), row('coab')].filter((_r, i) => (i ? cell('coab') : cell('por'))[0] !== 'absent'))]
     const ent = (g: 'por' | 'coab') => { const t = TABLES[g].find((x) => x.table === n); return t ? spanOf(t, RULES[g]).entries : '–' }
-    out.push(`| \`${n}\` | ${cell('por').join(' | ')} | ${cell('coab').join(' | ')} | ${rows.map((r) => r || '–').join(' / ')} | ${ent('por')} | ${ent('coab')} |`)
+    out.push(`| \`${n}\` | ${cell('por').join(' | ')} | ${cell('coab').join(' | ')} | ${rows.length ? rows.map((r) => r || '–').join(' / ') : '–'} | ${ent('por')} | ${ent('coab')} |`)
   }
   return out.join('\n') + '\n'
 }

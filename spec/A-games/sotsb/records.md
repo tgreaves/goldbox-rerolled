@@ -166,6 +166,65 @@ No member carries items or (but MALACHITE's 4 gp) money; nobody has spells memor
   ptr next` (O, 0x405B9; the shipped files decode so).
 - `ITEMS` is 2 050 bytes as in PoR and CotAB (its contents not compared yet, ?).
 
+### 3.1 Random treasure items (O, type choice 0x1FB2F–0x1FE2B, builder 0x4F6D2)
+
+The procedure is PoR's ([engine/records.md, "Random items"](../engine/records.md#random-items)): TREASURE
+with 0x80 + *n* makes *n* items, each type chosen by the handler, built by 0x4F6D2 (far call 0x13C:0x7A) and
+prepended to the list. SotSB's item types, words, weights and values are its own; the engine model holds them
+as data ([B-model/procedures.md §14](../../B-model/procedures.md#14-random-treasure)). Dice are `roll(1, N)`
+(0x145:0x43).
+
+**Type choice.** d100:
+
+- 1–31: a second d100: 1–20 → d10 (1–2 6, 3–6 8, 7–8 0x46, 9 0x0F, 10 0x1D); 21–44 → d3 (5, 0x0C, 0x1E);
+  45–60 → d20 (1–3 7, 4–6 0x18, 7–9 0x16, 10–12 0x19, 13–14 0x17, 15–17 0x1C, 18–20 0x0F); 61–100 → d4: 1–3
+  a d20 (1–8 0x12, 9–13 0x11, 14 0x0D, 15 0x10, 16–18 0x13, 19–20 0x14), 4 a d8 (1 1, 2–3 4, 4–5 9, 6 0x0A,
+  7 0x0E, 8 0x47);
+- 32–62 0x27 (magic-user scroll), 63–70 0x28 (cleric scroll), 71–80 0x25, 81–85 0x3B (a ring of protection);
+- 86–95 d20: 1–3 0x1F, 4–11 0x23, 12–16 0x24, 17 0x20, 18 0x21, 19–20 0x22;
+- 96–100 d6: 1–2 0x32 (bracers), 3–4 0x2F (potion), 5 0x34 (wand), 6 0x35.
+
+No band repeats the previous type and no roll is replaced (PoR's 48–49 and 45).
+
+**Building** (0x4F6D2): the 67 bytes cleared; +0x35 = 6, +0x2E = type, +0x33 = 0.
+
+- **Weapons and armour**, types 1–0x25, 0x32, 0x3B, 0x46, 0x47: the plus (0x4F690) d10: 1–6 +1, 7–9 +2,
+  10 +3, into +0x32; type 7 then d5, 5 → record 0x31 (Javelin of Lightning). Words (+0x2F, +0x30, +0x31) and
+  mask, with P = 0x6E + plus (word 0x6F "+1"):
+
+  | Type | +0x2F | +0x30 | +0x31 | Other |
+  |---|---|---|---|---|
+  | 0x1D | P | 0x1C | 0x1D | mask 4 |
+  | 0x1F | P | 0x30 | 0x1F | mask 4 |
+  | 0x20–0x24 | P | 0x2F | type | mask 4 |
+  | 0x32 | 0x6B | 0x5A | 0x32 | plus := 4 ("Bracers of AC 6") |
+  | 0x3B | 0x6E + 1 | 0x31 | 0x2E | plus := 1, +0x33 := 1 ("Ring Of Prot +1") |
+  | any other | 0 | P | type | |
+
+  Weight +0x37 (count +0x39 0 unless stated): 75: 1, 0x11; 50: 6, 0x0E, 0x0F, 0x17, 0x19, 0x25, 0x1D;
+  125: 9; 100: 8, 0x10, 0x18; 150: 0x46, 0x1F; 175: 0x47; 10: 4, 0x32; 5 (count 20): 5; 60: 0x0A, 0x12;
+  80: 0x16; 20: 7; 40: 0x0D; 35: 0x13; 250: 0x14, 0x20; 400: 0x21; 300: 0x22; 350: 0x23; 450: 0x24;
+  1: 0x1C, 0x3B; any other 4 with count 20. Value +0x3A = plus × k: 50 for 5, 0x0C, 0x1E; 1250 0x25;
+  1500 0x20, 0x21, 0x32; 1750 0x22; 2000 0x23; 2500 0x24; 1000 any other.
+- **Scrolls**, 0x27 and 0x28: *n* = d3; +0x2F = 0x63 + *n* ("1 Spell" …), +0x30 = 0x27 "Scroll", +0x31 =
+  0x28 "Mage" (0x27) or 0x26 "Cler" (0x28); plus 1, weight 25, count 0. For each spell *i*: the level *L*
+  (magic-user d7, cleric d6), then the id from a list by level, DS:580C + offset + 1d*s*, into +0x3B + *i*;
+  the mask := 4 (magic-user) or 0 (cleric); the value += 150 × *L*.
+
+  | Kind | Level: sides, offset from DS:580C |
+  |---|---|
+  | cleric | 1: d8, 0x00; 2: d7, 0x0A; 3: d8, 0x14; 4: d6, 0x1E; 5: d6, 0x28; 6: d2, 0x32 |
+  | magic-user | 1: d10, 0x50; 2: d7, 0x5B; 3: d11, 0x66; 4: d10, 0x71; 5: d4, 0x7C; 6: d5, 0x87; 7: d3, 0x92 |
+
+  The lists' ids are informative (D5): every id of a level is reachable, magic-user level 7 is 115–117.
+- **Magic records**: 0x34 → 0x21, 0x35 → 0x09, 0x2F → d8 (1–2 0x01, 3–4 0x11, 5–6 0x19, 7–8 0x29); any other
+  type keeps no record (a blank item). The records are PoR's form at **DS:0A28** (word *m* at DS:0A28 + 2*m*;
+  7 records, *m* = 1 + 8*j*): +0x2F … +0x31 the low bytes of words *m* … *m* + 2, +0x32 = 1, **+0x33 = 0**
+  (PoR and CotAB 1), +0x37 word *m* + 3, +0x39 = 0, +0x3A word *m* + 4, +0x3C … +0x3E the low bytes of words
+  *m* + 5 … *m* + 7 (0x4FE41–0x4FEF8). *Informative*: 0x01 Extra Healing, 0x09 Giant Strength, 0x11
+  Healing, 0x19 Speed (potions), 0x21 Wand of Magic Missiles, 0x29 Potion of Invisibility, 0x31 Javelin
+  of Lightning.
+
 ## 4. `SAVGAM<x>.DAT`: 5 469 bytes
 
 Written by 0x421CB, read by 0x419DD in the same order (O, each BlockWrite and BlockRead):
@@ -250,5 +309,5 @@ above, as data like `games/imports.ts`).
   monster-class flags.
 - +0x101's meaning (tested against 3 and 4 with the paladin and ranger on import).
 - The area script's reload after loading a save (no code buffer in the file).
-- The monster loader, the NPC join, random treasure and the joining rules: not traced in this pass.
+- The monster loader, the NPC join and the joining rules: not traced in this pass.
 - `ITEMS`: its 16-byte records against CotAB's.

@@ -188,6 +188,7 @@ Addresses are DS offsets; "/ n" is the row size (decimal). "absent" is `at` = �
 | `templeNames` | DS:011A / 41 | DS:00E6 / 41 | Pascal strings in menu order, the last "Exit" |
 | `diseases` | DS:0113 | DS:00DF | byte, entries 1–6 at `at` + 1 … + 6: the disease effect types |
 | `randomItems` | DS:0970 | DS:082E | u16 words; random-item record *m* starts at word *m* (byte `at` + 2*m*) |
+| `scrollSpells` | absent | absent | bytes: a random scroll's spell ids by level, read at `at` + the profile's offset + a die (§14 of procedures.md, `scrollTable`); SotSB DS:580C |
 | `sky` | DS:0C26 | DS:0A8A | 16 bytes: sky colours (eight, twice) |
 | `itemWords` | DS:10BC / 21 | DS:1057 / 21 | Pascal strings, name word 1 at `at` (word *w* at `at` + (*w* − 1) · 21), 255 words |
 | `wallDx`, `wallDy` | DS:2736, DS:273F | DS:2696, DS:269F | 9 × s8: direction vectors 0 N … 7 NW, 8 the square itself |
@@ -304,7 +305,8 @@ profile.
 The character map `SOTSB_FIELDS` (439 bytes, spec/A-games/sotsb/records.md §2) adds `classCount`: the
 class levels a record holds, 8 in PoR and CotAB, 7 in SotSB (no monk), which every loop over the levels
 reads. `SOTSB_TABLES` follows spec/A-games/sotsb/tables.md §2; the frame, overland cursor and terrain
-tables, `randomItems` and `diseases` are absent until found. The save files (`SOTSB_FILES`) add
+tables are absent until found; `diseases` is at DS:1B3D (4 entries), `randomItems` at DS:0A28 and the new
+`scrollSpells` at DS:580C. The save files (`SOTSB_FILES`) add
 `itemRecord` (a character's item file in 67-byte records, the last four bytes SotSB's +0x3F chain pointer,
 written 0) and `codeSize` (0: no script code in the save; the area's record is loaded again).
 

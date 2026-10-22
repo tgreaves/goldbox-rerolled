@@ -6,7 +6,7 @@ import { COAB_RULES_TEXT } from './rulestext'
 import { SOTSB_EFFECTS } from './effectrules'
 import { SOTSB_SPELLS } from './spellrules'
 import { COAB_LANDMARKS } from './landmarkrules'
-import { COAB_TREASURE } from './treasure'
+import { SOTSB_TREASURE } from './treasure'
 import { SOTSB_SOUND } from './sound'
 import { SOTSB_TITLE } from './title'
 import { SOTSB_STARTUP } from './startup'
@@ -36,7 +36,7 @@ export const SOTSB: GameProfile = {
   tables: SOTSB_TABLES,
   ecl: SOTSB_ECL,
   saves: SOTSB_FILES,
-  // SotSB's rules (games/rules.ts SOTSB_RULES); CotAB's spells, effects, treasure and landmarks stand in where not yet read (?)
+  // SotSB's rules (games/rules.ts SOTSB_RULES); CotAB's spells, effects and landmarks stand in where not yet read (?)
   rules: SOTSB_RULES,
   journal: null,
   spellNotes: {},
@@ -48,7 +48,7 @@ export const SOTSB: GameProfile = {
   strings: SOTSB_STRINGS,
   menus: SOTSB_MENUS,
   commissions: false,
-  treasure: COAB_TREASURE,
+  treasure: SOTSB_TREASURE,
   spells: SOTSB_SPELLS,
   landmarks: COAB_LANDMARKS,
   debug: { jumps: [], finale: null },
