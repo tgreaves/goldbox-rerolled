@@ -438,10 +438,14 @@ Identify fee is profile data (`R.identifyFee`: SotSB 100, its line at 0x456C0). 
 SotSB's own (2026-10-22); spells 0, 9, 42, 83 and effect 80 re-read as mapped. Still open: the finder's
 first-entry pick for a holder of 0x5B (since settled: dead code, DS:8E23 is never written), the zone
 lifts' body cells (since done: `R.bodyCell`, SotSB's 0x1C/0x1E); no journal (since done, below); a
-browser play-through. *Since done (2026-10-22)*: the free temple (`R.templeHeal`, camp.md §4a); Join and
+browser play-through (since done, below). *Since done (2026-10-22)*: the free temple (`R.templeHeal`, camp.md §4a); Join and
 Halve of scroll bundles (`R.itemJoin`, records.md §3.2); the vault synced as `folder/VAULT`
 (accounts-and-sync.md §1.3); the `.WHO` loader's paladin uses (`R.addRefill`); SotSB's own Rules
-reference (`SOTSB_RULES_TEXT`); the main menu's Move, left out with View and Area (IMP-061).
+reference (`SOTSB_RULES_TEXT`); the main menu's Move, left out with View and Area (IMP-061); a
+browser play-through of the town, camp, a battle, training, save and load, a new game with CotAB
+imports (spec/VALIDATION.md §4), with its fixes: no camp or Alter prompt (`camp: []`, `alter: []`),
+Level left with Escape (`MenuOpts.cancel`), the shop's factor 16 as data, a PRINT going on along
+the line (`Io.print`'s `run`, for all games).
 
 ## Backlog
 

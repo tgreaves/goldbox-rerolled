@@ -113,6 +113,26 @@ Also run before every commit: `npx tsc --noEmit -p .`, `npm run build`, and
   values). Then: CotAB's camp menus (View, Magic, Rest, Alter, Fix) and its final battle on Quick,
   about 25 minutes of rounds without an end (the script refights it while ECL 0x7EC7 > 128). No page
   or console errors.
+- **Silver Blades in the browser** (2026-10-22, Playwright with headless Chrome, the GOG folder
+  imported). From save A: the title with its music, the party screen, the load, the opening's
+  treasure (Take all, the split offered, Confirm); walking, the area map, Look, Search; camp: View,
+  Magic (PAINE memorises Detect Magic, rests 4 h 15 min, casts it: "PAINE is Affected"), Rest, Alter,
+  Level, Fix; Debug jumps into the town (block 1, area 16): the shop's Buy prices, Sell, Identify at
+  100; the temple's free healing; the vault (Deposit, View, Take); the Hall of Training (a refusal,
+  "Not Enough Experience", then with experience from the debug editor "will become: a level 9
+  Paladin", "Congratulations...", no fee); a battle (block 2, area 68: the fighter's scene, then a
+  patrol while resting): Aim's targets with their chances, Exit, Quick to the end, "Continue Battle:"
+  with only the dying left, the treasure; save to slot B in camp ("Quit TO DOS" answered No), quit
+  to the party screen, load B. A new game from the party screen: the CotAB import (CotAB's
+  `CHRDATAn.SAV` given as `.GUY` files to Import: six characters, races renumbered), a party of three
+  from save A and three from Curse, Begin, the opening's treasure; the item sheet: Ready and Unready,
+  Halve ("Can't halve that") and Join ("There are no similar items to join with.") on a single scroll,
+  as records.md §3.2. No page or console errors. Found and fixed: "#camp" and "#alter" printed as
+  the camp and Alter prompts (SotSB has none); Level could not be left with Escape; the Debug jump
+  capped areas at 63 (SotSB has 68 and more); a text a script prints in pieces was split into a line
+  per piece (PRINT goes on along the line, host-contracts.md `print`); SotSB's shop factor 16 written
+  into its data (Buy 0x25385). Not reached: Cast in a battle (no spells memorised by those at hand)
+  and a real bundle of two scrolls (one scroll in the opening).
 
 ## 5. Clean-room runs
 
