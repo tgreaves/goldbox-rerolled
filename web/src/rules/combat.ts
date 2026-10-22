@@ -1618,15 +1618,16 @@ export class Battle implements FxHost {
           }
           return { f, x: f.x, y: f.y, cost: 0, ok: true }
         }
-        // up to 20 × the finder FUN_3aae_37e4(caster, range, 0, 1), which clears the target and sets its
-        // pick; a rejected pick stays the target
-        for (let i = 0; i < 20; i++) {
+        // up to R.casting.aiPick.tries × the finder FUN_3aae_37e4(caster, range, 0, 1) (PoR 20, CotAB
+        // 0x2C56C once), which clears the target and sets its pick; a rejected pick stays the target
+        const pick = R.casting.aiPick
+        for (let i = 0; i < pick.tries; i++) {
           const list = this.enemiesWithin(f, range)
           if (!list.length) { f.target = null; return null }
           const t = list[this.e.roll(1, list.length) - 1]
           f.target = t
-          if (s.area > 0 && this.fighters.some((o) => this.inPlay(o) && this.side(o) === this.side(f) && this.dist(t, o) <= s.area)) continue
-          if (this.helpless(t.c) && [51, 52, 53, 31].includes(s.effect)) continue
+          if (pick.areaCheck && s.area > 0 && this.fighters.some((o) => this.inPlay(o) && this.side(o) === this.side(f) && this.dist(t, o) <= s.area)) continue
+          if (this.helpless(t.c) && ids().helpless.includes(s.effect)) continue // the same table (DS:286B, CotAB DS:27CB)
           return { f: t, x: t.x, y: t.y, cost: 0, ok: true }
         }
         return null

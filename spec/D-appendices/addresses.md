@@ -1042,9 +1042,12 @@ when its table column or sentence names CotAB.
 | 0x2B7EE | coab/combat | coab/combat: The former class in battle |  |
 | 0x2C2F7 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x2C34E | coab/combat | coab/combat: Casting | `FUN_3aae_1bf8` |
-| 0x2C56C | coab/effects, B/vocabularies | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
+| 0x2C56C | coab/effects, B/procedures, B/vocabularies | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
+| 0x2C642 | coab/effects | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
 | 0x2C781 | coab/effects, coab/spells | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
 | 0x2C7EA | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers |  |
+| 0x2CA1B | coab/effects | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
+| 0x2CAB6 | coab/effects | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
 | 0x2CB5D | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x2CCBD | coab/combat, B/procedures | coab/combat: Casting | `FUN_3aae_2414` |
 | 0x2CDA1 | coab/ecl | coab/ecl: Engine entry points |  |

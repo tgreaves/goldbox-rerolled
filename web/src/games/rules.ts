@@ -279,10 +279,14 @@ export interface GameRules {
    * (PoR FUN_3334_0545 from 0; CotAB 0x236E4 from 1, so slot 0 is never chosen). `aiItemSpell`: the
    * computer's item choice (PoR FUN_3334_03e4, CotAB 0x2356A) judges an item's power item[0x3D] as the
    * spell id it gives, less `minus` above `above` (both 0x38, 0x17; CotAB's Use then casts the power as
-   * it stands, spec/A-games/coab/spells.md)
+   * it stands, spec/A-games/coab/spells.md). `aiPick`: the computer's pick of a hostile spell's target
+   * (PoR FUN_3aae_1e16, CotAB 0x2C56C): up to `tries` times the finder, a pick refused when the target is
+   * helpless and the spell's effect a helpless one, or (`areaCheck`) an area spell would reach the
+   * caster's own side
    */
   casting: {
     lostFrom: 'current' | 'target'; miscast: { effect: number; sides: number } | null; aiFirstSlot: number; aiItemSpell: { above: number; minus: number }
+    aiPick: { tries: number; areaCheck: boolean }
     /**
      * Who may cast a spell of each spell class, the filter of every player spell list (CotAB 0x43F8E,
      * called by the list builder 0x449E4; procedures.md §15.1): the ability `stat` must be above
@@ -374,7 +378,7 @@ export const POR_RULES: GameRules = {
   mapField: { cornerWallEnd: 0x04, finishing: true, furnish: null },
   clouds: { gas: { cell: 0x1e, immune: [0x1e, 0x1f, 0x20, 0x6f, 0x7d], probe: { immune: [0x20, 0x1e, 0x6f, 0x7d], turned: false, save: null }, roundEnd: true, apply: false }, kill: null }, // FUN_5216_0ae7
   // FUN_3aae_02f9 → FUN_10ba_148b; FUN_3334_0545; FUN_3334_03e4 (3334:04D6)
-  casting: { lostFrom: 'current', miscast: null, aiFirstSlot: 0, aiItemSpell: { above: 0x38, minus: 0x17 }, allowed: null, scrollReaders: null },
+  casting: { lostFrom: 'current', miscast: null, aiFirstSlot: 0, aiItemSpell: { above: 0x38, minus: 0x17 }, aiPick: { tries: 20, areaCheck: true }, allowed: null, scrollReaders: null }, // aiPick 0x2C9BC, 0x2CA1B
   thief: { dualClass: false, bonus: 0, clampWithBonus: false, gloves: null, gauntlets: null },
   saveCon: null,
   startEffects: { race: { 1: [0x5a, 0x61, 0x1a, 0x2f], 2: [0x6b], 3: [0x61, 0x12, 0x2f, 0x30], 4: [0x7c], 5: [0x5a, 0x61] }, cls: {} },
@@ -463,6 +467,7 @@ export const COAB_RULES: GameRules = {
   clouds: { gas: { cell: 0x1e, immune: [0x1f, 0x20, 0x6f, 0x7d], probe: { immune: [0x20, 0x1e, 0x6f, 0x7d, 0x81, 0x3f], turned: true, save: 0 }, roundEnd: false, apply: true }, kill: { cell: 0x1c, save: 0, bands: [[0, 4, null], [5, 5, -4], [6, 6, 0]], poison: 0x37, probe: { immune: [0x81, 0x6f, 0x85, 0x7d], turned: true, save: null, below: 7 } } }, // probe 0x238EE, 0x239BD
   // 0x2AAB4 / 0x4CC8A forget(target, spell); 0x45373 effect 0x4A, 1d2; 0x236E4 slots 1–0x53
   casting: { lostFrom: 'target', miscast: { effect: 0x4a, sides: 2 }, aiFirstSlot: 1, aiItemSpell: { above: 0x38, minus: 0x17 }, // 0x23651
+    aiPick: { tries: 1, areaCheck: false }, // 0x2C642: one try, no check of the caster's side
     // 0x43F8E: cleric spells WIS > 8 and a cleric or a paladin above 8; druid spells WIS > 8 and a ranger
     // above 6; magic-user spells INT > 8, and an armoured human in combat a ranger above 8 (or a former one, with a magic-user level)
     allowed: { 0: { stat: 2, above: 8, any: [[0, 0], [3, 8]], armoured: null }, 1: { stat: 2, above: 8, any: [[4, 6]], armoured: null },

@@ -122,7 +122,12 @@ INT; **0x0D** STR and INT.
 **Target hook** `*DS:72BA`: in combat 0x2C781 (`2a55:2231`, set at 0x21E41; `c2:34` outside), CotAB's
 `FUN_3aae_20c3(spell, ai, &ok)`: ok := 1, the list DS:744E (count) / DS:744F (pointers) emptied, DS:6FB7 := 0,
 the aim DS:7573/7574 := the caster's square; then by mode (spell byte 6 & 0xF) as PoR's, through the picker
-0x2C56C (PoR `1e16`, I: not compared line by line), with a mode 5 of its own; a failed pick sets ok := 0.
+0x2C56C (PoR `1e16`, compared, O), with a mode 5 of its own; a failed pick sets ok := 0. The picker is
+PoR's but for: the player's Aim gets a flag (spell ≠ 0x53) that only hides the "Target" label (Dimension
+Door; display); and for a hostile spell the computer makes **one** attempt (0x2C642; PoR 20) and has **no
+check of its own side** in an area spell's reach (PoR 0x2CA1B–0x2CAB6), keeping the helpless test with
+the spell's effect against DS:27CB[1..4]. The finder 0x2E394 is PoR's `FUN_3aae_37e4` instruction for
+instruction but for its relocations (O).
 The specials call it with ai = 1 for spell 0x33 (Lightning Bolt: range 4 + level, mode 8), 0x3D (range 6, one
 pick, effect 0x34, so helpless targets are refused) or 0x41 (range 12, one pick). The finder sets the
 target (combat record +0xA), which 83, 86, 126 and 131 read afterwards.
