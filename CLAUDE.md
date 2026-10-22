@@ -37,7 +37,10 @@ came first and is playable; Curse of the Azure Bonds (CotAB) is being added. The
    **Bug**, is in `spec/README.md`). Code comments cite the routine
    (`FUN_seg_off`, or image offsets for CotAB) and the spec section.
 4. **No game data in the repository.** Game files, their extracted art and text, and tool output that
-   contains them stay local. (The journal text is the exception: CC BY-SA, credited in the README.)
+   contains them stay local. (The journals are the exception: PoR's and CotAB's from CC BY-SA
+   transcriptions, credited in the README; and, by Tristan's decision of 2026-10-22, a game's printed
+   Adventurer's Journal may be transcribed from a scan, as it has no use without the game and the port
+   shows it only once the player has imported their own copy of that game.)
 5. **Reference code.** Simeon Pilgrim's C# CotAB rebuild has no licence: use it only to find where to
    look; confirm everything in the binaries; never copy its code or text.
 6. **Saves stay compatible.** Records stay in each game's native layout; the original's save files
