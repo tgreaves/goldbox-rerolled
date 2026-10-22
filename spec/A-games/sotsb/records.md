@@ -230,6 +230,56 @@ No band repeats the previous type and no roll is replaced (PoR's 48–49 and 45)
   Healing, 0x19 Speed (potions), 0x21 Wand of Magic Missiles, 0x29 Potion of Invisibility, 0x31 Javelin
   of Lightning.
 
+### 3.2 Join and Halve: bundles of scrolls (O, Join 0x44940, Halve 0x44638)
+
+The items menu's **Join** on a scroll (type 0x27 or 0x28) or a bundle (0x49) bundles; on anything else
+it joins stacks as PoR (spec/A-games/engine/town.md, "Items menu") with three differences.
+
+- **Bundling** (0x44973):
+  - **Refusals.** A target holding 10 or more is refused with "Bundles are limited to " 10 " scrolls."
+    (0x448CD, 0x448E5; the 10 printed by the number routine). Fewer than two scrolls or bundles below 10
+    in the list, the target counted, gives "There are no similar items to join with." (0x448EF).
+  - **A scroll target becomes a bundle of one** (0x44A44), its 67-byte copy chained at +0x3F (the copy's
+    +0x3F cleared). The target then gets:
+    - readied 0;
+    - words 0x27, 1, 0x4D;
+    - properties 0x3C–0x3E 0;
+    - count 1, type 0x49 and hidden bits 0.
+
+    Its value stays the scroll's.
+  - **A bundle target's chain end** is found by walking its count.
+  - **The scan** (0x44B32): while the target holds fewer than 10, each other item in list order joins:
+    - a bundle below 10 whose count fits whole (target + it ≤ 10) chains its scrolls;
+    - a scroll is copied onto the end (its +0x3F cleared);
+    - anything else is skipped.
+
+    A joined item's value (16-bit word +0x3A) and count are added. Word 2 and the weight (+0x37) become
+    the count. The item is destroyed.
+
+  A scroll target with no fitting partner stays a bundle of one (O).
+- **The name** (0x5308B, 0x53154): a bundle has no count before its name, and its word 2 prints as the
+  count. Word 1 takes the plural (0x53253), so "Bundle of 3 Scrolls".
+- **The weight** counted for carrying is weight × count (0x46061), so a bundle of *n* weighs *n*² (O,
+  a quirk kept).
+- **Regular Join's differences from PoR** (0x44CCA–0x44E9D):
+  - a target of count 0 is refused with "That cannot be joined with other items." (0x44918), where PoR's
+    absorbs from 0;
+  - the weight is not compared;
+  - a candidate of count 0 is not skipped.
+
+  The self-compares of 0x3C–0x3E and the test 0x3C < 2 are PoR's.
+- **Halve** (0x44638): *h* = count / 2; 0 gives "Can't halve that" (0x44627). A bundle (0x44666) splits:
+  - **The new item, after it** (unreadied), takes the first *h* scrolls. With *h* = 1 it is that scroll
+    itself (+0x3F cleared). Otherwise it is a bundle of *h* whose count, word 2 and weight are *h* and
+    whose value is the sum of its scrolls.
+  - **The old item keeps the rest**: count, word 2 and weight are the rest, and its value is lessened
+    by the scrolls taken. A bundle of 2 becomes its second scroll (0x4474D).
+
+  Any other item halves as PoR.
+
+*Port:* `R.itemJoin` (games/rules.ts), `join`, `halve` (rules/inventory.ts), the namer (data/items.ts);
+`test/bundle.test.ts`.
+
 ## 4. `SAVGAM<x>.DAT`: 5 469 bytes
 
 Written by 0x421CB, read by 0x419DD in the same order (O, each BlockWrite and BlockRead):

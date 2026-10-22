@@ -127,7 +127,10 @@ describe.skipIf(!have)('Silver Blades rules on its files', () => {
     const item = (type: number) => { const r = new Uint8Array(63); r[0x2e] = type; r[0x2f] = 1; r[0x31] = 2; r[0x39] = 10; return new Item(r) }
     const [w1, w2] = [t.words[0], t.words[1]]
     expect(t.name(item(0x1e), true)).toBe(`10 ${w2}s ${w1}`)
-    expect(t.name(item(0x49), true)).toBe(`10 ${w2} ${w1}s`)
+    // a bundle: no count before the name; its word 2, when set, prints as the count (0x5308B, 0x53154)
+    expect(t.name(item(0x49), true)).toBe(`${w2} ${w1}s`)
+    const bundle = item(0x49); bundle.raw[0x30] = 7
+    expect(t.name(bundle, true)).toBe(`${w2} 10 ${w1}s`)
   })
 
   it('the backstab needs the target within reach (0x33889)', () => {

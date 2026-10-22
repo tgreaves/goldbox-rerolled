@@ -148,6 +148,7 @@ export type StringId =
   | 'templeHowHelp' | 'templeCanSee' | 'templeIsCured' | 'templeHealed' | 'templeMustRaise' | 'templeStonemason'
   | 'templeNotHere' | 'templeNoNeed' | 'templeFullyHealed' | 'templeCannotRaise' | 'templeResurrected'
   | 'templeNoLongerPoisoned' | 'templeCurseLifted' | 'templeTurnedToFlesh'
+  | 'bundleLimited' | 'bundleScrolls' | 'joinNothing' | 'joinCannot'
   | 'cureAnyway'
   | 'willOnlyCost'
   | 'goldPieces'
@@ -923,6 +924,8 @@ export const SOTSB_STRINGS: Strings = {
   templeStonemason: 0x2278b, templeNotHere: 0x227ae, templeNoNeed: 0x227ba, templeFullyHealed: 0x227d1,
   templeCannotRaise: 0x22a87, templeResurrected: 0x22a98, templeNoLongerPoisoned: 0x22cec, templeCurseLifted: 0x22df2,
   templeTurnedToFlesh: 0x22ef8,
+  // Join's lines (0x44940): "Bundles are limited to " n " scrolls.", no candidates, a target of count 0
+  bundleLimited: 0x448cd, bundleScrolls: 0x448e5, joinNothing: 0x448ef, joinCannot: 0x44918,
   scribingSpell: 0x36f34, identifyFor: 0x456c0, takeWillYou: 0x4f369,
   foundTreasure: [0xe130, 0xe146], memorizeThese: [0x479a0, 0xe1e8], memorizeThese2: [0x479a0, 0xe1e8],
   scribeThese: [0x479a9, 0xe1e8], scribeThese2: [0x479a9, 0xe1e8],

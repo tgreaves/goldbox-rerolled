@@ -247,7 +247,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       const m = trade({ c, items }, { c: to, items: e.itemsOf(to) }, it, t)
       say(`  ${what} traded to ${nameOf(to)}${m ? ` (${m})` : ''}`)
     } else if (r < 0.88) { const m = halve(c, items, it, t); say(`  ${what} halved${m ? ` (${m})` : ''}`) }
-    else if (r < 0.96) say(`  ${what} joined with ${joinStacks(c, items, it, t)} others`)
+    else if (r < 0.96) say(`  ${what} joined with ${joinStacks(c, items, it, t).merged} others`)
     else { const m = drop(c, items, it, t); say(`  ${what} dropped${m ? ` (${m})` : ''}`) }
   }
 

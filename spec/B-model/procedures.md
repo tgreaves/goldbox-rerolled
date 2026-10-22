@@ -380,6 +380,20 @@ at `variable`] bits (negative: right), as a 16-bit word; a factor not in `shifts
 Parameter `identifyFee`: what the shop's Identify charges in gold: PoR 200 (`FUN_4894_1f52`), CotAB 200
 (0x3FF59), SotSB 100 (its line "For 100 gold pieces…", 0x456C0).
 
+Parameter `itemJoin` `{ weight, refuseSingle, bundle }`: the items menu's Join.
+- `weight`: candidates must have the target's weight and a count above 0.
+- `refuseSingle`: a target of count 0 is refused ("That cannot be joined with other items").
+- `bundle` `{ of, limit, words }` or null: Join on a scroll of the types `of`, or on a bundle (the save
+  layout's `bundleType`), joins the scrolls into one bundle of at most `limit`, with name words 1 and 3
+  `words`. Halve splits a bundle's scrolls.
+
+The procedure is [sotsb/records.md §3.2](../A-games/sotsb/records.md#32-join-and-halve-bundles-of-scrolls-o-join-0x44940-halve-0x44638).
+
+| Game | Values |
+|---|---|
+| PoR (`FUN_4894_189d`), CotAB (as PoR, I) | weight true, refuseSingle false, bundle null |
+| SotSB (0x44940) | weight false, refuseSingle true, bundle of 0x27, 0x28, limit 10, words 0x27, 0x4D |
+
 ## 10. Class abilities
 
 **Original:** CotAB's paladin, View menu 0x3D530 + 0x35F0 … ([coab/records.md §10](../A-games/coab/records.md#10-creation-effects-and-paladin-abilities-o)).

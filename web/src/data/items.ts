@@ -80,11 +80,13 @@ export class ItemTables {
     const pluralHere = (n: number) => (1 << (n - 1)) === mask || (n === 1 && mask > 4 && it.type !== oil) ||
       (n === 1 && firstWord.includes(it.type)) || (n === 2 && !(mask & 1)) || (n === 3 && it.type === oil) ||
       ((at === null || n === at) && ammo.includes(it.type) && word[3] !== except)
-    let s = count > 0 ? `${count} ` : ''
+    // a bundle (games/files.ts bundleType): no count before the name, its word 2 the count (SotSB 0x5308B, 0x53154)
+    const bundle = it.type === game().saves.bundleType
+    let s = count > 0 && !bundle ? `${count} ` : ''
     let plural = false
     for (let n = 3; n >= 1; n--) {
       if (!(mask & (1 << (n - 1)))) continue
-      s += this.words[word[n] - 1] ?? `#${word[n]}`
+      s += bundle && n === 2 ? String(count) : this.words[word[n] - 1] ?? `#${word[n]}`
       if (count >= 2 && !plural && pluralHere(n)) { s += 's'; plural = true }
       s += ' '
     }

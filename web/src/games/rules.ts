@@ -198,6 +198,15 @@ export interface GameRules {
   shopPrice: { variable: number; shifts: Record<number, number> } | null
   /** what the shop's Identify charges, in gold (PoR FUN_4894_1f52, CotAB 0x3FF59: 200; SotSB 100, its line at 0x456C0) */
   identifyFee: number
+  /**
+   * The items menu's Join (spec/A-games/engine/town.md "Items menu"; SotSB spec/A-games/sotsb/records.md §3.2):
+   * `weight`: a candidate's weight must match and its count be above 0 (PoR FUN_4894_189d; SotSB 0x44940
+   * compares neither); `refuseSingle`: a target of count 0 is refused ("That cannot be joined with other
+   * items", SotSB 0x44CCA) where PoR's absorbs from 0; `bundle`: scrolls of the types `of`, and bundles
+   * (games/files.ts `bundleType`) below `limit`, are joined into one bundle of at most `limit` scrolls whose
+   * name words 1 and 3 are `words` (word 2, its count) (SotSB 0x44973); null: none
+   */
+  itemJoin: { weight: boolean; refuseSingle: boolean; bundle: { of: number[]; limit: number; words: [number, number] } | null }
   itemTypes: {
     arrows: number; quarrels: number; holyWater: number | null; oil: number | null; elfBonus: number[]
     /** the name word (item +0x2F) of a Bag of Holding, whose readying lightens the load by 5 000; null: none does */
@@ -440,6 +449,7 @@ export const POR_RULES: GameRules = {
   // 0xD1B–0xD48, the flight FUN_3aae_26b0 (0x2D190)
   shopPrice: null,
   identifyFee: 200,
+  itemJoin: { weight: true, refuseSingle: false, bundle: null },
   itemTypes: {
     arrows: 0x49, quarrels: 0x1c, holyWater: 0x55, oil: 0x56, elfBonus: [36, 37, 41, 42, 43, 44],
     bagOfHolding: 0xba, // 0x18DA
@@ -530,6 +540,7 @@ export const COAB_RULES: GameRules = {
   // flight 0x2D141: the Dart of Hornets Nest (100) flies as an arrow, the Staff Sling (101) and Spine (98) as a stone
   shopPrice: { variable: 0x6e6d, shifts: { 1: -4, 2: -3, 4: -2, 8: -1, 32: 1, 64: 2, 128: 3 } }, // B + 0x6DA (ECL 0x7F6D)
   identifyFee: 200,
+  itemJoin: { weight: true, refuseSingle: false, bundle: null },
   itemTypes: {
     arrows: 0x49, quarrels: 0x1c, holyWater: 0x55, oil: 0x56, elfBonus: [36, 37, 41, 42, 43, 44],
     // the bag's flag is cleared (0x4DC9E) and never set, so the − 5 000 at 0x4DFEE never runs
@@ -606,6 +617,8 @@ export const SOTSB_RULES: GameRules = {
   addRefill: { cls: 3, value: 1 }, // 0x40FF4: a paladin (or a former one, 0x164:0x57 the former-levels test, I) gets its Cure Disease use
   templeHeal: { mode: 'free', raise: { notRaces: [1], removes: [0x37], fighters: [2, 3, 4] } },
   identifyFee: 100, // "For 100 gold pieces I'll identify your …" (0x456C0)
+  // Join 0x44940: scrolls into a "Bundle of n Scrolls" (words 0x27, n, 0x4D) of at most 10 (0x44976); no weight compared (0x44D32–0x44DFD)
+  itemJoin: { weight: false, refuseSingle: true, bundle: { of: [0x27, 0x28], limit: 10, words: [0x27, 0x4d] } },
   // 117 records (DS:449D), names at DS:34AE; spell classes 0 cleric, 1 druid, 3 magic-user, 4 item (the
   // caster-level routine 0x559E6 and the list filter 0x477F4); levels to 7
   spells: { records: 117, named: 117, book: 117, levels: 7, cleric: 0, druid: 1, magicUser: 3, item: 4, itemSpell: { mask: 0x7f, above: 0xff, minus: 0 } /* 0x44F4E: +0x3D & 0x7F as it stands, as CotAB's */ },

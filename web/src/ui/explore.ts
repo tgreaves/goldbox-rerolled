@@ -1611,8 +1611,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         else { it.hidden = 0; again({ selected: keep, message: `${msg('looksLike')}${t.name(it)}` }) }
       } else if (a === 'halve') again({ selected: keep, message: halve(node, items, it, t) })
       else if (a === 'join') {
-        const n = join(node, items, it, t)
-        again({ selected: items.indexOf(it), message: n ? '' : 'Nothing to join.' })
+        const j = join(node, items, it, t)
+        again({ selected: items.indexOf(it), message: j.message || (j.merged ? '' : 'Nothing to join.') })
       } else again({ selected: keep })
     }))
     dialog.querySelectorAll<HTMLButtonElement>('.money-actions [data-m]').forEach((b) => b.addEventListener('click', () => {
