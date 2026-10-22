@@ -91,9 +91,12 @@ ranger 88 + 2(…), magic-user 44 + (…), thief 60 + 2(…)) (O for the arithme
 
 CotAB's filter with SotSB's spell classes: cleric spells WIS > 8 and a cleric level or a paladin above
 8 (or the former ones); druid spells WIS > 8 and a ranger above 6; magic-user spells (class 3) INT > 8
-and a magic-user level, an armoured human in battle only as CotAB's; **new**: in the cast list (mode 0)
-a **thief above level 10**, or a former thief above 10 when it counts, takes magic-user spells
-(0x47959–0x4797C); item spells (class 4) never.
+and a magic-user level or a ranger above 8 (current, or former when it counts; 0x478DA–0x47955), a human
+in body armour in battle keeping only the ranger term (0x47910); **new**: in the cast lists (the filter's
+flag) a **thief above level 10**, or a former thief above 10 when it counts, takes magic-user spells,
+armour or not (0x47959–0x4797C); item spells (class 4) never. In the port: `casting.allowed` with
+`castList` [thief, 10], set by the cast lists (camp, the sheet, battle; **I** for which lists the original
+flags).
 
 ## 7. Training, thief skills, the import
 
@@ -139,7 +142,7 @@ levelLimits: [ /* CotAB's rows, races renumbered: elf 1, half-elf 2, dwarf 3, gn
 seven spell levels and the classes 0, 1, 3, 4 (`SOTSB_RULES`, [B-model/procedures.md §1, §3, §7](../../B-model/procedures.md#1-spell-slots)).
 The start effects by race and class (0x39BAF, 0x39669) and the paladin's effects 0x6D and 0x6E (0x46597,
 0x4673A) are in the profile (**O**); training is free and the thief skills take no item and no +7
-(`trainingCost` 0, `thief`). Not done: the thief above 10 in the cast list (§6, **I**). Tests:
+(`trainingCost` 0, `thief`). Tests:
 `test/sotsbrules.test.ts`.
 
 - **Starting money**: a per-class amount (2d6 gold for a thief, nothing otherwise) where `startMoney`

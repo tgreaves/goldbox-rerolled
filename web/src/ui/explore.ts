@@ -1442,7 +1442,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     function spellsPanel(): string {
       const st = engine.spells
       if (!st || opts.combat) return ''
-      const ready = [...new Set(memorised(node).filter((v) => v > 0 && v < 0x80))].map((id) => st.get(id)!).filter((s) => s && mayCast(node, s))
+      const ready = [...new Set(memorised(node).filter((v) => v > 0 && v < 0x80))].map((id) => st.get(id)!).filter((s) => s && mayCast(node, s, false, true))
       if (!ready.length) return ''
       if (opts.castOn !== undefined) {
         const s = st.get(opts.castOn)!

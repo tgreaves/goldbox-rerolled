@@ -10,6 +10,7 @@ import { COAB, POR, SOTSB, setGame, wants } from '../src/games/profile'
 import { F } from '../src/games/fields'
 import { R } from '../src/games/rules'
 import { Tables, rollAbilities, thiefSkills } from '../src/rules/chargen'
+import { mayCast } from '../src/rules/magic'
 import { unexepack } from '../src/data/exepack'
 import { derive } from '../src/rules/training'
 import { fix, memorised } from '../src/rules/camp'
@@ -201,5 +202,29 @@ describe.skipIf(!have)('Silver Blades training and thief skills', () => {
     R.thief = { ...keep, bonus: 7 }
     try { thiefSkills(t, c) } finally { R.thief = keep }
     expect(Array.from({ length: 8 }, (_, k) => c[F.thief + k] - skills[k])).toEqual(Array(8).fill(7))
+  })
+})
+
+describe('Silver Blades: a thief above level 10 in the cast lists (0x47959)', () => {
+  afterAll(() => setGame(POR))
+  it('casts magic-user spells from the cast lists only, with INT above 8', () => {
+    setGame(SOTSB)
+    const c = new Uint8Array(F.size)
+    c[F.levels + 6] = 11; c[F.stat[1]] = 12
+    const mu = { cls: R.spells.magicUser }
+    expect([mayCast(c, mu, false, true), mayCast(c, mu)]).toEqual([true, false])
+    c[F.levels + 6] = 10
+    expect(mayCast(c, mu, false, true)).toBe(false)
+    c[F.levels + 6] = 11; c[F.stat[1]] = 8
+    expect(mayCast(c, mu, false, true)).toBe(false)
+    const m = new Uint8Array(F.size) // a magic-user casts; a human one in body armour in combat not, a ranger above 8 yes
+    m[F.levels + 5] = 3; m[F.stat[1]] = 12; m[F.race] = 6
+    expect([mayCast(m, mu), mayCast(m, mu, true)]).toEqual([true, false])
+    m[F.levels + 4] = 9
+    expect(mayCast(m, mu, true)).toBe(true)
+    setGame(COAB)
+    const t = new Uint8Array(F.size)
+    t[F.levels + 6] = 11; t[F.stat[1]] = 12
+    expect(mayCast(t, { cls: R.spells.magicUser }, false, true)).toBe(mayCast(t, { cls: R.spells.magicUser })) // CotAB has no such term
   })
 })

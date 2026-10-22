@@ -26,9 +26,10 @@ export function casterLevel(c: Uint8Array, s: Spell, fromItem = false): number {
 
 /**
  * Whether `c` may cast spell `s` now (R.casting.allowed; CotAB 0x43F8E): the filter of the cast,
- * memorise and learn lists. `armoured`: in combat with body armour readied.
+ * memorise and learn lists. `armoured`: in combat with body armour readied; `castList`: for a list of
+ * spells to cast (the filter's flag, SotSB 0x47959; I for which lists set it: the cast lists).
  */
-export function mayCast(c: Uint8Array, s: Pick<Spell, 'cls'>, armoured = false): boolean {
+export function mayCast(c: Uint8Array, s: Pick<Spell, 'cls'>, armoured = false, castList = false): boolean {
   const all = R.casting.allowed
   if (!all) return true
   const rule = all[s.cls]
@@ -37,6 +38,8 @@ export function mayCast(c: Uint8Array, s: Pick<Spell, 'cls'>, armoured = false):
   const s8 = (v: number) => (v << 24) >> 24
   const f = formerLevelsCount(c)
   const lev = (k: number) => s8(c[F.levels + k]), prev = (k: number) => (F.prevLevels >= 0 ? s8(c[F.prevLevels + k]) : 0)
+  const cl = rule.castList
+  if (castList && cl && (lev(cl[0]) > cl[1] || (f && prev(cl[0]) > cl[1]))) return true
   const ar = rule.armoured
   if (ar && armoured && c[F.race] === ar.race) {
     if (ar.any.some(([k, above]) => lev(k) > above)) return true

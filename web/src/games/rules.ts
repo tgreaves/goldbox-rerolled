@@ -345,10 +345,12 @@ export interface GameRules {
      * `above`; then a level term [class, above] passes with the class's level above it, or the former
      * level when former levels count; `any` null: no class test. `armoured`: in combat, for a character
      * of `race` with body armour readied, only these terms count, a former one only together with a
-     * level, current or former, in class `formerWith`. A spell class without an entry: never.
+     * level, current or former, in class `formerWith`. `castList` [class, above]: in the cast lists only
+     * (the filter's flag, SotSB 0x47959), a level of that class above it, or the former one when former
+     * levels count, also lets the spell in, armour or not. A spell class without an entry: never.
      * Null: no filter (PoR's lists, FUN_4894_299c, take every memorised or known spell).
      */
-    allowed: Record<number, { stat: number; above: number; any: [number, number][] | null; armoured: { race: number; any: [number, number][]; formerWith: number } | null }> | null
+    allowed: Record<number, { stat: number; above: number; any: [number, number][] | null; armoured: { race: number; any: [number, number][]; formerWith: number } | null; castList?: [number, number] }> | null
     /**
      * Who may read a scroll (CotAB 0x3FADB in the item-use routine 0x3F9A8): one of `classes` as its
      * current or former class, or with a level in one; else a level in `thief.cls` above
@@ -648,7 +650,9 @@ export const SOTSB_RULES: GameRules = {
     miscast: { effect: 0x44, sides: null }, // 0x48D64: no die, silently nothing
     // 0x477F4: CotAB's filter keyed by SotSB's classes (the thief above 10 in the cast list, 0x47959, is not expressed: I)
     allowed: { 0: { stat: 2, above: 8, any: [[0, 0], [3, 8]], armoured: null }, 1: { stat: 2, above: 8, any: [[4, 6]], armoured: null },
-      3: { stat: 1, above: 8, any: null, armoured: { race: 6, any: [[4, 8]], formerWith: 5 } } },
+      // 0x478DA: INT above 8, then a magic-user level (or the former one) unless a human in body armour in
+      // combat (0x47910), or a ranger above 8 (or the former), or in the cast lists a thief above 10 (0x47959)
+      3: { stat: 1, above: 8, any: [[5, 0], [4, 8]], armoured: { race: 6, any: [[4, 8]], formerWith: 4 }, castList: [6, 10] } },
   },
   // 0x39BAF (by race, SotSB's numbers), 0x39669 (paladin, ranger, cleric/ranger)
   startEffects: { race: { 1: [0x5f], 2: [0x12], 3: [0x2f, 0x1a, 0x61], 4: [0x30, 0x07, 0x61], 5: [0x61] }, cls: { 3: [8], 4: [0x69], 10: [0x69] } },

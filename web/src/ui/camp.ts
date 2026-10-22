@@ -105,7 +105,7 @@ export async function cast(ui: CampUi) {
     const c = e.cur
     const ready = memorised(c).filter((v) => v > 0 && v < 0x80)
     if (!ready.length) { ui.print(`${nameOf(c)} ${msg('noSpells')}`, false); return }
-    const spells = ready.map((id) => st.get(id)!).filter((s) => s && mayCast(c, s)) // CotAB 0x43F8E
+    const spells = ready.map((id) => st.get(id)!).filter((s) => s && mayCast(c, s, false, true)) // CotAB 0x43F8E (SotSB's cast-list flag)
     const i = await list(ui, spells.map((s) => s.name.toUpperCase()), { prompt: 'Spells in Memory:', notes: spells.map(spellText) })
     if (i >= spells.length) return
     const s = spells[i]

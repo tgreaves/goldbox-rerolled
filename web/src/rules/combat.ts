@@ -1154,7 +1154,7 @@ export class Battle implements FxHost {
     // CotAB's list takes only what the caster may cast (0x43F8E: with body armour, in battle)
     const armoured = this.e.itemsOf(f.c).some((it) => it.ready && this.e.items?.baseOf(it)?.slot === 2)
     const ready = Array.from({ length: F.memorisedCount }, (_, k) => f.c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
-      .filter((id) => { const s = st.get(id); return !s || mayCast(f.c, s, armoured) })
+      .filter((id) => { const s = st.get(id); return !s || mayCast(f.c, s, armoured, true) })
     if (!ready.length) { this.print(`${name(f.c)} ${msg('noSpells')}`); return }
     const i = await this.ui.pick('Cast:', ready.map((id) => st.get(id)?.name ?? `#${id}`), ready.map((id) => { const s = st.get(id); return s ? spellText(s) : '' }))
     if (i < 0) return
