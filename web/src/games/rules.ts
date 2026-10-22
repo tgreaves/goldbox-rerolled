@@ -134,6 +134,14 @@ export interface GameRules {
    *  their prices (immediates in the game's code, not a table) */
   /** the temple's services in menu order; `spell`: the service runs that spell's handler on the character (Remove Curse: PoR FUN_4e53_2540, CotAB 0x47575) */
   temple: { kind: TempleService; gp: number; spell?: number }[]
+  /**
+   * How the temple's Heal works: `priced` (PoR FUN_2d14_09d7, CotAB 0x1D1C1): "cure anyway?" when not
+   * needed, the price asked and paid, then the cure; `free` (SotSB 0x22FA5): no question and no price, each
+   * service cures or says why not in the game's own lines (spec/A-games/sotsb/camp.md, "The temple"). For a
+   * free temple's Raise Dead: `notRaces` refused ("cannot be raised"), `removes` the effects taken off
+   * first, `fighters` the classes whose levels weigh by CON (rules/camp.ts raiseDeadHp)
+   */
+  templeHeal: { mode: 'priced' } | { mode: 'free'; raise: { notRaces: number[]; removes: number[]; fighters: number[] } }
   /** caster level by spell class: the best of its terms (a class's level, plus its former dual-class
    *  level when that counts, minus `minus`; never below 0); item-only spells cast at 12 and anything
    *  cast from an item at 6 (PoR FUN_10ba_26c2; CotAB 0x4F8BF, spec/A-games/coab/tables.md §3.7) */
@@ -462,6 +470,7 @@ export const POR_RULES: GameRules = {
   join: { pcs: 6, members: 8, maxRangers: null, evil: [], paladins: false },
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
     { kind: 'ccw', gp: 600 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 }, { kind: 'curse', gp: 3500, spell: 43 }, { kind: 'stone', gp: 2000 }],
+  templeHeal: { mode: 'priced' },
 }
 
 export const COAB_RULES: GameRules = {
@@ -573,6 +582,7 @@ export const COAB_RULES: GameRules = {
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
     { kind: 'ccw', gp: 600 }, { kind: 'heal', gp: 5000 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 },
     { kind: 'curse', gp: 3500, spell: 43 }, { kind: 'stone', gp: 2000 }],
+  templeHeal: { mode: 'priced' },
 }
 
 /**
@@ -583,6 +593,9 @@ export const COAB_RULES: GameRules = {
  */
 export const SOTSB_RULES: GameRules = {
   ...COAB_RULES,
+  // 0x22FA5: free; Raise Dead (0x22AA7) refuses elves (race 1), takes off poison (0x37) only, fighters,
+  // paladins and rangers weigh by CON, the current CON only lowered
+  templeHeal: { mode: 'free', raise: { notRaces: [1], removes: [0x37], fighters: [2, 3, 4] } },
   identifyFee: 100, // "For 100 gold pieces I'll identify your …" (0x456C0)
   // 117 records (DS:449D), names at DS:34AE; spell classes 0 cleric, 1 druid, 3 magic-user, 4 item (the
   // caster-level routine 0x559E6 and the list filter 0x477F4); levels to 7

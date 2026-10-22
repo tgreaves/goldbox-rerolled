@@ -358,6 +358,12 @@ raise 5 500, curse 3 500, stone 2 000. CotAB: the same with heal 5 000 after ccw
 `effects.ids` (`blind`, `poisoned` with `slowPoison` and `poisonTick`, `cursed`, Raise Dead's
 `animated` and `poisoned`; CotAB's Heal also `stat.feebleminded`), the diseases START.EXE's table.
 
+Parameter `templeHeal`: `{ mode: 'priced' }` (PoR, CotAB: the above) or `{ mode: 'free', raise: {
+notRaces, removes, fighters } }` (SotSB 0x22FA5): no question and no price; each service cures or prints
+why not in the game's own lines ([sotsb/camp.md §4a](../A-games/sotsb/camp.md#4a-the-temple-o-0x22fa5)); its
+Raise Dead refuses `notRaces` (SotSB [1], elves), takes off `removes` ([0x37]) and weighs `fighters`
+([2, 3, 4]) by CON, lowering the current CON only.
+
 ### 9.1 Shop prices
 
 **Original:** PoR's shop charges an item's value ([engine/town.md](../A-games/engine/town.md)); CotAB's

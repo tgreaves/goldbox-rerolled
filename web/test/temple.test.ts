@@ -3,7 +3,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { unexepack } from '../src/data/exepack'
-import { COAB, POR, setGame } from '../src/games/profile'
+import { COAB, POR, SOTSB, setGame } from '../src/games/profile'
 import { R } from '../src/games/rules'
 import { T } from '../src/games/tables'
 import { F } from '../src/games/fields'
@@ -100,5 +100,57 @@ describe('temple cures go through the heal routine', () => {
     expect(c[F.maxHp] - c[F.hp]).toBeLessThanOrEqual(4)
     const dead = await cure(COAB, process.env.COAB!, 'CURE CRITICAL WOUNDS', (c) => { c[F.status] = 6; c[F.hp] = 0; c[F.inPlay] = 0 })
     expect([dead[F.status], dead[F.hp]]).toEqual([6, 0])
+  })
+})
+
+/** SotSB's free temple (0x22FA5): the shipped party's first member, service `kind`; its lines and the money. */
+async function freeCure(kind: string, setup: (c: Uint8Array, e: Engine) => void) {
+  setGame(SOTSB)
+  const files = loadFiles(SOTSB, process.env.SOTSB!)
+  const io = { print: () => {}, menu: async () => 0 } as unknown as Io
+  const dat = files.get('SAVGAMA.DAT')!
+  const stems = parseSave(dat).party
+  const e = new Engine(files, io, 1)
+  e.loadSave(dat, stems.map((st) => files.get(`${st}.SAV`)!))
+  stems.forEach((st, i) => e.attachFiles(i, files.get(`${st}.${SOTSB.saves.items}`), files.get(`${st}.${SOTSB.saves.effects}`)))
+  const c = e.party()[0]
+  setup(c, e)
+  const money = [...c.subarray(F.money, F.money + 14)]
+  const said: string[] = []
+  const at = R.temple.findIndex((x) => x.kind === kind)
+  let step = 0
+  const ui: TownUi = {
+    engine: e, print: (t: string) => { if (t) said.push(t) }, inputNumber: async () => 0, view: async () => {}, refresh: () => {},
+    // the temple menu: Heal, then the service, then Exit at both
+    menu: async (items) => { step++; return step === 1 ? items.findIndex((x) => /^HEAL/i.test(x)) : step === 2 ? at : items.length - 1 },
+  }
+  await temple(ui)
+  return { c, said: said.filter((l) => !/gp in coins/.test(l)), paid: money.some((v, i) => c[F.money + i] !== v), e }
+}
+
+describe.skipIf(!process.env.SOTSB || !existsSync(process.env.SOTSB))('Secret of the Silver Blades: the free temple', () => {
+  afterAll(() => setGame(POR))
+  it('Cure Blindness: "can see!" or "is not blind", no price asked or paid (0x225F6)', async () => {
+    const blind = await freeCure('blind', (c, e) => { e.effectsOf(c).push({ type: 0x21, duration: 0, power: 0, flag: 0 } as never) })
+    expect(blind.said.at(-1)).toMatch(/can see!$/)
+    expect(blind.e.effectsOf(blind.c).some((x) => x.type === 0x21)).toBe(false)
+    expect(blind.paid).toBe(false)
+    expect((await freeCure('blind', () => {})).said.at(-1)).toMatch(/is not blind$/)
+  })
+  it('the cures: full HP needs nothing, the dead must be raised, elves cannot be raised (0x227E1, 0x22AA7)', async () => {
+    expect((await freeCure('clw', (c) => { c[F.hp] = c[F.maxHp] })).said.at(-1)).toMatch(/has no need of healing$/)
+    const dead = await freeCure('csw', (c) => { c[F.status] = 6; c[F.hp] = 0; c[F.inPlay] = 0 })
+    expect(dead.said.at(-1)).toMatch(/must be raised from dead$/)
+    expect(dead.c[F.status]).toBe(6)
+    const elf = await freeCure('raise', (c) => { c[F.status] = 6; c[F.hp] = 0; c[F.inPlay] = 0; c[F.race] = 1 })
+    expect(elf.said.at(-1)).toMatch(/cannot be raised$/)
+    const human = await freeCure('raise', (c) => { c[F.status] = 6; c[F.hp] = 0; c[F.inPlay] = 0; c[F.race] = 6 })
+    expect(human.said.at(-1)).toMatch(/is ressurected$/)
+    expect([human.c[F.status], human.c[F.inPlay], human.c[F.hp]]).toEqual([0, 1, 1])
+  })
+  it('Stone to Flesh and Neutralize Poison (0x22F0B, 0x22D12)', async () => {
+    const st = await freeCure('stone', (c) => { c[F.status] = 7; c[F.hp] = 0; c[F.inPlay] = 0 })
+    expect(st.said.at(-1)).toMatch(/is turned to flesh$/)
+    expect((await freeCure('poison', () => {})).said.at(-1)).toMatch(/is not poisoned$/)
   })
 })

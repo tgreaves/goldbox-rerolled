@@ -145,6 +145,9 @@ export type StringId =
   | 'notDead'
   | 'notCursed'
   | 'notStoned'
+  | 'templeHowHelp' | 'templeCanSee' | 'templeIsCured' | 'templeHealed' | 'templeMustRaise' | 'templeStonemason'
+  | 'templeNotHere' | 'templeNoNeed' | 'templeFullyHealed' | 'templeCannotRaise' | 'templeResurrected'
+  | 'templeNoLongerPoisoned' | 'templeCurseLifted' | 'templeTurnedToFlesh'
   | 'cureAnyway'
   | 'willOnlyCost'
   | 'goldPieces'
@@ -915,6 +918,11 @@ export const SOTSB_STRINGS: Strings = {
   // two built from pieces, as their routines print them: the treasure line (DS) and Memorize/Scribe + " these spells?"
   charmUnaffected: 0x464c1, isCured: 0xdf62, notBlind: 0x225e0, notDiseased: 0x22673,
   notPoisoned: 0x22d02, notDead: 0x22a77, notCursed: 0x22e18, notStoned: 0x22ee7, templeNoMoney: 0x25297,
+  // the free temple's lines (0x225F6–0x22F82; "is cured" is DS:0x142)
+  templeHowHelp: 0x22f83, templeCanSee: 0x225ed, templeIsCured: 0xdf62, templeHealed: 0x22768, templeMustRaise: 0x22772,
+  templeStonemason: 0x2278b, templeNotHere: 0x227ae, templeNoNeed: 0x227ba, templeFullyHealed: 0x227d1,
+  templeCannotRaise: 0x22a87, templeResurrected: 0x22a98, templeNoLongerPoisoned: 0x22cec, templeCurseLifted: 0x22df2,
+  templeTurnedToFlesh: 0x22ef8,
   scribingSpell: 0x36f34, identifyFor: 0x456c0, takeWillYou: 0x4f369,
   foundTreasure: [0xe130, 0xe146], memorizeThese: [0x479a0, 0xe1e8], memorizeThese2: [0x479a0, 0xe1e8],
   scribeThese: [0x479a9, 0xe1e8], scribeThese2: [0x479a9, 0xe1e8],

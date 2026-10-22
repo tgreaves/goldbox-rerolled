@@ -1,7 +1,7 @@
 // Shop, temple and treasure screens (spec/A-games/engine/town.md), run when a script's COMBAT finds the shop or
 // temple flag set, or treasure without monsters. They use the exploration screen's menus and text.
 import { game } from '../games/profile'
-import { R } from '../games/rules'
+import { R, type TempleService } from '../games/rules'
 import { T } from '../games/tables'
 import type { Engine } from '../vm/engine'
 import { parseCharacter } from '../data/character'
@@ -14,7 +14,9 @@ import { heal as healChar, raiseDeadHp } from '../rules/camp'
 
 const memorisedReady = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
 import { appraiseGem, appraiseJewel, COINS, coinPrompt, coinValue, keepAsItem, moneyOf, pay, poolAll, priceStock, receive, share, shopPrice, take, takeOne } from '../rules/money'
-import { msg, menu, ask, type MenuOpts } from '../games/strings'
+import { msg, hasMsg, menu, ask, type MenuOpts } from '../games/strings'
+import { effectiveStat } from '../rules/effectkinds'
+import { WorldHost } from '../rules/worldfx'
 import { yes, list } from './camp'
 
 /** A leave question with its routine's own "~Yes ~No" (the ECL menu rule, strings.md §4.1). */
@@ -189,9 +191,11 @@ async function heal(ui: TownUi) {
   const cures = services(e.startImage!), DISEASES = diseases(e.startImage!), I = game().effects.ids
   // the list's line is the game's "Heal Exit": a cure is chosen from the list (Heal or Enter), or Exit
   const ex = menu('templeHeal').find((w) => w.key === 'E') ?? { text: 'Exit', key: 'E' }
-  const i = await ui.menu([...cures.map((x) => x.name.toUpperCase()), ex.text.toUpperCase()], { prompt: `Healing for ${name}:`, vertical: true, keys: [...cures.map(() => ''), ex.key] })
+  const prompt = hasMsg('templeHowHelp') ? `${name}${msg('templeHowHelp')}` : `Healing for ${name}:`
+  const i = await ui.menu([...cures.map((x) => x.name.toUpperCase()), ex.text.toUpperCase()], { prompt, vertical: true, keys: [...cures.map(() => ''), ex.key] })
   if (i >= cures.length) return
   const s = cures[i], kind = s.kind
+  if (R.templeHeal.mode === 'free') { await freeCure(ui, s, R.templeHeal.raise); return }
   const status = c[F.status]
   const reason = {
     blind: has([I.blind]) ? '' : msg('notBlind'),
@@ -229,6 +233,86 @@ async function heal(ui: TownUi) {
   }
   recalc(c, items, t)
   ui.print(`${name} ${msg('templeCured')}`, false)
+  ui.refresh()
+}
+
+/**
+ * A free temple's service (SotSB 0x22FA5 → 0x225F6 … 0x22F0B): no question, no price; the cure, or the
+ * game's line saying why not, "<name> <line>" (0x151:0x84). Effects come off first-of-type, as the remove
+ * routine with no record does; INT, WIS (Heal) and STR (Cure Disease) are worked out again (0x145:0x8E).
+ */
+async function freeCure(ui: TownUi, s: { kind: TempleService; spell?: number }, raise: { notRaces: number[]; removes: number[]; fighters: number[] }) {
+  const e = ui.engine, t = e.items!
+  const { c, items, name } = cur(e)
+  const fx = e.effectsOf(c), I = game().effects.ids, DISEASES = diseases(e.startImage!)
+  const h = new WorldHost(e, (m) => ui.print(m, false))
+  const has = (type: number) => fx.some((f) => f.type === type)
+  const takeOff = (type: number) => { const j = fx.findIndex((f) => f.type === type); if (j < 0) return false; fx.splice(j, 1); return true }
+  const say = (id: Parameters<typeof msg>[0]) => ui.print(`${name} ${msg(id).trim()}`, false)
+  const levels: Partial<Record<TempleService, number>> = { clw: 1, csw: 2, ccw: 3, heal: 4 }
+  switch (s.kind) {
+    case 'blind': if (takeOff(I.blind)) say('templeCanSee'); else say('notBlind'); break // 0x225F6
+    case 'disease': { // 0x22683
+      if (!DISEASES.some(has)) { say('notDiseased'); break }
+      say('templeIsCured')
+      for (const d of DISEASES) takeOff(d)
+      await effectiveStat(h, c, 0)
+      break
+    }
+    case 'clw': case 'csw': case 'ccw': case 'heal': { // 0x227E1 with the level 1–4
+      let level = levels[s.kind]!, line: Parameters<typeof msg>[0] = 'templeHealed', cured = false, amount = 0
+      if (c[F.status] === 6) { level = 0; line = 'templeMustRaise' }
+      if (c[F.status] === 7) { level = 0; line = 'templeStonemason' }
+      if (c[F.status] === 8) { level = 0; line = 'templeNotHere' }
+      const full = c[F.hp] === c[F.maxHp]
+      if (full) line = 'templeNoNeed'
+      if (!full) {
+        if (level === 1) amount = e.roll(1, 8)
+        else if (level === 2) amount = e.roll(2, 8) + 1
+        else if (level === 3) amount = e.roll(3, 8) + 3
+        else if (level === 4) amount = (c[F.maxHp] - c[F.hp] - e.roll(1, 4)) & 0xff // as CotAB's Heal, a byte
+      }
+      if (level === 4) {
+        if (takeOff(I.blind)) cured = true
+        if (I.stat && takeOff(I.stat.feebleminded)) cured = true
+        for (const d of DISEASES) if (takeOff(d)) cured = true
+        if (cured) say('templeIsCured')
+        if (!full && cured) line = 'templeFullyHealed'
+        await effectiveStat(h, c, 1); await effectiveStat(h, c, 2)
+      }
+      if (!full && level) healChar(c, fx, amount, false)
+      say(line)
+      break
+    }
+    case 'poison': { // 0x22D12
+      if (!has(I.poisoned)) { say('notPoisoned'); break }
+      if (c[F.hp] === 0) c[F.hp] = 1
+      for (const x of [I.poisoned, I.slowPoison, I.poisonTick]) takeOff(x)
+      c[F.inPlay] = 1; c[F.status] = 0
+      say('templeNoLongerPoisoned')
+      break
+    }
+    case 'raise': { // 0x22AA7
+      if (c[F.status] !== 6) { say('notDead'); break }
+      if (raise.notRaces.includes(c[F.race])) { say('templeCannotRaise'); break }
+      say('templeResurrected')
+      for (const x of raise.removes) takeOff(x)
+      c[F.hp] = 1; c[F.status] = 0; c[F.inPlay] = 1
+      raiseDeadHp(c, raise.fighters, false)
+      break
+    }
+    case 'curse': // 0x22E26: a cursed item or the curse effect: the game's Remove Curse (DS:8C67 := the character)
+      if (!items.some((x) => x.cursed) && !has(I.cursed)) { say('notCursed'); break }
+      if (s.spell !== undefined) for (const l of await spellOn(e, c, s.spell)) ui.print(l, false)
+      say('templeCurseLifted')
+      break
+    case 'stone': // 0x22F0B
+      if (c[F.status] !== 7) { say('notStoned'); break }
+      c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = 1
+      say('templeTurnedToFlesh')
+      break
+  }
+  recalc(c, items, t)
   ui.refresh()
 }
 

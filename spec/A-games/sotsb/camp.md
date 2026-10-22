@@ -89,6 +89,26 @@ or forgetting them (I: the slots stay, as CotAB's).
 - The clock is CotAB's ([ecl.md](ecl.md), PASS_TIME) (**I**).
 - A spell that cannot be cast in camp asks "Lose it?" ([combat.md §11](combat.md#11-casting-o-0x48a53)).
 
+## 4a. The temple (O, 0x22FA5)
+
+A town service, described here for its kinship with Fix. The menus are CotAB's ("Heal View Take Pool
+Share Appraise Exit" 0x2319F, without money "Heal View Pool Appraise Exit" 0x231C7); Heal prints
+"*Name*, how can we help you?" (0x22F83) and lists the ten services (`templeNames`, "Heal Exit" 0x22F9B).
+**No price is asked or paid, and there is no "cure anyway?"**: each service cures, or says why not,
+in a line "*Name* *line*" (0x151:0x84), on the current character (DS:7D38):
+
+| Service | Routine | Does |
+|---|---|---|
+| Cure Blindness | 0x225F6 | effect 0x21: off, "can see!"; else "is not blind" |
+| Cure Disease | 0x22683 | any of the four diseases (DS:1B3E): "is cured" (DS:0x142), each removed first-of-type, STR worked out again; else "is not Diseased" |
+| Cure Light / Serious / Critical Wounds, Heal | 0x227E1 (1–4) | "is healed"; status 6 "must be raised from dead", 7 "can only be healed by a stonemason", 8 "is not here" (no healing); full HP "has no need of healing" (none); else 1d8, 2d8 + 1, 3d8 + 3, or (Heal) max − HP − 1d4 as a byte, through the heal routine; Heal also takes off 0x21, 0x44 and the diseases ("is cured", then "is fully healed" instead of "is healed") and works out INT and WIS again |
+| Neutralize Poison | 0x22D12 | effect 0x37: HP 0 → 1, 0x37, 0x16, 0x0F off, in play, status 0, "is no longer poisoned"; else "is not poisoned" |
+| Raise Dead | 0x22AA7 | status 6 only ("is not dead yet"); an elf (race 1) "cannot be raised"; else "is ressurected": 0x37 off, HP 1, Okay, in play, the current CON −1 and the maximum HP loss of [B-model/procedures.md §9](../../B-model/procedures.md#9-temple) with fighters, paladins and rangers weighing by CON |
+| Remove Curse | 0x22E26 | a cursed item (+0x36) or effect 0x24: the Remove Curse spell (DS:8C67 := the character, `113:4d`), "rejoices.  The curse has been lifted!"; else "is not cursed" |
+| Stone to Flesh | 0x22F0B | status 7: Okay, in play, HP 1, "is turned to flesh"; else "is not petrified" |
+
+Port: `R.templeHeal` `{ mode: 'free', raise }`, `ui/town.ts` `freeCure`; `test/temple.test.ts`.
+
 ## 5. Draft profile values (informative)
 
 ```ts
