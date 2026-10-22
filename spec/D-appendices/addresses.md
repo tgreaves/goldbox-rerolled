@@ -953,9 +953,11 @@ when its table column or sentence names CotAB.
 | 0x24C90 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x24CD6 | coab/combat | coab/combat: Map-area generator | `FUN_34c7_0221` |
 | 0x24D63 | coab/combat, B/procedures | coab/combat: Furnishing |  |
+| 0x24E90 | B/procedures | B/procedures: 9.1 Shop prices |  |
 | 0x24F96 | coab/combat | coab/combat: Map-area generator | `FUN_34c7_012b` |
 | 0x25018 | coab/combat | coab/combat: Map-area generator | `FUN_34c7_01ad` |
 | 0x25373 | coab/combat, B/procedures | coab/combat: Map-area generator |  |
+| 0x25385 | B/procedures | B/procedures: 9.1 Shop prices |  |
 | 0x25386 | coab/combat | coab/combat: Map-area generator |  |
 | 0x25467 | coab/combat, B/procedures | coab/combat: Map-area generator |  |
 | 0x2555D | coab/combat, B/procedures | coab/combat: Battlefield | `FUN_34c7_0810` |

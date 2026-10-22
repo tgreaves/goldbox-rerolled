@@ -678,7 +678,9 @@ export const SOTSB_RULES: GameRules = {
   newGame: [[0x49e6, 1], [0x4af4, 2]], // 0x2CB28: the map flag A 0x1CC; 0x2CB1D: Veteran
   setStatusEvent: null, // 0x50929: no event 13
   diseaseCount: 4, // DS:1B3D[1..4]
-  // the listing 0x24E90 and Buy read B + 0x6DA with CotAB's shifts (O): shopPrice is CotAB's
+  // the listing 0x24E90 and Buy read B + 0x6DA with CotAB's shifts (O); Buy (0x25385) also prices factor 16
+  // at the value, so a factor-16 shop is not IMP-078's case here (the listing has no 16 case: the value too)
+  shopPrice: { variable: 0x6e6d, shifts: { 1: -4, 2: -3, 4: -2, 8: -1, 16: 0, 32: 1, 64: 2, 128: 3 } },
   // ITEMS reordered (the rows compared with CotAB's; the readers): arrows 0x1E and quarrels 0x0C (the
   // recalculation 0x54DE3, readying 0x44417, selling 0x45327); no holy-water score in the computer's
   // weapon choice; the elf's +1 for 18, 19 and 22–26 (0x52CD8); no Bag of Holding step; the flight

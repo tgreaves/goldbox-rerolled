@@ -376,6 +376,7 @@ at `variable`] bits (negative: right), as a 16-bit word; a factor not in `shifts
 |---|---|
 | PoR | null |
 | CotAB | variable 0x6E6D (ECL 0x7F6D), shifts 1: −4, 2: −3, 4: −2, 8: −1, 32: 1, 64: 2, 128: 3 |
+| SotSB | CotAB's and 16: 0 (Buy 0x25385 prices factor 16 at the value; the listing 0x24E90 has no 16 case and shows the value as well, O) |
 
 Parameter `identifyFee`: what the shop's Identify charges in gold: PoR 200 (`FUN_4894_1f52`), CotAB 200
 (0x3FF59), SotSB 100 (its line "For 100 gold pieces…", 0x456C0).
