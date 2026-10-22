@@ -13,8 +13,9 @@ effect table and call sites are part A ([engine/sound.md](../A-games/engine/soun
 implementation (`web/src/audio/sfx.ts`, `audio/driver.ts`, the `sound` calls of `vm/engine.ts` and
 `rules/combat.ts`, **O**).
 
-The games have no music ([sound.md, "No music"](../A-games/engine/sound.md#no-music-o)); the port adds
-none.
+PoR and CotAB have no music ([sound.md, "No music"](../A-games/engine/sound.md#no-music-o)); the port adds
+none. Secret of the Silver Blades plays AdLib music for its title ([sotsb/assets.md](../A-games/sotsb/assets.md));
+the port's OPL2 synthesiser for it is §6.
 
 ## 1. How an effect is produced
 
@@ -137,6 +138,52 @@ playing PoR's script effect 11 in full and cutting CotAB's 7, 9, 10 and 13: C23,
   encounter menu's Advance does not play it.
 - The sample on the Sound setting (§2).
 
+## 6. OPL2 synthesis
+
+The AdLib card's chip, the Yamaha YM3812 (OPL2), is synthesised by `web/src/audio/opl2.ts`, written
+for the port from the chip's documented behaviour; a game's music driver (part A) turns its song
+into register writes, which the synthesiser renders. *Informative* where it simplifies the chip.
+
+- **Interface**: `Opl2.write(register, value)` takes effect from the next chip sample;
+  `Opl2.generate(out, rate, start, end)` renders samples at the chip's rate, 3 579 545 / 72 =
+  49 716 Hz, resampled linearly to `rate`. `renderWrites(writes, seconds, rate)` renders a timed list
+  of writes. The result is played as the effects are (`playSamples` in `audio/sfx.ts`: not with the
+  sound off or muted; Ctrl-S stops it).
+- **Registers**: 0x01 (bit 5, waveform select), 0x08 (bit 6, the note select of the key code),
+  0x20–0x35 (AM, VIB, EG type, KSR, MULT), 0x40–0x55 (KSL, TL), 0x60–0x75 (AR, DR), 0x80–0x95 (SL,
+  RR), 0xA0–0xA8 and 0xB0–0xB8 (F-number, block, key-on), 0xBD (AM and VIB depth, rhythm mode, the
+  five drum keys), 0xC0–0xC8 (feedback, connection), 0xE0–0xF5 (waveform); offsets with no operator
+  are ignored.
+- **Pitch**: an operator's frequency is F-number · 2^block · MULT / 2^20 of the chip rate (MULT 0 is
+  ½; 11, 13 and 15 as 10, 12 and 15).
+- **Level**: attenuation in dB = envelope + 0.75 · TL + KSL + tremolo; silent at 96 dB. KSL is
+  6 dB an octave of the top four F-number bits and the block (18 + 6 log₂ n − 6 (7 − block), at
+  least 0), scaled ½, ¼ or 1 by KSL 1, 2, 3.
+- **Envelope**: the effective rate is 4 · R + the key code (block · 2 + the note-select bit of the
+  F-number), or the key code / 4 without KSR, at most 63; R = 0 holds. A 96 dB decay or release takes
+  39 281 ms at rate 4, an attack 2 826 ms, halved every four rate steps and times 4 / (4 + rate mod 4)
+  between; attack at rate 60 and above is instant. Decay and release are linear in dB, attack
+  exponential (the attenuation shrinks by a constant fraction each sample, from 96 dB to 0.1 dB in the
+  attack time, then 0). After the decay to the
+  sustain level (3 dB steps, 15 = 93 dB) an operator with the EG-type bit holds it until key-off,
+  without it goes on at the release rate. Key-on restarts the phase and the attack from the current
+  level.
+- **Modulation**: the modulator's output shifts the carrier's phase by up to 4π (FM), or both are
+  heard (connection 1); feedback adds the mean of the modulator's last two outputs times π/16 … 4π
+  (FB 1–7). Waveforms: sine, half sine, absolute sine, quarter sine (only with register 1's bit 5).
+- **LFOs**: tremolo, a triangle of 13 432 chip samples (≈ 3.7 Hz), 1 or 4.8 dB; vibrato, a triangle of
+  8 192 (≈ 6.1 Hz), ±7 or ±14 cents.
+- **Rhythm mode** (approximated): channel 6 is the bass drum (both operators, output doubled); channel
+  7's modulator the hi-hat and carrier the snare, channel 8's modulator the tom-tom and carrier the
+  cymbal, each keyed by its 0xBD bit or the channel's key and doubled. The hi-hat and snare mix the
+  23-bit noise generator with a tone, the cymbal and hi-hat a ring of square waves at 8 × channel 7's
+  modulator phase and 32 × channel 8's carrier phase. The chip's exact drum phase logic is not
+  reproduced.
+- **Not emulated**: the timers (0x02–0x04, the status register) and CSM speech mode (0x08 bit 7). The
+  arithmetic is floating point, not the chip's log and exponent tables, so levels and the attack curve
+  are close to the chip's rather than bit-exact.
+- **Mix**: the channels summed × 0.15.
+
 ## Validation
 
 - `web/test/sound.test.ts`: every effect, both devices, against `tools/sound.py` sample for sample;
@@ -144,6 +191,9 @@ playing PoR's script effect 11 in full and cutting CotAB's 7, 9, 10 and 13: C23,
 - The cut-off by call site: `web/test/soundcut.test.ts` (the profile's `transient`, the cut tick per
   mode and game, the script's CALL sound transient for effects 10 and 11); `headless.test.ts` checks
   the mode of every sound of a scripted walk and battle.
+- `web/test/opl2.test.ts`: pitch from F-number and block (440 Hz at 580, block 4) at the chip's rate
+  and resampled; TL in dB; decay, release and attack times against the rate rule; waveforms 1–3 and the
+  select bit; feedback; rhythm-mode noise not periodic; the same output for the same writes.
 
 ## Open
 

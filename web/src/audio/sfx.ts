@@ -77,6 +77,26 @@ export function toggleMute(): boolean {
   return muted
 }
 
+/** The audio context's sample rate, for rendering music to it (null before the first gesture). */
+export const outputRate = () => ctx?.sampleRate ?? null
+
+/**
+ * Play rendered samples (the OPL2 music, src/audio/opl2.ts) as the effects are played: not with the
+ * sound off or muted; Ctrl-S stops it. Returns a function that stops it.
+ */
+export function playSamples(samples: Float32Array): () => void {
+  if (device === 'off' || muted || !ctx) return () => {}
+  const buf = ctx.createBuffer(1, samples.length, ctx.sampleRate)
+  buf.copyToChannel(samples as Float32Array<ArrayBuffer>, 0)
+  const src = ctx.createBufferSource()
+  src.buffer = buf
+  src.connect(ctx.destination)
+  playing.add(src)
+  src.onended = () => playing.delete(src)
+  src.start()
+  return () => { try { src.stop() } catch { /* already ended */ } }
+}
+
 /** Play effect n as its call site does (`mode`, spec/C-port/audio.md §3). */
 export function play(n: number, mode: SoundMode) {
   if (device === 'off' || muted || !ctx || !image) return
