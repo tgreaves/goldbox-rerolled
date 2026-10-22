@@ -705,9 +705,11 @@ when its table column or sentence names CotAB.
 | 0x18CB5 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x19085 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x190C3 | coab/assets, coab/ecl | coab/assets: 5. BIGPIC uses |  |
+| 0x190E5 | coab/ecl | coab/ecl: Open |  |
 | 0x190EA | coab/ecl | coab/ecl: CALL targets |  |
 | 0x190F3 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x19101 | coab/assets | coab/assets: 5. BIGPIC uses |  |
+| 0x191A0 | coab/ecl | coab/ecl: Open |  |
 | 0x191AE | coab/ecl | coab/ecl: Opcodes |  |
 | 0x191F4 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x1926C | coab/ecl | coab/ecl: Opcodes |  |
@@ -736,6 +738,8 @@ when its table column or sentence names CotAB.
 | 0x19A90 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x19AF9 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x19B7E | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
+| 0x19C09 | coab/ecl | coab/ecl: Opcodes |  |
+| 0x19C0B | coab/ecl | coab/ecl: Opcodes |  |
 | 0x19CA4 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x19ECE | coab/ecl | coab/ecl: Opcodes |  |
 | 0x19F6E | coab/ecl | coab/ecl: Opcodes |  |
@@ -755,6 +759,8 @@ when its table column or sentence names CotAB.
 | 0x1A90D | coab/ecl | coab/ecl: Opcodes |  |
 | 0x1AA5C | coab/ecl | coab/ecl: Opcodes |  |
 | 0x1AA96 | coab/ecl | coab/ecl: Opcodes |  |
+| 0x1ABB8 | coab/ecl | coab/ecl: Opcodes |  |
+| 0x1ABC4 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x1B007 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x1B0A6 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x1B15B | coab/ecl, B/script-vm-map | coab/ecl: Start-up menu and demo |  |
@@ -818,6 +824,7 @@ when its table column or sentence names CotAB.
 | 0x1CCC5 | coab/tables | coab/tables: 3.11 Temple |  |
 | 0x1D6E0 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x1D819 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x1D912 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1DC36 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x1DD03 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1DD2F | coab/ecl | coab/ecl: Start-up menu and demo |  |
@@ -834,6 +841,7 @@ when its table column or sentence names CotAB.
 | 0x1EF4E | coab/ecl, B/profile | coab/ecl: Start-up menu and demo |  |
 | 0x1EFB6 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x1F01E | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x1F03F | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1F04F | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x1F0F6 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1F531 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
@@ -848,8 +856,10 @@ when its table column or sentence names CotAB.
 | 0x1FD01 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1FD3C | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x1FF13 | coab/ecl | coab/ecl: Opcodes |  |
+| 0x1FFB7 | coab/ecl | coab/ecl: Open |  |
 | 0x1FFBB | coab/ecl | coab/ecl: CALL targets |  |
 | 0x2002E | coab/ecl | coab/ecl: CALL targets |  |
+| 0x20063 | coab/ecl | coab/ecl: Open |  |
 | 0x200A7 | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x200CB | coab/ecl | coab/ecl: Engine entry points | `FUN_2fea_06d3` |
 | 0x200F3 | coab/ecl, B/script-vm-map | coab/ecl: Engine entry points | `FUN_2fea_06fb` |
@@ -1036,6 +1046,7 @@ when its table column or sentence names CotAB.
 | 0x2CF0C | coab/combat | coab/combat: The backstab |  |
 | 0x2D141 | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x2D4D0 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x2D4FA | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x2E394 | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x2E582 | B/vocabularies | B/vocabularies: 3.7 Holding, draining, engulfing |  |
 | 0x2E842 | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
@@ -1168,6 +1179,7 @@ when its table column or sentence names CotAB.
 | 0x3C77B | coab/assets | coab/assets: 8. Config, video, palette, sound |  |
 | 0x3D02C | coab/ecl, B/profile, C/app-flow | coab/ecl: Opcodes | `FUN_4804_02a4` |
 | 0x3D34D | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x3D378 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x3D459 | coab/assets | coab/assets: 5. BIGPIC uses |  |
 | 0x3D530 | coab/chargen-and-progression, coab/records, B/procedures | coab/chargen-and-progression: The former class afterwards |  |
 | 0x3D87C | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
@@ -1190,6 +1202,8 @@ when its table column or sentence names CotAB.
 | 0x41317 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x415AA | coab/camp | coab/camp: 2. Rest |  |
 | 0x415F1 | coab/camp | coab/camp: 2. Rest |  |
+| 0x41647 | coab/ecl | coab/ecl: Opcodes |  |
+| 0x41709 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x41741 | coab/camp | coab/camp: 1. Fix |  |
 | 0x41ADE | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x41B6A | coab/camp | coab/camp: 1. Fix |  |
@@ -1367,19 +1381,21 @@ when its table column or sentence names CotAB.
 | 0x51691 | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x5171A | coab/chargen-and-progression | coab/chargen-and-progression: Where |  |
 | 0x51776 | coab/chargen-and-progression | coab/chargen-and-progression: Allowed classes (0x511AE) |  |
-| 0x517D2 | coab/chargen-and-progression | coab/chargen-and-progression: The change (0x51521) |  |
+| 0x517D2 | coab/chargen-and-progression, coab/ecl | coab/chargen-and-progression: The change (0x51521) |  |
 | 0x51822 | coab/chargen-and-progression | coab/chargen-and-progression: Where |  |
 | 0x51841 | coab/chargen-and-progression, coab/combat, coab/ecl, coab/tables, B/procedures | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x5194A | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x51A39 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x51C48 | coab/assets, coab/ecl | coab/assets: 4. Overland: no tile map |  |
 | 0x51D81 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x51DFA | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x51E1F | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x51E52 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x51E8B | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x51E9D | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x51F18 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x51F9B | coab/ecl | coab/ecl: Start-up menu and demo |  |
+| 0x52027 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x52BD5 | coab/assets | coab/assets: 4. Overland: no tile map |  |
 | 0x52BDC | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x52BFE | coab/assets | coab/assets: 4. Overland: no tile map |  |

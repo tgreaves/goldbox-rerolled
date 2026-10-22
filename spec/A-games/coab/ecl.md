@@ -241,9 +241,9 @@ Found by sweeping `les DS:4FB2/4FB6; …es:[di+off]` in the full disassembly. "P
 | 0x4BFC, 0x4BFF | 0x35F08, 0x35EEB | save-game copies (I) | 0x49FC/FF |
 | 0x4BFD, 0x4BFE | 0x52D62, 0x52D50 | redraw (write side effect) | 0x49FD/FE |
 | 0x4C00–0x4C1F | 0x1FCDC | per-area, zeroed on entry | 0x4A00–1F |
-| 0x4CA1 | 0x25C90, 0x52BDC | index into DS:0A4A table (**?**) | — |
-| 0x4CFD | 0x1B9C2 (=0xFF at PROGRAM 8), 0x36DCD | **?** | — |
-| 0x4CFF | 0x3D34D, 0x51D81 | picture-drawing mode flag (**?**) | — |
+| 0x4CA1 | 0x25C90, 0x52BDC | the party's place on the overland: the map cursor's index into DS:0A4A/0A6A and the wilderness battlefield's terrain DS:4A2C; scripts set it (O) | — |
+| 0x4CFD | 0x1B9C2 (=0xFF at PROGRAM 8), 0x36DCD | the game is won: set by PROGRAM 8; the party screen's B goes on only with no current character, 0x4CFD = 0 or DS:4FD5 ≠ 0 (O); no script uses it | — |
+| 0x4CFF | 0x3D34D, 0x51D81 | animate the current picture once: the menu input loop 0x51C48 animates while it is set, its frames not waiting their delays (0x51D81, 0x51DFA), and clears it on return (0x52027); the ending sets it around PIC 0x4D (0x3D34D, 0x3D378) (O) | — |
 | 0x7EA8 | 0x34573, 0x36A6C (training) | trainable class mask (I) | 0x6DA8 |
 | 0x7EC0, 0x7EC1 | 0x18C3E, 0x18C65 | encounter sprite max / current distance | 0x6DC0/C1 |
 | 0x7EC6 | 0x24533 | encounter morale (I) | 0x6DC6 |
@@ -256,14 +256,14 @@ Found by sweeping `les DS:4FB2/4FB6; …es:[di+off]` in the full disassembly. "P
 | 0x7ED5 | 0x1BEF9, 0x2F697 | edge-exit flag | 0x6DD5 |
 | 0x7EE1 | 0x190F3 | portrait selector (0xFF = plain PIC) | 0x6DE1 |
 | 0x7EE2 | 0x1A0E9 | temple flag for COMBAT | 0x6DE2 |
-| 0x7EE3 | 0x1D819 | cleared after battle (**?**) | 0x6DE3 |
+| 0x7EE3 | 0x1D819 | the next battle gives no items: the aftermath skips each combatant's items when 1 (0x1D819 → 0x1D912), cleared after battle (0x1F03F) (O) | 0x6DE3 |
 | 0x7EE6 | 0x1DD03 | duel flag | 0x6DE6 |
 | 0x7F12 | 0x360CB | block digit (mapped) | 0x6E12 |
-| 0x7F33 | 0x2697F, 0x2D4D0 | **?** | — |
+| 0x7F33 | 0x2697F, 0x2D4D0 | the party attacked an ally: 1 after "Attack Ally:" is answered Y (0x2D4D0), then the NPCs of morale > 0x7F change side (0x2D4FA); cleared at battle start (0x2697F) (O); PoR's 0x6E33 | — |
 | 0x7F3E | 17 sites | party size | 0x6E3E |
 | **0x7F3F** | 0x18A6A | **remainder of the last DIVIDE** (written to the buffer directly) | new |
 | 0x7F6C | 0x1A056 | shop flag for COMBAT | 0x6E6C |
-| 0x7F6D | 0x1F0F6, 0x1F531 | shop-related (**?**) | — |
+| 0x7F6D | 0x1F0F6, 0x1F531 | the shop's price factor (canonical 0x6E6D, which PoR's engine never reads): the listing and Buy take the item's value shifted by it, 1 → ÷ 16, 2 → ÷ 8, 4 → ÷ 4, 8 → ÷ 2, 32 → × 2, 64 → × 4, 128 → × 8; another factor lists the value and leaves Buy's price unset (bp−8, **Bug**) (O) | — |
 | 0x7F70–0x7F72 | 0x1F01E, 0x4BD60 | to-hit / movement bonuses for next battle (I) | 0x6E70–72 |
 | 0x7F79–0x7F82 | 0x1FD01 | scratch, zeroed by NEW_ECL | 0x6E79–82 |
 
@@ -315,7 +315,7 @@ n = operand count passed to the reader in the handler (O for every row). Status:
 | 15 | VMENU | VMENU | 3+N | 0x19739 / 0EE9 | 0F08 | ≈ | count = val 3; also clears DS:8B80 |
 | 16–1B | IF_xx | IF_xx | 0 | 0x193C1 / 0B71 | 0B52 | = | |
 | 1C | CLEAR_MONSTERS | CLEAR_MONSTERS | 0 | 0x19A90 / 1240 | 125D | = | |
-| 1D | PARTY_STRENGTH | PARTY_STRENGTH | 1 | 0x19AF9 / 12A9 | 12C6 | Δ | Σ over list of (HP char[0x1A4] + 5·max(char[0x19A]−60,0) + 5·max(char[0x199]−39,0) + 8·L1 + 4·L2) div 10 (byte, wraps), with **L1 = f·char[0x116] + char[0x10E], L2 = f·char[0x111] + char[0x109]**, f = FUN 0x51841(char) (I: char[0x109+c] current and char[0x111+c] former-class levels, c = 5 magic-user, 0 cleric, so L1/L2 are the MU/cleric levels of a dual-class character when f = 1) |
+| 1D | PARTY_STRENGTH | PARTY_STRENGTH | 1 | 0x19AF9 / 12A9 | 12C6 | Δ | Σ over list of (HP char[0x1A4] + 5·max(char[0x19A]−60,0) + 5·max(char[0x199]−39,0) + 8·L1 + 4·L2) div 10 (byte, wraps), with **L1 = f·char[0x116] + char[0x10E], L2 = f·char[0x111] + char[0x109]**, f = FUN 0x51841(char) (stub `fe:52`): 1 when 0x517D2(char), a human's first non-zero current class level (0 for other races), is above char[0xE6], the level at the change, else 0 (O): the former levels count only once the new class has passed them; the per-character sum is divided by 10 (0x19C09) and added as a byte (0x19C0B) |
 | 1E | CHECK_PARTY | CHECK_PARTY | 6 | 0x19CA4 / 1454 | 1435 | Δ | s = (kind 1 ? address : value) − 0x7FFF. s = 0x8001 (selector 0): found = any member has effect val 2 (0x4F395). s = 0xA5..0xAC (signed compare): min/max/avg of thief skill char[0xE9 + s − 0xA4]. s = 0x9F: of movement char[0x1A5]. Outputs: op3 ← min, op4 ← max, op5 ← avg (signed div), op6 ← found. **The only use in the data (`CHECK_PARTY [0x7CA5], …`, ECL4 record 32, 0x8A42) gives s = 0xFCA6 and writes nothing** (O); selectors expected by the code would be 0x80A4–0x80AB / 0x809E |
 | 1F | — | — | (2) | none | none | = | no handler (PC never advances); skip table says 2 |
 | 20 | NEW_ECL | NEW_ECL | 1 | 0x19437 / 0BE7 | 0BD1 | ≈ | 0x4BF2 = old area (DS:8B78), DS:8B78 = n, load (0x1FD3C), reset (0x1FBB8), stop, DS:47F9 = 1. The loading message moved into the loader |
@@ -327,7 +327,7 @@ n = operand count passed to the reader in the handler (O for every row). Status:
 | 26 | ON_GOSUB | ON_GOSUB | 2+N | 0x1A335 | 18F8 | = | |
 | 27 | TREASURE | TREASURE | 8 | 0x1A3ED / 1B9D | 19B0 | Δ | money ops 1–7 → DS:6F8A (dwords). op 8 < 0x80: `ITEM<block>` record = list of 63-byte items, each prepended (DS:6FA6); missing record → message and exit to DOS (0x06700). 0xFF none. 0x80+k: k random items, **new type table** below |
 | 28 | ROB | ROB | 3 | 0x1A7C6 / 1F76 | 1DB1 | = | |
-| 29 | ENCOUNTER_MENU | ENCOUNTER_MENU | 14 | 0x1A90D / 20BD | 1EF8 | ≈ | 97% identical; the menu-variant test now uses 0x4BE6 and DS:72A4 (0x1AA5C–0x1AA96) instead of PoR's distance test (**?** exact effect) |
+| 29 | ENCOUNTER_MENU | ENCOUNTER_MENU | 14 | 0x1A90D / 20BD | 1EF8 | ≈ | 97% identical; the menu-variant test now uses 0x4BE6 and DS:72A4 (0x1AA5C–0x1AA96) instead of PoR's distance test: the choice of the PARLAY or ADVANCE menu is PoR's (0x1ABB8, 0x1ABC4); two display flags differ: the picture is animated only when DS:8B7C and DS:8B7D are set, A 0x4BE6 ≠ 0 (a map area) and the picture DS:72A4 ≠ 0x50 (PoR: DS:84E0 and DS:84E1), and the text window is cleared before the text only in a map area (O) |
 | 2A | GET_TABLE | GET_TABLE | 3 | 0x1968F / 0E3F | 0E5E | = | |
 | 2B | HMENU | HMENU | 2+N | 0x19904 / 10B4 | 10D1 | = | count = val 2 |
 | 2C | PARLAY | PARLAY | 6 | 0x1B007 / 27B7 | 25CB | = | |
@@ -338,7 +338,7 @@ n = operand count passed to the reader in the handler (O for every row). Status:
 | 31 | REDRAW | REDRAW | 0 | 0x1B506 / 2CB6 | 2AA2 | = | (+ DS:759A = 1) |
 | 32 | FIND_ITEM | FIND_ITEM | 1 | 0x1B0A6 / 2856 | 266A | = | |
 | 33 | NEWLINE | NEWLINE | 0 | 0x1B55F / 2D0F | 2AEB | = | |
-| 34 | DELAY | **PASS_TIME** | **2** | 0x1B52A / 2CDA | 2AC1 | Δ | PoR read 1 operand with an uninitialised index. CotAB: clock routine 0x4129A(count = val1, unit = val2): `count` times add 1 to clock word 0x4BC6+unit and normalise, then 0x40EBE(count, unit) (I: effect expiry). Data: `PASS_TIME [0x4C06], #4` in ECL1 records 80 and 81 (travel; I: unit 4 = days) |
+| 34 | DELAY | **PASS_TIME** | **2** | 0x1B52A / 2CDA | 2AC1 | Δ | PoR read 1 operand with an uninitialised index. CotAB: clock routine 0x4129A(count = val1, unit = val2): `count` times add 1 to clock word 0x4BC6+unit and normalise, then 0x40EBE(count, unit), the effects' time-out. The moduli (DS:3E2C: 10, 10, 6, 24, 30, 12, 256, PoR's DS:363A) and the rest menu (0x41647–0x41709: D unit 4, H unit 3, M adds 5 to unit 1) make unit 1 minutes, 2 ten minutes, 3 hours, 4 days, 5 months, 6 years, unit 0 the 6-second segment (O). Data: `PASS_TIME [0x4C06], #4` in ECL1 records 80 and 81 (travel, days) |
 | 35 | SAVE_TABLE | SAVE_TABLE | 3 | 0x196ED / 0E9D | 0EBC | = | |
 | 36 | ADD_NPC | ADD_NPC | 2 | 0x1B61A / 2DCA | 2B7E | Δ | load NPC val1 (0x3593D); morale char[0xF7] = (val2 >> 1) \| 0x80; recompute (0x4DC70, 0x4D7E8). **PoR's "enemy side for id 0x18" is gone**: the side byte stays as the record holds it. 0x3593D (nothing with 8 in the party, DS:4FB6 + 0x67C) loads the record with the monster loader 0x3565C, which keeps it as stored (no icon size, no icon colours rolled), sets the identity tag char[0x126] = val1 (0x35974, PoR Random(256)), joins it to the party (0x359CA: icon slot char[0x143]) and loads its combat icon from `CPIC` record val1 into that slot (0x3599F → 0x56C50). No class pick and no portrait (no NPC portrait tables): **no draws** at all (O: no call of Random 0x8F7:0x15EA or the dice routine on the path) |
 | 37 | LOAD_WALLSETS | LOAD_WALLSETS | 3 | 0x19491 | 0C74 | ≈ | as PoR (0x7F → slot 1 set 0; otherwise 0xFF empties a slot), except that with 0x4BE7 and 0x4BE8 set (ops 1 and 3 only) **an operand of 0xFF is skipped, leaving its slot as it is** (0x19563, 0x19575; PoR has no test there) |
@@ -403,8 +403,8 @@ Then 0x42D97(type, item) builds the 63-byte record, which is prepended to the tr
 
 ## Open
 
-- 0x7CC9 / PARTY_STRENGTH level formula: what FUN 0x51841 returns (**?**, I: dual-class multiplier)
-- ENCOUNTER_MENU's changed menu condition (0x1AA5C) (**?**)
-- 0x4CA1, 0x4CFD, 0x4CFF, 0x7F33, 0x7F6D, 0x7EE3 meanings (**?**)
-- PASS_TIME unit names (clock word order is O, labels I)
-- DS:8B62 (2 bytes cleared by EXIT/reset/NEW_ECL/COMBAT/PROTECTION) (**?**)
+- ~~PARTY_STRENGTH's f, ENCOUNTER_MENU's condition, 0x4CA1, 0x4CFD, 0x4CFF, 0x7F33, 0x7F6D, 0x7EE3, the
+  PASS_TIME units~~: answered in the tables above (2026-10-22).
+- ~~DS:8B62~~: the encounter display state (PoR's DS:84C8): [0] a sprite is on show (0x1FFB7), [1] a
+  picture (0x20063, PICTURE 0x190E5); +0x1A/+0x1B (DS:8B7C/7D) are ENCOUNTER_MENU's flags. Clearing [0]
+  and [1] (EXIT, reset, NEW_ECL, COMBAT, PROTECTION; 0x191A0) means nothing is drawn over the view (O).
