@@ -171,7 +171,7 @@ Opened from View (character screen) on the current character's item list. Each l
 | U | Use | char[0x10D] (in play), area flag `A[0x1CA]` = 0, and mode 2/3/4, or mode 5 with combat record [2] set |
 | T | Trade to another member | not combat, and the character is a PC, out of play or Animated (NPCs in play cannot) |
 | D | Drop ("Your X will be gone forever. Drop It?") | always |
-| H | Halve a stack | fewer than 16 items |
+| H | Halve a stack | fewer than 16 items (the word is left out of the menu otherwise, 0x399B2; CotAB 0x3EC2D, SotSB 0x43C1A; O) |
 | J | Join stacks | always |
 | S | Sell | shop/temple mode, same PC/NPC rule as Trade |
 | I | Identify | shop/temple mode |

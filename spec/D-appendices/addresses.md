@@ -1250,6 +1250,7 @@ when its table column or sentence names CotAB.
 | 0x3F40D | coab/effects | coab/effects: 6. Item kinds 0x3F034 |  |
 | 0x3F54A | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x3F57D | coab/effects | coab/effects: 6. Item kinds 0x3F034 |  |
+| 0x3F7B5 | B/procedures | B/procedures: 9.1 Shop prices |  |
 | 0x3F9A2 | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
 | 0x3F9A8 | coab/chargen-and-progression, coab/spells, B/procedures | coab/chargen-and-progression: The former class afterwards | `FUN_4894_1a8a` |
 | 0x3F9A9 | coab/tables | coab/tables: 3.7a Caster level |  |

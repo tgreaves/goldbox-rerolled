@@ -28,9 +28,13 @@ export function trade(from: { c: Uint8Array; items: Item[] }, to: { c: Uint8Arra
   return ''
 }
 
-/** Halve (FUN_4894_17ed): split off half a stack, unreadied, right after the item. A bundle (SotSB 0x44638) splits its scrolls. */
+/**
+ * Halve (FUN_4894_17ed): split off half a stack, unreadied, right after the item. A bundle (SotSB 0x44638)
+ * splits its scrolls. The items menu offers it only below 16 items (PoR 0x399B2, CotAB 0x3EC2D, SotSB
+ * 0x43C1A), so with 16 it does nothing.
+ */
 export function halve(c: Uint8Array, items: Item[], it: Item, t: ItemTables): string {
-  if (items.length >= 16) return 'You have too many items'
+  if (items.length >= 16) return ''
   const n = Math.floor(it.count / 2)
   if (n === 0) return msg('cantHalve')
   if (it.type === game().saves.bundleType) return halveBundle(c, items, it, n, t)

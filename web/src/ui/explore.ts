@@ -1373,12 +1373,12 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       else if (opts.confirm === 'trade') actions = `<p>${escape(msg('tradeWithWhom'))}</p>` + others.map((n, k) =>
         `<button data-a="trade-${k}">${escape(parseCharacter(n).name)}</button>`).join('') + listExit('data-a="cancel"')
       // the items menu's words (FUN_4894_0ef8, CotAB 0x3EAB3): "Ready", " Use", " Trade", " Drop", " Halve", " Join", " Sell", " Id";
-      // "Un" before Ready on a readied item is the port's
+      // "Un" before Ready on a readied item is the port's; Halve only below 16 items (PoR 0x399B2, CotAB 0x3EC2D, SotSB 0x43C1A)
       else {
         const ready = word('itemReady', 'R')
         actions = wordButton('data-a="ready"', it.ready ? { ...ready, text: ready.text.toLowerCase() } : ready, it.ready ? 'Un' : '') + wordButton('data-a="use"', word('itemUse', 'U')) +
           (others.length ? wordButton('data-a="trade"', word('itemTrade', 'T')) : '') +
-          wordButton('data-a="drop"', opts.mode === 'vault' ? word('itemDeposit', 'D') : word('itemDrop', 'D')) + wordButton('data-a="halve"', word('itemHalve', 'H')) + wordButton('data-a="join"', word('itemJoin', 'J')) +
+          wordButton('data-a="drop"', opts.mode === 'vault' ? word('itemDeposit', 'D') : word('itemDrop', 'D')) + (items.length < 16 ? wordButton('data-a="halve"', word('itemHalve', 'H')) : '') + wordButton('data-a="join"', word('itemJoin', 'J')) +
           (store ? wordButton('data-a="sell"', word('itemSell', 'S')) + wordButton('data-a="id"', word('itemId', 'I')) : '')
       }
     }

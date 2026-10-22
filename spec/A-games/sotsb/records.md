@@ -268,7 +268,8 @@ it joins stacks as PoR (spec/A-games/engine/town.md, "Items menu") with three di
   - a candidate of count 0 is not skipped.
 
   The self-compares of 0x3C–0x3E and the test 0x3C < 2 are PoR's.
-- **Halve** (0x44638): *h* = count / 2; 0 gives "Can't halve that" (0x44627). A bundle (0x44666) splits:
+- **Halve** (0x44638): *h* = count / 2; 0 gives "Can't halve that" (0x44627); nothing else is tested there: the items
+  menu offers Halve only below 16 items (0x43C1A), as PoR's (0x399B2) and CotAB's (0x3EC2D) do. A bundle (0x44666) splits:
   - **The new item, after it** (unreadied), takes the first *h* scrolls. With *h* = 1 it is that scroll
     itself (+0x3F cleared). Otherwise it is a bundle of *h* whose count, word 2 and weight are *h* and
     whose value is the sum of its scrolls.

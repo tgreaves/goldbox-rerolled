@@ -2,7 +2,8 @@
 // Halve (0x44638) on scrolls and "Bundle of n Scrolls"; the regular Join's SotSB differences. Needs SOTSB.
 import { afterAll, describe, expect, it } from 'vitest'
 import { existsSync } from 'node:fs'
-import { POR, SOTSB, setGame } from '../src/games/profile'
+import { COAB, POR, SOTSB, setGame } from '../src/games/profile'
+import { R } from '../src/games/rules'
 import { Item, characterItems, characterItemsFile } from '../src/data/items'
 import { Engine, type Io } from '../src/vm/engine'
 import { halve, join } from '../src/rules/inventory'
@@ -85,5 +86,22 @@ describe.skipIf(!dir || !existsSync(dir))('SotSB: scroll bundles', () => {
     arrows[1].raw[0x37] = 3
     expect(join(c, arrows, arrows[0], t).merged).toBe(1)
     expect(arrows[0].count).toBe(15)
+  })
+})
+
+describe('Join and Halve across games', () => {
+  afterAll(() => setGame(POR))
+  it('CotAB joins as PoR: the same R.itemJoin (0x3F7B5 is FUN_4894_189d instruction for instruction)', () => {
+    setGame(POR)
+    const por = { ...R.itemJoin }
+    setGame(COAB)
+    expect({ ...R.itemJoin }).toEqual(por)
+  })
+  it('Halve with 16 items does nothing (the menu leaves it out: 0x399B2, 0x3EC2D, 0x43C1A)', () => {
+    setGame(POR)
+    const items = Array.from({ length: 16 }, () => { const r = new Uint8Array(63); r[0x2e] = 1; r[0x39] = 10; return new Item(r) })
+    expect(halve(new Uint8Array(400), items, items[0], { baseOf: () => undefined } as never)).toBe('')
+    expect(items.length).toBe(16)
+    expect(items[0].count).toBe(10)
   })
 })

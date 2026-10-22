@@ -391,7 +391,7 @@ The procedure is [sotsb/records.md §3.2](../A-games/sotsb/records.md#32-join-an
 
 | Game | Values |
 |---|---|
-| PoR (`FUN_4894_189d`), CotAB (as PoR, I) | weight true, refuseSingle false, bundle null |
+| PoR (`FUN_4894_189d`), CotAB (0x3F7B5: PoR's instruction for instruction, the item list at +0x14D, O) | weight true, refuseSingle false, bundle null |
 | SotSB (0x44940) | weight false, refuseSingle true, bundle of 0x27, 0x28, limit 10, words 0x27, 0x4D |
 
 ## 10. Class abilities
