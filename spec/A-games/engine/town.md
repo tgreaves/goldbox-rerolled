@@ -244,10 +244,13 @@ Suffix: " Detect Exit" if there are items and the current character has Detect M
 
 ## Open
 
-- The shop and temple "Pool" key is skipped while a local flag (passed to the menu and to View) is
-  set; when that happens (**?**).
-- Appraise: whether Escape at "Sell Keep" sells the gem (every key other than K does on the path
-  seen).
+- ~~The shop and temple "Pool" key's flag~~: it is the horizontal menu's `isExt` (an extended key):
+  shop (0x1FD4D) and temple (0x1DF1E) ignore P when it is set, so Down (0x50) does not pool; the
+  temple also ignores H for Up (0x48, 0x1DEF0); other extended codes act as their letters (**I**: F7
+  0x41 Appraise, F8 0x42 Buy, Del 0x53 Share). CotAB the same (0x1D547, 0x1D575, 0x1F86D) (O). The
+  port's menus are buttons: nothing to do.
+- ~~Appraise's Escape at "Sell Keep"~~: only K keeps (0x3E094 gem, 0x3E3E7 jewel; the extended Left
+  0x4B also keeps); every other key sells, Escape, Space and Enter included (O). CotAB 0x43AD6, 0x43E2C.
 - The Remove Curse spell handler used by the temple: not traced here.
 - Confirm in DOSBox: the stack Sell price (value/2 × count / 20 for every stack), the vanishing share
   of 0xB3 NPCs in Share, and the lost gem when keeping it with an empty inventory.

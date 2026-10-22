@@ -29,7 +29,7 @@ Camp screen:
 2. Print "The party makes camp..." and pause.
 3. **Clear every member's pending spells** (`FUN_3f81_0214`): memorised slots ≥ 0x80 → 0, char[0x2C] = 0, bit 7 cleared on every scroll spell byte. The same is done again when leaving, so pending memorisations and scribes live only inside one camp session.
 4. Menu loop (below) until **E**xit / Esc, or until a rest was interrupted.
-5. On leaving: clear pending spells again, `DS:6DB5` = `DS:6DB7` = 0 (**?**), restore `DS:49F3`, redraw.
+5. On leaving: clear pending spells again, `DS:6DB5` = `DS:6DB7` = 0 (the last spell target, below; 0x317C9), restore `DS:49F3`, redraw.
 
 ## Camp menu (O, `DS:0508`)
 
@@ -287,5 +287,6 @@ The engine reads the hour only for the status line (O). The scripts treat **hour
 
 ## Open
 
-- `DS:6DB5`/`DS:6DB7`: cleared when leaving the camp and before casting
+- ~~`DS:6DB5`/`DS:6DB7`~~: a far pointer to the last character picked as a spell's target outside combat: the picker `FUN_4e53_0a91` (0x3EFC7) sets it to the caster when empty, opens the party picker `FUN_10ba_2c48(1, &DS:6DB5)` on it for a one-target spell and keeps the choice; a cancelled pick empties the target list. Cleared at Cast (0x2FCC2), on leaving the camp (0x317C9) and at 0x41960, so within one Cast the picker reopens on the last target (O). The port starts each pick at its default (presentation).
+- ~~Whether durations are scaled~~: no: `FUN_5216_1656` passes the duration word to `FUN_5216_0e52`, which stores it at eff+1 (0x43042), and the time-out subtracts minutes from it (O).
 - Exact screen rows and colours of the camp windows (the routines are named above)

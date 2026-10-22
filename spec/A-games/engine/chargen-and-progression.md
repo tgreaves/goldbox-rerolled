@@ -80,7 +80,7 @@ of the sequence). Values: [expected-values.md §6.2](../../D-appendices/expected
 #### Age category thresholds (mature, middle-aged, old, venerable)
 
 Five u16 per race at `DS:3F31 + race·10`: the thresholds of the mature, middle-aged, old and
-venerable categories, then a fifth value (**?**: not read by the age adjustment). Values:
+venerable categories, then a fifth value that nothing reads (O: no reader of DS:3F39 in the image; CotAB's DS:412C none either). Values:
 [expected-values.md §6.2](../../D-appendices/expected-values.md#62-starting-age-and-age-categories-ds3e5b-ds3f31).
 
 #### Racial ability limits (`DS:3DA3 + race·16`)
@@ -266,5 +266,5 @@ Experience from battles (the monsters' award values, money and magic items conve
 
 ## Open
 
-- The fifth u16 of each race's age thresholds (`DS:3F31`) has no reader found (**?**).
+- ~~The fifth u16 of each race's age thresholds~~: never read, O (above).
 - How char[0x2D] reaches char[0x110] beyond the derived statistics' STR step (**I**).

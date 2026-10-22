@@ -37,8 +37,8 @@ Part of the [specification](README.md). Ordered by what a browser reimplementati
 - ~~The combat summary of `FUN_10ba_0bb8` calls `FUN_10ba_01fb` the weapon routine~~ fixed: the summary is gone, [engine/records.md, "Derived statistics"](A-games/engine/records.md#derived-statistics-o-fun_10ba_0bb8) is the only description and combat points there.
 - ~~Haste/Slow and spell AC/THAC0 changes vs the recalculation~~ answered (2026-10-22, O in both games): `FUN_10ba_0bb8` (CotAB 0x4DC70) fires no event, but every to-hit roll, a weapon's (0x2C069 → event 11 at 0x2C077; CotAB 0x2BBC0, 0x2BBCE) and a touch spell's (0x3EEDD, 0x3EEEB; CotAB 0x44FCC, 0x44FD9), recalculates the target and fires event 11 first, where Shield (17) and Cause Blindness (33) put their AC back; Haste and Slow act through event 18 when movement is worked out, not on +0x11C. Nothing is lost for a roll; only readers without that pair (the AC shown, ECL DAMAGE's `FUN_5216_0c4f`) see the base value. The port's touch roll lacked the pair (fixed).
 - ~~Meaning of ECL 0x6EF6 = 1 and 0x6E6D = 16, set by every shop script before `COMBAT`~~ script-private: no engine code refers to them ([engine/town.md](A-games/engine/town.md#how-scripts-open-them-o), **I**)
-- The shop/temple "Pool" key is skipped while a local flag (passed to the menu and to View) is set; when that happens **?**.
-- Appraise: whether Escape at "Sell Keep" sells the gem (every key other than K does in the code path seen).
+- ~~The shop/temple "Pool" key's flag~~: the menu's extended-key flag ([engine/town.md](A-games/engine/town.md#open)), answered 2026-10-22 **?**.
+- ~~Appraise: Escape at "Sell Keep"~~: sells (only K keeps), answered 2026-10-22
 - Confirm in DOSBox: stack Sell price (value/2 × count / 20 for every stack), the vanishing share of 0xB3 NPCs in Share, and the lost gem when keeping it with an empty inventory.
 - ~~Scroll test `0x96:0x3E` (slot 11–14 per the guide)~~ answered below (Camp, clock and training: `FUN_4e53_323d`, slots 11–13). The Remove Curse spell handler used by the temple: not traced here.
 - Combat use of ammunition: the round-start formula (`FUN_3aae_0d23`, `FUN_3aae_0e52`) is only summarised in [engine/records.md](A-games/engine/records.md).
@@ -60,8 +60,8 @@ Part of the [specification](README.md). Ordered by what a browser reimplementati
 ## Camp, clock and training (from [engine/camp-and-time.md](A-games/engine/camp-and-time.md), [engine/chargen-and-progression.md](A-games/engine/chargen-and-progression.md))
 
 - ~~Original bugs a port must decide on~~ decided for GoldBox Rerolled: an empty new-spell list at a magic-user level-up setting max HP to 1 is fixed (IMP-028); pressing Train truncating excess experience before the hall check and the Yes/No, the party ageing at every clock advance once 256 years have passed, and script writes to the clock words being normalised only at the next advance are kept as the original ([IMPROVEMENTS.md](../IMPROVEMENTS.md): only bugs that destroy money, items or characters are fixed)
-- `DS:6DB5`/`DS:6DB7`, cleared by camp exit and by Cast
-- Whether `FUN_5216_1656` scales spell durations (they look like plain minutes)
+- ~~`DS:6DB5`/`DS:6DB7`~~: the last out-of-combat spell target ([engine/camp-and-time.md](A-games/engine/camp-and-time.md#open))
+- ~~Whether `FUN_5216_1656` scales spell durations~~: no, minutes
 - The scroll test `0x96:0x3E` is `FUN_4e53_323d`: `ITEMS` byte 0 in 11–13 (types 61 and 62 in the data), not 11–14
 - Confirm in DOSBox: the rest-encounter counter `DS:49FB` carrying over between rests; the heal counter `DS:6DD8` adding up across rests in one camp
 
@@ -90,8 +90,6 @@ Each was an **I** or **?** in a part A file; the file now states it (AUDIT §6.9
 - ~~Which creature carries CotAB's miscast effect 0x4A~~ only the cursed Robe of Vermin ([coab/combat.md, "Casting"](A-games/coab/combat.md#casting-o)).
 - ~~ECL 0x4AB3's arid-terrain change (I)~~ the river-pollution commission, rewarded ([engine/battlefield.md, "Terrain flags"](A-games/engine/battlefield.md#terrain-flags-o-fun_34c7_08a4)).
 
-Still open from that pass, each in its file's "Open" section: the fifth age threshold
-([chargen-and-progression.md](A-games/engine/chargen-and-progression.md#open)), the remaining engine
-globals in [ecl.md](A-games/engine/ecl.md#open) (B 0x6B00/0x6C00 answered: the leave flags), start-up step 9's
-background call ([input-and-menus.md](A-games/engine/input-and-menus.md#open)), CotAB's WIS bonus
-routine ([coab/tables.md](A-games/coab/tables.md#open)).
+Still open from that pass: the remaining engine globals in [ecl.md](A-games/engine/ecl.md#open). The
+others (B 0x6B00/0x6C00, the fifth age threshold, start-up step 9, CotAB's WIS bonus) were answered on
+2026-10-22.

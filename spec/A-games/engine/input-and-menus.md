@@ -54,7 +54,7 @@ Main program `1000:00F6` (O):
 | 6 | Credits screen ([title-and-credits.md](../por/title-and-credits.md)), wait **10 s** or a key. The boxes are `FUN_13f1_02e8(title, title colour, frame style, x1, y1, x2, y2)`: clear, then frame glyphs `0x114 + 3·style + k` around the box (`FUN_13f1_0000`, drawn with `FUN_1428_002a`), the title centred on the top row. The glyph table maps indices 0x100–0x11E to `8X8D1` #202 (31 colour tiles); style 0 is tiles 20 (yellow corner square), 21 (vertical red rope), 22 (horizontal red rope) | `FUN_290c_0206`, O |
 | 7 | Code-wheel check ([title-and-credits.md](../por/title-and-credits.md)) | `FUN_298d_00fd` (= `290c:090D`), O |
 | 8 | Party screen `FUN_417f_0161`; returns on Begin/Load | O |
-| 9 | `FUN_55a0_0155(6,7,0,0x0B)` (**?**), main adventure loop `FUN_29c3_32f8`, then exit to DOS | O |
+| 9 | `FUN_55a0_0155(0x0B, 0, 7, 6)` (0x12C: the default view band colours DS:6A60–6A63, sky 11, line 0, band 7, floor 6), main adventure loop `FUN_29c3_32f8`, then exit to DOS | O |
 
 No other intro text exists in the executable.
 
@@ -174,8 +174,10 @@ Current HP always = max HP. No point budget: any stat can be set anywhere inside
 
 ## Open
 
-- Start-up step 9's `FUN_55a0_0155(6, 7, 0, 0x0B)` (**?**; the routine sets the view's background
-  bands, [maps-and-view.md](maps-and-view.md)).
+- ~~Start-up step 9's background call~~: `FUN_55a0_0155(0x0B, 0, 7, 6)` stores the default band colours
+  (DS:6A60–6A63), which `FUN_55a0_0174` fills; the redraw `FUN_54cf_016d` sets the sky from DS:0C26 every
+  time and line, band and floor while DS:84E5 is set, which the VM reset does (0x2007A), so the start-up
+  values last until the first reset (O; [maps-and-view.md](maps-and-view.md)). CotAB makes no such call.
 - Inferred (**I**): `POOL.CFG` line 2 as the sound device and line 5 as "fixed disk"; the extended-key
   table `DS:285B`; Enter in horizontal menus being ignored by their callers; Modify's maximum-HP CON
   term; char[0x85] as the "modified" flag; the Drop message's test of char[0x10D].
