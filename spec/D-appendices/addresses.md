@@ -1086,6 +1086,8 @@ when its table column or sentence names CotAB.
 | 0x3376E | coab/records | coab/records: 7.5 Hillsfar (brief, O for structure) |  |
 | 0x33873 | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) |  |
 | 0x33CE2 | coab/records | coab/records: 7.2 Engine conversion |  |
+| 0x33E47 | coab/effects | coab/effects: 9. No level drain |  |
+| 0x33E5B | coab/effects | coab/effects: 9. No level drain |  |
 | 0x33F00 | coab/records | coab/records: 7.2 Engine conversion |  |
 | 0x340E4 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x342F5 | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) |  |
@@ -1156,6 +1158,8 @@ when its table column or sentence names CotAB.
 | 0x3A468 | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers |  |
 | 0x3B230 | B/procedures | B/procedures: 2. Hit points | `FUN_417f_29ae` |
 | 0x3B557 | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
+| 0x3BD5D | coab/effects | coab/effects: 9. No level drain |  |
+| 0x3BD76 | coab/effects | coab/effects: 9. No level drain |  |
 | 0x3BD91 | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x3BE45 | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x3BF10 | B/profile | B/profile: 3.5 The ending (`EndingScript`) |  |
@@ -1233,6 +1237,8 @@ when its table column or sentence names CotAB.
 | 0x47C01 | coab/effects, B/procedures | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
 | 0x47C49 | coab/effects, B/vocabularies | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
 | 0x47C7F | coab/spells, B/procedures | coab/spells: 2. Per spell id |  |
+| 0x47CFC | coab/effects | coab/effects: 9. No level drain |  |
+| 0x47D3B | coab/effects | coab/effects: 9. No level drain |  |
 | 0x47E69 | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x47F27 | B/vocabularies | B/vocabularies: 4.2 Shared kinds |  |
 | 0x47FB0 | coab/effects | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |

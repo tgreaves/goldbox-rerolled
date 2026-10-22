@@ -173,6 +173,14 @@ going down (0x4AB2D), event 13, the fall (`121:75`), the pause, the message area
 `FUN_10ba_17e3` on DS:4FD3) and, unless DS:4FD3 = 5, the roster (0x4D7E8, **I**) for the current character (DS:6520). Handler 130 (0x29993) repeats its steps inline from status
 8 without the message or the test (0x299F4).
 
+## 9. No level drain (O)
+
+CotAB drains no levels: the only writes anywhere in the image to the drained-levels and lost-HP bytes
+(+0xE7, +0xE8) are the Pool of Radiance import's copies of PoR's +0x74/+0x75 (0x33E47, 0x33E5B);
+Restoration only subtracts from them (0x3BD5D, 0x3BD76; 0x47CFC, 0x47D3B), and none of PoR's drain
+texts is in the image. Its types 85 and 86 are other handlers (§2), so PoR's drain procedure
+(`FUN_3723_2122`) is PoR's alone.
+
 ## Open
 
 - Damage type 0x20 (breath, **I**) and 0x40 (**?**), §3.
