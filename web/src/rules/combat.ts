@@ -1363,15 +1363,19 @@ export class Battle implements FxHost {
       c[F.hp] = 0
       c[F.inPlay] = 0
       this.print(c[F.status] === 4 ? `${name(c)} ${msg('goesDown')}` : c[F.status] === 5 ? `${name(c)} ${msg('goesDown')} ${msg('andIsDying')}` : `${name(c)} ${msg('isKilled')}`)
-      // FUN_5216_100a removes through FUN_5216_0026, so removal callbacks run (a grab frees its victim,
-      // a charm ends); the callbacks' synchronous part runs here, the record goes at once
+      // FUN_5216_100a (CotAB 0x4C05B) removes the first record of each listed type through FUN_5216_0026
+      // (a null record: the first of the type), so removal callbacks run (a grab frees its victim, a charm
+      // ends); the callbacks' synchronous part runs here, the record goes at once
       const list = this.e.effectsOf(c)
-      for (const e of [...list]) {
-        if (!ids().goingDown.includes(e.type)) continue
+      for (const type of ids().goingDown) {
+        const e = list.find((x) => x.type === type)
+        if (!e) continue
         void removeEffect(this, c, e)
         const j = list.indexOf(e)
         if (j >= 0) list.splice(j, 1)
       }
+      const back = ids().downRejoins
+      if (back && list.some((x) => x.type === back.effect) && c[F.morale] === back.morale) c[F.side] = 0
       void fire(this, c, 13)
       this.downF(t)
     } else c[F.hp] = left

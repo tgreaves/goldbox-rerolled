@@ -52,7 +52,7 @@ describe('effect handler maps', () => {
   it('each game\'s named effect types (`ids`) are types of its handler table', () => {
     for (const [g, last] of TABLE) {
       const all: number[] = []
-      const walk = (v: unknown) => { if (typeof v === 'number') all.push(v); else if (v && typeof v === 'object') Object.values(v).forEach(walk) }
+      const walk = (v: unknown) => { if (typeof v === 'number') all.push(v); else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (k !== 'morale') walk(x) }
       walk(g.effects.ids)
       expect(all.length).toBeGreaterThan(20)
       // a type of the handler table, or (PoR) of the item handlers 128–139 by +0x3E − 0x80

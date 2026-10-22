@@ -66,7 +66,7 @@ For item handlers (128–139), the dispatcher is called with an **item pointer i
   - DS:681C is the dice count. DS:681E means "untargetable". DS:681F suppresses re-arming in `FUN_3723_001f`. DS:6820 is set by area spells. DS:6826 is a scratch far pointer, usually the combat-record target (+0x108 → +0x0A).
 - `FUN_3723_0000(t)` (0x37230): if t=0 **or** DS:6817=t, it sets DS:6818=0 and DS:6817=0. One call negates the damage (event 6) or blocks the effect being added (event 9).
 - `FUN_3723_001f(dur, power, type, char)` (0x3724F): if DS:681F=0, it re-adds `type` (flag 1) and returns 1; otherwise it returns 0. This is the self-re-arm used by periodic R effects.
-- `FUN_3723_0058(char, status, msg)` (0x37288): prints msg. Unless the char is already status 6/7/8, it sets status, clears can-act and HP, and fires event 13.
+- `FUN_3723_0058(char, status, msg)` (0x37288): prints msg. Unless the char is already status 6/7/8, it sets status, clears can-act and HP, removes the going-down effects (`FUN_5216_100a`, 0x372F0, O) and fires event 13.
 - `FUN_3723_0fac(pct, char)` (0x381DC): if the attacker has a weapon, distance > 1 and d100 ≤ pct, it prints "Avoids it", sets 6818=0, sets 6822=0xFF and decrements 6823 (missile deflection).
 - `FUN_3723_101d(char)` (0x3824D): returns the attacker's ammo (`FUN_10ba_2e8b`), else its weapon (+0xCC). Item +0x32 = plus, +0x2E = type, +0x2F..0x31 = name-word indices; the word table is at DS:10A7, 0x15 bytes per entry (0x76 "Mirror", 0x98 "Holy Symbol", 0xB1 "Silver").
 - `FUN_3723_1545(bonus, char)`: the target saves vs type 0 at the given bonus. On failure: "is Poisoned", add 55, status 6.

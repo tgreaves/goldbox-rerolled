@@ -149,6 +149,22 @@ DS:0A1A)[d], d the direction of the step onto the last creature listed on the fi
 one, ?; a conforming build takes the last step's); these lines are not cut by sight. The list (DS:744E/744F) leaves
 out the current combatant (DS:6520). Three spell handlers call it too (0x48A8C, 0x49522, 0x496D1).
 
+## 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) (O)
+
+PoR's `FUN_5216_100a` with CotAB's list: for i = 1..19 the remove routine 0x4ABBA with a null record
+(the first record of the type) for DS:0A31[i] = 7, 11, 13, 21, 23, 30, 31, 32, 51, 52, 53, 58, 59, 95,
+98, 136, 137, 139, 144, in that order. Against PoR's DS:0C14[1..16] (7, 11, 30, 31, 32, 51, 52, 53,
+54, 58, 59, 95, 98, 137, 74, 75) it adds 13, 21, 23, 136, 139 and 144 (the hold markers 0x8B/0x90) and
+drops 54 (the Hot Fire Shield in CotAB), 74 (dead) and 75 (Giant bane). Then, CotAB only, the
+find-effect routine 0x4F395 (`ed:9d`) for 0x4D (77, berserk): if found and morale (+0xF7) is 0xB3,
+side (+0x197) := 0 (**I**: a berserk NPC that goes down is the party's again). Called, as in PoR, from
+the set-status routine (0x299F4, after status, in-play := 0 and HP := 0; PoR `FUN_3723_0058` at
+0x272F0) and after the battle's "goes down" lines (0x2AB72; PoR 0x2B0CC); event 13 follows at both.
+
+A sibling of the same shape, 0x4C0BD (`e3:6b`), removes DS:0A45[1..4] = 13, 58, 139, 144 (PoR 0x431A1:
+DS:0C23[1..2] = 74, 75), called once (0x2445C; PoR 0x24434) from a per-combatant routine that first
+clears combat record +0x14 (**I**: the clean-up when a combatant leaves the battle).
+
 ## Open
 
 - Damage type 0x20 (breath, **I**) and 0x40 (**?**), §3.

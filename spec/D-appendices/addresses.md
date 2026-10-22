@@ -898,6 +898,8 @@ when its table column or sentence names CotAB.
 | 0x237FB | coab/combat, B/procedures | coab/combat: Cell table | `FUN_3334_0675` |
 | 0x238DA | coab/combat, B/procedures | coab/combat: Cell table |  |
 | 0x23E57 | coab/spells | coab/spells: 1. Dispatch and shared helpers |  |
+| 0x24434 | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
+| 0x2445C | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x24533 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x24C90 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x24CD6 | coab/combat | coab/combat: Map-area generator | `FUN_34c7_0221` |
@@ -944,6 +946,7 @@ when its table column or sentence names CotAB.
 | 0x26FF6 | coab/assets | coab/assets: GEO and WALLDEF: unchanged |  |
 | 0x270B5 | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) |  |
 | 0x27135 | coab/ecl | coab/ecl: Start-up menu and demo |  |
+| 0x272F0 | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x27350 | coab/records | coab/records: 10. Creation effects and paladin abilities |  |
 | 0x27369 | B/vocabularies | B/vocabularies: 1.1 The shared globals |  |
 | 0x273C1 | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers |  |
@@ -985,6 +988,7 @@ when its table column or sentence names CotAB.
 | 0x298ED | B/vocabularies | B/vocabularies: 3.8 On-hit effects |  |
 | 0x29973 | B/vocabularies | B/vocabularies: 3.3 Damage resistances and immunities |  |
 | 0x29993 | B/vocabularies | B/vocabularies: 3.8 On-hit effects |  |
+| 0x299F4 | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x29A23 | coab/spells, B/vocabularies | coab/spells: 2. Per spell id |  |
 | 0x29AA0 | B/vocabularies | B/vocabularies: 3.3 Damage resistances and immunities |  |
 | 0x29ACC | B/vocabularies | B/vocabularies: 3.2 Attack and damage modifiers |  |
@@ -1004,10 +1008,12 @@ when its table column or sentence names CotAB.
 | 0x2A74C | coab/combat | coab/combat: The backstab |  |
 | 0x2AA62 | coab/combat, B/procedures | coab/combat: Casting | `FUN_3aae_02f9` |
 | 0x2AAB4 | coab/combat | coab/combat: Casting |  |
+| 0x2AB72 | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x2AC98 | coab/combat, coab/tables, B/procedures | coab/combat: Cell table | `FUN_3aae_0712` |
 | 0x2AD05 | coab/combat, B/procedures | coab/combat: Cell table |  |
 | 0x2AD64 | B/procedures | B/procedures: 15.5 Battlefield movement |  |
 | 0x2AD78 | coab/combat, B/procedures | coab/combat: Cell table |  |
+| 0x2B0CC | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x2B778 | coab/combat | coab/combat: The former class in battle |  |
 | 0x2B7EE | coab/combat | coab/combat: The former class in battle |  |
 | 0x2C2F7 | coab/ecl | coab/ecl: Opcodes |  |
@@ -1180,6 +1186,7 @@ when its table column or sentence names CotAB.
 | 0x4245A | coab/effects, B/vocabularies | coab/effects: Event → types, in the order called |  |
 | 0x42D5F | coab/records | coab/records: 8. Random treasure items |  |
 | 0x42D97 | coab/ecl, coab/records, coab/tables, B/procedures | coab/ecl: Random treasure types | `FUN_4c2d_1010` |
+| 0x431A1 | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x43F70 | coab/spells | coab/spells: CotAB spell handlers: diff against PoR `engine/spells.md |  |
 | 0x43F8E | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: The former class afterwards |  |
 | 0x449E4 | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: The former class afterwards |  |
@@ -1264,6 +1271,8 @@ when its table column or sentence names CotAB.
 | 0x4BE31 | coab/camp, coab/combat | coab/camp: 1. Fix |  |
 | 0x4BE7C | coab/spells, B/vocabularies | coab/spells: 2. Per spell id | `FUN_5216_0de3` |
 | 0x4C023 | coab/effects | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
+| 0x4C05B | coab/effects, B/vocabularies | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
+| 0x4C0BD | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x4C0FD | coab/spells | coab/spells: 1. Dispatch and shared helpers |  |
 | 0x4C160 | coab/spells | coab/spells: 1. Dispatch and shared helpers | `FUN_5216_10e4` |
 | 0x4C1D8 | coab/spells, B/procedures | coab/spells: 1. Dispatch and shared helpers | `FUN_5216_115c` |
@@ -1297,7 +1306,7 @@ when its table column or sentence names CotAB.
 | 0x4E381 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x4E570 | coab/combat | coab/combat: Casting | `FUN_10ba_148b` |
 | 0x4E5EC | coab/ecl | coab/ecl: Opcodes |  |
-| 0x4F395 | coab/ecl | coab/ecl: Opcodes |  |
+| 0x4F395 | coab/ecl, coab/effects | coab/ecl: Opcodes |  |
 | 0x4F5B4 | coab/effects | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x4F758 | coab/effects | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x4F8BF | coab/chargen-and-progression, coab/spells, coab/tables, B/procedures | coab/chargen-and-progression: 1. The recalculation | `FUN_10ba_26c2` |

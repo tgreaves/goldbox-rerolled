@@ -66,8 +66,16 @@ export interface EffectIds {
   gazeReflectable: number
   /** helpless: may be slain and makes no attack of opportunity; "(Helpless)" on the combat card (PoR FUN_10ba_09e3) */
   helpless: number[]
-  /** the records taken off a combatant that goes down (PoR FUN_5216_100a) */
+  /**
+   * the records taken off a combatant that goes down (PoR FUN_5216_100a, CotAB 0x4C05B): the first of
+   * each type, in this order, through the removal routine
+   */
   goingDown: number[]
+  /**
+   * then (CotAB 0x4C05B → 0x4F395): one holding `effect` whose morale byte is `morale` goes back to
+   * side 0; null: nothing
+   */
+  downRejoins: { effect: number; morale: number } | null
   /** a combatant holding one of these (grabbing, draining blood) makes no attack of opportunity */
   noOpportunity: number[]
   /** Cure Disease (PoR FUN_4e53_228a): each group's first type, then its partners when the first went */
@@ -93,7 +101,8 @@ const POR_IDS: EffectIds = {
   animated: 0x20, // FUN_2d14_0510
   gazeReflectable: 0x7f,
   helpless: [0x1f, 0x33, 0x34, 0x35], // FUN_10ba_09e3
-  goingDown: [7, 11, 30, 31, 32, 51, 52, 53, 54, 58, 59, 74, 75, 95, 98, 137], // FUN_5216_100a
+  goingDown: [7, 11, 30, 31, 32, 51, 52, 53, 54, 58, 59, 95, 98, 137, 74, 75], // FUN_5216_100a: DS:0C14[1..16]
+  downRejoins: null,
   noOpportunity: [0x4a, 0x4b], // grab, blood drain
   diseases: [[0x22], [0x2b, 0x2c, 0x1f], [0x32, 0x39]], // FUN_4e53_228a
   strength: [12, 38], // FUN_5216_115c
@@ -103,12 +112,14 @@ const POR_IDS: EffectIds = {
 /**
  * CotAB's: PoR's numbers where the type is unchanged (spec/A-games/coab/effects.md §2). Cure Disease is
  * PoR's routine byte for byte (0x46FA7), 0x32 and 0x39 included though they are the Hot Fire Shield and
- * engulf in CotAB (spec/A-games/coab/spells.md). `goingDown`, `noOpportunity` and `helpless` are PoR's
- * lists, not yet read in CotAB's binary (?): CotAB's 7, 54, 75 and 137 are other effects, 74 is dead
- * and its holds use 0x8B and 0x90.
+ * engulf in CotAB (spec/A-games/coab/spells.md). `helpless` is PoR's list (0x4DC2B: DS:27CC[1..4]) and
+ * so is `noOpportunity` (0x2B08D, 0x2B0A7), though CotAB's 75 is Giant bane and 74 is dead.
  */
 const COAB_IDS: EffectIds = {
   ...POR_IDS,
+  // 0x4C05B: DS:0A32[1..19]; against PoR's, 13, 21, 23, 136, 139, 144 added, 54, 74, 75 gone
+  goingDown: [7, 11, 13, 21, 23, 30, 31, 32, 51, 52, 53, 58, 59, 95, 98, 136, 137, 139, 144],
+  downRejoins: { effect: 0x4d, morale: 0xb3 }, // 0x4F395: a berserk NPC (77) back with the party
   stat: { strAdd: 0x26, strSet: [0x92, 0x0c], feebleminded: 0x44, chaAdd: 0x0e, regenerate: 0x3e }, // 0x4C389
 }
 
