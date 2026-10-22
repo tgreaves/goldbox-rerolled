@@ -17,6 +17,13 @@ export interface EndingScript {
   /** offset in GAME.OVR of the overlay segment that holds the captions (the strings' offsets count from it) */
   cs: number
   steps: EndingStep[]
+  /**
+   * What PROGRAM 8 does after the ending (null: nothing, back to the script): script variables set
+   * (canonical address, value); the party restored (HP at maximum, status Okay, in play); the party
+   * screen, its Begin refused while the variable `won` is not 0; then `savePrompt` (the address of the
+   * game's question) and, on Yes, Save; then the game is left (the original returns to DOS)
+   */
+  after: { set: [number, number][]; restoreParty: boolean; won: number; savePrompt: number } | null
 }
 
 const fin = (record: number, at: [number, number], more: Partial<EndingPicture> = {}): EndingStep => ({ picture: { file: 'FINAL', record, at, ...more } })
@@ -32,6 +39,7 @@ export const POR_ENDING: EndingScript = {
     { text: [0x239, 0x260, 0x288, 0x29b] }, fin(8, [16, 0], { animate: true, loops: 1 }),
     { wait: true },
   ],
+  after: null, // PROGRAM 8 (0x1CA86) plays the ending and returns
 }
 
 // image 0x3D02C: captions in the text window, PIC 74, 75 and the animated 77 by the routine 0x3CA89,
@@ -47,4 +55,7 @@ export const COAB_ENDING: EndingScript = {
     { picture: { file: 'BIGPIC', record: 122 } },
     { text: [0x104e, 0x1083, 0x10be, 0x10f4] }, { wait: true },
   ],
+  // PROGRAM 8 (0x1B9AD): ECL 0x4CFD and 0x7EA8 := 0xFF, every member restored, the party screen (0x36A1C,
+  // Begin refused while 0x4CFD is set: 0x36DCD), "You've won. Save before quitting?" (0x1B92B), then DOS
+  after: { set: [[0x4afd, 0xff], [0x6da8, 0xff]], restoreParty: true, won: 0x4afd, savePrompt: 0x1b92b },
 }

@@ -206,6 +206,12 @@ PoR's steps (**O**, `FUN_4804_02a4`, [por/ending.md](../A-games/por/ending.md)):
 members, 5 at (104, 72) from 3, 6 at (0, 72) from 4; text 0x17B, 0x19F, 0x1C4, 0x1EB, 0x20B, 0x230;
 FINAL 7 at (16, 0) animated; text 0x239, 0x260, 0x288, 0x29B; FINAL 8 at (16, 0) animated once; wait.
 
+`after` (null: PoR, whose PROGRAM 8 at 0x1CA86 plays the ending and returns): what PROGRAM 8 does next,
+`{ set, restoreParty, won, savePrompt }`: the script variables `set` ([canonical address, value]), every
+member restored (HP := max, status 0, in play 1), the party screen with Begin refused while `won` is not
+0, the question at `savePrompt` and Save on Yes, then the game left. CotAB (**O**, 0x1B9AD): set
+[[0x4AFD, 0xFF], [0x6DA8, 0xFF]] (its ECL 0x4CFD and 0x7EA8), restoreParty, won 0x4AFD, savePrompt 0x1B92B.
+
 CotAB's steps (**O**, image 0x3D02C): text 0xC87, 0xCB6, 0xCEB, 0xD21; wait; text 0xD76, 0xDA7, 0xDE0,
 0xE15; PIC 0x4A animated; wait; text 0xE4F, 0xE81, 0xEBB, 0xEF2; PIC 0x4B animated; wait; text 0xEFF,
 0xF2D, 0xF62, 0xF95; PIC 0x4D animated; PIC 0x41; text 0xF9B, 0xFC2, 0xFF7, 0x102A; wait; BIGPIC 122;

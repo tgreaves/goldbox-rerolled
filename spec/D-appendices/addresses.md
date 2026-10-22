@@ -779,8 +779,9 @@ when its table column or sentence names CotAB.
 | 0x1B773 | coab/ecl, B/script-vm-map | coab/ecl: Opcodes | `FUN_29c3_2ccf` |
 | 0x1B7B2 | coab/ecl, B/script-vm-map | coab/ecl: CALL targets |  |
 | 0x1B8E4 | coab/ecl | coab/ecl: Engine entry points | `FUN_29c3_2dd3` |
-| 0x1B92B | coab/ecl | coab/ecl: Opcodes |  |
+| 0x1B92B | coab/ecl, B/profile, C/app-flow | coab/ecl: Opcodes |  |
 | 0x1B94E | coab/ecl | coab/ecl: Opcodes |  |
+| 0x1B9AD | B/profile, C/app-flow | B/profile: 3.5 The ending (`EndingScript`) |  |
 | 0x1B9C2 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1BA7E | coab/ecl, B/script-vm-map | coab/ecl: Start-up menu and demo |  |
 | 0x1BA8F | coab/ecl | coab/ecl: Opcodes |  |
@@ -1151,7 +1152,7 @@ when its table column or sentence names CotAB.
 | 0x36A1C | coab/assets, coab/ecl | coab/assets: 7. Start-up, title, copy protection |  |
 | 0x36A6C | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x36CEF | coab/chargen-and-progression | coab/chargen-and-progression: Where |  |
-| 0x36DCD | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x36DCD | coab/ecl, C/app-flow | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x36DD5 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x3708F | B/procedures | B/procedures: 7. Creation and training values | `FUN_417f_056c` |
 | 0x371F6 | coab/records | coab/records: 10. Creation effects and paladin abilities |  |

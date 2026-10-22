@@ -51,6 +51,7 @@ import { msg, entry, word, ask, type MenuOpts } from '../games/strings'
 import { wordButton, yesNo, listExit } from './sheet'
 import { yes } from './camp'
 import { playEnding } from './ending'
+import { text } from '../data/gametext'
 import { onClose } from './sheet'
 import { openSettings, reducedMotion, viewMode } from './settings'
 import { accountLabel, openAccount } from './account'
@@ -566,6 +567,18 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       }
       if (what === 'ending') {
         await playEnding(dialog, files, engine.block, engine.party().length, engine.speed)
+        const after = files.game.ending.after
+        if (!after) return
+        for (const [a, v] of after.set) engine.write(a, v)
+        if (after.restoreParty) for (const c of engine.party()) { c[F.hp] = c[F.maxHp]; c[F.status] = 0; c[F.inPlay] = 1 }
+        drawRoster()
+        townMode = 'camp'
+        try { await trainingHall() } finally { townMode = null }
+        const y = word('yesNo', 'Y')
+        if ((await ask(menu, [y, word('yesNo', 'N')], { prompt: text(after.savePrompt).trimEnd() })) === y.key) await saveGame()
+        // the original returns to DOS; the port's way out is the party screen, as for "Quit TO DOS"
+        engine.quit = true
+        setTimeout(leave, 0)
         return
       }
       if (what === 'party screen') {
@@ -1197,7 +1210,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       // FUN_417f_0161, CotAB 0x36A1C), the key each one's first letter
       // CotAB's Human Change Classes only for a human who never changed class (0x36A93)
       const change = game().menus.partyChangeClass !== undefined && offersChangeClass(engine.cur)
-      const fns = (['partyCreate', 'partyDrop', 'partyModify', 'partyTrain', ...(change ? ['partyChangeClass'] as const : []), 'partyView', 'partyAdd', 'partyRemove', 'partySave', 'partyBegin'] as const).map(entry)
+      // Begin is refused once the game is won (CotAB 0x36DCD: ending.after.won set, a party, not the demo)
+      const won = game().ending.after
+      const begin = !(won && engine.read(won.won) !== 0 && party.length && !engine.demo)
+      const fns = (['partyCreate', 'partyDrop', 'partyModify', 'partyTrain', ...(change ? ['partyChangeClass'] as const : []), 'partyView', 'partyAdd', 'partyRemove', 'partySave', ...(begin ? ['partyBegin'] as const : [])] as const).map(entry)
       const o = await ask(menu, fns, { prompt: 'Choose a function:' })
       const c = engine.cur
       if (o === 'B' || o === '') return

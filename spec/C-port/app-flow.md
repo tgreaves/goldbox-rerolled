@@ -268,7 +268,12 @@ PROGRAM 8 ([B-model/profile.md §3.5](../B-model/profile.md#35-the-ending-ending
   ((10 − speed) × 5) / 2 times. **A key, a click on the picture or Continue skips the current
   animation** (its last frame stays) or ends a wait; Escape does the same.
 - Without `GAME.OVR` the captions read "The captions need GAME.OVR: re-import the *FOLDER* folder."
-- When the panel closes the script goes on (PoR: the walk back to New Phlan).
+- When the panel closes, with no `ending.after` (PoR), the script goes on (PoR: the walk back to New
+  Phlan). With one (CotAB, PROGRAM 8 at 0x1B9AD): its variables are set (ECL 0x4CFD, 0x7EA8 := 0xFF), every
+  member is restored (HP at maximum, Okay, in play), the in-game party screen opens with **Begin** left out
+  of its functions while `won` is set (0x36DCD; a party, not the demo), and when it is left the game's
+  question "You've won. Save before quitting?" (0x1B92B) with Yes and No; Yes opens Save. Then the game
+  ends as for "Quit TO DOS": the port's way out is the party screen ([screens.md §6.1](screens.md#61-the-camp-menu)).
 
 ## 9. The party destroyed and the game over
 
