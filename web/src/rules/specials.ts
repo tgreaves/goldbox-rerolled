@@ -7,7 +7,7 @@ import type { Effect } from '../data/effects'
 import { text } from '../data/gametext'
 import type { HandlerSpec } from '../games/effectrules'
 import { F } from '../games/fields'
-import { fx, has, removeEffect, removeType, type FxHost } from './effects'
+import { fx, has, ids, removeEffect, removeType, type FxHost } from './effects'
 
 const num = (p: HandlerSpec, k: string) => p[k] as number
 const say = (h: FxHost, c: Uint8Array, msg: string) => h.print(`${h.name(c)} ${msg}`)
@@ -51,7 +51,7 @@ export async function breathBolt(h: FxHost, eff: Effect, c: Uint8Array, p: Handl
   if (x === at.x + 1) x++
   if (y === at.y + 1) y++
   h.aimed = { x, y }
-  await removeType(h, c, 25)
+  await removeType(h, c, ids().invisible)
   h.flyCells?.(at, h.aimed, 19, 4, 50)
   h.boltHit(x, y, c[F.maxHp], num(p, 'save'))
   h.bolt(c, num(p, 'len'), c[F.maxHp], num(p, 'save'), false)
@@ -72,7 +72,7 @@ export async function throwLightning(h: FxHost, _e: Effect, c: Uint8Array, p: Ha
   if (!at || !h.aimed || !h.boltHit || !h.bolt) return
   say(h, c, txt(p, 'msg'))
   await h.aimSpell?.(c, num(p, 'spell'))
-  await removeType(h, c, 25)
+  await removeType(h, c, ids().invisible)
   h.flyCells?.(at, h.aimed, 19, 4, 50)
   h.boltHit(h.aimed.x, h.aimed.y, dice(h, num(p, 'count'), num(p, 'sides')), num(p, 'save'))
   h.bolt(c, num(p, 'len'), dice(h, num(p, 'count'), num(p, 'sides')), num(p, 'save'), false)
@@ -161,7 +161,7 @@ export async function gazeStone(h: FxHost, _e: Effect, c: Uint8Array, p: Handler
   else h.fly?.(c, t, 'gaze')
   let victim = t
   const word = num(p, 'word')
-  if (has(h, c, 0x7f) && h.itemsOf(t).some((it) => it.ready && [0x2f, 0x30, 0x31].some((k) => it.raw[k] === word))) {
+  if (has(h, c, ids().gazeReflectable) && h.itemsOf(t).some((it) => it.ready && [0x2f, 0x30, 0x31].some((k) => it.raw[k] === word))) {
     say(h, t, txt(p, 'reflects'))
     if (a && b) h.flyCells?.(b, a, 18, 4, 45)
     else h.fly?.(t, c, 'gaze')

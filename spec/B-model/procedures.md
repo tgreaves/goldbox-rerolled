@@ -338,9 +338,9 @@ code immediates.
 
 The fee is asked ("… will only cost *n* gold pieces. pay for cure?") and paid first, whether or not
 the cure then does anything. PoR: blind 1 000, disease 1 000, clw 100, csw 350, ccw 600, poison 1 000,
-raise 5 500, curse 3 500, stone 2 000. CotAB: the same with heal 5 000 after ccw. *Known gap:* the
-effect types named in this table are constants of the procedure in shared code (the same in both
-games); they belong in the profile as named ids ([adding-a-game.md §4](adding-a-game.md#4-what-is-still-a-paired-procedure)).
+raise 5 500, curse 3 500, stone 2 000. CotAB: the same with heal 5 000 after ccw. The effect types the cures remove are the profile's
+`effects.ids` (`blind`, `poisoned` with `slowPoison` and `poisonTick`, `cursed`, Raise Dead's
+`animated` and `poisoned`; CotAB's Heal also `stat.feebleminded`), the diseases START.EXE's table.
 
 ## 10. Class abilities
 
@@ -809,4 +809,3 @@ null), `aiFirstSlot` (PoR 0, CotAB 1). Cure Light Wounds' patient test is the sp
 ## Open
 
 - CotAB's druid and monk fixed hit points (2) are **I** (no druid or monk in play).
-- The temple's effect ids (§9) are a known gap of the reference implementation.

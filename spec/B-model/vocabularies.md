@@ -92,6 +92,7 @@ The module `effects` of the profile:
 | `items` | +0x3E & 0x7F → an item behaviour, for items with +0x3E ≥ 0x80 |
 | `replaces` | the add-effect rule: `longerOrPermanent` or `anyTimed` ([procedures.md §12.1](procedures.md#121-adding-and-removing-effects)) |
 | `healBlock` | effect types that stop unforced healing ([procedures.md §12.2](procedures.md#122-healing)) |
+| `ids` | the effect types the shared procedures add, test or remove, named by what they are (`poisoned`, `blind`, `helpless` …, the current-stat routine's `stat` or null); each game's own numbers |
 | `names` | effect type → the address of its name in the camp Display window (PoR `FUN_3f81_0fbc`, CotAB 0x30DDA; [D-appendices/strings.md §5](../D-appendices/strings.md#5-texts-in-the-profile-data)) |
 
 Text parameters of the handler and spell maps (`msg`, `msgs`, `death`, `names` and the others strings.md §5 lists) are image addresses of the game's strings, each the copy the cited routine prints; where the tables below quote the words, they identify the line (D1), the profile holds the address.

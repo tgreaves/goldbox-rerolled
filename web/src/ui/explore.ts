@@ -711,8 +711,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       if (st) for (const v of memorised(raw)) if (v > 0 && v < 0x80) { const n = st.get(v)?.name; if (n) counts.set(n, (counts.get(n) ?? 0) + 1) }
       const spells = [...counts].map(([n, k]) => (k > 1 ? `${n} ×${k}` : n)).join(', ')
       const effects = effectNames(engine, raw)
-      // the combat panel's "(Helpless)" (FUN_10ba_09e3): effects 0x33-0x35 and 0x1F
-      const helpless = up && engine.effectsOf(raw).some((e) => [0x1f, 0x33, 0x34, 0x35].includes(e.type))
+      // the combat panel's "(Helpless)" (FUN_10ba_09e3)
+      const helpless = up && engine.effectsOf(raw).some((e) => game().effects.ids.helpless.includes(e.type))
       const train = t ? canTrain(t, raw) : false
       const xpp = t ? xpProgress(t, raw) : null
       const xpBar = t ? `<span class="xpbar${train ? ' ready' : ''}" title="${escape(xpp ? xpp.text : 'Every class is at its highest level')}"><span style="width:${xpp ? xpp.pct : 100}%"></span></span>` : ''

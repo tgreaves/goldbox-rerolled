@@ -6,7 +6,7 @@ import type { Spell } from '../data/spells'
 import type { Effect } from '../data/effects'
 import { COLS, ROWS, cellTable, mapBattlefield, wildBattlefield, wildField, type Battlefield, type CellInfo } from './battlefield'
 import { dexMissile, recalc } from './equip'
-import { fx, fire, damageText, healedLine, addEffect, addRaw, removeEffect, removeFirst, removeOne, removeType, runEffect, type FxHost } from './effects'
+import { fx, fire, damageText, healedLine, addEffect, addRaw, ids, removeEffect, removeFirst, removeOne, removeType, runEffect, type FxHost } from './effects'
 import { heal as healChar, isScroll } from './camp'
 import { amount, castShared, line, msgOf, spellSpec, term, textOf } from './spellkinds'
 import type { Amount, SpellSpec } from '../games/spellrules'
@@ -296,11 +296,11 @@ export class Battle implements FxHost {
         const z = this.clouds.find((o) => o.cell === rule.gas.cell && o.cells.some((q) => q.laid && q.x === t.x && q.y === t.y))
         const keep = this.current_
         if (z) this.current_ = this.of(z.owner) ?? keep
-        const [type, dur, said] = saved ? [0x1e, 1, msg('cough')] : [0x1f, this.e.roll(1, 4) + 1, msg('nausea')]
+        const [type, dur, said] = saved ? [ids().coughing, 1, msg('cough')] : [ids().nauseated, this.e.roll(1, 4) + 1, msg('nausea')]
         await addEffect(this, t.c, type, dur, 0xff, 0, 0, saved, true, said) // I: runs the new record (the original the first of its type)
         this.current_ = keep
-      } else if (saved) { this.print(`${name(t.c)} ${msg('cough')}`); addRaw(this, t.c, 0x1e, 1, 0xff, 0) }
-      else { this.print(`${name(t.c)} ${msg('nausea')}`); addRaw(this, t.c, 0x1f, this.e.roll(1, 4) + 1, 0xff, 0); this.endTurnF(t) }
+      } else if (saved) { this.print(`${name(t.c)} ${msg('cough')}`); addRaw(this, t.c, ids().coughing, 1, 0xff, 0) }
+      else { this.print(`${name(t.c)} ${msg('nausea')}`); addRaw(this, t.c, ids().nauseated, this.e.roll(1, 4) + 1, 0xff, 0); this.endTurnF(t) }
     }
     const kill = rule.kill
     if (kill && on(kill.cell)) {
@@ -1166,7 +1166,7 @@ export class Battle implements FxHost {
     if (a.c[F.attacksLeft] <= 0 && a.c[F.attacksLeft + 1] <= 0) this.endTurnF(a)
   }
 
-  helpless(c: Uint8Array) { return this.e.effectsOf(c).some((e) => [31, 51, 52, 53].includes(e.type)) }
+  helpless(c: Uint8Array) { return this.e.effectsOf(c).some((e) => ids().helpless.includes(e.type)) }
   large(c: Uint8Array) { return c[F.sizeFlags] > 0x80 || (c[F.sizeFlags] & 7) > 1 }
 
   /** Attack loop (FUN_3aae_1406); returns the attacks made with hand 1. */
@@ -1193,7 +1193,7 @@ export class Battle implements FxHost {
       this.ui.sound(7, 'transient') // FUN_3aae_1406: transient
       this.print(`${name(ac)} ${msg('slaysHelpless')} ${name(tc)} ${msg('cruelBlow')}`)
       this.inflict(t, tc[F.hp] + 5)
-      await removeType(this, ac, 25)
+      await removeType(this, ac, ids().invisible)
       ac[F.attacksLeft] = ac[F.attacksLeft + 1] = 0
       return 0
     }
@@ -1287,7 +1287,7 @@ export class Battle implements FxHost {
 
   /** To-hit (FUN_5216_0cb7). */
   async toHit(a: Uint8Array, t: Uint8Array, acByte: number): Promise<boolean> {
-    await removeType(this, a, 25)
+    await removeType(this, a, ids().invisible)
     let r = this.e.roll(1, 20)
     if (r <= 1) return false
     if (r === 20) r = 100
@@ -1367,7 +1367,7 @@ export class Battle implements FxHost {
       // a charm ends); the callbacks' synchronous part runs here, the record goes at once
       const list = this.e.effectsOf(c)
       for (const e of [...list]) {
-        if (![7, 11, 30, 31, 32, 51, 52, 53, 54, 58, 59, 74, 75, 95, 98, 137].includes(e.type)) continue
+        if (!ids().goingDown.includes(e.type)) continue
         void removeEffect(this, c, e)
         const j = list.indexOf(e)
         if (j >= 0) list.splice(j, 1)
@@ -1425,7 +1425,7 @@ export class Battle implements FxHost {
       if (!this.inPlay(f)) break
       const still = Math.max(Math.abs(e.x - nx), Math.abs(e.y - ny)) <= 1
       if (still || this.helpless(e.c) || !this.canTarget(e, f)) continue
-      if (this.e.effectsOf(e.c).some((x) => x.type === 0x4a || x.type === 0x4b)) continue
+      if (this.e.effectsOf(e.c).some((x) => ids().noOpportunity.includes(x.type))) continue
       let toward = (this.dirTo(e, f) - e.r[9] + 8) % 8
       if (toward > 4) toward = 8 - toward
       if (!(s8(e.r[3]) > 0 || e.r[0xf] === 0 || toward <= 2)) continue
@@ -1482,8 +1482,8 @@ export class Battle implements FxHost {
   moveOf(f: Fighter) {
     let m = f.c[F.move] + (this.side(f) === 0 ? s8(this.e.read(0x6e72)) : 0)
     if (m < 1 || m > 96) m = 1
-    if (this.e.effectsOf(f.c).some((x) => x.type === 0x27)) m *= 2
-    if (this.e.effectsOf(f.c).some((x) => x.type === 0x2a)) m >>= 1
+    if (this.e.effectsOf(f.c).some((x) => x.type === ids().hasted)) m *= 2
+    if (this.e.effectsOf(f.c).some((x) => x.type === ids().slowed)) m >>= 1
     return 2 * m
   }
 
@@ -2139,7 +2139,7 @@ export class Battle implements FxHost {
       const nx = f.x + DX[d], ny = f.y + DY[d]
       if (this.bf.get(ny, nx) === 0) { if (fleeing) { await this.flee(f); return false } continue }
       if (this.occupied(nx, ny, f.size, f) || !this.passable(nx, ny, f.size)) continue
-      if (this.bf.get(ny, nx) === 0x1e && !this.e.effectsOf(f.c).some((x) => [0x20, 0x1e, 0x6f, 0x7d].includes(x.type))) continue
+      if (this.bf.get(ny, nx) === R.clouds.gas.cell && !this.e.effectsOf(f.c).some((x) => R.clouds.gas.probe.includes(x.type))) continue
       // the probe (FUN_3334_0675, CotAB 0x237FB) refuses a direction whose byte (or cost) is as much as
       // the movement left, or whose cost is more; the next preference is tried
       if (this.moveTest(nx, ny, d) >= f.r[6] || this.stepCost(nx, ny, d) > f.r[6]) continue

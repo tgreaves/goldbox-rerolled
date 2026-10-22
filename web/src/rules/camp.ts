@@ -104,7 +104,7 @@ export function readableScrolls(c: Uint8Array, items: Item[], fx: Effect[], t: I
   return items.filter((it) => {
     if (!isScroll(it, t)) return false
     const cleric = c[F.levels] > 0 && t.baseOf(it)?.slot === 12
-    if (fx.some((f) => f.type === 0x10) || cleric) it.hidden = 0
+    if (fx.some((f) => f.type === game().effects.ids.readMagic) || cleric) it.hidden = 0
     return it.hidden === 0
   })
 }

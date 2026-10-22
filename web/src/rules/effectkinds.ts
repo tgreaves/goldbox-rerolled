@@ -12,7 +12,7 @@ import { F } from '../games/fields'
 import { R, classLevel, formerLevelsCount } from '../games/rules'
 import { T } from '../games/tables'
 import { Item as ItemRecord, ITEM_SIZE } from '../data/items'
-import { addEffect, addRaw, deflect, drain, fire, fx, handle, has, healedLine, negate, rearm, removeEffect, removeFirst, removeType, restoreStr, runEffect, setStr, strDec, strKey, type FxHost } from './effects'
+import { addEffect, addRaw, deflect, drain, fire, fx, handle, has, healedLine, ids, negate, rearm, removeEffect, removeFirst, removeType, restoreStr, runEffect, setStr, strDec, strKey, type FxHost } from './effects'
 import { refillUses } from './abilities'
 import { strDamageBonus } from './equip'
 import { thiefSkills } from './chargen'
@@ -979,6 +979,8 @@ export function behave(h: FxHost, spec: HandlerSpec, eff: Effect, c: Uint8Array,
  * CHA: kind 6 −1, kind 8 +1, effect 0x0E adds its power. Kind 8 needs a base below 18.
  */
 export function effectiveStat(h: FxHost, c: Uint8Array, stat: number): void | Promise<void> {
+  const S = ids().stat
+  if (!S) return // a game without the routine
   const base = (k: number) => c[F.baseStat[k]]
   let cur = base(stat), pct = c[F.baseStrPct]
   let cand = 0, candPct = 0, override = 0xff
@@ -1010,7 +1012,7 @@ export function effectiveStat(h: FxHost, c: Uint8Array, stat: number): void | Pr
   }
   switch (stat) {
     case 0: {
-      const e38 = first(0x26)
+      const e38 = first(S.strAdd)
       if (e38) {
         decode(e38)
         if (cur <= 18 && pct < 100) {
@@ -1023,22 +1025,22 @@ export function effectiveStat(h: FxHost, c: Uint8Array, stat: number): void | Pr
         }
         take()
       }
-      for (const type of [0x92, 0x0c]) { const e = first(type); if (e) { decode(e); take() } }
+      for (const type of S.strSet) { const e = first(type); if (e) { decode(e); take() } }
       c[F.stat[0]] = override !== 0xff ? override : cur
       c[F.strPct] = override !== 0xff ? 0 : pct
       return
     }
     case 1: case 2:
-      if (first(0x44) && override > 7) override = 3
+      if (first(S.feebleminded) && override > 7) override = 3
       c[F.stat[stat]] = override !== 0xff ? override : cur
       return
     case 3: c[F.stat[3]] = cur; return
-    case 5: { const e = first(0x0e); if (e) add(e.power); c[F.stat[5]] = cur; return }
+    case 5: { const e = first(S.chaAdd); if (e) add(e.power); c[F.stat[5]] = cur; return }
     case 4: {
       conHitPoints(h, c, cur)
       c[F.stat[4]] = cur
-      if (cur >= 20) { if (!first(0x3e)) addRaw(h, c, 0x3e, 0x3c, 0xff, 1); return }
-      return removeFirst(h, c, 0x3e).then(() => {})
+      if (cur >= 20) { if (!first(S.regenerate)) addRaw(h, c, S.regenerate, 0x3c, 0xff, 1); return }
+      return removeFirst(h, c, S.regenerate).then(() => {})
     }
   }
 }

@@ -33,6 +33,83 @@ export interface EffectRules {
   names: Record<number, number>
   /** effect types whose presence stops unforced healing (PoR FUN_5216_175d: mummy rot 0x32; CotAB 0x4CE85: none) */
   healBlock: number[]
+  /** the effect types the shared procedures add, test or remove by what they are */
+  ids: EffectIds
+}
+
+/**
+ * Effect types named by what they are, for the procedures outside the handlers that add, test or
+ * remove them (the handlers' own types are their parameters). Each game gives its own numbers.
+ */
+export interface EffectIds {
+  /** items in the party's hands show as magic (Detect Magic) */
+  detectMagic: number
+  /** scrolls can be read (Read Magic; PoR FUN_4e53_044e) */
+  readMagic: number
+  /** invisible: ends when the holder attacks or breathes */
+  invisible: number
+  /** the gas cloud's effects on a creature that saved (coughing) or did not (nauseated, helpless) */
+  coughing: number
+  nauseated: number
+  /** movement doubled / halved (the battle's movement, PoR FUN_3aae_0d23) */
+  hasted: number
+  slowed: number
+  /** poisoned, Slow Poison, and the slowed poison's tick */
+  poisoned: number
+  slowPoison: number
+  poisonTick: number
+  blind: number
+  cursed: number
+  /** an animated dead (Raise Dead takes it away) */
+  animated: number
+  /** a gazer whose gaze a readied item of its word turns back */
+  gazeReflectable: number
+  /** helpless: may be slain and makes no attack of opportunity; "(Helpless)" on the combat card (PoR FUN_10ba_09e3) */
+  helpless: number[]
+  /** the records taken off a combatant that goes down (PoR FUN_5216_100a) */
+  goingDown: number[]
+  /** a combatant holding one of these (grabbing, draining blood) makes no attack of opportunity */
+  noOpportunity: number[]
+  /** Cure Disease (PoR FUN_4e53_228a): each group's first type, then its partners when the first went */
+  diseases: number[][]
+  /** the STR records whose active one holds the STR to restore (PoR FUN_5216_115c) */
+  strength: number[]
+  /**
+   * the current-stat routine's types (CotAB 0x4C389): STR added, STR set, INT and WIS to 3, CHA added,
+   * CON 20 regeneration; null for a game without the routine (PoR)
+   */
+  stat: { strAdd: number; strSet: number[]; feebleminded: number; chaAdd: number; regenerate: number } | null
+}
+
+/** PoR's (spec/A-games/engine/effects.md §2, each at the routine cited) */
+const POR_IDS: EffectIds = {
+  detectMagic: 5, // FUN_10ba_0442: "* " on item names
+  readMagic: 0x10, // FUN_4e53_044e
+  invisible: 25,
+  coughing: 0x1e, nauseated: 0x1f, // FUN_5216_0ae7, the gas cloud
+  hasted: 0x27, slowed: 0x2a, // the battle's movement
+  poisoned: 0x37, slowPoison: 0x16, poisonTick: 0x0f, // Slow Poison 185b, temple FUN_2d14_0d09
+  blind: 0x21, cursed: 0x24, // temple FUN_2d14_0d09
+  animated: 0x20, // FUN_2d14_0510
+  gazeReflectable: 0x7f,
+  helpless: [0x1f, 0x33, 0x34, 0x35], // FUN_10ba_09e3
+  goingDown: [7, 11, 30, 31, 32, 51, 52, 53, 54, 58, 59, 74, 75, 95, 98, 137], // FUN_5216_100a
+  noOpportunity: [0x4a, 0x4b], // grab, blood drain
+  diseases: [[0x22], [0x2b, 0x2c, 0x1f], [0x32, 0x39]], // FUN_4e53_228a
+  strength: [12, 38], // FUN_5216_115c
+  stat: null,
+}
+
+/**
+ * CotAB's: PoR's numbers where the type is unchanged (spec/A-games/coab/effects.md §2). Cure Disease is
+ * PoR's routine byte for byte (0x46FA7), 0x32 and 0x39 included though they are the Hot Fire Shield and
+ * engulf in CotAB (spec/A-games/coab/spells.md). `goingDown`, `noOpportunity` and `helpless` are PoR's
+ * lists, not yet read in CotAB's binary (?): CotAB's 7, 54, 75 and 137 are other effects, 74 is dead
+ * and its holds use 0x8B and 0x90.
+ */
+const COAB_IDS: EffectIds = {
+  ...POR_IDS,
+  stat: { strAdd: 0x26, strSet: [0x92, 0x0c], feebleminded: 0x44, chaAdd: 0x0e, regenerate: 0x3e }, // 0x4C389
 }
 
 /** A behaviour key (rules/effectkinds.ts) and its parameters. */
@@ -203,6 +280,7 @@ export const POR_EFFECTS: EffectRules = {
   names: { 4: 0x306d8, 7: 0x306f9, 27: 0x3071f, 31: 0x3072c, 35: 0x30735, 44: 0x3073c, 50: 0x3074a, 54: 0x30760, 55: 0x30769,
     59: 0x30772, 61: 0x3077f, 71: 0x3078f, 72: 0x30799, 89: 0x307a5 },
   healBlock: [0x32],
+  ids: POR_IDS,
 }
 
 export const COAB_EFFECTS: EffectRules = {
@@ -316,4 +394,5 @@ export const COAB_EFFECTS: EffectRules = {
   names: { 4: 0x30cba, 7: 0x30cc6, 27: 0x30cd2, 31: 0x30cdb, 35: 0x30ce4, 44: 0x30ced, 50: 0x30cfb, 54: 0x30d0b, 55: 0x30d1c,
     59: 0x30d25, 61: 0x30d32, 63: 0x30d42, 68: 0x30d61, 69: 0x30d6b, 71: 0x30d80, 72: 0x30d8a, 73: 0x30d96, 77: 0x30db3, 89: 0x30dbb },
   healBlock: [], // 0x4CE85: the 0x32 test is gone (0x32 is the Hot Fire Shield in CotAB)
+  ids: COAB_IDS,
 }

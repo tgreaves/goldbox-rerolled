@@ -966,7 +966,7 @@ when its table column or sentence names CotAB.
 | 0x28628 | B/vocabularies | B/vocabularies: 3.3 Damage resistances and immunities |  |
 | 0x2871A | B/vocabularies | B/vocabularies: 3.3 Damage resistances and immunities |  |
 | 0x288D9 | coab/combat | coab/combat: Casting |  |
-| 0x288E5 | coab/combat, B/vocabularies | coab/combat: Casting |  |
+| 0x288E5 | coab/combat, coab/tables, B/vocabularies | coab/combat: Casting |  |
 | 0x2896F | coab/combat | coab/combat: Casting |  |
 | 0x28986 | B/vocabularies | B/vocabularies: 3.2 Attack and damage modifiers |  |
 | 0x28A22 | B/vocabularies | B/vocabularies: 3.3 Damage resistances and immunities |  |

@@ -234,10 +234,11 @@ export interface GameRules {
    * character meanwhile, then the record's handler at once (CotAB), else raw, the turn ended on a
    * failure (PoR). `kill` (CotAB): a creature on a `cell` square dies by its hit dice: `bands`
    * [lowest, highest, save bonus or null for no save] (saves vs `save`), "is Poisoned" (`poison` added
-   * raw), then status 6 "is killed"; null: the game has no such cloud
+   * raw), then status 6 "is killed"; null: the game has no such cloud. `probe`: the computer's movement
+   * probe (PoR FUN_3334_0675, CotAB 0x237FB) steps onto a `cell` square only under one of these
    */
   clouds: {
-    gas: { cell: number; immune: number[]; roundEnd: boolean; apply: boolean }
+    gas: { cell: number; immune: number[]; probe: number[]; roundEnd: boolean; apply: boolean }
     kill: { cell: number; save: number; bands: [number, number, number | null][]; poison: number } | null
   }
   /**
@@ -336,7 +337,7 @@ export const POR_RULES: GameRules = {
   },
   // FUN_34c7_0810, then the finishing pass FUN_34c7_0000
   mapField: { cornerWallEnd: 0x04, finishing: true, furnish: null },
-  clouds: { gas: { cell: 0x1e, immune: [0x1e, 0x1f, 0x20, 0x6f, 0x7d], roundEnd: true, apply: false }, kill: null }, // FUN_5216_0ae7
+  clouds: { gas: { cell: 0x1e, immune: [0x1e, 0x1f, 0x20, 0x6f, 0x7d], probe: [0x20, 0x1e, 0x6f, 0x7d], roundEnd: true, apply: false }, kill: null }, // FUN_5216_0ae7
   // FUN_3aae_02f9 → FUN_10ba_148b; FUN_3334_0545; FUN_3334_03e4 (3334:04D6)
   casting: { lostFrom: 'current', miscast: null, aiFirstSlot: 0, aiItemSpell: { above: 0x38, minus: 0x17 }, allowed: null, scrollReaders: null },
   thief: { dualClass: false, bonus: 0, clampWithBonus: false, gloves: null, gauntlets: null },
@@ -414,7 +415,7 @@ export const COAB_RULES: GameRules = {
   // tables (RandCom 0) on d10 ≤ 5 and chairs (RandCom 1) beside them on d10 ≤ 9 (spec/A-games/coab/combat.md)
   mapField: { cornerWallEnd: 0x08, finishing: false, furnish: { flag: 0x40, blank: [0x17, 0x36], table: [0x1a, 10, 5], chair: [0x1b, 10, 9] } },
   // 0x4B8F7: no 0x1E immunity; HD 0–4 die, 5 save at −4, 6 save, 7 and up (and below 0) unaffected
-  clouds: { gas: { cell: 0x1e, immune: [0x1f, 0x20, 0x6f, 0x7d], roundEnd: false, apply: true }, kill: { cell: 0x1c, save: 0, bands: [[0, 4, null], [5, 5, -4], [6, 6, 0]], poison: 0x37 } },
+  clouds: { gas: { cell: 0x1e, immune: [0x1f, 0x20, 0x6f, 0x7d], probe: [0x20, 0x1e, 0x6f, 0x7d] /* ?: PoR's, not read at 0x237FB */, roundEnd: false, apply: true }, kill: { cell: 0x1c, save: 0, bands: [[0, 4, null], [5, 5, -4], [6, 6, 0]], poison: 0x37 } },
   // 0x2AAB4 / 0x4CC8A forget(target, spell); 0x45373 effect 0x4A, 1d2; 0x236E4 slots 1–0x53
   casting: { lostFrom: 'target', miscast: { effect: 0x4a, sides: 2 }, aiFirstSlot: 1, aiItemSpell: { above: 0x38, minus: 0x17 }, // 0x23651
     // 0x43F8E: cleric spells WIS > 8 and a cleric or a paladin above 8; druid spells WIS > 8 and a ranger

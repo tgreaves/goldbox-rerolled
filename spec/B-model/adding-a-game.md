@@ -74,10 +74,10 @@ procedure:
 
 - **The ending**: PoR's sequence is its own procedure (`ending.por`) beside the generic steps
   ([profile.md §3.5](profile.md#35-the-ending-endingscript)).
-- **Effect type numbers in shared code**: the temple's types (33, 55, 36, 22, 15, 68), combat's
-  hold and sleep types, the cloud occupant check's 0x1E/0x1F, the current-stat routine's types
-  ([procedures.md §11](procedures.md#11-the-current-stat-routine)) and the monster specials' 25 and
-  0x7F are the same in both games and named in code; they belong in the profile as named ids.
+- ~~**Effect type numbers in shared code**~~: done 2026-10-22, the profile's `effects.ids`
+  ([vocabularies.md](vocabularies.md), the effect rules table) names every type the shared procedures
+  add, test or remove; a new game gives its own numbers. Three of CotAB's lists there (`goingDown`,
+  `noOpportunity`, `helpless`) are PoR's, not yet read in CotAB's binary (**?**).
 - **Optional content switched by data**: the commissions panel (`commissions`, PoR's quests) and the
   tile wilderness (`view.tileOverland` with the `overlandTile` battlefield and its terrain table,
   [procedures.md §15.4](procedures.md#154-battlefields)) are PoR content kept in shared modules.

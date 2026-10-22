@@ -186,11 +186,16 @@ watch, because each is an alternative path in code:
    `zones`), with the cloud occupant check one procedure on `R.clouds`. What is inferred is listed in
    spec/A-games/coab/spells.md (port status). The effect handlers' tests of spell 15 (Shield 17, type 91) are
    a parameter of their behaviours (`spell`).
-2. Effect type numbers named in shared code: the effect handlers' own types (what they add, test or
-   remove) are parameters of their behaviours in both games' maps (2026-10-20). Still in code: the
-   temple's blindness, poison and paralysis; combat's hold and sleep types; the cloud occupant check's
-   0x1E/0x1F; the current-stat routine's types (`rules/effectkinds.ts` effectiveStat); the monster
-   specials (`rules/specials.ts`). The same in both games so far, but they belong in data as named ids.
+2. ~~Effect type numbers named in shared code~~: done 2026-10-22. The handlers' own types were
+   parameters already (2026-10-20); the types the shared procedures add, test or remove are now
+   named in the profile, `game().effects.ids` (`games/effectrules.ts`): the temple's cures, Raise
+   Dead, Cure Disease's groups, Slow Poison, the gas cloud's 0x1E/0x1F, haste and slow, invisibility,
+   Read Magic and Detect Magic, the helpless and going-down lists, the gazer's reflection, the STR
+   records and the current-stat routine's types (null for PoR, which has no such routine); the AI's
+   gas probe is `R.clouds.gas.probe`. `test/effectmap.test.ts` checks every id is a type of its game's
+   table. Open (**?**): CotAB's `goingDown`, `noOpportunity` and `helpless` are PoR's lists, not read
+   in CotAB's binary, though CotAB's 7, 54, 75 and 137 are other effects and 74 is dead; nor is its
+   gas probe (0x237FB).
 3. ~~Functions inside profiles~~: done 2026-10-20 (the character view's reads are declarative entries,
    the kept files a list of patterns); profiles now hold only data.
 4. ~~Procedure keys named after games~~: done 2026-10-20 (the item handlers as a map, `R.bolt` flags,
@@ -199,7 +204,7 @@ watch, because each is an alternative path in code:
 **Plan, in order:** ~~CotAB's changed and new spell handlers as kinds~~ (done); ~~PoR's effect handler map made
 explicit~~ (done); ~~PoR's effect handlers checked against the binary~~ (done, spec/A-games/engine/effects.md "Port
 status"); ~~profile functions replaced by data~~ (done); the paired procedures made parametric where
-the originals allow it (the PoR ending procedure); named ids for effect types. When those are done, a third game should
+the originals allow it (the PoR ending procedure); ~~named ids for effect types~~ (done 2026-10-22). When those are done, a third game should
 need only its profile modules and any procedure the earlier games do not have.
 
 ## Order of work

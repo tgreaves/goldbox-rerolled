@@ -185,7 +185,7 @@ async function heal(ui: TownUi) {
   const fx = e.effectsOf(c)
   const has = (types: number[]) => fx.some((f) => types.includes(f.type))
   const remove = (types: number[]) => { for (let i = fx.length - 1; i >= 0; i--) if (types.includes(fx[i].type)) fx.splice(i, 1) }
-  const cures = services(e.startImage!), DISEASES = diseases(e.startImage!)
+  const cures = services(e.startImage!), DISEASES = diseases(e.startImage!), I = game().effects.ids
   // the list's line is the game's "Heal Exit": a cure is chosen from the list (Heal or Enter), or Exit
   const ex = menu('templeHeal').find((w) => w.key === 'E') ?? { text: 'Exit', key: 'E' }
   const i = await ui.menu([...cures.map((x) => x.name.toUpperCase()), ex.text.toUpperCase()], { prompt: `Healing for ${name}:`, vertical: true, keys: [...cures.map(() => ''), ex.key] })
@@ -193,12 +193,12 @@ async function heal(ui: TownUi) {
   const s = cures[i], kind = s.kind
   const status = c[F.status]
   const reason = {
-    blind: has([33]) ? '' : msg('notBlind'),
+    blind: has([I.blind]) ? '' : msg('notBlind'),
     disease: has(DISEASES) ? '' : msg('notDiseased'),
     clw: '', csw: '', ccw: '', heal: '',
-    poison: has([55]) ? '' : msg('notPoisoned'),
+    poison: has([I.poisoned]) ? '' : msg('notPoisoned'),
     raise: status === 6 || status === 1 ? '' : msg('notDead'),
-    curse: items.some((x) => x.cursed) || has([36]) ? '' : msg('notCursed'),
+    curse: items.some((x) => x.cursed) || has([I.cursed]) ? '' : msg('notCursed'),
     stone: status === 7 ? '' : msg('notStoned'),
   }[kind]
   if (reason && !await yes(ui, `${name} ${reason} ${msg('cureAnyway').trimEnd()}`)) return
@@ -208,21 +208,21 @@ async function heal(ui: TownUi) {
   // nothing for the dead, the stoned or (PoR) mummy rot, though the fee is paid; someone unconscious is revived
   const hp = (n: number) => { healChar(c, fx, n, false) }
   switch (kind) {
-    case 'blind': remove([33]); break
+    case 'blind': remove([I.blind]); break
     case 'disease': remove(DISEASES); break
     case 'clw': hp(e.roll(1, 8)); break
     case 'csw': hp(e.roll(2, 8) + 1); break
     case 'ccw': hp(e.roll(3, 8) + 3); break
     case 'heal': // CotAB (image 0x1CBF6): max HP − HP − 1d4 as a byte (0x1CC34), so, with the heal routine's
-      // byte sum, HP becomes max − 1d4 even from nearly full; blindness, the diseases, ghoul paralysis go;
-      // INT and WIS are worked out again from the base values (feeblemind; I: items and effects not re-added)
+      // byte sum, HP becomes max − 1d4 even from nearly full; blindness, the diseases, feeblemind (0x44) go;
+      // INT and WIS are worked out again from the base values (I: items and effects not re-added)
       hp((c[F.maxHp] - c[F.hp] - e.roll(1, 4)) & 0xff)
-      remove([33, ...DISEASES, 68])
+      remove([I.blind, ...DISEASES, ...(I.stat ? [I.stat.feebleminded] : [])])
       c[F.stat[1]] = c[F.baseStat[1]]; c[F.stat[2]] = c[F.baseStat[2]]
       break
-    case 'poison': remove([55, 22, 15]); break
+    case 'poison': remove([I.poisoned, I.slowPoison, I.poisonTick]); break
     case 'raise': if (!reason) raiseDead(e, c); break
-    case 'curse': remove([36]); for (const x of items) x.raw[0x36] = 0; break
+    case 'curse': remove([I.cursed]); for (const x of items) x.raw[0x36] = 0; break
     case 'stone': if (!reason) { c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = 1 } break // PoR 0x1DAD7: Okay, in play, 1 HP
   }
   recalc(c, items, t)
@@ -233,7 +233,8 @@ async function heal(ui: TownUi) {
 /** Raise Dead (FUN_2d14_0510): HP 1, CON −1, maximum HP loss by class levels and CON. */
 function raiseDead(e: Engine, c: Uint8Array) {
   const fx = e.effectsOf(c)
-  for (let i = fx.length - 1; i >= 0; i--) if (fx[i].type === 32 || fx[i].type === 55) fx.splice(i, 1)
+  const I = game().effects.ids
+  for (let i = fx.length - 1; i >= 0; i--) if (fx[i].type === I.animated || fx[i].type === I.poisoned) fx.splice(i, 1)
   c[F.hp] = 1
   c[F.status] = 0
   c[F.inPlay] = 1 // back in play (PoR 0x1D739, CotAB 0x1CDCF)

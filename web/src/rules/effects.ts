@@ -111,6 +111,9 @@ export const fx = {
   saved: false, // CotAB DS:6FC2: the last saving throw succeeded (1 while its event 12 runs)
 }
 
+/** the active game's named effect types (games/effectrules.ts `ids`) */
+export const ids = () => game().effects.ids
+
 export const has = (h: FxHost, c: Uint8Array, t: number) => h.effectsOf(c).some((e) => e.type === t)
 
 /**
@@ -331,7 +334,7 @@ export const strKey = ([s, p]: [number, number]) => s * 101 + (s === 18 ? p : 0)
 export function setStr(h: FxHost, c: Uint8Array, str: number, pct: number): { ok: boolean; pw: number } {
   const cs = c[F.stat[0]], cp = c[F.strPct]
   if (str < cs || (str === 18 && cs === 18 && pct < cp)) return { ok: false, pw: strEnc(str, pct) | 0x80 }
-  const prev = h.effectsOf(c).find((e) => (e.type === 12 || e.type === 38) && e.power < 0x80)
+  const prev = h.effectsOf(c).find((e) => ids().strength.includes(e.type) && e.power < 0x80)
   let pw = strEnc(cs, cp)
   if (prev) { pw = prev.power & 0x7f; prev.power = strEnc(cs, cp) | 0x80 }
   c[F.stat[0]] = str

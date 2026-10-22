@@ -1469,7 +1469,7 @@ export class Engine {
   get items(): ItemTables | null {
     if (this.itemTableCache === undefined) this.itemTableCache = ItemTables.load(this.files.get('ITEMS'), this.files.get('START.EXE'))
     // item names carry "* " while anyone has Detect Magic (effect 5), as FUN_10ba_0442 checks on every name
-    if (this.itemTableCache) this.itemTableCache.detect = this.party().some((c) => this.effectsOf(c).some((e) => e.type === 5))
+    if (this.itemTableCache) this.itemTableCache.detect = this.party().some((c) => this.effectsOf(c).some((e) => e.type === game().effects.ids.detectMagic))
     return this.itemTableCache
   }
 

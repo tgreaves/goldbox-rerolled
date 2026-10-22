@@ -8,7 +8,7 @@ import type { Amount, SpellSpec, Term } from '../games/spellrules'
 import { game } from '../games/profile'
 import { Tables } from './chargen'
 import { derive, levelLimit, xpFor } from './training'
-import { addEffect, addRaw, fire, fx, removeEffect, removeFirst, removeOne, setStr, strEnc, type FxHost } from './effects'
+import { addEffect, addRaw, fire, fx, ids, removeEffect, removeFirst, removeOne, setStr, strEnc, type FxHost } from './effects'
 import { effectiveStat } from './effectkinds'
 import { F } from '../games/fields'
 import { msg } from '../games/strings'
@@ -62,9 +62,11 @@ export const textOf = (a: unknown) => (typeof a === 'number' && a ? text(a) : ''
 export async function cureDisease(h: FxHost, t: Uint8Array): Promise<boolean> {
   let any = false
   fx.noRearm = true
-  if (await removeOne(h, t, 0x22)) any = true
-  if (await removeOne(h, t, 0x2b)) { any = true; await removeFirst(h, t, 0x2c); await removeFirst(h, t, 0x1f) }
-  if (await removeOne(h, t, 0x32)) { any = true; await removeFirst(h, t, 0x39) }
+  for (const [type, ...partners] of ids().diseases) {
+    if (!(await removeOne(h, t, type))) continue
+    any = true
+    for (const q of partners) await removeFirst(h, t, q)
+  }
   fx.noRearm = false
   return any
 }
@@ -132,11 +134,11 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
   },
   /** Slow Poison (185b): only on a poisoned target that is not Animated */
   async slowPoison({ h, dur, targets: [t] }, p) {
-    if (!t || t[F.status] === 1 || !h.effectsOf(t).some((x) => x.type === 0x37)) return
+    if (!t || t[F.status] === 1 || !h.effectsOf(t).some((x) => x.type === ids().poisoned)) return
     if (t[F.hp] === 0) t[F.hp] = 1
-    await addEffect(h, t, 0x16, dur, 0xff, 1, 0, false, false, msgOf(p))
+    await addEffect(h, t, ids().slowPoison, dur, 0xff, 1, 0, false, false, msgOf(p))
     h.revive(t, t[F.hp]) // handler 0x4E with arg 1, whatever the status
-    addRaw(h, t, 0x0f, 10, 0xff, 1)
+    addRaw(h, t, ids().poisonTick, 10, 0xff, 1)
   },
   /**
    * The spell's effect (or `effect`) on the caster or the first target (`to`), with power L (or `power`,
@@ -335,7 +337,7 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
   /** Keoghtum's Ointment (2e4d): poison, else disease, else the amount healed */
   async ointment({ h, L, targets: [t] }, p) {
     if (!t) return
-    if (await removeOne(h, t, 0x37)) { fx.noRearm = true; await removeFirst(h, t, 0x16); fx.noRearm = false; return }
+    if (await removeOne(h, t, ids().poisoned)) { fx.noRearm = true; await removeFirst(h, t, ids().slowPoison); fx.noRearm = false; return }
     if (await cureDisease(h, t)) return
     if (h.heal(t, amount(p.amount as Amount, L, h.roll.bind(h)).total, false)) good(h, t, msgOf(p))
   },

@@ -49,6 +49,17 @@ describe('effect handler maps', () => {
     })
   }
 
+  it('each game\'s named effect types (`ids`) are types of its handler table', () => {
+    for (const [g, last] of TABLE) {
+      const all: number[] = []
+      const walk = (v: unknown) => { if (typeof v === 'number') all.push(v); else if (v && typeof v === 'object') Object.values(v).forEach(walk) }
+      walk(g.effects.ids)
+      expect(all.length).toBeGreaterThan(20)
+      // a type of the handler table, or (PoR) of the item handlers 128–139 by +0x3E − 0x80
+      for (const t of all) expect(g.effects.handlers[t] ?? (t > last ? g.effects.items[t - 0x80] : undefined), `${g.id} id ${t}`).toBeDefined()
+    }
+  })
+
   it('each game\'s item handlers name existing item behaviours', () => {
     for (const g of [POR, COAB]) for (const [k, spec] of Object.entries(g.effects.items)) expect(ITEM_BEHAVIOURS[spec.b], `${g.id} item ${k}: ${spec.b}`).toBeTypeOf('function')
     expect(Object.keys(POR.effects.items).map(Number)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) // 128–139
