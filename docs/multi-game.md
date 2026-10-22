@@ -86,8 +86,8 @@ and makes one active (`setGame`), switching the live objects the rest of the cod
 | `fields.ts` | the character record: size and the offset of every named field | `F.hp`, `F.levels + k` |
 | `tables.ts` | START.EXE tables: data segment, address and row size of each (rules, names, frames, temple …) | `T.thac0.at` |
 | `ecl.ts` | the script VM: memory regions, character view, opcode variants, CALL targets, start area | `game().ecl` |
-| `files.ts` | character and save files: extensions, save size, where the party list and wall sets are | `game().saves` |
-| `rules.ts` | rules values and procedure choices: spells, slots, hit points, caster level, thief skills, level limits, money, temple, joining, creation effects, paladin abilities, when a battle is fought on a wilderness field and how that field is built (`wildBattle`, `wildField`: the passes in order with their numbers), casting in combat (`casting`) | `R` |
+| `files.ts` | character and save files: extensions, save size, where the party list and wall sets are, the item record and bundle type, the vault file | `game().saves` |
+| `rules.ts` | rules values and procedure choices: spells, slots, hit points, caster level, thief skills, level limits, money, temple (priced or free), joining, the items menu's Join (scroll bundles), creation effects, paladin abilities, when a battle is fought on a wilderness field and how that field is built (`wildBattle`, `wildField`: the passes in order with their numbers), casting in combat (`casting`) | `R` |
 | `spellrules.ts` | spell handlers: every spell id's handler kind and parameters (as the original's handler table), the duration special cases | `game().spells` |
 | `landmarkrules.ts` | what the area map's landmarks look for in the script text (shopkeepers' lines, the temple's god, named places) | `game().landmarks` |
 | `effectrules.ts` | the effect system: event lists in the original's order, area effects, per-type handler map, item kinds | `game().effects` |
@@ -436,9 +436,11 @@ music plays, save A loads, the opening's equipment comes as treasure and the par
 Identify fee is profile data (`R.identifyFee`: SotSB 100, its line at 0x456C0). Delayed Blast Fireball
 (the delay, its zone and effect 100's explosion), Feeblemind's class rules and effects 15, 94, 110 are
 SotSB's own (2026-10-22); spells 0, 9, 42, 83 and effect 80 re-read as mapped. Still open: the finder's
-first-entry pick for a holder of 0x5B (DS:8E23 not traced, ?), the zone lifts' body cells; SotSB's temple (it asks no price); join for scroll
-bundles; the vault on the server; the `.WHO` loader's paladin uses; the Rules reference text (CotAB's)
-and no journal; the main menu's new Move command; a browser play-through.
+first-entry pick for a holder of 0x5B (DS:8E23 not traced, ?), the zone lifts' body cells; no journal; a
+browser play-through. *Since done (2026-10-22)*: the free temple (`R.templeHeal`, camp.md §4a); Join and
+Halve of scroll bundles (`R.itemJoin`, records.md §3.2); the vault synced as `folder/VAULT`
+(accounts-and-sync.md §1.3); the `.WHO` loader's paladin uses (`R.addRefill`); SotSB's own Rules
+reference (`SOTSB_RULES_TEXT`); the main menu's Move, left out with View and Area (IMP-061).
 
 ## Backlog
 

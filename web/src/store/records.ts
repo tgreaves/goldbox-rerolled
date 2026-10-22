@@ -6,7 +6,7 @@ import { parseSave } from '../data/save'
 import { parseSidecarFields, sidecar } from './savefiles'
 import type { SavedGame, StoredCharacter } from './user'
 
-export type Kind = 'saves' | 'characters' | 'conflicts' | 'docs'
+export type Kind = 'saves' | 'characters' | 'conflicts' | 'docs' | 'folder'
 export interface RecFile { name: string; data: Uint8Array }
 export interface Rec { meta: Record<string, unknown>; files: RecFile[] }
 

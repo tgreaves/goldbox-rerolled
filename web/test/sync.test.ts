@@ -183,6 +183,22 @@ describe('sync: merging', () => {
     expect(a.store.get('docs/settings')!.meta.values).toEqual({ 'poolrad.sound': 'pc' })
     expect([...a.store.keys(), ...b.store.keys()].some((k) => k.startsWith('conflicts/'))).toBe(false)
   })
+  it('carries the vault (folder/VAULT, VAULT.DAT) to another browser; the newer change wins, without copies', async () => {
+    const a = browser(), b = browser()
+    await a.login(); await b.login()
+    const vault = (seed: number): Rec => ({ meta: {}, files: [{ name: 'VAULT.DAT', data: bytes(0x1c + 67, seed) }] })
+    a.at(100).write('folder/VAULT', vault(1))
+    await a.sync.flush()
+    await b.sync.pull()
+    expect(seedOf(b.store.get('folder/VAULT'))).toBe(seedOf(vault(1)))
+    a.at(200).write('folder/VAULT', vault(2))
+    b.at(300).write('folder/VAULT', vault(3))
+    await a.sync.flush()
+    await b.sync.flush()
+    await a.sync.pull()
+    expect(seedOf(a.store.get('folder/VAULT'))).toBe(seedOf(vault(3)))
+    expect([...a.store.keys(), ...b.store.keys()].some((k) => k.startsWith('conflicts/'))).toBe(false)
+  })
 })
 
 describe('sync: deletions and the queue', () => {

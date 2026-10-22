@@ -5,6 +5,7 @@
 //   users/<name>/<game>/saves/<slot>@<version>/      SAVGAMx.DAT, CHRDATxn.SAV/… , SAVGAMx.GBR
 //   users/<name>/<game>/characters/<stem>.json, <stem>@<version>/
 //   users/<name>/<game>/conflicts/<id>.json, <id>@<version>/
+//   users/<name>/<game>/folder/<stem>.json, <stem>@<version>/   a file the game keeps in its folder (SotSB VAULT.DAT)
 //   users/<name>/<game>/party.json, settings.json   (documents: metadata only)
 //
 // A record is replaced by writing its files into a new version directory, then the pointer
@@ -23,6 +24,7 @@ export const KINDS = {
   characters: new RegExp(`^${STEM}$`),
   conflicts: /^[a-z0-9]{1,40}$/,
   docs: /^(?:party|settings)$/,
+  folder: new RegExp(`^${STEM}$`),
 } as const
 export type Kind = keyof typeof KINDS
 export const isKind = (k: string): k is Kind => Object.hasOwn(KINDS, k)

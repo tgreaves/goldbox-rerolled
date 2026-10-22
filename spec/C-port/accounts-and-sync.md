@@ -45,6 +45,7 @@ writes its key as `<kind>/<id>` (`saves/A`, `characters/ALIAS`, `docs/party`).
 | `characters` | a DOS stem: 1–8 characters from `A`–`Z`, `0`–`9` and ``! # $ % & ' ( ) + = @ ^ _ ` { } ~ - [ ]`` | a roster character |
 | `conflicts` | `[a-z0-9]{1,40}` | a conflict copy of a save or a character |
 | `docs` | `party`, `settings` | a document: metadata only, no files |
+| `folder` | a DOS stem, as `characters` | a file the game keeps in its own folder beside the saves (SotSB's vault, `VAULT`) |
 
 A record is `{ meta, files }`:
 
@@ -92,6 +93,11 @@ losing change's time).
 **`docs/party`**: `meta.stems`, the party as roster stems; **`docs/settings`**: `meta.values`, an
 object of the synced localStorage keys that are set, each a string ([§5.9](#59-settings)); both with
 `modifiedAt`. Journal finds have no document: they travel inside each save's `.GBR`.
+
+**`folder/<stem>`**: `meta` is `{}` plus `modifiedAt`; one file, the game's own under its own name. The
+client writes `folder/VAULT` with `VAULT.DAT` for a game whose profile names a vault file (`saves.vault`,
+SotSB; [A-games/sotsb/records.md §5](../A-games/sotsb/records.md#5-the-vault-vaultdat)), byte for byte as the
+original writes it, so it too can be copied into a DOSBox game folder.
 
 ## 2. HTTP API v1
 
@@ -189,13 +195,13 @@ records are deleted at once, every session ends, and the cookie is cleared.
 
 ### 2.5 Records
 
-`<game>` matches `^[a-z0-9][a-z0-9-]{0,31}$`; `<kind>` is one of the four kinds; `<id>` is
+`<game>` matches `^[a-z0-9][a-z0-9-]{0,31}$`; `<kind>` is one of the five kinds; `<id>` is
 percent-decoded and then matched against its kind's rule ([§1.2](#12-records)). Anything else is
 400 `bad request` (after the session check). The client percent-encodes ids
 (`encodeURIComponent`).
 
 **List** `GET games/<game>`: every record of that game, kinds in the order `saves`, `characters`,
-`conflicts`, `docs`:
+`conflicts`, `docs`, `folder`:
 
 ```ts
 type Listed = { kind: string; id: string; updatedAt: number; meta: object }
@@ -342,6 +348,7 @@ users/<name>/<game>/saves/<id>@<version>/    its files: SAVGAMA.DAT, CHRDATA1.SA
 users/<name>/<game>/characters/<stem>.json, <stem>@<version>/
 users/<name>/<game>/conflicts/<id>.json, <id>@<version>/
 users/<name>/<game>/party.json, settings.json                   documents (pointer only)
+users/<name>/<game>/folder/<stem>.json, <stem>@<version>/        game-folder files: VAULT.DAT
 sessions/<sha-256 hex of token>.json
 invites/<sha-256 hex of "goldbox-code:" + code>.json
 ```
@@ -421,6 +428,7 @@ The sync sees the browser's data as records under the same keys as the server's
 | `conflicts/<id>` | a conflict copy | stored as the record itself |
 | `docs/party` | `meta.party` | `{ meta: { stems }, files: [] }`; present when `meta.party` is set |
 | `docs/settings` | the synced localStorage keys | `{ meta: { values }, files: [] }`; present when at least one is set |
+| `folder/VAULT` | `meta.vault` (SotSB) | `{ meta: {}, files: [VAULT.DAT] }`; present when the vault has been left once |
 
 Writing a record into the browser converts it back (a save to its slot, a character to the roster,
 the party, the settings); a record that cannot be converted is not written. Removing one removes the
@@ -448,7 +456,7 @@ Missing fields read as empty.
 
 Every write or deletion of the browser's data that a player's action causes reports its key: a save
 or the autosave written, a roster character written or dropped, the party set, a conflict copy
-deleted or restored, and `docs/settings` when the Settings panel closes with any synced key changed.
+deleted or restored, the vault left (`folder/VAULT`), and `docs/settings` when the Settings panel closes with any synced key changed.
 Writes made by the sync itself are not reported. For a reported key:
 
 - a **change**: `dirty[key] = max(now, dirty[key] + 1)` (so a stamp only grows), and `seeded[key]`
@@ -537,8 +545,8 @@ its `stamp`:
    in base 36, up to six random base-36 digits), written in the browser as `conflicts/<id>` with the
    loser's files and its meta plus `conflictOf`, `conflictId`, `from` (`"server"` when the browser
    won, `"browser"` when it lost), `keptAt` (now) and `modifiedAt` (the losing change's time), and
-   queued with `dirty = now`, so it reaches the server too. For `docs` the newer simply wins, with no
-   copy.
+   queued with `dirty = now`, so it reaches the server too. For `docs` and `folder` the newer simply wins,
+   with no copy (a vault changed on two devices keeps the later one's contents).
 6. The browser won: `PUT` `L` with `base = R.updatedAt` and `modifiedAt: stamp` (on 200 record the
    version and clear the entry; a further 409 leaves it queued). The server won: take `R`.
 

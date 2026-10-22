@@ -87,7 +87,8 @@ export async function setParty(stems: string[]) {
 /**
  * The party's vault (SotSB VAULT.DAT, data/vault.ts), as the original keeps it in the game folder: one per
  * game, beside the saves, not in any save slot; undefined until the vault is first left (the imported
- * folder's VAULT.DAT, if any, stands in). Kept on this device only (not synced).
+ * folder's VAULT.DAT, if any, stands in). Synced as the record folder/<its stem> with the file under its
+ * own name (vaultKey, userLocal below).
  */
 export async function getVaultFile(): Promise<Uint8Array | undefined> {
   const v = (await run(META, 'readonly', (s) => s.get('vault'))) as ArrayBuffer | undefined
@@ -96,7 +97,12 @@ export async function getVaultFile(): Promise<Uint8Array | undefined> {
 
 export async function setVaultFile(d: Uint8Array) {
   await run(META, 'readwrite', (s) => s.put(d.slice().buffer, 'vault'))
+  const key = vaultKey()
+  if (key) localChanged(key)
 }
+
+/** The vault's record key, "folder/VAULT" (games/files.ts `vault`), or null for a game without one. */
+const vaultKey = () => { const v = game().saves.vault; return v ? `folder/${v.split('.')[0]}` : null }
 
 /** First run: copy the characters from the imported game files into the roster (those not there yet). */
 export async function seedRoster(files: GameFiles) {
@@ -223,11 +229,13 @@ export const userLocal: LocalSide = {
     const chars = (await run(CHARS, 'readonly', (s) => s.getAllKeys())) as string[]
     const conflicts = (await run(CONFLICTS, 'readonly', (s) => s.getAllKeys())) as string[]
     const party = await run(META, 'readonly', (s) => s.get('party'))
+    const vault = vaultKey() && (await run(META, 'readonly', (s) => s.get('vault'))) !== undefined
     return [
       ...saves.map((k) => `saves/${k === 'auto' ? 'AUTO' : k}`),
       ...chars.map((k) => `characters/${k}`),
       ...conflicts.map((k) => `conflicts/${k}`),
       ...(party !== undefined ? ['docs/party'] : []),
+      ...(vault ? [vaultKey()!] : []),
     ]
   },
   async get(key) {
@@ -245,6 +253,10 @@ export const userLocal: LocalSide = {
       const p = await run<string[] | undefined>(META, 'readonly', (s) => s.get('party'))
       return p === undefined ? null : { meta: { stems: p }, files: [] }
     }
+    if (key === vaultKey()) {
+      const d = await getVaultFile()
+      return d ? { meta: {}, files: [{ name: game().saves.vault!, data: d }] } : null
+    }
     return null
   },
   async put(key, rec) {
@@ -260,6 +272,9 @@ export const userLocal: LocalSide = {
     } else if (key === 'docs/party') {
       const stems = Array.isArray(rec.meta.stems) ? rec.meta.stems.filter((x): x is string => typeof x === 'string') : []
       await run(META, 'readwrite', (s) => s.put(stems, 'party'))
+    } else if (key === vaultKey()) {
+      const d = rec.files.find((f) => f.name === game().saves.vault)?.data
+      if (d) await run(META, 'readwrite', (s) => s.put(d.slice().buffer, 'vault'))
     }
   },
   async remove(key) {
@@ -268,6 +283,7 @@ export const userLocal: LocalSide = {
     else if (kind === 'characters') await run(CHARS, 'readwrite', (s) => s.delete(id))
     else if (kind === 'conflicts') await run(CONFLICTS, 'readwrite', (s) => s.delete(id))
     else if (key === 'docs/party') await run(META, 'readwrite', (s) => s.delete('party'))
+    else if (key === vaultKey()) await run(META, 'readwrite', (s) => s.delete('vault'))
   },
 }
 

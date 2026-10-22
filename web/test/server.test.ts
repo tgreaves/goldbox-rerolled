@@ -343,6 +343,22 @@ describe('server: data', () => {
     expect((await a.put('coab', 'docs', 'party', 0, [], { stems: ['CHRDATA1'] })).status).toBe(200)
     expect(JSON.parse(readFileSync(join(app.accounts.usersDir, 'iris', 'coab', 'party.json'), 'utf8')).meta).toEqual({ stems: ['CHRDATA1'] })
   })
+  it('keeps a game-folder file (the SotSB vault) as a record of its own, in the export too', async () => {
+    const a = new Client(base)
+    await a.signup('ivan')
+    const vault = { name: 'VAULT.DAT', data: bytes(0x1c + 67 * 3, 4) }
+    const r = await a.put('sotsb', 'folder', 'VAULT', 0, [vault])
+    expect(r.status).toBe(200)
+    expect(new Uint8Array(readFileSync(join(app.accounts.usersDir, 'ivan', 'sotsb', 'folder', `VAULT@${r.data.updatedAt}`, 'VAULT.DAT')))).toEqual(vault.data)
+    const back = (await a.get('sotsb', 'folder', 'VAULT')).data
+    expect(Buffer.from(back.files[0].data, 'base64').equals(Buffer.from(vault.data))).toBe(true)
+    // ids and file names follow the DOS rules as everywhere else
+    expect((await a.put('sotsb', 'folder', 'VAULT.DAT', 0, [vault])).status).toBe(400)
+    expect((await a.put('sotsb', 'folder', 'vault', 0, [vault])).status).toBe(400)
+    expect((await a.put('sotsb', 'folder', 'VAULT', r.data.updatedAt, [{ name: '../VAULT.DAT', data: vault.data }])).status).toBe(400)
+    const names = (await unzip((await a.req('GET', '/api/v1/export')).data)).map((f) => f.name)
+    expect(names).toContain('sotsb/folder/VAULT/VAULT.DAT')
+  })
   it('enforces the storage quota with a clear error, counting replaced records once', async () => {
     await app.close()
     await start({ quota: 10_000 })

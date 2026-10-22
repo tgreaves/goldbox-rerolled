@@ -305,6 +305,7 @@ export async function createApp(config: Config): Promise<App> {
     const files: { name: string; data: Uint8Array }[] = [{ name: 'README.txt', data: enc.encode(
       'GoldBox Rerolled: everything the server keeps for this account.\r\n' +
       'Each saved game and character folder holds the original game files (copy them into the game folder for DOSBox);\r\n' +
+      'folder/ holds files the game keeps in its own folder, such as Secret of the Silver Blades\' VAULT.DAT;\r\n' +
       'record.json beside them is the port\'s metadata. party.json and settings.json are the party and settings.\r\n') }]
     for (const game of await storage.games(user)) {
       for (const l of await storage.list(user, game)) {

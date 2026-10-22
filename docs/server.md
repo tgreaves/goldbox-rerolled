@@ -48,7 +48,12 @@ Everything is in `DATA_DIR`: `users/<name>/` (the account and its records, one f
 for operating it:
 
 - The files in a record's version folder are the game's own, byte for byte: copy
-  `users/<name>/<game>/saves/A@…/` into a DOSBox game folder and the save loads there.
+  `users/<name>/<game>/saves/A@…/` into a DOSBox game folder and the save loads there. Secret of the
+  Silver Blades' vault is the record `folder/VAULT` (`users/<name>/sotsb/folder/VAULT@…/VAULT.DAT`),
+  which goes into the game folder the same way.
+- The `folder` kind (added for the vault) takes nothing new from a client: its ids are DOS stems as
+  for characters, and its files pass the same name, size, count, record and quota limits as every
+  other record (`web/test/server.test.ts`, "keeps a game-folder file").
 - Every write is atomic (temporary file, sync, rename; a new version folder, then the pointer), so
   copying the folder while the server runs gives a consistent backup of each record.
 

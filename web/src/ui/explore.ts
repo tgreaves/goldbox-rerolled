@@ -608,7 +608,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         // SotSB's vault (0x21C90): VAULT.DAT (this device's, else the imported folder's) into the pile, the
         // screen, then the pile written back (0x220DA); what is left in the pile stays there, as in the original
         const sv = game().saves
-        const v = parseVault((await getVaultFile()) ?? files.get('VAULT.DAT'), sv.itemRecord, sv.bundleType)
+        const v = parseVault((await getVaultFile()) ?? (sv.vault ? files.get(sv.vault) : undefined), sv.itemRecord, sv.bundleType)
         engine.money = v.money
         engine.treasure = v.items
         townMode = 'treasure'

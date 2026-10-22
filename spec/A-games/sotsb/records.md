@@ -316,7 +316,8 @@ screen (game mode 8) reads `vault.dat` if there is one (else clears the coins), 
 " Deposit" (0x4357E), asking "Your *item* will be left in the vault" (0x43A41) and putting it in the pile.
 Leaving writes the coins and the items (a bundle with its scrolls) back to `vault.dat` (0x220DA–0x221C3),
 after a disk-space check the port does not need, and frees the item list (O). Port: `data/vault.ts`,
-`ui/town.ts` `vault`.
+`ui/town.ts` `vault`; the file named by the profile (`saves.vault`), kept per game in the browser and
+synced as the record `folder/VAULT` ([C-port/accounts-and-sync.md §1.3](../../C-port/accounts-and-sync.md#13-what-each-kind-holds)).
 
 ## 6. Importing CotAB characters
 
