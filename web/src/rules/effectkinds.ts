@@ -41,16 +41,6 @@ function spellByte(h: FxHost, id: number, k: number): number | null {
   const t = h.tables?.()
   return t ? t.b(T.spellRecords.at + id * T.spellRecords.row + k) : null
 }
-/** the combatant nearest to c, of any side (the berserk search 11c:3e, I: ties to the earlier entry) */
-function nearest(h: FxHost, c: Uint8Array): Uint8Array | null {
-  let best: Uint8Array | null = null, d = Infinity
-  for (const o of h.all()) {
-    if (o === c || !o[F.inPlay]) continue
-    const x = h.distance(c, o)
-    if (x < d) { d = x; best = o }
-  }
-  return best
-}
 /** a victim held by an engulfer or hugger: `held` (0x3A, pw = its index) run at once, then the holder's marker */
 function hold(h: FxHost, holder: Uint8Array, v: Uint8Array, held: number, marker: number, also?: () => void) {
   const e = addRaw(h, v, held, 0, h.indexOf(v), 0)
@@ -797,7 +787,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     c[F.morale] = c[F.morale] <= 0x7f || c[F.morale] === 0xb3 ? 0xb3 : 0xb2
     if (num(p, 'say') && !h.inCombat()) return
     h.setRec(c, 0xa, 0)
-    const t = nearest(h, c)
+    const t = h.nearestInSight?.(c) ?? null // 11c:3e: the nearest in sight, ties by direction
     if (t) h.setTarget?.(c, t)
     if (num(p, 'say')) h.setRec(c, 1, 0)
     if (t) c[F.side] = t[F.side] ^ 1

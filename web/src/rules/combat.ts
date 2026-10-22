@@ -526,6 +526,23 @@ export class Battle implements FxHost {
     for (const [ax, ay] of footprint(a.size || 1)) for (const [bx, by] of footprint(b.size || 1)) if (this.sees(a.x + ax, a.y + ay, b.x + bx, b.y + by)) return true
     return false
   }
+  /**
+   * The berserk search (CotAB 0x553D8 with the sort 0x54B33, from Berserk 0x28B94): every combatant in
+   * play that c sees (c itself first, distance 0), by distance over footprint pairs, sorted by exchange
+   * (i < j, swap when j is nearer, or as near with a lower direction of no greater parity); entry 2 is
+   * the target. Nobody else in sight: none (the original reads a stale entry, ?).
+   */
+  nearestInSight(c: Uint8Array): Uint8Array | null {
+    const f = this.of(c)
+    if (!f) return null
+    const L = this.fighters.filter((o) => this.inPlay(o) && (o === f || this.seesF(f, o)))
+      .map((o) => ({ o, d: o === f ? 0 : this.dist(f, o), dir: o === f ? 0 : Math.max(0, this.dirTo(f, o)) }))
+    for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
+      const a = L[i], b = L[j]
+      if (b.d < a.d || (b.d === a.d && b.dir < a.dir && b.dir % 2 <= a.dir % 2)) { L[i] = b; L[j] = a }
+    }
+    return L[1]?.o.c ?? null
+  }
   /** enemies in sight within `range` squares, nearest first (FUN_10ba_2433) */
   enemiesWithin(f: Fighter, range: number) {
     return this.enemies(f).filter((o) => this.dist(f, o) <= range && (range >= 255 || this.seesF(f, o))).sort((a, b) => this.dist(f, a) - this.dist(f, b))

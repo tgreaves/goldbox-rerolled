@@ -34,6 +34,8 @@ export interface FxHost {
   setRec(c: Uint8Array, i: number, v: number): void
   /** the set-status routine (FUN_3723_0058, CotAB 0x4AAC4): `setStatusOf`, then the host's fall */
   setStatus(c: Uint8Array, status: number, msg: string): void
+  /** the berserk search's target (CotAB 0x553D8, 0x54B33); in battle only */
+  nearestInSight?(c: Uint8Array): Uint8Array | null
   /** a combatant leaves the field (FUN_5216_0f06, CotAB 0x4BF57); in battle only */
   takeOff?(c: Uint8Array, status: number, msg: string): void
   /** damage (FUN_5216_1344) */

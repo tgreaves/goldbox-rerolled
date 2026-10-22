@@ -44,6 +44,8 @@ class Host implements FxHost {
   distance() { return 1 }
   targetOf(c: Uint8Array) { return this.targets.get(c) ?? null }
   setTarget(c: Uint8Array, t: Uint8Array) { this.targets.set(c, t) }
+  /** the berserk search: everyone at distance 1 and in sight here, so the first other combatant in play */
+  nearestInSight(c: Uint8Array) { return this.people.find((o) => o !== c && o[F.inPlay]) ?? null }
   current() { return this.cur }
   endTurn(c: Uint8Array) { this.setRec(c, 3, 0); this.ended.push(c) }
   r(c: Uint8Array) { if (!this.recs.has(c)) this.recs.set(c, new Uint8Array(22)); return this.recs.get(c)! }

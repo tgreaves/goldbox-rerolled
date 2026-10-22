@@ -743,7 +743,8 @@ Not yet, or approximated:
 - The hook's picker 0x2C56C is PoR's with one attempt and no own-side check (`R.casting.aiPick`, O), the finder 0x2E394 PoR's (O); the eye rays' spells go
   through the port's cast, which has 0x45251's own check since 2026-10-21 (with effect 0x4A, 1 in 2 "miscasts", 0x45373). The template's
   sight range and side-line direction where the original reads unset memory (§7, ?). Berserk's
-  nearest-combatant search (11c:3e) takes the first of equal distance (I).
+  search (11c:3e) is the nearest combatant in sight, ties by direction (O; `Battle.nearestInSight`; with
+  nobody else in sight the port takes none where the original reads a stale entry, ?).
 - 130 takes the target out of play through the host's status call. `e3:66` is the going-down removal
   0x4C05B ([coab/effects.md §8](../A-games/coab/effects.md#8-going-down-0x4c05b-e366-4aab15ab-char-o)),
   the profile's `effects.ids.goingDown` and `downRejoins` (2026-10-22), run after the battle's "goes down"

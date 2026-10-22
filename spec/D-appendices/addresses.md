@@ -1000,6 +1000,7 @@ when its table column or sentence names CotAB.
 | 0x28A6A | B/vocabularies | B/vocabularies: 3.2 Attack and damage modifiers |  |
 | 0x28AC2 | B/vocabularies | B/vocabularies: 3.2 Attack and damage modifiers |  |
 | 0x28B03 | B/vocabularies | B/vocabularies: 3.6 Charm, morale and control |  |
+| 0x28B94 | coab/effects | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x28CCF | B/vocabularies | B/vocabularies: 3.3 Damage resistances and immunities |  |
 | 0x28CE0 | B/vocabularies | B/vocabularies: 3.3 Damage resistances and immunities |  |
 | 0x28D31 | B/vocabularies | B/vocabularies: 3.3 Damage resistances and immunities |  |
@@ -1461,9 +1462,11 @@ when its table column or sentence names CotAB.
 | 0x5492C | coab/assets | coab/assets: GEO and WALLDEF: unchanged |  |
 | 0x549AD | coab/assets, coab/ecl | coab/assets: GEO and WALLDEF: unchanged |  |
 | 0x54B00 | coab/ecl | coab/ecl: Opcodes |  |
+| 0x54B33 | coab/effects | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x54CA5 | coab/effects | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
 | 0x54D4C | coab/effects | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
-| 0x54EF1 | coab/effects | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
+| 0x54EF1 | coab/effects | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
+| 0x553D8 | coab/effects | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x556B0 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x557AC | coab/assets | coab/assets: 8. Config, video, palette, sound |  |
 | 0x5580C | coab/assets | coab/assets: 8. Config, video, palette, sound |  |
