@@ -184,6 +184,17 @@ into register writes, which the synthesiser renders. *Informative* where it simp
   are close to the chip's rather than bit-exact.
 - **Mix**: the channels summed × 0.15.
 
+## 7. Title music
+
+A game whose profile names a song (Secret of the Silver Blades: `SOUND.DAX` record 2, song 0) plays it
+at its title through `audio/song.ts`: the song file's events become the original driver's AdLib register
+writes, counter tick by counter tick at 72.826 Hz with the sequencer on even ticks, exactly as
+[sotsb/music.md](../A-games/sotsb/music.md) §2–§5 specifies (the initialiser's writes at tick 0, the
+tracks from tick 1, the stop after the last track), and §6's synthesiser renders them. The writes equal
+a register log made separately from that procedure (3 589 writes over 6 152 ticks; its SHA-256 in
+`web/test/song.test.ts`). Effect set 0 only (the title's: no echo, no doubling); the other output
+devices (speaker, Tandy, CMS, Innovation, Covox) are not played: the AdLib stands for them all.
+
 ## Validation
 
 - `web/test/sound.test.ts`: every effect, both devices, against `tools/sound.py` sample for sample;
