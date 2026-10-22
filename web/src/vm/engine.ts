@@ -62,8 +62,10 @@ const ENCOUNTER: Act[][] = [
 ]
 
 export interface Io {
-  /** Text for the text window; clear = PRINT_CLEAR / new screen of text. */
-  print(text: string, clear: boolean): void
+  /** Text for the text window; clear = PRINT_CLEAR / new screen of text. `run` is given by PRINT and
+   *  PRINT_CLEAR only: true when the text goes on along the line a PRINT left open (only PRINT_CLEAR and
+   *  NEWLINE move the cursor to a new line, SotSB 0x1E593, CotAB 0x1926C); any other text starts a line. */
+  print(text: string, clear: boolean, run?: boolean): void
   /** A menu; resolves to the 0-based choice. `enter` = a one-item "press Enter" prompt. */
   menu(items: string[], opts?: MenuOpts): Promise<number>
   inputNumber(): Promise<number>
@@ -732,8 +734,10 @@ export class Engine {
         this.storeString(this.addr(2), s)
         break
       }
-      case 0x11: this.readops(1); this.io.print(this.text(1), false); this.cursor = { col: 1, row: 17, open: true }; break
-      case 0x12: this.readops(1); this.io.print(this.text(1), true); this.cursor = { col: 1, row: 17, open: true }; break
+      // PRINT goes on from the cursor, PRINT_CLEAR from (1, 17) of a cleared window (SotSB 0x1E5FD, CotAB
+      // 0x192D6); the text routine moves to the next row only past the right edge (SotSB 0x5B29)
+      case 0x11: this.readops(1); this.io.print(this.text(1), false, this.cursor.open); this.cursor = { col: 1, row: 17, open: true }; break
+      case 0x12: this.readops(1); this.io.print(this.text(1), true, false); this.cursor = { col: 1, row: 17, open: true }; break
       case 0x13: this.readops(0); if (this.stack.length) this.pc = this.stack.pop()!; break
       case 0x14: {
         this.readops(4)

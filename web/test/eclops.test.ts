@@ -1,4 +1,4 @@
-// ECL opcodes ROB, CHECK_PARTY, FIND_ITEM, NEWLINE, CLEAR_TOP, PRINT_LIST (spec/A-games/engine/ecl.md); needs POOLRAD.
+// ECL opcodes ROB, CHECK_PARTY, FIND_ITEM, PRINT, NEWLINE, CLEAR_TOP, PRINT_LIST (spec/A-games/engine/ecl.md); needs POOLRAD.
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -16,7 +16,8 @@ function setup() {
   const text: string[] = []
   const glyphs: { codes: number[]; at: { col: number; row: number } | null }[] = []
   const tops: boolean[] = []
-  const io = { print: (t: string) => { if (t) text.push(t) }, menu: async () => 0, refresh: async () => {}, pause: async () => {}, sound: () => {},
+  const runs: [string, boolean | undefined][] = []
+  const io = { print: (t: string, _c: boolean, run?: boolean) => { if (t) text.push(t); runs.push([t, run]) }, menu: async () => 0, refresh: async () => {}, pause: async () => {}, sound: () => {},
     picture: () => {}, sprite: () => {}, engine: async () => {}, inputNumber: async () => 0, inputText: async () => '',
     clearTop: (on: boolean) => tops.push(on), glyphs: (codes: number[], at: { col: number; row: number } | null) => glyphs.push({ codes, at }) } as unknown as Io
   const dat = files.get('SAVGAMA.DAT')!
@@ -25,7 +26,7 @@ function setup() {
   e.loadSave(dat, stems.map((s) => files.get(`${s}.SAV`)!))
   stems.forEach((s, i) => e.attachFiles(i, files.get(`${s}.ITM`), files.get(`${s}.SPC`)))
   const run = async (bytes: number[]) => { e.code.fill(0); e.code.set(bytes); await e.run(CODE) }
-  return { e, run, text, glyphs, tops }
+  return { e, run, text, glyphs, tops, runs }
 }
 const imm = (v: number) => [0, v]
 const mem = (a: number) => [1, a & 0xff, a >> 8]
@@ -60,6 +61,14 @@ describe.skipIf(!have)('ECL opcodes', () => {
     expect(e.flags.EQ).toBe(1)
     await run([0x32, ...imm(0xfe), 0x00])
     expect(e.flags.NE).toBe(1)
+  })
+
+  it('PRINT goes on along the line a PRINT left open; PRINT_CLEAR, NEWLINE and the end of the script start one', async () => {
+    // SotSB 0x1E593 / CotAB 0x1926C: only PRINT_CLEAR sets the cursor; the text routine wraps past the edge only
+    const { run, runs } = setup()
+    await run([0x12, ...imm(1), 0x11, ...imm(2), 0x33, 0x11, ...imm(3), 0x00])
+    await run([0x11, ...imm(4), 0x00])
+    expect(runs).toEqual([['1', false], ['2', true], ['3', false], ['4', false]])
   })
 
   it('PRINT_LIST draws glyphs inline, or in the view after CLEAR_TOP', async () => {

@@ -30,7 +30,7 @@ the engine then does nothing for that call.
 
 | Method | Called when | The host MUST |
 |---|---|---|
-| `print(text, clear)` | PRINT, PRINT_CLEAR, NEWLINE, engine messages | show the text in the text window; `clear` starts a new screen of text (PRINT_CLEAR, a new menu screen) |
+| `print(text, clear, run?)` | PRINT, PRINT_CLEAR, NEWLINE, engine messages | show the text in the text window; `clear` starts a new screen of text (PRINT_CLEAR, a new menu screen). `run` comes with PRINT and PRINT_CLEAR only: true when the text goes on along the line the last PRINT left open, which the host MUST then continue (no line break). PRINT leaves the cursor after its text; only PRINT_CLEAR, NEWLINE and the end of the script start a line (O: CotAB 0x1926C, SotSB 0x1E593 set the cursor for PRINT_CLEAR only; the text routine, SotSB 0x58B9, goes to the next row only past the right edge, 0x5B29). Any other text starts a line |
 | `menu(items, { prompt?, vertical? })` → index | HMENU, VMENU, ENCOUNTER_MENU, yes/no questions, the "PRESS ENTER" prompt (one item) | offer the items (vertical: a list) with the prompt and resolve to the 0-based choice. While a demo with `keysWait` false runs, resolve at once with 0 |
 | `inputNumber()` → number | INPUT_NUMBER | read a number, 0–65 535 (non-digits dropped, empty 0); in a no-wait demo, 0 at once |
 | `inputText()` → string | INPUT_STRING | read a line of text; in a no-wait demo, "" at once |

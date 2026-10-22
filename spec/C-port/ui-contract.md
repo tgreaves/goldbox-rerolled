@@ -231,6 +231,9 @@ The original's six-line text window as a scrolling log (IMP-008).
 - Each **screen** of text is a block: `print(text, clear)` with `clear` (PRINT_CLEAR, a new menu
   screen) starts a new block. A block is created at its first line, so an empty clear leaves no
   trace.
+- Each text is a line, except a PRINT with `run` ([host-contracts.md](../B-model/host-contracts.md),
+  `print`): it is added to the line the last PRINT left open, so a text a script prints in pieces
+  (SotSB's "A SIGN OVER THIS DOOR READS " "'" "HALL OF TRAINING" ".'") reads as one line.
 - At most **120** blocks are kept; the oldest goes first.
 - The newest block is at full brightness, the earlier ones dimmed (IMP-057). The log scrolls to its
   end on every line; the player may scroll back.

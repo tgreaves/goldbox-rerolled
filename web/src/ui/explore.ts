@@ -232,9 +232,16 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   let screen: HTMLElement | null = null
   /** PRINT_CLEAR starts a new block, created lazily so empty clears leave no trace */
   let newBlock = true
-  function print(text: string, clear: boolean, kind = '') {
+  /** the line the last PRINT left open (Io.print's `run`): a PRINT that goes on is added to it */
+  let openLine: HTMLElement | null = null
+  function print(text: string, clear: boolean, kind = '', run?: boolean) {
     if (clear) newBlock = true
-    if (!text) return
+    if (!text) { if (run === undefined) openLine = null; return }
+    if (run && openLine && !newBlock && openLine === screen?.lastElementChild) {
+      openLine.textContent += text
+      log.scrollTop = log.scrollHeight
+      return
+    }
     if (newBlock || !screen) {
       screen = document.createElement('div')
       screen.className = 'screen'
@@ -246,6 +253,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     if (kind) p.className = kind
     p.textContent = text
     screen.append(p)
+    openLine = run === undefined ? null : p
     log.scrollTop = log.scrollHeight
   }
   const note = (text: string) => print(text, false, 'note')
@@ -474,8 +482,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   /** the text of the current screen, for journal reveals */
   let screenText = ''
   const io: Io = {
-    print: (text, clear) => {
-      print(text, clear)
+    print: (text, clear, run) => {
+      print(text, clear, '', run)
       if (engine.demo) return // the demo finds nothing for the journal
       for (const id of revealedBy(text)) known.add(id)
       // the journal (IMP-055): the whole screen is scanned, as a number can come in a print of its own

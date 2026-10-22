@@ -719,7 +719,7 @@ when its table column or sentence names CotAB.
 | 0x191A0 | coab/ecl | coab/ecl: Open |  |
 | 0x191AE | coab/ecl | coab/ecl: Opcodes |  |
 | 0x191F4 | coab/ecl | coab/ecl: Opcodes |  |
-| 0x1926C | coab/ecl | coab/ecl: Opcodes |  |
+| 0x1926C | coab/ecl, B/host-contracts | coab/ecl: Opcodes |  |
 | 0x19308 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x19356 | coab/ecl | coab/ecl: Flags and control flow |  |
 | 0x1935C | coab/ecl | coab/ecl: Opcodes |  |
@@ -853,6 +853,7 @@ when its table column or sentence names CotAB.
 | 0x1DD2F | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x1DF24 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1E19C | coab/ecl | coab/ecl: Start-up menu and demo |  |
+| 0x1E593 | B/host-contracts | B/host-contracts: 2. The script host (`Io`) |  |
 | 0x1E7A3 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x1EAA7 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x1EAB3 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
