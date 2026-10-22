@@ -18,7 +18,9 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, dice: 
     return new Promise((resolve) => {
       dialog.innerHTML = `<h2>${title}</h2><ol class="pick">${list.map((c, i) => {
         const p = parseCharacter(c.sav)
-        return `<li><button data-i="${i}">${escape(p.name)} <span class="muted">${p.race} ${p.cls}, level ${p.levels.map((l) => l.level).join('/')}</span></button></li>`
+        // a character seeded from a save slot that came with the game keeps its slot stem (CHRDAT<x><n>): say which
+        const slot = /^CHRDAT([A-J])\d$/i.exec(c.stem)?.[1]
+        return `<li><button data-i="${i}">${escape(p.name)} <span class="muted">${p.race} ${p.cls}, level ${p.levels.map((l) => l.level).join('/')}${slot ? ` · from save ${slot.toUpperCase()}` : ''}</span></button></li>`
       }).join('')}</ol><form method="dialog"><button>Cancel</button></form>`
       const stop = onClose(dialog, () => resolve(null))
       dialog.querySelectorAll<HTMLButtonElement>('ol button').forEach((b) => b.addEventListener('click', () => {

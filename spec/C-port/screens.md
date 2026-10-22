@@ -82,7 +82,9 @@ the selected row is highlighted. Footer **Exit** (E) and **Keep** (K, main), the
 ### 1.3 Add character
 
 A list "Add character" of the roster characters not in the party, each "*Name* *Race Class*, level
-*a*/*b*", with **Cancel**. Choosing one checks the joining rules ([B-model/procedures.md](../B-model/procedures.md),
+*a*/*b*", followed by " · from save *X*" for a character seeded from a save slot that came with the game
+(roster key `CHRDAT<X><n>`, [storage.md §4](storage.md#4-roster-seeding): PoR's A and J hold the same six
+names), with **Cancel**. Choosing one checks the joining rules ([B-model/procedures.md](../B-model/procedures.md),
 `R.join`): a refusal is shown as the message ("The party is full.", "paladins do not join with evil
 scum", "too many rangers in party", "*Name* will tolerate no evil!", *game text*); a character already
 in the party is refused silently. Otherwise it joins at the end and becomes current: "*Name* joins the
