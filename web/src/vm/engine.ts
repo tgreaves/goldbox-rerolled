@@ -1707,6 +1707,9 @@ export class Engine {
   /** Party screen → Add: a character joins the end of the party (before any monsters). */
   addMember(sav: Uint8Array, itm?: Uint8Array, spc?: Uint8Array) {
     const c = sav.slice()
+    // SotSB 0x40FF4 (R.addRefill): a paladin's ability uses set as the roster loader reads the record
+    const r = R.addRefill
+    if (r && F.abilityUses >= 0 && ((((c[F.levels + r.cls]) << 24) >> 24) > 0 || (F.misc86 >= 0 && c[F.misc86] === r.cls && formerLevelsCount(c)))) c[F.abilityUses] = r.value
     const n = this.party().length
     this.nodes.splice(n, 0, c)
     this.B[PARTY_SIZE - B0] = n + 1

@@ -225,6 +225,12 @@ export interface GameRules {
   /** who may join the party (CotAB Add, 0x36848+0x3815): player characters and members at most, and
    *  CotAB's paladin and ranger rules (null: none) */
   join: { pcs: number; members: number; maxRangers: number | null; evil: number[]; paladins: boolean }
+  /**
+   * What the roster loader sets on a character as it joins (SotSB 0x40FF4, for a native .WHO record):
+   * ability uses (F.abilityUses) := `value` for one with a level of class `cls`, or whose former class
+   * (F.misc86, +0x101) is `cls` while former levels count; null: nothing
+   */
+  addRefill: { cls: number; value: number } | null
   /** innate effects a new character gets, permanent, power 0xFF, in this order: by race, then by class id
    *  (PoR spec/A-games/engine/chargen-and-progression.md; CotAB 0x371F6, 0x37647) */
   startEffects: { race: Record<number, number[]>; cls: Record<number, number[]> }
@@ -468,6 +474,7 @@ export const POR_RULES: GameRules = {
   // no Fix in PoR: CotAB's procedure (0x320D8) with PoR's one cure, Cure Light Wounds (IMP-048)
   fix: { cures: [{ spell: 3, level: 1, dice: 1, sides: 8, bonus: 0, minutes: 15, base: 240, group: 0, weight: 27 }], start: 14, conditions: [] },
   join: { pcs: 6, members: 8, maxRangers: null, evil: [], paladins: false },
+  addRefill: null,
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
     { kind: 'ccw', gp: 600 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 }, { kind: 'curse', gp: 3500, spell: 43 }, { kind: 'stone', gp: 2000 }],
   templeHeal: { mode: 'priced' },
@@ -569,6 +576,7 @@ export const COAB_RULES: GameRules = {
   thief: { dualClass: true, bonus: 7, clampWithBonus: true, gloves: { effect: 0x0b, raise: { 1: 5, 2: 7 }, bonus: 5 }, gauntlets: { effect: 0x02, minLevel: 4, bonus: 10 } },
   // a paladin joins no party with an evil member, nor an evil character a party with a paladin; three rangers at most
   join: { pcs: 6, members: 8, maxRangers: 3, evil: [2, 5, 8], paladins: true },
+  addRefill: null,
   startEffects: { race: { 1: [0x61, 0x1a, 0x2f], 2: [0x6b], 3: [0x61, 0x12, 0x2f, 0x30], 4: [0x7c], 5: [0x61] }, cls: { 3: [8], 4: [0x86], 10: [0x86] } },
   paladin: { layOnHands: { perLevel: 2, effect: 0x8c, minutes: 1440 }, cureDisease: { effect: 0x8d, minutes: 10080, levelsPerUse: 5, initial: 1 } },
   // 0x31CC2 / 0x31D7D: Cure Light 1d8, Serious 2d8+1, Critical 3d8+3; 0x31E8D: minutes 15/60/75 per cleric
@@ -595,6 +603,7 @@ export const SOTSB_RULES: GameRules = {
   ...COAB_RULES,
   // 0x22FA5: free; Raise Dead (0x22AA7) refuses elves (race 1), takes off poison (0x37) only, fighters,
   // paladins and rangers weigh by CON, the current CON only lowered
+  addRefill: { cls: 3, value: 1 }, // 0x40FF4: a paladin (or a former one, 0x164:0x57 the former-levels test, I) gets its Cure Disease use
   templeHeal: { mode: 'free', raise: { notRaces: [1], removes: [0x37], fighters: [2, 3, 4] } },
   identifyFee: 100, // "For 100 gold pieces I'll identify your …" (0x456C0)
   // 117 records (DS:449D), names at DS:34AE; spell classes 0 cleric, 1 druid, 3 magic-user, 4 item (the

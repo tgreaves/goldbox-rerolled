@@ -43,6 +43,11 @@ Key routines (O):
 The shipped pre-made party is `CHRDATA1–6.SAV` with `.SFX` for members 1, 2 and 4 and no item files:
 they start without equipment (O, the files present).
 
+Loading a native `.WHO` character (0x40F0C, DS:8DBA = 1) sets its ability uses (+0x6D) to 1 when it has a
+paladin level (+0x114 > 0), or when +0x101 (`misc86`) is 3 and its former levels count (0x164:0x57, I:
+the former-levels test), at 0x40FF4; its item pointers are then cleared. The one caller (0x41E91) is the
+party screen's Add from the roster (O). Port: `R.addRefill`, `Engine.addMember`.
+
 ## 2. Character record: 0x1B7 = 439 bytes
 
 The same record for party members, NPCs and monsters (all 70 `MON1CHA` records and the six
