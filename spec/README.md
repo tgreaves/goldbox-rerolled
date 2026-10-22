@@ -193,6 +193,9 @@ Research started (2026-10-22); to be written as differences, as CotAB's.
 | [spells.md](A-games/sotsb/spells.md) | the spell handler table (ids 0–117), same, changed and new handlers against CotAB |
 | [effects.md](A-games/sotsb/effects.md) | the effect dispatcher, event lists, handler table (types 1–120, renumbered), item kinds, the effect id lists |
 | [music.md](A-games/sotsb/music.md) | the title music: the song driver, the GLBR parts and SLBR song files, the sequencer and its OPL2 writes |
+| [combat.md](A-games/sotsb/combat.md) | battles (map areas only), the cell table, the difficulty level, set-status and going down, morale, casting, the backstab, the finder |
+| [camp.md](A-games/sotsb/camp.md) | the camp menus, Fix's condition pass, Alter's Level |
+| [chargen-and-progression.md](A-games/sotsb/chargen-and-progression.md) | creation, money, hit points, attacks, spell-level limits, caster level, training and dual-classing |
 
 ## Part B: the engine model ([B-model/](B-model/))
 

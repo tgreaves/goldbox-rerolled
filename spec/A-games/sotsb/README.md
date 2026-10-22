@@ -61,7 +61,8 @@ SotSB-specific tool yet.
 
 ## Open
 
-- The subjects so far are in [records.md](records.md), [tables.md](tables.md), [ecl.md](ecl.md) and
-  [assets.md](assets.md), each with its own "Open"; still to write: combat, spells and effects, camp
-  and training (as CotAB's files), and the title music ([assets.md](assets.md), the driver and its parts file).
+- Every subject has its file ([records.md](records.md), [tables.md](tables.md), [ecl.md](ecl.md),
+  [assets.md](assets.md), [music.md](music.md), [spells.md](spells.md), [effects.md](effects.md),
+  [combat.md](combat.md), [camp.md](camp.md), [chargen-and-progression.md](chargen-and-progression.md)),
+  each with its own "Open".
 - The register of open questions: [open-questions.md](../../open-questions.md).
