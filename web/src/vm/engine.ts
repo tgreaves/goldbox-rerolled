@@ -1389,12 +1389,15 @@ export class Engine {
       this.restoreCur = false
     }
     const n = this.val(1)
-    if (n === game().ecl.quitProgram) this.quit = true // CotAB PROGRAM 3 (0x1BA7E): DS:4FE0 = 1, then EXIT
+    // PoR 0x1CA40 (CotAB 0x1B94E): 0 (the party screen) and 8 (the ending) return and the script goes on;
+    // 9 (camp) and CotAB's 3 (quit: DS:4FE0 = 1) then act as EXIT (0x19C31); other values do nothing
+    if (n === game().ecl.quitProgram) this.quit = true
     else if (n === 9) {
       const pc = this.pc
       await this.camp(false)
       this.pc = pc
-    } else await this.io.engine(n === 0 ? 'party screen' : n === 8 ? 'ending' : `program ${n}`)
+    } else if (n === 0 || n === 8) { await this.io.engine(n === 0 ? 'party screen' : 'ending'); return }
+    else return
     this.stop = true
     this.stack = []
   }

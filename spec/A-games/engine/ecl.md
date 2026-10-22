@@ -313,7 +313,7 @@ Stored values: **0** the monsters flee ("The monsters flee."), **1** combat, **2
 | 2D | CALL | addr 1 | native routine, table below | O |
 | 31 | REDRAW | — | if an encounter sprite is showing, redraw the 3D view | O |
 | 34 | DELAY | val ? | **passes game time** (the rest-loop clock routine `FUN_4b46_03d5`), not a pause. Its operand is read with an uninitialised index, so the amount is undefined; used once in the data (`DELAY #1`, ECL7 record 17), where in practice it passes 0 minutes, so nothing happens (**I**); a conforming build passes no time | O |
-| 38 | PROGRAM | val 1 | 0 party/training-hall screen; 8 ending; 9 camp (runs `camp_menu`, the camp screen, then `camp_confirmed` if the camp was interrupted), then acts as EXIT | O |
+| 38 | PROGRAM | val 1 | 0 party/training-hall screen, then the map redrawn (`FUN_10ba_27d9`); 8 ending; both return and the script goes on (0x1CA7A–0x1CA8F); 9 camp (runs `camp_menu`, the camp screen, then `camp_confirmed` if the camp was interrupted), then acts as EXIT (0x19C31); any other value does nothing | O |
 
 ## CALL targets (O, `FUN_29c3_2ccf`)
 

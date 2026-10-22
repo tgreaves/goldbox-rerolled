@@ -585,8 +585,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         townMode = 'camp'
         try { await trainingHall() } finally {
           townMode = null
-          // PROGRAM 0 then exits the script and the screen is redrawn for the map (FUN_10ba_27d9):
-          // the hall's picture goes and the 3D view is back
+          // PROGRAM 0 then redraws the screen for the map (FUN_10ba_27d9) and the script goes on
+          // (0x1CA7F): the hall's picture goes and the 3D view is back
           showPicture(null)
           await sync(0)
         }
@@ -1811,7 +1811,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       act(async () => {
         await engine.jump(...finale.at)
         await engine.run(fight ? finale.fight : finale.ending)
-        // after the ending the script goes on from the area's on_enter: re-enter to carry on
+        // the script goes on after PROGRAM 8 (PoR: the walk back to New Phlan, NEW_ECL); enter where it
+        // left the party, as the main loop would
         if (!engine.quit) await engine.enter()
       })
     }))
