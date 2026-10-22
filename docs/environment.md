@@ -1,0 +1,125 @@
+# Working environment
+
+What a new working session needs: the machine, the game files, the reverse-engineering tools
+(REA, objdump) and how to test. The working rules are in [`../CLAUDE.md`](../CLAUDE.md); this file
+holds only the setup they assume.
+
+## Picking up the work
+
+1. Read [`../CLAUDE.md`](../CLAUDE.md) (rules, method, where things are), then
+   [`../spec/README.md`](../spec/README.md) (the spec's conventions).
+2. What is open: [`../spec/open-questions.md`](../spec/open-questions.md),
+   [`multi-game.md`](multi-game.md) ("Backlog", "Tracking to the goal"), and "Where the work stands"
+   in `CLAUDE.md`.
+3. Point the tests at the game files (below) and run them once from `web/` before changing anything.
+
+## The development server
+
+The work so far has been done on one Linux machine on Tristan's LAN:
+
+| | |
+|---|---|
+| Repository | `/home/tmg/pool-of-radiance-re`, remote `https://github.com/tgreaves/goldbox-rerolled` (public), branch `main` |
+| Push | over HTTPS with the `gh` login as credential helper; there is no SSH key on the server |
+| Size | 4 cores (AVX2), 7.4 GB RAM, 61 GB disk (upgraded 2026-10-20; it froze once at ~3 GB) |
+| Node | 24 (`server/` runs `.ts` directly; `web/` builds with Vite 8, tests with Vitest 5) |
+| Python | 3.14; the tools in `tools/` use only the standard library |
+| Disassembly | `objdump` (binutils) for the 16-bit code; REA with Ghidra for decompiling (below) |
+| Browser | Playwright (a `web/` dev dependency) with its headless Chromium in `~/.cache/ms-playwright` |
+| Docker | installed, for trying the server image (`../docker-compose.yml`) |
+| LAN preview | `npm run build && npx vite preview --host --port 8080` in `web/`, then `http://192.168.1.21:8080` from the workstation |
+
+Resource limits, learnt the hard way: never run Vitest or Vite with `--root /` (it froze the server
+on 2026-10-15); run one Vitest at a time; close REA's Ghidra sessions (`close_binary`) when done;
+no unbounded background jobs.
+
+## Game files
+
+Never in the repository (`.gitignore` keeps them out). The tests and tools find them through
+environment variables; tests that need a game skip without it.
+
+| Game | Folder on the server | Variable | Source |
+|---|---|---|---|
+| Pool of Radiance (PC 1.3) | `/home/tmg/poolrad-files` | `POOLRAD` | GOG Mac installer `pool_of_radiance_enUS_1_3_31236.pkg` |
+| Curse of the Azure Bonds (1.0) | `/home/tmg/coab-files` | `COAB` | GOG Mac installer `curse_of_the_azure_bonds_enUS_1_0_31854.pkg` (in `/home/tmg`); includes the Manual, Cluebook and Adventurer's Journal PDFs and `COPYCURS.EXE` |
+| Secret of the Silver Blades | `/home/tmg/sotsb-files` | (none yet) | GOG installer; unpacked 2026-10-21, research not started |
+
+```sh
+cd web
+POOLRAD=/home/tmg/poolrad-files COAB=/home/tmg/coab-files npx vitest run
+```
+
+On another machine: the GOG Mac `.pkg` files are DOSBox wrappers round the DOS games. Unpack with
+`python3 tools/xar_extract.py GAME.pkg OUTDIR`, then the `Scripts` member is a gzip cpio archive
+whose `payload/Contents/Resources/game/<FOLDER>/` is the game folder (`POOLRAD`, `CURSE`, …).
+
+The headless playthrough harness takes extra variables (`POR_PLAY_SEEDS`, `POR_PLAY_STEPS`,
+`COAB_PLAY_SEEDS`, `COAB_PLAY_STEPS`, `…_TRACE`, `…_FIRST`); see `web/test/porplay.test.ts`,
+`coabplay.test.ts` and `web/headless/harness.ts`.
+
+## Reverse engineering
+
+### The executables
+
+`START.EXE` is EXEPACK-packed and `GAME.OVR` holds Borland overlays (Turbo Pascal). Before any
+disassembler sees the whole engine:
+
+```sh
+python3 tools/unexepack.py START.EXE out/START.unpacked.EXE                   # unpack
+python3 tools/mergeovr.py out/START.unpacked.EXE GAME.OVR out/merged.EXE        # overlays merged in: stubs → JMP FAR, fixups as relocations
+```
+
+Addresses in the spec are `FUN_seg_off` (Ghidra's names in the merged PoR image) or image offsets
+for CotAB; `spec/D-appendices/` has the address index. Output of these tools contains game code, so
+it stays outside the repository (`out/` is ignored).
+
+### REA (Ghidra through MCP)
+
+Decompiling was done with **REA**, an MCP server that drives Ghidra (and rizin), used from Claude
+Code. On the dev server it is registered for the user (`~/.claude.json`) and in this repository's
+[`../.mcp.json`](../.mcp.json):
+
+| | |
+|---|---|
+| Server | `npx -y rea-agents@6.5.0 mcp` (stdio) |
+| Ghidra | 12.1.4 at `/home/tmg/opt/ghidra_12.1.4_PUBLIC` (`GHIDRA_INSTALL_DIR`) |
+| Java | Temurin JDK 21.0.12.1 at `/home/tmg/opt/jdk-21.0.12.1+1` (`JAVA_HOME`) |
+| rizin | `/home/tmg/opt/rizin/bin/rizin` (`REA_RIZIN_COMMAND`) |
+| Skill | `reverse-engineer-anything` in `~/.claude/skills/` (how to use REA's tools; from the REA package) |
+
+`.mcp.json` reads those three paths from the environment and falls back to the dev server's, so on
+another machine export `GHIDRA_INSTALL_DIR`, `JAVA_HOME` and `REA_RIZIN_COMMAND` before starting
+Claude Code. REA does not install Ghidra or Java itself. `npx -y rea-agents@6.5.0 doctor --client claude_code --json` checks
+the setup; `setup --client claude_code --dry-run --json`, then `--yes`, registers the server and
+installs the matching skill. Restart Claude Code afterwards so the tools appear.
+
+How it was used: open the merged image (`open_binary`), then `procedure_pseudo_code`,
+`procedure_callers`/`xrefs`, `search_strings`, `read_bytes`; name routines as they are understood.
+Close the session when finished: Ghidra's JVM is the largest process on the server. For a quick look, `objdump -D -b
+binary -m i8086` on the unpacked image is lighter and was used for most table reading.
+
+REA is optional. Every finding is already in `spec/` with its address, and the port does not need it;
+it is needed only to answer a new question about the original.
+
+### Not tried yet
+
+The original has never been run here under DOSBox (or DOSBox-X's debugger) to compare with the
+port; nothing is installed for it.
+
+## References outside the repository
+
+- Stephen S. Lee's GameFAQs guide to Pool of Radiance (PC 1.3), v2.00 (April 2026), with a
+  technical analysis of the engine (§12) and a bug list:
+  [GameFAQs](https://gamefaqs.gamespot.com/pc/564785-pool-of-radiance/faqs/73869); a local copy is
+  at `/home/tmg/poolrad-reference/gamefaqs-lee-v2.00.md` (not committed: its copyright)
+- Simeon Pilgrim's C# CotAB rebuild, [github.com/simeonpilgrim/coab](https://github.com/simeonpilgrim/coab):
+  no licence, so only a pointer to where to look (rule 5 in `CLAUDE.md`); not cloned on the server
+- Journals: Pool of Radiance Wiki and Gold Box Wiki transcriptions (CC BY-SA, credited in the README)
+
+## Browser play-testing
+
+Done with short throw-away Playwright scripts (not committed) against `vite preview`, headless
+Chromium at desktop and phone sizes, the game folder imported through the folder picker; the
+observations are recorded in `spec/C-port/` (`app-flow.md`, `screens.md`, `ui-contract.md`).
+In an environment with Chromium elsewhere, pass `executablePath` to `chromium.launch` rather than
+running `playwright install`.

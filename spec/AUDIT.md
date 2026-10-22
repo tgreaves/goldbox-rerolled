@@ -535,6 +535,7 @@ spells).
 - **S10** `spec/README.md` version column: see C16.
 - **S11** `data/spells.ts`: class codes comment is PoR's only.
 - **S12** `tools/coab/ecl_coab.py`, `records_coab.py`: default paths `/home/tmg/coab-files`.
+  Fixed 2026-10-22: `records_coab.py` defaults to `$COAB`; `ecl_coab.py` has no default path left.
 
 ### 6.6 Open questions still open
 

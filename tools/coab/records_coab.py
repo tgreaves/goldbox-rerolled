@@ -2,13 +2,15 @@
 """CotAB (Curse of the Azure Bonds) record decoder.
 
 Usage:
-  records_coab.py [SAVE_DIR]            pre-made party + .FX + SAVGAMA.DAT (default /home/tmg/coab-files/SAVE)
+  records_coab.py [SAVE_DIR]            pre-made party + .FX + SAVGAMA.DAT (default $COAB/SAVE)
   records_coab.py --mon GAME_DIR [N]    monsters from MON<N>CHA/ITM/SPC.DAX (all blocks if N omitted)
   records_coab.py --por FILE.CHA        convert a PoR 285-byte record the way the CotAB engine does
                                         (323c:14b3) and print the result
 Layout: see spec/A-games/coab/records.md.  Offsets are CotAB record offsets.
 """
 import os, sys, struct, glob
+
+COAB = os.environ.get('COAB', 'CURSE')  # the CotAB game folder, as the web tests take it
 
 REC = 0x1A6          # 422
 ITEM = 0x3F          # 63
@@ -190,7 +192,7 @@ def party(save):
 
 
 def monsters(game, blocks):
-    sys.path.insert(0, '/home/tmg/pool-of-radiance-re/tools')
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
     from dax import read_dax, unrle
 
     def load(path):
@@ -277,7 +279,7 @@ def convert_por(p, faithful=True):
 
 def main(a):
     if a and a[0] == '--mon':
-        game = a[1] if len(a) > 1 else '/home/tmg/coab-files'
+        game = a[1] if len(a) > 1 else COAB
         monsters(game, [int(a[2])] if len(a) > 2 else range(1, 7))
     elif a and a[0] == '--por':
         p = open(a[1], 'rb').read()
@@ -285,7 +287,7 @@ def main(a):
         show(c)
         print('   (items are not transferred; money replaced by 300 pp; then recalc 4d05:0c20 and class bonuses 5047:03c6 run)')
     else:
-        party(a[0] if a else '/home/tmg/coab-files/SAVE')
+        party(a[0] if a else os.path.join(COAB, 'SAVE'))
 
 
 if __name__ == '__main__':

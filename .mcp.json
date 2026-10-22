@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "rea": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "rea-agents@6.5.0", "mcp"],
+      "env": {
+        "GHIDRA_INSTALL_DIR": "${GHIDRA_INSTALL_DIR:-/home/tmg/opt/ghidra_12.1.4_PUBLIC}",
+        "JAVA_HOME": "${JAVA_HOME:-/home/tmg/opt/jdk-21.0.12.1+1}",
+        "REA_RIZIN_COMMAND": "${REA_RIZIN_COMMAND:-/home/tmg/opt/rizin/bin/rizin}"
+      }
+    }
+  }
+}

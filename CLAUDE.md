@@ -1,7 +1,9 @@
 # GoldBox Rerolled: how to work here
 
 Standing preferences and method for anyone (human or AI assistant) working in this repository. They
-apply to every change.
+apply to every change. The setup they assume (game files, test variables, REA/Ghidra, the
+development server, references kept outside the repository) is in
+[`docs/environment.md`](docs/environment.md): read it first in a new session.
 
 ## Goal
 
@@ -60,8 +62,8 @@ Tests that need game files skip without them. Each game's tests check its profil
 files (field maps against the pre-made characters, table maps against START.EXE, the script sweep
 over every area). PoR's tests must stay green through every change.
 
-The development server is small (about 3 GB RAM): run one vitest at a time, close disassemblers after
-use, no unbounded background jobs.
+The development server is small (7.4 GB RAM; it froze once at about 3 GB): run one vitest at a time,
+close disassemblers (REA's Ghidra sessions) after use, no unbounded background jobs.
 
 ## Method for a new game or table
 
@@ -91,3 +93,19 @@ use, no unbounded background jobs.
   the profile id, files in each game's own formats); `web/src/store/sync.ts`, `account.ts`: the browser's side;
   `docs/server.md`: design, API, security, deployment (systemd, Docker); its tests are `web/test/server.test.ts`
   and `sync.test.ts`
+
+## Where the work stands (2026-10-22)
+
+- Pool of Radiance plays start to finish; Curse of the Azure Bonds is playable at an early stage
+  (all 8 steps of `docs/multi-game.md` done, dual-classing included), not yet played through in a
+  browser. About 400 tests pass; long headless playthroughs (24 × 1000 steps) show no failures.
+- The spec is the normative source (decisions D1–D6 in `spec/README.md`); steps 1–7 of its work plan
+  (`spec/AUDIT.md` §8) are done. Step 8, the clean-room rebuilds that validate it, is **on hold** by
+  Tristan's choice (token and session limits): do not start one unasked.
+- Current focus: bug fixes and gaps (`spec/open-questions.md`, the backlog in `docs/multi-game.md`).
+- Not yet done: comparison with the original running in DOSBox; browser play-through of CotAB and
+  of much of the newer UI.
+- Next game: Secret of the Silver Blades, files unpacked (see `docs/environment.md`), research not
+  started; it follows the "Method for a new game" above.
+- `server/` (accounts and sync) is built but not deployed. It is meant to become a public service
+  with open sign-up, so treat every change there as internet-facing (`docs/server.md`, "Running it publicly").
