@@ -155,9 +155,13 @@ No member carries items or (but MALACHITE's 4 gp) money; nobody has spells memor
   far pointer at **+0x3F**. The data files keep 63-byte records (`ITEM1–3.DAX`, `MON1ITM.DAX`: every
   record a multiple of 63, O); the item loader (0x1FA40, I: `TREASURE`) moves 63 bytes into a 67-byte record and clears +0x2A (next)
   and +0x3F (0x1FA54–0x1FA6A). Next pointer +0x2A, type +0x2E, count +0x39 as CotAB (O).
-- **+0x3F**: a second chain. The character saver writes, after an item of type 0x49 (arrows), as many
-  further 67-byte records as its count, following +0x3F (0x40486–0x404EC) (O for the writes; I that
-  each arrow of a stack is its own record).
+- **+0x3F**: a second chain, of a **bundle**. Type 0x49 is a "Bundle of" scrolls: Join (0x4495x) makes
+  scrolls (types 0x27, 0x28) into one item of type 0x49 (words 0x27, 1, 0x4D: "Bundle of … Scroll"),
+  its count the number of scrolls joined, at most 10 ("Bundles are limited to … scrolls", 0x448CE), each
+  scroll a copy chained at +0x3F (O). The character saver writes, after an item of type 0x49, its count
+  of further 67-byte records following +0x3F (0x40486–0x404EC); the loader reads them back into the chain,
+  a short read ending the list (0x412B4–0x41344); `vault.dat` the same (0x21DF7, 0x22156) (O). The main
+  record's +0x3F bytes are written as they stand (a pointer, or what the file held).
 - **Effects** (`.SFX`): CotAB's 9-byte record unchanged: `u8 type, u16 duration, u8 power, u8 flag,
   ptr next` (O, 0x405B9; the shipped files decode so).
 - `ITEMS` is 2 050 bytes as in PoR and CotAB (its contents not compared yet, ?).
@@ -236,7 +240,6 @@ above, as data like `games/imports.ts`).
 - The third spell-slot array 0x140–0x146 and the fields 0x15E, 0x15F, 0x1A5; whether 0x15D is the
   monster-class flags.
 - +0x101's meaning (tested against 3 and 4 with the paladin and ranger on import).
-- The +0x3F item chain's purpose beyond arrows.
 - The area script's reload after loading a save (no code buffer in the file).
 - The monster loader, the NPC join, random treasure and the joining rules: not traced in this pass.
 - `ITEMS`: its 16-byte records against CotAB's.

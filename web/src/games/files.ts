@@ -6,8 +6,10 @@ export interface SaveFiles {
   items: string
   effects: string
   /** the item record's size in a character's item file: 63 (PoR, CotAB), 67 (SotSB: a second chain pointer
-   *  at +0x3F, written 0 by the port; the DAX records stay 63) */
+   *  at +0x3F, kept as loaded; the DAX records stay 63) */
   itemRecord: number
+  /** the item type whose joined items follow it in the file, chained at +0x3F (SotSB 0x49, "Bundle of" scrolls: 0x40486, 0x412B4); null: none */
+  bundleType: number | null
   /** extension of a roster character outside a saved game */
   roster: string
   /** SAVGAM<x>.DAT size */
@@ -23,7 +25,7 @@ export interface SaveFiles {
   exportName: string
 }
 
-export const POR_FILES: SaveFiles = { items: 'ITM', effects: 'SPC', itemRecord: 63, roster: 'CHA', saveSize: 13137, codeSize: 0x1e00, partyAt: 0x3208, wallSetsAt: -1, exportName: 'poolrad-save' }
-export const COAB_FILES: SaveFiles = { items: 'SWG', effects: 'FX', itemRecord: 63, roster: 'GUY', saveSize: 13149, codeSize: 0x1e00, partyAt: 0x3214, wallSetsAt: 0x3208, exportName: 'curse-save' }
+export const POR_FILES: SaveFiles = { items: 'ITM', effects: 'SPC', itemRecord: 63, bundleType: null, roster: 'CHA', saveSize: 13137, codeSize: 0x1e00, partyAt: 0x3208, wallSetsAt: -1, exportName: 'poolrad-save' }
+export const COAB_FILES: SaveFiles = { items: 'SWG', effects: 'FX', itemRecord: 63, bundleType: null, roster: 'GUY', saveSize: 13149, codeSize: 0x1e00, partyAt: 0x3214, wallSetsAt: 0x3208, exportName: 'curse-save' }
 // 0x421CB / 0x419DD: CotAB's layout without the code buffer (5 469 = 13 149 − 0x1E00); .WHO/.STF/.SFX (0x3FE44)
-export const SOTSB_FILES: SaveFiles = { items: 'STF', effects: 'SFX', itemRecord: 67, roster: 'WHO', saveSize: 5469, codeSize: 0, partyAt: 0x1414, wallSetsAt: 0x1408, exportName: 'blades-save' }
+export const SOTSB_FILES: SaveFiles = { items: 'STF', effects: 'SFX', itemRecord: 67, bundleType: 0x49, roster: 'WHO', saveSize: 5469, codeSize: 0, partyAt: 0x1414, wallSetsAt: 0x1408, exportName: 'blades-save' }

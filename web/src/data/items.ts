@@ -97,9 +97,14 @@ export class ItemTables {
   }
 }
 
-/** One item, kept as its 63-byte record so it saves back unchanged apart from what the game edits. */
+/**
+ * One item, kept as its record (63 bytes, or 67 in SotSB's files: its +0x3F chain pointer) so it saves back
+ * unchanged apart from what the game edits. `bundle`: the items joined into it, for a game whose bundle item
+ * type (games/files.ts `bundleType`, SotSB 0x49 "Bundle of" scrolls) chains them at +0x3F (0x4495x).
+ */
 export class Item {
   readonly raw: Uint8Array
+  bundle: Item[] = []
   constructor(raw: Uint8Array) { this.raw = raw }
 
   get type() { return this.raw[0x2e] }
@@ -122,24 +127,41 @@ export class Item {
   /** magical for Detect Magic: a bonus or the magic/cursed flag */
   get magic() { return this.plus !== 0 || this.saveBonus !== 0 || this.cursed }
 
-  copy(): Item { return new Item(this.raw.slice()) }
+  copy(): Item { const c = new Item(this.raw.slice()); c.bundle = this.bundle.map((b) => b.copy()); return c }
 }
 
-/** Items from records of `size` bytes (DAX records 63; a character's item file the game's `saves.itemRecord`), the 63 they share. */
-export function parseItems(d: Uint8Array | undefined, size = ITEM_SIZE): Item[] {
+/**
+ * Items from records of `size` bytes (DAX records 63; a character's item file the game's `saves.itemRecord`),
+ * each kept whole. With `bundleType` (SotSB 0x49): an item of that type is followed by its count of joined
+ * items, read into its bundle (the loader 0x412B4, the vault 0x21DF7); a short record ends the list, as the
+ * original's read loop does.
+ */
+export function parseItems(d: Uint8Array | undefined, size = ITEM_SIZE, bundleType: number | null = null): Item[] {
   const out: Item[] = []
   if (!d) return out
-  for (let o = 0; o + size <= d.length; o += size) out.push(new Item(d.slice(o, o + ITEM_SIZE)))
+  let o = 0
+  while (o + size <= d.length) {
+    const it = new Item(d.slice(o, o + size))
+    o += size
+    out.push(it)
+    if (bundleType === null || it.type !== bundleType) continue
+    for (let k = 0; k < it.count && o + size <= d.length; k++, o += size) it.bundle.push(new Item(d.slice(o, o + size)))
+  }
   return out
 }
 
-/** Items back to the .ITM layout (records unchanged, including the stale pointer bytes; a 67-byte record's last four, SotSB's chain pointer, 0). */
-export function itemsFile(items: Item[], size = ITEM_SIZE): Uint8Array {
-  const d = new Uint8Array(items.length * size)
-  items.forEach((it, i) => d.set(it.raw, i * size))
+/** Items back to the file layout: each record as kept (stale pointer bytes included; a 63-byte record in a 67-byte file is padded with 0, as the item loader clears +0x3F), then its bundle (the saver 0x40486). */
+export function itemsFile(items: Item[], size = ITEM_SIZE, bundleType: number | null = null): Uint8Array {
+  const recs: Uint8Array[] = []
+  for (const it of items) {
+    recs.push(it.raw)
+    if (bundleType !== null && it.type === bundleType) for (const b of it.bundle.slice(0, it.count)) recs.push(b.raw)
+  }
+  const d = new Uint8Array(recs.length * size)
+  recs.forEach((r, i) => d.set(r.subarray(0, size), i * size))
   return d
 }
 
-/** A character's item file in the active game's record size (games/files.ts `itemRecord`). */
-export const characterItems = (d: Uint8Array | undefined) => parseItems(d, game().saves.itemRecord)
-export const characterItemsFile = (items: Item[]) => itemsFile(items, game().saves.itemRecord)
+/** A character's item file in the active game's record size and bundle type (games/files.ts). */
+export const characterItems = (d: Uint8Array | undefined) => parseItems(d, game().saves.itemRecord, game().saves.bundleType)
+export const characterItemsFile = (items: Item[]) => itemsFile(items, game().saves.itemRecord, game().saves.bundleType)
