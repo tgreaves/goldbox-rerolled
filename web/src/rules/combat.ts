@@ -1701,8 +1701,17 @@ export class Battle implements FxHost {
     if (type) await addEffect(this, t.c, type, dur, L, flag, s.save, saved, false, msgOf(p))
   }
   private spellSave(t: Fighter, s: Spell, bonus = 0) { return s.save ? this.saveSync(t.c, s.saveType, bonus) : false }
-  /** a touch spell (range byte 0xFF) rolls to hit against the target's AC */
-  private async spellTouch(c: Uint8Array, s: Spell, t: Fighter) { return s.range[0] !== 0xff || await this.toHit(c, t.c, t.c[F.ac]) }
+  /**
+   * a touch spell (range byte 0xFF) rolls to hit against the target's AC, worked out again with event 11
+   * first, as before a weapon's roll (PoR 0x3EEDD, 0x3EEEB; CotAB 0x44FCC, 0x44FD9): Shield's and
+   * blindness's AC are put back on
+   */
+  private async spellTouch(c: Uint8Array, s: Spell, t: Fighter) {
+    if (s.range[0] !== 0xff) return true
+    this.recalc(t.c)
+    await fire(this, t.c, 11)
+    return this.toHit(c, t.c, t.c[F.ac])
+  }
 
   /** The kinds that need the battlefield (the shared ones are in rules/spellkinds.ts). */
   static readonly spellKinds: Record<string, (this: Battle, x: BattleCast, p: SpellSpec) => Promise<void>> = {
