@@ -24,3 +24,8 @@ out/
 !web/public/journal/*.png
 web/dist/
 web/dist-single/
+
+# editor swap and backup files
+*.swp
+*.swo
+*~
