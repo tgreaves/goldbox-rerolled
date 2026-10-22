@@ -54,6 +54,14 @@ CotAB 13 149), the pre-made party `CHRDATA1–6.SAV` (**439** bytes each, a new 
 is 422) with effects in `CHRDATA*.SFX` (9-byte records, as `.SPC`/`.FX`; only for members with
 effects), and no item files for the pre-made party.
 
+## The main menu (O, 0x35834)
+
+"Move Area Cast View Encamp Search Look" (0x357FE; CotAB's without Move). **Move** sets DS:A4D4 (0x358BB):
+the menu becomes "Exit" (0x3582E) and the arrows step (0x48 → 0x3568B), turn about (0x50) and turn left
+or right (0x4B, 0x4D) until E clears it (0x35A51). The arrows move in the normal menu too (an extended key
+goes to the movement handler 0x100:0x52, 0x359D3), so Move only hides the other commands. The port leaves
+it out with View and Area (IMP-061): its movement keys and pad always move.
+
 ## Tools
 
 `tools/mergeovr.py` (takes TPOV since 2026-10-22), `tools/unexepack.py`, `tools/dax.py`. No
