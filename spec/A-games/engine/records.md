@@ -432,7 +432,7 @@ kept ([spells.md, "Shared helpers"](spells.md#shared-helpers)).
   60, 64–66, 80, 81, 83, 89, 94–96 and 127 were for (no instance in the shipped data).
 - The first random item of a `TREASURE` when its second d100 is 48–49: its type is an uninitialised
   stack byte (**?**; a conforming build takes type 0, a blank item, "Type choice").
-- Confirm in DOSBox: random arrow and quarrel stacks weigh 40 per unit (400 per stack of 10) against
-  4 for shop arrows.
+- Not run in DOSBox: random arrow and quarrel stacks weigh 40 per unit (400 per stack of 10) against
+  4 for shop arrows. (O from the code; a DOSBox run was judged not worth it, Tristan 2026-10-22: the readings are direct and the two counters checked in DOSBox matched)
 - ~~Effects that write char[0x110]–[0x112] or [0x11C] directly~~: nothing is lost for any to-hit roll: every weapon attack and touch spell recalculates the target and fires event 11 first, where Shield and Cause Blindness put their AC back (O, [open-questions.md](../../open-questions.md), "Items, shops, money").
 - ~~The missile attack count's final conversion `FUN_3aae_0e52`~~: (n + round & 1) div 2 ("Derived statistics", O).

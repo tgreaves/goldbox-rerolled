@@ -252,5 +252,5 @@ Suffix: " Detect Exit" if there are items and the current character has Detect M
 - ~~Appraise's Escape at "Sell Keep"~~: only K keeps (0x3E094 gem, 0x3E3E7 jewel; the extended Left
   0x4B also keeps); every other key sells, Escape, Space and Enter included (O). CotAB 0x43AD6, 0x43E2C.
 - ~~The Remove Curse spell handler used by the temple~~: the spell's own, `FUN_4e53_2540`, on the current character (DS:6C95 := it, 0x1D981–0x1DA41; CotAB 0x1D0CA → 0x47575): effect 0x24 if present, else the first cursed item only (O).
-- Confirm in DOSBox: the stack Sell price (value/2 × count / 20 for every stack), the vanishing share
-  of 0xB3 NPCs in Share, and the lost gem when keeping it with an empty inventory.
+- Not run in DOSBox: the stack Sell price (value/2 × count / 20 for every stack), the vanishing share
+  of 0xB3 NPCs in Share, and the lost gem when keeping it with an empty inventory. (O from the code; a DOSBox run was judged not worth it, Tristan 2026-10-22: the readings are direct and the two counters checked in DOSBox matched)
