@@ -904,8 +904,10 @@ when its table column or sentence names CotAB.
 | 0x23A51 | coab/combat | coab/combat: The computer's probe on clouds |  |
 | 0x23E57 | coab/spells | coab/spells: 1. Dispatch and shared helpers |  |
 | 0x24434 | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
+| 0x2443F | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x2445C | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x24533 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x2459C | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x24C90 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x24CD6 | coab/combat | coab/combat: Map-area generator | `FUN_34c7_0221` |
 | 0x24D63 | coab/combat, B/procedures | coab/combat: Furnishing |  |
@@ -1191,7 +1193,6 @@ when its table column or sentence names CotAB.
 | 0x4245A | coab/effects, B/vocabularies | coab/effects: Event → types, in the order called |  |
 | 0x42D5F | coab/records | coab/records: 8. Random treasure items |  |
 | 0x42D97 | coab/ecl, coab/records, coab/tables, B/procedures | coab/ecl: Random treasure types | `FUN_4c2d_1010` |
-| 0x431A1 | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x43F70 | coab/spells | coab/spells: CotAB spell handlers: diff against PoR `engine/spells.md |  |
 | 0x43F8E | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: The former class afterwards |  |
 | 0x449E4 | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: The former class afterwards |  |

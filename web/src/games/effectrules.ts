@@ -76,6 +76,12 @@ export interface EffectIds {
    * side 0; null: nothing
    */
   downRejoins: { effect: number; morale: number } | null
+  /**
+   * the records the computer's morale check takes off first, the first of each type (PoR FUN_3334_10d7
+   * through FUN_5216_1041, CotAB 0x2443F through 0x4C0BD), and those it takes off one that turns to flee
+   */
+  moraleRemoves: number[]
+  fleeRemoves: number[]
   /** a combatant holding one of these (grabbing, draining blood) makes no attack of opportunity */
   noOpportunity: number[]
   /** Cure Disease (PoR FUN_4e53_228a): each group's first type, then its partners when the first went */
@@ -103,6 +109,8 @@ const POR_IDS: EffectIds = {
   helpless: [0x1f, 0x33, 0x34, 0x35], // FUN_10ba_09e3
   goingDown: [7, 11, 30, 31, 32, 51, 52, 53, 54, 58, 59, 95, 98, 137, 74, 75], // FUN_5216_100a: DS:0C14[1..16]
   downRejoins: null,
+  moraleRemoves: [74, 75], // DS:0C24[1..2]
+  fleeRemoves: [0x4a, 0x4b], // 0x24574
   noOpportunity: [0x4a, 0x4b], // grab, blood drain
   diseases: [[0x22], [0x2b, 0x2c, 0x1f], [0x32, 0x39]], // FUN_4e53_228a
   strength: [12, 38], // FUN_5216_115c
@@ -120,6 +128,8 @@ const COAB_IDS: EffectIds = {
   // 0x4C05B: DS:0A32[1..19]; against PoR's, 13, 21, 23, 136, 139, 144 added, 54, 74, 75 gone
   goingDown: [7, 11, 13, 21, 23, 30, 31, 32, 51, 52, 53, 58, 59, 95, 98, 136, 137, 139, 144],
   downRejoins: { effect: 0x4d, morale: 0xb3 }, // 0x4F395: a berserk NPC (77) back with the party
+  // 0x4C0BD: DS:0A46[1..4]; fleeRemoves stays PoR's 0x4A, 0x4B (0x2459C), dead and Giant bane in CotAB
+  moraleRemoves: [13, 58, 139, 144],
   stat: { strAdd: 0x26, strSet: [0x92, 0x0c], feebleminded: 0x44, chaAdd: 0x0e, regenerate: 0x3e }, // 0x4C389
 }
 

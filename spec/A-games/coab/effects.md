@@ -161,9 +161,11 @@ side (+0x197) := 0 (**I**: a berserk NPC that goes down is the party's again). C
 the set-status routine (0x299F4, after status, in-play := 0 and HP := 0; PoR `FUN_3723_0058` at
 0x272F0) and after the battle's "goes down" lines (0x2AB72; PoR 0x2B0CC); event 13 follows at both.
 
-A sibling of the same shape, 0x4C0BD (`e3:6b`), removes DS:0A45[1..4] = 13, 58, 139, 144 (PoR 0x431A1:
-DS:0C23[1..2] = 74, 75), called once (0x2445C; PoR 0x24434) from a per-combatant routine that first
-clears combat record +0x14 (**I**: the clean-up when a combatant leaves the battle).
+A sibling of the same shape, 0x4C0BD (`e3:6b`), removes DS:0A45[1..4] = 13, 58, 139, 144 (PoR
+`FUN_5216_1041`: DS:0C23[1..2] = 74, 75), called once (0x2445C; PoR 0x24434): the start of the
+computer's morale check (0x2443F; PoR `FUN_3334_10d7`, [engine/combat-ai.md, "Morale"](../engine/combat-ai.md#morale-o-fun_3334_10d7)),
+after R[0x14] := 0. A creature that turns to flee there loses 0x4A and 0x4B as in PoR (0x2459C), though
+in CotAB those are a dead type and Giant bane.
 
 ## Open
 

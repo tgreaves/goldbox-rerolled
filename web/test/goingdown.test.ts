@@ -23,8 +23,8 @@ function load(dir: string, g: GameProfile) {
   return new GameFiles(m, g)
 }
 
-/** a battle with one combatant of `side` holding `types` (each a timed record), the others' default */
-function downed(files: GameFiles, side: number, types: number[], morale = 0) {
+/** a battle with one combatant of `side` holding `types` (each a timed record) */
+function battle(files: GameFiles, side: number, types: number[], morale = 0) {
   const e = new Engine(files, io, 7)
   const ui = { print: () => {}, redraw: () => {}, pause: async () => {}, sound: () => {} } as unknown as CombatUi
   const bf = new Battlefield(false)
@@ -35,8 +35,14 @@ function downed(files: GameFiles, side: number, types: number[], morale = 0) {
   const f: Fighter = { c, r: new Uint8Array(22), x: 5, y: 5, size: 1, index: 0, monster: side === 1, target: null }
   b.fighters.push(f)
   for (const t of types) addRaw(b, c, t, 10, 0xff, 0)
+  return { b, f, c, left: () => b.effectsOf(c).map((x) => x.type) }
+}
+
+/** the same, then 50 damage */
+function downed(files: GameFiles, side: number, types: number[], morale = 0) {
+  const { b, f, c, left } = battle(files, side, types, morale)
   b.inflict(f, 50)
-  return { left: b.effectsOf(c).map((x) => x.type), c }
+  return { left: left(), c }
 }
 
 const por = process.env.POOLRAD ?? '', coab = process.env.COAB ?? ''
@@ -48,6 +54,13 @@ describe.skipIf(!por || !existsSync(por))('PoR: going down (FUN_5216_100a)', () 
     expect(c[F.status]).toBe(6)
     expect(left).toEqual([54, 13]) // one 54 of two; 13 is not in PoR's list
   })
+
+  it('the morale check (FUN_3334_10d7) first takes off the first 74 (grab) and 75 (blood drain)', async () => {
+    const files = load(por, POR)
+    const { b, f, left } = battle(files, 0, [74, 13, 75, 74])
+    await b.morale(f)
+    expect(left()).toEqual([13, 74])
+  })
 })
 
 describe.skipIf(!coab || !existsSync(coab))('CotAB: going down (0x4C05B)', () => {
@@ -57,6 +70,13 @@ describe.skipIf(!coab || !existsSync(coab))('CotAB: going down (0x4C05B)', () =>
     const files = load(coab, COAB)
     const { left } = downed(files, 1, [13, 54, 74, 75, 139, 144])
     expect(left).toEqual([54, 74, 75])
+  })
+
+  it('the morale check (0x2443F) first takes off 13, 58, 139 and 144', async () => {
+    const files = load(coab, COAB)
+    const { b, f, left } = battle(files, 0, [13, 74, 58, 139, 144, 75])
+    await b.morale(f)
+    expect(left()).toEqual([74, 75])
   })
 
   it('a berserk NPC (77, morale 0xB3) goes back to side 0; another morale does not', () => {

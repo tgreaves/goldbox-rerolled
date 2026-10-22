@@ -2167,6 +2167,7 @@ export class Battle implements FxHost {
   async morale(f: Fighter): Promise<boolean> {
     const c = f.c
     f.r[0x14] = 0
+    for (const type of ids().moraleRemoves) await removeFirst(this, c, type)
     if (f.r[0x10]) { f.r[0x14] = 1; this.print(`${name(c)} ${msg('forcedToFlee')}`); return false }
     if (c[F.morale] < 0x80) return false
     let m = (c[F.morale] & 0x7f) * 2
@@ -2180,7 +2181,11 @@ export class Battle implements FxHost {
     await fire(this, c, 17)
     if (fx.morale !== 0 && fx.morale >= 100 - this.e.read(0x6dc6) && this.side(f) !== 0) return false
     const fast = Math.max(0, ...this.enemies(f).map((e) => this.moveOf(e) >> 1))
-    if (fast <= this.moveOf(f) >> 1) { f.r[0x14] = 1; return false }
+    if (fast <= this.moveOf(f) >> 1) {
+      f.r[0x14] = 1
+      for (const type of ids().fleeRemoves) await removeFirst(this, c, type)
+      return false
+    }
     if (c[F.stat[1]] > 5) {
       this.print(`${name(c)} ${msg('surrenders')}`)
       c[F.status] = 4; c[F.hp] = 0; c[F.inPlay] = 0
