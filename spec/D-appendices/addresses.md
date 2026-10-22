@@ -908,6 +908,7 @@ when its table column or sentence names CotAB.
 | 0x2445C | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
 | 0x24533 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x2459C | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
+| 0x2466C | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x24C90 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x24CD6 | coab/combat | coab/combat: Map-area generator | `FUN_34c7_0221` |
 | 0x24D63 | coab/combat, B/procedures | coab/combat: Furnishing |  |
@@ -1033,6 +1034,7 @@ when its table column or sentence names CotAB.
 | 0x2CDA1 | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x2CE27 | coab/combat, B/procedures | coab/combat: The backstab |  |
 | 0x2CF0C | coab/combat | coab/combat: The backstab |  |
+| 0x2D141 | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x2D4D0 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x2E394 | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x2E582 | B/vocabularies | B/vocabularies: 3.7 Holding, draining, engulfing |  |
@@ -1300,16 +1302,23 @@ when its table column or sentence names CotAB.
 | 0x4CD91 | coab/spells, B/procedures | coab/spells: 1. Dispatch and shared helpers | `FUN_5216_1656` |
 | 0x4CE0A | B/procedures | B/procedures: 12.1 Adding and removing effects |  |
 | 0x4CE85 | coab/camp, coab/spells, coab/tables, B/procedures | coab/camp: 1. Fix | `FUN_5216_175d` |
+| 0x4D1EE | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
+| 0x4D70D | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
+| 0x4D748 | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x4D7E8 | coab/camp, coab/ecl, coab/effects, B/vocabularies | coab/camp: 1. Fix |  |
 | 0x4DC70 | coab/ecl, coab/records | coab/ecl: Start-up menu and demo | `FUN_10ba_0bb8` |
+| 0x4DC9E | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x4DCA5 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x4DCEC | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x4DD5F | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
+| 0x4DDB8 | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
+| 0x4DDD5 | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x4DE42 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x4DE70 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x4DEEF | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x4DEFF | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x4DF16 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
+| 0x4DFEE | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x4E0BC | coab/combat | coab/combat: The former class in battle |  |
 | 0x4E2CF | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x4E381 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |

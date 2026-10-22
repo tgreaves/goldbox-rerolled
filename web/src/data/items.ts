@@ -1,6 +1,7 @@
 // Items (spec/A-games/engine/records.md): 63-byte item records (CHRDAT*.ITM, ITEM<n>.DAX, MON<n>ITM.DAX), the
 // 16-byte base item table in ITEMS, and the name words in START.EXE's data segment.
 import { T } from '../games/tables'
+import { R } from '../games/rules'
 import { unexepack } from './exepack'
 
 export const ITEM_SIZE = 63
@@ -73,8 +74,9 @@ export class ItemTables {
     let mask = 0
     for (let n = 1; n <= 3; n++) if (word[n] && (identified || !((r[0x35] >> (3 - n)) & 1))) mask |= 1 << (n - 1)
     const count = it.count
-    const pluralHere = (n: number) => (1 << (n - 1)) === mask || (n === 1 && mask > 4 && it.type !== 0x56) ||
-      (n === 2 && !(mask & 1)) || (n === 3 && it.type === 0x56) || ((it.type === 0x49 || it.type === 0x1c) && word[3] !== 0xb1)
+    const { oil, arrows, quarrels } = R.itemTypes
+    const pluralHere = (n: number) => (1 << (n - 1)) === mask || (n === 1 && mask > 4 && it.type !== oil) ||
+      (n === 2 && !(mask & 1)) || (n === 3 && it.type === oil) || ((it.type === arrows || it.type === quarrels) && word[3] !== 0xb1)
     let s = count > 0 ? `${count} ` : ''
     let plural = false
     for (let n = 3; n >= 1; n--) {

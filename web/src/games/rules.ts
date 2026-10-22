@@ -150,6 +150,19 @@ export interface GameRules {
    * dual-class part.
    */
   backstab: { armour: number | null; weapons: number[]; notLarge: boolean; minus: number }
+  /**
+   * Item types (ITEMS) the shared procedures name: the launchers' ammunition (the recalculation's
+   * char+0xF8 / +0xFC), holy water (the computer's weapon score against undead), flasks of oil and the
+   * ammunition in the name's plural rule, the weapons an elf gets +1 to hit with, and the sprite a
+   * missile flies as (`flight`: the arrow by direction, the thrown weapon and the flask cycles of COMSPR
+   * 3 and 4, the sling stone of 8; anything else 7)
+   */
+  itemTypes: {
+    arrows: number; quarrels: number; holyWater: number; oil: number; elfBonus: number[]
+    /** the name word (item +0x2F) of a Bag of Holding, whose readying lightens the load by 5 000; null: none does */
+    bagOfHolding: number | null
+    flight: { arrow: number[]; thrown: number[]; flask: number[]; stone: number[] }
+  }
   /** thief skills (PoR FUN_51cf_0329, CotAB 0x50F5A): the level (with former dual-class levels in
    *  CotAB), a bonus on every skill (CotAB: an uninitialised variable that holds 7 from the saves
    *  routine, confirmed by the shipped characters), whether the race clamp counts it, and the first
@@ -324,6 +337,13 @@ export const POR_RULES: GameRules = {
   dualClass: null,
   recalc: { attacksReset: true, classMask: false },
   backstab: { armour: 50, weapons: [7, 8, 35, 36, 37], notLarge: false, minus: 0 }, // Leather Armor; Club, Dagger, the swords
+  // FUN_10ba_0bb8 (0x18A0, 0x18BD), FUN_3334_128d (0x24644), the name 0x1239–0x126A, the elf bonus
+  // 0xD1B–0xD48, the flight FUN_3aae_26b0 (0x2D190)
+  itemTypes: {
+    arrows: 0x49, quarrels: 0x1c, holyWater: 0x55, oil: 0x56, elfBonus: [36, 37, 41, 42, 43, 44],
+    bagOfHolding: 0xba, // 0x18DA
+    flight: { arrow: [9, 21, 28, 31, 73], thrown: [2, 7, 20], flask: [85, 86], stone: [47] },
+  },
   bolt: { lightning: 8, skipLast: false, mapAreaOnly: false, noRepeatBounce: false, chargeSinceLast: false },
   wildBattle: { kind: 'overlandTile' },
   battleMove: { test: 'byte', shortStep: 'stay' }, // every cell's byte 0 is 1 or 0xFF
@@ -394,6 +414,14 @@ export const COAB_RULES: GameRules = {
   dualClass: { race: 7, primeFrom: 9, oldAtLeast: 15, newAtLeast: 17 },
   recalc: { attacksReset: false, classMask: true }, // 0x50836
   backstab: { armour: null, weapons: [0x61, 7, 8, 35, 36, 37], notLarge: true, minus: 1 }, // 0x2CE27, 0x2A74C
+  // 0x4DDB8, 0x2466C, the name 0x4D70D–0x4D748, the elf bonus 0x4D1EE (not the Drow Long Sword 97), the
+  // flight 0x2D141: the Dart of Hornets Nest (100) flies as an arrow, the Staff Sling (101) and Spine (98) as a stone
+  itemTypes: {
+    arrows: 0x49, quarrels: 0x1c, holyWater: 0x55, oil: 0x56, elfBonus: [36, 37, 41, 42, 43, 44],
+    // the bag's flag is cleared (0x4DC9E) and never set, so the − 5 000 at 0x4DFEE never runs
+    bagOfHolding: null,
+    flight: { arrow: [9, 21, 100, 28, 31, 73], thrown: [2, 7, 20], flask: [85, 86], stone: [101, 47, 98] },
+  },
   bolt: { lightning: 7, skipLast: true, mapAreaOnly: true, noRepeatBounce: true, chargeSinceLast: true }, // 0x478F6, 0x479B4
   // 0x25D56: the grid builder takes the map generator only when A 0x1CC (ECL 0x4BE6, the engine's 0x49E6)
   // is set; the place is A byte 0x342 (ECL 0x4CA1, the engine's 0x4AA1)

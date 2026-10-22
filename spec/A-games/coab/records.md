@@ -189,6 +189,13 @@ All have base = current stats, 300 pp and nothing else, no items (no `.SWG` file
   - 8 dagger: range 1 → 0; 9 dart: flags 0x10 → 0x1A (DEX to-hit, launcher); 44 short bow, 73 arrow: mask 0x48 → 0xCC (thieves may use them);
   - 60–62 scrolls: hands 2 → 0; 61 MU scroll mask 0x01 → 0x05 (thieves); 66 robe mask 0x7F → 0x01 (Robe of Powerlessness/Vermin, MU only); 83 mask 0 → 0xFF; 84/87/89 mask 0x08 → 0xC8;
   - new types (names from shipped instances, I): 94 Drow Mace (slot 0, hands 0, 1d6+1/1d6, bashing), 95 Elfin Chain Mail and 96 Drow Chain Mail (slot 2, AC byte 183 = AC 5), 97 Drow Long Sword (1d8/1d12), 98 Spine (thrown, RoF 12/2, range 18), 99 Ring of Wizardry (slot 9, MU), 100 Dart of Hornets Nest (RoF 28/2, range 6), 101 Staff Sling (2 hands, range 24).
+- **Item types the engine names** (O): arrows 73 and quarrels 28 (the recalculation's +0x17D / +0x181,
+  0x4DDB8, 0x4DDD5), holy water 0x55 (the computer's weapon score, 0x2466C), oil 0x56 and the plural rule
+  (0x4D70D–0x4D748) and the elf's +1 weapons (0x4D1EE: 36, 37, 41–44, not the Drow Long Sword 97) are
+  PoR's. The missile flight (0x2D141) adds 100 (Dart of Hornets Nest) to the arrow group and 101 (Staff
+  Sling) and 98 (Spine) to the sling stone's (COMSPR 8; PoR 47 only). The **Bag of Holding** step is
+  dead: the recalculation still subtracts 5 000 when its flag is set (0x4DFEE), but the flag is only ever
+  cleared (0x4DC9E), so no bag lightens the load. The profile's `rules.itemTypes` holds these.
 - **`ITEM<n>.DAX`** (O, `1885:1b9d`, string `1885:1b7a` "ITEM" + block + ".dax"): ECL TREASURE with item operand < 0x80 loads record id = operand and splits it into 63-byte items, added to the treasure list `DS:6FA6`; same as PoR. Record sizes 126–3654 (= 58 items, shop stock), all multiples of 63 (O).
 - **Name words**: 255 × 21-byte Pascal strings at `DS:1057` for word 1 (PoR `DS:10BC`), 40 entries changed (O, data): e.g. 72 Dragon Breath, 82 Elfin Chain, 83 Wizardry, 108 Ioun Stone, 127 Dragon Slayer, 130 Frost Brand, 145 Flask of Oil, 160 Drow, 175 Spine; abbreviations 208 "Clrc Scroll", 209 "MU Scroll", 213 "Prot. Scroll", 224 "Of Prot.". The full list is read from `DS:1057` (D5).
 

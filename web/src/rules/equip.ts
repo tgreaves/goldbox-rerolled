@@ -3,12 +3,9 @@
 import type { Item, ItemTables } from '../data/items'
 import { itemHandler, type FxHost } from './effects'
 import { F } from '../games/fields'
-import { classLevel, formerLevelsCount } from '../games/rules'
+import { R, classLevel, formerLevelsCount } from '../games/rules'
 import { msg } from '../games/strings'
 
-const ARROW = 73
-const QUARREL = 28
-const BAG_OF_HOLDING = 0xba
 const MAX_ITEMS = 16
 
 const u16 = (d: Uint8Array, o: number) => d[o] | (d[o + 1] << 8)
@@ -66,9 +63,9 @@ export function recalc(c: Uint8Array, items: Item[], t: ItemTables) {
     const b = t.baseOf(it)
     if (!b) continue
     if (b.slot === 0) weapon = it
-    if (it.type === ARROW) arrows = it
-    if (it.type === QUARREL) quarrels = it
-    if (it.raw[0x2f] === BAG_OF_HOLDING) bag = true
+    if (it.type === R.itemTypes.arrows) arrows = it
+    if (it.type === R.itemTypes.quarrels) quarrels = it
+    if (it.raw[0x2f] === R.itemTypes.bagOfHolding) bag = true
     hands += b.hands
   }
   c[F.itemCount] = items.length
@@ -99,7 +96,7 @@ export function recalc(c: Uint8Array, items: Item[], t: ItemTables) {
     if (b.flags & 0x80 && quarrels) plus += quarrels.plus
     if (b.flags & 0x01 && arrows) plus += arrows.plus
     dmg += plus
-    if (c[F.race] === 2 && [36, 37, 41, 42, 43, 44].includes(weapon.type)) plus += 1 // elves: swords and plain bows
+    if (c[F.race] === 2 && R.itemTypes.elfBonus.includes(weapon.type)) plus += 1 // elves: swords and plain bows
     hit += plus
     c[F.thac0] = hit & 0xff
     c[F.bonus] = dmg & 0xff
@@ -161,7 +158,7 @@ export function ready(c: Uint8Array, items: Item[], it: Item, t: ItemTables): st
     const rings = readied.filter((x) => t.baseOf(x)?.slot === 9)
     if (rings.length >= 2) { err = 2; using = rings[1] }
   }
-  if (it.type === ARROW || it.type === QUARREL) {
+  if (it.type === R.itemTypes.arrows || it.type === R.itemTypes.quarrels) {
     const other = readied.find((x) => x.type === it.type)
     if (other) { err = 2; using = other }
   }

@@ -47,13 +47,14 @@ export const cycle = (rec: number): SpriteFrame[] => [{ rec }, { rec, mirror: tr
 /** The sprite a thrown or fired item flies as (FUN_3aae_26b0); `dir` 0 = N, clockwise. */
 export function missileFlight(type: number, dir: number): Flight {
   const sounds: [number, number] = [6, 12]
-  if ([9, 21, 28, 31, 73].includes(type)) {
+  const fl = R.itemTypes.flight
+  if (fl.arrow.includes(type)) {
     const ARROW: SpriteFrame[] = [{ rec: 0 }, { rec: 1 }, { rec: 2 }, { rec: 129 }, { rec: 128 }, { rec: 129, mirror: true }, { rec: 130 }, { rec: 1, mirror: true }]
     return { frames: [ARROW[dir & 7]], delay: 10, sounds }
   }
-  if ([2, 7, 20].includes(type)) return { frames: cycle(3), delay: 50, sounds }
-  if (type === 85 || type === 86) return { frames: cycle(4), delay: 50, sounds }
-  if (type === 47) return { frames: [{ rec: 8 }, { rec: 136 }], delay: 20, sounds }
+  if (fl.thrown.includes(type)) return { frames: cycle(3), delay: 50, sounds }
+  if (fl.flask.includes(type)) return { frames: cycle(4), delay: 50, sounds }
+  if (fl.stone.includes(type)) return { frames: [{ rec: 8 }, { rec: 136 }], delay: 20, sounds }
   return { frames: [{ rec: 7 }, { rec: 135 }], delay: 20, sounds }
 }
 
@@ -739,8 +740,8 @@ export class Battle implements FxHost {
     const b = this.e.items?.baseOf(w)
     if (!b) return null
     if (b.flags & 0x10) return w
-    if (b.flags & 0x01) return this.e.itemsOf(c).find((it) => it.ready && it.type === 73) ?? null
-    if (b.flags & 0x80) return this.e.itemsOf(c).find((it) => it.ready && it.type === 28) ?? null
+    if (b.flags & 0x01) return this.e.itemsOf(c).find((it) => it.ready && it.type === R.itemTypes.arrows) ?? null
+    if (b.flags & 0x80) return this.e.itemsOf(c).find((it) => it.ready && it.type === R.itemTypes.quarrels) ?? null
     if (b.flags === 0x0a) return w
     return null
   }
@@ -2240,7 +2241,7 @@ export class Battle implements FxHost {
     let v = (b.small[0] * b.small[1]) & 0xff
     if (it.plus > 0) v = (v + 8 * it.plus) & 0xff
     if (b.small[2] > 0) v = (v + 2 * b.small[2]) & 0xff
-    if (it.type === 0x55 && f.target && s8(f.target.c[F.undead]) > 0) v = 8 // holy water against undead
+    if (it.type === R.itemTypes.holyWater && f.target && s8(f.target.c[F.undead]) > 0) v = 8 // holy water against undead
     if (b.flags & 8) v = (v + 2 * (b.rate - 1)) & 0xff
     if (b.hands <= 1) v = (v + 3) & 0xff
     if (otherHands + b.hands > 3) v = 0
@@ -2289,8 +2290,8 @@ export class Battle implements FxHost {
       let ammo: Item | null = null
       if (b.flags & 0x10) ammo = ranged
       if (b.flags & 8) {
-        if (b.flags & 1) ammo = items.find((it) => it.ready && it.type === 73) ?? null // arrows (char+0xF8)
-        if (b.flags & 0x80) ammo = items.find((it) => it.ready && it.type === 28) ?? null // quarrels (char+0xFC)
+        if (b.flags & 1) ammo = items.find((it) => it.ready && it.type === R.itemTypes.arrows) ?? null // char+0xF8
+        if (b.flags & 0x80) ammo = items.find((it) => it.ready && it.type === R.itemTypes.quarrels) ?? null // char+0xFC
       }
       const hasAmmo = !!ammo || b.flags === 0x0a
       if (rangedScore > meleeScore >> 1 && hasAmmo && (throwMelee || this.enemiesWithin(f, 1).length === 0)) pick = ranged

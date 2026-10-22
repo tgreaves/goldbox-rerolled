@@ -838,7 +838,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
   function readyCompare(t: ItemTables, c: Uint8Array, items: Item[], it: Item): { text: string; gain: number } {
       const b = t.baseOf(it)
-      if (!b || (b.slot > 9 && it.type !== 73 && it.type !== 28)) return { text: '', gain: 0 }
+      if (!b || (b.slot > 9 && it.type !== R.itemTypes.arrows && it.type !== R.itemTypes.quarrels)) return { text: '', gain: 0 }
       const cc = c.slice(), copies = items.map((x) => x.copy()), mine = it.copy()
       copies.push(mine)
       // take off what the new item would replace (same slot; a weapon also frees a shield's hand if it needs two)
@@ -1022,7 +1022,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const kind = (it: Item) => {
       const b = t.baseOf(it)
       if (!b) return 'other'
-      if (b.slot === 0 || it.type === 73 || it.type === 28) return 'weapons'
+      if (b.slot === 0 || it.type === R.itemTypes.arrows || it.type === R.itemTypes.quarrels) return 'weapons'
       if (b.slot >= 1 && b.slot <= 9) return 'armour'
       return 'other'
     }
@@ -1294,7 +1294,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       SLOT_NAMES.forEach((label, n) => { const x = bySlot(n)[0]; if (x) placed.add(x); cells.push(itemCell(x, label)) })
       const rings = bySlot(9)
       for (let k = 0; k < 2; k++) { if (rings[k]) placed.add(rings[k]); cells.push(itemCell(rings[k], 'Ring')) }
-      for (const x of readied) if (!placed.has(x)) cells.push(itemCell(x, x.type === 73 || x.type === 28 ? 'Ammunition' : 'Also readied'))
+      for (const x of readied) if (!placed.has(x)) cells.push(itemCell(x, x.type === R.itemTypes.arrows || x.type === R.itemTypes.quarrels ? 'Ammunition' : 'Also readied'))
       equipped = cells.join('')
       carried = items.filter((x) => !x.ready).map((x) => {
         const i = items.indexOf(x)
