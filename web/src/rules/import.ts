@@ -50,7 +50,7 @@ export function convert(imp: CharacterImport, raw: Uint8Array, effects: Uint8Arr
   c[F.itemCount] = 0
   // the class mask (5047:03c6) and the derived statistics: THAC0, attacks, slots, saves, thief skills
   let mask = 0
-  for (let k = 0; k < 8; k++) if (c[F.levels + k] > 0) mask |= t.b(T.classBits.at + k)
+  for (let k = 0; k < F.classCount; k++) if (c[F.levels + k] > 0) mask |= t.b(T.classBits.at + k)
   c[F.itemMask] = mask
   derive(t, c)
   const fx = parseEffects(effects).filter((e) => imp.keepEffects.includes(e.type))

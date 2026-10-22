@@ -245,7 +245,7 @@ function raiseDead(e: Engine, c: Uint8Array) {
   if (con < 14) return
   const b = Math.max(0, c[F.maxHp] - c[F.hpRolled])
   let t = 0
-  for (let k = 0; k < 8; k++) {
+  for (let k = 0; k < F.classCount; k++) {
     const L = c[F.levels + k]
     if (L <= 0) continue
     t += k === 2 ? L * (con - 14) : con > 15 ? 2 * L : L

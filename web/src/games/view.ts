@@ -30,6 +30,8 @@ export interface ViewArt {
    *  bit 7 clear: for a facing (0 N … 3 E … 6 W, ×2) and hours, a SKY record at view cell
    *  (col0 + col·hour, row0 + row·hour), 8-pixel cells from the view's top left; masked colour 13 */
   skyArt: { daySky: number; mask: number; rules: { facing2: number; hours: [number, number]; record: number; col: [number, number]; row: [number, number] }[] } | null
+  /** the 8 × 8 font: DAX family and record (PoR, CotAB 8X8D1 #201; SotSB 8X8D5 #201, loaded by name at 0x5579) */
+  font: { file: string; record: number }
 }
 
 export const POR_VIEW: ViewArt = {
@@ -37,7 +39,7 @@ export const POR_VIEW: ViewArt = {
   bands: [{ rows: [0, 42], colour: 'sky' }, { rows: [43, 43], colour: 'line' }, { rows: [44, 45], colour: 'band' }, { rows: [46, 87], colour: 'floor' }],
   closedEdges: [0, 10],
   floor: null, ground: null, bigFrom: null, overlandPicture: null, tileOverland: [25, 26, 27],
-  frame: { rope: { corner: 20, vertical: 21, horizontal: 22 } }, skyArt: null }
+  frame: { rope: { corner: 20, vertical: 21, horizontal: 22 } }, skyArt: null, font: { file: '8X8D1', record: 201 } }
 
 // spec/A-games/coab/assets.md §3: in EGA the floor is colour 8 under SKY #252, the cobbled ground drawn at
 // view rows 40–87 in every square, indoors too
@@ -62,4 +64,15 @@ export const COAB_VIEW: ViewArt = {
     { facing2: 4, hours: [13, 15], record: 251, col: [-8, 1], row: [-13, 1] },
     { facing2: 0, hours: [0, 23], record: 250, col: [0, 0], row: [0, 0] },
   ] },
+  font: { file: '8X8D1', record: 201 },
+}
+
+// spec/A-games/sotsb/assets.md §2–3, §5: the background is CotAB's routine (0x59FEB, the same SKY records and
+// rules); PICTURE ids from 0x70 load BIGPIC; no overland picture (no record 121); 8X8D1 #202 tiles 20–30 are
+// PoR's rope frame (the frame tables are not found yet, so the rope stands in, I); the font in 8X8D5 #201
+export const SOTSB_VIEW: ViewArt = {
+  ...COAB_VIEW,
+  bigFrom: 0x70, overlandPicture: null,
+  frame: { rope: { corner: 20, vertical: 21, horizontal: 22 } },
+  font: { file: '8X8D5', record: 201 },
 }

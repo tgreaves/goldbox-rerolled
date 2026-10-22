@@ -22,3 +22,7 @@ export const POR_SOUND: SoundDriver = { segment: 0x8ae0, shift: 0, transient: tr
 // segment 0x0699 (O: 5211 of 5955 bytes equal at the shift); PlaySound 0x69B0 starts the effect and
 // returns, with no delay and no stop: every effect plays to its end (O)
 export const COAB_SOUND: SoundDriver = { segment: 0x6990, shift: -0xbd, transient: false }
+// spec/A-games/sotsb/assets.md §6.3: CotAB's driver in the segment of image 0x7E40, its code CotAB's moved by
+// 0x218F (so PoR's offsets + 0x20D2); PlaySound 0x7E60 as CotAB's. The effect tables (CS:0x04A0, CS:0x0508) do not
+// follow that shift (?): the effects may not play right until the driver model takes a table offset
+export const SOTSB_SOUND: SoundDriver = { segment: 0x7e40, shift: 0x20d2, transient: false }

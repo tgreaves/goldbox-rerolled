@@ -130,6 +130,8 @@ the screen frame (40 columns, 24 rows). The full-screen frame (CotAB 0x1330, wit
 0x1403) is: row 23 the bottom table, a divider row the divider table, column 0 the left table,
 column 39 the right table, row 0 the top table, in that order of precedence, nothing elsewhere.
 
+`font` (2026-10-22): the 8 × 8 font's DAX family and record: 8X8D1 #201 (PoR, CotAB), 8X8D5 #201 (SotSB).
+
 ### 3.2 The title (`TitleScript`)
 
 The start-up sequence is part A ([engine/input-and-menus.md §1](../A-games/engine/input-and-menus.md#1-start-up-sequence);

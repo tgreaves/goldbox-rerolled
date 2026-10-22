@@ -187,6 +187,30 @@ export const COAB_TABLES: TableMap = {
   placeRing: t(0x02dc, 4), placeOrient: t(0x02ec, 4), placeVec: t(0x02fc), placeOriginX: t(0x0300), placeOriginY: t(0x0308), placeAllow: t(0x0310, 12),
 }
 
+// spec/A-games/sotsb/tables.md §2 (DS = paragraph 0x0DE2): O where the reading code was found, else a
+// data match (I). Not found yet (?): the frame tables, the overland cursor and terrain, randomItems and the
+// temple's disease list (I: DS:1B3D[1..4]), marked absent
+export const SOTSB_TABLES: TableMap = {
+  ds: 0xde20,
+  classBits: t(0x4c92), trainerBits: t(0x4c99), hitDiceCount: t(0x09b0), hitDiceSides: t(0x09b7), hitDiceStop: t(0x4ca9),
+  npcHeads: absent, npcBodiesCleric: absent, npcBodiesFighter: absent, npcBodiesMagicUser: absent, npcBodiesThief: absent,
+  raceNames: t(0x0d71, 9), classNames: t(0x0b8b, 27), alignmentNames: t(0x0db9, 17), statusNames: t(0x0ead, 13),
+  genderNames: t(0x0e52, 7), coinNames: t(0x0e60, 11), coinValues: t(0x0b40, 4),
+  frameTop: absent, frameBottom: absent, frameLeft: absent, frameRight: absent, frameDivider: absent,
+  cursorX: absent, cursorY: absent, placeTerrain: absent,
+  templeNames: t(0x014c, 41), diseases: absent, randomItems: absent, sky: t(0x0aa8), itemWords: t(0x0f22, 21), wallDx: t(0x1a90), wallDy: t(0x1a99),
+  battleCells: t(0x1a9e, 4), headRecords: absent, bodyRecords: absent, spellNames: t(0x34ae, 35), spellRecords: t(0x449d, 16),
+  overlandMap: absent, overlandSpecials: absent, overlandColumns: absent,
+  thac0: t(0x4c0c, 19), thiefBase: t(0x4cad, 8), thiefRace: t(0x4d3d, 8), thiefDex: t(0x4d48, 5), raceLimits: t(0x4d9d, 16),
+  raceClasses: t(0x4dff, 14), startAge: t(0x4e45, 0x1c), ageing: t(0x4eff, 10), classMins: t(0x4f45, 6), alignments: t(0x4fab, 10),
+  conHp: t(0x5052), xp: { at: 0x5064, row: 0xbb, levels: 19 }, clericSlots: t(0x50a1, 7), muSlots: t(0x5448, 7), paladinSlots: t(0x52d2, 7), rangerSlots: t(0x538d, 7),
+  startGold: t(0x5589, 2), saves: t(0x5592, 0x5a),
+  fanDx1: t(0x0a1a), fanDy1: t(0x0a22), fanDx2: t(0x0a0a), fanDy2: t(0x0a12),
+  gasCloud: t(0x349f), killCloud: t(0x34a3), furnishDx: t(0x03bf), furnishDy: t(0x03c3),
+  viewPieces: t(0x0ad8),
+  placeRing: t(0x0350, 4), placeOrient: t(0x0360, 4), placeVec: t(0x0370), placeOriginX: t(0x0374), placeOriginY: t(0x037c), placeAllow: t(0x0384, 12),
+}
+
 /** The active game's tables; start-up (setGame) switches them. */
 export const T: TableMap = { ...POR_TABLES }
 

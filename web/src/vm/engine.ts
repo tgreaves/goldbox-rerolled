@@ -16,7 +16,7 @@ import { GeoMap, STEP } from '../data/geo'
 import { WallSets } from '../data/walls'
 import { unpackText } from '../data/text'
 import { Overland } from '../rules/overland'
-import { Item, ItemTables, parseItems } from '../data/items'
+import { Item, ItemTables, characterItems, parseItems } from '../data/items'
 import { parseEffects, type Effect } from '../data/effects'
 import { SpellTables } from '../data/spells'
 import { unexepack } from '../data/exepack'
@@ -232,20 +232,27 @@ export class Engine {
       return out
     }
     this.A = w(1, 0x400); this.B = w(0x801, 0x400); this.C = w(0x1001, 0x200)
-    this.code = d.slice(0x1401, 0x3201)
-    this.x = d[0x3201]; this.y = d[0x3202]; this.facing2 = d[0x3203]
+    const pos = 0x1401 + game().saves.codeSize
+    this.code = d.slice(0x1401, pos)
+    this.x = d[pos]; this.y = d[pos + 1]; this.facing2 = d[pos + 2]
     this.speed = Math.min(this.A[0x49fc - A0], 9)
     this.nodes = party.map((c) => c.slice())
     this.cur = this.savedCur = this.nodes[0]
-    this.setBlock(this.B[0x6e12 - B0])
+    // the block: B + 0x312 where it is the file digit (PoR, CotAB); else the save's first byte, the digit itself
+    // (SotSB DS:7420, written first by 0x421CB)
+    if (game().ecl.blockFile.divide === 1) this.setBlockValue(this.B[0x6e12 - B0])
+    else this.setBlock(d[0])
     this.area = this.A[AREA_ID - A0]
     this.loadGeo(this.A[GEO_ID - A0])
     parseSave(d).wallSets.forEach((r, i) => { if (r !== 0xffff) this.walls.load(i + 1, r) })
     // the VM is reset when play starts (FUN_29c3_32f8), keeping the saved per-area variables
     this.restoring = true
     this.wallsLoaded = true // CotAB's loader sets DS:47FB (0x1C057)
+    // a save without the code buffer (SotSB): the area's script is loaded again from its record (I: 0x419DD not traced)
+    if (!game().saves.codeSize && this.area) this.loadEcl(this.area)
     const zero = game().ecl.areaZero
-    if (this.area === 0 && zero !== null) { // a start-of-game save: the first area's script, loaded
+    if (this.area === 0 && zero !== null) {
+      if (game().ecl.areaZeroBlock !== null) this.setBlock(game().ecl.areaZeroBlock!) // a start-of-game save: the first area's script, loaded
       this.area = zero // (then reset as any load is, 0x1C05C: portrait selector, vectors, saved per-area variables)
       this.loadEcl(zero)
     }
@@ -276,25 +283,26 @@ export class Engine {
     this.A[0x49fc - A0] = this.speed
     this.A[0x49ff - A0] = 3 // monster pictures and portraits on
     this.A[AREA_ID - A0] = this.area
-    this.B[0x6e12 - B0] = this.block
+    if (game().ecl.blockFile.divide === 1) this.B[0x6e12 - B0] = this.block // else B keeps the scripts' value
     const L = game().saves
     const d = new Uint8Array(L.saveSize)
     d[0] = this.block
     const put = (o: number, words: Uint16Array) => words.forEach((v, i) => { d[o + 2 * i] = v & 0xff; d[o + 2 * i + 1] = v >> 8 })
     put(1, this.A); put(0x801, this.B); put(0x1001, this.C)
-    d.set(this.code.subarray(0, 0x1e00), 0x1401)
+    if (L.codeSize) d.set(this.code.subarray(0, L.codeSize), 0x1401)
+    const pos = 0x1401 + L.codeSize
     const [wall, event] = this.square()
-    d.set([this.x, this.y, this.facing2, wall, event], 0x3201)
-    if (L.wallSetsAt < 0) d[0x3206] = this.overland ? this.area - 23 : 1 // DS:49FA area kind: 1 map area, 2-4 wilderness
+    d.set([this.x, this.y, this.facing2, wall, event], pos)
+    if (L.wallSetsAt < 0) d[pos + 5] = this.overland ? this.area - 23 : 1 // DS:49FA area kind: 1 map area, 2-4 wilderness
     else {
       // CotAB: the previous game state (I: 4 the 3D view, 3 the overland map), and the wall sets
-      d[0x3206] = this.A[NO_OVERLAND - A0] ? 4 : 3
+      d[pos + 5] = this.A[NO_OVERLAND - A0] ? 4 : 3
       for (let s = 1; s <= 3; s++) {
         const r = this.walls.records[s], o = L.wallSetsAt + 4 * (s - 1)
         d[o] = r & 0xff; d[o + 1] = r >> 8; d[o + 2] = s; d[o + 3] = 0
       }
     }
-    d[0x3207] = 2
+    d[pos + 6] = 2
     d[L.partyAt] = stems.length
     stems.forEach((st, i) => {
       const o = L.partyAt + 1 + 41 * i
@@ -302,6 +310,12 @@ export class Engine {
       for (let j = 0; j < d[o]; j++) d[o + 1 + j] = st.charCodeAt(j)
     })
     return d
+  }
+
+  /** the block from the value scripts and saves keep in B + 0x312 (EclMap.blockFile) */
+  private setBlockValue(v: number) {
+    const f = game().ecl.blockFile
+    this.setBlock(Math.floor((v + f.add) / f.divide))
   }
 
   private setBlock(b: number) {
@@ -387,6 +401,7 @@ export class Engine {
 
   // --------------------------------------------------------------- memory
   read(a: number): number {
+    if (a === game().ecl.facingInA) return this.facing
     if (a >= A0 && a < 0x4d00) return this.A[a - A0]
     if (a >= B0 && a < 0x6f00) {
       const v = this.charRead(a - B0)
@@ -437,11 +452,12 @@ export class Engine {
     if (k === 0xa0) return s8(F.hitDice)
     if (k >= 0xa5 && k <= 0xac) return c[F.thief + k - 0xa5]
     if (k === 0xb8) return c[F.morale]
-    if ([0xbb, 0xbd, 0xbf, 0xc1, 0xc3].includes(k)) return u16(F.money + k - 0xbb)
+    if (k >= 0xbb && k < 0xbb + 2 * game().ecl.moneyWords && !((k - 0xbb) & 1)) return u16(F.money + k - 0xbb)
     if (k === 0xd8) return s8(F.alignment)
     if (k === 0xf7) return u16(F.xpBase)
     if (k === 0xf9) return c[F.xpPerHp]
     if (k === 0x100) {
+      if (game().ecl.view100.read === 'status') return c[F.status]
       const past = game().ecl.loadPastEnd && this.loadedPastEnd
       this.loadedPastEnd = false
       return past ? 0 : c[F.inPlay] === 0 ? 0x80 : 1
@@ -454,8 +470,25 @@ export class Engine {
     if (k === 0x11b) return c[F.move]
     if (k === 0x2b1 || k === 0x2b4) return Math.max(0, this.nodes.indexOf(c))
     if (k === 0x2cf) return R.chaReaction[c[F.stat[5]]] ?? 0
-    if (k === 0x312) return this.block
+    if (k === 0x312) return game().ecl.blockFile.divide === 1 ? this.block : undefined
     return undefined
+  }
+
+  /** ADD_EP everyone, amount (SotSB 0x21324; EclMap.addExperience). */
+  private async addExperience() {
+    this.readops(2)
+    const p = game().ecl.addExperience
+    if (!p) return
+    const all = this.val(1) !== 0, amount = this.val(2)
+    const nameOf = (c: Uint8Array) => String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name]))
+    this.io.print(all ? text(p.party) : text(p.one) + nameOf(this.cur) + text(p.gains), false)
+    for (const c of all ? this.party() : [this.cur]) {
+      let n = 0
+      for (let k = 0; k < p.classes; k++) if (((c[F.levels + k] << 24) >> 24) > 0) n++
+      if (!n || !c[F.inPlay]) continue // no class level: the original divides by 0 (Bug, not met in play)
+      const to = (((c[F.xp] | (c[F.xp + 1] << 8) | (c[F.xp + 2] << 16) | (c[F.xp + 3] << 24)) >>> 0) + Math.floor(amount / n)) >>> 0
+      c[F.xp] = to & 0xff; c[F.xp + 1] = (to >> 8) & 0xff; c[F.xp + 2] = (to >> 16) & 0xff; c[F.xp + 3] = to >>> 24
+    }
   }
 
   /** FUN_2fea_0a74 */
@@ -470,25 +503,33 @@ export class Engine {
   }
   private charWrite(k: number, v: number) {
     const c = this.cur
+    const E = game().ecl, mv = E.memorisedView, extra = E.viewWrites[k]
     if (k === 0 && v === 0) this.leaveFlags[0] = true
-    if (k >= 0x20 && k <= 0x70) c[F.memorised + k - 0x20 + game().ecl.memorisedView] = v & 0xff
+    if (extra) {
+      const at = F[extra.field] as number
+      c[at] = v & 0xff
+      if (extra.word) c[at + 1] = v >> 8
+    } else if (k >= mv.from && k <= mv.to) c[F.memorised + k - mv.from + mv.offset] = v & 0xff
     else if (k === 0xb8) c[F.morale] = (v > 0xb2 ? v - 0x32 : v) & 0xff
-    else if ([0xbb, 0xbd, 0xbf, 0xc1, 0xc3].includes(k)) {
+    else if (k >= 0xbb && k < 0xbb + 2 * E.moneyWords && !((k - 0xbb) & 1)) {
       c[F.money + k - 0xbb] = v & 0xff
       c[F.money + k - 0xbb + 1] = v >> 8
     } else if (k === 0xf7) { c[F.xpBase] = v & 0xff; c[F.xpBase + 1] = v >> 8 }
     else if (k === 0xf9) c[F.xpPerHp] = v & 0xff
     else if (k === 0x100) {
-      if (v === 0) this.leaveFlags[1] = true
-      if (v > 0x7f) {
-        c[F.inPlay] = 0
-        if (v === 0x87) c[F.status] = 7
+      if (E.view100.write === 'okayInPlay') { if (v === 1) { c[F.status] = 0; c[F.inPlay] = 1 } }
+      else {
+        if (v === 0) this.leaveFlags[1] = true
+        if (v > 0x7f) {
+          c[F.inPlay] = 0
+          if (v === 0x87) c[F.status] = 7
+        }
       }
     } else if (k === 0x10c) {
       if (v === 0) { c[F.side] = 0; c[F.quick] = 0 }
       else if (v === 0x80) { c[F.side] = 0; c[F.quick] = 1 }
       else if (v === 0x81) { c[F.side] = 1; c[F.quick] = 1 }
-    } else if (k === 0x312) this.setBlock(v)
+    } else if (k === 0x312) this.setBlockValue(v)
     else if ((k === 0x322 || k === 0x324 || k === 0x326) && v > 0x80) {
       this.walls.load((k - 0x320) / 2, v & 0x7f)
       this.mapDirty = true
@@ -959,8 +1000,9 @@ export class Engine {
     const b = [1, 2, 3].map((i) => this.val(i) & 0xff)
     if (b[0] === 0x7f) this.walls.load(1, 0)
     else if (this.A[0x49e7 - A0] && this.A[0x49e8 - A0]) {
-      for (const i of [0, 2]) if (b[i] !== 0xff || !game().ecl.twoSlotSkipsFF) this.walls.load(i + 1, b[i])
-    } else b.forEach((r, i) => { if (r !== 0xff) this.walls.load(i + 1, r); else this.walls.clear(i + 1) })
+      const none = game().ecl.wallSetNone
+      for (const i of [0, 2]) if (!none.includes(b[i]) || !game().ecl.twoSlotSkipsFF) this.walls.load(i + 1, b[i])
+    } else b.forEach((r, i) => { if (!game().ecl.wallSetNone.includes(r)) this.walls.load(i + 1, r); else this.walls.clear(i + 1) })
     this.mapDirty = true
   }
 
@@ -1351,6 +1393,8 @@ export class Engine {
         await this.io.refresh()
         break
       case 'dropCharacter': this.readops(0); this.leaveParty(); break
+      case 'nothing': this.readops(0); break // SotSB PROTECTION (0x2116D): an empty handler
+      case 'addExperience': await this.addExperience(); break
       case 'findEffect': { // EQ when the current character has the effect, else NE
         this.readops(1)
         const has = this.effectsOf(this.cur).some((x) => x.type === (this.val(1) & 0xff))
@@ -1410,7 +1454,7 @@ export class Engine {
       const pc = this.pc
       await this.camp(false)
       this.pc = pc
-    } else if (n === 0 || n === 8) { await this.io.engine(n === 0 ? 'party screen' : 'ending'); return }
+    } else if (n === 0 || n === game().ecl.endingProgram) { await this.io.engine(n === 0 ? 'party screen' : 'ending'); return }
     else return
     this.stop = true
     this.stack = []
@@ -1494,7 +1538,7 @@ export class Engine {
   attachFiles(i: number, itm?: Uint8Array, spc?: Uint8Array) {
     const node = this.nodes[i]
     if (!node) return
-    this.inventory.set(node, parseItems(itm))
+    this.inventory.set(node, characterItems(itm))
     this.effects.set(node, parseEffects(spc))
   }
 
@@ -1585,7 +1629,7 @@ export class Engine {
     const n = this.party().length
     this.nodes.splice(n, 0, c)
     this.B[PARTY_SIZE - B0] = n + 1
-    this.inventory.set(c, parseItems(itm))
+    this.inventory.set(c, characterItems(itm))
     this.effects.set(c, parseEffects(spc))
     if (!this.cur) this.cur = this.savedCur = c
     return c

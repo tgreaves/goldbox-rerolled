@@ -237,6 +237,22 @@ share rule as parameters), PROTECTION as a no-op, the memorised view's start as 
 writes as data (0x100 and 0x119 differ), the second leave flag as profile data (absent here), the
 0xC05A write dropped (an unknown register: the port's NOWHERE), and A[0x4BEA] read from the facing.
 
+## Found while running the scripts in the port (2026-10-22)
+
+- **The block written by scripts is not the file digit** (O): the B-view write of 0x312 (ECL 0x7F12,
+  0x2675A) calls 0x6EB0, which keeps the old digit in DS:7421 and sets the DAX file digit DS:7420 :=
+  (v + 1) div 2: values 1 and 2 are ECL1, 3 and 4 ECL2, 5 and 6 ECL3 (the scripts write 2 before
+  `NEW_ECL #33`, 4 before `NEW_ECL #64`). 0x6ECE puts the old digit back. The save's first byte is that
+  digit (0x421CB writes DS:7420 first); B + 0x312 keeps the scripts' value.
+- **NEW_ECL** (0x1E75C): A + 0x1E4 := the current record, DS:A4C2 := the operand, then the loader 0x25C3C
+  ("Loading...Please Wait", `ECL` + DS:7420 + `.dax`), which retries while the record's size is below 2
+  (as PoR's): a record missing from the file loops (O).
+- **LOAD_PIECES** (0x1E7CF): 0x7F means "no set" as 0xFF does, in every mode (0x1E812–0x1E949); in one-slot
+  mode such a slot is emptied (DS:89DC + 4·slot := 0xFFFF) (O).
+- The scripts of ECL2 #49–51 load WALLDEF2 records 1 and 2 where record 1 holds two sets and there is no
+  record 2: what the original's loader does with the missing record is not traced (**?**; the port leaves
+  the slot as it is).
+
 ## Open
 
 - The changed handlers listed under [Opcodes](#opcodes) (CHECK_PARTY, TREASURE, LOAD_MONSTER, LOAD_AREA,

@@ -61,7 +61,7 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
           ${num('Experience', 'xp', u32(c, F.xp), 0, 99999999)}
         </fieldset>
         <fieldset><legend>Levels</legend>
-          ${CLASSES.slice(0, 8).map((n, k) => num(`${n} (max ${tables ? maxLevel(tables, k) : 1})`, `l${k}`, c[F.levels + k], 0, tables ? maxLevel(tables, k) : 1)).join('')}
+          ${CLASSES.slice(0, F.classCount).map((n, k) => num(`${n} (max ${tables ? maxLevel(tables, k) : 1})`, `l${k}`, c[F.levels + k], 0, tables ? maxLevel(tables, k) : 1)).join('')}
         </fieldset>
         <fieldset><legend>Money</legend>
           ${MONEY.map((n, k) => num(n, `m${k}`, u16(c, F.money + 2 * k), 0, 65535)).join('')}
@@ -155,7 +155,7 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
       // experience comes up to that level's minimum (lowering a level leaves max HP alone)
       let gained = 0
       const hpBefore = c[F.maxHp]
-      for (let k = 0; k < 8; k++) {
+      for (let k = 0; k < F.classCount; k++) {
         const to = clamp(v(`l${k}`), 0, tables ? maxLevel(tables, k) : 1)
         if (tables && c[F.levels + k] > 0) while (c[F.levels + k] < to) {
           c[F.levels + k]++

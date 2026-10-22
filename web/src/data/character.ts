@@ -63,7 +63,7 @@ export function parseCharacter(d: Uint8Array): Character {
   while (first < 7 && d[F.levels + first] === 0) first++
   const now = (d[F.levels + first] << 24) >> 24
   const former = (i: number) => (F.prevLevels >= 0 ? (d[F.prevLevels + i] << 24) >> 24 : 0)
-  const levels = Array.from({ length: 8 }, (_, i) => ({ cls: pick(CLASSES, i), level: ((d[F.levels + i] << 24) >> 24) + former(i) }))
+  const levels = Array.from({ length: F.classCount }, (_, i) => ({ cls: pick(CLASSES, i), level: ((d[F.levels + i] << 24) >> 24) + former(i) }))
     .filter((_, i) => d[F.levels + i] > 0 || (former(i) > 0 && former(i) < now))
   const bonus = (d[F.bonus] << 24) >> 24
   return {

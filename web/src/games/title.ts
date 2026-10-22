@@ -82,3 +82,30 @@ export const COAB_TITLE: TitleScript = {
     ],
   },
 }
+
+// spec/A-games/sotsb/assets.md §4 (0x1D631): TITLE #1, #2, then #3 at (16, 40) and #4 at (40, 40), each logo
+// with the castle behind, over #2; the waits are 15, 50, 50 and 60 (I: seconds); no lightning, no code wheel; the
+// title music plays meanwhile (games/sound.ts). Nothing reads BLADES.CFG line 5 (0x2B4A), so all of it is `first`
+export const SOTSB_TITLE: TitleScript = {
+  first: [
+    { pictures: [{ record: 1, x: 0, y: 0 }], ms: 15000 },
+    { pictures: [{ record: 2, x: 0, y: 0 }], ms: 50000 },
+    { pictures: [{ record: 2, x: 0, y: 0 }, { record: 3, x: 16, y: 40 }], ms: 50000 },
+    { pictures: [{ record: 2, x: 0, y: 0 }, { record: 4, x: 40, y: 40 }], ms: 60000 },
+  ],
+  long: [],
+  configLine: 4,
+  credits: {
+    ms: 80000,
+    // 0x1BBA: tile 0x137 along rows 1 and 23 with edge tiles between (I: drawn here as one box of the game's border)
+    frame: { boxes: [[0, 1, 39, 23]] },
+    // 0x1D35C: 540:35d(col, row, colour, 0, text), texts at CS = image 0x1D0C0
+    lines: [
+      [0, 7, 5, 0x1d15b], [3, 2, 5, 0x1d177], [4, 2, 14, 0x1d195], [4, 22, 5, 0x1d1a1], [5, 2, 14, 0x1d1b1],
+      [7, 2, 5, 0x1d1d2], [8, 2, 14, 0x1d1f4], [9, 2, 14, 0x1d215], [10, 22, 14, 0x1d235], [11, 2, 5, 0x1d240],
+      [11, 22, 14, 0x1d252], [12, 2, 14, 0x1d25c], [13, 2, 14, 0x1d27d], [14, 2, 14, 0x1d29f], [15, 2, 14, 0x1d2bc],
+      [16, 2, 14, 0x1d2cb], [16, 22, 5, 0x1d2d6], [17, 22, 14, 0x1d2e5], [19, 2, 5, 0x1d2f3], [19, 12, 14, 0x1d2fd],
+      [20, 2, 14, 0x1d316], [21, 2, 14, 0x1d339],
+    ],
+  },
+}

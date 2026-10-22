@@ -292,7 +292,7 @@ const weaponOf = (h: FxHost, c: Uint8Array) => h.weapon(c)
  */
 function drainPick(tb: Tables, t: Uint8Array): { best: number; xp: number } {
   let best = 0, xp = 0, top = 0
-  for (let k = 0; k < 8; k++) {
+  for (let k = 0; k < F.classCount; k++) {
     const lv = (t[F.levels + k] << 24) >> 24
     const need = lv > 1 ? xpFor(tb, k, lv) : 0
     if (lv >= top && (need >= xp || need === 0xffffffff)) { xp = need; best = k; top = lv }
@@ -309,7 +309,7 @@ export function drain(h: FxHost, t: Uint8Array, n: number) {
     if (t[F.status] === 8) continue
     t[F.drainLevels]++
     let total = 0
-    for (let k = 0; k < 8; k++) total += t[F.levels + k]
+    for (let k = 0; k < F.classCount; k++) total += t[F.levels + k]
     if (total <= 0) break // the original divides by zero here
     const loss = Math.floor(t[F.maxHp] / total)
     // IMP-067: the lost-HP counter stops at 255 instead of wrapping
@@ -319,7 +319,7 @@ export function drain(h: FxHost, t: Uint8Array, n: number) {
     t[F.hp] = Math.max(0, t[F.hp] - loss)
     if (!tb) { // no START.EXE: the level comes off the highest class, as before
       let best = 0
-      for (let k = 1; k < 8; k++) if (t[F.levels + k] > t[F.levels + best]) best = k
+      for (let k = 1; k < F.classCount; k++) if (t[F.levels + k] > t[F.levels + best]) best = k
       if (t[F.levels + best] <= 1) { h.setStatus(t, 8, `${h.name(t)} ${msg('deadForever')}`); t[F.maxHp] = 0; continue }
       t[F.levels + best]--
       if (t[F.hp] === 0 && t[F.status] !== 6) h.setStatus(t, 6, `${h.name(t)} ${msg('drainKilled')}`)

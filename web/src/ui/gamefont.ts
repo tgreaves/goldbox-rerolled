@@ -26,7 +26,7 @@ export const gameFontAvailable = () => available
 /** Build and register the font once the game files are known. */
 export async function installGameFont(files: GameFiles) {
   if (available) return apply()
-  const rec = files.record('8X8D1', 201)
+  const rec = files.record(files.game.view.font.file, files.game.view.font.record)
   if (!rec) return
   try {
     const ttf = buildTtf(rec)

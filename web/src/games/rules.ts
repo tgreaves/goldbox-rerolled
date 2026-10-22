@@ -534,8 +534,9 @@ export function bookSpell(s: { id: number; cls: number; level: number }): boolea
  */
 export function formerLevelsCount(c: Uint8Array): boolean {
   if (!R.dualClass || F.prevLevels < 0 || F.hpLevel < 0 || c[F.race] !== R.dualClass.race) return false
-  let cur = c[F.levels + 7]
-  for (let k = 0; k < 7; k++) if (c[F.levels + k] !== 0) { cur = c[F.levels + k]; break }
+  // 0x517D2: the first class with a level, the last class's level when none (SotSB's copy not read, I)
+  let cur = c[F.levels + F.classCount - 1]
+  for (let k = 0; k < F.classCount - 1; k++) if (c[F.levels + k] !== 0) { cur = c[F.levels + k]; break }
   return ((cur << 24) >> 24) > ((c[F.hpLevel] << 24) >> 24)
 }
 

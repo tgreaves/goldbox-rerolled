@@ -2,6 +2,7 @@
 // whose files were imported, set once at start-up.
 import { POR } from './por'
 import { COAB } from './coab'
+import { SOTSB } from './sotsb'
 import type { GameProfile } from './types'
 import { useFields } from './fields'
 import { useTables } from './tables'
@@ -9,11 +10,11 @@ import { useRules } from './rules'
 import { useJournal } from './journal'
 
 export type { GameProfile } from './types'
-export { POR, COAB }
+export { POR, COAB, SOTSB }
 export { F } from './fields'
 export { T } from './tables'
 
-export const GAMES: GameProfile[] = [POR, COAB]
+export const GAMES: GameProfile[] = [POR, COAB, SOTSB]
 
 const LAST_KEY = 'goldbox.game'
 
@@ -23,10 +24,21 @@ export function wants(g: GameProfile, name: string): boolean {
   return g.keep.some((r) => r.test(n))
 }
 
-/** Which game a set of files belongs to: by its configuration file, else by files only it has. */
+/**
+ * Which game a set of files belongs to: by its configuration file, else by the game with the most of its
+ * marker files present (the first in GAMES on a tie). Games share some files (SotSB has PoR's GEO1 and
+ * CotAB's SKY), so one marker alone does not decide.
+ */
 export function detect(names: Iterable<string>): GameProfile | undefined {
   const has = new Set([...names].map((n) => n.toUpperCase()))
-  return GAMES.find((g) => has.has(g.config)) ?? GAMES.find((g) => g.markers.some((m) => has.has(m)))
+  const byConfig = GAMES.find((g) => has.has(g.config))
+  if (byConfig) return byConfig
+  let best: GameProfile | undefined, most = 0
+  for (const g of GAMES) {
+    const n = g.markers.filter((m) => has.has(m)).length
+    if (n > most) { best = g; most = n }
+  }
+  return best
 }
 
 export function byId(id: string | null | undefined): GameProfile | undefined {

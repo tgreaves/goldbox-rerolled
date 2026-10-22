@@ -316,7 +316,7 @@ export const SHARED_KINDS: Record<string, SpellKind> = {
     t[F.drainHp] -= hp
     t[F.drainLevels]--
     let best = 13, min = 10_000_000, pick = -1
-    for (let k = 0; k < 8; k++) {
+    for (let k = 0; k < F.classCount; k++) {
       const lv = t[F.levels + k]
       if (lv <= 0 || lv > best) continue
       const xp = xpFor(tb, k, lv + 1)

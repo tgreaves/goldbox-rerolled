@@ -4,6 +4,7 @@ A reimplementation of SSI's Gold Box engine for the web browser, and the reverse
 
 - ***Pool of Radiance*** (1988, MS-DOS) is playable in the browser from start to finish: exploration, combat, camp, shops, training, character creation, saves compatible with the original, the ending.
 - ***Curse of the Azure Bonds*** (1989) is being added and is playable at an early stage: its records, tables, scripts, saves, rules (its own shop prices, battle details and the end of the game, read from its binary) and presentation (3D view ground, full-width pictures, overland map, title, its demo (Watch the demo on the party screen), the ending, sound) run on the shared engine, and every area's scripts run without errors. It has not yet been played through. See [`docs/multi-game.md`](docs/multi-game.md).
+- ***Secret of the Silver Blades*** (1990): research under way and a first profile in place: its files can be viewed and its scripts run headless over every area without errors; not yet playable.
 - The aim is one engine for every Gold Box game (*Secret of the Silver Blades*, *Pools of Darkness* and beyond), each game described by a profile of data (record layout, rules tables, script map, save layout, rules) rather than special cases in the code.
 
 The work concentrates on the split between the engine and the data that drives the adventure: maps, scripts, text, monsters, items and graphics.

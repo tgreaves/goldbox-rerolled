@@ -100,7 +100,7 @@ export const BEHAVIOURS: Record<string, Behaviour> = {
     if (v < from) return
     const a = (c[F.maxHp] - c[F.hpRolled]) & 0xff
     let b = 0
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < F.classCount; i++) {
       const L = (c[F.levels + i] << 24) >> 24 // a signed byte (jle)
       if (L <= 0) continue
       b = (b + L * (i === fighter ? v - from : v > from ? 2 : 1)) & 0xff
@@ -1063,7 +1063,7 @@ function conHitPoints(h: FxHost, c: Uint8Array, con: number) {
   }
   const old = c[F.maxHp]
   c[F.maxHp] = c[F.hpRolled]
-  for (let k = 0; k < 8; k++) {
+  for (let k = 0; k < F.classCount; k++) {
     if (c[F.prevLevels + k] > 0) bonus(k, c[F.prevLevels + k])
     let lv = c[F.levels + k]
     if (lv > 0) n++

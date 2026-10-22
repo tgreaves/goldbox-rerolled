@@ -371,6 +371,24 @@ identity, the working image, the DAX families). Its GAME.OVR has the older TPOV 
 a 5 469-byte SAVGAM, effects in `.SFX`, three script blocks and one monster block, no WILDCOM, RANDCOM
 or TILES, an AdLib sound device. Next: the record and save layouts, the script VM, the rules tables.
 
+*Profile, steps 1–5 (2026-10-22)*, as CotAB's were: `games/sotsb.ts` with `SOTSB_FIELDS`, `SOTSB_TABLES`,
+`SOTSB_ECL`, `SOTSB_FILES`, the view, title, start-up menu and sound driver; detection by `BLADES.CFG`, else by
+the most marker files (SotSB shares GEO1 with PoR and SKY with CotAB); `playable: false` (the asset viewer).
+What it needed as data rather than code: `classCount` (7 class levels, no monk, in every level loop),
+`itemRecord` 67 and `codeSize` 0 (no script code in the save: the area's record is loaded again), the
+memorised view's range, the money words, B + 0x100's read and write, A 0x4BEA as the facing, the block's
+file digit (`blockFile`: the scripts write a value two of which share a file), `wallSetNone` (0x7F as well as
+0xFF), the ending's PROGRAM operand, ADD_EP (`addExperience`) and PROTECTION as `nothing`, the font's
+record (`view.font`, 8X8D5 #201), and the game text's merged image from a TPOV overlay file. The engine's
+messages and menus are CotAB's found by their text (176 and 79; the rest show their id). Tested:
+`test/sotsb.test.ts` (detection, the pre-made party, START.EXE's tables, the shipped save) and
+`test/sotsbsweep.test.ts` (every area from every third square: no interpreter errors). Still CotAB's, not
+researched (?): the rules, spells, effects, treasure, landmarks; not done: the CotAB import, the vault, the
+67-byte item chain for arrows, the title music (the OPL2 synthesiser is in; its sequencer waits on
+spec/A-games/sotsb/music.md). The shipped save is a start-of-game save (area 0): written back after the
+start-up's conversion (block 2, record 17, as the original does) it cannot equal the shipped bytes, and the
+bytes after each member's name are written 0 (as for PoR and CotAB).
+
 ## Backlog
 
 - ~~CotAB dual-classing~~: done 2026-10-21 ("Human Change Classes" 0x5135D in the training hall's

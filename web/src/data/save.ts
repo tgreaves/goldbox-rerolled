@@ -31,15 +31,16 @@ export function parseSave(d: Uint8Array): SaveGame {
     const o = L.partyAt + 1 + 41 * i
     party.push(String.fromCharCode(...d.subarray(o + 1, o + 1 + d[o])))
   }
+  const pos = 0x1401 + L.codeSize // the position after the code buffer (none in SotSB)
   return {
     A: words(1, 0x400),
     B: words(0x801, 0x400),
     C: words(0x1001, 0x200),
-    code: d.slice(0x1401, 0x3201),
-    x: d[0x3201],
-    y: d[0x3202],
-    facing2: d[0x3203],
-    areaKind: d[0x3206],
+    code: d.slice(0x1401, pos),
+    x: d[pos],
+    y: d[pos + 1],
+    facing2: d[pos + 2],
+    areaKind: d[pos + 5],
     party,
     wallSets: [0, 1, 2].map((i) => {
       if (L.wallSetsAt < 0) return d[1 + 2 * (0x1fa + i)] | (d[2 + 2 * (0x1fa + i)] << 8) // A[0x4AFA + i]

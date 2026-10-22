@@ -109,10 +109,14 @@ The B words at 0x00 and 0x100 written as 0, then a LOAD_CHARACTER with bit 7, dr
 
 ### 4.2 Per-game view
 
-| EclMap field | Meaning | PoR | CotAB |
-|---|---|---|---|
-| `memorisedView` | added to the memorised index of a write to 0x20–0x70 (CotAB's list is 1-based there) | 0 | 1 |
-| `viewReads` | reads this game adds or changes, by offset (below) | none | 0x15, 0x72, 0x73, 0xD6, 0xE4, 0xC9 |
+| EclMap field | Meaning | PoR | CotAB | SotSB |
+|---|---|---|---|---|
+| `memorisedView` | `{ from, to, offset }`: a write to B + from … to lands at `memorised` + (offset − from) + `offset` | 0x20–0x70, 0 | 0x20–0x70, 1 (1-based) | 0x1B–0x65, 0 |
+| `viewReads` | reads this game adds or changes, by offset (below) | none | 0x15, 0x72, 0x73, 0xD6, 0xE4, 0xC9 | 0x15, 0x19, 0x72, 0x73, 0x76, 0xAC, 0xC9–0xCC, 0xCF, 0xD0, 0xD6, 0x119 |
+| `viewWrites` | writes this game adds: offset → a field, a byte or (`word`) a u16 | none | none | 0x119 → HP |
+| `moneyWords` | money words from B + 0xBB, two bytes apart, read and written as the record's | 5 | 5 | 6 (to 0xC5) |
+| `view100` | B + 0x100 read as in play (0x80 out, 1 in) or as the status byte; written `outOfPlay` (≥ 0x80 out of play, 0x87 stoned, 0 the second leave flag) or `okayInPlay` (1: Okay and in play) | in play, outOfPlay | in play, outOfPlay | status, okayInPlay (0x260CD, 0x265BD; so the second leave flag is never set) |
+| `facingInA` | an A address answered with the facing instead of the array | null | null | 0x49EA (SotSB A 0x4BEA, 0x269A9) |
 
 A `ViewRead` is one of:
 
@@ -223,9 +227,19 @@ holds "The END!" as a string (the code task of [AUDIT.md](../AUDIT.md) §6.8, C2
 |---|---|---|---|
 | `start` | where a new game's scripts start: ECL block and record | block 3, record 0 | block 2, record 1 (**I**: the start-up code sets block 2, record 1 is the block's first) |
 | `areaZero` | a save whose area word is 0 starts at this record, with that record's script loaded (not restored), as the loader does; null: area 0 is an area | null | 1 (image 0x1C001–0x1C050) |
+| `areaZeroBlock` | the block that start goes to as well; null: the save's | null | null |
+| `blockFile` | `{ add, divide }`: the DAX file digit of the value written to B + 0x312 (the block), floor((v + add) / divide); with divide ≠ 1 a save's block is its first byte, the digit, and B + 0x312 keeps the scripts' value | { 0, 1 } | { 0, 1 } |
 | `quitProgram` | the PROGRAM operand that ends the game (the engine stops and the host leaves play); null: none | null | 3 (DS:4FE0 = 1, then EXIT, 0x1BA7E) |
+| `endingProgram` | the PROGRAM operand that plays the ending; null: none | 8 | 8 |
+| `wallSetNone` | LOAD_WALLSETS operands meaning "no set" (one-slot mode: the slot emptied; two-slot: left) | [0xFF] | [0xFF] |
+| `addExperience` | ADD_EP `{ party, one, gains, classes }` (the lines; the share amount ÷ the number of the first `classes` class levels above 0, to those in play); null: no such opcode | null | null |
 
-PROGRAM's other operands are the engine's: 0 the party screen (training), 8 the ending, 9 camp (the
+SotSB (spec/A-games/sotsb/ecl.md): `areaZero` 17 with `areaZeroBlock` 2 (0x21934), `blockFile` { 1, 2 }
+(0x26763 → 0x6EB0: two values a file), no `endingProgram`, `wallSetNone` [0xFF, 0x7F] (0x1E812–0x1E949),
+`addExperience` { 0x212D4, 0x21300, 0x21311, 6 } (0x21324), and the variants `nothing` for PROTECTION
+(0x3C) and `addExperience` for 0x41.
+
+PROGRAM's other operands are the engine's: 0 the party screen (training), `endingProgram` the ending, 9 camp (the
 script then continues where it was); any other is handed to the host as `program n`
 ([host-contracts.md §2](host-contracts.md#2-the-script-host-io)).
 

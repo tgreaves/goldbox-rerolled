@@ -862,3 +862,65 @@ export const COAB_MENUS: Menus = {
   iconHair: 0x3a6da, // level 3's third word, colour 1; 0x3A716
   iconFace: 0x3a6df, // colour 2; 0x3A716
 }
+
+// SotSB (spec/A-games/sotsb/): each CotAB message found by its text in SotSB's merged image (I: matched by text,
+// the copy each routine prints not traced; where the text occurs more than once, the first). Not found, so
+// shown as their id until traced: turnsUndead, isTurned, isDestroyed, nothingHappens, charmUnaffected, wonDuel, foundTreasure, duelistReceives, lostDuel, cursed, trainingCosts, getsBackUp, unCursed, miscasts, isCured, notBlind, notDiseased, notPoisoned, notDead, notCursed, notStoned, willOnlyCost, goldPieces, payForCure, templeNoMoney, templeCured, camp, memorizeThese, memorizeThese2, cannotMemorize, scribeThese, scribeThese2, scribingSpell, funky, noSpellEffects, alter, identifyFor, reviveMonster, reviveParty, takeWillYou
+export const SOTSB_STRINGS: Strings = {
+  cough: 0x514d0, nausea: 0x514e0, cloudPoisoned: 0x514fc, cloudKilled: 0x2eb8d, battleBegins: 0x2c551,
+  teammateDying: 0x28ab9, continueBattle: 0x28ad0, gameSpeed: 0x37d41, speedRange: 0x37d4f, bandaged: 0x5611f,
+  flee: 0x28cff, blocked: 0x28d05, notWithWeapon: 0x29080, attackAlly: 0x33bc5, aim: 0x33ce0, usesItem: 0x44ead,
+  campOnlySpell: 0x33599, beginsCasting: 0x335a9, sweeps: 0x31f9f, backstabs: 0x3126e, slaysHelpless: 0x3127a,
+  attacks: 0x31289, fromBehind: 0x31291, cruelBlow: 0x312a0, hittingFor: 0x312b4, point: 0x312c1, points: 0x312c9,
+  ofDamage: 0x312d2, andMisses: 0x312dc, lostSpell: 0x2f2df, goesDown: 0x312f4, andIsDying: 0x312fe,
+  isKilled: 0x2eb8d, gotAway: 0x31d80, escapeBlocked: 0x31d89, abortSpell: 0x48be7, spellAborted: 0x48bf5,
+  castsASpell: 0x4de13, spellName: 0x4de21, alreadyTargeted: 0x32fd4, fleesInPanic: 0x295a0, forcedToFlee: 0x2a82f,
+  surrenders: 0x2a841, experiencePoints: 0x23e60, partyWon: 0x23e34, eachReceives: 0x23e47, partyFled: 0x23e20,
+  monstersRejoice: 0x24c08, hidesShare: 0x24985, his: 0x24997, share: 0x2499b, her: 0x249a3, locked: 0x35ba2,
+  noMonster: 0x414e7, bothWait: 0x2001d, monstersFlee: 0x2002e, dies: 0x279f5, isHitFor: 0x279fd,
+  pointsOfDamage: 0x27a0a, wrongClass: 0x442ef, alreadyUsing: 0x442fb, handsFull: 0x4430a, overloaded: 0x4455c,
+  consciousOnly: 0x3dbe6, notThatClass: 0x3dc05, notEnoughXp: 0x3dc24, aLevel: 0x3dc48, willBecome: 0x3dc3a,
+  andALevel: 0x3dc57, wishToTrain: 0x3dc64, congratulations: 0x3dc7b, hasScribed: 0x47232, hasMemorized: 0x4716e,
+  partyHealed: 0x470a7, fallKilled: 0x2eb8d, fallDown: 0x52601, casts: 0x48be1, noEvilScum: 0x3c681,
+  tooManyRangers: 0x3c6a5, toleratesNoEvil: 0x3c6bf, feelsBetter: 0x464b3, handsUnaffected: 0x464c1,
+  diseaseCured: 0x465dd, mustUnready: 0x4375b, takeOverloaded: 0x4455c, cantHalve: 0x44627, moneyOverloaded: 0x4455c,
+  takes: 0x52587, pointsOfDamageLine: 0x5258e, takesOnePoint: 0x525a1, fromFire: 0x525ba, fromCold: 0x525c4,
+  fromElectricity: 0x525ce, fromAcid: 0x525df, fromMagic: 0x525e9, unaffected: 0x5297a, avoidsIt: 0x2e42e,
+  howMuch: 0x45984, noGems: 0x4ff00, fineCollection: 0x4ff43, gemOne: 0x4ff13, pieceOfJewelry: 0x4ff1e,
+  gemsCount: 0x4ff18, piecesOfJewelry: 0x4ff30, gemValued: 0x4ff85, gp: 0x4ff9b, jewelValued: 0x4ffba,
+  youCan: 0x4ffaf, shopOverloaded: 0x2516d, shopNoMoney: 0x25297, cureAnyway: 0x4df2a, take: 0x24276,
+  makesCamp: 0x38f66, quitToDos: 0x38f9e, castAny: 0x36739, memorizeAny: 0x36749, scribeAny: 0x36759,
+  noCastHere: 0x36702, noCondition: 0x36722, noSpells: 0x36889, loseIt: 0x48b8b, noScrolls: 0x36f00,
+  knowSpell: 0x36f18, cannotScribe: 0x36f58, restTime: 0x46e26, selected: 0x37996, dropFromParty: 0x37ad0,
+  bidsFarewell: 0x37ae2, dumpedInDitch: 0x37af4, sighOfRelief: 0x37b09, partyKilled: 0x20896, interrupted: 0x475e0,
+  cantModify: 0x3b7ff, goldForYour: 0x451df, illGiveYou: 0x451d0, mustBeReadied: 0x43a2b, moveLeft: 0x28cdf,
+  shopLeave: 0x255c6, shopGoBack: 0x25619, templeLeave: 0x231ee, templeGoBack: 0x23239, treasureLeft: 0x24400,
+  treasureGoBack: 0x24420, guarding: 0x55992, dropIt: 0x43a70, isItADeal: 0x456e8, sold: 0x4527d,
+  identifyDeal: 0x456e8, idNoMoney: 0x456f7, nothingNew: 0x45708, looksLike: 0x4572e, tradeWithWhom: 0x4454b,
+  okayToLose: 0x43793, tradeTo: 0x4595b, selectCoin: 0x45967, notHere: 0x35825, partyOrder: 0x37968,
+  pickNewClass: 0x5759b, doesntQualify: 0x57589, nowFirstLevel: 0x575b2, nowFirstLevelEnd: 0x3ff3e,
+  sellOverloaded: 0x452c1, appraiseOverloaded: 0x4e7ef, tradeHowMuch: 0x45984, tradeWillYou: 0x4598e,
+  dropHowMuch: 0x45984, dropWillYou: 0x45d16, coinCopper: 0x4f209, coinSilver: 0x4f201, coinElectrum: 0x4f1f7,
+  coinGold: 0x4f1e7, coinPlatinum: 0x4f1ed, coinGems: 0x4f1e1, coinJewelry: 0x4f211, takeSelectCoin: 0x45967,
+  scrollOops: 0x44ec0,
+}
+
+// the same for the menus; not found: main, alter, battleTurn, partyBegin, modify
+export const SOTSB_MENUS: Menus = {
+  camp: 0xe1f7, magic: 0xe220, orderSelect: 0xe48e, orderPlace: 0xe4b7, campFaster: 0x37d66, campSlower: 0x37d6e,
+  campSpeedExit: 0x243c0, rest: 0x46f2a, yesNo: 0x4c3c2, shopLeaveYesNo: 0x231e5, templeLeaveYesNo: 0x231e5,
+  treasureLeaveYesNo: 0x231e5, listExit: 0x243c0, shop: 0x2557a, shopNoPool: 0x255a1, temple: 0x2319f,
+  templeNoPool: 0x231c7, templeHeal: 0x22f9b, treasureMoney: 0x243d3, treasureItems: 0x243e8, treasureNone: 0x243b1,
+  treasureDetect: 0x243c6, treasureExit: 0x243c0, take: 0x2427d, appraiseGems: 0x4ff62, appraiseJewelry: 0x4ff69,
+  appraiseExit: 0x243c0, sell: 0x4ffa0, sellKeep: 0x4ffa5, battleMove: 0x2887a, battleViewAim: 0x28880,
+  battleUse: 0x2888a, battleCast: 0x2888f, battleQuickDone: 0x28895, doneGuard: 0x2914d, doneDelayQuit: 0x29154,
+  doneBandage: 0x29160, doneSpeedExit: 0x29169, battleSlower: 0x293f7, battleFaster: 0x293ff,
+  battleSpeedExit: 0xe106, aim: 0x33cd4, encounterParlay: 0x1ffe4, encounterAdvance: 0x20000, parlay: 0x2071b,
+  doorBash: 0x35b8a, doorPick: 0x35b8f, doorKnock: 0x35b95, doorExit: 0x243c0, itemReady: 0x439e2, itemUse: 0x439e8,
+  itemTrade: 0x439ed, itemDrop: 0x439fd, itemHalve: 0x43a03, itemJoin: 0x43a0a, itemSell: 0x43a10, itemId: 0x43a16,
+  viewTrade: 0x433d8, viewDrop: 0x3b556, viewExit: 0xe106, partyCreate: 0xe4e0, partyDrop: 0xe50a,
+  partyModify: 0xe534, partyTrain: 0xe55e, partyChangeClass: 0xe588, partyView: 0xe5b2, partyAdd: 0xe5dc,
+  partyRemove: 0xe606, partyLoad: 0xe630, partySave: 0xe65a, partyExit: 0xe6d8, iconMain: 0xe702,
+  iconHeadWeapon: 0xe72b, iconParts: 0xe754, iconEdit: 0xe7a6, iconSmall: 0x3cfa1, iconLarge: 0x3cfa7,
+  iconHair: 0x3cfc0, iconFace: 0x3cfc5,
+}

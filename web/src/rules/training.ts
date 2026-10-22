@@ -5,7 +5,7 @@ import { T } from '../games/tables'
 import { rollHitDice, conBonus, saves, thiefSkills, wisdomBonus, type Tables } from './chargen'
 import type { Dice } from './dice'
 import { CLASSES, COIN_VALUES } from '../data/character'
-import { F } from '../games/fields'
+import { F, classIndices } from '../games/fields'
 import type { Item, ItemTables } from '../data/items'
 import { msg } from '../games/strings'
 
@@ -72,7 +72,7 @@ export function checkTraining(t: Tables, c: Uint8Array, hallMask: number, cheat 
   let all = 0, eligible = 0, cap = 0
   const xp = u32(c, F.xp)
   const eligibleClasses: number[] = []
-  for (let k = 0; k < 8; k++) {
+  for (let k = 0; k < F.classCount; k++) {
     const L = c[F.levels + k]
     if (L <= 0) continue
     all |= trainerBit(t, k)
@@ -101,7 +101,7 @@ export function willBecome(c: Uint8Array, train: number[]): string[] {
 /** Steps 9–13: pay, gain levels, recompute, then hit points. Returns true if a new MU spell is due. */
 export function train(t: Tables, dice: Dice, c: Uint8Array, classes: number[], cheat = false): boolean {
   if (!cheat) payCoins(c, R.trainingCost)
-  const k = [0, 1, 2, 3, 4, 5, 6, 7].filter((i) => c[F.levels + i] > 0).length
+  const k = classIndices().filter((i) => c[F.levels + i] > 0).length
   const oldMU = c[F.levels + 5]
   for (const cls of classes) {
     c[F.levels + cls]++
@@ -121,7 +121,7 @@ export function train(t: Tables, dice: Dice, c: Uint8Array, classes: number[], c
  * The hit points of one level gained (FUN_417f_29ae step 6): rolls for the classes that went up,
  * the CON bonus, both divided over the character's k classes; the wound is kept.
  */
-export function levelHp(t: Tables, dice: Dice, c: Uint8Array, classes: number[], k = [0, 1, 2, 3, 4, 5, 6, 7].filter((i) => c[F.levels + i] > 0).length) {
+export function levelHp(t: Tables, dice: Dice, c: Uint8Array, classes: number[], k = classIndices().filter((i) => c[F.levels + i] > 0).length) {
   let rolled = 0
   rolled = rollHitDice(t, dice, c, classes)
   c[F.hpRolled] = (c[F.hpRolled] + Math.max(1, Math.trunc(rolled / Math.max(1, k)))) & 0xff
@@ -154,7 +154,7 @@ export function maxLevel(t: Tables, k: number): number {
 export function derive(t: Tables, c: Uint8Array, items?: Item[], itemTables?: ItemTables) {
   const rc = R.recalc
   let thac = 0, high = s8(c[F.hitDice])
-  for (let k = 0; k < 8; k++) {
+  for (let k = 0; k < F.classCount; k++) {
     const L = s8(c[F.levels + k])
     thac = Math.max(thac, t.b(T.thac0.at + k * T.thac0.row + L))
     high = Math.max(high, L)
@@ -170,7 +170,7 @@ export function derive(t: Tables, c: Uint8Array, items?: Item[], itemTables?: It
   if (rc.classMask) {
     // 0x50929: a class counts with a level, or a former level below the highest level
     let mask = 0
-    for (let k = 0; k < 8; k++) {
+    for (let k = 0; k < F.classCount; k++) {
       const prev = F.prevLevels >= 0 ? s8(c[F.prevLevels + k]) : 0
       if (s8(c[F.levels + k]) > 0 || (prev > 0 && prev < s8(c[F.hitDice]))) mask = (mask + t.b(T.classBits.at + k)) & 0xff
     }
@@ -181,7 +181,7 @@ export function derive(t: Tables, c: Uint8Array, items?: Item[], itemTables?: It
     // 0x50A10: the former levels give their attacks, THAC0 and thief skills too
     const prev = (k: number) => s8(c[F.prevLevels + k])
     if (extra(prev)) c[F.attacksBase] = 3
-    for (let k = 0; k < 8; k++) c[F.thac0Base] = Math.max(c[F.thac0Base], t.b(T.thac0.at + k * T.thac0.row + prev(k)))
+    for (let k = 0; k < F.classCount; k++) c[F.thac0Base] = Math.max(c[F.thac0Base], t.b(T.thac0.at + k * T.thac0.row + prev(k)))
     if (prev(6) > 0) thiefSkills(t, c, items)
   }
 }

@@ -59,6 +59,22 @@ export const COAB_STARTUP: StartMenu = {
   },
 }
 
+// spec/A-games/sotsb/assets.md §4 and ecl.md "Start-up and new game": the menu "Play Demo" (image 0x64) under the
+// game's name (0x05) with a 3 000-hundredths timeout answering D (DS:8A63, DS:8A67); the demo at block 1 record 3
+// (0x21934). The timeout after a demo, the title again and the demo's flags are taken to be CotAB's (I)
+export const SOTSB_STARTUP: StartMenu = {
+  title: 0x05,
+  choices: 0x64,
+  timeout: { first: 3000, again: 1000 },
+  timeoutKey: 'D',
+  demoKey: 'D',
+  titleAgain: true,
+  demo: {
+    block: 1, record: 3, speed: 9,
+    keysWait: false, continueBattle: false, aftermath: false,
+  },
+}
+
 /** A Pascal string (length byte, then the characters) at offset `at`; null past the end. */
 function pascal(img: Uint8Array, at: number): string | null {
   const n = img[at]

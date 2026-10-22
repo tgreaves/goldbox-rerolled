@@ -299,6 +299,15 @@ profile.
 7. Tables only PoR has: marked absent (§3.3).
 8. The character record: the field map (§2).
 
+### SotSB's maps (2026-10-22)
+
+The character map `SOTSB_FIELDS` (439 bytes, spec/A-games/sotsb/records.md §2) adds `classCount`: the
+class levels a record holds, 8 in PoR and CotAB, 7 in SotSB (no monk), which every loop over the levels
+reads. `SOTSB_TABLES` follows spec/A-games/sotsb/tables.md §2; the frame, overland cursor and terrain
+tables, `randomItems` and `diseases` are absent until found. The save files (`SOTSB_FILES`) add
+`itemRecord` (a character's item file in 67-byte records, the last four bytes SotSB's +0x3F chain pointer,
+written 0) and `codeSize` (0: no script code in the save; the area's record is loaded again).
+
 ## Open
 
 - The meaning of `misc83`, `misc86`, `misc87` in PoR (copied by the CotAB converter, and never read in CotAB, O) and of byte 1 of a

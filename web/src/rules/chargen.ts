@@ -6,7 +6,7 @@ import { R, classLevel } from '../games/rules'
 import type { Item } from '../data/items'
 import type { Effect } from '../data/effects'
 import { T } from '../games/tables'
-import { F } from '../games/fields'
+import { F, classIndices } from '../games/fields'
 import { random, type Dice } from './dice'
 
 export class Tables {
@@ -123,7 +123,7 @@ export function rollAbilities(t: Tables, dice: Dice, c: Uint8Array) {
   c[F.baseMove] = 12
   // gold, level-1 spell slots and known spells
   let gold = 0, classes = 0
-  for (let k = 0; k < 8; k++) {
+  for (let k = 0; k < F.classCount; k++) {
     if (!c[F.levels + k]) continue
     if (k === 0) c[F.clericSlots] = 1
     else if (k === 5) c[F.muSlots] = 1
@@ -159,7 +159,7 @@ export function startEffects(c: Uint8Array): Effect[] {
 }
 
 export function hitDice(t: Tables, dice: Dice, c: Uint8Array): number {
-  return rollHitDice(t, dice, c, [0, 1, 2, 3, 4, 5, 6, 7].filter((k) => c[F.levels + k] > 0)) & 0xff
+  return rollHitDice(t, dice, c, classIndices().filter((k) => c[F.levels + k] > 0)) & 0xff
 }
 
 /**
@@ -194,7 +194,7 @@ export function keepBase(c: Uint8Array) {
 
 export function conBonus(t: Tables, c: Uint8Array): number {
   let b = 0
-  for (let k = 0; k < 8; k++) {
+  for (let k = 0; k < F.classCount; k++) {
     if (!c[F.levels + k]) continue
     b += t.s(T.conHp.at + c[F.stat[4]])
     if (c[F.stat[4]] > 16 && c[F.cls] === 2) b++
@@ -222,7 +222,7 @@ function readiedEffect(items: Item[] | undefined, effects: number[]): number | n
 export function saves(t: Tables, c: Uint8Array, items?: Item[]) {
   for (let i = 0; i < 5; i++) {
     c[F.saves + i] = 20
-    for (let k = 0; k < 8; k++) {
+    for (let k = 0; k < F.classCount; k++) {
       if (c[F.levels + k] > 0) c[F.saves + i] = Math.min(c[F.saves + i], t.b(T.saves.at + k * T.saves.row + c[F.levels + k] * 5 + i))
     }
   }
@@ -350,7 +350,7 @@ export function fileStem(name: string) {
 /** FUN_417f_3fb3: lowest max HP Modify allows. */
 export function hpMin(t: Tables, c: Uint8Array): number {
   let dice = 0, classes = 0
-  for (let k = 0; k < 8; k++) {
+  for (let k = 0; k < F.classCount; k++) {
     if (c[F.levels + k] <= 0) continue
     dice += c[F.levels + k]
     classes++
@@ -363,7 +363,7 @@ export function hpMin(t: Tables, c: Uint8Array): number {
 export function hpMax(t: Tables, c: Uint8Array): number {
   const die = [8, 8, 10, 10, 8, 4, 6, 4]
   let sum = 0, classes = 0
-  for (let k = 0; k < 8; k++) {
+  for (let k = 0; k < F.classCount; k++) {
     if (c[F.levels + k] <= 0) continue
     classes++
     sum += (c[F.levels + k] + (k === 4 || k === 7 ? 1 : 0)) * die[k]

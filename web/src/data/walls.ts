@@ -38,7 +38,9 @@ export class WallSets {
   /** FUN_55a0_0e08: load WALLDEF<block> record into slots starting at `slot`. */
   load(slot: number, record: number) {
     const def = this.files.record(`WALLDEF${this.block}`, record)
-    if (!def) throw new Error(`WALLDEF${this.block} has no record ${record}`)
+    // a record the file lacks (SotSB ECL2 #49–51 name record 2 after the two-set #1) leaves the slot as it is
+    // (I: the DAX loader returns nothing for a missing id, as for ECL records, 0x88AC)
+    if (!def) return
     const sets = Math.floor(def.length / SET_SIZE)
     const shift = BANK_BASE[slot] - BANK_BASE[1]
     for (let f = 0; f < sets && slot + f <= 3; f++) {

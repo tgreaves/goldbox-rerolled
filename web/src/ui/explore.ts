@@ -33,7 +33,7 @@ import { JOURNAL, journalReveals, revealNote, roman } from '../rules/journal'
 import { spellText } from '../rules/spelltext'
 import { ICONS, landmarks, type Landmark } from '../rules/landmarks'
 import { Overland } from '../rules/overland'
-import { itemsFile, type Item, type ItemTables } from '../data/items'
+import { characterItemsFile, type Item, type ItemTables } from '../data/items'
 import { buildIcon } from '../render/icon'
 import { effectsFile } from '../data/effects'
 import { canTakeItem, capacity, ready, readyItem, recalc, unready, unreadyItem } from '../rules/equip'
@@ -347,7 +347,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   let topBlank = false
   let glyphFont: Uint8Array[] | null | undefined
   function drawGlyphs(g: CanvasRenderingContext2D, codes: number[], x: number, y: number) {
-    if (glyphFont === undefined) { const r = files.record('8X8D1', 201); glyphFont = r ? parseFont(r).glyphs : null }
+    if (glyphFont === undefined) { const r = files.record(files.game.view.font.file, files.game.view.font.record); glyphFont = r ? parseFont(r).glyphs : null }
     if (!glyphFont) return
     g.fillStyle = '#ffffff'
     codes.forEach((code, i) => {
@@ -631,7 +631,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     try {
       await writeAutosave({ slot: 'A', dat: engine.toSave(members.map((_, n) => `CHRDATA${n + 1}`)), savedAt: Date.now(), known: [...known], sidecar: sidecarExtra,
         label: `${parseCharacter(members[0]).name}'s party, block ${engine.block} area ${engine.area} (${why})`,
-        chars: members.map((c) => ({ sav: c.slice(), itm: itemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })) })
+        chars: members.map((c) => ({ sav: c.slice(), itm: characterItemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })) })
       autosavedAt = `${engine.block}:${engine.area}`
     } catch { /* storage full or unavailable: the game goes on */ }
   }
@@ -649,7 +649,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const stems = members.map((_, n) => `CHRDAT${slot}${n + 1}`)
     const label = `${parseCharacter(members[0]).name}'s party, block ${engine.block} area ${engine.area}`
     await writeSave({ slot, dat: engine.toSave(stems), label, savedAt: Date.now(),
-      chars: members.map((c) => ({ sav: c.slice(), itm: itemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })), known: [...known], sidecar: sidecarExtra })
+      chars: members.map((c) => ({ sav: c.slice(), itm: characterItemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })), known: [...known], sidecar: sidecarExtra })
     note(`Game saved in slot ${slot}.`)
   }
 
@@ -795,7 +795,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   function xpProgress(t: Tables, c: Uint8Array): { pct: number; text: string } | null {
     const xp = (c[F.xp] | (c[F.xp + 1] << 8) | (c[F.xp + 2] << 16) | (c[F.xp + 3] << 24)) >>> 0
     let best: { pct: number; text: string; left: number } | null = null
-    for (let k = 0; k < 8; k++) {
+    for (let k = 0; k < F.classCount; k++) {
       const L = c[F.levels + k]
       if (L <= 0 || L >= levelLimit(c, k)) continue
       const next = xpFor(t, k, L + 1)
@@ -810,7 +810,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
   function canTrain(t: Tables, c: Uint8Array) {
     const xp = (c[F.xp] | (c[F.xp + 1] << 8) | (c[F.xp + 2] << 16) | (c[F.xp + 3] << 24)) >>> 0
-    for (let k = 0; k < 8; k++) {
+    for (let k = 0; k < F.classCount; k++) {
       const L = c[F.levels + k]
       if (L <= 0 || L >= levelLimit(c, k)) continue
       const need = xpFor(t, k, L + 1)
@@ -1241,7 +1241,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         }
       } else if (o === 'R') {
         if (party.length <= 1) { print('The party needs at least one character.', false); continue }
-        await saveCharacter({ stem: fileStem(nameOf(c)), sav: c.slice(), itm: itemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })
+        await saveCharacter({ stem: fileStem(nameOf(c)), sav: c.slice(), itm: characterItemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })
         engine.dropMember(c)
         print(`${nameOf(c)} leaves the party (still available to Add).`, false)
       } else if (o === 'D') {

@@ -12,7 +12,11 @@ import { unexepack } from './exepack'
 export function mergedImage(startExe: Uint8Array, ovr?: Uint8Array): Uint8Array {
   const u = unexepack(startExe)
   const img = u.image
-  if (!ovr || ovr[0] !== 0x46 || ovr[1] !== 0x42 || ovr[2] !== 0x4f || ovr[3] !== 0x56) return img // 'FBOV'
+  // 'FBOV' (PoR, CotAB: the signature and a dword, code from offset 8) or 'TPOV' (SotSB: the signature alone,
+  // code from offset 4; spec/A-games/engine/containers.md)
+  const sig = ovr ? String.fromCharCode(ovr[0], ovr[1], ovr[2], ovr[3]) : ''
+  if (!ovr || (sig !== 'FBOV' && sig !== 'TPOV')) return img
+  const first = sig === 'FBOV' ? 8 : 4
   const dv = new DataView(img.buffer, img.byteOffset, img.byteLength)
   // the overlay stubs: CD 3F 00 00, the overlay's file offset (32 bits), code size, fix-up size,
   // entry count; each entry at +0x20 + 5·i begins CD 3F
@@ -20,7 +24,7 @@ export function mergedImage(startExe: Uint8Array, ovr?: Uint8Array): Uint8Array 
   for (let p = 0; p + 0x20 <= img.length; p += 16) {
     if (img[p] !== 0xcd || img[p + 1] !== 0x3f || img[p + 2] !== 0 || img[p + 3] !== 0) continue
     const fo = dv.getUint32(p + 4, true), size = dv.getUint16(p + 8, true), n = dv.getUint16(p + 12, true)
-    if (!n || fo < 8 || fo >= ovr.length) continue
+    if (!n || fo < first || fo >= ovr.length) continue
     let ok = true
     for (let i = 0; i < n && ok; i++) ok = img[p + 0x20 + 5 * i] === 0xcd && img[p + 0x21 + 5 * i] === 0x3f
     if (ok) stubs.push({ fo, size })

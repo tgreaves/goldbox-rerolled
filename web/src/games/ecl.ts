@@ -11,10 +11,27 @@ export interface EclMap {
   b: number
   c: number
   code: number
-  /** B-view writes to B + 0x20…0x70 land at memorised + (offset − 0x20) + this (PoR 0, CotAB 1: 1-based) */
-  memorisedView: number
+  /** B-view writes to B + from … to land at memorised + (offset − from) + `offset` (PoR 0x20–0x70, 0; CotAB
+   *  0x20–0x70, 1: 1-based; SotSB 0x1B–0x65, 0) */
+  memorisedView: { from: number; to: number; offset: number }
   /** B-view reads this game adds to the shared ones (offset from B → value) */
   viewReads: Record<number, ViewRead>
+  /** B-view writes this game adds (offset from B → the field written, a byte or with `word` a u16) */
+  viewWrites: Record<number, { field: keyof CharFields; word?: boolean }>
+  /** how many money words the view shows from B + 0xBB, two bytes apart (PoR, CotAB 5; SotSB 6, to 0xC5) */
+  moneyWords: number
+  /** B + 0x100: read as in play (0x80 out, 1 in: PoR, CotAB) or as the status byte (SotSB 0x260CD); written
+   *  `outOfPlay` (at least 0x80 out of play, 0x87 stoned, 0 the second leave flag: PoR, CotAB) or `okayInPlay`
+   *  (1: Okay and in play; SotSB 0x265BD) */
+  view100: { read: 'inPlay' | 'status'; write: 'outOfPlay' | 'okayInPlay' }
+  /** an A address the engine answers with the facing byte instead of the array (SotSB A 0x4BEA, 0x269A9); null: none */
+  facingInA: number | null
+  /** the PROGRAM operand that plays the ending (PoR, CotAB 8); null: none (SotSB's PROGRAM knows only 0 and 9) */
+  endingProgram: number | null
+  /** ADD_EP everyone, amount (SotSB 0x41, 0x21324): the lines (`party` for everyone; `one` + the name + `gains`
+   *  for the current character), each character's share amount / the number of its first `classes` class levels
+   *  above 0, given to those in play; null: no such opcode */
+  addExperience: { party: number; one: number; gains: number; classes: number } | null
   /** opcodes this game handles its own way (opcode → variant the engine implements) */
   ops: Record<number, EclVariant>
   /** IF-skip operand counts that differ from PoR's table */
@@ -37,13 +54,21 @@ export interface EclMap {
   loadPastEnd: boolean
   /** shown before "The entire party is killed!" when DAMAGE kills everyone (PoR "The END!", 0x1C667) */
   wipeBanner: number | null
+  /** the DAX file digit for the value scripts write to B + 0x312 (ECL 0x6E12, the block): floor((v + add) /
+   *  divide); PoR and CotAB { 0, 1 }: the value is the digit; SotSB { 1, 2 } (0x26763 → 0x6EB0: two values a file) */
+  blockFile: { add: number; divide: number }
   /** where a new game's scripts start: ECL block and record */
   start: { block: number; area: number }
   /** a save whose area is 0 starts here, with that area's script loaded (CotAB 1; PoR has an area 0) */
   areaZero: number | null
+  /** the block that start goes to as well (SotSB 2: 0x21934 sets the block digit DS:7420 := 2); null: the save's */
+  areaZeroBlock: number | null
   /** LOAD_WALLSETS in two-slot mode (A 0x49E7 and 0x49E8 set): an operand of 0xFF leaves its slot as
    *  it is (CotAB, image 0x19563/0x19575) or is loaded like any record (PoR, image 0x1A96D: no test) */
   twoSlotSkipsFF: boolean
+  /** LOAD_WALLSETS operands meaning "no set": the slot is emptied (one-slot mode) or left (two-slot mode)
+   *  (PoR, CotAB 0xFF; SotSB 0xFF and 0x7F, 0x1E812–0x1E949) */
+  wallSetNone: number[]
   /** PAUSE and CALL frame wait the game speed times this many ms (PoR FUN_1709_0dbe 225; CotAB 0x1B15B
    *  and 0x6803 → 0x57F9: Delay(DS:4FC2 · 100)) */
   pauseMs: number
@@ -64,24 +89,29 @@ export interface EclMap {
 /** One B-view read: a character field (element `index` of an array field; `signed` sign-extends a byte;
  *  `mask` keeps those bits), a raw record byte, or a class's level with its dual-class part. */
 export type ViewRead =
-  | { field: keyof CharFields; index?: number; signed?: boolean; mask?: number }
+  | { field: keyof CharFields; index?: number; signed?: boolean; mask?: number; word?: boolean }
   | { raw: number; mask?: number }
   | { classLevel: number }
 
 export type EclVariant = 'passTime' | 'findSpell' | 'protection' | 'redrawScreen' | 'dropCharacter' | 'findEffect' |
-  'destroyItems' | 'returnOrExit' | 'divideRemainder'
+  'destroyItems' | 'returnOrExit' | 'divideRemainder' | 'nothing' | 'addExperience'
 
 export const POR_ECL: EclMap = {
-  a: 0x4900, b: 0x6b00, c: 0x9700, code: 0x9900, memorisedView: 0, viewReads: {}, ops: {}, skip: {}, operands: {},
+  a: 0x4900, b: 0x6b00, c: 0x9700, code: 0x9900, memorisedView: { from: 0x20, to: 0x70, offset: 0 }, viewReads: {}, viewWrites: {},
+  moneyWords: 5, view100: { read: 'inPlay', write: 'outOfPlay' }, facingInA: null, endingProgram: 8, addExperience: null,
+  ops: {}, skip: {}, operands: {},
   calls: { refresh: 0x2c90, sound: 0xba03, frame: -1 },
   callSounds: { by: { 8: 10, 10: 11 }, other: null },
   refreshAfterPicture: false,
   damageDespiteSave: 0,
   loadPastEnd: false,
   wipeBanner: 0x1c35d, // "The END!" (FUN_29c3_2775)
+  blockFile: { add: 0, divide: 1 },
   start: { block: 3, area: 0 },
   areaZero: null,
+  areaZeroBlock: null,
   twoSlotSkipsFF: false,
+  wallSetNone: [0xff],
   pauseMs: 225,
   quitProgram: null,
   addNpc: { enemyId: 0x18, tag: 'random', loaderRolls: true, iconPicture: false },
@@ -90,7 +120,8 @@ export const POR_ECL: EclMap = {
 // spec/A-games/coab/ecl.md, "B as a view of the current character"; B+0x100's "loaded past the end" flag is
 // loadPastEnd below.
 export const COAB_ECL: EclMap = {
-  a: 0x4b00, b: 0x7c00, c: 0x7a00, code: 0x8000, memorisedView: 1,
+  a: 0x4b00, b: 0x7c00, c: 0x7a00, code: 0x8000, memorisedView: { from: 0x20, to: 0x70, offset: 1 }, viewWrites: {},
+  moneyWords: 5, view100: { read: 'inPlay', write: 'outOfPlay' }, facingInA: null, endingProgram: 8, addExperience: null,
   viewReads: {
     0x15: { field: 'stat', index: 1 }, // INT
     0x72: { field: 'race', signed: true },
@@ -114,15 +145,66 @@ export const COAB_ECL: EclMap = {
   loadPastEnd: true,
   wipeBanner: null,
   // the start-up code sets block 2 for a real game (spec/A-games/coab/assets.md); record 1 is block 2's first (I)
+  blockFile: { add: 0, divide: 1 },
   start: { block: 2, area: 1 },
   // image 0x1C001–0x1C050: area 0 → record 1 (82 in the demo: games/startup.ts), loaded rather than restored
   areaZero: 1,
+  areaZeroBlock: null,
   twoSlotSkipsFF: true,
+  wallSetNone: [0xff],
   pauseMs: 100,
   quitProgram: 3,
   // 0x1B61A → 0x3593D: the record as stored (0x3565C rolls nothing), char[0x126] = id, CPIC record id as
   // the combat icon, no side, no portrait
   addNpc: { enemyId: null, tag: 'monster', loaderRolls: false, iconPicture: true },
+}
+
+// spec/A-games/sotsb/ecl.md: CotAB's spaces; the view follows the 439-byte record; PROTECTION reads nothing;
+// ADD_EP (0x41) new; PROGRAM knows only 0 and 9; the second leave flag is never set (B+0x100 written 1 revives).
+// Handlers not yet read (CHECK_PARTY, TREASURE, LOAD_MONSTER, COMBAT, DAMAGE ...) keep CotAB's behaviour (?)
+export const SOTSB_ECL: EclMap = {
+  a: 0x4b00, b: 0x7c00, c: 0x7a00, code: 0x8000, memorisedView: { from: 0x1b, to: 0x65, offset: 0 },
+  viewReads: {
+    0x15: { field: 'stat', index: 1 }, // INT
+    0x19: { field: 'stat', index: 5 }, // +0x1B
+    0x72: { field: 'race', signed: true },
+    0x73: { field: 'cls', signed: true },
+    0x76: { field: 'maxHp' }, // +0x70
+    0xac: { field: 'undead' }, // +0xF2
+    0xc9: { classLevel: 5 }, 0xca: { classLevel: 0 }, 0xcb: { classLevel: 6 }, 0xcc: { classLevel: 2 }, 0xcf: { classLevel: 3 }, 0xd0: { classLevel: 4 },
+    0xd6: { field: 'gender', signed: true },
+    0x119: { field: 'hp' }, // +0x1B5
+  },
+  viewWrites: { 0x119: { field: 'hp' } },
+  moneyWords: 6,
+  view100: { read: 'status', write: 'okayInPlay' },
+  facingInA: 0x49ea, // A 0x4BEA in SotSB's numbering
+  endingProgram: null,
+  // CS:0x37A4, 0x37D0, 0x37E1 in the VM's segment (image 0x1DB30): the levels +0x111 ... +0x116, the thief's not counted
+  addExperience: { party: 0x212d4, one: 0x21300, gains: 0x21311, classes: 6 },
+  ops: {
+    0x06: 'divideRemainder', 0x13: 'returnOrExit', 0x34: 'passTime', 0x3b: 'findSpell', 0x3c: 'nothing',
+    0x3d: 'redrawScreen', 0x3e: 'dropCharacter', 0x3f: 'findEffect', 0x40: 'destroyItems', 0x41: 'addExperience',
+  },
+  // 0x27864: CotAB's lists with 0x41 among the two-operand ones; 0x3C keeps its 1 though it reads none
+  skip: { 0x0c: 3, 0x3f: 1, 0x40: 1, 0x41: 2 },
+  operands: { 0x34: [2], 0x3c: [0], 0x3e: [0], 0x3f: [1], 0x40: [1], 0x41: [2] },
+  calls: { refresh: 0x2dcb, sound: 0xb203, frame: 0x6803 },
+  callSounds: { by: { 8: 10, 10: 11 }, other: 10 }, // DS:19DA, 19DC (I: their values CotAB's)
+  refreshAfterPicture: true, // I: as CotAB
+  damageDespiteSave: 0x10, // I: DAMAGE's handler grew, not read
+  loadPastEnd: true, // I
+  wipeBanner: null,
+  // 0x21934: a new game at record 17 (block 2); the demo at record 3 (block 1, games/startup.ts)
+  blockFile: { add: 1, divide: 2 },
+  start: { block: 2, area: 17 },
+  areaZero: 17,
+  areaZeroBlock: 2,
+  twoSlotSkipsFF: true, // I
+  wallSetNone: [0xff, 0x7f],
+  pauseMs: 100, // I
+  quitProgram: null,
+  addNpc: { enemyId: null, tag: 'monster', loaderRolls: false, iconPicture: true }, // I: as CotAB
 }
 
 const SIZES: ['a' | 'b' | 'c' | 'code', number][] = [['a', 0x400], ['b', 0x400], ['c', 0x200], ['code', 0x1e00]]
@@ -143,6 +225,7 @@ export function viewRead(r: ViewRead, c: Uint8Array): number {
   if ('classLevel' in r) return classLevel(c, r.classLevel) & 0xff
   if ('raw' in r) return c[r.raw] & (r.mask ?? 0xff)
   const at = r.field === 'stat' ? F.stat[r.index ?? 0] : (F[r.field] as number) + (r.index ?? 0)
+  if (r.word) return c[at] | (c[at + 1] << 8)
   const v = c[at] & (r.mask ?? 0xff)
   return r.signed ? ((v << 24) >> 24) & 0xffff : v
 }

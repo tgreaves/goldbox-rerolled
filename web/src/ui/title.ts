@@ -87,7 +87,7 @@ export function showTitle(app: HTMLElement, files: GameFiles, next: () => void) 
         if (n >= 0 && tiles[n]) blit(g, tiles[n], col * 8, row * 8)
       }
     }
-    const r = files.record('8X8D1', 201)
+    const r = files.record(files.game.view.font.file, files.game.view.font.record)
     if (!r) return
     const font = parseFont(r).glyphs, map = charMap()
     for (const [row, col, colour, at] of files.game.title.credits.lines) {

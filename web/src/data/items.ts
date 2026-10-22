@@ -1,6 +1,7 @@
 // Items (spec/A-games/engine/records.md): 63-byte item records (CHRDAT*.ITM, ITEM<n>.DAX, MON<n>ITM.DAX), the
 // 16-byte base item table in ITEMS, and the name words in START.EXE's data segment.
 import { T } from '../games/tables'
+import { game } from '../games/profile'
 import { R } from '../games/rules'
 import { unexepack } from './exepack'
 
@@ -122,16 +123,21 @@ export class Item {
   copy(): Item { return new Item(this.raw.slice()) }
 }
 
-export function parseItems(d: Uint8Array | undefined): Item[] {
+/** Items from records of `size` bytes (DAX records 63; a character's item file the game's `saves.itemRecord`), the 63 they share. */
+export function parseItems(d: Uint8Array | undefined, size = ITEM_SIZE): Item[] {
   const out: Item[] = []
   if (!d) return out
-  for (let o = 0; o + ITEM_SIZE <= d.length; o += ITEM_SIZE) out.push(new Item(d.slice(o, o + ITEM_SIZE)))
+  for (let o = 0; o + size <= d.length; o += size) out.push(new Item(d.slice(o, o + ITEM_SIZE)))
   return out
 }
 
-/** Items back to the .ITM layout (records unchanged, including the stale pointer bytes). */
-export function itemsFile(items: Item[]): Uint8Array {
-  const d = new Uint8Array(items.length * ITEM_SIZE)
-  items.forEach((it, i) => d.set(it.raw, i * ITEM_SIZE))
+/** Items back to the .ITM layout (records unchanged, including the stale pointer bytes; a 67-byte record's last four, SotSB's chain pointer, 0). */
+export function itemsFile(items: Item[], size = ITEM_SIZE): Uint8Array {
+  const d = new Uint8Array(items.length * size)
+  items.forEach((it, i) => d.set(it.raw, i * size))
   return d
 }
+
+/** A character's item file in the active game's record size (games/files.ts `itemRecord`). */
+export const characterItems = (d: Uint8Array | undefined) => parseItems(d, game().saves.itemRecord)
+export const characterItemsFile = (items: Item[]) => itemsFile(items, game().saves.itemRecord)
