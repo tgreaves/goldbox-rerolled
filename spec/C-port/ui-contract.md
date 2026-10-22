@@ -51,8 +51,8 @@ Every colour on screen has a role. The roles are normative; the reference colour
 | highlight | EGA 14 yellow | hotkey letters, the main action (a filled button with black text), the current card or choice (border), hurt HP (the original's "yellow when hurt", `FUN_10ba_0973`), pending spells, messages inside panels |
 | frame | EGA 11 light cyan | panel borders with Borders = Plain, the location line, the Magic On button, the experience bar |
 | NPC | EGA 13 light magenta | NPC names on cards, the Quick badge (the original's highlight/NPC colour) |
-| enemy | light red, `#ff8080` | enemies in the turn strip and the info box, the status of a fallen character |
-| spells | light blue, `#9ecbff` | the spell line on cards |
+| enemy | light red, EGA 12 `#ff5555` | enemies in the turn strip and the info box, the status of a fallen character |
+| spells | light blue, EGA 9 `#5555ff` | the spell line on cards |
 
 The translucent fills of the battlefield (reachable squares blue, area-spell squares red), the
 selected row tints and the area map's colours ([exploration-view.md §6](exploration-view.md#6-the-area-map))
@@ -409,7 +409,5 @@ for every game ([storage.md §8](storage.md#8-localstorage-keys)).
 
 ## Open
 
-- The enemy and spell colours (`#ff8080`, `#9ecbff`) are not EGA colours; EGA 12 and 9 would keep
-  IMP-057's rule.
 - The party screen's 600-px rule hides columns of a member table that no longer exists (the members
   are cards since IMP-045): dead CSS ([AUDIT.md](../AUDIT.md) §6.9, UI7).

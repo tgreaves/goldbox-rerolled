@@ -212,7 +212,7 @@ export async function runBattle(s: BattleScreen) {
       const at = falling.get(f) ?? { x: f.x, y: f.y }
       return { row: at.y, col: at.x, icon: ic.icon, action: ic.action, side: f.c[F.side] ? 1 : 0, left: f.r[9] >= 4, pose: poses.has(f) } as Figure
     })
-    const planMarks = plan ? [...plan.cells.map((p) => ({ row: p.y, col: p.x, colour: '#4c8bd6' })), { row: plan.to.y, col: plan.to.x, colour: '#55ff55' }] : []
+    const planMarks = plan ? [...plan.cells.map((p) => ({ row: p.y, col: p.x, colour: '#5555ff' })), { row: plan.to.y, col: plan.to.x, colour: '#55ff55' }] : []
     // the grey cursor tile (COMSPR 25) lies under the combatant whose turn it is
     const cursor = acting && battle.inPlay(acting) ? [{ row: acting.y, col: acting.x }] : []
     view.draw(battle.bf, battle.cells, figures, focus, [...marks, ...planMarks], cursor, sprites)
@@ -236,7 +236,7 @@ export async function runBattle(s: BattleScreen) {
       marks = reachable(f).map((p) => ({ row: p.y, col: p.x, colour: '', fill: 'rgba(85, 85, 255, 0.22)' }))
       for (let d = 0; d < 8; d++) {
         const [dx, dy] = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]][d]
-        marks.push({ row: f.y + dy, col: f.x + dx, colour: '#4c8bd6' })
+        marks.push({ row: f.y + dy, col: f.x + dx, colour: '#5555ff' })
       }
       draw()
       let settled = false
@@ -337,7 +337,7 @@ export async function runBattle(s: BattleScreen) {
     command: (f, items, prompt, left, keys) => awaitStep(f, left, { items, prompt, keys }),
     aim: (f, entries, prompt, allowCell, area) => new Promise<AimEntry | null>((resolve) => {
       const ok = entries.filter((x) => x.ok)
-      const base = ok.map((x) => ({ row: x.y, col: x.x, colour: '#e05050' }))
+      const base = ok.map((x) => ({ row: x.y, col: x.x, colour: '#ff5555' }))
       marks = base
       draw()
       // an area spell shows the squares it would cover; a second tap on the same square casts (IMP-059)

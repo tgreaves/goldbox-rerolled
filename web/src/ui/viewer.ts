@@ -115,7 +115,7 @@ function mapFigure(raw: Uint8Array, label: string): HTMLElement {
   c.width = c.height = 16 * cell + 1
   c.style.border = '1px solid var(--line)'
   const g = c.getContext('2d')!
-  g.fillStyle = '#0b1218'
+  g.fillStyle = '#000000'
   g.fillRect(0, 0, c.width, c.height)
   for (let y = 0; y < 16; y++) {
     for (let x = 0; x < 16; x++) {

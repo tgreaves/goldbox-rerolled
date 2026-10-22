@@ -19,7 +19,7 @@ button {
   padding: 0.5rem 0.9rem; cursor: pointer; min-height: 44px;
 }
 button:hover { border-color: var(--accent); }
-button.primary { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 600; }
+button.primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
 .muted { color: var(--muted); }
 
 .import { max-width: 40rem; margin: auto; padding: 1.5rem; display: grid; gap: 1rem; }
@@ -56,7 +56,7 @@ canvas.pixel { image-rendering: pixelated; background: #000; border: 1px solid v
 .view3d { flex: 1; width: 100%; height: 100dvh; display: block; touch-action: manipulation; image-rendering: pixelated; }
 
 /* Exploration screen: the original's arrangement (view | party / text / commands) */
-:root { --ega-green: #55ff55; --ega-yellow: #ffff55; --ega-magenta: #ff55ff; --ega-cyan: #55ffff; }
+:root { --ega-green: #55ff55; --ega-yellow: #ffff55; --ega-magenta: #ff55ff; --ega-cyan: #55ffff; --ega-lred: #ff5555; --ega-lblue: #5555ff; }
 .game {
   flex: none; height: 100dvh; overflow: hidden; display: grid; gap: 0.5rem; padding: 0.5rem;
   padding: max(0.5rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right))
@@ -100,7 +100,7 @@ dialog.panel {
   background: var(--panel); color: var(--text); border: 2px solid var(--ega-cyan); border-radius: 6px;
   max-width: min(46rem, 94vw); max-height: 90dvh; overflow: auto;
 }
-dialog.panel::backdrop { background: #000a; }
+dialog.panel::backdrop { background: #000; }
 dialog.panel h2 { margin: 0 0 0.3rem; color: #fff; }
 dialog.panel .sheet { display: flex; flex-wrap: wrap; gap: 1.5rem; margin: 0.8rem 0; }
 dialog.panel .sheet th { text-align: left; color: var(--muted); font-weight: 500; padding: 0.15rem 0.8rem 0.15rem 0; }
@@ -122,7 +122,7 @@ dialog.panel table.items { border-collapse: collapse; width: 100%; }
 dialog.panel table.items th { text-align: left; color: var(--muted); font-weight: 500; padding: 0.15rem 0.5rem 0.15rem 0; }
 dialog.panel table.items td { padding: 0.25rem 0.5rem 0.25rem 0; color: var(--ega-green); cursor: pointer; }
 dialog.panel table.items td:last-child, dialog.panel table.items th:last-child { text-align: right; }
-dialog.panel table.items tr.sel td { color: #fff; background: #ffffff14; }
+dialog.panel table.items tr.sel td { color: #fff; background: var(--line); }
 dialog.panel .item-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.4rem 0; align-items: center; }
 dialog.panel .item-actions p { width: 100%; margin: 0; }
 dialog.panel .item-actions u { color: var(--accent); text-decoration: none; font-weight: 700; }
@@ -192,7 +192,7 @@ dialog.panel form.jump input { width: 4.5rem; }
   box-shadow: 0 0 0 100vmax #000;
 }
 .game .overlay.wide { height: auto; width: 100%; aspect-ratio: auto; }
-.game .text .screen { padding-top: 0.4rem; border-top: 1px solid #ffffff14; }
+.game .text .screen { padding-top: 0.4rem; border-top: 1px solid var(--line); }
 .game .text .screen:first-child { border-top: none; }
 .game .pad.disabled button { opacity: 0.35; pointer-events: none; }
 .game ol.choices { list-style: none; margin: 0.3rem 0; padding: 0; display: grid; gap: 0.3rem; }
@@ -275,7 +275,7 @@ dialog.panel.wide { max-width: min(76rem, 97vw); width: 100%; }
 .nc-label { display: block; color: var(--muted); font-size: 0.85rem; margin-bottom: 0.25rem; }
 .nc-opts { display: flex; flex-wrap: wrap; gap: 0.3rem; }
 .nc-opts button { min-height: 36px; padding: 0.25rem 0.6rem; }
-.nc-opts button.on { border-color: var(--accent); color: var(--accent); background: #f2c94c14; }
+.nc-opts button.on { border-color: var(--accent); color: var(--accent); }
 .nc-opts button:disabled { opacity: 0.35; cursor: not-allowed; }
 .nc-hint { font-size: 0.85rem; }
 .nc-derived { color: var(--ega-green); }
@@ -299,7 +299,7 @@ dialog.panel.wide { max-width: min(76rem, 97vw); width: 100%; }
 .slot { display: grid; text-align: left; padding: 0.3rem 0.5rem; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ega-green); }
 .slot .slot-name { font-size: 0.75rem; color: var(--muted); }
 .slot.empty { color: var(--muted); opacity: 0.6; }
-.slot.sel, .carried.sel { border-color: var(--accent); background: #f2c94c14; }
+.slot.sel, .carried.sel { border-color: var(--accent); }
 .slot.cursed { color: var(--ega-magenta); }
 .carried-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.25rem; }
 .carried { width: 100%; display: flex; gap: 0.6rem; align-items: baseline; text-align: left; min-height: 40px; padding: 0.3rem 0.5rem; }
@@ -307,7 +307,7 @@ dialog.panel.wide { max-width: min(76rem, 97vw); width: 100%; }
 .carried .cant { font-size: 0.75rem; color: var(--ega-yellow); }
 .enc { display: flex; gap: 0.6rem; align-items: center; margin-top: 0.6rem; color: var(--muted); }
 .enc meter { flex: 1; height: 0.8rem; }
-.item-info { display: grid; gap: 0.15rem; margin: 0.8rem 0 0.3rem; padding: 0.5rem 0.7rem; border-left: 3px solid var(--accent); background: #ffffff08; }
+.item-info { display: grid; gap: 0.15rem; margin: 0.8rem 0 0.3rem; padding: 0.5rem 0.7rem; border-left: 3px solid var(--accent); }
 @media (max-width: 760px) { .sheet2 { grid-template-columns: 1fr; } }
 
 /* shop Buy panel (IMP-042) */
@@ -316,7 +316,7 @@ dialog.panel.wide { max-width: min(76rem, 97vw); width: 100%; }
 .shop-filter label { margin-left: 0.6rem; color: var(--muted); display: flex; gap: 0.3rem; align-items: center; }
 table.shop { width: 100%; border-collapse: collapse; margin: 0.4rem 0; }
 table.shop th { text-align: left; color: var(--muted); font-weight: 500; padding: 0.2rem 0.4rem; }
-table.shop td { padding: 0.25rem 0.4rem; border-top: 1px solid #ffffff10; color: var(--ega-green); vertical-align: middle; }
+table.shop td { padding: 0.25rem 0.4rem; border-top: 1px solid var(--line); color: var(--ega-green); vertical-align: middle; }
 table.shop .num { text-align: right; font-variant-numeric: tabular-nums; }
 table.shop td.cmp { color: var(--text); font-size: 0.9rem; }
 table.shop tr.unusable td { color: var(--muted); }
@@ -332,36 +332,36 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 .mem-slots, .mem-book { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.25rem 0; }
 .spell { padding: 0.25rem 0.55rem; border-radius: 6px; border: 1px solid var(--line); font-size: 0.9rem; }
 .spell.ready { color: var(--ega-green); }
-.spell.pending { color: var(--ega-yellow); border-color: #ffff5566; min-height: 36px; }
+.spell.pending { color: var(--ega-yellow); border-color: var(--ega-yellow); min-height: 36px; }
 .spell.empty { color: var(--muted); border-style: dashed; }
 .mem-book button { min-height: 36px; padding: 0.2rem 0.6rem; font-size: 0.9rem; }
 
 /* combat helpers (IMP-044) */
 .game .combat-info {
   position: absolute; z-index: 3; pointer-events: none; padding: 0.2rem 0.5rem; border-radius: 4px;
-  background: #000000e6; border: 1px solid var(--line); color: var(--ega-green); font-size: 0.85rem; white-space: nowrap;
+  background: #000; border: 1px solid var(--line); color: var(--ega-green); font-size: 0.85rem; white-space: nowrap;
 }
-.game .combat-info.enemy { color: #ff8080; }
+.game .combat-info.enemy { color: var(--ega-lred); }
 .game .combat-info[hidden], .game .turnstrip[hidden] { display: none; }
 .game .turnstrip {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; display: flex; gap: 0.25rem; align-items: center;
-  overflow-x: auto; padding: 0.25rem 0.4rem; background: #000a; font-size: 0.8rem; scrollbar-width: none;
+  overflow-x: auto; padding: 0.25rem 0.4rem; background: #000; font-size: 0.8rem; scrollbar-width: none;
 }
 .game .turnstrip .ts-label { color: var(--muted); margin-right: 0.3rem; white-space: nowrap; }
 .game .turnstrip .ts { padding: 0.05rem 0.4rem; border-radius: 3px; white-space: nowrap; border: 1px solid transparent; }
 .game .turnstrip .ts.ally { color: var(--ega-green); }
-.game .turnstrip .ts.enemy { color: #ff8080; }
+.game .turnstrip .ts.enemy { color: var(--ega-lred); }
 .game .turnstrip .ts.now { border-color: var(--accent); color: #fff; }
 
 /* party cards (IMP-045) */
 .partyscreen .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 0.5rem; }
 .pcard { display: grid; grid-template-columns: auto 1fr auto; gap: 0.7rem; align-items: center; text-align: left; padding: 0.5rem; min-height: 0; }
-.pcard.current { border-color: var(--accent); background: #f2c94c10; }
+.pcard.current { border-color: var(--accent); }
 .pcard canvas.pc-portrait { width: 66px; height: 66px; }
 .pcard canvas.pc-icon { width: 48px; height: 48px; align-self: start; }
 .pc-body { display: grid; gap: 0.1rem; min-width: 0; color: var(--ega-green); }
 .pc-body strong { color: #fff; }
-.hpbar { display: block; height: 0.45rem; border-radius: 3px; background: #ffffff18; overflow: hidden; margin-top: 0.15rem; }
+.hpbar { display: block; height: 0.45rem; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 0.15rem; }
 .hpbar span { display: block; height: 100%; background: var(--ega-green); }
 .hpbar.low span { background: var(--ega-yellow); }
 
@@ -385,17 +385,17 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 .rcard .rc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rcard .rc-ac { color: var(--text); font-variant-numeric: tabular-nums; }
 .rcard .rc-line { font-size: 0.85rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rcard .rc-spells { color: #9ecbff; }
+.rcard .rc-spells { color: var(--ega-lblue); }
 .rcard .rc-badges { display: flex; flex-wrap: wrap; gap: 0.2rem; }
-.rcard .badge { font-size: 0.7rem; padding: 0 0.35rem; border-radius: 3px; border: 1px solid #ffffff30; color: var(--text); }
+.rcard .badge { font-size: 0.7rem; padding: 0 0.35rem; border-radius: 3px; border: 1px solid var(--line); color: var(--text); }
 .rcard .badge.train { border-color: var(--accent); color: var(--accent); }
-.rcard.current { border-color: var(--accent); background: #f2c94c14; }
+.rcard.current { border-color: var(--accent); }
 .rcard.current .rc-name { color: #fff; }
 .rcard.npc .rc-name { color: var(--ega-magenta); }
 .rcard .rc-hp { color: var(--ega-green); } /* FUN_10ba_0973: light green at full HP, yellow when hurt */
 .rcard.hurt .rc-hp { color: var(--ega-yellow); }
 .rcard.down { opacity: 0.7; }
-.rcard.down .rc-hp { color: #ff8080; }
+.rcard.down .rc-hp { color: var(--ega-lred); }
 @media (max-width: 760px), (max-aspect-ratio: 4/5) {
   .roster-cards { grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); }
   .rcard canvas.rc-portrait, .rcard .rc-spells, .rcard .rc-badges { display: none; }
@@ -466,7 +466,7 @@ dialog.panel form.charedit {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr)); gap: 0.5rem; margin: 0.5rem 0;
 }
 dialog.panel form.charedit fieldset {
-  border: 1px solid #ffffff30; margin: 0; min-width: 0; display: grid; gap: 0.3rem;
+  border: 1px solid var(--line); margin: 0; min-width: 0; display: grid; gap: 0.3rem;
   grid-template-columns: max-content minmax(0, 1fr);
 }
 dialog.panel form.charedit label { display: contents; }
@@ -479,7 +479,7 @@ dialog.panel form.additem input[type=number] { width: 4rem; }
 
 /* the journal (IMP-055) */
 dialog.panel .journal { display: grid; gap: 0.8rem; margin: 0.6rem 0; }
-dialog.panel .journal article { border-top: 1px solid #ffffff20; padding-top: 0.5rem; }
+dialog.panel .journal article { border-top: 1px solid var(--line); padding-top: 0.5rem; }
 dialog.panel .journal h3 { margin: 0 0 0.3rem; color: var(--ega-yellow); font-size: 1rem; }
 dialog.panel .journal p { margin: 0 0 0.45rem; line-height: 1.45; }
 dialog.panel img.journal-map { display: block; max-width: 100%; height: auto; margin: 0.4rem 0; background: #fff; image-rendering: auto; }
@@ -490,7 +490,7 @@ dialog.panel p.small { font-size: 0.8rem; }
 .tr-member { display: grid; gap: 0.2rem; text-align: left; padding: 0.35rem 0.5rem; }
 .tr-member.on { border-color: var(--accent); }
 .tr-member small { color: var(--muted); font-size: 0.72rem; }
-.loadbar { display: block; height: 0.4rem; border-radius: 3px; background: #ffffff18; overflow: hidden; }
+.loadbar { display: block; height: 0.4rem; border-radius: 3px; background: var(--line); overflow: hidden; }
 .loadbar span { display: block; height: 100%; background: var(--ega-green); }
 .loadbar.full span { background: var(--ega-yellow); }
 .tr-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
@@ -513,7 +513,7 @@ button:hover:not(:disabled), button:focus-visible { border-color: var(--accent);
 button.primary { background: var(--accent); color: #000; }
 button u { color: var(--accent); text-decoration: none; }
 button.primary u { color: #000; }
-.rcard.current { background: #ffff5512; }
+.rcard.current { background: #000; }
 /* the text window: the current screen bright, the earlier ones dimmed */
 .game .text .screen { opacity: 0.55; }
 .game .text .screen:last-child { opacity: 1; }
@@ -577,7 +577,7 @@ dialog.panel .rules-body h3 { color: var(--ega-cyan); margin: 0.8rem 0 0.2rem; f
 .spell-actions button small { color: var(--muted); }
 
 /* experience to the next level (IMP-063) */
-.xpbar { display: block; height: 0.25rem; background: #ffffff18; overflow: hidden; margin-top: 0.12rem; }
+.xpbar { display: block; height: 0.25rem; background: var(--line); overflow: hidden; margin-top: 0.12rem; }
 .xpbar span { display: block; height: 100%; background: var(--ega-cyan); }
 .xpbar.ready span { background: var(--accent); }
 
@@ -637,7 +637,7 @@ dialog.panel .rules-body h3 { color: var(--ega-cyan); margin: 0.8rem 0 0.2rem; f
 /* the games screen: one row per game */
 .import ul.games { list-style: none; padding: 0; display: grid; gap: 0.6rem; }
 .import ul.games li { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: space-between; align-items: center;
-  padding: 0.6rem 0.8rem; border: 1px solid #ffffff22; border-radius: 6px; }
+  padding: 0.6rem 0.8rem; border: 1px solid var(--line); border-radius: 6px; }
 .import ul.games .actions { margin: 0; }
 
 /* class abilities on the sheet (CotAB paladin) */

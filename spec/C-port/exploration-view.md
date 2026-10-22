@@ -291,14 +291,14 @@ only ([maps-and-view.md, "Overhead map"](../A-games/engine/maps-and-view.md#over
   wilderness; otherwise "Not here." (the panel) or the note "Not Here." (the Area command, *game
   text*).
 - **Grid**: 16 × 16 squares of 24 px (a 385 × 385 canvas), scaled to fit its region (contain); ground
-  `#0b1218`.
+  black (EGA 0).
 - **Walls**: each side with a wall type ≠ 0 is a line along that edge of the square (width
   max(2, square / 6)), coloured by the side's passability ([maps-and-view.md, "Movement"](../A-games/engine/maps-and-view.md#movement-o-fun_3e76_0d6d-fun_55a0_0350)):
-  0 (a wall) light grey `#c9d4de`; 1 (a door that opens, or an opened door) blue `#4c8bd6`; 2 or 3 (a
-  locked door) yellow `#f2c94c`. A door unlocked during play changes colour at the next redraw.
+  0 (a wall) light grey (EGA 7, `#aaaaaa`); 1 (a door that opens, or an opened door) light blue (EGA 9,
+  `#5555ff`); 2 or 3 (a locked door) yellow (EGA 14, `#ffff55`). A door unlocked during play changes colour at the next redraw.
 - **No fog of war**: every wall is shown, explored or not, as the original's overhead map (the
   engine keeps no visited squares).
-- **Party**: a yellow (`#f2c94c`) triangle in the party's square pointing in the facing.
+- **Party**: a yellow (EGA 14) triangle in the party's square pointing in the facing.
 - **Landmarks** (§6.2): their icons centred in their squares, under the party marker.
 - Redrawn on every refresh.
 
@@ -354,7 +354,7 @@ Here." instead.
 
 ### 6.4 In the asset viewer
 
-The same drawing without a party: squares that carry an event are shaded (`#203040`) and there are no
+The same drawing without a party: squares that carry an event are shaded blue (EGA 1, `#0000aa`) and there are no
 landmarks.
 
 ## 7. When the view is updated
