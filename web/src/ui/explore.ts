@@ -1553,7 +1553,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           if (!a.startsWith('use-on-')) { again({ selected: keep, confirm: 'use', use: u }); return }
           targets = [engine.party()[Number(a.slice(7))]]
         }
-        // CotAB 0x3FADB: who may read a scroll; "oops!" and nothing cast (the scroll kept, I)
+        // CotAB 0x3FADB: who may read a scroll; "oops!" and nothing cast; outside battle the scroll is kept (View clears the result, 0x3E0BA)
         if (u.scroll && !readsScroll(node, (n, sd) => engine.roll(n, sd))) { again({ selected: keep, message: `${c.name} ${msg('scrollOops')}` }); return }
         print(`${c.name} ${msg('usesItem')}`, false)
         void castOutside(engine, node, s, targets, true).then((out) => {

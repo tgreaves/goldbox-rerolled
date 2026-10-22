@@ -1095,9 +1095,11 @@ export class Battle implements FxHost {
       const k = await this.ui.pick('Cast from scroll:', spells.map((s) => st.get(s)?.name ?? `#${s}`), spells.map((s) => { const sp = st.get(s); return sp ? spellText(sp) : '' }))
       if (k < 0) return
       const id = spells[k]
-      // CotAB 0x3FADB: who may read it; "oops!" and nothing cast (the scroll kept, I), the turn over
-      if (!readsScroll(f.c, (n, s) => this.e.roll(n, s))) { this.print(`${name(f.c)} ${msg('scrollOops')}`); this.endTurnF(f); return }
+      // CotAB 0x3FADB: who may read it; "oops!" and nothing cast, but in battle the turn ends (0x3FBE6 →
+      // the turn end, result 1) and the spell is used up from the scroll all the same (0x3FC17)
+      const read = readsScroll(f.c, (n, s) => this.e.roll(n, s))
       for (let j = 0; j < 3; j++) if ((it.raw[0x3c + j] & 0x7f) === id) { it.raw[0x3c + j] = 0; break }
+      if (!read) { this.print(`${name(f.c)} ${msg('scrollOops')}`); this.endTurnF(f); return }
       const s = st.get(id)
       if (!s) return
       this.print(`${name(f.c)} ${msg('usesItem')}`)

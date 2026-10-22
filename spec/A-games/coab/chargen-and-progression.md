@@ -138,10 +138,11 @@ an armoured former magic-user's spells in battle.
 **Reading a scroll** (O, the item-use routine 0x3F9A8 at 0x3FADB): a cleric or magic-user as the
 current class (0x51776) or the former class (0x5171A, whether it counts or not), or with a level in
 either, reads it; else a thief above level 9 reads it when the request (1, 100) gives at most 75;
-else "*Name*" " oops!" (0x3F9A2) and nothing is cast; in battle the turn ends. PoR's Use has no such
-test.
+else "*Name*" " oops!" (0x3F9A2) and nothing is cast. In battle the turn ends and the spell is used
+up from the scroll all the same (the oops path jumps to 0x3FBE6, whose turn end `ed:c0` returns 1 into
+the result byte; 0x3FC17 then consumes the spell, `c2:43`); outside battle View has set the result to 0
+(0x3E0BA) and the scroll is kept (O). PoR's Use has no such test.
 
 ## Open
 
-- Whether a scroll that is not read ("oops!") is used up: the routine then consumes it when its
-  caller's result byte is set, which this path does not set itself (**I**: kept; the port keeps it).
+- ~~Whether a scroll that is not read is used up~~: in battle yes, outside no (above, O).
