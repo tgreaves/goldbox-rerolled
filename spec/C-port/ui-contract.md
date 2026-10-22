@@ -412,5 +412,7 @@ for every game ([storage.md §8](storage.md#8-localstorage-keys)).
 
 ## Open
 
+- Escape does nothing in most menus (Aim, for instance; their hot keys work), in every game: whether it
+  should leave a menu as its Exit does is a decision left open (noted 2026-10-22).
 - The party screen's 600-px rule hides columns of a member table that no longer exists (the members
   are cards since IMP-045): dead CSS ([AUDIT.md](../AUDIT.md) §6.9, UI7).

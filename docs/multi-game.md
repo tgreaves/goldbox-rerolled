@@ -449,6 +449,21 @@ the line (`Io.print`'s `run`, for all games).
 
 ## Backlog
 
+**Open (2026-10-22), not yet done or not yet checked:**
+- SotSB: casting in a battle and Join/Halve on a real bundle of two or more scrolls not yet exercised in
+  the browser (unit tests cover both: `sotsbspells`, `bundle`); its demi-human training limits by race,
+  class and prime requisite (0x3DE79–0x3DEF3) not checked against the port; the patient search and the
+  cloud laying taking both body marks (0x1C, 0x1E) is **I**; the vault's sync keeps the newer change and
+  loses the other device's (documented, `docs/server.md`); journal entry 35's heading kept as printed
+  ("Toom") and entry 72's map key has one illegible word.
+- CotAB: its outdoor sky and clouds not yet compared with the original in DOSBox (only the starting room);
+  its frame edge is an approximation (`spec/C-port/rendering.md`, Open).
+- PoR: register 0x035F needs a debugger (`spec/A-games/engine/ecl.md`, Open); the Sell, Share, Appraise and
+  arrow-weight checks were not run in DOSBox by decision (code-read, `spec/open-questions.md`).
+- Every game: Escape does nothing in most of the port's menus (Aim, for instance; the hot keys work): a
+  behaviour to decide (`spec/C-port/ui-contract.md`, Open).
+
+
 - ~~CotAB dual-classing~~: done 2026-10-21 ("Human Change Classes" 0x5135D in the training hall's
   party screen, `rules/dualclass.ts`, `R.dualClass`; the recalculation's CotAB parts as `R.recalc`:
   the item class mask again and no attack reset; spec/B-model/procedures.md §7.1, §7.2,
