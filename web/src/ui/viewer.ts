@@ -3,6 +3,8 @@ import type { GameFiles } from '../store/gamefiles'
 import { daxRecords } from '../data/dax'
 import { parseRecord, toImageData, type Frame } from '../data/image'
 import { GeoMap, STEP } from '../data/geo'
+import { playSong } from '../audio/song'
+import { unlockAudio } from '../audio/sfx'
 
 let timers: number[] = []
 
@@ -20,6 +22,7 @@ export function showViewer(app: HTMLElement, files: GameFiles, reimport: () => v
       <nav>
         <select aria-label="Asset family">${shown.map((f) => `<option>${f}</option>`).join('')}</select>
         ${shown.map((f) => `<button data-f="${f}">${f}</button>`).join('')}
+        ${files.game.title.music && files.record(files.game.title.music.file, files.game.title.music.record) ? '<button id="music">♪ Title music</button>' : ''}
         ${back ? '<button id="back" class="primary">◀ Party screen</button>' : ''}
         ${files.game.playable ? '' : `<p class="muted hint">${files.game.name} is in progress: its assets can be viewed, not yet played.</p>`}
         ${files.get('START.EXE') ? '' : `<p class="muted hint">Sound needs START.EXE: re-import the ${files.game.folder} folder to include it.</p>`}
@@ -55,8 +58,19 @@ export function showViewer(app: HTMLElement, files: GameFiles, reimport: () => v
 
   app.querySelectorAll<HTMLButtonElement>('nav button[data-f]').forEach((b) => b.addEventListener('click', () => open(b.dataset.f!)))
   select.addEventListener('change', () => open(select.value))
-  app.querySelector('#reimport')!.addEventListener('click', reimport)
-  app.querySelector('#back')?.addEventListener('click', () => { timers.forEach(clearInterval); back?.() })
+  // the title's song (audio/song.ts), on and off
+  let stopMusic: (() => void) | null = null
+  const musicButton = app.querySelector<HTMLButtonElement>('#music')
+  musicButton?.addEventListener('click', () => {
+    const m = files.game.title.music!
+    if (stopMusic) { stopMusic(); stopMusic = null; musicButton.textContent = '♪ Title music'; return }
+    unlockAudio()
+    stopMusic = playSong(files.record(m.file, m.record)!, m.song)
+    musicButton.textContent = '■ Stop music'
+  })
+  const leave = () => { stopMusic?.(); stopMusic = null }
+  app.querySelector('#reimport')!.addEventListener('click', () => { leave(); reimport() })
+  app.querySelector('#back')?.addEventListener('click', () => { timers.forEach(clearInterval); leave(); back?.() })
   if (shown.length) open(shown[0])
 }
 

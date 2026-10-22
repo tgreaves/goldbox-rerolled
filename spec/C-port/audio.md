@@ -193,7 +193,10 @@ writes, counter tick by counter tick at 72.826 Hz with the sequencer on even tic
 tracks from tick 1, the stop after the last track), and §6's synthesiser renders them. The writes equal
 a register log made separately from that procedure (3 589 writes over 6 152 ticks; its SHA-256 in
 `web/test/song.test.ts`). Effect set 0 only (the title's: no echo, no doubling); the other output
-devices (speaker, Tandy, CMS, Innovation, Covox) are not played: the AdLib stands for them all.
+devices (speaker, Tandy, CMS, Innovation, Covox) are not played: the AdLib stands for them all. The title
+starts it at the first moment the browser lets audio play (the first key or tap) and stops it when the
+title ends, as the original's 0x1D12F; the device setting Off and Ctrl-S silence it. Until a game is
+playable its asset viewer offers the song ([app-flow.md §10](app-flow.md#10-the-asset-viewer)).
 
 ## Validation
 

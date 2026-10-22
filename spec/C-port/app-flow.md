@@ -295,7 +295,9 @@ The delivery-step-1 viewer, for checking the decoders against the player's files
 are not yet playable:
 
 - a list of the game's image families present in its files (profile `imageFamilies`) and **GEO**,
-  as buttons (a drop-down on narrow screens); **◀ Party screen** when opened from the party screen;
+  as buttons (a drop-down on narrow screens); **♪ Title music** when the profile's title names a song
+  (SotSB), playing it and turning into **■ Stop music** (leaving the viewer stops it); **◀ Party screen**
+  when opened from the party screen;
   "*name* is in progress: its assets can be viewed, not yet played." for an assets-only game; "Sound
   needs START.EXE: re-import the *FOLDER* folder to include it." without `START.EXE`; **Games and
   files…** (the games screen);

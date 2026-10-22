@@ -18,6 +18,8 @@ export interface TitleScript {
   /** shown when line `configLine` (0-based) of the game's configuration file starts with F */
   long: TitleScreen[]
   configLine: number
+  /** music through the title (SotSB 0x1D631: SOUND.DAX record 2, song 0, stopped as the title ends, 0x1D12F) */
+  music?: { file: string; record: number; song: number }
   credits: {
     ms: number
     /** PoR: rope boxes (the game's border tiles) as cells x1, y1, x2, y2; CotAB: the screen frame
@@ -95,6 +97,7 @@ export const SOTSB_TITLE: TitleScript = {
   ],
   long: [],
   configLine: 4,
+  music: { file: 'SOUND', record: 2, song: 0 },
   credits: {
     ms: 80000,
     // 0x1BBA: tile 0x137 along rows 1 and 23 with edge tiles between (I: drawn here as one box of the game's border)

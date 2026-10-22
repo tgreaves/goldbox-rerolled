@@ -9,7 +9,8 @@ import { parseFont } from '../data/font'
 import { charMap } from '../data/ttf'
 import { blit, sizeCanvas } from '../render/upscale'
 import { reducedMotion } from './settings'
-import { initSound, play, unlockAudio } from '../audio/sfx'
+import { initSound, outputRate, play, unlockAudio } from '../audio/sfx'
+import { playSong } from '../audio/song'
 import { textOrNull } from '../data/gametext'
 
 /** The configuration file's long-intro flag (PoR POOL.CFG line 5, CotAB CURSE.CFG line 4: 'F'). */
@@ -114,6 +115,14 @@ export function showTitle(app: HTMLElement, files: GameFiles, next: () => void) 
     screens.push({ show: credits, ms: script.credits.ms })
   }
   if (!screens.length) return next()
+  // the title's music (audio/song.ts): from the first moment audio may play (a key or tap unlocks it)
+  let stopMusic: (() => void) | null = null
+  const music = () => {
+    const m = script.music
+    if (stopMusic || !m || !outputRate()) return
+    const r = files.record(m.file, m.record)
+    if (r) stopMusic = playSong(r, m.song)
+  }
   let i = -1
   const advance = () => {
     clear()
@@ -122,6 +131,7 @@ export function showTitle(app: HTMLElement, files: GameFiles, next: () => void) 
       later(screens[i].ms, advance)
     } else {
       window.removeEventListener('keydown', onKey)
+      stopMusic?.()
       next()
     }
   }
@@ -129,11 +139,13 @@ export function showTitle(app: HTMLElement, files: GameFiles, next: () => void) 
   const onKey = (e: KeyboardEvent) => {
     e.preventDefault()
     unlockAudio()
+    music()
     advance()
   }
   window.addEventListener('keydown', onKey)
-  box.addEventListener('click', () => { unlockAudio(); advance() })
+  box.addEventListener('click', () => { unlockAudio(); music(); advance() })
   initSound(files.get('START.EXE'))
+  music()
   advance()
   box.focus()
 }
