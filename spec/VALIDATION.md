@@ -97,7 +97,9 @@ Also run before every commit: `npx tsc --noEmit -p .`, `npm run build`, and
   Exit for Begin, "You've won. Save before quitting?", Save to slot B, the end at the party screen);
   CotAB's shop prices against the stock's values (ECL4 #37, factor 32: every price twice the value,
   and Buy charges it; Tilverton's factor 16: the values, IMP-078) and PoR's New Phlan store (the
-  values). No page or console errors.
+  values). Then: CotAB's camp menus (View, Magic, Rest, Alter, Fix) and its final battle on Quick,
+  about 25 minutes of rounds without an end (the script refights it while ECL 0x7EC7 > 128). No page
+  or console errors.
 
 ## 5. Clean-room runs
 
