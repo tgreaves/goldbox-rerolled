@@ -406,7 +406,7 @@ classes 0, 1, 3, 4; the races renumbered; seven-column slot sources and the WIS 
 (`wildBattle` none); the silent no-cast effect (`casting.miscast.sides` null); the difficulty (`difficulty`,
 `newGame`: monsters' HP scaled as they load, Alter → Level in camp); Fix's Heal and its condition pass
 (`fix.conditions`). Each as data for the shared procedures (spec/B-model/procedures.md §1, §3, §7, §12.4,
-§15). Still to do (I): the target finder's first-entry pick (effect 0x5B, combat.md §9), the "Lose it?" question, the thief's magic-user
+§15). Still to do (I): the "Lose it?" question, the thief's magic-user
 list above level 10, Fix's second rest, training fees and thief skills re-read. Tests: `test/sotsbrules.test.ts`.
 
 *Spells and effects (2026-10-22)*: SotSB's own maps, each handler read. `SOTSB_SPELLS` (ids 0–117: CotAB's
@@ -436,7 +436,8 @@ music plays, save A loads, the opening's equipment comes as treasure and the par
 Identify fee is profile data (`R.identifyFee`: SotSB 100, its line at 0x456C0). Delayed Blast Fireball
 (the delay, its zone and effect 100's explosion), Feeblemind's class rules and effects 15, 94, 110 are
 SotSB's own (2026-10-22); spells 0, 9, 42, 83 and effect 80 re-read as mapped. Still open: the finder's
-first-entry pick for a holder of 0x5B (DS:8E23 not traced, ?), the zone lifts' body cells; no journal; a
+first-entry pick for a holder of 0x5B (since settled: dead code, DS:8E23 is never written), the zone
+lifts' body cells (since done: `R.bodyCell`, SotSB's 0x1C/0x1E); no journal; a
 browser play-through. *Since done (2026-10-22)*: the free temple (`R.templeHeal`, camp.md §4a); Join and
 Halve of scroll bundles (`R.itemJoin`, records.md §3.2); the vault synced as `folder/VAULT`
 (accounts-and-sync.md §1.3); the `.WHO` loader's paladin uses (`R.addRefill`); SotSB's own Rules

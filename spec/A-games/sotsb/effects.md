@@ -293,7 +293,7 @@ poison on hit 0x2EB97, the hold on hit 0x2D144, the weapon of 0x2E4B1, deflectio
   "Delayed Blast Fireball goes off" (CS:3091, image 0x301C1) in the first; the zone lifted: laid, its square
   goes back to its kept cell (+8), or where a body record lies (DS:868E, 7 bytes each, DS:86CD of them) to
   0x1C if the **owner's** status (+0x1A6) is 7, else 0x1E (Bug: the owner's status, not the body's; the
-  port's shared lift puts the port's body cell back, as for every zone); unlinked, freed, the zones drawn
+  port's shared lift does the same, `R.bodyCell.liftBy` owner, [combat.md](combat.md)); unlinked, freed, the zones drawn
   again (0x3D20D). Then damage type 9, one roll L d6 + L, and for each target save vs 4 (no bonus), damage
   mode 2 (half on a save); the damage type 0 after (O).
 
@@ -302,6 +302,5 @@ profile's.
 
 ## Open
 
-- The body cells of SotSB's zone lifts (0x1C / 0x1E by the owner's status, 91 and 100): the port keeps one
-  body cell for every game.
+- ~~The body cells of SotSB's zone lifts~~: done 2026-10-22 (`R.bodyCell`, [combat.md](combat.md)).
 - The computer's movement probe on clouds (CotAB 0x237FB) with SotSB's cells.

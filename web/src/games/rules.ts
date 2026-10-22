@@ -350,6 +350,14 @@ export interface GameRules {
     kill: { cell: number; save: number; bands: [number, number, number | null][]; poison: number; probe: CloudProbe } | null
   }
   /**
+   * The cell marking a fallen combatant's square (at battle start and when it goes down, unless the square
+   * is the gas cell): `stoned` for one of status 7, else `down`; a zone lifting off a body's square puts
+   * back the mark by the status of `liftBy`: the body itself or (SotSB, a bug) the zone's owner. PoR
+   * (FUN_34c7_15xx 0x2699F, the fall 0x487B5, the lift 0x28073) and CotAB (0x267C9, 0x5673A, 0x280ED) mark
+   * 0x1F whatever the status
+   */
+  bodyCell: { down: number; stoned: number; liftBy: 'body' | 'owner' }
+  /**
    * Casting in combat, one procedure (spec/A-games/engine/combat-rules.md "Cast", spec/A-games/coab/combat.md "Casting"): the cast
    * routine (PoR FUN_3aae_2414, CotAB 0x2CCBD), the spell going off (FUN_4e53_0c20, 0x45251) and the
    * lost spell on damage (FUN_3aae_02f9 / FUN_5216_1344, 0x2AA62 / 0x4CC3C). `lostFrom`: whose memorised
@@ -474,6 +482,7 @@ export const POR_RULES: GameRules = {
   },
   // FUN_34c7_0810, then the finishing pass FUN_34c7_0000
   mapField: { cornerWallEnd: 0x04, finishing: true, furnish: null },
+  bodyCell: { down: 0x1f, stoned: 0x1f, liftBy: 'body' },
   clouds: { gas: { cell: 0x1e, immune: [0x1e, 0x1f, 0x20, 0x6f, 0x7d], probe: { immune: [0x20, 0x1e, 0x6f, 0x7d], turned: false, save: null }, roundEnd: true, apply: false }, kill: null }, // FUN_5216_0ae7
   // FUN_3aae_02f9 → FUN_10ba_148b; FUN_3334_0545; FUN_3334_03e4 (3334:04D6)
   casting: { lostFrom: 'current', miscast: null, aiFirstSlot: 0, aiItemSpell: { above: 0x38, minus: 0x17 }, aiPick: { tries: 20, areaCheck: true }, allowed: null, scrollReaders: null }, // aiPick 0x2C9BC, 0x2CA1B
@@ -574,6 +583,7 @@ export const COAB_RULES: GameRules = {
   // tables (RandCom 0) on d10 ≤ 5 and chairs (RandCom 1) beside them on d10 ≤ 9 (spec/A-games/coab/combat.md)
   mapField: { cornerWallEnd: 0x08, finishing: false, furnish: { flag: 0x40, blank: [0x17, 0x36], table: [0x1a, 10, 5], chair: [0x1b, 10, 9] } },
   // 0x4B8F7: no 0x1E immunity; HD 0–4 die, 5 save at −4, 6 save, 7 and up (and below 0) unaffected
+  bodyCell: { down: 0x1f, stoned: 0x1f, liftBy: 'body' },
   clouds: { gas: { cell: 0x1e, immune: [0x1f, 0x20, 0x6f, 0x7d], probe: { immune: [0x20, 0x1e, 0x6f, 0x7d, 0x81, 0x3f], turned: true, save: 0 }, roundEnd: false, apply: true }, kill: { cell: 0x1c, save: 0, bands: [[0, 4, null], [5, 5, -4], [6, 6, 0]], poison: 0x37, probe: { immune: [0x81, 0x6f, 0x85, 0x7d], turned: true, save: null, below: 7 } } }, // probe 0x238EE, 0x239BD
   // 0x2AAB4 / 0x4CC8A forget(target, spell); 0x45373 effect 0x4A, 1d2; 0x236E4 slots 1–0x53
   casting: { lostFrom: 'target', miscast: { effect: 0x4a, sides: 2 }, aiFirstSlot: 1, aiItemSpell: { above: 0x38, minus: 0x17 }, // 0x23651
@@ -684,6 +694,9 @@ export const SOTSB_RULES: GameRules = {
   // the probe 0x29D53, 0x29DE5; the gas cell 0x1D and the kill cell 0x1B, gas immunity 0x1F and 0x63
   // (spec/A-games/sotsb/effects.md); the kill bands by hit dice (+0xEE) and the poison 0x37 read at
   // 0x5173D–0x51887 (CotAB's: 0–4 no save, 5 at −4, 6 at 0, "is Poisoned", status 6)
+  // battle start 0x2C42C, the fall 0x5CE5B: status 7 → 0x1C, else 0x1E; the zone lifts (0x2E334, 0x2F048,
+  // 0x2FF0D, 0x30505) test the zone's owner's status instead (a bug, kept)
+  bodyCell: { down: 0x1e, stoned: 0x1c, liftBy: 'owner' },
   clouds: {
     gas: { cell: 0x1d, immune: [0x1f, 0x63], probe: { immune: [0x1e, 0x3f, 0x39, 0x63], turned: true, save: 0 }, roundEnd: false, apply: true },
     kill: { cell: 0x1b, save: 0, bands: [[0, 4, null], [5, 5, -4], [6, 6, 0]], poison: 0x37, probe: { immune: [0x63], turned: true, save: null, below: 7 } },

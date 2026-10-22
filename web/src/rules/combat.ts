@@ -202,8 +202,6 @@ export class Line {
  * and CotAB's "resisted" byte (+0x1D, Dispel Magic).
  */
 interface Cloud { owner: Uint8Array; n: number; cell: number; x: number; y: number; cells: { x: number; y: number; old: number; laid: boolean }[]; resisted: boolean }
-/** The cell a fallen party member's body leaves (FUN_577f_0e11) */
-const BODY_CELL = 0x1f
 /** One cast in combat: the caster, the spell at level L with its duration, and its targets. */
 interface BattleCast { f: Fighter; s: Spell; L: number; dur: number; targets: Fighter[] }
 /**
@@ -286,9 +284,13 @@ export class Battle implements FxHost {
    * The owner's zone expiring (PoR handler 0x28 FUN_3723_0cc3; CotAB 0x28 at 0x27F6D, 0x5B at 0x28E09):
    * the first zone of the list of `cell` with that owner and number power >> 4 (a number from 16 on, or a
    * level from 16 on, so never or another zone: quirk kept); `say` is printed, each laid square goes back
-   * to the body cell where a body lies (its record still in use; I: a body still down), else to the cell
-   * it found; the zone leaves the list and the list's other zones are drawn again. False when none.
+   * to the body mark where a body lies (R.bodyCell, by the body's or, SotSB, the owner's status; its
+   * record still in use; I: a body still down), else to the cell it found; the zone leaves the list and the list's other zones are drawn again. False when none.
    */
+  /** the cell that marks the square of a fallen `c` (R.bodyCell) */
+  bodyMark(c: Uint8Array) { return c[F.status] === 7 ? R.bodyCell.stoned : R.bodyCell.down }
+  isBodyCell(v: number) { return v === R.bodyCell.down || v === R.bodyCell.stoned }
+
   clearCloud(c: Uint8Array, power: number, cell = 0x1e, say = '') {
     const i = this.clouds.findIndex((z) => z.cell === cell && z.owner === c && z.n === power >> 4)
     if (i < 0) return false
@@ -296,8 +298,8 @@ export class Battle implements FxHost {
     if (say) this.print(say)
     for (const t of z.cells) {
       if (!t.laid) continue
-      const body = this.bodies.some((b) => b.f.size === 0 && b.x === t.x && b.y === t.y)
-      this.bf.set(t.y, t.x, body ? BODY_CELL : t.old)
+      const body = this.bodies.find((b) => b.f.size === 0 && b.x === t.x && b.y === t.y)
+      this.bf.set(t.y, t.x, body ? this.bodyMark(R.bodyCell.liftBy === 'owner' ? c : body.f.c) : t.old)
     }
     this.clouds.splice(i, 1)
     for (const o of this.clouds) if (o.cell === cell) for (const t of o.cells) if (t.laid) this.bf.set(t.y, t.x, o.cell)
@@ -706,7 +708,7 @@ export class Battle implements FxHost {
         f.size = 0
         if (!this.e.duel) { // in a duel the bystanders sit out and leave no body
           this.bodies.push({ f, x: f.x, y: f.y, cell: this.bf.get(f.y, f.x) })
-          this.bf.set(f.y, f.x, BODY_CELL)
+          this.bf.set(f.y, f.x, this.bodyMark(f.c))
         }
       } else if (f.monster) this.removeFighter(f)
       else f.size = 0
@@ -1466,7 +1468,7 @@ export class Battle implements FxHost {
       if (!t.r[0x13]) {
         this.bodies.push({ f: t, x: t.x, y: t.y, cell: this.bf.get(t.y, t.x) })
         const v = this.bf.get(t.y, t.x)
-        if (v !== 0 && v !== 0x1e) this.bf.set(t.y, t.x, BODY_CELL)
+        if (v !== 0 && v !== R.clouds.gas.cell) this.bf.set(t.y, t.x, this.bodyMark(t.c))
       }
       this.ui.fall?.(cells, this.e.speed * 225, t)
     }
@@ -1666,7 +1668,7 @@ export class Battle implements FxHost {
       if (o) {
         if (this.side(o) !== this.side(f) || o.c[F.hp] >= o.c[F.maxHp]) continue
         if (o.c[F.hp] < bestHp || (o === f && o.c[F.hp] < o.c[F.maxHp] >> 1)) { best = o; bestHp = o.c[F.hp] }
-      } else if (this.bf.get(y, x) === BODY_CELL) {
+      } else if (this.isBodyCell(this.bf.get(y, x))) {
         for (const b of this.bodies) if (![6, 7, 8].includes(b.f.c[F.status]) && b.x === x && b.y === y) body = b.f
       }
     }
@@ -2144,7 +2146,7 @@ export class Battle implements FxHost {
             for (const t of q.cells) if (t.laid && t.x === x && t.y === y && !r.not.includes(t.old)) { v = t.old; hit = true }
             if (hit && p.firstZone) break
           }
-        } else if (v === BODY_CELL) for (const b of this.bodies) if (b.x === x && b.y === y) v = b.cell
+        } else if (this.isBodyCell(v)) for (const b of this.bodies) if (b.x === x && b.y === y) v = b.cell
         z.cells.push({ x, y, old: v, laid })
         if (laid) this.bf.set(y, x, cell)
       }

@@ -773,6 +773,12 @@ cast, 0 at round end) ([engine/spells.md, "Stinking Cloud"](../A-games/engine/sp
 
 The clouds' squares and zones are the spell kind `cloud` ([vocabularies.md §4.3](vocabularies.md#43-the-battles-kinds)).
 
+Parameter `bodyCell` `{ down, stoned, liftBy }`: the cell a fallen combatant's square takes at battle start
+and when it goes down (not on the gas `cell`): `stoned` for status 7, else `down`; a zone lifting off a
+square where a body lies puts back the mark by the status of `liftBy`, the body or the zone's owner.
+PoR and CotAB { 0x1F, 0x1F, body }; SotSB { 0x1E, 0x1C, owner } (the owner: a bug of its lifts,
+[sotsb/combat.md](../A-games/sotsb/combat.md)).
+
 ### 15.4 Battlefields
 
 **Original:** the grid builder PoR `FUN_34c7_1e31` / CotAB 0x25CC0, the generators in

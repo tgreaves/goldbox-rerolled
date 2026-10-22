@@ -65,8 +65,13 @@ map-area set; 0x1A–0x1E are cost 1, sight clear, image slots 0x19–0x1D (CotA
 come from `DungCom`'s 30 tiles ([assets.md](assets.md)). The furnishing 0x2B084 still writes 0x1A
 (table) and 0x1B (chair) in flagged rooms with CotAB's dice and tests (O); in SotSB they are `DungCom`
 images 0x19 and 0x1A, with the cost of an ordinary floor cell (**I** for what they depict). The
-battle start marks a fallen body with cell 0x1C (CotAB 0x1F) and a petrified combatant (status 7)
-with 0x1E (0x2C42C–0x2C469, new) (**O** for the writes, **I** for the images).
+battle start marks a fallen combatant's square with cell 0x1C when its status is 7 (petrified), else
+0x1E (CotAB 0x1F whatever the status; 0x2C42C–0x2C469), and so does the fall when a combatant goes down
+(0x5CE54–0x5CE9B), unless the square is the gas cell 0x1D; the zone lifts put back 0x1C or 0x1E where a
+body lies by the **zone owner's** status, not the body's (0x2E334, 0x2F048, 0x2FF0D, 0x30505; **Bug**)
+(**O** for the writes, **I** for the images). The port: `R.bodyCell` { down 0x1E, stoned 0x1C, liftBy
+owner }; PoR and CotAB { 0x1F, 0x1F, body } (PoR 0x2699F, 0x487B5, 0x28073; CotAB 0x267C9, 0x5673A,
+0x280ED, 0x28F89).
 
 The gas and kill clouds are SotSB's `gasCloud`/`killCloud` tables (DS:349F, DS:34A3,
 [tables.md](tables.md)); their cell numbers are not re-read here (?).
@@ -158,7 +163,12 @@ unless word 3 is 0x5D ("Silver") (**O**).
   DS:8DC9 (O). 0x5B is the Cloudkill owner's record (its table handler, filled at 0x30A9C, is the kill zone
   lift 0x2FD7E, [effects.md](effects.md)); DS:8DC9 is written only by the sweep (0x31FA6, "sweeps" at CS:0F3F,
   image 0x31F9F): the index of the sweep's first target (18b:7a at 0x320EE) (O). What DS:8E23 holds there
-  is not traced (?), so the purpose is unknown (I: a quirk joining a Cloudkill caster to the last sweep).
+  is **never written**: its only two references in the image are reads (`cmp` at 0x34D6F/0x34D75 here,
+and at 0x55830/0x55836 in the list builder, which moves a candidate equal to it to the list's front), and
+no instruction addresses DS:8E1F–8E25 as a block to fill or copy (O: every displacement and immediate
+pointing there searched). So the far pointer DS:8E23:8E25 keeps its start-up value and never equals a
+combatant: the pick and the list's move to the front are dead code, and the finder is CotAB's (O). The
+port has nothing to do.
 
 ## 10. No turning undead (O)
 
@@ -211,8 +221,8 @@ moraleRemoves: [], fleeRemoves: [],
 the difficulty (`R.difficulty`, `newGame`, the monster scaling in the engine's monster loader, Alter →
 Level), `setStatusEvent` null, `turnUndead` false, `casting.miscast` { 0x44, sides null }, `backstab.reach`
 1, `wildBattle` none, the renumbered item types and plural rule (`itemTypes`), the clouds' SotSB numbers.
-Not done: the finder's first-entry pick (effect 0x5B, §9: DS:8E23 not traced, **?**); the kill
-cloud's bands and poison are CotAB's (**I**). Tests: `test/sotsbrules.test.ts`.
+The finder's first-entry pick (effect 0x5B, §9) is dead code in the original (DS:8E23 never written):
+nothing to port. The kill cloud's bands and poison are CotAB's (**I**). Tests: `test/sotsbrules.test.ts`.
 
 - **Difficulty**: a new rule (`R.difficulty`: the variable ECL 0x4CF4, the five names, the start value 2,
   the HP scale (difficulty + 2) / 4 for side-1 monsters at LOAD_MONSTER) and the Alter → Level menu.
@@ -222,7 +232,7 @@ cloud's bands and poison are CotAB's (**I**). Tests: `test/sotsbrules.test.ts`.
 - **The silent "no cast" effect** in place of the miscast roll (`casting.miscast` with no die and no
   line), and the "Lose it?" question.
 - **The backstab's reach test**.
-- The finder's forced-target case (effect 0x5B).
+- ~~The finder's forced-target case (effect 0x5B)~~: dead code (DS:8E23 is never written, §9).
 - Renumbered effect and item types throughout the profile.
 
 ## Open
