@@ -876,6 +876,8 @@ export const COAB_MENUS: Menus = {
 // getsBackUp, reviveMonster, reviveParty; unCursed is "is " + "un-cursed"; trainingCosts, cannotMemorize, funky,
 // noSpellEffects)
 export const SOTSB_STRINGS: Strings = {
+  // the camp (0x38FAF) and Alter (0x37C92) menus print no prompt: the image has no "Camp:"/"Alter:" (O)
+  camp: [], alter: [],
   cursed: 0x442e2, // the ready routine 0x4431F (CS:0x1BD2), O
   combatOnlySpell: 0x48b75, // "can't be cast here...": the cast 0x48C03, a spell of record byte 7 = 0 out of battle, not from an item; then loseIt (Y forgets it), O
   cough: 0x514d0, nausea: 0x514e0, cloudPoisoned: 0x514fc, cloudKilled: 0x2eb8d, battleBegins: 0x2c551,

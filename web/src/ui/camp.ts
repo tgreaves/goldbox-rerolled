@@ -309,7 +309,7 @@ async function alter(ui: CampUi) {
       // Level (SotSB, spec/A-games/sotsb/camp.md): the difficulty variable 0-4, Novice ... Champion;
       // the original opens the menu on the current level (the port names it in the prompt); any other answer keeps it
       const d = R.difficulty, w = menu('alterLevel'), cur = e.read(d.variable)
-      const k = await ask((l, op) => ui.menu(l, op), w, { prompt: w[cur]?.text ?? '' })
+      const k = await ask((l, op) => ui.menu(l, op), w, { prompt: w[cur]?.text ?? '', cancel: true }) // Escape: any other key, the level kept
       const i = w.findIndex((x) => x.key[0] === k)
       if (i >= 0) e.write(d.variable, i)
     }

@@ -18,7 +18,8 @@ export function msg(id: StringId): string {
 export const hasMsg = (id: StringId) => game().strings[id] !== undefined
 
 /** a port menu's options: a prompt, a vertical list, a line under each choice, each choice's hot keys (else its first letter) */
-export interface MenuOpts { prompt?: string; vertical?: boolean; notes?: string[]; keys?: string[] }
+/** … and `cancel`: Escape answers it with no choice (-1; `ask` gives ''), for a menu the original leaves on any other key */
+export interface MenuOpts { prompt?: string; vertical?: boolean; notes?: string[]; keys?: string[]; cancel?: boolean }
 
 /** One choice of a menu: its text as the game has it, and its hot keys (capitals and digits). */
 export interface MenuWord { text: string; key: string }

@@ -398,7 +398,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
 
   // ---------------------------------------------------------------- menus
-  let pending: { resolve: (n: number) => void; items: string[]; keys?: string[] } | null = null
+  let pending: { resolve: (n: number) => void; items: string[]; keys?: string[]; cancel?: boolean } | null = null
   /** a click, tap or key skips the current script pause */
   let skipPause: (() => void) | null = null
   function menu(items: string[], opts: MenuOpts = {}): Promise<number> {
@@ -431,7 +431,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         menuBar.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => choose(Number(b.dataset.i))))
         menuBar.querySelector<HTMLButtonElement>('button')?.focus()
       }
-      pending = { resolve, items, keys: opts.keys }
+      pending = { resolve, items, keys: opts.keys, cancel: !!opts.cancel }
       pad.classList.add('disabled')
     })
   }
@@ -2065,6 +2065,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     if (pending) {
       const items = pending.items
       if ((e.key === 'Enter' || e.key === ' ') && items.length === 1) { e.preventDefault(); choose(0); return }
+      if (e.key === 'Escape' && pending.cancel) { e.preventDefault(); choose(-1); return }
       // a key chooses the choice it is a hot key of (the last one, as FUN_53aa_03bd's scan), else the first letter
       const K = e.key.toUpperCase(), keys = pending.keys
       const hot = (j: number) => keys?.[j] || (items[j][0]?.toUpperCase() ?? '')

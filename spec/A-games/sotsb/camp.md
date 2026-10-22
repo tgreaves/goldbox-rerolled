@@ -16,13 +16,15 @@
 | level (new) | "Novice Squire Veteran Adept Champion" (0xE272) | — |
 | rest | "Rest Days Hours Mins Add Subtract Exit" (0x46F2B) | the same |
 
-The camp screen is 0x38FAF (CotAB 0x321CB, "The party makes camp...", 0x38F66).
+The camp screen is 0x38FAF (CotAB 0x321CB, "The party makes camp...", 0x38F66). Neither the camp
+menu nor Alter's (0x37C92) prints a prompt: the image has no "Camp:" or "Alter:" (O; the port's
+`camp` and `alter` strings are empty).
 
 ## 2. Alter → Level (O, 0x37C92–0x37D3D)
 
 New: the difficulty ([combat.md §5](combat.md#5-difficulty-o)). The menu (DS:0x452, a horizontal menu
 with the current level highlighted, DS:8A61 := level + 1) takes N, S, V, A or C and sets A word 0x3E8
-(ECL 0x4CF4) to 0–4; any other answer keeps it. The Pics choice of CotAB's Alter is gone (**I**: the
+(ECL 0x4CF4) to 0–4; any other answer keeps it (the port: Escape, `MenuOpts.cancel`). The Pics choice of CotAB's Alter is gone (**I**: the
 NPC portrait switch; not looked for elsewhere).
 
 ## 3. Fix (O, 0x38E56)
