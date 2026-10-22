@@ -126,6 +126,18 @@ export async function castOutside(e: Engine, caster: Uint8Array, s: Spell, targe
   return out
 }
 
+/** A spell's handler run on c by someone else (the temple's Remove Curse, PoR 0x1DA41, CotAB 0x1D0EB): no casting line, nothing forgotten. */
+export async function spellOn(e: Engine, c: Uint8Array, id: number): Promise<string[]> {
+  const s = e.spells?.get(id)
+  if (!s) return []
+  const out: string[] = []
+  const h = new WorldHost(e, (m) => out.push(m))
+  const L = casterLevel(c, s, false)
+  await castShared({ h, e, caster: c, s, L, dur: duration(e, s, L), targets: [c] }, spellSpec(id))
+  if (e.items) recalc(c, e.itemsOf(c), e.items)
+  return out
+}
+
 /** The spell id an item's +0x3D names (PoR FUN_4894_1a8a 0x3A468, CotAB 0x3FA0D; `spells.itemSpell`). */
 export function itemSpellId(v: number): number {
   const { mask, above, minus } = R.spells.itemSpell

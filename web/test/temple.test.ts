@@ -38,7 +38,7 @@ describe('temple tables', () => {
 })
 
 /** The temple screen for the shipped party's first member, answering by the menu items' names. */
-async function cure(game: typeof POR, dir: string, service: string, setup: (c: Uint8Array) => void) {
+async function cure(game: typeof POR, dir: string, service: string, setup: (c: Uint8Array, e: Engine) => void) {
   setGame(game)
   const files = loadFiles(game, dir)
   const io = { print: () => {}, menu: async () => 0 } as unknown as Io
@@ -49,7 +49,7 @@ async function cure(game: typeof POR, dir: string, service: string, setup: (c: U
   stems.forEach((st, i) => e.attachFiles(i, files.get(`${st}.${game.saves.items}`), files.get(`${st}.${game.saves.effects}`)))
   const c = e.party()[0]
   c[F.money + 8] = 0x10; c[F.money + 9] = 0x27 // 10 000 platinum
-  setup(c)
+  setup(c, e)
   const answers = ['HEAL', service, 'YES', 'YES', 'EXIT', 'EXIT']
   const ui: TownUi = {
     engine: e, print: () => {}, inputNumber: async () => 0, view: async () => {}, refresh: () => {},
@@ -84,6 +84,15 @@ describe('temple cures go through the heal routine', () => {
     expect(await lost(5, 16)()).toBe(Math.floor(20 / 8)) // CON 16: 2L
     const stone = await cure(POR, process.env.POOLRAD!, 'STONE TO FLESH', (c) => { c[F.status] = 7; c[F.hp] = 0; c[F.inPlay] = 0 })
     expect([stone[F.status], stone[F.inPlay], stone[F.hp]]).toEqual([0, 1, 1]) // 0x1DAD7
+  })
+  it.skipIf(!process.env.POOLRAD || !existsSync(process.env.POOLRAD))('Remove Curse runs the spell (FUN_4e53_2540): only the first cursed item', async () => {
+    let items: { cursed: boolean; raw: Uint8Array }[] = []
+    await cure(POR, process.env.POOLRAD!, 'REMOVE CURSE', (c, e) => {
+      items = e.itemsOf(c)
+      expect(items.length).toBeGreaterThanOrEqual(2)
+      items[0].raw[0x36] = 1; items[1].raw[0x36] = 1
+    })
+    expect(items.slice(0, 2).map((x) => x.cursed)).toEqual([false, true])
   })
   it.skipIf(!process.env.COAB || !existsSync(process.env.COAB))('Curse of the Azure Bonds: Heal leaves max − 1d4 even from nearly full (0x1CC34)', async () => {
     const c = await cure(COAB, process.env.COAB!, 'HEAL', (c) => { c[F.hp] = c[F.maxHp] - 1 })

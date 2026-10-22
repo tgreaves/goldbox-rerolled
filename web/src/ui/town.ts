@@ -8,7 +8,7 @@ import { parseCharacter } from '../data/character'
 import { F } from '../games/fields'
 import type { Item } from '../data/items'
 import { canTakeItem, recalc } from '../rules/equip'
-import { castOutside } from '../rules/magic'
+import { castOutside, spellOn } from '../rules/magic'
 import { heal as healChar } from '../rules/camp'
 
 const memorisedReady = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
@@ -223,7 +223,8 @@ async function heal(ui: TownUi) {
       break
     case 'poison': remove([I.poisoned, I.slowPoison, I.poisonTick]); break
     case 'raise': if (!reason) raiseDead(e, c); break
-    case 'curse': remove([I.cursed]); for (const x of items) x.raw[0x36] = 0; break
+    // the game's Remove Curse handler (PoR 0x1DA41 → FUN_4e53_2540, CotAB 0x1D0EB → 0x47575): the curse effect, else the first cursed item
+    case 'curse': if (s.spell !== undefined) for (const l of await spellOn(e, c, s.spell)) ui.print(l, false); break
     case 'stone': if (!reason) { c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = 1 } break // PoR 0x1DAD7: Okay, in play, 1 HP
   }
   recalc(c, items, t)

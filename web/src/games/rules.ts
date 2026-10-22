@@ -121,7 +121,8 @@ export interface GameRules {
   startMoney: { coin: number; fixed: number | null }
   /** the temple's healing services in the order of the game's name table (T.templeNames), with
    *  their prices (immediates in the game's code, not a table) */
-  temple: { kind: TempleService; gp: number }[]
+  /** the temple's services in menu order; `spell`: the service runs that spell's handler on the character (Remove Curse: PoR FUN_4e53_2540, CotAB 0x47575) */
+  temple: { kind: TempleService; gp: number; spell?: number }[]
   /** caster level by spell class: the best of its terms (a class's level, plus its former dual-class
    *  level when that counts, minus `minus`; never below 0); item-only spells cast at 12 and anything
    *  cast from an item at 6 (PoR FUN_10ba_26c2; CotAB 0x4F8BF, spec/A-games/coab/tables.md §3.7) */
@@ -387,7 +388,7 @@ export const POR_RULES: GameRules = {
   fix: { cures: [{ spell: 3, level: 1, dice: 1, sides: 8, bonus: 0, minutes: 15, base: 240, group: 0, weight: 27 }], start: 14 },
   join: { pcs: 6, members: 8, maxRangers: null, evil: [], paladins: false },
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
-    { kind: 'ccw', gp: 600 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 }, { kind: 'curse', gp: 3500 }, { kind: 'stone', gp: 2000 }],
+    { kind: 'ccw', gp: 600 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 }, { kind: 'curse', gp: 3500, spell: 43 }, { kind: 'stone', gp: 2000 }],
 }
 
 export const COAB_RULES: GameRules = {
@@ -489,7 +490,7 @@ export const COAB_RULES: GameRules = {
   saveCon: { save: 0, races: [1, 5], itemEffect: 6, from: 4, bands: [[6, 1], [10, 2], [13, 3], [17, 4], [18, 5]], all: [[20, 1], [22, 2], [24, 3], [25, 4]] },
   temple: [{ kind: 'blind', gp: 1000 }, { kind: 'disease', gp: 1000 }, { kind: 'clw', gp: 100 }, { kind: 'csw', gp: 350 },
     { kind: 'ccw', gp: 600 }, { kind: 'heal', gp: 5000 }, { kind: 'poison', gp: 1000 }, { kind: 'raise', gp: 5500 },
-    { kind: 'curse', gp: 3500 }, { kind: 'stone', gp: 2000 }],
+    { kind: 'curse', gp: 3500, spell: 43 }, { kind: 'stone', gp: 2000 }],
 }
 
 /** The active game's rules; start-up (setGame) switches them. */

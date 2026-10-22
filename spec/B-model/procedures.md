@@ -334,7 +334,7 @@ code immediates.
 | `heal` | always | heals (max HP − HP − 1d4) as a byte; removes 33, the diseases and 68; INT and WIS := their base values |
 | `poison` | has effect 55 ("is not poisoned.") | removes 55, 22 and 15 |
 | `raise` | status 6 or 1 ("is not dead.") | Raise Dead as part A (HP 1, CON − 1 also in the base, the HP loss by levels and CON) |
-| `curse` | a cursed item or effect 36 ("is not cursed.") | removes 36; every item's curse byte (+0x36) := 0 |
+| `curse` | a cursed item or effect 36 ("is not cursed.") | the service's `spell`, Remove Curse (43), run on the character: effect 36 removed ("is un-cursed") if present, else only the **first** cursed item uncursed (PoR 0x1DA41 → `FUN_4e53_2540`; CotAB 0x1D0EB → 0x47575, which also puts the item away) |
 | `stone` | status 7 ("is not stoned.") | status 0, in play, HP 1 |
 
 The fee is asked ("… will only cost *n* gold pieces. pay for cure?") and paid first, whether or not

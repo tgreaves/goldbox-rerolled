@@ -829,6 +829,7 @@ when its table column or sentence names CotAB.
 | 0x1CBF6 | coab/tables | coab/tables: 3.11 Temple |  |
 | 0x1CC34 | coab/tables | coab/tables: 3.11 Temple |  |
 | 0x1CCC5 | coab/tables | coab/tables: 3.11 Temple |  |
+| 0x1D0EB | B/procedures | B/procedures: 9. Temple |  |
 | 0x1D6E0 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x1D819 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1D912 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
@@ -1271,7 +1272,7 @@ when its table column or sentence names CotAB.
 | 0x47154 | B/vocabularies | B/vocabularies: 4.3 The battle's kinds |  |
 | 0x47297 | coab/spells | coab/spells: 2. Per spell id |  |
 | 0x47397 | coab/spells | coab/spells: 2. Per spell id |  |
-| 0x47575 | B/vocabularies | B/vocabularies: 4.2 Shared kinds |  |
+| 0x47575 | B/procedures, B/vocabularies | B/procedures: 9. Temple |  |
 | 0x477EB | B/vocabularies | B/vocabularies: 4.3 The battle's kinds |  |
 | 0x478F6 | coab/effects, coab/spells, B/procedures | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x47977 | coab/effects | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
