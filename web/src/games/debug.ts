@@ -29,5 +29,10 @@ export const POR_DEBUG: DebugTools = {
 
 export const COAB_DEBUG: DebugTools = {
   jumps: [{ label: 'Tilverton: the Windlord\'s Inn (6,12)', to: [2, 1, 6, 12, 0] }],
-  finale: null,
+  // ECL6 #67, the temple of Bane's throne room: native 0x9280 (on_step's event 26, square (6,1)) sets up
+  // and fights Tyranthraxus, the margoyle and the high priest; 0x93E7, after a win, is PROGRAM 8 (the
+  // ending, then ending.after); canonical addresses (native + 0x1900). (5,2): in the throne room, off
+  // the battle's square and x 6 (on_enter's voice scene)
+  finale: { foe: 'Tyranthraxus', at: [6, 67, 5, 2, 0], fight: 0xab80, ending: 0xace7,
+    note: 'the end of the game as its script runs it (ECL6 #67): after the final battle is won, or that battle (the bonds scene before it is skipped)' },
 }

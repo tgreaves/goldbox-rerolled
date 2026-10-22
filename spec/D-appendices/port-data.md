@@ -326,7 +326,12 @@ tower), fight 0xA7DC (sets up and starts the battle with monster 66), ending 0xA
 flags, PROGRAM 8, the walk back to New Phlan), note "the end of the game as its script runs it (ECL5
 #7): after the final battle is won, or that battle (the guards and the NPCs' vote are skipped)".
 
-CotAB jumps: "Tilverton: the Windlord's Inn (6,12)" [2, 1, 6, 12, 0]; finale null.
+CotAB jumps: "Tilverton: the Windlord's Inn (6,12)" [2, 1, 6, 12, 0]. CotAB finale: foe Tyranthraxus, at
+[6, 67, 5, 2, 0] (ECL6 #67, the temple of Bane's throne room, off the battle's square (6,1) and column 6,
+where on_enter plays the voice scene), fight 0xAB80 (native 0x9280: Tyranthraxus, the margoyle and the
+high priest, fought again while ECL 0x7EC7 > 128), ending 0xACE7 (native 0x93E7: PROGRAM 8), note "the
+end of the game as its script runs it (ECL6 #67): after the final battle is won, or that battle (the
+bonds scene before it is skipped)"; addresses canonical (native + 0x1900).
 
 ## 7. View choices
 

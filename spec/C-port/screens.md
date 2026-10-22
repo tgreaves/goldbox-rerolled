@@ -570,7 +570,7 @@ IMP-025, not part of the game. A panel "Debug" with "Not part of the game. Now: 
 *x*,*y* facing *Facing*" (or "wilderness *x*,*y*"):
 
 - **Edit characters…** (outside battles; "abilities, HP, experience, levels, money, items");
-- the finale, when the profile has one (PoR): **Play the ending** and **Fight *foe*** with its note
+- the finale, when the profile has one (both games): **Play the ending** and **Fight *foe*** with its note
   ([port-data.md §6](../D-appendices/port-data.md#6-debug-jumps-and-finale)): jump to its square, run
   its script at `ending` or `fight`, then re-enter the area unless the game ended; notes "Debug: the
   ending, as after *foe* falls." / "Debug: the battle with *foe*.";

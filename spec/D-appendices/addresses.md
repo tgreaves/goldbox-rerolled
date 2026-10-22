@@ -1152,7 +1152,7 @@ when its table column or sentence names CotAB.
 | 0x36A1C | coab/assets, coab/ecl | coab/assets: 7. Start-up, title, copy protection |  |
 | 0x36A6C | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x36CEF | coab/chargen-and-progression | coab/chargen-and-progression: Where |  |
-| 0x36DCD | coab/ecl, C/app-flow | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x36DCD | coab/ecl, C/app-flow, C/departures | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x36DD5 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x3708F | B/procedures | B/procedures: 7. Creation and training values | `FUN_417f_056c` |
 | 0x371F6 | coab/records | coab/records: 10. Creation effects and paladin abilities |  |
