@@ -203,13 +203,10 @@ export function conBonus(t: Tables, c: Uint8Array): number {
   return (b << 24) >> 24
 }
 
+/** The WIS bonus cleric slots (PoR FUN_51cf_01af, CotAB 0x50AF6; R.slots.wisBonus): each step a slot more, if that level has one. */
 export function wisdomBonus(c: Uint8Array) {
   const wis = c[F.stat[2]]
-  if (wis > 12 && c[F.clericSlots]) c[F.clericSlots]++
-  if (wis > 13 && c[F.clericSlots]) c[F.clericSlots]++
-  if (wis > 14 && c[F.clericSlots + 1]) c[F.clericSlots + 1]++
-  if (wis > 15 && c[F.clericSlots + 1]) c[F.clericSlots + 1]++
-  if (wis > 16 && c[F.clericSlots + 2]) c[F.clericSlots + 2]++
+  for (const [above, level] of R.slots.wisBonus) if (wis > above && c[F.clericSlots + level - 1]) c[F.clericSlots + level - 1]++
 }
 
 /** The first readied item whose handler effect (item +0x3E, ≥ 0x80) is one of `effects`; its effect. */

@@ -101,6 +101,8 @@ export interface GameRules {
     clear: boolean
     sources: { cls: number; table: 'clericSlots' | 'muSlots' | 'paladinSlots' | 'rangerSlots'; from: number; first: boolean; add: boolean; columns: { pool: 'cleric' | 'druid' | 'mu'; level: number }[] }[]
     wisdom: 'afterCleric'
+    /** the WIS bonus: [WIS above, cleric spell level], each +1 slot when that level has one (PoR FUN_51cf_01af, CotAB 0x50AF6) */
+    wisBonus: [number, number][]
     learn: { classes: number[]; spellClass: 'cleric' | 'druid'; all: boolean }[]
     /** a readied item with this effect byte (+0x3E) doubles the magic-user slots of levels 1..levels */
     doubler: { effect: number; levels: number } | null
@@ -326,6 +328,7 @@ export const POR_RULES: GameRules = {
       { cls: 5, table: 'muSlots', from: 2, first: false, add: false, columns: [{ pool: 'mu', level: 1 }, { pool: 'mu', level: 2 }, { pool: 'mu', level: 3 }] },
     ],
     wisdom: 'afterCleric',
+    wisBonus: [[12, 1], [13, 1], [14, 2], [15, 2], [16, 3]], // 0x41E9F–0x41F42
     learn: [{ classes: [0], spellClass: 'cleric', all: false }],
     doubler: null,
   },
@@ -397,6 +400,7 @@ export const COAB_RULES: GameRules = {
       { cls: 5, table: 'muSlots', from: 2, first: true, add: true, columns: [{ pool: 'mu', level: 1 }, { pool: 'mu', level: 2 }, { pool: 'mu', level: 3 }, { pool: 'mu', level: 4 }, { pool: 'mu', level: 5 }] },
     ],
     wisdom: 'afterCleric', // 0x50568: inside the cleric branch, before the paladin's rows
+    wisBonus: [[12, 1], [13, 1], [14, 2], [15, 2], [16, 3], [17, 4]], // 0x50AF6: WIS 18 also a fourth-level slot (0x50C4B)
     learn: [{ classes: [0, 3], spellClass: 'cleric', all: false }, { classes: [4], spellClass: 'druid', all: true }],
     doubler: { effect: 0x81, levels: 3 }, // Ring of Wizardry (0x507C3)
   },

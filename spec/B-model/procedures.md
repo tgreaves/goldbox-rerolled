@@ -53,8 +53,9 @@ for l in learn: if any class of l.classes has a level:
 if doubler: for each readied item with +0x3E = doubler.effect: muSlots[1..levels] := ×2 as a byte
 ```
 
-The WIS bonus is part A's (`FUN_51cf_01af`: WIS > 12, > 13 add a first-level, > 14, > 15 a second-level,
-> 16 a third-level cleric slot, each only if that level already has one). A pool missing from the
+The WIS bonus is `wisBonus`, [WIS above, cleric level] steps, each adding a slot of that level if it
+already has one: PoR (`FUN_51cf_01af`) [12, 1], [13, 1], [14, 2], [15, 2], [16, 3]; CotAB (0x50AF6) the
+same and [17, 4]. A pool missing from the
 game (`druidSlots` = −1) is never named by its sources. The slot array of a spell class is the one
 whose code `rules.spells` gives (cleric, druid, magic-user); a class code without a pool has no
 slots.

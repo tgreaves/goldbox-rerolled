@@ -45,8 +45,10 @@ Read Magic (18), **Enlarge (12)** and Sleep (21); PoR's are Detect Magic, Read M
 and Sleep. (The character loader 0x34660 grants PoR's four in its path for another game's record,
 [records.md §7.5](records.md#75-hillsfar-brief-o-for-structure); unused by the port.)
 
-The cleric's WIS bonus slots (0x50AF6, called by the slot routine at 0x50568 with 0) follow PoR's
-`FUN_51cf_01af` and apply only with a cleric level (the cleric level with its former part,
+The cleric's WIS bonus slots (0x50AF6, called by the slot routine at 0x50568 with 0) are PoR's
+`FUN_51cf_01af` with one step more: WIS > 12, > 13 a first-level, > 14, > 15 a second-level, > 16 a
+third-level and **> 17 a fourth-level** slot (0x50C4B–0x50C60), each only if that level already has
+one; no druid part (O). They apply only with a cleric level (the cleric level with its former part,
 f·+0x111 + +0x109): a paladin's cleric slots never get them. Called with 1 (dual-classing) it first
 sets the cleric slots back to one first-level slot and adds the rows `DS:42BC[L·5 + n]` again.
 

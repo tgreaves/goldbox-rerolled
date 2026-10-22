@@ -1389,6 +1389,8 @@ when its table column or sentence names CotAB.
 | 0x50A10 | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
 | 0x50A3B | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x50AF6 | coab/chargen-and-progression, coab/tables, B/procedures | coab/chargen-and-progression: 1. The recalculation |  |
+| 0x50C4B | coab/chargen-and-progression, coab/tables | coab/chargen-and-progression: 1. The recalculation |  |
+| 0x50C60 | coab/chargen-and-progression, coab/tables | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x50C6B | coab/chargen-and-progression, coab/records, coab/tables, B/procedures | coab/chargen-and-progression: 1. The recalculation | `FUN_51cf_0255` |
 | 0x50F5A | coab/chargen-and-progression, coab/effects, coab/records, coab/tables, B/procedures | coab/chargen-and-progression: 1. The recalculation | `FUN_51cf_0329` |
 | 0x511AE | coab/chargen-and-progression, B/procedures | coab/chargen-and-progression: Allowed classes (0x511AE) |  |
