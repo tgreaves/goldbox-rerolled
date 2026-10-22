@@ -173,9 +173,11 @@ CotAB's 0x45251 with these differences:
 - **No miscast roll.** In its place: a caster with effect **0x44** (SotSB's number) casting other than
   from an item (DS:8D99, the from-an-item flag, = 0) casts nothing, silently: no line, no target, no
   effect, nothing forgotten (0x48D64–0x48D86; CotAB: effect 0x4A, 1 in 2, "miscasts").
-- **"can't be cast here... Lose it?"** (CS strings 0x48B75, 0x48B8B): a spell that cannot be cast where
-  the caster is now asks whether to lose it; Y (0x59) forgets it (0x48D40–0x48D58, **I** for when it is
-  asked).
+- **"can't be cast here... Lose it?"** (CS strings 0x48B75, 0x48B8B; the cast 0x48C03, O): out of battle
+  (DS:67E7 ≠ 5), a spell whose record byte 7 is 0 (combat only) and not cast from an item (DS:8D99 = 0)
+  prints its name and "can't be cast here...", then "Lose it?"; Y (0x59) forgets it (`151:70`). PoR's
+  camp Cast asks the same (`combatOnlySpell`, `loseIt`); the port's camp Cast does it for SotSB with its
+  own strings.
 - The rest (the target hook, forgetting on going off or abort) as CotAB's (I).
 
 ## 12. Draft profile values (informative)
@@ -206,7 +208,7 @@ moraleRemoves: [], fleeRemoves: [],
 the difficulty (`R.difficulty`, `newGame`, the monster scaling in the engine's monster loader, Alter →
 Level), `setStatusEvent` null, `turnUndead` false, `casting.miscast` { 0x44, sides null }, `backstab.reach`
 1, `wildBattle` none, the renumbered item types and plural rule (`itemTypes`), the clouds' SotSB numbers.
-Not done: the finder's forced target (effect 0x5B) and the "Lose it?" question (**I** both); the kill
+Not done: the finder's forced target (effect 0x5B, **I**); the kill
 cloud's bands and poison are CotAB's (**I**). Tests: `test/sotsbrules.test.ts`.
 
 - **Difficulty**: a new rule (`R.difficulty`: the variable ECL 0x4CF4, the five names, the start value 2,
