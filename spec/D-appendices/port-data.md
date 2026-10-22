@@ -243,9 +243,9 @@ A game without one has null and no Journal entry in the menu.
 
 | Field | Type | Meaning |
 |---|---|---|
-| `source` | record of strings | the transcription's name, a note, the source pages by section, the licence |
+| `source` | record of strings | the transcription's name, a note, the source pages by section, the licence (`license`, absent when the text is not under one) |
 | `preface` | string | the journal's opening text (shown first) |
-| `journal` | `{ n, text, images[] }[]` | numbered entries; `images` are file names of scans shown with the entry |
+| `journal` | `{ n, title?, text, images[] }[]` | numbered entries; `title` the entry's printed heading where the source keeps it; `images` are file names of scans shown with the entry |
 | `proclamations` | `{ id, text }[]` | proclamations by roman-numeral id |
 | `tales` | `{ n, text }[]` | numbered tavern tales |
 | `background` | `{ title, text }[]` (optional) | sections read from the start, not revealed by scripts |
@@ -253,14 +253,17 @@ A game without one has null and no Journal entry in the menu.
 
 ### 4.2 Content and sources
 
-The journal text is a third-party transcription of the printed journal, used under CC BY-SA 3.0 and
-credited in the project README; it is the one exception to "no game data in the repository" and is
-not part of this specification's text:
+The journal text is a transcription of the printed journal, credited in the project README: PoR's and
+CotAB's are third-party transcriptions used under CC BY-SA 3.0; SotSB's was transcribed for the port
+from a scan of the printed journal, by Tristan's decision (CLAUDE.md rule 4: the journal is of use
+only with the game, which the player supplies). It is the one exception to "no game data in the
+repository" and is not part of this specification's text:
 
 | Game | Source | Content |
 |---|---|---|
 | PoR | Pool of Radiance Wiki (Fandom): Journal Entries, Proclamations, Tavern Tales pages; the journal text only, the wiki's commentary left out | 58 entries, 18 proclamations, 23 tales; 14 map and picture scans (`JE4_Map`, `JE10_Map`, `JE15`, `JE22_Map`, `JE26`, `JE28`, `JE29`, `JE35`, `JE37_1`–`JE37_3`, `JE41`, `JE42`, `JE58`) |
 | CotAB | Gold Box Wiki (Fandom), "Curse of the Azure Bonds/Journal": the journal text only (the rules appendices left out), lines joined into paragraphs and a few lost apostrophes restored | 59 entries (eight are only a picture in the printed journal and say so), 62 tales, 4 background sections, no proclamations |
+| SotSB | the printed Adventurer's Journal (SSI, 1990), transcribed from a scan (archive.org); the entries, the opening story and the bestiary (the rules sections, glossary and appendices left out); the printed spelling kept, only scanning errors corrected | 72 entries with their printed headings (the four rumours, 6, 8, 20, 30, have none; twelve, 1, 32, 35, 36, 38, 41, 45, 49, 52, 66, 68, 72, are only a map and say so), 2 background sections ("How the Heroes Arrive", "Creatures of the Forgotten Realms"), no tales or proclamations |
 
 A builder takes the same text from the same sources (or from the player's printed journal) into this
 schema.
@@ -274,6 +277,7 @@ schema.
 | PoR | tales | Nothing yet. Listen in the taverns of New Phlan. |
 | CotAB | journal | Nothing yet. What you learn on your travels is copied in here. |
 | CotAB | tales | Nothing yet. Listen in the taverns. |
+| SotSB | journal | Nothing yet. What you learn on your travels is copied in here. |
 
 ### 4.4 What reveals an entry
 
@@ -281,7 +285,9 @@ Every screen of game text the scripts print (the whole screen, so a number print
 caught) is scanned, upper-cased, for:
 
 - `ENTR(?:Y|IES)\s*(\d+(?:(?:[\s,]|AND)+\d+)*)`: each number that is an entry → id `journal:<n>`
-  ("AS ENTRY 30", "UNDER ENTRIES 23 AND 14", "(ENTRY 33)");
+  ("AS ENTRY 30", "UNDER ENTRIES 23 AND 14", "(ENTRY 33)"; SotSB prints "AND YOU RECORD IT AS JOURNAL
+  ENTRY " from a subroutine, then the number, literal or from a table: ECL1 record 16's 0x9B58 holds
+  the rumours 6, 8, 20, 30, its 0x9B5C the old man's tales 12, 17, 51, 54, O);
 - `TAVERN TALE\s*#?\s*(\d+)` → `tale:<n>` ("YOU OVERHEAR TAVERN TALE 7", CotAB "TAVERN TALE #12");
 - `PROCLAMATIONS?\s*([IVXLCDM]+(?:(?:[\s,]|AND)+[IVXLCDM]+)*)`: each numeral that is a proclamation →
   `proc:<id>` ("PROCLAMATION CI.", "PROCLAMATIONS LXIV, LXXVIII, CIX, AND LIX.").

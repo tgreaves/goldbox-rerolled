@@ -437,7 +437,7 @@ Identify fee is profile data (`R.identifyFee`: SotSB 100, its line at 0x456C0). 
 (the delay, its zone and effect 100's explosion), Feeblemind's class rules and effects 15, 94, 110 are
 SotSB's own (2026-10-22); spells 0, 9, 42, 83 and effect 80 re-read as mapped. Still open: the finder's
 first-entry pick for a holder of 0x5B (since settled: dead code, DS:8E23 is never written), the zone
-lifts' body cells (since done: `R.bodyCell`, SotSB's 0x1C/0x1E); no journal; a
+lifts' body cells (since done: `R.bodyCell`, SotSB's 0x1C/0x1E); no journal (since done, below); a
 browser play-through. *Since done (2026-10-22)*: the free temple (`R.templeHeal`, camp.md §4a); Join and
 Halve of scroll bundles (`R.itemJoin`, records.md §3.2); the vault synced as `folder/VAULT`
 (accounts-and-sync.md §1.3); the `.WHO` loader's paladin uses (`R.addRefill`); SotSB's own Rules
@@ -457,6 +457,11 @@ reference (`SOTSB_RULES_TEXT`); the main menu's Move, left out with View and Are
   entries 1–59, tavern tales 1–62 and the four background notes (`data/coab-journal.json`, built by
   `tools/coab/journal_coab.py`); CotAB has no proclamations. Eight entries are only a picture in
   the printed journal and say so.
+- ~~SotSB journal~~: done 2026-10-22, transcribed from a scan of the printed Adventurer's Journal
+  (Tristan's decision, CLAUDE.md rule 4): entries 1–72 with their printed headings (`title`), the
+  opening story and the bestiary as background (`data/sotsb-journal.json`, `SOTSB_JOURNAL`); no
+  tales or proclamations. Twelve entries are only a map and say so. The sweep checks that every
+  entry number the scripts print is in it.
 - ~~CotAB add-effect rule~~: done 2026-10-20 (`effects.replaces`).
 
 Each step is committed separately with PoR's tests passing, so PoR stays playable throughout.

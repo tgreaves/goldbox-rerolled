@@ -18,6 +18,7 @@ import { SOTSB_ECL } from './ecl'
 import { SOTSB_FILES } from './files'
 import { SOTSB_RULES } from './rules'
 import { SOTSB_STRINGS, SOTSB_MENUS } from './stringtable'
+import { SOTSB_JOURNAL } from './journal'
 
 export const SOTSB: GameProfile = {
   id: 'sotsb',
@@ -39,7 +40,8 @@ export const SOTSB: GameProfile = {
   saves: SOTSB_FILES,
   // SotSB's rules (games/rules.ts SOTSB_RULES); CotAB's spells, effects and landmarks stand in where not yet read (?)
   rules: SOTSB_RULES,
-  journal: null,
+  // the printed Adventurer's Journal, transcribed from a scan (games/journal.ts SOTSB_JOURNAL)
+  journal: SOTSB_JOURNAL,
   spellNotes: {},
   view: SOTSB_VIEW,
   title: SOTSB_TITLE,

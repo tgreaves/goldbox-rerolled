@@ -2,8 +2,10 @@
 // to by number (IMP-055). Each game's profile carries its own, or none.
 import porJournal from '../data/journal.json'
 import coabJournal from '../data/coab-journal.json'
+import sotsbJournal from '../data/sotsb-journal.json'
 
-export interface JournalEntry { n: number; text: string; images: string[] }
+/** title: the entry's printed heading, where the source keeps it */
+export interface JournalEntry { n: number; title?: string; text: string; images: string[] }
 export interface Proclamation { id: string; text: string }
 export interface Tale { n: number; text: string }
 /** a section of the printed journal that is read from the start, not revealed by the scripts */
@@ -38,6 +40,12 @@ export const COAB_JOURNAL: JournalData = {
     journal: 'Nothing yet. What you learn on your travels is copied in here.',
     tales: 'Nothing yet. Listen in the taverns.',
   },
+}
+
+/** Secret of the Silver Blades' Adventurer's Journal (transcribed from a scan of the printed journal, SSI 1990). */
+export const SOTSB_JOURNAL: JournalData = {
+  ...(sotsbJournal as JournalData),
+  empty: { journal: 'Nothing yet. What you learn on your travels is copied in here.' },
 }
 
 /** The active game's journal (empty when it has none); Pool of Radiance's until setGame chooses another. */

@@ -1871,13 +1871,13 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const procs = JOURNAL.proclamations.filter((p) => has(`proc:${p.id}`)).sort((a, b) => roman(a.id) - roman(b.id))
       const tales = JOURNAL.tales.filter((t) => has(`tale:${t.n}`))
       const bg = JOURNAL.background ?? []
-      // a tab only for what the game's journal has (CotAB has no proclamations; background is read from the start)
-      if ((journalTab === 'proclamations' && !JOURNAL.proclamations.length) || (journalTab === 'background' && !bg.length)) journalTab = 'journal'
+      // a tab only for what the game's journal has (CotAB has no proclamations, SotSB no tales; background is read from the start)
+      if ((journalTab === 'proclamations' && !JOURNAL.proclamations.length) || (journalTab === 'tales' && !JOURNAL.tales.length) || (journalTab === 'background' && !bg.length)) journalTab = 'journal'
       const tab = (k: typeof journalTab, label: string, n: number, of: number) => !of ? '' :
         `<button type="button" data-tab="${k}" class="${journalTab === k ? 'on' : ''}">${label} (${n}${journalAll || k === 'background' ? '' : ` of ${of}`})</button>`
       const empty = JOURNAL.empty ?? {}
       let body = ''
-      if (journalTab === 'journal') body = entries.map((j) => `<article><h3>Journal entry ${j.n}</h3>${paras(j.text)}${j.images.map((src) =>
+      if (journalTab === 'journal') body = entries.map((j) => `<article><h3>Journal entry ${j.n}${j.title ? `: ${escape(j.title)}` : ''}</h3>${paras(j.text)}${j.images.map((src) =>
         `<img class="journal-map" src="${base}${src}" alt="Map from journal entry ${j.n}" loading="lazy">`).join('')}</article>`).join('')
         || `<p class="muted">${escape(empty.journal ?? 'Nothing yet.')}</p>`
       else if (journalTab === 'proclamations') body = procs.map((p) => `<article><h3>Proclamation ${p.id}</h3><p class="muted">${escape(JOURNAL.preface)}</p>${paras(p.text)}</article>`).join('')
@@ -1890,7 +1890,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         <div class="nc-opts">${tab('journal', 'Entries', entries.length, JOURNAL.journal.length)}${tab('proclamations', 'Proclamations', procs.length, JOURNAL.proclamations.length)}${tab('tales', 'Tavern tales', tales.length, JOURNAL.tales.length)}${tab('background', 'Background', bg.length, bg.length)}</div>
         <div class="journal">${body}</div>
         <p class="muted"><label><input type="checkbox" data-all="1"${journalAll ? ' checked' : ''}> Show everything, like the printed journal (some entries are false; the original asked you not to read ahead)</label></p>
-        <p class="muted small">Text${maps ? ' and maps' : ''} from the <a href="${JOURNAL.source.journal}" target="_blank" rel="noopener">${escape(JOURNAL.source.name ?? '')}</a>, CC BY-SA.</p>
+        <p class="muted small">Text${maps ? ' and maps' : ''} from the <a href="${JOURNAL.source.journal}" target="_blank" rel="noopener">${escape(JOURNAL.source.name ?? '')}</a>${JOURNAL.source.license ? ', CC BY-SA' : ''}.</p>
         <form method="dialog"><button>Close</button></form>`
     }
     const onClick = (e: MouseEvent) => {
@@ -2025,7 +2025,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const item = (cmd: string, label: string, note: string) => `<li><button data-go="${cmd}">${label}<small>${note}</small></button></li>`
     dialog.innerHTML = `<h2>Menu</h2>
       <ul class="mainmenu">
-        ${!JOURNAL.journal.length ? '' : item('journal', 'Journal', found ? `${found} found` : JOURNAL.proclamations.length ? 'entries, proclamations and tavern tales' : 'entries and tavern tales')}
+        ${!JOURNAL.journal.length ? '' : item('journal', 'Journal', found ? `${found} found` : [JOURNAL.proclamations.length ? 'proclamations' : '', JOURNAL.tales.length ? 'tavern tales' : ''].filter(Boolean).reduce((s, k, i, a) => s + (i === a.length - 1 ? ' and ' : ', ') + k, 'entries'))}
         ${!game().commissions ? '' : item('commissions', `Commissions${due ? ' <span class="due">•</span>' : ''}`, due ? 'a reward is waiting' : 'the City Council\'s commissions and progress')}
         ${accountStatus().available ? item('account', accountLabel(), accountStatus().user ? 'your saves on the server, sync, password' : 'keep your saves on the server and play on any device') : ''}
         ${item('save', 'Save', 'any time, slots A–J')}

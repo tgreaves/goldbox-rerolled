@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { GameFiles } from '../src/store/gamefiles'
 import { Engine, type Io } from '../src/vm/engine'
 import { POR, SOTSB, setGame, wants } from '../src/games/profile'
+import { JOURNAL } from '../src/rules/journal'
 
 const dir = process.env.SOTSB ?? ''
 const have = dir !== '' && existsSync(dir)
@@ -23,9 +24,17 @@ function load(): GameFiles {
   return new GameFiles(m, SOTSB)
 }
 
+// every journal entry number the scripts print ("… AS JOURNAL ENTRY " then the number)
+const printed = new Set<number>()
+let tail = ''
+
 function headless(answer: (n: number) => number) {
   return {
-    print: () => {}, menu: async (items: unknown[]) => answer(items.length), inputNumber: async () => 0,
+    print: (t: string) => {
+      tail = (tail + t).slice(-80)
+      const m = /JOURNAL ENTRY\s*(\d+)\D$/.exec(tail)
+      if (m) printed.add(Number(m[1]))
+    }, menu: async (items: unknown[]) => answer(items.length), inputNumber: async () => 0,
     inputText: async () => 'TEST', picture: () => {}, sprite: () => {}, refresh: async () => {},
     pause: async () => {}, sound: () => {}, engine: async () => {},
   } as unknown as Io
@@ -72,5 +81,8 @@ describe.skipIf(!have)('Secret of the Silver Blades scripts', () => {
     expect(summary).toEqual([])
     expect(runs).toBeGreaterThan(1500)
     expect(asking).toBeLessThan(runs / 10)
+    // every entry the scripts announce is in the transcribed journal
+    expect(printed.size).toBeGreaterThan(0)
+    expect([...printed].filter((n) => !JOURNAL.journal.some((j) => j.n === n))).toEqual([])
   }, 300000)
 })

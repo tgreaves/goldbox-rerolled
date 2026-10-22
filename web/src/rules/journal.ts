@@ -1,6 +1,6 @@
 // The Adventurer's Journal (IMP-055): the journal entries, proclamations and tavern tales the game
 // refers to by number, from the active game's printed journal (games/journal.ts: PoR's via the Pool of
-// Radiance Wiki, CotAB's via the Gold Box Wiki). The scripts announce each one in their text; the port
+// Radiance Wiki, CotAB's via the Gold Box Wiki, SotSB's transcribed from a scan). The scripts announce each one in their text; the port
 // notes it as revealed.
 import { JOURNAL } from '../games/journal'
 

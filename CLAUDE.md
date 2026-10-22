@@ -112,8 +112,8 @@ close disassemblers (REA's Ghidra sessions) after use, no unbounded background j
   of much of the newer UI.
 - Secret of the Silver Blades: researched 2026-10-22 (`spec/A-games/sotsb/`, every subject) and playable at
   an early stage (`games/sotsb.ts`: its own rules, spells, effects, script variants, items, vault, CotAB
-  import, title music through the OPL2 synthesiser); headless playthroughs pass; its Rules reference text
-  is still CotAB's and it has no journal; open items in `docs/multi-game.md`. Tests take `SOTSB` (the game
+  import, title music through the OPL2 synthesiser, its own Rules reference text, its printed journal
+  transcribed from a scan); headless playthroughs pass; open items in `docs/multi-game.md`. Tests take `SOTSB` (the game
   folder) like POOLRAD and COAB.
 - `server/` (accounts and sync) is built but not deployed. It is meant to become a public service
   with open sign-up, so treat every change there as internet-facing (`docs/server.md`, "Running it publicly").

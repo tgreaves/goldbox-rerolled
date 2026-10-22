@@ -167,7 +167,7 @@ each with a quiet second line; **Back to the game** at the foot.
 
 | Entry | Shown | Second line |
 |---|---|---|
-| **Journal** | the game has a journal | "*n* found", or "entries, proclamations and tavern tales" (PoR) / "entries and tavern tales" (CotAB) |
+| **Journal** | the game has a journal | "*n* found", or what the journal holds: "entries, proclamations and tavern tales" (PoR) / "entries and tavern tales" (CotAB) / "entries" (SotSB) |
 | **Commissions** (with "•" when due) | the game has commissions (PoR) | "a reward is waiting", or "the City Council's commissions and progress" |
 | **Sign in / create account** or **Account: …** | a server answers | "keep your saves on the server and play on any device" / "your saves on the server, sync, password" |
 | **Save** | always | "any time, slots A–J" |
@@ -537,14 +537,16 @@ of the finds in [storage.md §6](storage.md#6-journal-finds-and-the-gbr-sidecar)
 "Journal":
 
 - tabs, each only when the game's journal has that kind: **Entries (*n* of *N*)**, **Proclamations
-  (*n* of *N*)** (PoR), **Tavern tales (*n* of *N*)**, **Background (*N*)** (CotAB, always shown in
-  full); with "Show everything" on the counts are "(*n*)";
-- the tab's finds in order (proclamations by numeral): "Journal entry *n*" with its paragraphs and
+  (*n* of *N*)** (PoR), **Tavern tales (*n* of *N*)** (PoR, CotAB), **Background (*N*)** (CotAB, SotSB,
+  always shown in full); with "Show everything" on the counts are "(*n*)";
+- the tab's finds in order (proclamations by numeral): "Journal entry *n*" (": *title*" after it when
+  the entry has its printed heading, SotSB) with its paragraphs and
   its scans (alt text "Map from journal entry *n*"); "Proclamation *id*" with the journal's preface;
   "Tavern tale *n*"; or the tab's empty text ([port-data.md §4.3](../D-appendices/port-data.md#43-empty-tab-texts));
 - the box "Show everything, like the printed journal (some entries are false; the original asked you
   not to read ahead)" (not kept between openings of the game);
-- the credit "Text and maps from the *source name*, CC BY-SA." linking to the source (new tab);
+- the credit "Text and maps from the *source name*, CC BY-SA." linking to the source (new tab); "and
+  maps" only when an entry has scans, ", CC BY-SA" only when the source has a licence (not SotSB's);
   **Close**.
 
 ## 9. Commissions

@@ -1,7 +1,7 @@
 // The journal texts and the reveals found in the game's own lines (IMP-055).
 import { describe, expect, it } from 'vitest'
 import { JOURNAL, journalReveals, roman } from '../src/rules/journal'
-import { COAB, POR, setGame } from '../src/games/profile'
+import { COAB, POR, SOTSB, setGame } from '../src/games/profile'
 
 describe('journal', () => {
   it('has the printed journal: 58 entries, 23 tales, the proclamations', () => {
@@ -42,5 +42,26 @@ describe('journal', () => {
     }
     expect(JOURNAL.journal).toHaveLength(58)
     expect(JOURNAL.background).toEqual([])
+  })
+
+  it("has SotSB's journal when SotSB is the game: 72 titled entries, the opening story and bestiary, no tales", () => {
+    setGame(SOTSB)
+    try {
+      expect(JOURNAL.journal.map((j) => j.n)).toEqual(Array.from({ length: 72 }, (_, i) => i + 1))
+      expect(JOURNAL.tales).toEqual([])
+      expect(JOURNAL.proclamations).toEqual([])
+      expect(JOURNAL.background?.map((b) => b.title)).toEqual(['How the Heroes Arrive', 'Creatures of the Forgotten Realms'])
+      for (const j of JOURNAL.journal) expect(j.text.trim(), `entry ${j.n}`).not.toBe('')
+      // the rumours (ECL1 record 16's table at 0x9B58: 6, 8, 20, 30) have no printed heading
+      expect(JOURNAL.journal.filter((j) => !j.title).map((j) => j.n)).toEqual([6, 8, 20, 30])
+      expect(JOURNAL.journal[0].text).toMatch(/map in the printed journal/) // entry 1 is a map
+      expect(JOURNAL.journal[36].title).toBe("Mayor's Introduction")
+      // SotSB's phrasings (ECL text): the number printed after the subroutine's "AS JOURNAL ENTRY "
+      expect(journalReveals('HE CONTINUES, AND YOU RECORD IT IN JOURNAL ENTRY 37.')).toEqual(['journal:37'])
+      expect(journalReveals('YOU TAKE THE LETTER THAT SHE WAS READING AND YOU RECORD IT AS JOURNAL ENTRY 69.')).toEqual(['journal:69'])
+      expect(journalReveals('YOUR ENTRY HAS DISTURBED THEIR CHANTING.')).toEqual([])
+    } finally {
+      setGame(POR)
+    }
   })
 })

@@ -80,7 +80,7 @@ profile value reads it from the active profile when it runs.
 | `ending` | `EndingScript` | the ending (PROGRAM 8) | C | §3.5 | §3.5 |
 | `imports` | `CharacterImport[]` | characters this game takes from other games | C | none | [procedures.md §13](procedures.md#13-character-import) |
 | `commissions` | boolean | shows the commissions panel (PoR's City Council quests, read from its script variables) | P | true | false |
-| `journal` | `JournalData` or null | the printed journal the scripts refer to | P | [D-appendices/port-data.md §4](../D-appendices/port-data.md#4-the-journal) | same |
+| `journal` | `JournalData` or null | the printed journal the scripts refer to (PoR, CotAB, SotSB) | P | [D-appendices/port-data.md §4](../D-appendices/port-data.md#4-the-journal) | same |
 | `spellNotes` | id → string | one-line spell notes | P | [D-appendices/port-data.md §1](../D-appendices/port-data.md#1-spell-notes) | same |
 | `rulesText` | `RulesText` | the Rules reference's text | P | [D-appendices/port-data.md §2](../D-appendices/port-data.md#2-rules-reference) | same |
 | `landmarks` | `LandmarkRules` | what the area map's landmarks look for in script text | P | [D-appendices/port-data.md §3](../D-appendices/port-data.md#3-landmark-patterns) | same |

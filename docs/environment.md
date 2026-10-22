@@ -117,7 +117,8 @@ port; nothing is installed for it.
   at `/home/tmg/poolrad-reference/gamefaqs-lee-v2.00.md` (not committed: its copyright)
 - Simeon Pilgrim's C# CotAB rebuild, [github.com/simeonpilgrim/coab](https://github.com/simeonpilgrim/coab):
   no licence, so only a pointer to where to look (rule 5 in `CLAUDE.md`); not cloned on the server
-- Journals: Pool of Radiance Wiki and Gold Box Wiki transcriptions (CC BY-SA, credited in the README)
+- Journals: Pool of Radiance Wiki and Gold Box Wiki transcriptions (CC BY-SA, credited in the README);
+  SotSB's transcribed from the archive.org scan of its printed Adventurer's Journal (`web/src/data/sotsb-journal.json`)
 
 ## Browser play-testing
 

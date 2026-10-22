@@ -1,0 +1,451 @@
+{
+  "source": {
+    "name": "Adventurer's Journal (SSI, 1990)",
+    "note": "Transcribed from a scan of the Adventurer's Journal printed with Secret of the Silver Blades (SSI, 1990), by Tristan's decision (CLAUDE.md rule 4). The journal entries, the opening story and the bestiary; the rules sections, glossary and appendices are left out. The printed spelling is kept; only scanning errors were corrected. Entries that are only a map say so.",
+    "journal": "https://archive.org/details/secrets-of-the-silver-blade",
+    "background": "https://archive.org/details/secrets-of-the-silver-blade"
+  },
+  "preface": "",
+  "proclamations": [],
+  "journal": [
+    {
+      "n": 1,
+      "title": "Map to the Dragon's Hoard.",
+      "text": "A map in the printed journal: the way from New Verdigris to the red dragon's lair (a key marks walls, doors, archways and the red dragon's lair).",
+      "images": []
+    },
+    {
+      "n": 2,
+      "title": "Fanatic Soldier's Tale",
+      "text": "'We have done it! Our noble ancestors are being freed from the ice and they fight by our side as brothers! Oh, to see the Legion again! I never thought it possible. No one can stop us now.'\n\nHis voice softens to a hoarse growl. 'They say that the personal bodyguard of Eldamar has been found and fights for us,' he whispers. 'I can now die in honor, knowing that our enemies will soon be destroyed.'\n\nThe fighter smiles and dies.",
+      "images": []
+    },
+    {
+      "n": 3,
+      "title": "Sir Deric's Story",
+      "text": "'The Black Circle laid an ambush for our party. Nearly everyone was captured or killed. I was unconscious and left for dead. Since that time I have sought to free my companions. At least two lie ahead and I shall seek them out. In this stolen Black Circle garb I may succeed. With your help I certainly will. As honorable men, will you join me on my quest?'",
+      "images": []
+    },
+    {
+      "n": 4,
+      "title": "Black Circle Mage at Top of Mine",
+      "text": "'We have just driven the foul beasts from the mine entrance. We will not inform the town until the mine is fully cleared. We do not wish to raise false hopes.'",
+      "images": []
+    },
+    {
+      "n": 5,
+      "title": "Mayor Talking of the Black Circle",
+      "text": "'We've had a number of dealings with the magic brotherhood known as the Black Circle. They have aided us in the past in return for gems. It was based on their divination that we extended our lower tunnels — and uncovered the monsters. Marcus is the only member that lives in town, but he keeps to himself. The Black Circle say that they are studying ways to stop the monsters and will act only when sure of success.'",
+      "images": []
+    },
+    {
+      "n": 6,
+      "text": "'One of the miners saw red robed figures outside the east wall.'",
+      "images": []
+    },
+    {
+      "n": 7,
+      "title": "Old Man's Tale of the Scroll",
+      "text": "'My uncle adventured along the shores of the Moonsea. He was a warrior who ventured on many a great quest. He feared nothing — nothing that is except dragons. Though he never met one, he was terrified by the possibility. This scroll was his insurance. When he died — from a knife wound gotten in a bawdy house — he passed it on to me. Seeing as how I'm unlikely to survive a dragon with this scroll I thought you might like it.'",
+      "images": []
+    },
+    {
+      "n": 8,
+      "text": "'I didn't drink that much. I'm sure that mouse in the corner was glowing.'",
+      "images": []
+    },
+    {
+      "n": 9,
+      "title": "Old Man's Tale of the Black Circle",
+      "text": "'Them Black Circlers are a hostile bunch, but don't judge 'em too hard. They was once mages serving the two brothers who ruled the old town. They used the Well's teleporters too many times and was cursed by the Well. If yah use them too often, yah will join the Circle. It serves the dark nature of the Well and they hate all others.'",
+      "images": []
+    },
+    {
+      "n": 10,
+      "title": "A Dying Man's Last Words",
+      "text": "'Don't go near that temple in the mines! There is an illusion of goodness there, but don't be fooled. It is ruled by some unknown demon. One of its minions referred to it as the Flaming One. I never saw it. I was ambushed as soon as I encamped near the altar. Now that I have passed on my warning I can die in peace.'\n\nThe man ceases to breathe.",
+      "images": []
+    },
+    {
+      "n": 11,
+      "title": "Exultant Banite Priest",
+      "text": "'The Beholder Corps has returned and is housed in the dungeons. Now nothing can harm the Dreadlord. Anyone who tries to penetrate the dungeons will be vaporized within seconds. Hah, hah, hah! The world will soon belong to us.'",
+      "images": []
+    },
+    {
+      "n": 12,
+      "title": "Old Man's Tale of the Temple",
+      "text": "'Twas long ago that the old town was a thrivin' place. The mine was there then too. Folks was ruled by a fellow who worshipped Tyr. He thought the miners was deservin' of Tyr's protection. Some of the folks round here say that the temple can still be found. Only those of stout heart should try though. Things buried so long tend to harbor ghosts that don't like disturbin'.'",
+      "images": []
+    },
+    {
+      "n": 13,
+      "title": "Blind Mage's Story",
+      "text": "'I led a band of heroes to clear the mines. We discovered the dungeons and were nearly to the top when the Black Circle sprung their ambush. I was a local who never trusted the Circle's claims of friendship, so they were glad to capture me. Not content to simply kill me, they prepared an elaborate wish. It traps me in this cell, blind and unable to cast spells. It also had the side effect of rendering me immortal and immune to damage. Once you free me I shall regain my own powers, but also lose these benefits. This is a fair exchange.\n\n'I return to my tower now, but let me give you some reward. First, seek the souls trapped in the highest level. They know important information. Second, take this map to where I have hidden some treasures.'",
+      "images": []
+    },
+    {
+      "n": 14,
+      "title": "The Captain's Tale",
+      "text": "'We were about to enter the Well. The rope was slippery with the slimy blood of the dragon but nothing could stop us from our goal. The gems glittered on the bottom, luring us with untold wealth. Gramkal was the first to go, of course. The thief was almost bursting with excitement as he reached down to take the gems. Poor man, his shriveled hand will never pick another pocket.'",
+      "images": []
+    },
+    {
+      "n": 15,
+      "title": "Meeting the Frost Giant King",
+      "text": "'So, not content with melting away our home you carry the war directly to us. We have held these crevasses for generations. We will not surrender them to the likes of you. Look to your lives! I am prepared to die. Are you?'",
+      "images": []
+    },
+    {
+      "n": 16,
+      "title": "Black Circle Commander's Paper",
+      "text": "We are prepared. The inner sanctum is well concealed, surrounded by the hatchling pool. We hope that the old Red Dragon will not miss the hatchlings; they provide an excellent defense. Soon we must find a way to age them to a more useful size.\n\nUse the map to plan an attack on Well. We expect regular progress reports.\n\nIf you fail, we will act on a suggestion made by a junior member. He believes that the dragon may be amenable to a human sacrifice. The clerk from Phlan has become expendable and will be the first victim. One way or another the dragon and its Banite allies will fall; the Well must be ours.",
+      "images": []
+    },
+    {
+      "n": 17,
+      "title": "Old Man's Tale of the Brother Wars",
+      "text": "'The old town was said to be a fabulous place for a time. Was ruled by brothers, one honorable and forthright, the other a studious and insecure mage. One day the mage decided he would live forever. The brother thought that was blasphemy and tried to stop him. War covered the valley and the town was laid waste. The gods cursed the valley and froze it over. These new monsters are just more of the valley's curse. We can only wait and suffer 'till the gods see fit to lift the curse.'",
+      "images": []
+    },
+    {
+      "n": 18,
+      "title": "Story of the Silver Blades",
+      "text": "Derf reclines in a chair and begins,\n\n'Three hundred years ago there were two brothers: Oswulf, a paladin, and Eldamar, a mage. Both were powerful and worshiped Tyr, god of justice. As Eldamar grew old he became obsessed with gaining immortality; serving Tyr was no longer enough. He became insane and isolated himself in the upper levels of the Castle of the Twins. There he researched the arcane magic necessary to become a lich. Oswulf discovered this, but was unable to convince his brother to abandon his madness.\n\n'Forseeing the evil that a lich would produce, Oswulf left the Castle and searched for 12 great heroes. These he forged into the band he called the Silver Blades. By the time Oswulf could return to this valley, Eldamar had completed his spells and was reborn as the lich called the Dreadlord. The Dreadlord summoned evil forces to protect him. The Silver Blades faced a pitched battle among the buildings of Verdigris. The town was laid waste and many of the heroes fell. Those of us who remained forced the evil horde back to the castle gates.\n\n'Oswulf refused to push on and slay his brother. Instead our mages and clerics cast a spell to freeze the valley permanently within a glacier. The Dreadlord's forces counterattacked while the spell was being cast and Oswulf fell protecting us. His body lies on the level above, but his spirit still guards the castle, preventing the reawakening of the Dreadlord. As the last of the Silver Blades, I chose to remain here to maintain my temple and keep watch as well.\n\n'Now the descendants of the Dreadlord's disciples have returned. The Black Circle is succeeding in unravelling our spell. I am now bound to this temple and cannot take the battle to them. You must take up the Silver Blades' standard and end the Dreadlord's threat forever.'",
+      "images": []
+    },
+    {
+      "n": 19,
+      "title": "The Amulet of Eldamar.",
+      "text": "Know now of the Amulet of Eldamar, stolen long ago. It was taken by a wily thief who held it for but a day. As he dreamed of wealth, he fell victim to a red dragon, kin to the one you slew to free me. The amulet now adorns the dragon's hoard, which lies in the south-western corner of the city.\n\n'The map starts at the entrance to the new town. Follow the path.'",
+      "images": []
+    },
+    {
+      "n": 20,
+      "text": "'That old man — south of the mayor's place — can sure talk yer ear off.'",
+      "images": []
+    },
+    {
+      "n": 21,
+      "title": "Early Days of the Town.",
+      "text": "'This whole valley used to be filled with a glacier. About 15 years ago it melted back beyond the old mineshaft. Miners from throughout the Dragonspines flocked here and formed the new town. The Black Circle helped them open the mine. A few years later the miners began to extract the gems again. Until these monsters came the town was doing quite well. The glacier kept going back too. In a few years the entire valley will be open.'",
+      "images": []
+    },
+    {
+      "n": 22,
+      "title": "Dying Cleric of Bane.",
+      "text": "'The Black Circle is trying to take our Well! They seek the death of the red dragon who holds it in sacred trust. I was ambushed while trying to entice the young dragons from the Well. They dragged me here to ... to...'\n\nThe Banite Cleric fades into death.",
+      "images": []
+    },
+    {
+      "n": 23,
+      "title": "Talk of Mystical Items.",
+      "text": "'The mages keep looking for a mysterious amulet. It is connected in some way to their whole purpose for being here. They say it will reveal some key to a mysterious sanctum. Perhaps they are after a great treasure.'",
+      "images": []
+    },
+    {
+      "n": 24,
+      "title": "The Guard of Grimdra Hoard",
+      "text": "'Grimdra discovered where the Well stored its gems — for they are not consumed. He dug a small tunnel and has diverted them for centuries. I am certain that the gems are what sustain him. He has never sold a single one and he was old when the twins were born.'",
+      "images": []
+    },
+    {
+      "n": 25,
+      "title": "Message From the Well.",
+      "text": "'The miners' plight masks a more serious threat. Should the Black Circle succeed in its plans, the entire Realms will feel the result. The mages seek the awakening of the Dreadlord, an evil of incalculable power. He sleeps within his castle, trapped within the glacier. The Circle has reached the dungeons and are melting their way upward. The monsters trapped in the dungeons are being released and allowed to harry the miners.\n\n'My powers are subject to laws you cannot understand. I am privy to information only at certain times and only when you sacrifice gems. Still, seek me out when you have questions. My powers are at your disposal.\n\n'My teleporters are paired. Each teleporter that rings me has a brother somewhere in the valley. Until you visit both gates, you may not use that pair. To my northwest is the gate which connects to the new town.\n\n'My power fades. Return to me with gems when you have more questions.'",
+      "images": []
+    },
+    {
+      "n": 26,
+      "title": "Warning About the Amulet.",
+      "text": "'The Dreadlord seeks the Amulet of Eldamar. If he can trick someone into bringing the amulet into the dungeons beneath the castle, he will be awakened. Even worse, it acts as a monster attractant. Evil creatures throughout the region will seek out the holder. Remember to always avoid this item.'",
+      "images": []
+    },
+    {
+      "n": 27,
+      "title": "Rescued Maiden's Story.",
+      "text": "'The mages took me to be sacrificed to the red dragon. They wanted access to the teleportation booths and the hoard of gems. My father is an unwitting servant of the Black Circle. When he became suspicious, they kidnapped me to keep him silent. Now I'm sure they must have killed him. I must leave!'\n\nShe runs away sobbing with grief.",
+      "images": []
+    },
+    {
+      "n": 28,
+      "title": "Old Man's Tale of the Vorpal Blade",
+      "text": "'This here blade has been carried down from my great-great grandpappy. He almost captured a throne out near Waterdeep, but tired of the campaigning. Travelled up to Myth Drannor and stood with elves against a Flight of the Dragons. They were impressed enough to let him retire there. Married an elven princess and led a settled life. Far as I know, she left with the other elves and is still alive.'",
+      "images": []
+    },
+    {
+      "n": 29,
+      "title": "Vala's Description of the Old Castle",
+      "text": "'I was here as a young child. Oswulf used to hold town meetings in the great hall. The hall was huge — much larger than this — and I don't recall any alcoves. These alcoves along the side were definitely put there by the Dreadlord. I suspect that he has radically changed the entire castle. Oswulf had said that his brother had become paranoid and turned the castle into a maze of traps. We must watch where we place our feet; any stone could conceal a pit or dart.'",
+      "images": []
+    },
+    {
+      "n": 30,
+      "text": "'So many gems down in that mine and no way to get at them. Life ain't fair.'",
+      "images": []
+    },
+    {
+      "n": 31,
+      "title": "Banite Patrol's Story",
+      "text": "'The Black Circle usurped our control of the Well of Knowledge. Bane was offended and sent a red dragon in vengeance. The dragon drove out the infidels and now holds the Well in trust. There he shall remain until Bane deems it time for our return. Death to the Black Circle! Death to the enemies of Bane!'",
+      "images": []
+    },
+    {
+      "n": 32,
+      "title": "Map of the 4th Level",
+      "text": "A map in the printed journal (its key marks walls, doors and other features).",
+      "images": []
+    },
+    {
+      "n": 33,
+      "title": "Prisoner's Tale",
+      "text": "'I am one of the champions who sought to free the town from its monstrous scourge. We penetrated the mines and passed through the excavated tunnel to these dungeons. We were led by a powerful mage who was able to answer the riddles posed by that mad spirit. Near the top of the dungeon we were ambushed by the Black Circle. Many died and none escaped. Our leader was taken away for some black rites. That spirit hates the living. Its laughter is driving me mad! I must escape to the open air!'",
+      "images": []
+    },
+    {
+      "n": 34,
+      "title": "Old Man's Tale of the Flaming One",
+      "text": "'The Flaming One is an accursed demon, destined to live as long as man walks the earth. He can possess anything of flesh. Last time he was defeated was in Myth Drannor and rumor held that he had died. If yah listen to travellers, yah can trace his movements. He is trapped in some diminutive form and seeks the power to release himself. I think he's skulking the ruins, seeking the power of the Dreadlord.'",
+      "images": []
+    },
+    {
+      "n": 35,
+      "title": "Map to Level 8 Toom",
+      "text": "A map in the printed journal: a shaft and a passage to a marked spot (its key marks walls and the spot).",
+      "images": []
+    },
+    {
+      "n": 36,
+      "title": "Map Purchased from the Storm Giants",
+      "text": "A map in the printed journal (its key marks walls and doors).",
+      "images": []
+    },
+    {
+      "n": 37,
+      "title": "Mayor's Introduction",
+      "text": "'We are a small town of miners in desperate straits. Three months ago we opened a new shaft and monsters boiled forth. Perhaps this is a gateway to the Abyss. In any case, we lost many comrades as the monsters have climbed up level after level of the mine. Now they are invading the nearby ruins. Soon they will reach New Verdigris.\n\n'To add to our problems, something has captured the Well of Knowledge. The Well imparts information, occasionally grants wishes and controls the teleporter in my house. If you free the Well, then you can use the teleporter to move through the ruins.\n\n'Once the Well is protected, you must descend into the mines and stop these horrors from emerging. Others have tried, but none have returned. You must save us before we are overwhelmed.'",
+      "images": []
+    },
+    {
+      "n": 38,
+      "title": "Map to Black Circle HQ",
+      "text": "A map in the printed journal: from the mine entrance to the Black Circle headquarters (its key marks walls, doors and archways).",
+      "images": []
+    },
+    {
+      "n": 39,
+      "title": "Old Man's Tale of the Cloak",
+      "text": "'My grandpappy was a paladin out near Cormyr, in the days before King Azoun. Family's come down a bit since then, but make no nevermind. He was beloved of a noble lady. She was a warrior maiden, namesake of Azoun's daughter Nacacia. Anyway, she kept trying to attract him, tie him down and so on. In turn, he would go on longer and more dangerous quests.\n\n'Nacacia took this in stride and eventually gave him this cloak as a present, saying that this way he could be around and elsewhere at the same time. My dad was their child and passed the cloak down to me. I think that it's too useful just to keep as an heirloom — and none of my kids deserve it — so put it to good use.'",
+      "images": []
+    },
+    {
+      "n": 40,
+      "title": "Ledger from New Verdigris Mining",
+      "text": "2nd Tenday of Highsun New Verdigris Mining\n\n1) 250\n2) 300\n3) 75 (Hill Giant Attack)\n4) 350\n5) 50 (Medusa Attack)\n6) 100 (Wyvern Attack)\n7,8,9,10) General Strike—no work.\n\n'Where are all these monsters coming from! We can't get any work done!'",
+      "images": []
+    },
+    {
+      "n": 41,
+      "title": "Map to the First Key",
+      "text": "A map in the printed journal: from level 8 to the stairs to level 6 (its key marks walls, doors, stairs and the key).",
+      "images": []
+    },
+    {
+      "n": 42,
+      "title": "The Medusa's Tale.",
+      "text": "'I don't care! We have been cheated of our rightful place in the Dreadlord's hierarchy. The Black Circle must pay! They may have freed our master, but he is still weak and does not realize their plans! I shall go and tell him!'",
+      "images": []
+    },
+    {
+      "n": 43,
+      "title": "Letter from Marcus to the Black Circle",
+      "text": "The new band the mayor has recruited seems superior to the last group. The townsmen managed to reach the Well prior to the red dragon. They WISHED for champions to protect them. Fortunately for us, the wish worked literally and brought only the people. The mayor has to clothe, feed and equip them. It was quite a sight to see these naked and angry people waking up right in the middle of a town meeting. I don't think they will pose a threat.",
+      "images": []
+    },
+    {
+      "n": 44,
+      "title": "Phlan Clerk's Tale",
+      "text": "'Well, I had just made my escape and was preparing to return to Phlan when I was grabbed by those vile Black Circle scum! Do they never bathe! The council back at Phlan will hear about this!\n\n'Anyway, where was I? Oh yes, mauled by filthy beasts. They started babbling about sacrifices and a Dreadlord. Dreadlord this and Dreadlord that; all they talk about is this Dreadlord. If he's so powerful, why does he let these disgusting people serve him?'\n\nShe gets a sly look in her eyes.\n\n'They dragged me here and I feigned unconsciousness — I wasn't going to make it easy for them. The scum started whispering about great treasures hidden in the crevasses. The western tunnels and a vorpal something were mentioned. Strange name for a valuable object. You wouldn't have a spare dress around? Look at mine. Dragged through mud and ice, absolutely filthy. And my hair . . .'\n\nShe starts complaining about trivial matters.",
+      "images": []
+    },
+    {
+      "n": 45,
+      "title": "Map Between Black Circle HQ and Well",
+      "text": "A map in the printed journal: from the Black Circle to the Well (its key marks walls, doors, archways and impassable areas).",
+      "images": []
+    },
+    {
+      "n": 46,
+      "title": "Letter from Mulmaster",
+      "text": "Know, oh ancient Dreadlord, that we remember our pledges — even those made over 300 years ago. As was promised, the newly reformed Beholder Corps will be sent to serve you for a period of 1313 days. We are gladdened that you have reawakened and hope that the alliance will continue in the same spirit that founded it centuries ago.\n\nIn Bane's Name,\n\nImperator Dhazheal",
+      "images": []
+    },
+    {
+      "n": 47,
+      "title": "Mayor Relates Yulash Experiences",
+      "text": "'Not long ago I served Hillsfar as a Red Plume. I was faithful and they made me commander of the city of Yulash. We were locked in a fierce war to protect that city from the forces of Zhentil Keep. The war tired me and I began to yearn for peace. What finally decided me was the Cult of Moander. It used my city as a base to restore its dead god to life. Were it not for a band of blue tattooed adventurers the Cult might have succeeded.\n\n'I left as the Zhentrim attacked again and wandered north. Here I found my leadership skills in need, so became mayor of this peaceful backwater. Now that peace is threatened. I hope you have the power to protect us.'",
+      "images": []
+    },
+    {
+      "n": 48,
+      "title": "The Glowing Mouse's Speech",
+      "text": "'You thought that you had defeated me in Myth Drannor and before that in my castle in Phlan. Know now that I am truly immortal. When the Gauntlet of Moander destroyed the Pool of Radiance, I feigned my death and managed to possess this creature. Now that you are here I can take one of you over and be free again.'",
+      "images": []
+    },
+    {
+      "n": 49,
+      "title": "Map of the Black Circle's Inner Sanctum",
+      "text": "A map in the printed journal (its key marks walls, doors, archways, impassable areas and a secret door).",
+      "images": []
+    },
+    {
+      "n": 50,
+      "title": "Derf Meeting Vala",
+      "text": "Vala chortles, \"Derf, you fuzzy old man, you look even cuter with white hair.\" She pinches his cheek and gives him a big hug.\n\nWhen she releases him, his cheeks are bright red and he sputters, \"Now, stop that!\" He straightens out his robe and continues, \"How can you be alive? You were lost in the great battle.\"\n\nShe smiles and explains, \"I was captured by the Dread Legion and encased in a mystical cage until these adventurers released me.\"\n\nHe responds, \"Thank Tyr!\" He looks her in the eyes with a soft expression and says, \"The Legion has returned and is unravelling our spells. The Dreadlord's threat must be ended forever.\"\n\nShe responds, \"I still remember my vows and I will do what is necessary.\" With that, she falls back into rank and the old dwarf recovers some of his dignity.",
+      "images": []
+    },
+    {
+      "n": 51,
+      "title": "Old Man's Tale of the Government House",
+      "text": "'Once heard tell about the impressiveness of the old town.\n\nThere was a great castle at the head of the valley. Then south of the mine was the old Government House. It was a large place, richly decorated, where affairs of state were conducted. Was built stoutly, so should be still standin'. Good loot no doubt, if you can stand the ghosts of clerks and bean counters.'",
+      "images": []
+    },
+    {
+      "n": 52,
+      "title": "Map to Blind Man's Treasure",
+      "text": "A map in the printed journal (its key marks walls, doors, archways and the treasure).",
+      "images": []
+    },
+    {
+      "n": 53,
+      "title": "The Black Circle's Plan",
+      "text": "The path to the Castle of the Twins was revealed when Oswulf's Confession was rediscovered. Oswulf gave his final confession to his cleric just before the ice encased the valley. The Dread Legion of Magic persuaded the cleric to reveal the Confession. Their leaders expanded and annotated the document. Their hopes of a quick penetration of the glacier were dashed when the Legion was nearly destroyed at Ashabenford. The Confession has been lost since that time.\n\nWe of the Black Circle are the descendants of the Legion. Now that we have the Confession again our plans can proceed. We have broken the glacier and it recedes slowly. The Silver Blades are gone, so no one can stop us from releasing the Dreadlord. It is only a matter of time.\n\nStill, we chafe at unnecessary delay. We have tricked the miners into opening the way into the dungeons. We are now recruiting fire-using creatures to melt a way upward. The monsters we release serve to keep away intruders.\n\nThe solving of the Dreadlord's dungeon riddles has cost us many lesser mages. Illusions have sent many scouts to unwitting deaths. We are proceeding, but would do better with control of the Well of Knowledge. Its wisdom and control of the teleportation gates would aid us greatly. We also seek the Amulet of Eldamar to pass the three great doors to the Sanctum\n\nDivinations show that a third item will be required to reach the Dreadlord. The signs indicate Tyr is involved with the item, but nothing is clear. The temple in the mine seems to hold nothing of value.",
+      "images": []
+    },
+    {
+      "n": 54,
+      "title": "Old Man's Tale of the Well of Knowledge",
+      "text": "'The Well of Knowledge was the heart of the old town. It controlled the gateways that allowed travel throughout the valley. Also, it served the old town by providing its enigmatic messages. The town used it but they did not build it. It was there when the first men entered the valley and it is said that it will remain when all else is gone.'",
+      "images": []
+    },
+    {
+      "n": 55,
+      "title": "Clerk's Story",
+      "text": "'I served the city of Phlan in the capacity of head clerk. During the reconquest of the city, I contracted out missions to the many heroes who freed the city. I had contacts with the Black Circle because of their access to the gems of Verdigris. We went through many gems in the early days of the city, as they were awarded to the heroes for successful completion of their missions.\n\n'After Phlan was freed, the council agreed to act as middlemen for the Circle. In return for our help they continued to replenish the city's treasury. I was sent here as a contact while the council works out the alliance between the Black Circle and the Red Wizards.\n\n'I have been here long enough to know that these mages are very dangerous. This scroll is a map of the Circle's inner sanctum. Take it! I'm getting out before the Circle succeeds in its plans. Good day!'\n\nThe woman storms out of the room with haughty dignity. She slams the door and her brisk steps recede down the hallway.",
+      "images": []
+    },
+    {
+      "n": 56,
+      "title": "Meeting with Oswulf",
+      "text": "'My hopes of keeping my brother from the world are crumbling with this ice. If the Dreadlord's evil cannot be contained then it must be destroyed. I am reassured that it is the Silver Blades who come to finish what we started centuries ago. Please remember that it is the lich and not my misguided brother's soul that is evil. Upon your honor I charge you with freeing his soul from the lich's taint. I shall hold the gate here, but the Dreadlord may escape through another exit. You must succeed ...'\n\nA tear appears in the giant spirit's eye, 'You must succeed ...",
+      "images": []
+    },
+    {
+      "n": 57,
+      "title": "Letter Found Blowing in the Wind",
+      "text": "Marcus, our plans proceed as well as can be expected. It is unfortunate that the Red Dragon has taken the Well of Knowledge. The Red Wizards may support us if they think we are after the Well. We will keep our real target to ourselves. We are using a contact in Phlan as a middleman. In turn, he has sent a clerk to take care of communications. She has no knowledge of our real intent.\n\nWe are running out of some spell components, especially bat guano and sulphur. When is the next shipment due? Maintain contact by standard means.\n\nOne final note. Rumor indicates that the mayor has brought together a new force to clear the mines and the Well. We are concerned. Reply with the information as soon as possible.",
+      "images": []
+    },
+    {
+      "n": 58,
+      "title": "A Prisoner's Speech",
+      "text": "'The driders have returned to this area only recently. They have been unable to enter this valley because of the ice blocking their tunnels. Suddenly the tunnels melted clear and many new monsters began to appear. The driders remember these creatures from over 300 years ago, when the valley was torn by a battle between two brothers. One of the brothers was responsible for the ice, but the driders have no idea how.'",
+      "images": []
+    },
+    {
+      "n": 59,
+      "title": "Tale of the Wounded Warrior",
+      "text": "'If it weren't so terrifying it would have been comical. We were deep in the mines when our party came to the cavern. A horrid mass of unspeakable monsters were there listening to a high pitched, squeaky voice. It took us a while to spot the source of that piping. Valgur laughed when he saw it. That was our downfall. The monsters heard and attacked. As I crawled from the fray badly wounded, I saw the creature in the back of the horde. It was only a glowing mouse!'",
+      "images": []
+    },
+    {
+      "n": 60,
+      "title": "Message Found by Pouch",
+      "text": "'I'm sorry but I needed to escape. This pouch is for you. Seems like old times.'",
+      "images": []
+    },
+    {
+      "n": 61,
+      "title": "Mayor Reveals His True Mission",
+      "text": "'Now that you have discovered the way to reach the Dreadlord, your usefulness is at an end. I still serve Hillsfar and my mission has been to recruit the Dreadlord. With his power Hillsfar can take control of the Dalelands and the Moonsea. I will become governor of the northern provinces and be wealthy beyond imagining.'",
+      "images": []
+    },
+    {
+      "n": 62,
+      "title": "Mage's Report",
+      "text": "Our flaming creatures are clearing the ice quite quickly now. The dungeon is open to just below the castle, where ice is much more resistant. Thankfully we have discovered a second door upward. This leads along a winding tunnel into a glacial crevasse. This was undoubtedly an old escape tunnel hidden by the Dreadlord.\n\nWe have seen no sign of adventurers, but disturbances have been reported in the lower levels. As a precaution, we have thawed out the purple worms. This will slow us down, but will provide needed defense.",
+      "images": []
+    },
+    {
+      "n": 63,
+      "title": "Vala's Story",
+      "text": "The amazonian woman collapses as she steps down from the shattered prison. As you rush to help, her eyes flutter open and she moans, 'Who are you? Where am I?'\n\nAfter you explain what you know and she has revived, she growls, 'The Legion will pay. They have left me imprisoned for 300 years, since the great battles. They captured me and imprisoned me in that shimmering cage.\n\n'So the war over the Dreadlord continues to this day. My vows compel me to continue this battle. I am Vala of the Silver Blades and will aid you in this war.'",
+      "images": []
+    },
+    {
+      "n": 64,
+      "title": "Mad Dwarf's Ramblings",
+      "text": "'Build 'em an arm today, a couple of chests tomorrow. Maybe slam out a few spare eyes. Wizards are queer birds — all skin and bones and glowin' eyes. Always distractin' yah, cacklin' and gigglin'. Iron statues, always more bits and pieces. They do strange things to 'em next door. Never can be sure with wizards. Next thing yah know the statues will be walkin'. Never be too sure...'",
+      "images": []
+    },
+    {
+      "n": 65,
+      "title": "Letter in Temple",
+      "text": "We go into battle today to stop the Dreadlord. I am fearful, but Oswulf is confident. When he speaks I find my courage returns. I hope everyone at home is happy. With any luck I will be home soon.\n\nYour loving son,\n\nJhaele",
+      "images": []
+    },
+    {
+      "n": 66,
+      "title": "Map Retrieved From Storm Giant Leader's Pouch",
+      "text": "A map in the printed journal (its key marks walls, doors, stairs up, illusionary walls and impassable areas).",
+      "images": []
+    },
+    {
+      "n": 67,
+      "title": "Mad Cleric's Ramblings",
+      "text": "'Questioned the high lord Bane once, you know. Didn't think that the Dreadlord was worthy of his attentions. Questioned that, I did. You know that questions are a burden! Very burdensome for a god. Then came the Silver Blades and I questioned again. Then came the ice and I called out to Bane. In his wisdom he kept my mind from freezing. Let me think about my questions for 300 years, with only ice as far as the eye could see. Can't see very far through ice either. Unmoving for 300 years gives a man pause. Finally I discovered the answer and I sacrificed my mind. Sacrifice is a balm to the gods. Gods inspire the mad. Madness flows from...'",
+      "images": []
+    },
+    {
+      "n": 68,
+      "title": "Map of the 8th Level of the Dungeon",
+      "text": "A map in the printed journal (its key marks walls, doors, jail doors, secret doors, stairs up, stairs down and a transporter).",
+      "images": []
+    },
+    {
+      "n": 69,
+      "title": "Clerk's Letter",
+      "text": "My dear Sasha,\n\nI'm sorry to hear that you have concerns about the Black Circle. However, their continued good will is essential. Their control of the Verdigris Mine gives us the gems we need at a reasonable price. As long as these shipments continue, we will not investigate them too closely.\n\nYou may tell them that my negotiations with the Red Wizards proceed very well. Some may be on their way even now. Should this turn out as well as I hope, you can count on a position as my personal scribe.\n\nWith my strongest felicitations,\n\nGragnak Ulfrim\n\nCouncilor of New Phlan",
+      "images": []
+    },
+    {
+      "n": 70,
+      "title": "Prisoner's Tale.",
+      "text": "'The Black Circle has collected us as payment to the driders. In return the driders will help them with some mysterious rite. One stronger prisoner was taken from among us. I believe he is to be a sacrifice. You must seek him out and save him as well.'",
+      "images": []
+    },
+    {
+      "n": 71,
+      "title": "Significance of the Amulet.",
+      "text": "'The Amulet of Eldamar will reveal three keys hidden within the dungeon. The keys open the three doors guarding the Dreadlord's Sanctum. Watch for a ghostly radiance that will indicate the presence of a key.'",
+      "images": []
+    },
+    {
+      "n": 72,
+      "title": "Map to Grimdra's Hoard.",
+      "text": "A map in the printed journal: from the Well to a marked spot (its key marks walls, doors and the spot).",
+      "images": []
+    }
+  ],
+  "tales": [],
+  "background": [
+    {
+      "title": "How the Heroes Arrive",
+      "text": "The miners haul the chests of gems to the edge of the well. The iron-banded boxes teeter a moment on the brink then tumble over and break the glassy surface with a splash. The mayor steps forward, clad in worn armor, and raises his hands skyward, beseeching, \"Great Well of Knowledge, I call upon you to bring us champions to defeat the evil that infests our mine.\"\n\nThe sky grows dark and the ground rumbles. The air is electric with eldrich power. With a crackle of light appear several figures, laying dazed and naked upon the ground. One of the miners moves cautiously to the nearest, and shakes him, eliciting only an incoherent groan. He looks up at the mayor and asks, \"You sure these folks are worth our entire treasury? They don't seem too impressive to me. Maybe you should have asked for armor and swords and stuff too?\"\n\nThe mayor frowns in concentration. \"The ways of the well are mysterious... it has always been reliable, but not predictable. Our wish has summoned these heroes bereft of equipment or sense. We must take them back to town and give them whatever help we can. Only then can we hope for their aid.\"\n\nThe dazed bodies are loaded into carts and they begin weaving their way through a maze of collapsed buildings. Suddenly streaks of fire light the overcast sky and shoot toward the well. Straggling miners rush up to the carts yelling incoherently. \"Flames from the sky... creatures attacked and encircled the well... teleporters shut down... Fritz is dead!\"\n\nThe carts bounce on more quickly, until they pass through a gateway and pull up at a large house. The miners lift the still limp adventurers and take them inside. The mayor steps forward and states, \"Now we wait. They must recover from the shock. We must trust that the well has provided what we need.\""
+    },
+    {
+      "title": "Creatures of the Forgotten Realms",
+      "text": "The denizens of these regions are many and varied. Here is a list of monsters you may encounter in your adventures. Some of these creatures are extremely rare, and you may never cross paths with them at all.\n\nBasilisk: Reptilian monsters whose very gaze can turn to stone any fleshy creature.\n\nCockatrice: A repulsive creature that appears as part cock, part lizard. They have the power to turn flesh to stone.\n\nCrocodile (Giant): Large reptilian carnivores—much more dangerous than their smaller cousins.\n\nDisplacer Beast: Creature resembling a six-legged puma with two ebony tentacles growing from behind its shoulders. These beasts have the magical ability to displace their image about three feet from their actual body, making them an especially tricky opponent.\n\nDragons: These are some of the most powerful and dangerous of the monsters a party can encounter. The older and larger the dragon, the more damage it can do and the harder it is to kill.\n\nRed Dragon: Red dragons can exhale great spouts of flame or attack with their claws and fangs.\n\nWhite Dragon: Unique among dragons in their preference for cold climates, these evil beasts can attack with their freezing cold breath in addition to razor sharp claws and fangs. Small in size and not as intelligent as their cousins, these dragons are still quite dangerous.\n\nDrider: Part dark-elf, part spider monster. This horror is the subterranean counterpart of the centaur.\n\nEttin: These foes look like giant two-headed orcs. They have great strength and can wield two spiked clubs that inflict terrible damage in combat.\n\nGargoyle: Ferocious predators of a magical nature. Gargoyles are typically found amid ruins or dwelling in underground caverns.\n\nGiants: Giants vary greatly in power, intelligence and tastes. The following is a list of the types of giants you are likely to encounter.\n\nCloud Giant: These members of the giant races consider themselves to be above all others of the species, except storm giants, whom they view as equals.\n\nFire Giant: Brutal and ruthless warriors, these giants resemble huge dwarves and have flaming red or orange hair and coal black skin.\n\nFrost Giant: These giants have a reputation for crudeness and stupidity. While the reputation may be deserved, frost giants are crafty and skilled fighters.\n\nHill Giant: One of the smaller of the giant races, they are brutish hulks possessing low intelligence and tremendous strength.\n\nStorm Giant: The most noble and intelligent of the giant races. These giants are dangerous fighters when angry, and can often use magic.\n\nGolem: Golems are magically created automatons of great power. Golems can be constructed of flesh, clay, stone, or iron. All are dangerous.\n\nGriffon: Half-lion, half-eagle avian carnivores. Their favorite prey is horses and their distant kin (hippogriffs, pegasi, and unicorns).\n\nHell Hound: These other-planar creatures resemble wolves, but they can breathe fire and detect invisible enemies.\n\nHippogriff: Magnificent creatures with the forelimbs and head of an eagle and the body and hind legs of a horse.\n\nHydra: Immense reptilian monsters with multiple heads. All of its heads must be severed before a hydra can be slain. Hydras come in many sizes, with an increasing number of heads as they grow stronger.\n\nLich: This is perhaps the single most powerful type of undead creature. A lich is the remains of a powerful magic user who has kept his body animated after death through the use of foul magics. Liches can use magic as they did while still living, and have other powers similar to greater undead creatures.\n\nLizard Men: These are savage reptilian humanoids. They generally attack in groups and are often accompanied by a larger, tougher Lizard King.\n\nMargoyle: Stony monsters which are immune to normal weapons and can attack many times with their sharp claws and spikes.\n\nMastodon: Large cold climate relatives of the elephants found in warmer regions.\n\nMedusa: These are hideous women-creatures with coiling masses of snakes for hair. They can turn a person to stone with their gaze.\n\nMegalo-centipede: True giants, often reaching over 5' in length. Their poisonous bite is extremely dangerous.\n\nMinotaur: These creatures are part-man and part-bull warriors. They are highly intelligent and dangerous opponents.\n\nMobat: These are huge omnivorous bats who like nothing better than warm-blooded humanoids for dinner!\n\nNeo-Otyugh: This is a more powerful form of Otyugh. These disgusting scavengers have several vicious attacks and a heavily armored body.\n\nOgre: Large, ugly, foul-tempered humanoids, ogres generally attack with a spiked club.\n\nOtyugh: These scavengers have long tentacles that they use to scoop trash into their cavernous mouths.\n\nPhase Spider: These are giant, poisonous spiders with the ability to phase in and out of this dimension. They are \"phased in\" until they attack and are \"phased out\" afterwards.\n\nPurple Worm: These enormous carnivores burrow through solid ground in search of small (man-sized) morsels.\n\nRemorhaz: These are sometimes referred to as Polar Worms. They inhabit cold regions and are aggressive predators who have been known to attack even frost giants.\n\nSlug (Giant): These are huge, omnivorous mutations of the common garden pest. They attack by biting and can spit a highly corrosive acid.\n\nSnake (Giant): These large reptiles slay their prey with deadly venom. Neutralize Poison counters snake bite.\n\nSphinx: An extremely rare creature that is part-lion, and has the upper torso of a woman. Rather than fight, sphinxes will often converse with adventurers.\n\nSpider (Giant): These giant cousins of the small predator attack with a poisonous bite.\n\nUmber Hulk: These powerful subterranean creatures can use their claws to burrow through solid stone in search of prey.\n\nWarg: Large, vicious wolves.\n\nWyvern: These creatures are distant relatives of dragons. They attack by biting and using the poisonous sting in their tail."
+    }
+  ]
+}
