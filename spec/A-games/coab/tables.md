@@ -109,7 +109,7 @@ Extra attacks (O, 508b4–508ee, again for former levels at 50a3b): fighter leve
 
 ### 3.4 Hit points (O, FUN at 3b230; called by chargen at 389fb and by training at 3be67)
 - For each class in the mask: if level < DS:3EBB[k], roll **count** dice, but count = 1 once the level is above 1. Roll that dice expression **twice and keep the higher**. PoR instead rolls count dice every level, with a minimum of 2/3 of the maximum at level 1.
-- Once the level reaches DS:3EBB[k] (C 10, F 10, P 10, R 11, MU 12, T 11): fixed fighter/paladin 3, cleric/ranger/thief 2, MU 1. **Quirk**: the fixed value *replaces* the running sum instead of adding to it.
+- Once the level reaches DS:3EBB[k] (C 10, F 10, P 10, R 11, MU 12, T 11): fixed fighter/paladin 3, cleric/ranger/thief 2, MU 1; druid (DS:3EBB[1] = 15) and monk ([7] = 19) get nothing: no dice, no fixed value, the sum kept (0x3B2ED–0x3B314, O). **Quirk**: the fixed value *replaces* the running sum instead of adding to it.
 - CON bonus DS:4281: same as PoR for 3–18. CON 19–25 read +2 (those entries alias the cleric XP level 0/1 dwords).
 
 ### 3.5 Spell slots (O, FUN at 50480)

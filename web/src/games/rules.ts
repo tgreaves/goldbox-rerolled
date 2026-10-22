@@ -112,7 +112,7 @@ export interface GameRules {
   /** how a level's hit points are rolled, per class (PoR: the class's dice every level, at least 2/3 of
    *  a die at level 1; CotAB FUN 0x3b230: the dice at level 1 and `laterDice` after, the best of `rolls`
    *  rolls, and from the stop level (T.hitDiceStop) a fixed amount that replaces the sum so far) */
-  hitPoints: { laterDice: number | null; rolls: number; firstLevelMin: [number, number] | null; fixed: number[] | null }
+  hitPoints: { laterDice: number | null; rolls: number; firstLevelMin: [number, number] | null; fixed: (number | null)[] | null }
   /** demi-human level limits: race, base class, the ability that sets the band, and the limit with
    *  that ability below 17, at 17 and at 18 or more (18/xx counts as 18) */
   levelLimits: { race: number; cls: number; by: 0 | 1; limits: [number, number, number] }[]
@@ -411,7 +411,7 @@ export const COAB_RULES: GameRules = {
   },
   extraAttacks: { 2: 6, 3: 6, 4: 7 }, // fighter > 6, paladin > 6, ranger > 7 (§3.3)
   // §3.4: fixed from the stop level: fighter and paladin 3, cleric, ranger and thief 2, magic-user 1 (druid, monk: 2, I)
-  hitPoints: { laterDice: 1, rolls: 2, firstLevelMin: null, fixed: [2, 2, 3, 3, 2, 1, 2, 2] },
+  hitPoints: { laterDice: 1, rolls: 2, firstLevelMin: null, fixed: [2, null, 3, 3, 2, 1, 2, null] }, // 0x3B2ED: druid and monk get nothing set, the sum kept
   // §3.2: PoR's, plus elf and half-elf magic-users by INT and half-elf rangers as fighters (classes 4 ranger, 5 MU)
   levelLimits: [
     { race: 1, cls: 2, by: 0, limits: [7, 8, 9] }, { race: 2, cls: 2, by: 0, limits: [5, 6, 7] },

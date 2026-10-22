@@ -1193,6 +1193,8 @@ when its table column or sentence names CotAB.
 | 0x3A275 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x3A468 | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers |  |
 | 0x3B230 | B/procedures | B/procedures: 2. Hit points | `FUN_417f_29ae` |
+| 0x3B2ED | coab/tables, B/procedures | coab/tables: 3.4 Hit points |  |
+| 0x3B314 | coab/tables | coab/tables: 3.4 Hit points |  |
 | 0x3B557 | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x3BD5D | coab/effects | coab/effects: 9. No level drain |  |
 | 0x3BD76 | coab/effects | coab/effects: 9. No level drain |  |

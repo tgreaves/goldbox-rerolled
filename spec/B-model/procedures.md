@@ -104,7 +104,7 @@ of classes with a level before training, the wound kept (maximum − current unc
 | Game | Values |
 |---|---|
 | PoR | laterDice null, rolls 1, firstLevelMin [2, 3], fixed null |
-| CotAB | laterDice 1, rolls 2, firstLevelMin null, fixed [2, 2, 3, 3, 2, 1, 2, 2] (cleric, druid **I**, fighter, paladin, ranger, magic-user, thief, monk **I**) |
+| CotAB | laterDice 1, rolls 2, firstLevelMin null, fixed [2, none, 3, 3, 2, 1, 2, none] (cleric, druid, fighter, paladin, ranger, magic-user, thief, monk; druid and monk: nothing set, the sum kept, O 0x3B2ED) |
 
 The CON bonus (`T.conHp`, with the fighter's extra points at CON 17 and 18) is part A's and the same
 in both games. CotAB's maximum HP is also worked out again by its current-stat routine when CON
@@ -828,4 +828,5 @@ null), `aiFirstSlot` (PoR 0, CotAB 1). Cure Light Wounds' patient test is the sp
 
 ## Open
 
-- CotAB's druid and monk fixed hit points (2) are **I** (no druid or monk in play).
+
+- None.

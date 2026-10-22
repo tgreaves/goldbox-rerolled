@@ -173,7 +173,7 @@ export function rollHitDice(t: Tables, dice: Dice, c: Uint8Array, classes: numbe
   let sum = 0
   for (const k of classes) {
     const L = c[F.levels + k]
-    if (hp.fixed && T.hitDiceStop.at >= 0 && L >= t.b(T.hitDiceStop.at + k)) { sum = hp.fixed[k] ?? 2; continue }
+    if (hp.fixed && T.hitDiceStop.at >= 0 && L >= t.b(T.hitDiceStop.at + k)) { const f = hp.fixed[k]; if (f !== null && f !== undefined) sum = f; continue }
     const n = L > 1 && hp.laterDice !== null ? hp.laterDice : t.b(T.hitDiceCount.at + k), sides = t.b(T.hitDiceSides.at + k)
     let r = dice.roll(n, sides)
     for (let i = 1; i < hp.rolls; i++) r = Math.max(r, dice.roll(n, sides))
