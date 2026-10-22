@@ -3,7 +3,8 @@
 // song into the timed register writes the original driver makes, counter tick by counter tick (72.826 Hz,
 // the sequencer on even ticks, §3), for the synthesiser (audio/opl2.ts) to render.
 
-import { renderWrites } from './opl2'
+import { Opl2, renderWrites } from './opl2'
+import { outputRate, playStream } from './sfx'
 
 /** One OPL2 register write at a counter tick (1/72.826 s). */
 export interface RegWrite { tick: number; reg: number; value: number }
@@ -138,4 +139,34 @@ export function songWrites(rec: Uint8Array, n = 0): RegWrite[] {
 export function renderSong(writes: RegWrite[], rate: number): Float32Array {
   const end = (writes.at(-1)?.tick ?? 0) / SONG_TICK_HZ + 2
   return renderWrites(writes.map((x) => ({ at: x.tick / SONG_TICK_HZ, reg: x.reg, value: x.value })), end, rate)
+}
+
+/** The song as audio at `rate`, a chunk of `size` samples per call (null at the end): what playSong streams. */
+export function songChunks(writes: RegWrite[], rate: number, size = rate): () => Float32Array | null {
+  const chip = new Opl2()
+  const end = Math.ceil(((writes.at(-1)?.tick ?? 0) / SONG_TICK_HZ + 2) * rate)
+  let i = 0, pos = 0
+  return () => {
+    if (pos >= end) return null
+    const len = Math.min(size, end - pos), out = new Float32Array(len)
+    let at = 0
+    for (; i < writes.length; i++) {
+      const k = Math.round((writes[i].tick / SONG_TICK_HZ) * rate) - pos
+      if (k >= len) break
+      if (k > at) { chip.generate(out, rate, at, k); at = k }
+      chip.write(writes[i].reg, writes[i].value)
+    }
+    chip.generate(out, rate, at, len)
+    pos += len
+    return out
+  }
+}
+
+/**
+ * Play song `n` of a SOUND.DAX record (the title music, spec/C-port/audio.md §7), rendered a second at a
+ * time as it plays; returns the function that stops it (as the title's end does, the driver's Stop).
+ */
+export function playSong(rec: Uint8Array, n = 0): () => void {
+  const rate = outputRate()
+  return rate ? playStream(songChunks(songWrites(rec, n), rate)) : () => {}
 }

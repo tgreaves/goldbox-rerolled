@@ -6,7 +6,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { readDax, daxRecords } from '../src/data/dax'
-import { songWrites, renderSong, SONG_TICK_HZ } from '../src/audio/song'
+import { songWrites, renderSong, songChunks, SONG_TICK_HZ } from '../src/audio/song'
 
 const dir = process.env.SOTSB ?? ''
 const have = dir !== '' && existsSync(join(dir, 'SOUND.DAX'))
@@ -20,6 +20,16 @@ describe.skipIf(!have)('SotSB title music', () => {
     const log = w.map((x) => `${x.tick} ${x.reg.toString(16).padStart(2, '0')} ${x.value.toString(16).padStart(2, '0')}`).join('\n') + '\n'
     expect(createHash('sha256').update(log).digest('hex')).toBe('eef168725e4ebac67dbd1b07db18d822ab0cc4fc5473e5642e52d44ca896a234')
     expect(6152 / SONG_TICK_HZ).toBeCloseTo(84.5, 1)
+  })
+  it('streamed in chunks, as it plays, gives the same samples as one render', () => {
+    const w = songWrites(rec()).filter((x) => x.tick < 300)
+    const whole = renderSong(w, 22050)
+    const next = songChunks(w, 22050, 4000), parts: number[] = []
+    for (let c = next(); c; c = next()) parts.push(...c)
+    expect(parts.length).toBe(whole.length)
+    let d = 0
+    for (let i = 0; i < whole.length; i++) d = Math.max(d, Math.abs(whole[i] - parts[i]))
+    expect(d).toBeLessThan(1e-6)
   })
   it('renders to audible, unclipped sound', () => {
     const pcm = renderSong(songWrites(rec()).filter((x) => x.tick < 400), 22050)

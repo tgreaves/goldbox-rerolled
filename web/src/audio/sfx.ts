@@ -84,6 +84,38 @@ export const outputRate = () => ctx?.sampleRate ?? null
  * Play rendered samples (the OPL2 music, src/audio/opl2.ts) as the effects are played: not with the
  * sound off or muted; Ctrl-S stops it. Returns a function that stops it.
  */
+/**
+ * Play a long sound made in chunks as it plays (the title music): `next()` gives the following chunk at
+ * the context's rate, or null at the end; each is scheduled to start where the last ends, keeping about
+ * `ahead` seconds rendered. Respects the device being off and Ctrl-S as playSamples does; the returned
+ * function stops it.
+ */
+export function playStream(next: () => Float32Array | null, ahead = 3): () => void {
+  if (device === 'off' || muted || !ctx) return () => {}
+  const c = ctx
+  let at = c.currentTime + 0.05, stopped = false, timer = 0
+  const srcs = new Set<AudioBufferSourceNode>()
+  const pump = () => {
+    if (stopped || muted) return
+    while (at - c.currentTime < ahead) {
+      const samples = next()
+      if (!samples) return
+      const buf = c.createBuffer(1, samples.length, c.sampleRate)
+      buf.copyToChannel(samples as Float32Array<ArrayBuffer>, 0)
+      const src = c.createBufferSource()
+      src.buffer = buf
+      src.connect(c.destination)
+      playing.add(src); srcs.add(src)
+      src.onended = () => { playing.delete(src); srcs.delete(src) }
+      src.start(at)
+      at += samples.length / c.sampleRate
+    }
+    timer = window.setTimeout(pump, 500)
+  }
+  pump()
+  return () => { stopped = true; clearTimeout(timer); for (const s of srcs) { try { s.stop() } catch { /* already ended */ } } }
+}
+
 export function playSamples(samples: Float32Array): () => void {
   if (device === 'off' || muted || !ctx) return () => {}
   const buf = ctx.createBuffer(1, samples.length, ctx.sampleRate)
