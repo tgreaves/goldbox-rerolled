@@ -67,9 +67,14 @@ sharing 0x38692) with more cures and a second pass for conditions:
      character** (DS:7D38), "regains sight" with that character's name; the count is not lowered
      (0x38C99, **Bug**: the member tested is not the one cured).
 
-   A count is spent only on a member who needs it. The second pass (0x38D11) counts the members still
-   in need (dead and not elf or half-elf, petrified, cursed, poisoned, feebleminded, else blind, else
-   0x22) for the second estimate.
+   A count is spent only on a member who needs it. The second pass (0x38D11, O) counts the members still
+   in need: dead and not an elf or half-elf, petrified, cursed (0x24), poisoned (0x37), feebleminded
+   (0x44; then neither of the next two), blind (0x21), 0x22. The second estimate (0x384BC, O) sums over
+   the Okay members the slots that cure each (Raise Dead: cleric level 5; Stone to Flesh: magic-user
+   level 6; the curse: magic-user level 4 and cleric level 3; poison: cleric 4; feeblemind: cleric 6;
+   blindness and 0x22: cleric 3) and takes Σ min(slots, need) × 75, 90, 45, 60, 90, 45, 45 minutes
+   (as hours, tens and minutes, DS:8DA2/8DA0/8D9E) for the silent rest (`10c:2f`); not interrupted, the
+   condition pass again with the counts the first left (they are not counted again).
 
 What it comes to: SotSB's Fix also cures with the clerics' memorised condition spells, without casting
 or forgetting them (I: the slots stay, as CotAB's).
@@ -104,8 +109,8 @@ alterLevel: { variable: 0x4cf4, start: 2, menu: 0x0e272 },  // with the difficul
 (`fix.conditions`, [B-model/procedures.md §12.4](../../B-model/procedures.md#124-the-camps-fix);
 rules/camp.ts `fixConditions`, Raise Dead's loss shared with the temple); Alter → Level sets
 `R.difficulty`'s variable through the game's `alterLevel` menu (ui/camp.ts; the port names the
-current level in the prompt where the original highlights it). Not done: the second estimate, rest
-and condition pass (**I**); the fighter-level test against +0xEF in Raise Dead's loss (a non-fighter
+current level in the prompt where the original highlights it); the second rest and condition pass
+(`fix.second`, `secondRest`). Not done: the fighter-level test against +0xEF in Raise Dead's loss (a non-fighter
 with a negative dual-class byte only). Tests: `test/sotsbrules.test.ts`.
 
 ## Open

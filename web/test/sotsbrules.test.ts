@@ -13,7 +13,7 @@ import { Tables, rollAbilities, thiefSkills } from '../src/rules/chargen'
 import { mayCast } from '../src/rules/magic'
 import { unexepack } from '../src/data/exepack'
 import { derive } from '../src/rules/training'
-import { fix, memorised } from '../src/rules/camp'
+import { fix, memorised, secondRest } from '../src/rules/camp'
 import { Battle, type CombatUi, type Fighter } from '../src/rules/combat'
 import { Battlefield, ROWS, COLS, type CellInfo } from '../src/rules/battlefield'
 import { Item } from '../src/data/items'
@@ -153,6 +153,21 @@ describe.skipIf(!have)('Silver Blades rules on its files', () => {
     a.x = 3
     t.r[9] = b.dirTo(a, t)
     expect(b.backstab(a, t)).toBe(false)
+  })
+
+  it("Fix's second rest (0x38D11, 0x384BC): min(slots, need) × minutes, Okay members' slots only", () => {
+    const { e } = party()
+    const [a, cleric, poisoned, elf] = e.party()
+    for (const c of e.party()) { c[F.status] = 0; for (let l = 0; l < 7; l++) { c[F.clericSlots + l] = 0; c[F.muSlots + l] = 0 } }
+    e.effectsOf(poisoned).push({ type: 0x37, duration: 0, power: 0, flag: 0 })
+    elf[F.status] = 6; elf[F.race] = 1 // a dead elf is not counted
+    cleric[F.clericSlots + 3] = 2 // two fourth-level slots: Neutralize Poison, but only one member needs it
+    a[F.clericSlots + 4] = 3; a[F.status] = 4 // not Okay: its slots do not count
+    expect(secondRest(e)).toBe(60)
+    elf[F.race] = 6 // a dead human needs Raise Dead: no Okay cleric has a fifth-level slot
+    expect(secondRest(e)).toBe(60)
+    a[F.status] = 0
+    expect(secondRest(e)).toBe(60 + 75)
   })
 
   it("Fix's condition pass: Stone to Flesh, Raise Dead (not an elf) and the counts (0x387CE)", async () => {

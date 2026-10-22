@@ -216,8 +216,8 @@ export async function restStep(e: Engine, r: RestState, camp: { heal: number }):
 /**
  * SotSB's condition pass of Fix (0x387CE, spec/A-games/sotsb/camp.md §3; R.fix.conditions): after the rest,
  * before the hit points are shared, each member in party order takes each entry while its count lasts.
- * Effects go through their removal as the original's 145:2A does (I: its callbacks). The original runs the
- * pass again after a second, shorter rest (0x38D11 → 0x384BC); the port does not (I).
+ * Effects go through their removal as the original's 145:2A does (I: its callbacks). After the hit points are
+ * shared it runs again after a second rest (R.fix.second, `secondRest`).
  */
 async function fixConditions(e: Engine, conds: number[]): Promise<string[]> {
   const out: string[] = [], host = new WorldHost(e, (m) => out.push(m))
@@ -361,5 +361,34 @@ export async function fix(e: Engine, camp: { heal: number }): Promise<{ messages
     if (need > pool) need = pool
     if (need >= 1 && heal(c, e.effectsOf(c), need & 0xff, false) && need <= pool) pool -= need
   }
+  // SotSB 0x38F17: the second rest for those still in need, then the conditions again with the counts left
+  const t2 = secondRest(e)
+  if (t2 !== null) {
+    const r2 = startRest(e, t2)
+    while (r2.minutes > 0) {
+      const res = await restStep(e, r2, camp)
+      messages.push(...res.messages)
+      if (res.interrupted) return { messages, interrupted: true }
+    }
+    if (conds.some((n) => n > 0)) messages.push(...(await fixConditions(e, conds)))
+  }
   return { messages, interrupted: false }
+}
+
+/** SotSB 0x38D11 and 0x384BC (R.fix.second): the second rest's minutes; null without a second pass. */
+export function secondRest(e: Engine): number | null {
+  const tests = R.fix.second
+  if (!tests) return null
+  const need = tests.map(() => 0), have = tests.map(() => 0)
+  const has = (c: Uint8Array, t: number) => e.effectsOf(c).some((x) => x.type === t)
+  for (const c of e.party()) {
+    for (let i = 0; i < tests.length; i++) {
+      const k = tests[i]
+      const hit = k.status !== undefined ? c[F.status] === k.status && !k.notRaces?.includes(c[F.race]) : has(c, k.effect!)
+      if (hit) { need[i]++; i += k.skip ?? 0 }
+    }
+    if (c[F.status] !== 0) continue // 0x38009: the slots of Okay members
+    tests.forEach((k, i) => { for (const [pool, lv] of k.slots) have[i] += c[(pool === 'mu' ? F.muSlots : F.clericSlots) + lv - 1] })
+  }
+  return tests.reduce((t, k, i) => (t + Math.min(have[i], need[i]) * k.minutes) & 0xffff, 0)
 }

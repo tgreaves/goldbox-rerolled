@@ -511,9 +511,13 @@ goes down when `used`. SotSB, in order: Heal (36; needs 0x44, removes 0x44, 0x21
 marks), Stone to Flesh (113; status 7), Neutralize Poison (67; needs 0x37, removes 0x37, 0x16, 0x0F),
 Raise Dead (75; status 6, not races 1 and 2, removes 0x37, fighters 2, 3, 4), Remove Curse (43, 89;
 needs 0x24), Cure Disease (39; not used up, unless marked, marks), Cure Blindness (37; needs 0x21,
-removes it from the selected character, not used up, unless marked). The original then counts the
-members still in need (0x38D11), rests again by a second estimate (0x384BC) and runs the pass once
-more; the port does not (**I**).
+removes it from the selected character, not used up, unless marked). After the sharing, `fix.second`
+(SotSB 0x38D11, 0x384BC): the members still in need are counted by its tests in order (`status` not
+of `notRaces`, or `effect`; a match skips the next `skip`), the Okay members' slots of each test's
+`slots` (pool, level) summed, and Σ min(slots, need) × `minutes` rested silently; not interrupted, the
+condition pass again with the counts left. SotSB: dead (not 2, 1) cleric 5 × 75; petrified MU 6 × 90;
+0x24 MU 4 + cleric 3 × 45; 0x37 cleric 4 × 60; 0x44 (skip 2) cleric 6 × 90; 0x21 cleric 3 × 45; 0x22
+cleric 3 × 45.
 
 ## 13. Character import
 

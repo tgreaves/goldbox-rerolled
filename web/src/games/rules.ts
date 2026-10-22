@@ -245,6 +245,14 @@ export interface GameRules {
       spells: number[]; cure: FixCure; msg: number; needs: number | null; status: number | null; removes: number[]; diseases: boolean
       used: boolean; marks: boolean; unlessMarked: boolean; on?: 'selected'; notRaces?: number[]; fighters?: number[]
     }[]
+    /**
+     * SotSB's second pass (0x38D11, 0x384BC): after the hit points are shared, the members still in need
+     * are counted by these tests in order (a `status`, not of `notRaces`, or an `effect`; a match skips the
+     * next `skip` tests); for each, the Okay members' slots of the levels in `slots` (pool, spell level)
+     * are summed, and min(slots, need) × `minutes` added up is a second silent rest; not interrupted, the
+     * condition pass again with the counts left. Absent: none.
+     */
+    second?: { status?: number; notRaces?: number[]; effect?: number; skip?: number; slots: ['cleric' | 'mu', number][]; minutes: number }[]
   }
   /** the set-status routine's event after going down (PoR FUN_3723_0058 and CotAB 0x4AAC4 fire 13; SotSB 0x508C0 none) */
   setStatusEvent: number | null
@@ -676,6 +684,16 @@ export const SOTSB_RULES: GameRules = {
       { spells: [43, 89], cure: 'removeCurse', msg: 0x38795, needs: 0x24, status: null, removes: [], diseases: false, used: true, marks: false, unlessMarked: false },
       { spells: [39], cure: 'cureDisease', msg: 0x387ac, needs: null, status: null, removes: [], diseases: true, used: false, marks: true, unlessMarked: true },
       { spells: [37], cure: 'cureBlindness', msg: 0x387c0, needs: 0x21, status: null, removes: [0x21], diseases: false, used: false, marks: false, unlessMarked: true, on: 'selected' }],
+    // 0x38D11 (the needs, in this order; feeblemind skips blindness and disease), 0x384BC (the slots and
+    // minutes: Heal and Stone to Flesh 90, Raise Dead 75, Neutralize Poison 60, the third-level cures 45)
+    second: [
+      { status: 6, notRaces: [2, 1], slots: [['cleric', 5]], minutes: 75 },
+      { status: 7, slots: [['mu', 6]], minutes: 90 },
+      { effect: 0x24, slots: [['mu', 4], ['cleric', 3]], minutes: 45 },
+      { effect: 0x37, slots: [['cleric', 4]], minutes: 60 },
+      { effect: 0x44, skip: 2, slots: [['cleric', 6]], minutes: 90 },
+      { effect: 0x21, slots: [['cleric', 3]], minutes: 45 },
+      { effect: 0x22, slots: [['cleric', 3]], minutes: 45 }],
   },
 }
 
