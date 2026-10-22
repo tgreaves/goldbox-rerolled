@@ -75,7 +75,7 @@ docker compose up -d --build                   # or with Docker (docker-compose.
 
 ## Status
 
-Open items are listed in [`spec/open-questions.md`](spec/open-questions.md) and, for the multi-game work, in [`docs/multi-game.md`](docs/multi-game.md). Nothing has been compared against the running original (DOSBox) yet.
+What is still to do is in [`TODO.md`](TODO.md); open questions about the originals are in [`spec/open-questions.md`](spec/open-questions.md), and each game's progress in [`docs/multi-game.md`](docs/multi-game.md). Parts of PoR and CotAB have been checked against the originals running in DOSBox (rest counters, the drawn 3D view; [`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
 
 ## Credits and legal
 

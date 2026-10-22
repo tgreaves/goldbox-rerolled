@@ -53,7 +53,8 @@ came first and is playable; Curse of the Azure Bonds (CotAB) is being added. The
 - Standing rule (Tristan, 2026-10-22): **always** keep the spec, `IMPROVEMENTS.md` and the README(s) up to date
   with every change, in the same commit; check all three before committing, even for a fidelity fix.
 - One commit per step of a plan, with a message saying what changed and why; push to `main`.
-- Keep the spec, `docs/multi-game.md`, the READMEs and `IMPROVEMENTS.md` in step with the code.
+- Keep the spec, `docs/multi-game.md`, the READMEs, `IMPROVEMENTS.md` and `TODO.md` in step with the code:
+  an open item goes into `TODO.md`, and leaves it in the commit that settles it.
 
 ## Testing
 
@@ -93,6 +94,7 @@ close disassemblers (REA's Ghidra sessions) after use, no unbounded background j
 - `web/src/games/`: game profiles: `fields.ts` (character record), `tables.ts` (START.EXE tables),
   `ecl.ts` (script VM map and opcode variants), `files.ts` (saves), `rules.ts` (rules values and
   procedure choices), `spellrules.ts` / `effectrules.ts` (spell and effect handler maps), `por.ts` / `coab.ts`
+- `TODO.md`: what is not yet done or not yet checked, by game
 - `docs/multi-game.md`: the multi-game design and its step-by-step status
 - `server/`: the optional accounts and sync server (Node 24, no dependencies; game-neutral: records keyed by
   the profile id, files in each game's own formats); `web/src/store/sync.ts`, `account.ts`: the browser's side;
