@@ -100,4 +100,4 @@ No Fireball or area burst graphic, no Magic Missile sprite, no sparkle on the ca
 
 ## Open
 
-- More than 5 monster types in one battle would overwrite icon slot 13 onwards (**?**, no check found).
+- ~~More than 5 monster types in one battle~~: LOAD_MONSTER gives each new type slot DS:6F83 and increments it with no check (0x1A42D; NPCs joining too, 0x21993; CLEAR_MONSTERS and the VM reset set it back to 8, 0x1AEA1, 0x20090), so a sixth type overwrites slot 13 (the arrow) and later ones 14 onwards, past 18 types beyond the 26-slot table at DS:5E5A; COMSPR fills slots 13–25 only at start-up (0x26C3D), so missiles fly as monster icons until the game is restarted (**Bug**, O; the port draws missiles from COMSPR, IMP-079).

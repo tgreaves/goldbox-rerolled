@@ -101,6 +101,7 @@ implementation's: *done*, or what remains.
 | Id | Subject | Specified in | Level | Status |
 |---|---|---|---|---|
 | IMP-033 | the battle screen | [combat-ui.md §1](combat-ui.md#1-layout)–[§3](combat-ui.md#3-what-is-drawn) | required | done |
+| IMP-079 | missile sprites not overwritten by a sixth monster type | [combat-ui.md §3](combat-ui.md#3-what-is-drawn); [engine/combat-visuals.md](../A-games/engine/combat-visuals.md) | required | done |
 | IMP-037 | pacing, waits cut short | [combat-ui.md §9](combat-ui.md#9-pacing) | required | done |
 | IMP-044 | walk planner, condition, turn strip | [combat-ui.md §5](combat-ui.md#5-input), [§7](combat-ui.md#7-information) | required | done |
 | IMP-053 | movement without MOVE | [combat-ui.md §4](combat-ui.md#4-the-command-row), [§5](combat-ui.md#5-input) | required | done |
