@@ -48,7 +48,7 @@ describe('merged image', () => {
 const TEXT_KEYS = new Set(['msg', 'msgs', 'death', 'names', 'gazes', 'reflects', 'misses', 'lost', 'resists', 'fleeMsg', 'confused',
   'berserkMsg', 'enraged', 'rays', 'gone', 'unaffected', 'immuneMsg', 'itemMsg', 'prompt', 'abort'])
 export function addressed(g: GameProfile): [string, number][] {
-  const out: [string, number][] = Object.entries(g.strings).map(([id, a]) => [`strings.${id}`, a as number])
+  const out: [string, number][] = Object.entries(g.strings).flatMap(([id, a]) => (Array.isArray(a) ? a : [a as number]).map((x, i): [string, number] => [Array.isArray(a) ? `strings.${id}[${i}]` : `strings.${id}`, x]))
   const walk = (where: string, v: unknown, text: boolean) => {
     if (typeof v === 'number') { if (text && v) out.push([where, v]) }
     else if (Array.isArray(v)) v.forEach((x, i) => walk(`${where}[${i}]`, x, text || (/options\[\d+\]\.effects\[\d+\]$/.test(where) && i === 1)))

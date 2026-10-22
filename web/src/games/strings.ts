@@ -11,7 +11,7 @@ import type { StringId, MenuId } from './stringtable'
  */
 export function msg(id: StringId): string {
   const a = game().strings[id]
-  return a === undefined ? `#${id}` : text(a)
+  return a === undefined ? `#${id}` : Array.isArray(a) ? a.map(text).join('') : text(a)
 }
 
 /** whether the current game prints message `id` at all */

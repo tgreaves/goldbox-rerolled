@@ -11,6 +11,7 @@ import { SOTSB_TABLES as m } from '../src/games/tables'
 import { parseSave, saveBlock } from '../src/data/save'
 import { unexepack } from '../src/data/exepack'
 import { Tables } from '../src/rules/chargen'
+import { GameText, mergedImage } from '../src/data/gametext'
 
 const dir = process.env.SOTSB ?? ''
 const have = dir !== '' && existsSync(dir)
@@ -113,5 +114,16 @@ describe.skipIf(!have)('Silver Blades files', () => {
     const e2 = new Engine(files, io, 1)
     e2.loadSave(back, again.party.map((st) => files.get(`${st}.SAV`)!))
     expect([e2.block, e2.area]).toEqual([2, 17]) // loaded back where it was saved
+  })
+
+  it('every message and menu the profile addresses reads as a string of the merged image', () => {
+    const t = new GameText(mergedImage(new Uint8Array(readFileSync(join(dir, 'START.EXE'))), new Uint8Array(readFileSync(join(dir, 'GAME.OVR')))))
+    const all: [string, number][] = [
+      ...Object.entries(SOTSB.strings).flatMap(([id, a]) => (Array.isArray(a) ? a : [a as number]).map((x): [string, number] => [id, x])),
+      ...Object.entries(SOTSB.menus).map(([id, a]): [string, number] => [`menu ${id}`, a as number]),
+    ]
+    for (const [id, a] of all) expect(t.read(a), `${id} at ${a.toString(16)}`).not.toBeNull()
+    expect(t.read(0x225e0)).toBe('is not blind')
+    expect([0x21c3a, 0x21c3f, 0x21c45].map((a) => t.read(a)).join('')).toBe('View Take Pool Exit')
   })
 })

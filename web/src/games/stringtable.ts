@@ -231,7 +231,8 @@ export type StringId =
   | 'nowFirstLevel'
   | 'nowFirstLevelEnd'
 
-export type Strings = Partial<Record<StringId, number>>
+/** id → the image address of the game's string, or the addresses of the pieces a routine prints one after another (SotSB) */
+export type Strings = Partial<Record<StringId, number | number[]>>
 
 export const POR_STRINGS: Strings = {
   cough: 0x42c1b, // Stinking Cloud, saved; FUN_5216_0ae7
@@ -684,7 +685,7 @@ export type MenuId =
   | 'itemReady' | 'itemUse' | 'itemTrade' | 'itemDrop' | 'itemHalve' | 'itemJoin' | 'itemSell' | 'itemId'
   | 'viewTrade' | 'viewDrop' | 'viewExit'
   | 'partyCreate' | 'partyDrop' | 'partyModify' | 'partyTrain' | 'partyChangeClass' | 'partyView' | 'partyAdd' | 'partyRemove' | 'partyLoad'
-  | 'partySave' | 'partyBegin' | 'partyExit'
+  | 'partySave' | 'partyBegin' | 'partyExit' | 'vaultView' | 'vaultTake' | 'vaultPoolExit'
   | 'modify' | 'iconMain' | 'iconHeadWeapon' | 'iconParts' | 'iconEdit' | 'iconSmall' | 'iconLarge' | 'iconHair' | 'iconFace'
 
 export type Menus = Partial<Record<MenuId, number>>
@@ -864,8 +865,12 @@ export const COAB_MENUS: Menus = {
 }
 
 // SotSB (spec/A-games/sotsb/): each CotAB message found by its text in SotSB's merged image (I: matched by text,
-// the copy each routine prints not traced; where the text occurs more than once, the first). Not found, so
-// shown as their id until traced: turnsUndead, isTurned, isDestroyed, nothingHappens, charmUnaffected, wonDuel, foundTreasure, duelistReceives, lostDuel, trainingCosts, getsBackUp, unCursed, miscasts, isCured, notBlind, notDiseased, notPoisoned, notDead, notCursed, notStoned, willOnlyCost, goldPieces, payForCure, templeNoMoney, templeCured, camp, memorizeThese, memorizeThese2, cannotMemorize, scribeThese, scribeThese2, scribingSpell, funky, noSpellEffects, alter, identifyFor, reviveMonster, reviveParty, takeWillYou
+// the copy each routine prints not traced; where the text occurs more than once, the first). Still
+// unmatched: those of procedures SotSB has not (Turn Undead: turnsUndead, isTurned, isDestroyed,
+// nothingHappens; duels: wonDuel, duelistReceives, lostDuel; miscasts) or does otherwise (the temple asks no
+// price: willOnlyCost, goldPieces, payForCure, templeCured; the camp has no prompt: camp, alter; revival:
+// getsBackUp, reviveMonster, reviveParty; unCursed is "is " + "un-cursed"; trainingCosts, cannotMemorize, funky,
+// noSpellEffects)
 export const SOTSB_STRINGS: Strings = {
   cursed: 0x442e2, // the ready routine 0x4431F (CS:0x1BD2), O
   cough: 0x514d0, nausea: 0x514e0, cloudPoisoned: 0x514fc, cloudKilled: 0x2eb8d, battleBegins: 0x2c551,
@@ -904,11 +909,22 @@ export const SOTSB_STRINGS: Strings = {
   dropHowMuch: 0x45984, dropWillYou: 0x45d16, coinCopper: 0x4f209, coinSilver: 0x4f201, coinElectrum: 0x4f1f7,
   coinGold: 0x4f1e7, coinPlatinum: 0x4f1ed, coinGems: 0x4f1e1, coinJewelry: 0x4f211, takeSelectCoin: 0x45967,
   scrollOops: 0x44ec0,
+  // traced to their routines' strings (2026-10-22): the temple's "not needed" lines (0x225E0 …), the item
+  // menu's curse, Remove Curse's cure line in DS, identification (its fee 100, CotAB's 200), Take's prompt;
+  // two built from pieces, as their routines print them: the treasure line (DS) and Memorize/Scribe + " these spells?"
+  charmUnaffected: 0x464c1, isCured: 0xdf62, notBlind: 0x225e0, notDiseased: 0x22673,
+  notPoisoned: 0x22d02, notDead: 0x22a77, notCursed: 0x22e18, notStoned: 0x22ee7, templeNoMoney: 0x25297,
+  scribingSpell: 0x36f34, identifyFor: 0x456c0, takeWillYou: 0x4f369,
+  foundTreasure: [0xe130, 0xe146], memorizeThese: [0x479a0, 0xe1e8], memorizeThese2: [0x479a0, 0xe1e8],
+  scribeThese: [0x479a9, 0xe1e8], scribeThese2: [0x479a9, 0xe1e8],
 }
 
-// the same for the menus; not found: main, battleTurn, partyBegin, modify
+// the same for the menus; main, alter (Pics now Level), partyBegin and modify traced; SotSB has no Turn
 export const SOTSB_MENUS: Menus = {
-  camp: 0xe1f7, magic: 0xe220, alter: 0xe249, alterLevel: 0xe272, orderSelect: 0xe48e, orderPlace: 0xe4b7, campFaster: 0x37d66, campSlower: 0x37d6e,
+  main: 0x35803, alter: 0xe249, alterLevel: 0xe272, partyBegin: 0xe684, modify: 0xe77d,
+  // the vault 0x21EC5: "View", " Take" when it holds money or items, " Pool Exit"
+  vaultView: 0x21c3a, vaultTake: 0x21c3f, vaultPoolExit: 0x21c45,
+  camp: 0xe1f7, magic: 0xe220, orderSelect: 0xe48e, orderPlace: 0xe4b7, campFaster: 0x37d66, campSlower: 0x37d6e,
   campSpeedExit: 0x243c0, rest: 0x46f2a, yesNo: 0x4c3c2, shopLeaveYesNo: 0x231e5, templeLeaveYesNo: 0x231e5,
   treasureLeaveYesNo: 0x231e5, listExit: 0x243c0, shop: 0x2557a, shopNoPool: 0x255a1, temple: 0x2319f,
   templeNoPool: 0x231c7, templeHeal: 0x22f9b, treasureMoney: 0x243d3, treasureItems: 0x243e8, treasureNone: 0x243b1,
