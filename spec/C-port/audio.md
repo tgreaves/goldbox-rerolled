@@ -22,7 +22,7 @@ the port's OPL2 synthesiser for it is §6.
 IMP-013. For effect *n* on the chosen device:
 
 1. Copy the driver's 64 KB segment out of the unpacked `START.EXE` image (profile `sound`: its segment,
-   and the game's offset shift, CotAB −0xBD, [B-model/profile.md](../B-model/profile.md)).
+   the game's data and code shifts and its effect tables, CotAB −0xBD, [B-model/profile.md](../B-model/profile.md) §3.4).
 2. Start effect *n* − 1 on the device's channels (PC speaker table or Tandy table) and run the driver's
    timer routine tick by tick (236.696 Hz, 5041 PIT clocks a tick), as [sound.md §3](../A-games/engine/sound.md#3-timer-engine)
    specifies, until no channel is active, the cut-off tick (§3) or 2400 ticks.

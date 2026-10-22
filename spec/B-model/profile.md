@@ -178,11 +178,13 @@ Each demo flag is read by the procedure it changes; a later game's demo is its p
 
 ### 3.4 The sound driver (`SoundDriver`)
 
-| Field | Meaning | PoR | CotAB |
-|---|---|---|---|
-| `segment` | image offset of the driver's code segment in START.EXE's load image | 0x8AE0 (segment 0x18AE) | 0x6990 (segment 0x0699) |
-| `shift` | added to every PoR driver offset (variables, tables, handlers, pointers inside tables) | 0 | −0xBD (**O**: 5 211 of 5 955 bytes equal at that shift) |
-| `transient` | whether `PlaySound` has a transient mode: outside the sections that play in full it stops the effect after `delay(10)` ([C-port/audio.md §3](../C-port/audio.md#3-the-cut-off-rule)) | true (`FUN_18ae_00dc`, `DS:5374`, **O**) | false (0x69B0 starts the effect and returns, **O**) |
+| Field | Meaning | PoR | CotAB | SotSB |
+|---|---|---|---|---|
+| `segment` | image offset of the driver's code segment in START.EXE's load image | 0x8AE0 (segment 0x18AE) | 0x6990 (segment 0x0699) | 0x7E40 (segment 0x07E4) |
+| `data` | added to PoR's offsets of the driver's variables and its channel and frequency tables (pointers inside the tables are the game's own) | 0 | −0xBD (**O**: 5 211 of 5 955 bytes equal at that shift) | −0xBF (**O**: the start routines 0xB654, 0xB6C0 and the timer routine) |
+| `code` | added to PoR's offsets of the command handlers, the targets of the driver's jump table | 0 | −0xBD | +0x20D2 (**O**: the jump table at CS:0x162) |
+| `tables` | the PC-speaker and Tandy effect tables, CS offsets: per effect four words, a channel's data or 0 | 0x55F, 0x607 | 0x4A2, 0x54A | 0x4A0 (13 effects), 0x508 |
+| `transient` | whether `PlaySound` has a transient mode: outside the sections that play in full it stops the effect after `delay(10)` ([C-port/audio.md §3](../C-port/audio.md#3-the-cut-off-rule)) | true (`FUN_18ae_00dc`, `DS:5374`, **O**) | false (0x69B0 starts the effect and returns, **O**) | false (0x7E60, as CotAB's, **O**) |
 
 The driver and its effects are part A ([engine/sound.md](../A-games/engine/sound.md),
 [coab/assets.md §8](../A-games/coab/assets.md#8-config-video-palette-sound)); the port's playback is

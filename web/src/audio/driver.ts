@@ -9,16 +9,17 @@ const PIT_HZ = 1193182
 const TICK_DIV = 0x13b1 // timer interrupt every 5041 PIT clocks: 236.7 Hz
 export const TICK_MS = (TICK_DIV * 1000) / PIT_HZ
 
-// driver variables, tables and command handlers, CS-relative in PoR's driver; a game whose driver is
-// moved adds its shift (games/sound.ts; CotAB −0xBD, spec/A-games/coab/assets.md "Sound driver")
-const OFFSETS = {
+// driver variables and channel and frequency tables (DATA), and command handlers (CODE), CS-relative in
+// PoR's driver; a game whose driver is moved adds its data and code shifts, and names its effect tables
+// (games/sound.ts; CotAB −0xBD, spec/A-games/coab/assets.md "Sound driver"; SotSB, sotsb/assets.md §6.3)
+const DATA = {
   V_BUSY: 0x1d8, V_CHLOOP: 0x1d9, V_STRUCTSZ: 0x1da, V_EFFECT: 0x1ff, V_CURCH: 0x201,
   V_CHBASE: 0x203, V_FREQTAB: 0x205, V_RETADDR: 0x207, V_CHEFFECT: 0x209, V_ENABLE: 0x20d,
   V_JUMPTAB: 0x221, V_PCSEL: 0x3c5,
-  PC_CHAN: 0x22d, PC_FREQ: 0x3ad, PC_TABLE: 0x55f,
-  TY_CHAN: 0x3c7, TY_FREQ: 0x547, TY_TABLE: 0x607,
-  J_FA: 0x164e, J_FB: 0x16ac, J_FC: 0x16b3, J_FD: 0x1645, J_FE: 0x162e, J_FF: 0x167f,
+  PC_CHAN: 0x22d, PC_FREQ: 0x3ad,
+  TY_CHAN: 0x3c7, TY_FREQ: 0x547,
 }
+const CODE = { J_FA: 0x164e, J_FB: 0x16ac, J_FC: 0x16b3, J_FD: 0x1645, J_FE: 0x162e, J_FF: 0x167f }
 const TANDY_CLOCK = 3579545
 export const NUM_EFFECTS = 21
 
@@ -29,12 +30,16 @@ class Driver {
   out42: number[] = []
   port61 = 0
 
-  /** the driver's offsets in this game (PoR's plus the game's shift) */
+  /** the driver's offsets in this game (PoR's plus the game's shifts, and its effect tables) */
   readonly c: Record<string, number>
 
   constructor(image: Uint8Array, drv: SoundDriver = game().sound) {
     this.m.set(image.subarray(drv.segment, drv.segment + 0x10000))
-    this.c = Object.fromEntries(Object.entries(OFFSETS).map(([k, v]) => [k, v + drv.shift]))
+    this.c = {
+      ...Object.fromEntries(Object.entries(DATA).map(([k, v]) => [k, v + drv.data])),
+      ...Object.fromEntries(Object.entries(CODE).map(([k, v]) => [k, v + drv.code])),
+      PC_TABLE: drv.tables.pc, TY_TABLE: drv.tables.tandy,
+    }
   }
 
   b(a: number) { return this.m[a & 0xffff] }

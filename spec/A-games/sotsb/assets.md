@@ -147,10 +147,14 @@ are the cursor and character writes), as in CotAB.
 **Effects: CotAB's driver.** The PC-speaker and Tandy driver sits in the segment of image 0x7E40
 (CS 0x07E4), its code CotAB's moved by 0x218F within the segment: install 0x7E40 + 0x344E
 (CotAB 0x12BF), uninstall + 0x3483, start PC **+ 0x3814**, start Tandy **+ 0x3880**, enable + 0x38EC,
-the same distances apart as CotAB's. The effect tables, 21 words each, are at CS:0x04A0 (PC) and
-CS:0x0508 (Tandy), the same shape as CotAB's (each entry CotAB's − 0x232 and + 0x21AB); 20 of the 21
-Tandy effects start with CotAB's bytes, and the PC ones differ only by their internal pointers as far
-as checked (**I** for a full byte-for-byte equality after normalisation).
+the same distances apart as CotAB's. The driver's data moved differently from its code: its variables and the channel and
+frequency tables are PoR's offsets **− 0xBF** (CotAB − 0xBD: effect number CS:0x140, busy 0x119, channel
+loop 0x11A, PC channels 0x16E, Tandy channels 0x308, the frequency tables 0x2EE and 0x488, in the start
+routines 0xB654 (PC) and 0xB6C0 (Tandy) and the timer routine), while the command handlers its jump table
+(CS:0x162) points at are PoR's **+ 0x20D2** (0x3700 … 0x3785). The effect tables, four words an effect, are
+at **CS:0x04A0** (PC; 13 effects, 0x68 bytes, PoR's and CotAB's 21) and **CS:0x0508** (Tandy). Rendered
+through the driver, effects 1–12 sound as CotAB's (the port's test, `test/sotsbsound.test.ts`; effect 1 is
+silent in both); 20 of the 21 Tandy effects start with CotAB's bytes.
 
 `PlaySound(n)` = **0x7E60** (`7e4:20`), CotAB's 0x69B0 with a fourth device:
 - 0 → stop on both drivers; 1 → enable; 0xFF → stop both, unhook the timer, `DS:741C` := 0 (each

@@ -285,7 +285,7 @@ starts at the game's `ecl.areaZero` ([script-vm-map.md §6](script-vm-map.md#6-s
 where the CotAB research listed what the profile would need; each point is now a field of the
 profile.
 
-1. The DS base and the sound driver's segment and shift (`tables.ds`, [profile.md](profile.md) `sound`).
+1. The DS base and the sound driver's segment, shifts and effect tables (`tables.ds`, [profile.md](profile.md) `sound`).
 2. Every table address with its stride (§3.2), and the counts: spells 56/67 → 100, random-item
    records 19 → 7, temple services 10 → 11, top level 13 (`rules`, `tables.xp.levels`).
 3. The spell-class encoding (PoR 0 cleric, 1 magic-user, 2 item; CotAB 0 cleric, 1 druid, 2 magic-user,
