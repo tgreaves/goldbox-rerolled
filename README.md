@@ -42,6 +42,7 @@ Game files are not included. Point the tools at an extracted `POOLRAD/` folder f
 | `chars.py` | character and monster record decoder |
 | `spells.py` | spell table extractor (from the unpacked `START.EXE`) |
 | `speclinks.py` | checks every link and heading anchor in the repository's Markdown files |
+| `dosbox/` | runs an original game unattended in DOSBox Staging, grabs its screens and compares the 3D view with the port's ([`tools/dosbox/README.md`](tools/dosbox/README.md)) |
 
 Examples:
 

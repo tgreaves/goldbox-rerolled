@@ -36,8 +36,9 @@ cross-reference from each spec section to the code is [xref.md](xref.md).
 | Saves | the shipped saves written back byte for byte, both games | agree (`engine.test.ts`, `coabsweep.test.ts`, `savefiles.test.ts`) |
 | The guide | the GameFAQs guide's claims against the code: cheat mode, the rest cap, training, loading | corrected in part A ([open-questions.md, "Cross-checks against the GameFAQs guide"](open-questions.md#cross-checks-against-the-gamefaqs-guide-porreadmemd-external-reference)) |
 
-Not yet done: a comparison with the running original in DOSBox (scripted walks, the rest-encounter
-counters, the south-edge exits: [open-questions.md](open-questions.md)).
+Against the running original in DOSBox: the drawn view and the rest counters (§4, with the harness
+in `tools/dosbox/`). Not yet: scripted walks and the south-edge exits
+([open-questions.md](open-questions.md)).
 
 ## 3. Test suites
 
@@ -100,7 +101,9 @@ Also run before every commit: `npx tsc --noEmit -p .`, `npm run build`, and
   save A's area equal the reference's drawn view exactly (0 of 7 744 pixels differing each), and showed
   the view at pixels 24–111, not 16–103 as graphics.md had it. CotAB the same way (save A, Tilverton's room at (7,13): 7 frames, four
   facings, a step into a wall): the wall set, the cobbled ground (SKY #252) and the view at 24–111, exact;
-  its outdoor sky and clouds not yet seen. Not run: the Sell, Share and Appraise
+  its outdoor sky and clouds not yet seen. The harness is in `tools/dosbox/` (rebuilt on the server the
+same day, the Mac's not having been committed): `viewcheck.py por|coab` repeats the view check from
+save A (as loaded, four turns, a step), 5 of 5 frames exact for each game. Not run: the Sell, Share and Appraise
   checks (no shop from save A; decided not worth a route); register 0x035F (no debugger).
 - **The interface** was checked against part C in headless Chromium (2026-10-21; each part C file's
   "Validation" section says what): every screen class, PoR's game-file save A, the games screen, the
@@ -151,8 +154,9 @@ Each run adds a row here, and its findings below.
 
 ## 6. Residual gaps
 
-- **No DOSBox comparison** of running behaviour yet (§2); the **I** items that only the running
-  original can settle are in [open-questions.md](open-questions.md).
+- **Little DOSBox comparison** of running behaviour yet: the drawn view and the rest counters only
+  (§4); the **I** items that only the running original can settle are in
+  [open-questions.md](open-questions.md).
 - **The Enhanced (3D) view** is checked by eye only: its tolerance check needs WebGL
   ([exploration-view.md §3.6](C-port/exploration-view.md#36-what-it-must-preserve-the-tolerance)).
 - **V11** needs a black-box mode of the server suites (AP4, [AUDIT.md §6.9](AUDIT.md#69-state-after-work-plan-step-1-2026-10-21)).

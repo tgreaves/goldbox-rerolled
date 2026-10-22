@@ -828,6 +828,8 @@ when its table column or sentence names CotAB.
 | 0x1C378 | coab/assets, coab/ecl | coab/assets: 7. Start-up, title, copy protection |  |
 | 0x1C422 | coab/assets | coab/assets: 7. Start-up, title, copy protection |  |
 | 0x1C5B3 | coab/assets | coab/assets: 7. Start-up, title, copy protection |  |
+| 0x1C621 | coab/assets | coab/assets: 7. Start-up, title, copy protection |  |
+| 0x1C658 | coab/assets | coab/assets: 7. Start-up, title, copy protection |  |
 | 0x1C987 | coab/tables | coab/tables: 3.11 Temple |  |
 | 0x1CA58 | coab/tables | coab/tables: 3.11 Temple |  |
 | 0x1CB07 | coab/tables | coab/tables: 3.11 Temple |  |

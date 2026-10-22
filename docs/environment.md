@@ -15,7 +15,8 @@ holds only the setup they assume.
 
 ## The development server
 
-The work so far has been done on one Linux machine on Tristan's LAN:
+Most of the work has been done on one Linux machine on Tristan's LAN (the Mac is the other place,
+below):
 
 | | |
 |---|---|
@@ -23,8 +24,9 @@ The work so far has been done on one Linux machine on Tristan's LAN:
 | Push | over HTTPS with the `gh` login as credential helper; there is no SSH key on the server |
 | Size | 4 cores (AVX2), 7.4 GB RAM, 61 GB disk (upgraded 2026-10-20; it froze once at ~3 GB) |
 | Node | 24 (`server/` runs `.ts` directly; `web/` builds with Vite 8, tests with Vitest 5) |
-| Python | 3.14; the tools in `tools/` use only the standard library |
+| Python | 3.14; the tools in `tools/` use only the standard library (`tools/dosbox/egaframe.py` also Pillow) |
 | Disassembly | `objdump` (binutils) for the 16-bit code; REA with Ghidra for decompiling (below) |
+| DOSBox | DOSBox Staging 0.83.0 in `~/opt/dosbox-staging-linux-x86_64-0.83.0-7b400/` and NASM 3.01 in `~/opt/nasm/usr/bin/`, for `tools/dosbox/` (below); both installed without root on 2026-10-22 |
 | Browser | Playwright (a `web/` dev dependency) with its headless Chromium in `~/.cache/ms-playwright` |
 | Docker | installed, for trying the server image (`../docker-compose.yml`) |
 | LAN preview | `npm run build && npx vite preview --host --port 8080` in `web/`, then `http://192.168.1.21:8080` from the workstation |
@@ -104,10 +106,20 @@ binary -m i8086` on the unpacked image is lighter and was used for most table re
 REA is optional. Every finding is already in `spec/` with its address, and the port does not need it;
 it is needed only to answer a new question about the original.
 
-### Not tried yet
+### The originals in DOSBox
 
-The original has never been run here under DOSBox (or DOSBox-X's debugger) to compare with the
-port; nothing is installed for it.
+`tools/dosbox/` runs an original game unattended in DOSBox Staging: keys typed by its `AUTOTYPE`,
+screens grabbed with F12 by a small resident program, the saves it writes kept; `viewcheck.py`
+compares the drawn view with the port's. How to get each game into play, and the requirements, are
+in [`../tools/dosbox/README.md`](../tools/dosbox/README.md):
+
+```sh
+export DOSBOX=~/opt/dosbox-staging-linux-x86_64-0.83.0-7b400/dosbox NASM=~/opt/nasm/usr/bin/nasm
+python3 tools/dosbox/viewcheck.py por /home/tmg/poolrad-files
+```
+
+There is no debugger: DOSBox Staging's release builds have none, and DOSBox-X (which has one) is not
+installed. Questions that need one (PoR's register 0x035F, `TODO.md`) stay open.
 
 ## References outside the repository
 
@@ -119,6 +131,19 @@ port; nothing is installed for it.
   no licence, so only a pointer to where to look (rule 5 in `CLAUDE.md`); not cloned on the server
 - Journals: Pool of Radiance Wiki and Gold Box Wiki transcriptions (CC BY-SA, credited in the README);
   SotSB's transcribed from the archive.org scan of its printed Adventurer's Journal (`web/src/data/sotsb-journal.json`)
+
+## Tristan's Mac
+
+The 2026-10-22 session (Silver Blades, the first DOSBox checks) ran on Tristan's Mac:
+
+- Game folders `~/Downloads/POOLRAD`, `~/Downloads/CURSE`, `~/Downloads/BLADES` (above).
+- Git's own network operations do not work there: [`../transfer-repo.sh`](../transfer-repo.sh) pushes
+  `main` to GitHub (fast-forward only) or fetches it, as a bundle through a throw-away Docker
+  container with the host's SSH agent forwarded (Docker Desktop's `/run/host-services/ssh-auth.sock`;
+  the remote there is `git@github.com:…`). On the server, plain `git push` works.
+- Browser checks used Playwright with Chrome; the DOSBox checks DOSBox Staging, the same method as
+  `tools/dosbox/`.
+- Editor swap files (`*.swp`) are ignored by `.gitignore` since one was committed by mistake.
 
 ## Browser play-testing
 

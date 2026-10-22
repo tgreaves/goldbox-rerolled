@@ -143,6 +143,7 @@ Main program (image 0x2F–0x360):
    - Asks for "the character in box number 6−r".
    - Expected = `DS:0002`-table row r, index (a + 34 − b + 12p + 2(5−r)) mod 36. The table is six 36-character Pascal strings at **DS:0002** (image 0xABE2), starting `CWLNRTESSCEDCSHS…`; the last row is `A…Z1…0`.
    - 3 tries. On failure PlaySound(1), PlaySound(5), "An unseen force hurls you into the abyss!", exit (O: constants 0x1A, 0x16, 0xC, 0x22, ±0x24 at 0x1C422–0x1C5B3).
+   - **This binary is patched** (O, the GOG release, 0x1C621–0x1C658): the compare of the typed character with the expected one is followed by `JNE` (75 1C) to the success exit, so any character **but the right one** is accepted at once; the right one prints "Sorry, that's incorrect." and counts a try. As PoR's patched check ([por/title-and-credits.md](../por/title-and-credits.md), "Copy protection"), a crack in the shipped files; `#` (never in the table) always passes (checked in DOSBox, 2026-10-22, `tools/dosbox/`). The same routine serves script opcode 0x3C ([ecl.md](ecl.md)).
 
 ## 8. Config, video, palette, sound
 **CURSE.CFG** (shipped `E`, `P`, `C:\SAVE\`, `F`), reader at 0x1FE0–0x225F (O):

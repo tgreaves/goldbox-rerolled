@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+"""The drawn 3D view of the original, in DOSBox, against the port's (spec/VALIDATION.md §4): from save A,
+the view as loaded, after each of four left turns and after a step forward, both ways, pixel by pixel.
+
+Usage:
+  viewcheck.py por  POOLRAD_DIR [--out DIR]
+  viewcheck.py coab CURSE_DIR   [--out DIR]
+
+Needs what run.py needs (DOSBox Staging, NASM; $DOSBOX, $NASM) and Node for the headless runner.
+Exits 1 if any frame differs.
+"""
+import json, os, subprocess, sys, tempfile
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+WEB = os.path.join(HERE, '..', '..', 'web')
+
+# Keys from DOS to free play with save A loaded, and the port's answers for the same screens.
+# PoR: STING skips the title; this release takes any code word; Load and A start play.
+# CotAB: STING skips the title; Play; this release takes any character but the right one at the
+# code wheel ('#' is never right, spec/A-games/coab/assets.md §7); Load, A, Begin, then two
+# "press Enter" screens of the opening.
+GAMES = {
+    'por': {'start': 'x enter l a', 'answers': []},
+    'coab': {'start': 'p numbersign enter l a b enter enter', 'answers': [0, 0]},
+}
+STEPS = [[], ['l'], ['l', 'l'], ['l', 'l', 'l'], ['l', 'l', 'l', 'l', 'f']]
+KEYS = 'f12 left f12 left f12 left f12 left up f12'
+
+
+def main(a):
+    if len(a) < 2 or a[0] not in GAMES:
+        raise SystemExit(__doc__)
+    game, folder = a[0], os.path.abspath(a[1])
+    out = os.path.abspath(a[a.index('--out') + 1]) if '--out' in a else tempfile.mkdtemp(prefix='viewcheck-')
+    g = GAMES[game]
+    subprocess.run([sys.executable, os.path.join(HERE, 'run.py'), '--game', folder, '--out', out,
+                    '--keys', f'{g["start"]} {KEYS}', '--wait', '6', '--pace', '3', '--seconds', '75'], check=True)
+    bad = 0
+    for i, commands in enumerate(STEPS):
+        dump = os.path.join(out, f'FRAME{i:02d}.EGA')
+        if not os.path.exists(dump):
+            print(f'frame {i}: not grabbed (the original did not reach play; see {out}/*.png)')
+            bad += 1
+            continue
+        script = os.path.join(out, f'port{i}.json')
+        json.dump({'game': game, 'answers': g['answers'], 'commands': commands}, open(script, 'w'))
+        port = os.path.join(out, f'port{i}.png')
+        subprocess.run(['node', '--import', './headless/node-ts.mjs', 'headless/run.ts', '--files', folder,
+                        '--script', script, '--frame', port], cwd=WEB, check=True, stdout=subprocess.DEVNULL)
+        r = subprocess.run([sys.executable, os.path.join(HERE, 'egaframe.py'), dump, '--compare', port,
+                            '--view', os.path.join(out, f'view{i}.png')])
+        bad += r.returncode != 0
+    print(f'{len(STEPS) - bad} of {len(STEPS)} frames equal; files in {out}')
+    sys.exit(1 if bad else 0)
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])

@@ -105,18 +105,20 @@ close disassemblers (REA's Ghidra sessions) after use, no unbounded background j
 
 - Pool of Radiance plays start to finish; Curse of the Azure Bonds is playable at an early stage
   (all 8 steps of `docs/multi-game.md` done, dual-classing included), not yet played through in a
-  browser. About 510 tests pass; long headless playthroughs (24 × 1000 steps) show no failures.
+  browser. About 540 tests pass; long headless playthroughs (24 × 1000 steps) show no failures.
 - The spec is the normative source (decisions D1–D6 in `spec/README.md`); steps 1–7 of its work plan
   (`spec/AUDIT.md` §8) are done. Step 8, the clean-room rebuilds that validate it, is **on hold** by
   Tristan's choice (token and session limits): do not start one unasked.
-- Current focus: bug fixes and gaps (`spec/open-questions.md`, the backlog in `docs/multi-game.md`).
-- Not yet done: comparison with the original running in DOSBox; browser play-through of CotAB and
-  of much of the newer UI.
+- Current focus: bug fixes and gaps (`TODO.md`, `spec/open-questions.md`).
+- The originals run unattended in DOSBox Staging through `tools/dosbox/` (keys typed, screens grabbed,
+  saves kept): PoR's and CotAB's drawn views are pixel-exact against the port, PoR's rest counters
+  confirmed; little else has been compared that way yet (`spec/VALIDATION.md` §4). Browser checks of
+  CotAB and SotSB are recorded there too.
 - Secret of the Silver Blades: researched 2026-10-22 (`spec/A-games/sotsb/`, every subject) and playable at
   an early stage (`games/sotsb.ts`: its own rules, spells, effects, script variants, items, vault, CotAB
   import, title music through the OPL2 synthesiser, its own Rules reference text, its printed journal
   transcribed from a scan); headless playthroughs pass, and a browser play-through of the town, camp,
   a battle, training, saves and a new game is recorded in `spec/VALIDATION.md` §4; open items in
-  `docs/multi-game.md`. Tests take `SOTSB` (the game folder) like POOLRAD and COAB.
+  `TODO.md`. Tests take `SOTSB` (the game folder) like POOLRAD and COAB.
 - `server/` (accounts and sync) is built but not deployed. It is meant to become a public service
   with open sign-up, so treat every change there as internet-facing (`docs/server.md`, "Running it publicly").
