@@ -1,7 +1,11 @@
 import struct, sys
 exe, ovrp, out = sys.argv[1:4]
 b = bytearray(open(exe,'rb').read()); ovr = open(ovrp,'rb').read()
-assert ovr[:4] == b'FBOV'
+# FBOV (PoR, CotAB): the signature and a dword, segments from offset 8; TPOV (SotSB, an older Turbo
+# Pascal overlay manager: OvrInit at image 0xC0F1 compares 'TP', 'OV'): the signature alone, segments
+# from offset 4. The stubs' file offsets count from the start of the overlay file in both.
+assert ovr[:4] in (b'FBOV', b'TPOV'), ovr[:4]
+first = 8 if ovr[:4] == b'FBOV' else 4
 hs = struct.unpack_from('<H', b, 8)[0]*16
 nrel = struct.unpack_from('<H', b, 6)[0]
 relocs = [struct.unpack_from('<HH', b, 0x1c+i*4) for i in range(nrel)]  # (ofs, seg)
@@ -12,11 +16,11 @@ stubs = []
 for p in range(0, len(img)-0x20, 16):
     if img[p:p+4] == b'\xcd\x3f\x00\x00':
         fo, cs_, rs, ne, prev = struct.unpack_from('<IHHHH', img, p+4)
-        if ne and all(img[p+0x20+5*i:p+0x22+5*i] == b'\xcd\x3f' for i in range(ne)) and 8 <= fo < len(ovr):
+        if ne and all(img[p+0x20+5*i:p+0x22+5*i] == b'\xcd\x3f' for i in range(ne)) and first <= fo < len(ovr):
             stubs.append((p//16, fo, cs_, rs, ne, prev))
 stubs.sort(key=lambda s: s[1])
 # contiguity check
-pos = 8
+pos = first
 for s in stubs:
     assert s[1] == pos, ('gap', hex(pos), hex(s[1])); pos = s[1] + s[2] + s[3]
 print('stubs', len(stubs), 'ovr coverage end', pos, 'ovr size', len(ovr))
@@ -41,6 +45,7 @@ for sp_, fo, csz, rsz, ne, prev in stubs:
     for i in range(ne):
         e = sp_*16 + 0x20 + 5*i
         ofs = struct.unpack_from('<H', img, e+2)[0]
+        if ofs == 0xFFFF: continue  # an entry with no code (SotSB has some): left as INT 3Fh, never called
         assert ofs < csz
         img[e] = 0xEA; struct.pack_into('<HH', img, e+1, ofs, seg)
         newrel.append((e - sp_*16 + 3, sp_))

@@ -9,7 +9,9 @@ tags: [reverse-engineering, gold-box, spec]
 > Pool of Radiance defines it. Everything here is **O** (observed), checked against every file of
 > the release. *Informative:* reference decoders in `tools/` (`xar_extract.py`, `unexepack.py`,
 > `mergeovr.py`, `dax.py`). Curse of the Azure Bonds uses the same containers
-> ([coab/assets.md](../coab/assets.md) §1; its working image: [coab/README.md](../coab/README.md#working-image)).
+> ([coab/assets.md](../coab/assets.md) §1; its working image: [coab/README.md](../coab/README.md#working-image));
+> Secret of the Silver Blades the same but for its overlay file's header (TPOV, below;
+> [sotsb/README.md](../sotsb/README.md)).
 
 ## Distribution (GOG Mac package)
 
@@ -45,6 +47,15 @@ tags: [reverse-engineering, gold-box, spec]
 - 35 units; blobs are contiguous and cover all 206,105 bytes
 - `tools/mergeovr.py` places each unit in a new paragraph-aligned segment above the stack (from para 0x1900), rewrites each entry to `EA ofs seg` (JMP FAR) and adds all fixups as MZ relocations (5195 total). Analysis only; the merged EXE is not intended to run.
 
+**TPOV** (Secret of the Silver Blades, O): the file is `"TPOV"` and the overlay code blobs, with no size
+word: the first blob is at offset 4. Its START.EXE's overlay manager (`OvrInit`, unpacked image 0xC0F1)
+compares the words `'TP'`, `'OV'` at the base of the overlay data, keeps that base (DS:5962/5964) and
+reads each unit at base + the stub's offset. The stubs are FBOV's (the table above). 37 units,
+contiguous from offset 4 over all 278 528 bytes; some entries hold the offset 0xFFFF (an entry with no
+code), which `mergeovr.py` leaves as `INT 3Fh`. Merged from paragraph 0x1D00, 6 972 relocations. The
+older Turbo Pascal overlay header (**I**: TPOV is the Turbo Pascal 5.x/6.0 manager's, FBOV Borland
+Pascal 7's).
+
 ## DAX archives
 
 All adventure data uses one container.
@@ -61,7 +72,7 @@ data area starts at 2 + header_len
 
 - Engine loader `FUN_1802_0716(&ptr, &size, id, filename)`: linear scan for `id`; aborts if `comp_size > 36000`
 - Filenames are built at runtime: `<family><block digit>.DAX`, e.g. `ECL3.DAX`; the block digit is a global (`DS:5376`), values 1–8
-- Validated: 113 files, header sums equal file size in all of them
+- Validated: 113 files, header sums equal file size in all of them (SotSB: 36 files, 665 records, the same format and RLE rule)
 
 ## RLE
 

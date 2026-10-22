@@ -19,7 +19,8 @@ Back to the [project README](../README.md).
   scripts, presentation), the engine model that lets one engine run every game from data, and the
   port's own design (interface, 3D view, storage, accounts and sync, offline app).
 - **Games:** *Pool of Radiance* (DOS 1.3, the GOG release) is described in full;
-  *Curse of the Azure Bonds* (DOS, GOG 1.0) as differences from it. A later game is added as
+  *Curse of the Azure Bonds* (DOS, GOG 1.0) as differences from it; *Secret of the Silver Blades*
+  (DOS, GOG 1.0) has begun (its identity and containers). A later game is added as
   another set of differences plus its profile ([B-model/adding-a-game.md](B-model/adding-a-game.md)).
 - **Out of scope:** the game files' contents (read from the player's copy); the development tools
   and tests (reference implementations, [xref.md](xref.md)); deployment of the server
@@ -175,7 +176,16 @@ set of differences** throughout; how the port realises them is in parts B and C.
 | [effects.md](A-games/coab/effects.md) | event lists, changed and new handlers, item kinds, monster-class flags, the target hook |
 | [combat.md](A-games/coab/combat.md) | the battlefield generators, the cell table, casting |
 | [camp.md](A-games/coab/camp.md) | the camp menus, Fix, the rest prompt, the silent rest |
-| [chargen-and-progression.md](A-games/coab/chargen-and-progression.md) | the recalculation after a level, the starting spells, dual-classing and the former-level rule || [assets.md](A-games/coab/assets.md) | DAX families, the 3D view's sky and ground, BIGPIC, title and start-up, sound |
+| [chargen-and-progression.md](A-games/coab/chargen-and-progression.md) | the recalculation after a level, the starting spells, dual-classing and the former-level rule |
+| [assets.md](A-games/coab/assets.md) | DAX families, the 3D view's sky and ground, BIGPIC, title and start-up, sound |
+
+### Secret of the Silver Blades ([A-games/sotsb/](A-games/sotsb/README.md))
+
+Research started (2026-10-22); to be written as differences, as CotAB's.
+
+| File | Covers |
+|---|---|
+| [README.md](A-games/sotsb/README.md) | identity (TPOV overlays, DS 0x0DE2), the working image, the DAX families and files, open questions |
 
 ## Part B: the engine model ([B-model/](B-model/))
 

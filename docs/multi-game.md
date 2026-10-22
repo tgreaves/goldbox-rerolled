@@ -365,6 +365,12 @@ falls (the New Phlan tavern brawl, seed 1 step 421). The harness calls them off 
 treasure split, Buy, Memorize), the town and overland menus beyond random play, anything past
 where random play gets (CotAB: Tilverton and the jumped-to areas).
 
+**Secret of the Silver Blades (2026-10-22).** Research started: `spec/A-games/sotsb/README.md` (the
+identity, the working image, the DAX families). Its GAME.OVR has the older TPOV header, which
+`tools/mergeovr.py` now merges; DS is paragraph 0x0DE2. Against CotAB: a 439-byte character record,
+a 5 469-byte SAVGAM, effects in `.SFX`, three script blocks and one monster block, no WILDCOM, RANDCOM
+or TILES, an AdLib sound device. Next: the record and save layouts, the script VM, the rules tables.
+
 ## Backlog
 
 - ~~CotAB dual-classing~~: done 2026-10-21 ("Human Change Classes" 0x5135D in the training hall's

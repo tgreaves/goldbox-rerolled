@@ -107,7 +107,8 @@ close disassemblers (REA's Ghidra sessions) after use, no unbounded background j
 - Current focus: bug fixes and gaps (`spec/open-questions.md`, the backlog in `docs/multi-game.md`).
 - Not yet done: comparison with the original running in DOSBox; browser play-through of CotAB and
   of much of the newer UI.
-- Next game: Secret of the Silver Blades, files unpacked (see `docs/environment.md`), research not
-  started; it follows the "Method for a new game" above.
+- Next game: Secret of the Silver Blades, research started 2026-10-22 (`spec/A-games/sotsb/README.md`:
+  identity, TPOV overlays now merged by `tools/mergeovr.py`, DS 0x0DE2, the DAX families; a 439-byte
+  character record, a 5 469-byte SAVGAM); it follows the "Method for a new game" above.
 - `server/` (accounts and sync) is built but not deployed. It is meant to become a public service
   with open sign-up, so treat every change there as internet-facing (`docs/server.md`, "Running it publicly").

@@ -42,12 +42,15 @@ environment variables; tests that need a game skip without it.
 |---|---|---|---|
 | Pool of Radiance (PC 1.3) | `/home/tmg/poolrad-files` | `POOLRAD` | GOG Mac installer `pool_of_radiance_enUS_1_3_31236.pkg` |
 | Curse of the Azure Bonds (1.0) | `/home/tmg/coab-files` | `COAB` | GOG Mac installer `curse_of_the_azure_bonds_enUS_1_0_31854.pkg` (in `/home/tmg`); includes the Manual, Cluebook and Adventurer's Journal PDFs and `COPYCURS.EXE` |
-| Secret of the Silver Blades | `/home/tmg/sotsb-files` | (none yet) | GOG installer; unpacked 2026-10-21, research not started |
+| Secret of the Silver Blades | `/home/tmg/sotsb-files` | (none yet) | GOG installer `secret_of_the_silver_blades_enUS_1_0_33010.pkg`; unpacked 2026-10-21; research started 2026-10-22 (`spec/A-games/sotsb/`) |
 
 ```sh
 cd web
 POOLRAD=/home/tmg/poolrad-files COAB=/home/tmg/coab-files npx vitest run
 ```
+
+On Tristan's Mac the folders are `~/Downloads/POOLRAD`, `~/Downloads/CURSE` and `~/Downloads/BLADES`
+(SotSB's game files sit directly in the package's `game/` folder, not in a sub-folder).
 
 On another machine: the GOG Mac `.pkg` files are DOSBox wrappers round the DOS games. Unpack with
 `python3 tools/xar_extract.py GAME.pkg OUTDIR`, then the `Scripts` member is a gzip cpio archive
