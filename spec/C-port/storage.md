@@ -114,7 +114,9 @@ in sort order. **Drop character** deletes the entry.
 ### 3.2 The party and the seed flag
 
 `meta.party` is the party the party screen shows: roster stems, at most 6. Stems
-no longer in the roster are dropped when it is read. `meta.seeded` is written `true` after the first
+no longer in the roster are dropped when it is read. `meta.vault` (SotSB) is the vault's file, VAULT.DAT's
+bytes as the original writes it in its folder: one per game, outside the save slots, written each time the
+vault screen is left; until then the imported folder's VAULT.DAT, if any, is read. It is not synced. `meta.seeded` is written `true` after the first
 seeding; deleting the database clears it, so seeding runs again.
 
 ### 3.3 Stored saves

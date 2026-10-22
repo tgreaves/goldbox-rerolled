@@ -194,6 +194,15 @@ its `ECL<n>.DAX` record on load (I: not traced).
 A party store in the game folder (O, 0x21CA0–0x221A0; menu "View Take Pool Exit", 0x21C3B; "left in
 the vault … will be gone forever", 0x43A56): 0x1C bytes from `DS:87AC`, seven u32 coin counts (I:
 the order of the character's coins), then a list of 67-byte item records from the head `DS:87CE`.
+Those are the treasure money table and item list (the temple, shops and treasure screen read them), so
+the vault is the pile: a script sets A 0x4CFC := 1 and runs COMBAT, which clears it and calls the vault
+screen ahead of the shop (0x1F5C2 → 0x21C90; ECL1 #16 0x8D74, "DEPOSIT" and "WITHDRAW" alike). The
+screen (game mode 8) reads `vault.dat` if there is one (else clears the coins), offers "View", " Take"
+(when the pile holds money or items), " Pool Exit" (0x21EC5); in mode 8 the item menu's Drop is
+" Deposit" (0x4357E), asking "Your *item* will be left in the vault" (0x43A41) and putting it in the pile.
+Leaving writes the coins and the items (a bundle with its scrolls) back to `vault.dat` (0x220DA–0x221C3),
+after a disk-space check the port does not need, and frees the item list (O). Port: `data/vault.ts`,
+`ui/town.ts` `vault`.
 
 ## 6. Importing CotAB characters
 

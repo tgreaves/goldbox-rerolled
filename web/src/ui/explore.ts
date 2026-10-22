@@ -26,7 +26,8 @@ import { Engine, A0, type Io } from '../vm/engine'
 import type { Dice } from '../rules/dice'
 import { drawMap, landmarkAt } from './areamap'
 import type { GeoMap } from '../data/geo'
-import { listCharacters, listSaves, saveCharacter, writeAutosave, writeSave } from '../store/user'
+import { getVaultFile, listCharacters, listSaves, saveCharacter, setVaultFile, writeAutosave, writeSave } from '../store/user'
+import { parseVault, vaultFile } from '../data/vault'
 import { newerSidecarNote, type SidecarExtra } from '../store/savefiles'
 import { report, revealedBy, type State } from '../rules/commissions'
 import { JOURNAL, journalReveals, revealNote, roman } from '../rules/journal'
@@ -40,7 +41,7 @@ import { canTakeItem, capacity, ready, readyItem, recalc, unready, unreadyItem }
 import { WorldHost } from '../rules/worldfx'
 import { drop, halve, join, scribing, trade, unavailable } from '../rules/inventory'
 import { moneyPrompt, COINS, coinValue, dropMoney, moneyOf, pay, poolAll, receive, priceStock, sellOffer, share, shopPrice, take, tradeMoney } from '../rules/money'
-import { shop, temple, treasure, type TownUi } from './town'
+import { shop, temple, treasure, vault, type TownUi } from './town'
 import { proposeSplit } from '../rules/treasure'
 import { camp, effectNames, type CampUi } from './camp'
 import { runBattle, type BattleControls } from './combat'
@@ -601,6 +602,19 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         try { quit = await camp(campUi) } finally { townMode = null; showPicture(null) }
         // "Quit TO DOS": the game ends there; the port's way out is the party screen (spec/C-port/screens.md §6.1)
         if (quit) { engine.quit = true; setTimeout(leave, 0) }
+        return
+      }
+      if (what === 'vault') {
+        // SotSB's vault (0x21C90): VAULT.DAT (this device's, else the imported folder's) into the pile, the
+        // screen, then the pile written back (0x220DA); what is left in the pile stays there, as in the original
+        const sv = game().saves
+        const v = parseVault((await getVaultFile()) ?? files.get('VAULT.DAT'), sv.itemRecord, sv.bundleType)
+        engine.money = v.money
+        engine.treasure = v.items
+        townMode = 'treasure'
+        try { await vault(townUi) } finally { townMode = null }
+        await setVaultFile(vaultFile({ money: engine.money, items: engine.treasure }, sv.itemRecord, sv.bundleType))
+        engine.treasure = []
         return
       }
       if (what === 'shop' || what === 'temple' || what === 'treasure') {
@@ -1291,7 +1305,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   interface MoneyStep { op: 'trade' | 'drop'; to?: number; type?: number }
   /** steps of Use on the sheet: which spell, then whom */
   interface UseStep { scroll: boolean; ids: number[]; spell?: number; combatOnly?: boolean }
-  function sheet(c: Character, opts: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use' | 'scribe'; use?: UseStep; after?: 'drop' | 'trade' | 'sell'; money?: MoneyStep; combat?: boolean; mode?: 'shop' | 'temple' | 'treasure'; castOn?: number; abilityOn?: Ability } = {}) {
+  function sheet(c: Character, opts: { selected?: number; message?: string; confirm?: 'drop' | 'trade' | 'sell' | 'id' | 'use' | 'scribe'; use?: UseStep; after?: 'drop' | 'trade' | 'sell'; money?: MoneyStep; combat?: boolean; mode?: 'shop' | 'temple' | 'treasure' | 'vault'; castOn?: number; abilityOn?: Ability } = {}) {
     const node = c.raw
     const t = engine.items
     const items = engine.itemsOf(node)
@@ -1340,7 +1354,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     let actions = ''
     if (it && t) {
       const store = opts.mode === 'shop' || opts.mode === 'temple'
-      if (opts.confirm === 'drop') actions = `<p>Your ${escape(t.name(it))} will be gone forever. ${escape(msg('dropIt').trimEnd())}</p>
+      if (opts.confirm === 'drop') actions = `<p>Your ${escape(t.name(it))} ${escape(opts.mode === 'vault' ? msg('leftInVault') : 'will be gone forever')}. ${escape(msg('dropIt').trimEnd())}</p>
         ${yesNo('data-a="drop-yes"')}`
       else if (opts.confirm === 'sell') actions = `<p>${escape(msg('illGiveYou'))}${sellOffer(it)}${escape(msg('goldForYour'))}${escape(t.name(it))} ${escape(msg('isItADeal').trimEnd())}</p>
         ${yesNo('data-a="sell-yes"')}`
@@ -1364,7 +1378,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         const ready = word('itemReady', 'R')
         actions = wordButton('data-a="ready"', it.ready ? { ...ready, text: ready.text.toLowerCase() } : ready, it.ready ? 'Un' : '') + wordButton('data-a="use"', word('itemUse', 'U')) +
           (others.length ? wordButton('data-a="trade"', word('itemTrade', 'T')) : '') +
-          wordButton('data-a="drop"', word('itemDrop', 'D')) + wordButton('data-a="halve"', word('itemHalve', 'H')) + wordButton('data-a="join"', word('itemJoin', 'J')) +
+          wordButton('data-a="drop"', opts.mode === 'vault' ? word('itemDeposit', 'D') : word('itemDrop', 'D')) + wordButton('data-a="halve"', word('itemHalve', 'H')) + wordButton('data-a="join"', word('itemJoin', 'J')) +
           (store ? wordButton('data-a="sell"', word('itemSell', 'S')) + wordButton('data-a="id"', word('itemId', 'I')) : '')
       }
     }
@@ -1450,7 +1464,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const npcInPlay = node[F.morale] >= 0x80 && node[F.inPlay] !== 0 && node[F.status] !== 1
       const canTrade = !opts.combat && !npcInPlay
       const m = opts.money
-      if (!m) return `<div class="money-actions">${canTrade ? '<button data-m="trade">Trade money</button>' : ''}<button data-m="drop">Drop money</button></div>`
+      if (!m) return `<div class="money-actions">${canTrade ? '<button data-m="trade">Trade money</button>' : ''}<button data-m="drop">${opts.mode === 'vault' ? 'Deposit money' : 'Drop money'}</button></div>`
       const party = engine.party()
       if (m.op === 'trade' && m.to === undefined) return `<div class="money-actions"><p>${escape(msg('tradeTo'))}</p>${party.map((n, k) =>
         `<button data-m="to-${k}">${escape(parseCharacter(n).name)}</button>`).join('')}${listExit('data-m="exit"')}</div>`
@@ -1577,6 +1591,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         if (!why && scribing(it, t) && !opts.after) return again({ selected: keep, confirm: 'scribe', after: 'drop' })
         again(why ? { selected: keep, message: why } : { selected: keep, confirm: 'drop' })
       } else if (a === 'drop-yes') {
+        // in the vault (game mode 8, 0x4357E) a dropped item is deposited: it goes into the pile
+        if (opts.mode === 'vault') { items.splice(items.indexOf(it), 1); it.ready = false; engine.treasure.push(it); recalc(node, items, t); return again({}) }
         const m = drop(node, items, it, t)
         again({ message: m })
       } else if (a === 'sell') {
@@ -1616,7 +1632,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         const to = engine.party()[m.to ?? 0]
         message = tradeMoney(node, items, to, engine.itemsOf(to), m.type, n, t)
       } else {
-        const pool = opts.mode === 'shop' || opts.mode === 'temple' || opts.mode === 'treasure' ? engine.money : null
+        const pool = opts.mode === 'shop' || opts.mode === 'temple' || opts.mode === 'treasure' || opts.mode === 'vault' ? engine.money : null
         dropMoney(node, items, m.type, n, pool, t)
       }
       // back to the coin list while there is money left (the original loops)

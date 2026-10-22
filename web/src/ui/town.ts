@@ -31,7 +31,7 @@ export interface TownUi {
   /** the treasure after a battle as one panel (IMP-056); without it the original's menus */
   treasurePanel?(): Promise<void>
   /** open the current character's sheet (items menu with Sell/Id in shops) and wait for it to close */
-  view(mode: 'shop' | 'temple' | 'treasure'): Promise<void>
+  view(mode: 'shop' | 'temple' | 'treasure' | 'vault'): Promise<void>
   refresh(): void
 }
 
@@ -243,6 +243,48 @@ function raiseDead(e: Engine, c: Uint8Array) {
   raiseDeadHp(c, [2], true)
 }
 
+/** Take (FUN_2e08_0d38, CotAB 0x1E60E): "Money Items Exit", or straight to the one there is; from the pile (money table and item list). */
+async function takeFromPile(ui: TownUi, money: boolean, items: boolean) {
+  const e = ui.engine, t = e.items
+  const k = money && items ? await ask((l, op) => ui.menu(l, op), menu('take'), { prompt: msg('take').trimEnd() }) : money ? 'M' : 'I'
+  if (k === 'M') await takeMoney(ui)
+  else if (k === 'I' && t) {
+    for (;;) {
+      if (!e.treasure.length) break
+      const i = await list(ui, e.treasure.map((it) => t.name(it)), { prompt: `${cur(e).name} takes:` })
+      if (i >= e.treasure.length) break
+      const it = e.treasure[i], who = cur(e)
+      const why = canTakeItem(who.c, who.items, it)
+      if (why) { ui.print(msg('shopOverloaded'), false); continue }
+      e.treasure.splice(i, 1)
+      who.items.push(it)
+      recalc(who.c, who.items, t)
+      ui.refresh()
+    }
+  }
+}
+
+/**
+ * The vault (SotSB 0x21C90; spec/A-games/sotsb/records.md §5): the caller has put VAULT.DAT's coins and items in
+ * the pile (the treasure money table and item list). "View", " Take" while it holds money or items, " Pool
+ * Exit" (0x21EC5): View is the character sheet whose Drop is Deposit (game mode 8, 0x4357E), money and items
+ * going into the pile; Take and Pool as the treasure screen's. Exit leaves; the caller writes the pile back.
+ */
+export async function vault(ui: TownUi) {
+  const e = ui.engine, t = e.items
+  for (;;) {
+    const money = e.money.some((v) => v > 0), items = e.treasure.length > 0
+    const parts = [money ? moneyLine(e.money) : '', items && t ? e.treasure.map((it) => t.name(it)).join(', ') : ''].filter(Boolean)
+    ui.print(parts.length ? `In the vault: ${parts.join('; ')}.` : 'The vault is empty.', true)
+    const words = [...menu('vaultView'), ...(money || items ? menu('vaultTake') : []), ...menu('vaultPoolExit')]
+    const o = await ask((l, op) => ui.menu(l, op), words)
+    if (o === 'V') await ui.view('vault')
+    else if (o === 'T') await takeFromPile(ui, money, items)
+    else if (o === 'P') { if (t) await pooling(ui, 'pool') }
+    else { ui.print('', true); return }
+  }
+}
+
 /** Treasure screen (FUN_2e08_0ecd), after a fight or a scripted TREASURE without monsters. */
 export async function treasure(ui: TownUi) {
   const e = ui.engine, t = e.items
@@ -272,25 +314,8 @@ export async function treasure(ui: TownUi) {
       continue
     }
     if (o === 'V') await ui.view('treasure')
-    else if (o === 'T') {
-      // Take (FUN_2e08_0d38, CotAB 0x1E60E): "Money Items Exit", or straight to the one there is
-      const k = money && items ? await ask((l, op) => ui.menu(l, op), menu('take'), { prompt: msg('take').trimEnd() }) : money ? 'M' : 'I'
-      if (k === 'M') await takeMoney(ui)
-      else if (k === 'I' && t) {
-        for (;;) {
-          if (!e.treasure.length) break
-          const i = await list(ui, e.treasure.map((it) => t.name(it)), { prompt: `${cur(e).name} takes:` })
-          if (i >= e.treasure.length) break
-          const it = e.treasure[i], who = cur(e)
-          const why = canTakeItem(who.c, who.items, it)
-          if (why) { ui.print(msg('shopOverloaded'), false); continue }
-          e.treasure.splice(i, 1)
-          who.items.push(it)
-          recalc(who.c, who.items, t)
-          ui.refresh()
-        }
-      }
-    } else if (o === 'P' || o === 'S') { if (t) await pooling(ui, o === 'P' ? 'pool' : 'share') }
+    else if (o === 'T') await takeFromPile(ui, money, items)
+    else if (o === 'P' || o === 'S') { if (t) await pooling(ui, o === 'P' ? 'pool' : 'share') }
     else {
       if ((e.money.some((v) => v > 0) || e.treasure.length) && await leaveYes(ui, `${msg('treasureLeft').trim()} ${msg('treasureGoBack')}`, 'treasureLeaveYesNo')) continue
       e.treasure = []

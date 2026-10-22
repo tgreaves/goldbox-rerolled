@@ -84,6 +84,20 @@ export async function setParty(stems: string[]) {
   localChanged('docs/party')
 }
 
+/**
+ * The party's vault (SotSB VAULT.DAT, data/vault.ts), as the original keeps it in the game folder: one per
+ * game, beside the saves, not in any save slot; undefined until the vault is first left (the imported
+ * folder's VAULT.DAT, if any, stands in). Kept on this device only (not synced).
+ */
+export async function getVaultFile(): Promise<Uint8Array | undefined> {
+  const v = (await run(META, 'readonly', (s) => s.get('vault'))) as ArrayBuffer | undefined
+  return v ? new Uint8Array(v) : undefined
+}
+
+export async function setVaultFile(d: Uint8Array) {
+  await run(META, 'readwrite', (s) => s.put(d.slice().buffer, 'vault'))
+}
+
 /** First run: copy the characters from the imported game files into the roster (those not there yet). */
 export async function seedRoster(files: GameFiles) {
   if ((await run(META, 'readonly', (s) => s.get('seeded'))) === true) return

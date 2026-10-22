@@ -225,7 +225,7 @@ export type StringId =
   | 'coinJewelry'
   | 'takeSelectCoin'
   | 'takeWillYou'
-  | 'scrollOops'
+  | 'scrollOops' | 'leftInVault'
   | 'pickNewClass'
   | 'doesntQualify'
   | 'nowFirstLevel'
@@ -685,7 +685,7 @@ export type MenuId =
   | 'itemReady' | 'itemUse' | 'itemTrade' | 'itemDrop' | 'itemHalve' | 'itemJoin' | 'itemSell' | 'itemId'
   | 'viewTrade' | 'viewDrop' | 'viewExit'
   | 'partyCreate' | 'partyDrop' | 'partyModify' | 'partyTrain' | 'partyChangeClass' | 'partyView' | 'partyAdd' | 'partyRemove' | 'partyLoad'
-  | 'partySave' | 'partyBegin' | 'partyExit' | 'vaultView' | 'vaultTake' | 'vaultPoolExit'
+  | 'partySave' | 'partyBegin' | 'partyExit' | 'vaultView' | 'vaultTake' | 'vaultPoolExit' | 'itemDeposit'
   | 'modify' | 'iconMain' | 'iconHeadWeapon' | 'iconParts' | 'iconEdit' | 'iconSmall' | 'iconLarge' | 'iconHair' | 'iconFace'
 
 export type Menus = Partial<Record<MenuId, number>>
@@ -917,6 +917,7 @@ export const SOTSB_STRINGS: Strings = {
   scribingSpell: 0x36f34, identifyFor: 0x456c0, takeWillYou: 0x4f369,
   foundTreasure: [0xe130, 0xe146], memorizeThese: [0x479a0, 0xe1e8], memorizeThese2: [0x479a0, 0xe1e8],
   scribeThese: [0x479a9, 0xe1e8], scribeThese2: [0x479a9, 0xe1e8],
+  leftInVault: 0x43a41, // Deposit's question: "Your … will be left in the vault"
 }
 
 // the same for the menus; main, alter (Pics now Level), partyBegin and modify traced; SotSB has no Turn
@@ -924,6 +925,7 @@ export const SOTSB_MENUS: Menus = {
   main: 0x35803, alter: 0xe249, alterLevel: 0xe272, partyBegin: 0xe684, modify: 0xe77d,
   // the vault 0x21EC5: "View", " Take" when it holds money or items, " Pool Exit"
   vaultView: 0x21c3a, vaultTake: 0x21c3f, vaultPoolExit: 0x21c45,
+  itemDeposit: 0x439f4, // the items menu's Drop in the vault (0x4357E)
   camp: 0xe1f7, magic: 0xe220, orderSelect: 0xe48e, orderPlace: 0xe4b7, campFaster: 0x37d66, campSlower: 0x37d6e,
   campSpeedExit: 0x243c0, rest: 0x46f2a, yesNo: 0x4c3c2, shopLeaveYesNo: 0x231e5, templeLeaveYesNo: 0x231e5,
   treasureLeaveYesNo: 0x231e5, listExit: 0x243c0, shop: 0x2557a, shopNoPool: 0x255a1, temple: 0x2319f,

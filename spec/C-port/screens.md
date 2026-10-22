@@ -362,6 +362,17 @@ EXIT with money in the pool asks the game's question ("As you Leave the Shopkeep
 but you have Left Some Money here." Do you want to go back and get your Money?", the temple's with a
 priest); Yes returns to the menu, No leaves and the pool is lost, as the original.
 
+### 5.6 The vault (SotSB)
+
+A script's COMBAT with its vault flag set ([B-model/script-vm-map.md](../B-model/script-vm-map.md), `combatVault`)
+opens the vault: VAULT.DAT's coins and items become the pool, a line "In the vault: …" (or "The vault is
+empty.", the port's), and the game's menu "View", " Take" while the vault holds anything, " Pool Exit"
+(*game text*, SotSB 0x21EC5). View opens the sheet with **Deposit** for Drop (the game's word): an item
+goes into the vault after "Your *item* will be left in the vault. Drop It?" (*game text*), coins with
+**Deposit money**; Take and Pool as the treasure screen's. Exit writes the pool back to the vault's file
+([storage.md §3.2](storage.md#32-the-party-and-the-seed-flag)); the coins stay in the pool as in the
+original (**I**: 0x222C3 frees only the item list).
+
 ## 6. Camp
 
 Encamp, PROGRAM 9 (an inn's rest) and scripts open the camp ([camp-and-time.md](../A-games/engine/camp-and-time.md));
