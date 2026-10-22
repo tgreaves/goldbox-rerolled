@@ -576,8 +576,13 @@ export const SOTSB_RULES: GameRules = {
   identifyFee: 100, // "For 100 gold pieces I'll identify your …" (0x456C0)
   // 117 records (DS:449D), names at DS:34AE; spell classes 0 cleric, 1 druid, 3 magic-user, 4 item (the
   // caster-level routine 0x559E6 and the list filter 0x477F4); levels to 7
-  spells: { records: 117, named: 117, book: 117, levels: 7, cleric: 0, druid: 1, magicUser: 3, item: 4, itemSpell: { mask: 0x7f, above: 0xff, minus: 0 } /* I: CotAB's */ },
+  spells: { records: 117, named: 117, book: 117, levels: 7, cleric: 0, druid: 1, magicUser: 3, item: 4, itemSpell: { mask: 0x7f, above: 0xff, minus: 0 } /* 0x44F4E: +0x3D & 0x7F as it stands, as CotAB's */ },
   raceMenu: [1, 2, 3, 4, 5, 6], // 0x39AAE: the race names 1–6 in table order
+  // training 0x3DA40: no fee (no "Training costs" text, no money test where CotAB's is, 0x3B5A2)
+  trainingCost: 0,
+  // thief skills 0x57146: CotAB's 0x50F5A without the readied-item scan (no Gloves of Thievery or
+  // Gauntlets of Dexterity) and with the bonus variable set to 0 (0x57155; CotAB's held 7)
+  thief: { dualClass: true, bonus: 0, clampWithBonus: true, gloves: null, gauntlets: null },
   startSpells: [11, 18, 19, 21], // creation 0x3B1C8: Detect Magic, Read Magic, Shield, Sleep (PoR's)
   startClericSlots: 2, // 0x3B15F
   startMoney: { coin: 3, fixed: null, byClass: { 6: [2, 6] } }, // 0x3B1F1: 2d6 gold for a thief, else nothing (DS:5589 has no reader)
@@ -632,7 +637,8 @@ export const SOTSB_RULES: GameRules = {
   },
   wildBattle: { kind: 'none' }, // 0x2B939 is empty and the map flag is always set: every battle on a map area
   // the probe 0x29D53, 0x29DE5; the gas cell 0x1D and the kill cell 0x1B, gas immunity 0x1F and 0x63
-  // (spec/A-games/sotsb/effects.md); the kill bands and poison CotAB's (I)
+  // (spec/A-games/sotsb/effects.md); the kill bands by hit dice (+0xEE) and the poison 0x37 read at
+  // 0x5173D–0x51887 (CotAB's: 0–4 no save, 5 at −4, 6 at 0, "is Poisoned", status 6)
   clouds: {
     gas: { cell: 0x1d, immune: [0x1f, 0x63], probe: { immune: [0x1e, 0x3f, 0x39, 0x63], turned: true, save: 0 }, roundEnd: false, apply: true },
     kill: { cell: 0x1b, save: 0, bands: [[0, 4, null], [5, 5, -4], [6, 6, 0]], poison: 0x37, probe: { immune: [0x63], turned: true, save: null, below: 7 } },

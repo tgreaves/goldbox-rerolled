@@ -97,9 +97,13 @@ a **thief above level 10**, or a former thief above 10 when it counts, takes mag
 
 ## 7. Training, thief skills, the import
 
-- Training: the hit points of §2 after the levels go up (as CotAB's 0x3B557 → 0x3DA40); the fees and
-  the halls' class bits (`DS:4C99`) are not re-read here (**?**).
-- Thief skills: 0x57146 (CotAB 0x50F5A, 0.77 of the sequence in common; **I**, not read).
+- Training: the hit points of §2 after the levels go up (as CotAB's 0x3B557 → 0x3DA40). **No fee** (O):
+  the image has no "Training costs" text and the training routine 0x3DA40 no money test where CotAB's
+  is (0x3B5A2: the coin total against 1 000). The halls' class bits are `DS:4C99` (as CotAB's use).
+- Thief skills: 0x57146, CotAB's 0x50F5A with two differences (O): no readied-item scan (CotAB's Gloves of
+  Thievery and Gauntlets of Dexterity, item kinds 0x0B and 2, which SotSB lacks), and the bonus variable
+  set to 0 at the start (0x57155), where CotAB's, never set, held 7; the clamp still takes it. The level
+  is the class level with its former part (signed, `imul`).
 - The CotAB import ([records.md §2](records.md#2-character-record-0x1b7--439-bytes)): base STR clamped to the race and sex limit
   (no bug), then a ranger gets effect 0x69 and a paladin effect 8 with Cure Disease uses +0x6D := 1.
 
@@ -134,8 +138,9 @@ levelLimits: [ /* CotAB's rows, races renumbered: elf 1, half-elf 2, dwarf 3, gn
 `startClericSlots` 2, `extraAttacks` with two levels a class, `slots.limits`, `dualClass.spells`,
 seven spell levels and the classes 0, 1, 3, 4 (`SOTSB_RULES`, [B-model/procedures.md §1, §3, §7](../../B-model/procedures.md#1-spell-slots)).
 The start effects by race and class (0x39BAF, 0x39669) and the paladin's effects 0x6D and 0x6E (0x46597,
-0x4673A) are in the profile (**O**). Not done: the thief above 10 in the cast list (§6, **I**); training
-fees and halls and thief skills are CotAB's (**I**, not re-read). Tests: `test/sotsbrules.test.ts`.
+0x4673A) are in the profile (**O**); training is free and the thief skills take no item and no +7
+(`trainingCost` 0, `thief`). Not done: the thief above 10 in the cast list (§6, **I**). Tests:
+`test/sotsbrules.test.ts`.
 
 - **Starting money**: a per-class amount (2d6 gold for a thief, nothing otherwise) where `startMoney`
   has one coin and either a fixed amount or the table's dice.
@@ -146,6 +151,6 @@ fees and halls and thief skills are CotAB's (**I**, not re-read). Tests: `test/s
 
 ## Open
 
-- Training fees and halls; thief skills (0x57146) read in full; the third slot array +0x140.
+- The third slot array +0x140.
 - The cleric spells at creation (`DS:580C`): which ids (data, D5) and whether a druid gets any.
 - Whether anything else gives a new character money.

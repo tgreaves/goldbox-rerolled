@@ -9,7 +9,8 @@ import { Engine, type Io } from '../src/vm/engine'
 import { COAB, POR, SOTSB, setGame, wants } from '../src/games/profile'
 import { F } from '../src/games/fields'
 import { R } from '../src/games/rules'
-import { Tables, rollAbilities } from '../src/rules/chargen'
+import { Tables, rollAbilities, thiefSkills } from '../src/rules/chargen'
+import { unexepack } from '../src/data/exepack'
 import { derive } from '../src/rules/training'
 import { fix, memorised } from '../src/rules/camp'
 import { Battle, type CombatUi, type Fighter } from '../src/rules/combat'
@@ -181,5 +182,24 @@ describe.skipIf(!have)('Silver Blades rules on its files', () => {
     cleric[F.memorised] = 75
     await fix(e, { heal: 0 })
     expect(dead[F.status]).toBe(6)
+  })
+})
+
+describe.skipIf(!have)('Silver Blades training and thief skills', () => {
+  afterAll(() => setGame(POR))
+  it('training is free (0x3DA40 has no fee); thief skills take no item and no +7 (0x57146)', () => {
+    const files = load()
+    expect(R.trainingCost).toBe(0)
+    expect([R.thief.bonus, R.thief.gloves, R.thief.gauntlets]).toEqual([0, null, null])
+    const t = new Tables(unexepack(files.get('START.EXE')!).image)
+    const c = new Uint8Array(F.size)
+    c[F.race] = 6; c[F.levels + 6] = 5; c[F.stat[3]] = 16
+    thiefSkills(t, c)
+    const skills = Array.from({ length: 8 }, (_, k) => c[F.thief + k])
+    // the same character under CotAB's +7 (its uninitialised variable): every skill 7 higher
+    const keep = R.thief
+    R.thief = { ...keep, bonus: 7 }
+    try { thiefSkills(t, c) } finally { R.thief = keep }
+    expect(Array.from({ length: 8 }, (_, k) => c[F.thief + k] - skills[k])).toEqual(Array(8).fill(7))
   })
 })

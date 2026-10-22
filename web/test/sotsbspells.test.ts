@@ -14,7 +14,6 @@ import { F } from '../src/games/fields'
 import { SHARED_KINDS } from '../src/rules/spellkinds'
 import { SOTSB_SPELLS } from '../src/games/spellrules'
 import { installText, textOrNull } from '../src/data/gametext'
-import { R } from '../src/games/rules'
 
 const cells: CellInfo[] = Array.from({ length: 0x42 }, (_, i) => ({ move: i === 2 ? 0xff : 1, sight: i === 2 ? 2 : 0, image: 0 }))
 const io = { print: () => {}, menu: async () => 0 } as unknown as Io
@@ -66,8 +65,7 @@ const have = !!sotsb && existsSync(sotsb)
 describe.skipIf(!have)('SotSB spells (SOTSB_SPELLS)', () => {
   const files = have ? load(sotsb, SOTSB) : null
   afterAll(() => setGame(POR))
-  // SotSB has 117 spell records (tables.md); until its rules profile says so, the test reads them all
-  const game = () => { setGame(SOTSB); Object.assign(R.spells, { records: Math.max(R.spells.records, 117), named: Math.max(R.spells.named, 117) }); return field(files!) }
+  const game = () => { setGame(SOTSB); return field(files!) }
 
   it('every id 1–117 names a kind of the battle or the shared ones', () => {
     const battle = (Battle as unknown as { spellKinds: Record<string, unknown> }).spellKinds
