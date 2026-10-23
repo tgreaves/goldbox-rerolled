@@ -253,7 +253,11 @@ the stem table's slack (the whole of each slot past the party count). Not run: t
   the port kept the scripts' block value in B 0x6E12 (1 after the jump; 3 in play for ECL2), which the
   original's loader takes as the file digit (0x41F66), and ECL1 has no record 51. Fixed (the save
   writes the digit there in every game, as the originals' writers do; ecl.md); then the original
-  loads it, 5 of 5 frames exact there.
+  loads it, 5 of 5 frames exact there, and 18 of 18 on a 17-move walk round the temple level. Saved
+  there by the original (Encamp, Save to B) and by the port after the same load: the DAT is equal
+  but for byte 0x1406, the previous game state (2 in the original's, 4 in the port's), which the
+  loader overwrites at once (records.md §4); the character files equal but for the run-time pointers
+  (three of the six written byte for byte as the port's).
 
 - **Curse of the Azure Bonds played further** (2026-10-23). Headless: the tour (`coabtour.test.ts`, every
   area of every block by the Debug jump, the sturdy party walking every square it reaches, 2 seeds × 1 500

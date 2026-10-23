@@ -293,7 +293,7 @@ Written by 0x421CB, read by 0x419DD in the same order (O, each BlockWrite and Bl
 | 0x1001 | 0x400 | array C (`DS:67CE`) | same |
 | — | — | **no ECL code buffer** | CotAB stores 0x1E00 bytes here |
 | 0x1401 | 5 | `DS:89D7..89DB`: X, Y, facing, wall, square (I: as CotAB) | same |
-| 0x1406 | 1 | previous game state `DS:67E8` | same |
+| 0x1406 | 1 | previous game state `DS:67E8`: what it holds when saving (4 after the opening's camp, 2 after a load and a camp; DOSBox); the loader reads it and replaces it at once with the game state (0x41FF4: DS:67E8 := DS:67E7), so its value has no effect (O). The port writes 4 (3 overland) | same |
 | 0x1407 | 1 | game state `DS:67E7` | same |
 | 0x1408 | 12 | 3 × (u16 wall-set record id `DS:89D8+4i`, u16 slot `DS:89DA+4i`), i = 1..3 | same |
 | 0x1414 | 1 | party count | same |
