@@ -163,12 +163,17 @@ export function itemSpells(it: import('../data/items').Item, scroll: boolean): n
 }
 
 /** After a cast from an item: a scroll loses that spell; a charged stack loses a unit, a single item a charge (gone at 0). */
-export function spendUse(items: import('../data/items').Item[], it: import('../data/items').Item, scroll: boolean, id: number) {
+export function spendUse(items: import('../data/items').Item[], it: import('../data/items').Item, scroll: boolean, id: number, owner?: { c: Uint8Array; t: import('../data/items').ItemTables }) {
   if (scroll) {
     for (let j = 0; j < 3; j++) if ((it.raw[0x3c + j] & 0x7f) === id) { it.raw[0x3c + j] = 0; break }
     return
   }
   if (it.raw[0x3c] === 0) return
   if (it.count > 1) it.count--
-  else if (--it.raw[0x3c] === 0) items.splice(items.indexOf(it), 1)
+  else if (--it.raw[0x3c] === 0) {
+    // the last charge: the item goes and the record is worked out again, as Drop does (I: the original's
+    // loss of a used-up item not traced; the record's item count must match what is carried)
+    items.splice(items.indexOf(it), 1)
+    if (owner) recalc(owner.c, items, owner.t)
+  }
 }

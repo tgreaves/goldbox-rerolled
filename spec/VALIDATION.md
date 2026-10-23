@@ -260,7 +260,12 @@ Not run: the Sell, Share and Appraise checks (decided not worth it); register 0x
   hole to 2/64 (event 62, the east walls at (15,11)–(15,14), 0x8448 → 0x85AF, shut only once A 0x4CD9
   is 1, set by ECL3 #99) is in a pocket entered only from level 10, sub-level 1, event 59 at (0,15)
   (its south wall, → square 50); 37 of level 10's 60 street states lead there, and the runs had not
-  found it by 400 000 steps. Not yet played in order: 2/64 onwards (block 2's 64–68, block 3, the
+  found it by 400 000 steps. Found and fixed on the way: camp Magic's Display with no effects printed the
+  placeholder "#noSpellEffects" in SotSB (its text is " <No Magical Effects>", camp.md); a potion or
+  wand used up from View left the record's item count one too high, written so into the save (the
+  item's removal now works the record out again, as Drop does, spells.md). Kept as the original does:
+  a last member charmed when the battle ends leaves with the monsters and the party is empty (the
+  play-test loads, as after a loss). Not yet played in order: 2/64 onwards (block 2's 64–68, block 3, the
   Dreadlord), TODO.md.
 - **Silver Blades in the browser, later blocks** (2026-10-23, Playwright with headless Chrome against
   the built app, a fresh profile): the title music (8 sound buffers started), save A, the Enhanced

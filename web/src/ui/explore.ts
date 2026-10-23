@@ -1616,7 +1616,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         const s = u.spell === undefined ? undefined : st.get(u.spell)
         if (u.spell !== undefined && !s) return
         if (s && s.side === 0 && a !== 'use-waste') u.combatOnly = true
-        if (a === 'use-waste' && s) { spendUse(items, it, u.scroll, s.id); again({ message: 'The item is used up.' }); return }
+        if (a === 'use-waste' && s) { spendUse(items, it, u.scroll, s.id, { c: node, t }); again({ message: 'The item is used up.' }); return }
         if (!s || u.combatOnly) { again({ selected: keep, confirm: 'use', use: u }); return }
         const kind = targetKind(s)
         let targets = [node]
@@ -1629,7 +1629,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         if (u.scroll && !readsScroll(node, (n, sd) => engine.roll(n, sd))) { again({ selected: keep, message: `${c.name} ${msg('scrollOops')}` }); return }
         print(`${c.name} ${msg('usesItem')}`, false)
         void castOutside(engine, node, s, targets, true).then((out) => {
-          spendUse(items, it, u.scroll, s.id)
+          spendUse(items, it, u.scroll, s.id, { c: node, t })
           for (const m of out) print(m, false)
           again({ selected: Math.min(keep, items.length - 1), message: out.join(' ') })
         })

@@ -875,12 +875,12 @@ export const COAB_MENUS: Menus = {
 // unmatched: those of procedures SotSB has not (Turn Undead: turnsUndead, isTurned, isDestroyed,
 // nothingHappens; duels: wonDuel, duelistReceives, lostDuel; miscasts) or does otherwise (the temple asks no
 // price: willOnlyCost, goldPieces, payForCure, templeCured; the camp has no prompt: camp, alter; revival:
-// getsBackUp, reviveMonster, reviveParty; unCursed is "is " + "un-cursed"; trainingCosts, cannotMemorize, funky,
-// noSpellEffects)
+// getsBackUp, reviveMonster, reviveParty; unCursed is "is " + "un-cursed"; trainingCosts, cannotMemorize, funky)
 export const SOTSB_STRINGS: Strings = {
   // the camp (0x38FAF) and Alter (0x37C92) menus print no prompt: the image has no "Camp:"/"Alter:" (O)
   camp: [], alter: [],
   cursed: 0x442e2, // the ready routine 0x4431F (CS:0x1BD2), O
+  noSpellEffects: 0x37446, // " <No Magical Effects>": Display's list starts with it (0x3745D, CS:0x1574; CotAB " <No Spell Effects>"), O
   combatOnlySpell: 0x48b75, // "can't be cast here...": the cast 0x48C03, a spell of record byte 7 = 0 out of battle, not from an item; then loseIt (Y forgets it), O
   cough: 0x514d0, nausea: 0x514e0, cloudPoisoned: 0x514fc, cloudKilled: 0x2eb8d, battleBegins: 0x2c551,
   teammateDying: 0x28ab9, continueBattle: 0x28ad0, gameSpeed: 0x37d41, speedRange: 0x37d4f, bandaged: 0x5611f,

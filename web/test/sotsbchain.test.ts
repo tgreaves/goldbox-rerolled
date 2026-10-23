@@ -15,7 +15,8 @@ const steps = Number(process.env.SOTSB_CHAIN_STEPS ?? 3000)
 const seeds = Number(process.env.SOTSB_CHAIN_SEEDS ?? 1)
 const fresh = process.env.SOTSB_CHAIN_FRESH === '1'
 // SOTSB_CHAIN_FROM=<dir>: go on from a save an earlier run left (SOTSB_CHAIN_SAVE=<dir> writes the last
-// seed's last save there); SOTSB_CHAIN_GOAL=2/64,3/80 stops a run on reaching one of those areas
+// seed's last save there); SOTSB_CHAIN_GOAL=2/64,3/80 stops a run on reaching one of those areas;
+// SOTSB_CHAIN_HINTS=<file.json> gives the tour squares to make for (PlayOptions.hints)
 const goal = process.env.SOTSB_CHAIN_GOAL?.split(',')
 function readSave(d: string): SaveFiles {
   const n = readdirSync(d).filter((f) => f.endsWith('.sav')).length
@@ -37,7 +38,8 @@ describe.skipIf(!have)('Secret of the Silver Blades played in its order', () => 
     const failures: string[] = []
     for (let seed = Number(process.env.SOTSB_CHAIN_SEED0 ?? 1); seed < Number(process.env.SOTSB_CHAIN_SEED0 ?? 1) + seeds; seed++) {
       const from = process.env.SOTSB_CHAIN_FROM ? readSave(process.env.SOTSB_CHAIN_FROM) : undefined
-      const r = await play({ game: SOTSB, files, seed, steps, from, goal, tour: true, hardy: true, fresh, watch: (process.env.SOTSB_CHAIN_WATCH ?? '0x4c4b,0x4c69,0x4c6b').split(',').map(Number), subAreas: [0x4c4b, 0x4c69, 0x4c6b], trace: !!process.env.PLAY_TRACE_FILE })
+      const hints = process.env.SOTSB_CHAIN_HINTS ? JSON.parse(readFileSync(process.env.SOTSB_CHAIN_HINTS, 'utf8')) : undefined
+      const r = await play({ game: SOTSB, files, seed, steps, from, goal, hints, tour: true, hardy: true, fresh, watch: (process.env.SOTSB_CHAIN_WATCH ?? '0x4c4b,0x4c69,0x4c6b').split(',').map(Number), subAreas: [0x4c4b, 0x4c69, 0x4c6b], trace: !!process.env.PLAY_TRACE_FILE })
       const st = r.stats
       const sq = [...(r.squares ?? new Map<string, Set<number>>())].map(([k, v]) => `${k}:${v.size}`).join(' ')
       appendFileSync(process.env.SOTSB_CHAIN_LOG ?? '/dev/stdout', `seed ${seed}: ${r.steps} steps; areas in order ${[...st.areas].join(' ')}; squares ${sq}; ${st.battles} battles (${st.won} won, ${st.fled} fled, ${st.lost} lost); watched ${[...(r.watched ?? new Map<number, Set<number>>())].map(([a, v]) => `${a.toString(16)}: ${[...v].join(',')}`).join('; ')}; ${st.ended}${r.stuck.length ? `; stuck ${r.stuck.length}: ${r.stuck.slice(0, 3).join(' | ')}` : ''}\n`)

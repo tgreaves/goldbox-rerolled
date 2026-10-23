@@ -14,6 +14,10 @@
 | magic | "Cast Memorize Scribe Display Rest Exit" (0xE221) | the same |
 | alter | "Order Drop Speed Icon **Level** Exit" (0xE249) | "Order Drop Speed Icon **Pics** Exit" |
 | level (new) | "Novice Squire Veteran Adept Champion" (0xE272) | — |
+
+Magic's **Display** (0x3745D) starts its list with " <No Magical Effects>" (CS:0x1574, image 0x37446), the
+line a party without effects sees; CotAB's is " <No Spell Effects>" (0x30DC5) (O). The port: the profile's
+`noSpellEffects`.
 | rest | "Rest Days Hours Mins Add Subtract Exit" (0x46F2B) | the same |
 
 The camp screen is 0x38FAF (CotAB 0x321CB, "The party makes camp...", 0x38F66). **Save** (0x390BE–0x39125,
