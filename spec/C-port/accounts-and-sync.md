@@ -697,7 +697,7 @@ with a message.
 | Variable | Default | Rule |
 |---|---|---|
 | `PORT` | `8080` | integer 0–65535 |
-| `HOST` | `0.0.0.0` | the listening address; `127.0.0.1` behind a proxy on the same machine |
+| `HOST` | `127.0.0.1` | the listening address: loopback unless set; `0.0.0.0` for a LAN (the systemd unit) or inside a container (the Dockerfile, its port published on 127.0.0.1) |
 | `DATA_DIR` | `$XDG_DATA_HOME/goldbox-rerolled` when `XDG_DATA_HOME` is an absolute path, else `~/.local/share/goldbox-rerolled` | made absolute; outside the repository; `/data` in the Docker image |
 | `WEB_ROOT` | `web/dist` beside `server/` | the built app |
 | `COOKIE_SECURE` | on | `Secure` cookie, `__Host-` prefix and HSTS; off only for plain HTTP on a LAN |

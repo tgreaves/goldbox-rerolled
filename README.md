@@ -67,12 +67,13 @@ The app works on its own, with everything kept in the browser. The small server 
 
 ```sh
 cd web && npm ci && npm run build && cd ..
-COOKIE_SECURE=0 node server/main.ts            # http://localhost:8080/ on a LAN (plain HTTP)
+COOKIE_SECURE=0 node server/main.ts            # http://localhost:8080/, this machine only (plain HTTP)
+HOST=0.0.0.0 COOKIE_SECURE=0 node server/main.ts   # the same on a LAN
 node server/admin.ts help                      # accounts, invites, stats
 docker compose up -d --build                   # or with Docker (docker-compose.yml is an example to adapt)
 ```
 
-[`docs/server.md`](docs/server.md) has the design, API, data layout, security model, configuration, the systemd unit, Docker, and what to do before running it publicly.
+[`docs/server.md`](docs/server.md) has the design, API, data layout, security model, configuration, the systemd unit, a macOS launchd agent, Docker, and what to do before running it publicly.
 
 ## Status
 

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  GoldBox Rerolled server as a macOS launchd agent (docs/server.md, "launchd (macOS)"), for local
+  testing: loopback only, plain HTTP. Replace /path/to/goldbox-rerolled and the node path, then:
+    cp server/goldbox-rerolled.plist ~/Library/LaunchAgents/org.goldbox-rerolled.plist
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/org.goldbox-rerolled.plist
+  Restart after a change under server/: launchctl kickstart -k gui/$(id -u)/org.goldbox-rerolled
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>org.goldbox-rerolled</string>
+  <key>WorkingDirectory</key><string>/path/to/goldbox-rerolled</string>
+  <key>ProgramArguments</key>
+  <array><string>/opt/homebrew/bin/node</string><string>server/main.ts</string></array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PORT</key><string>8080</string>
+    <!-- this machine only; never 0.0.0.0 here: the dev server is the LAN one -->
+    <key>HOST</key><string>127.0.0.1</string>
+    <!-- plain HTTP on localhost: cookies without the Secure flag, no HSTS -->
+    <key>COOKIE_SECURE</key><string>0</string>
+    <key>SIGNUP</key><string>open</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
+  <key>Umask</key><integer>63</integer>
+  <key>StandardOutPath</key><string>/tmp/goldbox-rerolled.log</string>
+  <key>StandardErrorPath</key><string>/tmp/goldbox-rerolled.log</string>
+</dict>
+</plist>

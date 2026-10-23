@@ -36,7 +36,9 @@ usually sets:
   `/data` in Docker). Keep it outside the repository and back it up.
 - `COOKIE_SECURE=0` only for plain HTTP on a LAN (it also turns HSTS off); leave the default behind
   HTTPS.
-- `TRUST_PROXY=1` and `HOST=127.0.0.1` behind one reverse proxy on the same machine.
+- `HOST`: the listening address, `127.0.0.1` unless set (so a plain `node server/main.ts` is reachable
+  only from the same machine); `0.0.0.0` to serve a LAN, as the systemd unit does.
+- `TRUST_PROXY=1` (with `HOST` left at `127.0.0.1`) behind one reverse proxy on the same machine.
 - `SIGNUP` (`open`, `invite`, `off`), `MAX_USERS`, `QUOTA_MB` (per account), `SESSION_DAYS`.
 - `LOG_REQUESTS=0` to log errors only.
 
@@ -89,6 +91,22 @@ journalctl --user -u goldbox-rerolled -f
 ```
 
 After `git pull`: `cd web && npm ci && npm run build`, then `systemctl --user restart goldbox-rerolled`.
+
+## launchd (macOS)
+
+For quick local testing on a Mac, [`server/goldbox-rerolled.plist`](../server/goldbox-rerolled.plist) is a
+launchd agent: loopback only (`HOST=127.0.0.1`), plain HTTP, open sign-up, started at login.
+
+```sh
+sed "s#/path/to/goldbox-rerolled#$PWD#" server/goldbox-rerolled.plist > ~/Library/LaunchAgents/org.goldbox-rerolled.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/org.goldbox-rerolled.plist
+launchctl kickstart -k gui/$(id -u)/org.goldbox-rerolled   # restart after a change under server/
+launchctl bootout gui/$(id -u)/org.goldbox-rerolled        # stop and unload
+tail -f /tmp/goldbox-rerolled.log
+```
+
+It serves `web/dist`, so `npm run build` in `web/` updates it at once. Check the node path in the
+file (`which node`).
 
 ## Docker
 

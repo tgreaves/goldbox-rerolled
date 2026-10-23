@@ -144,6 +144,11 @@ The 2026-10-22 session (Silver Blades, the first DOSBox checks) ran on Tristan's
   the remote there is `git@github.com:…`). On the server, plain `git push` works.
 - Browser checks used Playwright with Chrome; the DOSBox checks DOSBox Staging, the same method as
   `tools/dosbox/`.
+- The app and accounts server runs there too, for quick testing: the launchd agent
+  `~/Library/LaunchAgents/org.goldbox-rerolled.plist` (from `server/goldbox-rerolled.plist`, [server.md](server.md),
+  "launchd (macOS)"), on `http://127.0.0.1:8080/` only, plain HTTP, data in `~/.local/share/goldbox-rerolled`,
+  log `/tmp/goldbox-rerolled.log`. It serves `web/dist`: `npm run build` updates it; restart it after a change
+  under `server/` with `launchctl kickstart -k gui/$(id -u)/org.goldbox-rerolled`.
 - Editor swap files (`*.swp`) are ignored by `.gitignore` since one was committed by mistake.
 
 ## Browser play-testing

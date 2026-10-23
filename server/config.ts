@@ -49,7 +49,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   if (signup !== 'open' && signup !== 'invite' && signup !== 'off') throw new Error(`SIGNUP must be open, invite or off (got ${signup})`)
   return {
     port: int(env.PORT, 8080, 0, 65535),
-    host: env.HOST || '0.0.0.0',
+    host: env.HOST || '127.0.0.1',
     dataDir: resolve(env.DATA_DIR || defaultDataDir()),
     webRoot: resolve(env.WEB_ROOT || join(import.meta.dirname, '..', 'web', 'dist')),
     cookieSecure: flag(env.COOKIE_SECURE, true),
