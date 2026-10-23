@@ -1732,6 +1732,26 @@ export class Engine {
     return c
   }
 
+  /**
+   * An entry leaves the list as the original's remove-current routine takes it (PoR FUN_417f_3291, SotSB
+   * 0x3CAA4, called with the entry made current: the aftermath's flight 0x23CCC and clean-up 0x23D25):
+   * when it is the current one, the entry before it becomes current, or the new head when it was the
+   * first; the party size is left to the caller (the aftermath counts the list again). Its items and
+   * effects go with it.
+   */
+  removeEntry(c: Uint8Array) {
+    const i = this.nodes.indexOf(c)
+    if (i < 0) return
+    this.nodes.splice(i, 1)
+    this.inventory.delete(c)
+    this.effects.delete(c)
+    const next = this.nodes[Math.max(0, i - 1)]
+    if (next && this.cur === c) {
+      if (this.savedCur === c) this.savedCur = next
+      this.cur = next
+    }
+  }
+
   /** Alter → Drop: the member leaves the party for good. */
   dropMember(c: Uint8Array) {
     const i = this.nodes.indexOf(c)

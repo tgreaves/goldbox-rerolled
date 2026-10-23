@@ -229,7 +229,7 @@ if won: share = experience(); award(share)
 | Outcome | Condition | What happens to party entries | ECL 0x6DC7 |
 |---|---|---|---|
 | won | someone Okay or Animated | Running → Okay (back in play); Dying → Unconscious; Unconscious with HP > 0 → Okay | 0 |
-| fled | not defeated, nobody Okay/Animated, someone Running | Running → Okay; every other party entry (Unconscious, Dying, Dead, Stoned, Gone) is removed from the party with all its items (`FUN_417f_3291`, party size − 1) | 0x81 |
+| fled | not defeated, nobody Okay/Animated, someone Running | Running → Okay; every other party entry (Unconscious, Dying, Dead, Stoned, Gone) is made current and removed from the party with all its items (`FUN_417f_3291`, party size − 1), which makes the entry before it current, or the new head when it was the first (SotSB 0x23CCC → 0x3CAA4, O) | 0x81 |
 | destroyed | no non-NPC party-side member Okay, Animated or Running | every party entry removed; party size 0 | 0x80 |
 | duel | `DS:84D4` set | see below | 0 (also when lost) |
 

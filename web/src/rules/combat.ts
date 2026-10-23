@@ -2694,7 +2694,7 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
     e.write(0x6dc7, 0x81)
     for (const f of party) {
       if (f.c[F.status] === 3) { f.c[F.status] = 0; f.c[F.inPlay] = 1 }
-      else { const i = e.nodes.indexOf(f.c); if (i >= 0) e.nodes.splice(i, 1); e.inventory.delete(f.c) }
+      else { e.cur = f.c; e.removeEntry(f.c) } // made current and removed (0x23CCC → 0x3CAA4): the one before becomes current
     }
     msgs.push(msg('partyFled'), `${msg('eachReceives')}0 ${msg('experiencePoints')}`)
   } else {
@@ -2710,10 +2710,7 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
   for (const f of b.fighters) {
     if (!f.monster && f.c[F.side] !== 1) continue
     if (!f.c[F.inPlay]) defeated++
-    const i = e.nodes.indexOf(f.c)
-    if (i >= 0) e.nodes.splice(i, 1)
-    e.inventory.delete(f.c)
-    e.effects.delete(f.c)
+    e.removeEntry(f.c) // 0x23D25 makes each current first (I: what the current is after the battle is not traced)
   }
   e.write(0x6dc8, defeated)
   // only the party is left in the list now: the party size follows it (members lost when the party

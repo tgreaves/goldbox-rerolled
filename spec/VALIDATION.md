@@ -182,7 +182,8 @@ back, a frame after each: 25 of 25 exact. Not run: the Sell, Share and Appraise
   ecl.md "Start-up and new game"); a jump into an area whose map an earlier script loads (2/49–2/51)
   kept the last area's map, and after a save and load the party could not move (the jump now loads the
   area's own map, IMP-025); SotSB's view closes its edges in areas 0 and 80, not CotAB's 0 and 10
-  (assets.md §2). The demo itself runs in `demo.test.ts`, every picture and icon in the files.
+  (assets.md §2); after a flight that lost members the current character could be one of the lost
+  (the remove-current routine's rule now applies, combat-rules.md "Results"; all games). The demo itself runs in `demo.test.ts`, every picture and icon in the files.
 
 ## 5. Clean-room runs
 

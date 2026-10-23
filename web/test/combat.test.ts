@@ -179,6 +179,29 @@ describe.skipIf(!have)('combat', () => {
     if (r.messages.includes('The party has fled.')) expect(e.read(0x6dc7)).toBe(0x81)
   })
 
+  it('a member lost in a flight leaves as the remove-current routine takes it: the one before becomes current (SotSB 0x23CCC → 0x3CAA4)', async () => {
+    const m = new Map<string, Uint8Array>()
+    for (const n of readdirSync(dir)) if (wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(join(dir, n))))
+    const files = new GameFiles(m)
+    const io = { print: () => {}, menu: async () => 0, refresh: async () => {}, pause: async () => {}, sound: () => {},
+      picture: () => {}, sprite: () => {}, engine: async () => {}, inputNumber: async () => 0, inputText: async () => '' } as unknown as Io
+    const dat = files.get('SAVGAMA.DAT')!
+    const stems = parseSave(dat).party
+    const e = new Engine(files, io, 2)
+    e.loadSave(dat, stems.map((s) => files.get(`${s}.SAV`)!))
+    await e.start()
+    const [a, b, c] = e.party()
+    e.cur = e.savedCur = c
+    e.removeEntry(c)
+    expect([e.cur, e.savedCur]).toEqual([b, b]) // the one before
+    e.removeEntry(e.party()[e.party().length - 1]) // not the current one: the current stays
+    expect(e.cur).toBe(b)
+    e.cur = a
+    e.removeEntry(a)
+    expect(e.cur).toBe(b) // the first gone: the new head
+    expect(e.party()).not.toContain(a)
+  })
+
   it('never counts loaded monsters as party members, and recounts the party after a battle', async () => {
     const m = new Map<string, Uint8Array>()
     for (const n of readdirSync(dir)) if (wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(join(dir, n))))
