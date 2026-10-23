@@ -272,7 +272,30 @@ Not run: the Sell, Share and Appraise checks (decided not worth it); register 0x
   again when it removes an item, as spendUse does). From the 2/65 save (2 × 300 000 steps, hints for
   2/65's event 39 west and 2/66's event 31 south, on_move 0x8176 and 0x81B7): one seed went back by 2/64,
   the other reached 2/66, then its game ended 501 times with no battle lost (the cause not yet traced),
-  so block 3 is not yet reached in order. Kept as the original does: the Ring of Invisibility's effect 56
+  so block 3 is not yet reached in order. **The 501 endings, found and fixed** (2026-10-23): 2/66's screaming
+illusion (0x8EDD) frees a member when GOSUB 0x9C32 finds one whose B+0x100 reads 1 and a d20 is below its
+byte 0x9E; while nobody is freed everyone takes 2d10 with no save (0x8FCF) and it goes round again. SotSB's
+view read maps the status through a table (0x263D8: Okay reads 1, Dead 3 …), but the port returned the raw
+status (Okay 0), so nobody was ever freed and the loop killed the party every time (script-vm-map.md,
+`view100`; `view100.test.ts`). Every SotSB script test of who is in play read wrong before (VALA's, 3/99
+0x8999, among them). Since then, from saves the chain wrote on entering 2/64 and 2/65 (`SOTSB_CHAIN_SAVEAT`,
+in the game's own files): 3 seeds × 250 000 steps from 2/64 (one reached 2/65) and 3 × 150 000 from
+2/65 went back by 2/64 and into the mine and town; 2/65's way on (event 39 at (13,9) facing west) was not
+taken again, so block 3 is still not reached in order. **The end of the game, by Debug jumps** (not in
+order): headless, a party jumped beside 3/99's soul chamber (event 6 at (1,2), 0x84B3; 3/99 runs on 3/98's
+map) gets the Dreadlord's image, EXPLORE ROOM, 12 iron golems and 6 medusae (0x85E6), the gem shattered
+and "A GATE BEGINS TO GLOW IN THE NORTHWEST CORNER" ([0x4CD9] := 1, 0x8612); the gate (event 22 at (0,0),
+0x888E) works only once [0x4C63] is set, which the well's dragon fight sets (ECL1 #33 0x8CF2), so for a
+party that jumped it is "THE TELEPORTER IS DEAD"; jumped to the well (ECL1 #33, event 27 at (7,7)–(8,8),
+0x8B49), the party meets the ancient red dragon (0x8C71), then the well's talk and, [0x4CD9] being set,
+"BRAVE WARRIORS, YOU HAVE DEFEATED THE DREADLORD …" once (0x99C5, A 0x4C5F & 4), then "THE WELL HAS
+NOTHING FURTHER FOR YOU." each time after. **In the browser** (Chrome visible, slowed, the built app on
+127.0.0.1:4197, save A, Debug jumps to 3/99 (1,1) facing south, then twice to 1/33 to land at (7,6)):
+the Dreadlord's image and the chamber's text, the battle (iron golems and medusae in the turn strip),
+won by the Debug panel's "Win this battle" ("The party has won.", 29 987 experience each), the spirits'
+texts and the gate's glow; at the well the dragon's speech and battle (won the same way), "THE
+TREMENDOUS REPTILE LIES DEAD", journal entry 25 and the Dreadlord message, then "THE WELL HAS NOTHING
+FURTHER FOR YOU." and the push out of the well area; no page or console errors. Kept as the original does: the Ring of Invisibility's effect 56
   adds a record of 25 lasting 1 at every event 8 and 19 with no de-dupe (engine/effects.md, 3723_1363), so
   some 40 can stand at once after a long battle; the play-test no longer counts those as a pile-up.
   Found and fixed on the way: camp Magic's Display with no effects printed the

@@ -412,7 +412,7 @@ the difficulty level (ECL 0x4CF4, the rules profile's `difficulty`); CHECK_PARTY
 COMBAT opens the vault (ECL 0x4CFC, the bank's Deposit and Withdraw; the host's 'vault' screen); DAMAGE rolls
 per victim; FIND_SPELL counts from slot 0; DESTROY_ITEMS puts readied items away first. NEW_ECL, PICTURE,
 LOAD_AREA, WHO and REDRAW_SCREEN need nothing new; TREASURE's type table belongs to the random-treasure
-data. The game has no ending program: the well's epilogue (ECL1 #34) and play goes on.
+data. The game has no ending program: the well's epilogue (ECL1 #33, 0x99B7) and play goes on.
 `test/sotsbvm.test.ts`.
 
 *Rules (2026-10-22):* `SOTSB_RULES` (games/rules.ts) in place of CotAB's: seven spell levels and the spell

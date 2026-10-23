@@ -316,9 +316,11 @@ writes as data (0x100 and 0x119 differ), the second leave flag as profile data (
 
 - ~~The changed handlers~~: read ([Handlers read](#handlers-read-o)); TREASURE's type table is left to the
   random-treasure data.
-- **The end of the game** (O): no PROGRAM ends it. Once the Dreadlord is destroyed (ECL3), the well of ECL1
-  #34 (0x99B7) prints "BRAVE WARRIORS, YOU HAVE DEFEATED THE DREADLORD…" once (A 0x4C5F bit 4) and play goes
-  on; the profile's ending is empty.
+- **The end of the game** (O): no PROGRAM ends it. Once the Dreadlord's soul is destroyed (ECL3 #99, the gem's
+  chamber 0x84B3: 12 iron golems and 6 medusae, then [0x4CD9] := 1 at 0x8612), the well of ECL1 **#33**
+  (event 27, 0x8B49 → 0x8E3C → 0x99B7) prints "BRAVE WARRIORS, YOU HAVE DEFEATED THE DREADLORD…" once (A 0x4C5F
+  & 4, set at 0x9A49), then "THE WELL HAS NOTHING FURTHER FOR YOU." and play goes on; the profile's ending is
+  empty. Played headless and in the browser from Debug jumps ([VALIDATION.md §4](../../VALIDATION.md)).
 - What `19d:0`(1) does for the demo, and DS:7420's values 1 and 2 (**?**).
 - The meanings of the new record bytes the view reaches (+0x1B, +0x70, +0x1B5) wait for SotSB's record
   map (**?**).

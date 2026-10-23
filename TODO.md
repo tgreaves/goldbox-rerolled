@@ -16,8 +16,10 @@ that settles it.
    fixing what they find. SotSB in its order (2026-10-23, `sotsbchain.test.ts`): the town, the ruins'
    street zones, the mine's levels 0–10 and, through level 10's street maze (route hints from its
    tables), the hole into 2/64, then 2/65, 2/66 and 2/68, reached as the scripts route them; still to do,
-   from 2/66 into block 3 (3/80 by event 31 south; a run there ended its game 501 times with no battle
-   lost, cause not traced), block 3 and the Dreadlord, and the final battle and the well's message in the browser
+   from 2/65 on in order: 2/65's event 39 west at (13,9) into 2/66, 2/66's event 31 south into 3/80 (the
+   501 endings there were the B+0x100 read, fixed), block 3 (3/80–82, 96–99) and the Dreadlord. The end
+   itself (3/99's soul chamber, the well's dragon and its message) plays headless and in the browser
+   from Debug jumps; in order the glowing gate needs the well's 0x4C63, which a jumping party lacks
    ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4, "Silver Blades played in its order").
    CotAB (2026-10-23): every area toured headless and its towns, hall, shop,
    temple, overland edge, camp and a battle with spells checked in the browser
