@@ -490,10 +490,13 @@ export class Engine {
     if (k === 0xf7) return u16(F.xpBase)
     if (k === 0xf9) return c[F.xpPerHp]
     if (k === 0x100) {
-      if (game().ecl.view100.read === 'status') return c[F.status]
+      const read = game().ecl.view100.read
       const past = game().ecl.loadPastEnd && this.loadedPastEnd
       this.loadedPastEnd = false
-      return past ? 0 : c[F.inPlay] === 0 ? 0x80 : 1
+      if (past) return 0
+      // SotSB 0x263D8: the status through its table (Okay reads 1, as in play does in PoR and CotAB)
+      if (read !== 'inPlay') return read[c[F.status]] ?? 0
+      return c[F.inPlay] === 0 ? 0x80 : 1
     }
     if (k === 0x10c) {
       if (c[F.side] === 0 && c[F.quick] !== 0) return 0x80

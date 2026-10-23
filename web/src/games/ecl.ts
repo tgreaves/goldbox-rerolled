@@ -20,10 +20,12 @@ export interface EclMap {
   viewWrites: Record<number, { field: keyof CharFields; word?: boolean }>
   /** how many money words the view shows from B + 0xBB, two bytes apart (PoR, CotAB 5; SotSB 6, to 0xC5) */
   moneyWords: number
-  /** B + 0x100: read as in play (0x80 out, 1 in: PoR, CotAB) or as the status byte (SotSB 0x260CD); written
+  /** B + 0x100: read as in play (0x80 out, 1 in: PoR, CotAB) or as the status byte through a table, the value
+   *  by status 0, 1, 2 ... (SotSB 0x263D8: Okay 1, Running 6, Unconscious 5, Dying 4, Dead 3, Stoned 7, Gone 2,
+   *  else 0); with a LOAD_CHARACTER past the end before it (`loadPastEnd`) the read is 0 either way; written
    *  `outOfPlay` (at least 0x80 out of play, 0x87 stoned, 0 the second leave flag: PoR, CotAB) or `okayInPlay`
    *  (1: Okay and in play; SotSB 0x265BD) */
-  view100: { read: 'inPlay' | 'status'; write: 'outOfPlay' | 'okayInPlay' }
+  view100: { read: 'inPlay' | number[]; write: 'outOfPlay' | 'okayInPlay' }
   /** an A address the engine answers with the facing byte instead of the array (SotSB A 0x4BEA, 0x269A9); null: none */
   facingInA: number | null
   /** the PROGRAM operand that plays the ending (PoR, CotAB 8); null: none (SotSB's PROGRAM knows only 0 and 9) */
@@ -220,7 +222,7 @@ export const SOTSB_ECL: EclMap = {
   },
   viewWrites: { 0x119: { field: 'hp' } },
   moneyWords: 6,
-  view100: { read: 'status', write: 'okayInPlay' },
+  view100: { read: [1, 0, 0, 6, 5, 4, 3, 7, 2], write: 'okayInPlay' }, // 0x263D8
   facingInA: 0x49ea, // A 0x4BEA in SotSB's numbering
   endingProgram: null,
   // CS:0x37A4, 0x37D0, 0x37E1 in the VM's segment (image 0x1DB30): the levels +0x111 ... +0x116, the thief's not counted

@@ -115,7 +115,7 @@ The B words at 0x00 and 0x100 written as 0, then a LOAD_CHARACTER with bit 7, dr
 | `viewReads` | reads this game adds or changes, by offset (below) | none | 0x15, 0x72, 0x73, 0xD6, 0xE4, 0xC9 | 0x15, 0x19, 0x72, 0x73, 0x76, 0xAC, 0xC9–0xCC, 0xCF, 0xD0, 0xD6, 0x119 |
 | `viewWrites` | writes this game adds: offset → a field, a byte or (`word`) a u16 | none | none | 0x119 → HP |
 | `moneyWords` | money words from B + 0xBB, two bytes apart, read and written as the record's | 5 | 5 | 6 (to 0xC5) |
-| `view100` | B + 0x100 read as in play (0x80 out, 1 in) or as the status byte; written `outOfPlay` (≥ 0x80 out of play, 0x87 stoned, 0 the second leave flag) or `okayInPlay` (1: Okay and in play) | in play, outOfPlay | in play, outOfPlay | status, okayInPlay (0x260CD, 0x265BD; so the second leave flag is never set) |
+| `view100` | B + 0x100 read as in play (0x80 out, 1 in) or as the status byte through a table (the value by status; 0 after a LOAD_CHARACTER past the end); written `outOfPlay` (≥ 0x80 out of play, 0x87 stoned, 0 the second leave flag) or `okayInPlay` (1: Okay and in play) | in play, outOfPlay | in play, outOfPlay | the table [1, 0, 0, 6, 5, 4, 3, 7, 2] (0x263D8: Okay reads 1), okayInPlay (0x265BD; so the second leave flag is never set) |
 | `facingInA` | an A address answered with the facing instead of the array | null | null | 0x49EA (SotSB A 0x4BEA, 0x269A9) |
 
 A `ViewRead` is one of:

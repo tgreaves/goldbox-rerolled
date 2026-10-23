@@ -187,7 +187,7 @@ B offset k (word index: address − 0x7C00) → field of SotSB's record (CotAB's
 | 0xD6, 0xD8 | +0x11F, +0x120 | | +0x119, +0x11B |
 | 0xE4 | — | — | +0x192 bit 0 (the Hillsfar flag): gone |
 | 0xF7, 0xF9 | +0x14E (word), +0x150 | the same | +0x13C, +0x13E |
-| 0x100 | +0x1A6 | **v = 1: +0x1A6 := 0, +0x1A7 := 1** (I: Okay and in play) | +0x196; v ≥ 0x80 out of play, 0x87 stoned, 0 the second leave flag |
+| 0x100 | +0x1A6 through a table (0x263D8, O): 0 while DS:A4D1 is set (a LOAD_CHARACTER past the end, 0x1DE4C; cleared by one that finds a member, 0x1DE45); else Okay 1, Running (3) 6, Unconscious (4) 5, Dying (5) 4, Dead (6) 3, Stoned (7) 7, Gone (8) 2, any other 0 | **v = 1: +0x1A6 := 0, +0x1A7 := 1** (I: Okay and in play) | +0x196; v ≥ 0x80 out of play, 0x87 stoned, 0 the second leave flag |
 | 0x10C | +0x1A8, +0x1A9 | 0 → 0, 0; 0x80 → 0, 1; 0x81 → 1, 1 | +0x197, +0x198, the same values |
 | **0x119** | +0x1B5 | +0x1B5 | new |
 | 0x11B | +0x1B6 | | +0x1A5 |
