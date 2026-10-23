@@ -281,7 +281,20 @@ status (Okay 0), so nobody was ever freed and the loop killed the party every ti
 0x8999, among them). Since then, from saves the chain wrote on entering 2/64 and 2/65 (`SOTSB_CHAIN_SAVEAT`,
 in the game's own files): 3 seeds × 250 000 steps from 2/64 (one reached 2/65) and 3 × 150 000 from
 2/65 went back by 2/64 and into the mine and town; 2/65's way on (event 39 at (13,9) facing west) was not
-taken again, so block 3 is still not reached in order. **The end of the game, by Debug jumps** (not in
+taken again, so block 3 is still not reached in order. **Block 3 reached in order** (2026-10-23, on the
+dev server): two causes found. Every stair between the dungeon mazes asks "ANSWER" or "FIGHT", and an
+answer is a word typed (2/65's at (13,9): "YOU FEED IT, IT LIVES, YOU GIVE IT SOMETHING TO DRINK, IT
+DIES!", FIRE); the harness typed a random word, and a wrong one sends the party back to the Well
+("YOU FIND YOURSELVES BACK AT THE WELL OF KNOWLEDGE!") and its dragons. The harness now answers with the
+word the script compares next (`Engine.comparedAhead`, following the asking subroutine's RETURN; nine
+times in ten, `riddle.test.ts`). And from the shipped start the run no longer reached the mine: zone 6's
+south wall at (7,11) leads to zone 8's (4,8), an event square whose north wall the tour tried first and
+which took the party straight back; the wall behind a step into another area or sub-area is now not an
+exit to try first, and four seeds reach the mine in 19 000–25 000 steps. Then, from the shipped start,
+seed 1 of a 1 000 000-step run went town, ruins, the mine's levels and temple, 2/64, 2/68, 2/65, 2/66
+and into **3/80** at step 945 520 (7 353 battles, none lost by the undying party); seed 2 reached 2/64.
+The saves on entering 2/64–2/66 and the one in 3/80 are kept outside the repository (game data) for
+runs that go on from there (`docs/environment.md`). **The end of the game, by Debug jumps** (not in
 order): headless, a party jumped beside 3/99's soul chamber (event 6 at (1,2), 0x84B3; 3/99 runs on 3/98's
 map) gets the Dreadlord's image, EXPLORE ROOM, 12 iron golems and 6 medusae (0x85E6), the gem shattered
 and "A GATE BEGINS TO GLOW IN THE NORTHWEST CORNER" ([0x4CD9] := 1, 0x8612); the gate (event 22 at (0,0),

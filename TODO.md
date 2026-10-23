@@ -7,10 +7,13 @@ that settles it.
 
 ## Next steps (2026-10-23, in order)
 
-1. **SotSB in its order from 2/65 on** (`sotsbchain.test.ts`, its hints in `sotsbchain-hints.json`; saves
-   made on entering 2/64 and 2/65 let a run start there): give the harness 2/65's way on (event 39 entered
-   facing west at (13,9)) as a hint, then 2/66's event 31 south into 3/80, block 3 (3/80–82, 96–99) and the
-   Dreadlord; in order the glowing gate needs the well's 0x4C63. Then the final battle and the well in the
+1. **SotSB in its order through block 3** (`sotsbchain.test.ts`, hints in `sotsbchain-hints.json`): block
+   3 is reached in order since 2026-10-23 (3/80 from the shipped start; the riddles answered, the ruins'
+   zone 8 kept, `spec/VALIDATION.md` §4). From the 3/80 save (`/home/tmg/sotsb-saves/3-80`,
+   `SOTSB_CHAIN_FROM`): the crevasses to the Frost Giants' village 3/81 and its king, the castle's three
+   levels (3/96–3/99: the brass, silver and gold keys from the dungeon mazes, the passwords answered as
+   the riddles are) and the Dreadlord; in order the glowing gate needs the well's 0x4C63. The anonymous
+   GameFAQs walkthrough (`docs/environment.md`, references) gives the order and where each gate is. Then the final battle and the well in the
    browser from a chain save, in a visible window (Tristan watches browser runs: `headless: false`,
    `slowMo`), and the frost giants' village 3/81 drawn as its scripts load it. The end itself already plays
    from Debug jumps ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4, "Silver Blades played in its order").

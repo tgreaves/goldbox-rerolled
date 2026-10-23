@@ -69,5 +69,5 @@ describe.skipIf(!have)('Secret of the Silver Blades played in its order', () => 
     }
     for (const f of failures) console.log(`FAIL ${f}`)
     expect(failures).toEqual([])
-  }, 3600000)
+  }, Number(process.env.SOTSB_CHAIN_TIMEOUT ?? 3600000)) // SOTSB_CHAIN_TIMEOUT ms, for runs past an hour
 })

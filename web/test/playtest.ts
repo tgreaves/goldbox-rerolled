@@ -440,7 +440,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     print: (t) => { checkText(t, 'the text window'); say(t) },
     menu: async (items, opts) => choose(items, opts?.prompt),
     inputNumber: async () => number(),
-    inputText: async () => WORDS[pick(WORDS.length)],
+    // a word the script compares with next (a riddle's answer) nine times in ten, else one of WORDS
+    inputText: async () => { const w = e.comparedAhead(); return w.length && !chance(0.1) ? w[pick(w.length)] : WORDS[pick(WORDS.length)] },
     picture: (p) => {
       if (!o.tour || !p) return
       if ('big' in p) needPicture('BIGPIC', p.big)
@@ -942,8 +943,12 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       plan = []
     } else if (e.overland) ok = await act('travel', () => e.travel(pick(4)))
     else if (o.tour && r < 0.9) {
-      const c = tourMove(), was = `${place()}/${(e.y & 15) * 16 + (e.x & 15)}`, tried = c === 'f' ? lastTry : ''
+      const c = tourMove(), was = `${place()}/${(e.y & 15) * 16 + (e.x & 15)}`, tried = c === 'f' ? lastTry : '', from = place()
       ok = await act(`command ${c}`, () => e.command(c))
+      // a step into another area or sub-area: the wall behind is the way it came, not an exit to try
+      // first (SotSB's ruins: zone 6's south wall at (7,11) leads to zone 8's (4,8), whose north wall,
+      // an event square's, would take the party straight back, and the mine lies beyond)
+      if (c === 'f' && place() !== from) bumped.add(`${place()}/${(e.y & 15) * 16 + (e.x & 15)}/${(e.facing + 2) & 3}`)
       // a step that left the party where it was (a door it cannot open, a script that turns it back)
       if (tried && `${place()}/${(e.y & 15) * 16 + (e.x & 15)}` === was) { blocked.add(tried); blockedTries.set(tried, (blockedTries.get(tried) ?? 0) + 1) }
       else if (tried && o.hints?.some((h) => tried.startsWith(h.place) && tried.endsWith(`/${(h.y & 15) * 16 + (h.x & 15)}/${h.facing}`))) hintsTaken.add(tried)

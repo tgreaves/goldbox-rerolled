@@ -45,7 +45,7 @@ environment variables; tests that need a game skip without it.
 |---|---|---|---|
 | Pool of Radiance (PC 1.3) | `/home/tmg/poolrad-files` | `POOLRAD` | GOG Mac installer `pool_of_radiance_enUS_1_3_31236.pkg` |
 | Curse of the Azure Bonds (1.0) | `/home/tmg/coab-files` | `COAB` | GOG Mac installer `curse_of_the_azure_bonds_enUS_1_0_31854.pkg` (in `/home/tmg`); includes the Manual, Cluebook and Adventurer's Journal PDFs and `COPYCURS.EXE` |
-| Secret of the Silver Blades | `/home/tmg/sotsb-files` (Mac: `~/Downloads/BLADES`) | `SOTSB` | GOG installer `secret_of_the_silver_blades_enUS_1_0_33010.pkg`; unpacked 2026-10-21; research started 2026-10-22 (`spec/A-games/sotsb/`) |
+| Secret of the Silver Blades (saves the story-order run made on entering 2/64, 2/65, 2/66 and 3/80: `/home/tmg/sotsb-saves/`, for `SOTSB_CHAIN_FROM`) | `/home/tmg/sotsb-files` (Mac: `~/Downloads/BLADES`) | `SOTSB` | GOG installer `secret_of_the_silver_blades_enUS_1_0_33010.pkg`; unpacked 2026-10-21; research started 2026-10-22 (`spec/A-games/sotsb/`) |
 
 ```sh
 cd web
@@ -128,6 +128,11 @@ installed. Questions that need one (PoR's register 0x035F, `TODO.md`) stay open.
   technical analysis of the engine (§12) and a bug list:
   [GameFAQs](https://gamefaqs.gamespot.com/pc/564785-pool-of-radiance/faqs/73869); a local copy is
   at `/home/tmg/poolrad-reference/gamefaqs-lee-v2.00.md` (not committed: its copyright)
+- An anonymous Secret of the Silver Blades walkthrough from GameFAQs (given by Tristan, 2026-10-23), a
+  local copy at `/home/tmg/sotsb-reference/gamefaqs-sotsb-walkthrough.txt` (not committed: its copyright):
+  the story's order and gates (the Well's three battles, Derf and Oswulf's staff in the mines, the three
+  castle dungeon mazes with riddles or guards on every stair, the brass, silver and gold keys, the Frost
+  Giants' King, the castle's passwords). Used only to know where to look; every fact is read in the scripts
 - Simeon Pilgrim's C# CotAB rebuild, [github.com/simeonpilgrim/coab](https://github.com/simeonpilgrim/coab):
   no licence, so only a pointer to where to look (rule 5 in `CLAUDE.md`); not cloned on the server
 - Journals: Pool of Radiance Wiki and Gold Box Wiki transcriptions (CC BY-SA, credited in the README);

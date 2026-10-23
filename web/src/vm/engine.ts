@@ -625,6 +625,36 @@ export class Engine {
     this.pc += 1
   }
 
+  /**
+   * The string literals the next few instructions COMPARE with, read without running them (the run's
+   * state is kept as it was). For the play-test harness, which answers an INPUT_STRING with them: SotSB's
+   * riddles ask in a subroutine and compare in its caller (ECL2 #65, "YOU FEED IT, IT LIVES"), so the
+   * look follows GOTO and RETURN (to the return addresses on the stack, deepest last). It ends at an
+   * opcode whose operand count the IF skip does not know.
+   */
+  comparedAhead(count = 12): string[] {
+    const saved = { pc: this.pc, kind: this.kind.slice(), lo: this.lo.slice(), hi: this.hi.slice(), sbuf: this.sbuf.slice(), opstr: new Map(this.opstr) }
+    const out: string[] = []
+    let returns = this.stack.length
+    try {
+      for (let i = 0; i < count && this.pc >= CODE && this.pc < CODE_END; i++) {
+        const op = this.code[this.pc - CODE]
+        if (op === 0x13) { if (!returns) break; this.pc = this.stack[--returns]; continue }
+        if (op === 0x01) { this.readops(1); this.pc = this.addr(1); continue }
+        const n = game().ecl.skip[op] ?? SKIP[op]
+        if (n === undefined) break
+        this.readops(n)
+        if (op === 0x03) for (let j = 1; j <= n; j++) if (this.kind[j] === 0x80) out.push(this.opstr.get(j) ?? '')
+      }
+    } finally {
+      this.pc = saved.pc
+      this.kind.set(saved.kind); this.lo.set(saved.lo); this.hi.set(saved.hi)
+      this.sbuf = saved.sbuf
+      this.opstr = saved.opstr
+    }
+    return out
+  }
+
   /** an operand as an address: the game's own numbering translated to the engine's (games/ecl.ts) */
   private addr(i: number) { return canonical(game().ecl, (this.hi[i] << 8) | this.lo[i]) }
 
