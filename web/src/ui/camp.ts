@@ -57,8 +57,8 @@ export async function camp(ui: CampUi): Promise<boolean> {
   // the game's camp menu; Pool of Radiance has no Fix, the port adds the later games' (IMP-048)
   const words: MenuWord[] = [...menu('camp')]
   if (!words.some((w) => w.key === 'F')) words.splice(Math.max(0, words.length - 1), 0, { text: 'Fix', key: 'F' })
-  for (;;) {
-    const o = await ask((l, op) => ui.menu(l, op), words, { prompt: msg('camp').trimEnd() })
+  for (let again = false; ; again = true) {
+    const o = await ask((l, op) => ui.menu(l, op), words, { prompt: msg('camp').trimEnd(), again })
     if (o === 'S') {
       // Save, then "Quit TO DOS" Yes/No, asked even after a cancelled save (PoR FUN_3f81_1e6f at
       // 0x31766, CotAB 0x322D0); Yes ends the game
@@ -78,8 +78,8 @@ export async function camp(ui: CampUi): Promise<boolean> {
 
 /** Magic menu; returns true when a rest was interrupted. */
 async function magic(ui: CampUi, state: { heal: number }): Promise<boolean> {
-  for (;;) {
-    const o = await ask((l, op) => ui.menu(l, op), menu('magic'), { prompt: 'Magic:' })
+  for (let again = false; ; again = true) {
+    const o = await ask((l, op) => ui.menu(l, op), menu('magic'), { prompt: 'Magic:', again })
     if (o === 'C') await cast(ui)
     else if (o === 'M') await memorize(ui)
     else if (o === 'S') await scribe(ui)
@@ -221,11 +221,11 @@ export async function rest(ui: CampUi, state: { heal: number }): Promise<boolean
   // the selected field, Mins at first, changes by a step (5 minutes, an hour, a day); days capped at 99
   const w = menu('rest')
   let field = 3
-  for (;;) {
+  for (let again = false; ; again = true) {
     const d = Math.floor(minutes / 1440), h = Math.floor((minutes % 1440) / 60), m = minutes % 60
     const two = (v: number, f: number) => (f === field ? `[${String(v).padStart(2, '0')}]` : String(v).padStart(2, '0'))
     const label = `${msg('restTime')} ${two(d, 1)}:${two(h, 2)}:${two(m, 3)}`
-    const o = await ui.menu(w.map((x) => x.text.toUpperCase()), { prompt: label, keys: w.map((x) => x.key) })
+    const o = await ui.menu(w.map((x) => x.text.toUpperCase()), { prompt: label, keys: w.map((x) => x.key), again })
     if (w.length !== 7 || o === 6) return false
     if (o === 0) break
     if (o <= 3) { field = o; continue }

@@ -11,6 +11,7 @@ import { derive, levelHp, maxLevel, xpFor } from '../rules/training'
 import { keepBase, type Tables } from '../rules/chargen'
 import { onClose } from './sheet'
 import { F } from '../games/fields'
+import { game } from '../games/profile'
 
 const STATS = ['STR', 'INT', 'WIS', 'DEX', 'CON', 'CHA']
 const esc = (s: string) => s.replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`)
@@ -29,9 +30,14 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
   // the "+n" word is n1 for armour (types 0x32–0x3A), n2 otherwise
   const plusWord = (t: number) => (t >= 0x32 && t <= 0x3a ? 0x2f : 0x30)
   const types: [number, string][] = []
+  // scrolls as the treasure builder makes them (1–3 spells rolled from the game's lists), so bundles can be tried
+  const scrolls = game().treasure.scrolls.map((k) => k.type)
   if (it && e.startImage) for (let t = 1; t <= 0x3b; t++) {
-    if (t === 48 || t === 49) continue
-    try { const x = buildItem(t, () => 1, e.startImage); x.raw[0x32] = 0; x.raw[plusWord(t)] = 0; types.push([t, it.name(x, true)]) } catch { /* not buildable */ }
+    if (t === 48 || t === 49 || scrolls.includes(t)) continue
+    try { const x = buildItem(t, () => 1, e.startImage); x.raw[0x32] = 0; x.raw[plusWord(t)] = 0; const n = it.name(x, true).trim(); if (n) types.push([t, n]) } catch { /* not buildable */ }
+  }
+  if (it && e.startImage) for (const t of scrolls) {
+    try { const x = buildItem(t, () => 1, e.startImage); types.push([t, `${it.name(x, true).replace(/ 1 Spell$/, '')} (random spells)`]) } catch { /* not buildable */ }
   }
 
   const num = (label: string, name: string, v: number, min: number, max: number) =>
@@ -128,10 +134,13 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
         if (!it || !e.startImage) return
         const items = e.itemsOf(c)
         if (items.length >= 16) { message = 'No room: 16 items is the most a character can carry.'; render(); return }
-        const x: Item = buildItem(v('type'), () => 1, e.startImage)
+        const scroll = scrolls.includes(v('type'))
+        const x: Item = buildItem(v('type'), scroll ? (sides) => e.roll(1, sides) : () => 1, e.startImage)
         const plus = clamp(v('plus'), 0, 3) // the word table has +1 to +3
-        x.raw[0x32] = plus & 0xff
-        x.raw[plusWord(x.type)] = plus > 0 ? 0xa1 + plus : 0
+        if (!scroll) {
+          x.raw[0x32] = plus & 0xff
+          x.raw[plusWord(x.type)] = plus > 0 ? 0xa1 + plus : 0
+        }
         x.raw[0x35] = 0 // identified
         items.push(x)
         finish(c, `${nameOf(c)} now carries ${it.name(x, true)}.`)

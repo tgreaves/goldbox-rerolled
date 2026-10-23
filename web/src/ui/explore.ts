@@ -409,9 +409,12 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   let pending: { resolve: (n: number) => void; items: string[]; keys?: string[]; cancel?: boolean } | null = null
   /** a click, tap or key skips the current script pause */
   let skipPause: (() => void) | null = null
+  /** the line the last menu prompt went to, for a prompt asked `again` */
+  let promptLine: HTMLParagraphElement | null = null
   function menu(items: string[], opts: MenuOpts = {}): Promise<number> {
     return new Promise((resolve) => {
-      if (opts.prompt) print(opts.prompt, false)
+      if (opts.prompt && opts.again && promptLine && promptLine === screen?.lastElementChild) promptLine.textContent = opts.prompt
+      else if (opts.prompt) { print(opts.prompt, false); promptLine = screen?.lastElementChild as HTMLParagraphElement | null }
       const single = items.length === 1
       if (opts.vertical) {
         const list = document.createElement('ol')
@@ -1135,7 +1138,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         const c = engine.cur, name = parseCharacter(c).name
         const casters = engine.party().filter((m) => m[F.status] === 0 && slotLevels.some((l) => casterClasses().some((k) => slots(m, k.cls, l))))
         const groups: string[] = []
-        for (const { cls } of casterClasses()) {
+        for (const { cls, name: className } of casterClasses()) {
           if (!slotLevels.some((l) => slots(c, cls, l))) continue
           const levels = slotLevels.filter((l) => slots(c, cls, l)).map((l) => {
             const total = slots(c, cls, l)
@@ -1150,7 +1153,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
               <div class="mem-slots">${chips}${empty}</div>
               <div class="mem-book">${book.map((s) => `<button data-mem="${s.id}" ${free > 0 ? '' : 'disabled'} title="${escape(spellText(s))}">+ ${escape(s.name)}</button>`).join('') || '<span class="muted">No spells of this level in the book.</span>'}</div></div>`
           }).join('')
-          groups.push(`<section class="mem-class"><h3>${cls ? 'Magic-User' : 'Cleric'} spells</h3>${levels}</section>`)
+          groups.push(`<section class="mem-class"><h3>${className} spells</h3>${levels}</section>`)
         }
         const mins = preparation(c, engine.itemsOf(c), t, st)
         const pendingN = memorised(c).filter((v) => v >= 0x80).length

@@ -409,7 +409,8 @@ The list returns after each cast.
 One wide panel "Memorize" (IMP-043; the rule is `FUN_3f81_090a`'s):
 
 - the casters of the party who are Okay, as buttons (selects the current character);
-- per spell class the character has slots in ("Cleric spells", "Magic-User spells"), per level "Level
+- per spell class the character has slots in ("Cleric spells", "Druid spells", "Magic-User spells",
+  the class's name from the game's spell classes; a SotSB ranger's druid slots read "Druid"), per level "Level
   *L*" with "*used* of *total* slots": the slots as chips, **ready** (game-text colour), **pending**
   (highlight, "✕", tap to clear; tooltip "Pending: tap to clear") and **empty** (dashed); below, that
   level's book spells the character knows as "+ *Spell*" buttons (tooltip: what it does), greyed when
@@ -437,7 +438,10 @@ Display names them (`FUN_3f81_0fbc`: a spell's name for the spell effects, the f
 The duration prompt "Rest Time: *dd*:*hh*:*mm*" (*game text*) with the game's seven words: PoR REST
 DAYS HOURS MINS INC DEC EXIT (DAYS on Y), CotAB REST DAYS HOURS MINS ADD SUBTRACT EXIT (IMP-030).
 DAYS, HOURS and MINS select the field, shown in brackets ("00:04:[15]"; MINS at first); the fourth
-and fifth words change it by a step (a day, an hour, 5 minutes); REST starts, EXIT leaves. The time
+and fifth words change it by a step (a day, an hour, 5 minutes); REST starts, EXIT leaves. Each change
+redraws the prompt's line in the log rather than adding one, as the original redraws its line (a menu
+asked `again`, explore's `menu`); so do "Camp:" and "Magic:" when they come back with nothing printed
+since. The time
 starts at the longest preparation time of the party; days at most 99. REST runs the rest loop ([camp-and-time.md, "Rest loop"](../A-games/engine/camp-and-time.md#rest-loop-o-fun_4b46_0c9a))
 quickly, the cards and location line refreshed every hour of game time, with **Stop resting** on the
 command bar; messages (healing, spells learned, an encounter) go to the log. An interrupted rest
@@ -609,8 +613,10 @@ worked out again on Apply." The party as buttons; a form of Name (15), Status, A
 **Apply**. Raising a level the character has rolls its hit points as training does and brings
 experience up to that level's minimum; lowering one leaves max HP. Buttons **Heal fully**, **Clear
 effects (*n*)**, **Ready memorised spells**, **Learn every magic-user spell**; **Add item**: a weapon,
-armour or shield type (types 1–59 but 48 and 49) with a plus 0–3, identified ("No room: 16 items is the
-most a character can carry."). Each action's message; the derived statistics recomputed with the
+armour or shield type (types 1–59 but 48, 49 and the game's scroll types) with a plus 0–3, or one of
+the game's scrolls ("Mage Scroll (random spells)", "Cler Scroll (random spells)") with its spells rolled
+as the treasure builder rolls them (the plus ignored); identified ("No room: 16 items is the most a
+character can carry."). Types without a name in the game's ITEMS are left out. Each action's message; the derived statistics recomputed with the
 original rules.
 
 ## Validation
