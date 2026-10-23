@@ -15,8 +15,9 @@ that settles it.
 2. **Play-throughs** of CotAB and SotSB beyond the opening (headless harness first, then the browser),
    fixing what they find. CotAB (2026-10-23): every area toured headless and its towns, hall, shop,
    temple, overland edge, camp and a battle with spells checked in the browser
-   ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4); still to do, the quest chain in its order (not by
-   jumps) and the final battle to its end in the browser.
+   ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4); the chain in its order (`coabchain.test.ts`) reaches
+   Yulash, Zhentil Keep, Myth Drannor and 6/69 from save A; still to do, Dracandros' tower (6/64–6/67)
+   and the ending by the chain, and the final battle to its end in the browser.
 
 ## Waiting on Tristan
 

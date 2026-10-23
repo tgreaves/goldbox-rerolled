@@ -294,6 +294,18 @@ the stem table's slack (the whole of each slot past the party count). Not run: t
   current character was not the first member; camp Cast of a combat-only spell showed
   "#combatOnlySpell". The hall refusing Begin after the first save (the autosave too) was found here as
   well; the DOSBox comparison above fixed it.
+- **Curse of the Azure Bonds in its order** (2026-10-23; `coabchain.test.ts`, `COAB_CHAIN=1`): from save A
+  with no Debug jump, the tour's walk (an area's squares first, then each step off the map's edge, which is
+  how the scripts' exits are taken: the edge flag B 0x6DD5) and the scripts' own menus, the party made
+  undying for the run (`PlayOptions.undying`: healed at every round, its saves made, not held or charmed,
+  cured and raised after each battle), so that the route and not the dice decides how far a run gets. The
+  scripts' area graph (NEW_ECL and the block writes to B 0x312) is Tilverton 2/1 → the guild 2/2 → the
+  sewers 2/3 → the Fire Knives 2/4 (their defeat sets ECL 0x4C2A, which opens the sewers' way out) → the
+  wilderness 1/80–1/81 → Yulash 3/16–3/18 and 3/21, Zhentil Keep 4/32–4/35 and 4/37, Myth Drannor
+  5/48–5/51 and 5/53, Dracandros 6/64–6/67 and 6/69. Reached, 3 seeds × 30 000 steps: seed 1 Tilverton,
+  the Fire Knives, the wilderness, Yulash 3/16–3/18, 6/69, 5/53 and Myth Drannor 5/49–5/51 (231 battles
+  won); seed 2 the same as far as Yulash, then 6/69, 3/21, 5/53 and Zhentil Keep 4/32 (212 won); seed 3
+  stays in the sewers. No failures.
 
 ## 5. Clean-room runs
 

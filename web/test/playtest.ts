@@ -23,6 +23,7 @@ import { checkTraining, newSpellChoices, train, xpFor } from '../src/rules/train
 import { changeClass, changeClassChoices, offersChangeClass } from '../src/rules/dualclass'
 import { readyItem, recalc, unreadyItem } from '../src/rules/equip'
 import { WorldHost } from '../src/rules/worldfx'
+import { ids } from '../src/rules/effects'
 import { drop, halve, join as joinStacks, trade } from '../src/rules/inventory'
 import { castOutside, itemSpells, spendUse, targetKind } from '../src/rules/magic'
 import { isScroll, knows, memorise } from '../src/rules/camp'
@@ -59,6 +60,12 @@ export interface PlayOptions {
    * checked against the files (failures "no picture …", "the view …")
    */
   tour?: boolean
+  /**
+   * the party cannot be lost (a chain's play in the story's order, coabchain.test.ts): the standing are
+   * healed to full at every round of a battle and the fallen raised at its end, so that the route, not
+   * the dice, decides how far a run gets
+   */
+  undying?: boolean
 }
 
 export interface PlayReport {
@@ -70,6 +77,8 @@ export interface PlayReport {
   stuck: string[]
   /** squares stood on, by block/area */
   squares?: Map<string, Set<number>>
+  /** the areas in the order entered: "step block/area" at each change (a chain's route) */
+  route: string[]
   /** how far it got: areas visited, battles, screens */
   stats: { areas: Set<string>; battles: number; won: number; lost: number; fled: number; rounds: number; saves: number; screens: Map<string, number>; menus: number; ended: string }
 }
@@ -90,6 +99,8 @@ export function loadFiles(g: GameProfile, dir: string): GameFiles {
 
 const BATTLE_ROUNDS = 400 // a battle of fifty that keeps hurting someone can take a couple of hundred rounds
 const STALEMATE = 30
+/** Charm Person's effect type in every game so far (the effect rules' 11, `charmed`) */
+const CHARM = 11
 const STEP_MENUS = 150 // after this many menus in one step the player takes the last choice (usually EXIT or LEAVE)
 const nameOf = (c: Uint8Array) => String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + Math.min(c[F.name], 15)))
 const BAD_TEXT = /undefined|NaN|\[object|Infinity/
@@ -104,7 +115,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   const chance = (p: number) => rnd() < p
 
   const report: PlayReport = {
-    seed: o.seed, steps: 0, failures: [], stuck: [],
+    seed: o.seed, steps: 0, failures: [], stuck: [], route: [],
     stats: { areas: new Set(), battles: 0, won: 0, lost: 0, fled: 0, rounds: 0, saves: 0, screens: new Map(), menus: 0, ended: '' },
   }
   const recent: string[] = []
@@ -302,6 +313,18 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   let lastState = '', changedAt = 0
   function roundCap() {
     if (!battle || capped) return
+    // the battle's own records of the party (the combatants), not the party list's
+    if (o.undying) for (const c of battle.fighters.filter((f) => !f.monster).map((f) => f.c)) {
+      if (c[F.status] === 0) c[F.hp] = c[F.maxHp]
+      // and its saves made: a death ray, a gaze or Slay Living takes no HP (the bonus is recalculated at setup)
+      c[F.saveBonus] = 20
+      // nor held: a helpless member is slain with one blow (the rules' coup de grace), whatever its HP
+      const fx = e.effectsOf(c)
+      for (let i = fx.length - 1; i >= 0; i--) if (ids().helpless.includes(fx[i].type)) fx.splice(i, 1)
+      // nor charmed: a member still charmed at the end leaves with the monsters (the aftermath, as the original)
+      for (let i = fx.length - 1; i >= 0; i--) if (fx[i].type === CHARM) fx.splice(i, 1)
+    }
+    if (o.undying) for (const f of battle.fighters) if (!f.monster && f.c[F.side] === 1) f.c[F.side] = 0
     // those still standing and their HP (positions can see-saw for ever; the dying bleed on their own)
     const b = battle
     const state = b.fighters.map((f) => (b.inPlay(f) ? `${f.c[F.hp]}/${f.c[F.status]}` : '-')).join(' ')
@@ -416,6 +439,12 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
         try {
           // Magic On for the party's Quick members in half the battles (Alt-M), so their spells are cast
           const r = await fight(e, combatUi, (b) => { battle = b; b.magicOn = chance(0.5) })
+          if (o.undying) for (const c of e.party()) if (c[F.status] >= 4 && c[F.status] <= 7) { c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = c[F.maxHp] } // unconscious, dying, dead, stoned
+          // and cured, as a player would have them (Cure Disease, Remove Paralysis): the diseases and the helpless markers go
+          if (o.undying) for (const c of e.party()) {
+            const fx = e.effectsOf(c), gone = new Set([...ids().helpless, ...ids().diseases.flat()])
+            for (let i = fx.length - 1; i >= 0; i--) if (gone.has(fx[i].type)) fx.splice(i, 1)
+          }
           report.stats.rounds += battle?.round ?? 0
           const out = e.read(0x6dc7)
           if (!r.survived) report.stats.lost++
@@ -525,7 +554,10 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
           fail(`${who} has effect ${JSON.stringify(x)}`)
         }
       }
-      if (e.effectsOf(c).length > 40) fail(`${who} has ${e.effectsOf(c).length} effects`)
+      // the helpless markers do pile up: Cause Disease's STR (43) adds one at every tick once STR is at its
+      // floor (engine/effects.md, type 43: no "if absent", unlike 44), which an undying party outlives
+      const piled = e.effectsOf(c).filter((x) => !ids().helpless.includes(x.type))
+      if (piled.length > 40) fail(`${who} has ${piled.length} effects (types ${[...new Set(piled.map((x) => x.type.toString(16)))].join(' ')})`)
       // coins as 16-bit counts: a payment gone below 0 would show as about 65 000
       for (let i = 0; i < 7; i++) { const v = c[F.money + 2 * i] | (c[F.money + 2 * i + 1] << 8); if (v > 60000) fail(`${who} has ${v} of coin ${i}`) }
       // memorised spells (pending ones with bit 7) are spells of the game; the spell book holds 0 or 1
@@ -589,6 +621,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   }
   /** a tour's walk: towards the nearest square of this area not yet stood on, through open passages */
   const blocked = new Set<string>()
+  const edgesTried = new Set<string>()
   const tourMove = (): string => {
     const g = e.geo
     if (!g) return 'f'
@@ -597,19 +630,42 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     const from = new Map<number, number>([[at(e.x, e.y), -1]])
     const queue = [at(e.x, e.y)]
     let goal = -1
+    /** the nearest open step off the map's edge not yet tried here (a script's exit: the edge flag, B 0x6DD5) */
+    let exit = -1
     while (queue.length && goal < 0) {
       const q = queue.shift()!
       for (const d of [0, 1, 2, 3]) {
         const x = q & 15, y = q >> 4
         if (g.passage(x, y, d) === 0 || blocked.has(`${e.block}/${e.area}/${q}/${d}`)) continue
-        const n = at(x + STEPS[d][0], y + STEPS[d][1])
+        const nx = x + STEPS[d][0], ny = y + STEPS[d][1]
+        if ((nx < 0 || nx > 15 || ny < 0 || ny > 15)) {
+          if (exit < 0 && !edgesTried.has(`${e.block}/${e.area}/${q}/${d}`)) exit = q * 4 + d
+          continue
+        }
+        const n = at(nx, ny)
         if (from.has(n)) continue
         from.set(n, q * 4 + d)
         if (!set.has(n)) { goal = n; break }
         queue.push(n)
       }
     }
-    if (goal < 0) return explore() // all seen: wander (towards the exits, as before)
+    if (goal < 0 && exit >= 0) {
+      // all seen: to the nearest edge exit not yet tried, and through it
+      const q = exit >> 2, d = exit & 3
+      if (q === at(e.x, e.y)) {
+        const turn = (d - e.facing + 4) & 3
+        if (turn === 0) edgesTried.add(`${e.block}/${e.area}/${q}/${d}`)
+        return turn === 0 ? 'f' : turn === 1 ? 'r' : turn === 3 ? 'l' : 'b'
+      }
+      goal = q
+    }
+    if (goal < 0) {
+      // every exit tried: try them again later (a script's variables may have changed), wander meanwhile;
+      for (const k of [...edgesTried]) if (k.startsWith(`${e.block}/${e.area}/`) && chance(0.02)) edgesTried.delete(k)
+      // and the doors that turned the party back (a lock it may pick or bash at another try)
+      for (const k of [...blocked]) if (k.startsWith(`${e.block}/${e.area}/`) && chance(0.02)) blocked.delete(k)
+      return explore()
+    }
     let n = goal, d = 0
     while (from.get(n)! >= 0 && (from.get(n)! >> 2) !== at(e.x, e.y)) n = from.get(n)! >> 2
     d = from.get(n)! & 3
@@ -691,7 +747,10 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     }
     report.steps = step
     watchParty()
+    if (o.undying) for (const c of e.party()) { if (c[F.status] >= 4 && c[F.status] <= 7) { c[F.status] = 0; c[F.inPlay] = 1 } if (c[F.status] === 0) c[F.hp] = c[F.maxHp] }
     report.stats.areas.add(`${e.block}/${e.area}`)
+    const here = `${e.block}/${e.area}${e.overland ? ' overland' : ''}`
+    if (!report.route.length || !report.route[report.route.length - 1].endsWith(` ${here}`)) report.route.push(`${step} ${here}`)
     if (report.squares) {
       const k = `${e.block}/${e.area}`
       if (!report.squares.has(k)) report.squares.set(k, new Set())
