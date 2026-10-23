@@ -54,8 +54,19 @@ the pace is generous. Grab with `f12` to see where a run got to.
 
 The games run at DOSBox's default cycles. To force an outcome, `--patch FILE:OFFSET:HEX` writes bytes into the copy (an overlay
 routine's bytes are found in `GAME.OVR` by searching for them; offsets in the merged image differ).
-The rest-counter check of 2026-10-22 forced the rest-encounter chance this way (code 0x9A42) and set
-the game speed to 0; the exact bytes were not recorded.
+The rest-counter check (PoR save A, New Phlan) forces the rest-encounter chance and the game speed in
+the copied save, whose ECL code buffer the game runs from (save offset 0x1401 = ECL 0x9900): the camp
+script's `SAVE 24 → 0x6DD3` at ECL 0x9A42 has its value at 0x9A44 = save offset **0x1545**, and the game
+speed is A byte 0x1F8 = save offset **0x1F9**:
+
+```sh
+python3 tools/dosbox/run.py --game /home/tmg/poolrad-files --out out/rest \
+        --patch SAVGAMA.DAT:0x1545:64 --patch SAVGAMA.DAT:0x1F9:00 \
+        --keys "x enter l a e r h i r e e r h i r f12" --wait 5 --pace 4 --seconds 120
+```
+
+Rest one hour, leave camp, camp, rest one hour: the orcs come at 12:50, the 24th five-minute step
+overall (interval 24 steps), so the step counter `DS:49FB` carries over between camps.
 
 ## How GRAB.COM works
 

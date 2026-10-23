@@ -95,7 +95,8 @@ Also run before every commit: `npx tsc --noEmit -p .`, `npm run build`, and
   game's folder copied and mounted as `C:`, keys typed by DOSBox's `AUTOTYPE` from a batch file under
   250 characters, `start sting`), observed through the saves it writes (the clock A 0x49C6–0x49CC, each
   member's HP). From save A with the game speed set to 0 and the rest-encounter chance (code 0x9A42)
-  patched: the heal counter `DS:6DD8` adds up across rests in one camp and starts again with a camp; the
+  patched (save offsets 0x1545 = 100 and 0x1F9 = 0; rerun with the harness on 2026-10-23, the orcs at
+  the 24th step overall, `tools/dosbox/README.md`): the heal counter `DS:6DD8` adds up across rests in one camp and starts again with a camp; the
   rest-encounter counter `DS:49FB` carries over between rests and camps. Both as camp-and-time.md and the
   port. Screen frames come from a small resident program started before the game (F12, typed by
   AUTOTYPE, writes the EGA planes and palette to a file once DOS is idle): 7 frames of the 3D view in
