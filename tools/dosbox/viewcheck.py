@@ -3,8 +3,9 @@
 the view as loaded, after each of four left turns and after a step forward, both ways, pixel by pixel.
 
 Usage:
-  viewcheck.py por  POOLRAD_DIR [--out DIR]
-  viewcheck.py coab CURSE_DIR   [--out DIR]
+  viewcheck.py por   POOLRAD_DIR [--out DIR]
+  viewcheck.py coab  CURSE_DIR   [--out DIR]
+  viewcheck.py sotsb BLADES_DIR  [--out DIR]
 
 Needs what run.py needs (DOSBox Staging, NASM; $DOSBOX, $NASM) and Node for the headless runner.
 Exits 1 if any frame differs.
@@ -19,9 +20,18 @@ WEB = os.path.join(HERE, '..', '..', 'web')
 # CotAB: STING skips the title; Play; this release takes any character but the right one at the
 # code wheel ('#' is never right, spec/A-games/coab/assets.md §7); Load, A, Begin, then two
 # "press Enter" screens of the opening.
+# SotSB: Hoop skips the title (its STING); Play; no code wheel. Its party screen is a list moved with
+# the arrows (Load is the third row; after loading, Begin is five rows below the highlight). Save A
+# is the game's start: nine "press Enter" screens, the treasure left (Exit, No), three more. Keys typed
+# while it is busy are flushed, so it is typed slower. The port's treasure screen resolves at once, so
+# its answers are the eleven "press Enter" menus alone. Its arrows move only in Move (M), so the turns are
+# typed there (spec/A-games/sotsb/README.md, "The main menu").
+ENTERS = lambda n: ' '.join(['enter'] * n)
 GAMES = {
-    'por': {'start': 'x enter l a', 'answers': []},
-    'coab': {'start': 'p numbersign enter l a b enter enter', 'answers': [0, 0]},
+    'por': {'start': 'x enter l a', 'answers': [], 'args': 'STING', 'pace': '3'},
+    'coab': {'start': 'p numbersign enter l a b enter enter', 'answers': [0, 0], 'args': 'STING', 'pace': '3'},
+    'sotsb': {'start': f'p down down enter enter {ENTERS(5).replace("enter", "down")} enter {ENTERS(9)} e n {ENTERS(3)}',
+              'answers': [0] * 11, 'args': 'Hoop', 'pace': '5', 'move': 'm'},
 }
 STEPS = [[], ['l'], ['l', 'l'], ['l', 'l', 'l'], ['l', 'l', 'l', 'l', 'f']]
 KEYS = 'f12 left f12 left f12 left f12 left up f12'
@@ -34,7 +44,8 @@ def main(a):
     out = os.path.abspath(a[a.index('--out') + 1]) if '--out' in a else tempfile.mkdtemp(prefix='viewcheck-')
     g = GAMES[game]
     subprocess.run([sys.executable, os.path.join(HERE, 'run.py'), '--game', folder, '--out', out,
-                    '--keys', f'{g["start"]} {KEYS}', '--wait', '6', '--pace', '3', '--seconds', '75'], check=True)
+                    '--keys', ' '.join(filter(None, [g['start'], g.get('move'), KEYS])), '--wait', '6', '--pace', g['pace'], '--args', g['args'],
+                    '--seconds', str(10 + (len(g['start'].split()) + len(KEYS.split())) * float(g['pace']) * 1.5)], check=True)
     bad = 0
     for i, commands in enumerate(STEPS):
         dump = os.path.join(out, f'FRAME{i:02d}.EGA')

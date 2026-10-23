@@ -103,7 +103,10 @@ Also run before every commit: `npx tsc --noEmit -p .`, `npm run build`, and
   facings, a step into a wall): the wall set, the cobbled ground (SKY #252) and the view at 24–111, exact;
   its outdoor sky and clouds not yet seen. The harness is in `tools/dosbox/` (rebuilt on the server the
 same day, the Mac's not having been committed): `viewcheck.py por|coab` repeats the view check from
-save A (as loaded, four turns, a step), 5 of 5 frames exact for each game. Not run: the Sell, Share and Appraise
+save A (as loaded, four turns, a step), 5 of 5 frames exact for each game. **SotSB** the same way
+(2026-10-23, save A after its opening, block 1 area 16 at (3,3) facing south, four turns in Move and a
+step): 5 of 5 frames exact; it showed that the original's arrows move only in Move
+([sotsb/README.md](A-games/sotsb/README.md), "The main menu"). Not run: the Sell, Share and Appraise
   checks (no shop from save A; decided not worth a route); register 0x035F (no debugger).
 - **The interface** was checked against part C in headless Chromium (2026-10-21; each part C file's
   "Validation" section says what): every screen class, PoR's game-file save A, the games screen, the
@@ -158,8 +161,8 @@ Each run adds a row here, and its findings below.
 
 ## 6. Residual gaps
 
-- **Little DOSBox comparison** of running behaviour yet: the drawn view and the rest counters only
-  (§4); the **I** items that only the running original can settle are in
+- **Little DOSBox comparison** of running behaviour yet: the drawn view (all three games) and the rest
+  counters only (§4); the **I** items that only the running original can settle are in
   [open-questions.md](open-questions.md).
 - **The Enhanced (3D) view** is checked by eye only: its tolerance check needs WebGL
   ([exploration-view.md §3.6](C-port/exploration-view.md#36-what-it-must-preserve-the-tolerance)).

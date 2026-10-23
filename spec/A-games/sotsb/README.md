@@ -58,9 +58,12 @@ effects), and no item files for the pre-made party.
 
 "Move Area Cast View Encamp Search Look" (0x357FE; CotAB's without Move). **Move** sets DS:A4D4 (0x358BB):
 the menu becomes "Exit" (0x3582E) and the arrows step (0x48 → 0x3568B), turn about (0x50) and turn left
-or right (0x4B, 0x4D) until E clears it (0x35A51). The arrows move in the normal menu too (an extended key
-goes to the movement handler 0x100:0x52, 0x359D3), so Move only hides the other commands. The port leaves
-it out with View and Area (IMP-061): its movement keys and pad always move.
+or right (0x4B, 0x4D) until E clears it (0x35A51). **Only in Move do the arrows move** (O: the code, and
+the running original in DOSBox, 2026-10-23). In the normal menu an extended key goes through 0x359D3 to
+`0x100:0x52` = **0x460BE**, which on Up (0x48) and Down (0x50) makes the previous or next party member the
+current character (it walks the party list against DS:7D38) and ignores Left and Right. The port leaves
+Move out with View and Area (IMP-061): its movement keys and pad always move, and a character is chosen
+on the party cards.
 
 ## Tools
 
