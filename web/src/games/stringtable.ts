@@ -932,7 +932,7 @@ export const SOTSB_STRINGS: Strings = {
   scribingSpell: 0x36f34, identifyFor: 0x456c0, takeWillYou: 0x4f369,
   foundTreasure: [0xe130, 0xe146], memorizeThese: [0x479a0, 0xe1e8], memorizeThese2: [0x479a0, 0xe1e8],
   scribeThese: [0x479a9, 0xe1e8], scribeThese2: [0x479a9, 0xe1e8],
-  leftInVault: 0x43a41, // Deposit's question: "Your … will be left in the vault"
+  leftInVault: 0x43a41, // "Your … will be left in the vault" (I: where it is shown; Deposit asks nothing, DOSBox)
 }
 
 // the same for the menus; main, alter (Pics now Level), partyBegin and modify traced; SotSB has no Turn

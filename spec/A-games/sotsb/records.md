@@ -324,9 +324,9 @@ the vault is the pile: a script sets A 0x4CFC := 1 and runs COMBAT, which clears
 screen ahead of the shop (0x1F5C2 → 0x21C90; ECL1 #16 0x8D74, "DEPOSIT" and "WITHDRAW" alike). The
 screen (game mode 8) reads `vault.dat` if there is one (else clears the coins), offers "View", " Take"
 (when the pile holds money or items), " Pool Exit" (0x21EC5); in mode 8 the item menu's Drop is
-" Deposit" (0x4357E), asking "Your *item* will be left in the vault" (0x43A41) and putting it in the pile.
+" Deposit" (0x4357E), which puts the item in the pile at once, with no question (DOSBox: two unreadied armours deposited one key each; the string "Your *item* will be left in the vault", 0x43A41, is not shown then, I: where it is used); the character view's own " Deposit" puts coins in (its menu "Items Trade Deposit Heal Cure Exit" for a paladin with coins and items; with neither, "Heal Cure Exit"), and an item list left empty goes back to the view.
 Leaving writes the coins and the items (a bundle with its scrolls) back to `vault.dat` (0x220DA–0x221C3),
-after a disk-space check the port does not need, and frees the item list (O). Port: `data/vault.ts`,
+after a disk-space check the port does not need, and frees the item list (O). Seen in DOSBox (2026-10-23): coins pooled from two members (11, 22, 33, 448, 55 by the money table's order) are written as seven u32 and nothing more, 28 bytes; two deposited items as 0x1C + 2 × 67 bytes, each record as the character's item file held it but for the display-name cache +0x00–0x29, which the original rebuilds whenever it lists an item (engine/records.md, "Display name"), and the stale next pointer +0x2A; both files go through the port's `parseVault` and `vaultFile` byte for byte. Port: `data/vault.ts`,
 `ui/town.ts` `vault`; the file named by the profile (`saves.vault`), kept per game in the browser and
 synced as the record `folder/VAULT` ([C-port/accounts-and-sync.md §1.3](../../C-port/accounts-and-sync.md#13-what-each-kind-holds)).
 

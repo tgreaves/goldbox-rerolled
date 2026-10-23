@@ -1650,10 +1650,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       } else if (a === 'drop') {
         const why = unavailable(it)
         if (!why && scribing(it, t) && !opts.after) return again({ selected: keep, confirm: 'scribe', after: 'drop' })
+        // in the vault Deposit takes the item at once, with no question (SotSB in DOSBox, VALIDATION.md §4)
+        if (!why && opts.mode === 'vault') { items.splice(items.indexOf(it), 1); it.ready = false; engine.treasure.push(it); recalc(node, items, t); return again({}) }
         again(why ? { selected: keep, message: why } : { selected: keep, confirm: 'drop' })
       } else if (a === 'drop-yes') {
-        // in the vault (game mode 8, 0x4357E) a dropped item is deposited: it goes into the pile
-        if (opts.mode === 'vault') { items.splice(items.indexOf(it), 1); it.ready = false; engine.treasure.push(it); recalc(node, items, t); return again({}) }
         const m = drop(node, items, it, t)
         again({ message: m })
       } else if (a === 'sell') {

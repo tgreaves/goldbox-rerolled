@@ -260,6 +260,14 @@ the stem table's slack (the whole of each slot past the party count). Not run: t
   (three of the six written byte for byte as the port's). The previous-state byte (CotAB 0x3206, SotSB
   0x1406) is now written as the originals do, from their writers (records.md §4; `Engine.prevMode`): 0 begun
   from save A, 4 after SotSB's opening, 2 after a load (`savecompare.test.ts`).
+- **Silver Blades: the vault** (2026-10-23, DOSBox Staging, `run.py` from the original's own save past the
+  opening, given coins and two items by the port's writers in the copy): the route from (3,3) to the bank
+  (block 1 area 16, (7,9), `fffflffffrff`, found headless), DEPOSIT, the vault screen "View Pool Exit", the
+  character view "Items Trade Deposit Heal Cure Exit" and the item list "Ready Trade Deposit Halve Join
+  Exit". Deposit put each item in at once, with no question, which the port asked (fixed, records.md §5);
+  the `vault.dat` written on leaving, with two items, and another with the coins pooled from two members, go
+  through the port's `parseVault`/`vaultFile` byte for byte; the item records equal the port's deposit but
+  for the display-name cache and the stale next pointer (`vault.test.ts`).
 
 - **Curse of the Azure Bonds played further** (2026-10-23). Headless: the tour (`coabtour.test.ts`, every
   area of every block by the Debug jump, the sturdy party walking every square it reaches, 2 seeds × 1 500

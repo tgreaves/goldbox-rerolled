@@ -21,6 +21,11 @@ describe('the vault file', () => {
     expect(v.items[1].bundle.length).toBe(1)
     expect([...vaultFile(v, 67, 0x49)]).toEqual([...file])
   })
+  it('the coins pooled into the vault, as the original wrote them in DOSBox (spec/VALIDATION.md §4)', () => {
+    // 11 copper, 22 silver, 33 electrum, 444 + 4 gold, 55 platinum pooled from two members, then Exit
+    const orig = [11, 0, 0, 0, 22, 0, 0, 0, 33, 0, 0, 0, 0xc0, 1, 0, 0, 55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    expect([...vaultFile({ money: [11, 22, 33, 448, 55, 0, 0], items: [] }, 67, 0x49)]).toEqual(orig)
+  })
   it('no file yet: an empty vault', () => {
     expect(parseVault(undefined, 67, 0x49)).toEqual({ money: [0, 0, 0, 0, 0, 0, 0], items: [] })
     expect(vaultFile({ money: [1, 0, 0, 0, 0, 0, 0], items: [new Item(new Uint8Array(63))] }, 67, 0x49).length).toBe(28 + 67)
