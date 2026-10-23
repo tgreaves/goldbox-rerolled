@@ -1133,7 +1133,13 @@ export class Battle implements FxHost {
   async useItem(f: Fighter, it: Item, auto: boolean): Promise<boolean> {
     const s = this.e.spells?.get(itemSpellId(it.props[1]))
     if (it.count > 1) it.count--
-    else if (it.props[0] > 0 && --it.raw[0x3c] === 0) this.e.itemsOf(f.c).splice(this.e.itemsOf(f.c).indexOf(it), 1)
+    else if (it.props[0] > 0 && --it.raw[0x3c] === 0) {
+      // the last charge: the item goes and the record is worked out again (item count, hands), as spendUse
+      // does outside battle (I: spells.md, "From an item"); a wand used up on the battle's last turn else
+      // left the count and hands one too high after it
+      this.e.itemsOf(f.c).splice(this.e.itemsOf(f.c).indexOf(it), 1)
+      this.recalc(f.c)
+    }
     if (!s) return false
     this.print(`${name(f.c)} ${msg('usesItem')}`)
     await this.castSpell(f, s, { fromItem: true, announce: false, auto })

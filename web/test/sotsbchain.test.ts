@@ -49,7 +49,9 @@ describe.skipIf(!have)('Secret of the Silver Blades played in its order', () => 
       appendFileSync(process.env.SOTSB_CHAIN_LOG ?? '/dev/stdout', `seed ${seed}: ${r.steps} steps; areas in order ${[...st.areas].join(' ')}; squares ${sq}; ${st.battles} battles (${st.won} won, ${st.fled} fled, ${st.lost} lost); watched ${[...(r.watched ?? new Map<number, Set<number>>())].map(([a, v]) => `${a.toString(16)}: ${[...v].join(',')}`).join('; ')}; ${st.ended}${r.stuck.length ? `; stuck ${r.stuck.length}: ${r.stuck.slice(0, 3).join(' | ')}` : ''}\n`)
       failures.push(...r.failures.map((f) => `seed ${seed}: ${f}`))
       if (process.env.SOTSB_CHAIN_SQ) for (const [k, v] of r.squares ?? []) if (k.startsWith(process.env.SOTSB_CHAIN_SQ)) appendFileSync(process.env.SOTSB_CHAIN_LOG ?? '/dev/stdout', `  ${k}: ${[...v].sort((a, b) => a - b).map((q) => `${q & 15},${q >> 4}`).join(' ')}\n`)
-      if (process.env.SOTSB_CHAIN_SAVE && r.lastSave) writeSave(process.env.SOTSB_CHAIN_SAVE, r.lastSave)
+      // a seed that reached a goal writes SOTSB_CHAIN_SAVE, the others SOTSB_CHAIN_SAVE.seed<n>
+      const reached = !!goal?.some((g) => r.stats.areas.has(g))
+      if (process.env.SOTSB_CHAIN_SAVE && r.lastSave) writeSave(process.env.SOTSB_CHAIN_SAVE + (reached ? '' : `.seed${seed}`), r.lastSave)
     }
     for (const f of failures) console.log(`FAIL ${f}`)
     expect(failures).toEqual([])

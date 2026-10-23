@@ -266,7 +266,10 @@ Not run: the Sell, Share and Appraise checks (decided not worth it); register 0x
   a pocket whose only open edge leads back to the mine, so the chain's tour walks into every wall in
   reach before taking an edge exit (`walls`); one seed of 400 000 steps then reached 2/65 and 2/66, another
   wandered back into the mine and town. An undying run no longer answers Yes to "Quit TO DOS" after camp
-  Save (each quit loaded an older save). Kept as the original does: the Ring of Invisibility's effect 56
+  Save (each quit loaded an older save). Of five seeds from 2/64 at up to 500 000 steps, two reached 2/65
+  and 2/66 or 2/68 and 2/65; none block 3 yet. An NPC's wand used up on a battle's last turn left the
+  record's item count and hands one too high after the battle (the battle's Use now works the record out
+  again when it removes an item, as spendUse does). Kept as the original does: the Ring of Invisibility's effect 56
   adds a record of 25 lasting 1 at every event 8 and 19 with no de-dupe (engine/effects.md, 3723_1363), so
   some 40 can stand at once after a long battle; the play-test no longer counts those as a pile-up.
   Found and fixed on the way: camp Magic's Display with no effects printed the

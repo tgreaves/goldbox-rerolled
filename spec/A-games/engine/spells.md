@@ -47,7 +47,7 @@ Range when casting from an item (`DS:6DBF` set) uses caster level 6.
 Camp Cast and the explore-mode Cast command ([camp-and-time.md](camp-and-time.md)) call the shared routine directly; casting takes no game time (G: guide 8.1).
 
 - Outside combat (`DS:49F3` ≠ 5) a spell whose record **byte 7 (side) = 0** is refused, whatever byte 11 says: "*spell* is a combat-only spell..." then "Lose it? ". **Y** removes it from memory (`FUN_10ba_148b`); either way nothing is cast. Knock (id 31, byte 11 = camp, side 0) is caught by this too; doors use their own Knock path ([main-loop.md](main-loop.md)).
-- From an item (`DS:6DBF` set) the same test prints "That Item is a combat-only item..." and "Use it? "; **Y** sets the caller's used-up flag (**I**: the charge is spent). The last charge or unit spent takes the item away, and the record (item count, hands) is worked out again as after Drop (**I**: the original's removal of a used-up item not traced; the port's `spendUse`).
+- From an item (`DS:6DBF` set) the same test prints "That Item is a combat-only item..." and "Use it? "; **Y** sets the caller's used-up flag (**I**: the charge is spent). The last charge or unit spent takes the item away, and the record (item count, hands) is worked out again as after Drop, in camp and in battle alike (**I**: the original's removal of a used-up item not traced; the port's `spendUse` and the battle's Use, `Battle.useItem`).
 - Byte 11 (where) is checked only in combat (`FUN_3aae_2414`).
 
 ## Memorisation, scribing and learning
