@@ -351,7 +351,15 @@ Not run: the Sell, Share and Appraise checks (decided not worth it); register 0x
   at 0xFF, so their close-up is PIC5 #49, which the file lacks; the sprite routine 0x1FF50 loads the
   picture only at distance 0 with the selector of that moment (0x20022), so the original shows none
   either. Left open: a potion's last charge spent in camp leaves its item count and hands as they were
-  in the port (seed 2); whether the original recounts is in `TODO.md`.
+  in the port (seed 2); whether the original recounts is in `TODO.md`. In the browser (headless Chrome,
+  the built app, the CotAB folder with seed 1's save made on 6/67's (6,2) by `saveAt`): one step north
+  starts Tyranthraxus' speech and the final battle (his picture, then the battlefield with the margoyles
+  and high priests, the turn strip, "Tyranthraxus throws lightning"); the party's levels cannot win it, so
+  after its first rounds the Debug panel's Win this battle; then PROGRAM 8: "8301 experience points", the
+  ending's four panels (Tyranthraxus' spirit over the storm giant, the Pool, "Tyranthraxus is slain this
+  day", the Knights of Myth Drannor) and the party screen. Two of the party's cards drew no icon and a
+  pink name: the undying run strips Charm in battle without undoing what it set, leaving those members
+  with an NPC's morale (`TODO.md`).
 - **Curse of the Azure Bonds: a battle in DOSBox** (2026-10-23, `tools/dosbox/run.py` on a save the port wrote at
   2/3 (15,0) after a Debug jump, `SAVGAMB.DAT`): one step north, ECL2 #3's otyughs "attack immediately". An
   empty icon slot draws nothing: with LOAD_MONSTER's icon operand (save offset 0x2604) patched to a record

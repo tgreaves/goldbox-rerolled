@@ -48,6 +48,10 @@ that settles it.
   (Tilverton's are steps off the map's edge, B 0x6DD5, with the scripts' menus after), so a walk out needs
   those answers typed as the original's keys ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
 - DOSBox, not yet compared: the Hall of Training's screens (2/1 (5,1) facing south, after a Yes/No).
+- The undying harness (`playtest.ts`) strips Charm (11) from the party in battle without undoing what it
+  set, so a member can leave a battle with an NPC's morale (≥ 0x80): its card then draws the combat picture
+  of its id, none for a player character (seen on 6/67's chain save in the browser); the harness should end
+  the charm as the game does.
 - A potion used up in camp (its last charge) leaves the record's item count (0x14C) and hands (0x185) as
   they were in the port (`coabchain.test.ts` seed 2, 5/50); Use (0x3F9A8) returns a used flag and its
   caller spends the charge, not yet traced: whether the original then counts the items again, as after
