@@ -332,7 +332,15 @@ Not run: the Sell, Share and Appraise checks (decided not worth it); register 0x
   locked door and (14,7)'s west side a wall, and its only other way out (the bar, ECL4 #35's 0x8043) puts
   the party back on the square it came from, so a party that picks that lock stays inside (the port as
   the data, I: the original not tried); Scribe's used-up scroll leaves the item count as it was, as the
-  original (camp-and-time.md, Rest).
+  original (camp-and-time.md, Rest). Followed up (2026-10-23): the effects piling up in 6/69 were the
+  harness's: a failed save against the phase spiders' poison adds the poisoned marker 0x37 and kills
+  (status 6), and the undying run stood the dead up without removing it, where the game's Raise Dead
+  (0x4848A) removes 0x20 and 0x37; the run now raises as Raise Dead does. Place 13 (the tower) is the
+  fourth choice, MYTH DRANNOR, of the Standing Stones' travel menu (ECL1 #80, 0x8DDD), offered with the
+  three bonds' flags (0x4C59 = 1, 0x4C5A = 1, 0x4C5B ≠ 0); 0x4C59 is set by beating Dracandros in 5/51's
+  courtyard (0x8FB6), which is reached from the roof only by the stairs at (3,1), taken facing the wall
+  north (on_move 0x87A3 by the table at 0x9C81): the tour now tries each wall of a square with an event,
+  as on_move runs on a move into a wall too.
 - **Curse of the Azure Bonds: a battle in DOSBox** (2026-10-23, `tools/dosbox/run.py` on a save the port wrote at
   2/3 (15,0) after a Debug jump, `SAVGAMB.DAT`): one step north, ECL2 #3's otyughs "attack immediately". An
   empty icon slot draws nothing: with LOAD_MONSTER's icon operand (save offset 0x2604) patched to a record

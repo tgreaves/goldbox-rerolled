@@ -39,7 +39,7 @@ describe.skipIf(!have)('Curse of the Azure Bonds toured headless', () => {
           }
         }
         for (let seed = 1; seed <= seeds; seed++) {
-          const r = await play({ game: COAB, files, seed: block * 1000 + area * 10 + seed, steps, tour: true, jumpTo: { block, area, x, y }, trace: process.env.COAB_TOUR_TRACE === '1' })
+          const r = await play({ game: COAB, files, seed: block * 1000 + area * 10 + seed, steps, tour: true, undying: process.env.COAB_TOUR_UNDYING === '1', jumpTo: { block, area, x, y }, trace: process.env.COAB_TOUR_TRACE === '1' })
           const st = r.stats
           const sq = [...(r.squares ?? new Map<string, Set<number>>())].map(([k, v]) => `${k}:${v.size}`).join(' ')
           console.log(`${block}/${area} seed ${seed}: ${r.steps} steps, squares ${sq}, ${st.battles} battles (${st.won} won, ${st.fled} fled, ${st.lost} lost), screens ${[...st.screens].map(([k, v]) => `${k}×${v}`).join(' ')}; ${st.ended}${r.stuck.length ? `; stuck ${r.stuck.length}: ${r.stuck[0]}` : ''}`)

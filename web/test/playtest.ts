@@ -316,6 +316,11 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   let capped = false
   /** the standing fighters' HP and status, and the round they last changed: no change for STALEMATE rounds is a stalemate */
   let lastState = '', changedAt = 0
+  /** an undying party's fallen stand again as the game's Raise Dead leaves them: the effects it removes go
+   *  (CotAB 0x4848A: 0x20 and the poisoned marker 0x37), else every poisoning that killed would leave one
+   *  more marker behind (the pile-up of 6/69's phase spiders) */
+  const raiseRemoves = Object.values(game().spells.handlers).find((x) => x.k === 'raise')?.removes as number[] | undefined ?? []
+  const raised = (c: Uint8Array) => { const fx = e.effectsOf(c); for (let i = fx.length - 1; i >= 0; i--) if (raiseRemoves.includes(fx[i].type)) fx.splice(i, 1) }
   function roundCap() {
     if (!battle || capped) return
     // the battle's own records of the party (the combatants), not the party list's
@@ -452,13 +457,13 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
               b.outcome = () => {
                 const out = outcome()
                 if (out !== 'destroyed') return out
-                for (const f of b.fighters) if (!f.monster) { f.c[F.status] = 0; f.c[F.inPlay] = 1; f.c[F.hp] = f.c[F.maxHp] }
+                for (const f of b.fighters) if (!f.monster) { if (f.c[F.status]) raised(f.c); f.c[F.status] = 0; f.c[F.inPlay] = 1; f.c[F.hp] = f.c[F.maxHp] }
                 report.route.push(`${step} a battle lost in ${e.block}/${e.area} counted as won`)
                 return 'won'
               }
             }
           })
-          if (o.undying) for (const c of e.party()) if (c[F.status] >= 4 && c[F.status] <= 7) { c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = c[F.maxHp] } // unconscious, dying, dead, stoned
+          if (o.undying) for (const c of e.party()) if (c[F.status] >= 4 && c[F.status] <= 7) { c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = c[F.maxHp]; raised(c) } // unconscious, dying, dead, stoned
           // and cured, as a player would have them (Cure Disease, Remove Paralysis): the diseases and the helpless markers go
           if (o.undying) for (const c of e.party()) {
             const fx = e.effectsOf(c), gone = new Set([...ids().helpless, ...ids().diseases.flat()])
@@ -649,10 +654,21 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   /** a tour's walk: towards the nearest square of this area not yet stood on, through open passages */
   const blocked = new Set<string>()
   const edgesTried = new Set<string>()
+  /** the walls of event squares tried: on_move runs on any attempted move, a wall too (engine/ecl.md, vector 0),
+   *  and scripts put stairs and exits by facing there (5/51's roof: the stairs down face a wall north) */
+  const bumped = new Set<string>()
   const tourMove = (): string => {
     const g = e.geo
     if (!g) return 'f'
     const at = (x: number, y: number) => (y & 15) * 16 + (x & 15)
+    if (g.event(e.x, e.y)) {
+      const wall = [0, 1, 2, 3].find((d) => g.passage(e.x, e.y, d) === 0 && !bumped.has(`${e.block}/${e.area}/${at(e.x, e.y)}/${d}`))
+      if (wall !== undefined) {
+        const turn = (wall - e.facing + 4) & 3
+        if (turn === 0) bumped.add(`${e.block}/${e.area}/${at(e.x, e.y)}/${wall}`)
+        return turn === 0 ? 'f' : turn === 1 ? 'r' : turn === 3 ? 'l' : 'b'
+      }
+    }
     const set = report.squares!.get(`${e.block}/${e.area}`)!
     const from = new Map<number, number>([[at(e.x, e.y), -1]])
     const queue = [at(e.x, e.y)]
@@ -691,6 +707,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       for (const k of [...edgesTried]) if (k.startsWith(`${e.block}/${e.area}/`) && chance(0.02)) edgesTried.delete(k)
       // and the doors that turned the party back (a lock it may pick or bash at another try)
       for (const k of [...blocked]) if (k.startsWith(`${e.block}/${e.area}/`) && chance(0.02)) blocked.delete(k)
+      // and the walls of event squares (a question answered no, a facing exit whose variables were not yet set)
+      for (const k of [...bumped]) if (k.startsWith(`${e.block}/${e.area}/`) && chance(0.02)) bumped.delete(k)
       return explore()
     }
     let n = goal, d = 0
@@ -762,6 +780,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     }
   }
   let reloads = 0, healedAt = -100
+  const flags = (process.env.PLAY_FLAGS ?? '').split(',').filter(Boolean).map(Number)
+  let flagsNow = ''
   const savedAt = new Set<string>()
   for (step = 1; ok && step <= o.steps; step++) {
     if (e.quit) {
@@ -792,10 +812,12 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       if (!ok) break
     }
     watchParty()
-    if (o.undying) for (const c of e.party()) { if (c[F.status] >= 4 && c[F.status] <= 7) { c[F.status] = 0; c[F.inPlay] = 1 } if (c[F.status] === 0) c[F.hp] = c[F.maxHp] }
+    if (o.undying) for (const c of e.party()) { if (c[F.status] >= 4 && c[F.status] <= 7) { c[F.status] = 0; c[F.inPlay] = 1; raised(c) } if (c[F.status] === 0) c[F.hp] = c[F.maxHp] }
     report.stats.areas.add(`${e.block}/${e.area}`)
     const here = `${e.block}/${e.area}${e.overland ? ' overland' : ''}`
     if (!report.route.length || !report.route[report.route.length - 1].endsWith(` ${here}`)) report.route.push(`${step} ${here}`)
+    // PLAY_FLAGS: script variables whose changes the route records (a chain's story flags)
+    if (flags.length) { const now = flags.map((a) => `${a.toString(16)}=${e.read(a)}`).join(' '); if (now !== flagsNow) { report.route.push(`${step} ${here}: ${now}`); flagsNow = now } }
     const at = `${e.block}/${e.area}`
     if (o.saveAt?.areas.includes(at) && !savedAt.has(at) && !e.quit) {
       savedAt.add(at)
