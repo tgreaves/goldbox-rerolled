@@ -35,9 +35,6 @@ that settles it.
 ## Curse of the Azure Bonds
 
 - Its frame edge is an approximation ([`spec/C-port/rendering.md`](spec/C-port/rendering.md), Open).
-- Dimension Door's aim (CotAB and SotSB): the original's Manual cursor refuses any occupied square for
-  it (the flag spell ≠ 0x53, CotAB 0x2DB7D, SotSB 0x3434B; [`spec/A-games/coab/combat.md`](spec/A-games/coab/combat.md),
-  "Casting"), while the port's spell aim offers the combatants and bodies in range as for any spell.
 
 ## Pool of Radiance
 

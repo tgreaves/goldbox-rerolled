@@ -151,7 +151,7 @@ An ally picked asks "Attack Ally:" first. The odds are worked out from the attac
 temporary spell bonuses, hence "≈" (IMP-058, `hitOdds`).
 
 **Spell targets** (`FUN_3aae_20c3`): "Target for *Spell*:" with the candidates in range ("*Name* (range
-*d*)", a body "*Name* (body, range *d*)"; a weapon never takes a body); for a spell that may target a square, any square can be tapped ("there (range *d*)"). An **area
+*d*)", a body "*Name* (body, range *d*)"; a weapon never takes a body; a spell with `aimEmpty`, Dimension Door in CotAB and SotSB, lists no one, as the original's cursor takes no occupied square for it); for a spell that may target a square, any square can be tapped ("there (range *d*)"). An **area
 spell** (Fireball, Stinking Cloud …) previews the squares it would cover, filled red with the aimed
 square in yellow, as the pointer moves over the field or on a first tap ("Tap the yellow square again
 to cast there."); a second tap on the same square casts (IMP-059). The original draws its template

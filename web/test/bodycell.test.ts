@@ -104,3 +104,21 @@ describe('body cells', () => {
   it.skipIf(!coab || !existsSync(coab))('CotAB: the same (0x2DAAC, 0x2DBA3)', () => aimsAtBodies(coab, COAB, [0x1f]))
   it.skipIf(!sotsb || !existsSync(sotsb))('SotSB: a body under either mark (0x3426B, 0x3436D)', () => aimsAtBodies(sotsb, SOTSB, [0x1e, 0x1c]))
 })
+
+describe('Dimension Door takes no occupied square (CotAB 0x2DB7D, SotSB 0x3434B)', () => {
+  afterAll(() => setGame(POR))
+  for (const [name, dir, g] of [['CotAB', coab, COAB], ['SotSB', sotsb, SOTSB]] as const) {
+    it.skipIf(!dir || !existsSync(dir))(`${name}: the aim offers nobody, combatant or body; an empty square still does`, async () => {
+      const { b, add, aims, pick } = field(load(dir, g))
+      const me = add(2, 2)
+      me.c[F.side] = 0
+      add(4, 2)
+      pick(() => null)
+      await b.spellTargets(me, { id: 83, name: 'Dimension Door', target: 8 } as unknown as Spell, 6)
+      expect(aims.at(-1)!.some((en) => en.ok)).toBe(false)
+      // another one-pick spell still offers the combatant
+      await b.spellTargets(me, ONE, 6)
+      expect(aims.at(-1)!.some((en) => en.ok)).toBe(true)
+    })
+  }
+})

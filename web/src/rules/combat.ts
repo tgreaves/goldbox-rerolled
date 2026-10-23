@@ -1721,7 +1721,9 @@ export class Battle implements FxHost {
         }
         return null
       }
-      const entries = this.aimEntries(f).map((en) => ({ ...en, ok: (en.cost >> 1) <= range && !!en.f && this.canTarget(f, en.f) }))
+      // aimEmpty (CotAB 0x2DB7D, SotSB 0x3434B: Dimension Door): no occupied square, combatant or body, is taken
+      const empty = !!spellSpec(s.id).aimEmpty
+      const entries = this.aimEntries(f).map((en) => ({ ...en, ok: !empty && (en.cost >> 1) <= range && !!en.f && this.canTarget(f, en.f) }))
       return this.ui.aim(f, entries, `Target for ${s.name}:`, allowEmpty, area)
     }
     if (mode === 0xf) { const p = await pickOne(false); if (p) this.aimed = { x: p.x, y: p.y }; return p?.f ? [p.f] : null }

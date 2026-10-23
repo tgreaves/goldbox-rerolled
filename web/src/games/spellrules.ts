@@ -169,7 +169,8 @@ export const COAB_SPELLS: SpellRules = {
     93: { k: 'apply', saveShift: { save: 4, byClass: { 0: -1, 5: 4 }, other: 2 }, runAfter: 'first' },
     // 49697 (class 3): the template, width 1, 3 squares; 6d6 each, only monster type 0x12 (others negate)
     98: { k: 'beam', width: 1, len: 3, amount: { n: 6, d: 6 }, perTarget: 1, recordDice: 1, onlyType: 0x12 },
-    83: { k: 'teleport', heldBy: 0x3a, releases: [0x90, 0x8b], msg: 0x48897 }, // 488a1 Dimension Door
+    // 488a1 Dimension Door; aimEmpty: the Aim menu's flag (spell ≠ 0x53) is 0, so the cursor takes no occupied square (0x2DB7D)
+    83: { k: 'teleport', heldBy: 0x3a, releases: [0x90, 0x8b], msg: 0x48897, aimEmpty: 1 },
     84: { k: 'scare', width: 3, len: 6, saveType: 4, effect: 0x8e, msg: 0x48a35, unaffected: 0x48a44 }, // 48a52 Fear
     // 48bb2 Fire Shield: "flame type: " Hot (0x32 + 0x8F) or Cold (0x36 + 0x8F), the computer Hot on 1d10 > 5
     85: { k: 'flameShield', prompt: 0x48b79, abort: 0x48b9d, aiPick: { d: 10, above: 5 },
@@ -264,7 +265,7 @@ export const SOTSB_SPELLS: SpellRules = {
     75: { k: 'raise', statuses: [6, 1], races: [1], removes: [0x37], msg: is(0x4be62) }, // 4be69: not an elf (race 1)
     76: { ...COAB_SPELLS.handlers[76], probe: 0xff, immuneFlag: 8, msg: is(0x4bf1c), unaffected: UNAFFECTED }, // 4bf22
     78: { k: 'none' }, // 4bffb: empty
-    83: { k: 'teleport', heldBy: 0, releases: [], msg: 0x4c1c0 }, // 4c1ca: the caster to the aimed square, "teleports" (no holds released)
+    83: { k: 'teleport', heldBy: 0, releases: [], msg: 0x4c1c0, aimEmpty: 1 }, // 4c1ca: the caster to the aimed square, "teleports" (no holds released); no occupied square (0x3434B)
     // 4cd49 Feeblemind: the spell save (+0xEC) moved by the class byte, hit dice and race; a class not listed
     // is not affected; then the effect's record runs at once, else "is unaffected" (0x4CD3E); the save put back
     93: { k: 'apply', save: 4, saveRules: [{ classes: [0, 8, 12], add: -1 }, { classes: [4], hd: [[8, 8, 1], [9, 127, 2]] },

@@ -75,7 +75,7 @@ either is found (O): the computer's patient search (0x32CE7; bodies of status 6â
 there (0x4A466, 0x4CB0E, after the zone-replacement test of their own cell), and the aiming cursor's pick
 of a body (0x3426B, 0x3436D; the Manual routine 0x3408D is CotAB's, with its occupant flag at [bp+0x16], the
 body records DS:868E + 7i to DS:86CD matched against the cursor DS:8E1F/8E20, the movement bytes DS:1A9E;
-the weapon aim refuses a body under either mark). The port: `R.bodyCell` { down 0x1E, stoned 0x1C, liftBy
+the weapon aim refuses a body under either mark; for Dimension Door, spell 0x53, the occupant flag is 0 (0x3434B), so its cursor takes no occupied square, CotAB's rule, `aimEmpty`). The port: `R.bodyCell` { down 0x1E, stoned 0x1C, liftBy
 owner }; PoR and CotAB { 0x1F, 0x1F, body } (PoR 0x2699F, 0x487B5, 0x28073; CotAB 0x267C9, 0x5673A,
 0x280ED, 0x28F89).
 

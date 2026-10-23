@@ -1093,7 +1093,7 @@ when its table column or sentence names CotAB.
 | 0x2D577 | coab/effects | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
 | 0x2D8E5 | coab/combat | coab/combat: Casting |  |
 | 0x2DAAC | coab/combat | coab/combat: Casting |  |
-| 0x2DB7D | coab/combat, coab/effects | coab/combat: Casting |  |
+| 0x2DB7D | coab/combat, coab/effects, B/vocabularies | coab/combat: Casting |  |
 | 0x2DBA3 | coab/combat | coab/combat: Casting |  |
 | 0x2DBB3 | B/vocabularies | B/vocabularies: 3.4 Targeting and protection |  |
 | 0x2E075 | coab/combat | coab/combat: Casting |  |
@@ -1161,6 +1161,7 @@ when its table column or sentence names CotAB.
 | 0x33F00 | coab/records | coab/records: 7.2 Engine conversion |  |
 | 0x340E4 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x342F5 | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) |  |
+| 0x3434B | B/vocabularies | B/vocabularies: 4.3 The battle's kinds |  |
 | 0x34569 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x34573 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x345FD | coab/records | coab/records: 7.5 Hillsfar (brief, O for structure) |  |
