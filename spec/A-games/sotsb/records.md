@@ -300,7 +300,7 @@ Written by 0x421CB, read by 0x419DD in the same order (O, each BlockWrite and Bl
 | 0x1415 | 8 × 41 | member stems, Pascal string[40], `CHRDAT<x><n>` | same |
 
 5 469 = 13 149 − 0x1E00 (O). Before writing: A[0x1F8] := `DS:67D6` (speed), A[0x1FE] := `DS:67ED`
-+ 2·`DS:67EB`, B[0x624] := the block digit (O, 0x42413–0x42443); loading undoes them and sets B[0x67C]
++ 2·`DS:67EB`, B[0x624] := the block digit (O, 0x42413–0x42443); loading undoes them (DS:7420 := B[0x624] at 0x41F66, after the first byte) and sets B[0x67C]
 := 0 (0x41D8A–0x41DBE), as CotAB. Without the code buffer, the area's script is loaded again from
 its `ECL<n>.DAX` record on load (I: not traced).
 

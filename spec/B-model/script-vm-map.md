@@ -229,7 +229,7 @@ holds "The END!" as a string (the code task of [AUDIT.md](../AUDIT.md) §6.8, C2
 | `start` | where a new game's scripts start: ECL block and record | block 3, record 0 | block 2, record 1 (**I**: the start-up code sets block 2, record 1 is the block's first) |
 | `areaZero` | a save whose area word is 0 starts at this record, with that record's script loaded (not restored), as the loader does; null: area 0 is an area | null | 1 (image 0x1C001–0x1C050) |
 | `areaZeroBlock` | the block that start goes to as well; null: the save's | null | null |
-| `blockFile` | `{ add, divide }`: the DAX file digit of the value written to B + 0x312 (the block), floor((v + add) / divide); with divide ≠ 1 a save's block is its first byte, the digit, and B + 0x312 keeps the scripts' value | { 0, 1 } | { 0, 1 } |
+| `blockFile` | `{ add, divide }`: the DAX file digit of the value written to B + 0x312 (the block), floor((v + add) / divide); a save writes the digit into B + 0x312 (and, in SotSB, its first byte) and a load takes the block from B + 0x312, whatever the scripts kept there (SotSB 0x4243A, 0x41F66) | { 0, 1 } | { 0, 1 } |
 | `quitProgram` | the PROGRAM operand that ends the game (the engine stops and the host leaves play); null: none | null | 3 (DS:4FE0 = 1, then EXIT, 0x1BA7E) |
 | `endingProgram` | the PROGRAM operand that plays the ending; null: none | 8 | 8 |
 | `wallSetNone` | LOAD_WALLSETS operands meaning "no set" (one-slot mode: the slot emptied; two-slot: left) | [0xFF] | [0xFF] |

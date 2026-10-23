@@ -123,7 +123,7 @@ describe.skipIf(!have)('Silver Blades files', () => {
     const again = parseSave(back)
     expect(again.party).toEqual(sv.party)
     expect([again.x, again.y, again.facing2]).toEqual([sv.x, sv.y, sv.facing2])
-    expect([back[0], saveBlock(again)]).toEqual([2, 1]) // the file digit DS:7420; B + 0x312 keeps the scripts' value
+    expect([back[0], saveBlock(again)]).toEqual([2, 2]) // the file digit DS:7420, also in B + 0x312 (0x4243A), which the loader reads (0x41F66)
     expect(again.A.subarray(0, 0xf0)).toEqual(sv.A.subarray(0, 0xf0))
     const e2 = new Engine(files, io, 1)
     e2.loadSave(back, again.party.map((st) => files.get(`${st}.SAV`)!))

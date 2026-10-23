@@ -253,10 +253,9 @@ export class Engine {
     this.speed = Math.min(this.A[0x49fc - A0], 9)
     this.nodes = party.map((c) => c.slice())
     this.cur = this.savedCur = this.nodes[0]
-    // the block: B + 0x312 where it is the file digit (PoR, CotAB); else the save's first byte, the digit itself
-    // (SotSB DS:7420, written first by 0x421CB)
-    if (game().ecl.blockFile.divide === 1) this.setBlockValue(this.B[0x6e12 - B0])
-    else this.setBlock(d[0])
+    // the block: the file digit the save put in B + 0x312, whatever the scripts keep there in play (PoR,
+    // CotAB; SotSB 0x41F66: DS:7420 := B[0x624] after the save's first byte was read)
+    this.setBlock(this.B[0x6e12 - B0])
     this.area = this.A[AREA_ID - A0]
     this.loadGeo(this.A[GEO_ID - A0])
     parseSave(d).wallSets.forEach((r, i) => { if (r !== 0xffff) this.walls.load(i + 1, r) })
@@ -302,7 +301,9 @@ export class Engine {
     this.A[0x49fc - A0] = this.speed
     this.A[0x49ff - A0] = 3 // monster pictures and portraits on
     this.A[AREA_ID - A0] = this.area
-    if (game().ecl.blockFile.divide === 1) this.B[0x6e12 - B0] = this.block // else B keeps the scripts' value
+    // B + 0x312 := the file digit, in every game (PoR, CotAB B[0x624]; SotSB 0x4243A: DS:7420), so a SotSB
+    // save made where the scripts' value is not the digit (the mines, 3 for ECL2) loads in its own block
+    this.B[0x6e12 - B0] = this.block
     const d = new Uint8Array(L.saveSize)
     d[0] = this.block
     const put = (o: number, words: Uint16Array) => words.forEach((v, i) => { d[o + 2 * i] = v & 0xff; d[o + 2 * i + 1] = v >> 8 })

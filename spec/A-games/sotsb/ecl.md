@@ -294,7 +294,11 @@ writes as data (0x100 and 0x119 differ), the second leave flag as profile data (
   0x2675A) calls 0x6EB0, which keeps the old digit in DS:7421 and sets the DAX file digit DS:7420 :=
   (v + 1) div 2: values 1 and 2 are ECL1, 3 and 4 ECL2, 5 and 6 ECL3 (the scripts write 2 before
   `NEW_ECL #33`, 4 before `NEW_ECL #64`). 0x6ECE puts the old digit back. The save's first byte is that
-  digit (0x421CB writes DS:7420 first); B + 0x312 keeps the scripts' value.
+  digit (0x421CB writes DS:7420 first), and before writing the save puts the digit in B + 0x312 too
+  (0x4243A), over the scripts' value; the loader reads the first byte, then sets DS:7420 := B + 0x312
+  (0x41F66), so the digit in the file's B decides the block (O; DOSBox 2026-10-23: a save with the
+  scripts' value there, 1 for ECL1 in the mines, loops on "Loading...Please Wait", ECL1 having no
+  record 51; with the digit it loads, [VALIDATION.md §4](../../VALIDATION.md)).
 - **NEW_ECL** (0x1E75C): A + 0x1E4 := the current record, DS:A4C2 := the operand, then the loader 0x25C3C
   ("Loading...Please Wait", `ECL` + DS:7420 + `.dax`), which retries while the record's size is below 2
   (as PoR's): a record missing from the file loops (O).

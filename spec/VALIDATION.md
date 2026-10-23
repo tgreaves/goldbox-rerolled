@@ -248,6 +248,12 @@ the stem table's slack (the whole of each slot past the party count). Not run: t
   back round), 17 of 17 frames exact; from a save the port wrote after a debug jump to the ruins (block
   1 area 32, (11,2)), which the original loaded, 18 moves out of the ruins into the town across the area
   boundary (32 → 16 at (15,8)) and along its street past the temple and the vault, 19 of 19 exact.
+  A port save in the mines (block 2, entered by its entry record 48, which loads the map and wall sets
+  and goes on to the temple level, area 51) left the original on "Loading...Please Wait" for good:
+  the port kept the scripts' block value in B 0x6E12 (1 after the jump; 3 in play for ECL2), which the
+  original's loader takes as the file digit (0x41F66), and ECL1 has no record 51. Fixed (the save
+  writes the digit there in every game, as the originals' writers do; ecl.md); then the original
+  loads it, 5 of 5 frames exact there.
 
 - **Curse of the Azure Bonds played further** (2026-10-23). Headless: the tour (`coabtour.test.ts`, every
   area of every block by the Debug jump, the sturdy party walking every square it reaches, 2 seeds × 1 500
