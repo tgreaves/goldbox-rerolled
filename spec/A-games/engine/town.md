@@ -141,7 +141,7 @@ Buy and the temple read G(character) as u16 and both setters take a u16, so valu
 
 Entry and menu as in the shop: mode 1, pool cleared, "Heal View Take Pool Share Appraise Exit" (pool has money) or "Heal View Pool Appraise Exit". Leaving with pooled money asks "As you leave a priest says, "Excuse me but you have left some money here" Do you want to go back and retrieve your money?"
 
-**H**eal (`FUN_2d14_09d7`) lists the ten strings at DS:011A (41 bytes each; the tenth is "Exit") for the current character. A service whose condition fails first asks "<reason> cast cure anyway:" (Y/N, `FUN_2d14_0013`). Then "<service> will only cost N gold pieces. pay for cure?" (`FUN_2d14_00bf`): Yes pays as in Money or prints "Not enough money."; success prints "<name> is cured."
+**H**eal (`FUN_2d14_09d7`) lists the ten strings at DS:011A (41 bytes each; the tenth is "Exit") for the current character, under "*name*, how can we help you?" (0x1DAF6) with the menu "Heal Exit": **H** or Enter takes the highlighted service (0x1DCBB), and the list comes back after each service, cured or not, until its **E**xit (0x1DD3D–0x1DD4B; O, and seen in DOSBox). A cure does not run the items' recompute: the encumbrance keeps the fee paid (O, DOSBox). A service whose condition fails first asks "<reason> cast cure anyway:" (Y/N, `FUN_2d14_0013`). Then "<service> will only cost N gold pieces. pay for cure?" (`FUN_2d14_00bf`): Yes pays as in Money or prints "Not enough money."; success prints "<name> is cured."
 
 | Service | gp | Condition (else the reason) | Effect |
 |---|---|---|---|

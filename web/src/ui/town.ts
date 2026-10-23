@@ -177,8 +177,14 @@ export async function temple(ui: TownUi) {
   }
 }
 
-/** Heal (FUN_2d14_09d7): the game's services (PoR nine, CotAB ten) for the current character. */
+/** Heal (FUN_2d14_09d7): the game's services (PoR nine, CotAB ten) for the current character, the list
+ *  coming back after each service, cured or not, until its Exit (PoR 0x1DD3D–0x1DD4B). */
 async function heal(ui: TownUi) {
+  while (await healOnce(ui)) { /* the list again */ }
+}
+
+/** One choice from the Heal list; false for its Exit. */
+async function healOnce(ui: TownUi): Promise<boolean> {
   const e = ui.engine, t = e.items!
   const { c, items, name } = cur(e)
   const fx = e.effectsOf(c)
@@ -189,9 +195,9 @@ async function heal(ui: TownUi) {
   const ex = menu('templeHeal').find((w) => w.key === 'E') ?? { text: 'Exit', key: 'E' }
   const prompt = hasMsg('templeHowHelp') ? `${name}${msg('templeHowHelp')}` : `Healing for ${name}:`
   const i = await ui.menu([...cures.map((x) => x.name.toUpperCase()), ex.text.toUpperCase()], { prompt, vertical: true, keys: [...cures.map(() => ''), ex.key] })
-  if (i >= cures.length) return
+  if (i >= cures.length) return false
   const s = cures[i], kind = s.kind
-  if (R.templeHeal.mode === 'free') { await freeCure(ui, s, R.templeHeal.raise); return }
+  if (R.templeHeal.mode === 'free') { await freeCure(ui, s, R.templeHeal.raise); return true }
   const status = c[F.status]
   const reason = {
     blind: has([I.blind]) ? '' : msg('notBlind'),
@@ -202,9 +208,9 @@ async function heal(ui: TownUi) {
     curse: items.some((x) => x.cursed) || has([I.cursed]) ? '' : msg('notCursed'),
     stone: status === 7 ? '' : msg('notStoned'),
   }[kind]
-  if (reason && !await yes(ui, `${name} ${reason} ${msg('cureAnyway').trimEnd()}`)) return
-  if (!await yes(ui, `${s.name}${msg('willOnlyCost')}${s.gp}${msg('goldPieces')} ${msg('payForCure').trimEnd()}`)) return
-  if (!pay(c, e.money, s.gp)) { ui.print(msg('templeNoMoney'), false); return }
+  if (reason && !await yes(ui, `${name} ${reason} ${msg('cureAnyway').trimEnd()}`)) return true
+  if (!await yes(ui, `${s.name}${msg('willOnlyCost')}${s.gp}${msg('goldPieces')} ${msg('payForCure').trimEnd()}`)) return true
+  if (!pay(c, e.money, s.gp)) { ui.print(msg('templeNoMoney'), false); return true }
   // the cures go through the heal routine (PoR FUN_2d14_0401 → FUN_5216_175d, CotAB 0x1CB35 → 0x4CE85):
   // nothing for the dead, the stoned or (PoR) mummy rot, though the fee is paid; someone unconscious is revived
   const hp = (n: number) => { healChar(c, fx, n, false) }
@@ -227,9 +233,12 @@ async function heal(ui: TownUi) {
     case 'curse': if (s.spell !== undefined) for (const l of await spellOn(e, c, s.spell)) ui.print(l, false); break
     case 'stone': if (!reason) { c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = 1 } break // PoR 0x1DAD7: Okay, in play, 1 HP
   }
-  recalc(c, items, t)
+  // no items' recompute after a cure: the encumbrance keeps the fee paid (PoR in DOSBox, a Cure Light
+  // Wounds: char[0x102] as loaded); Remove Curse, which may free a readied item, is recomputed (I)
+  if (kind === 'curse') recalc(c, items, t)
   ui.print(`${name} ${msg('templeCured')}`, false)
   ui.refresh()
+  return true
 }
 
 /**

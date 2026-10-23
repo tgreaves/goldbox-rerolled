@@ -168,6 +168,11 @@ hit-point roll (char[0x32], [0x11B] and the roll counter [0xB1]). It found two t
 port recomputed the items after training (the encumbrance then lost the 1000 gp paid; the original
 leaves it, 638), and the original renumbers the members' icon slots char[0xBF] by party order when
 they join, a load included (`Engine.joinSlot`, [engine/records.md](A-games/engine/records.md)).
+**The temple** (the same way): BROTHER SEAN first with 5 HP, 14 moves to New Phlan's temple, Heal,
+Cure Light Wounds, Yes, Exit, Exit, camp and save: equal but for the hit points healed (1d8). Found and
+fixed: the original's Heal list comes back after each service until its Exit (the port went back to
+the temple's menu), its title is "*name*, how can we help you?" (0x1DAF6; the port had its own), and no
+items' recompute follows a cure (the encumbrance keeps the fee paid; [engine/town.md](A-games/engine/town.md), "Temple").
 Not run: the Sell, Share and Appraise checks (decided not worth it); register 0x035F (no debugger).
 - **The interface** was checked against part C in headless Chromium (2026-10-21; each part C file's
   "Validation" section says what): every screen class, PoR's game-file save A, the games screen, the

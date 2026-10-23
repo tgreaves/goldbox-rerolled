@@ -31,6 +31,8 @@ HOT = re.compile(r'[A-Z0-9]')
 # where a vertical list's highlight starts, by its prompt, where it is not the first entry: PoR's Buy
 # list opens on the second stock entry (FUN_2f70_0361 passes the list routine index 1, 0x1FA7C)
 LIST_START = {'por': [(re.compile(r'buys:$'), 1)]}
+# the key that takes a vertical list's highlighted row, by its prompt, where it is not Enter (none so far)
+LIST_TAKE = {}
 
 
 def hot(items, k):
@@ -58,7 +60,8 @@ def keys_of(game, events, slot):
                 out.append(keys[k][0].lower())
             elif e.get('vertical'):
                 at = next((n for r, n in LIST_START.get(game, []) if r.search(e.get('prompt', ''))), 0)
-                out += (['end'] * (k - at) if k >= at else ['home'] * (at - k)) + ['enter']
+                take = next((x for r, x in LIST_TAKE.get(game, []) if r.search(e.get('prompt', ''))), 'enter')
+                out += (['end'] * (k - at) if k >= at else ['home'] * (at - k)) + [take]
             else:
                 out.append(hot(items, k))
         elif ev == 'save':

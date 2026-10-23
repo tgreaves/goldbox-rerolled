@@ -373,6 +373,7 @@ export const POR_STRINGS: Strings = {
   payForCure: 0x1d1d5, // temple; FUN_2d14_00bf
   templeNoMoney: 0x1d1e3, // temple; FUN_2d14_00bf
   templeCured: 0x1d1f5, // temple; FUN_2d14_00bf
+  templeHowHelp: 0x1daf6, // the Heal list's title after the name; FUN_2d14_09d7
   take: 0x1eda0, // treasure; FUN_2e08_0d38
   makesCamp: 0x31633, // camp; FUN_3f81_1e6f
   camp: 0x3166b, // camp; FUN_3f81_1e6f
