@@ -67,7 +67,7 @@ export interface PlayOptions {
    * the dice, decides how far a run gets
    */
   undying?: boolean
-  /** on first entering each of these areas ("block/area"), save there and write the files under `dir`
+  /** on first entering each of these areas ("block/area", or "block/area@x:y" for a square), save there and write the files under `dir`
    *  with the game's names (SAVGAMA.DAT and the party's CHRDATAn files), for the browser to load */
   saveAt?: { areas: string[]; dir: string }
   /** ECL addresses (the game's own numbering) whose values are recorded at every step (PlayReport.watched) */
@@ -342,6 +342,12 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   let capped = false
   /** the standing fighters' HP and status, and the round they last changed: no change for STALEMATE rounds is a stalemate */
   let lastState = '', changedAt = 0
+  /** an undying party's fallen stand again as the game's Raise Dead leaves them: the effects it removes go
+   *  (CotAB 0x4848A: 0x20 and the poisoned marker 0x37), else every poisoning that killed would leave one
+   *  more marker behind (the pile-up of 6/69's phase spiders) */
+  const raiseRemoves = Object.values(game().spells.handlers).find((x) => x.k === 'raise')?.removes as number[] | undefined ?? []
+  const cureRemoves = Object.values(game().spells.handlers).filter((x) => x.k === 'cure').map((x) => x.effect as number)
+  const raised = (c: Uint8Array) => { const fx = e.effectsOf(c); for (let i = fx.length - 1; i >= 0; i--) if (raiseRemoves.includes(fx[i].type)) fx.splice(i, 1) }
   function roundCap() {
     if (!battle || capped) return
     // the battle's own records of the party (the combatants), not the party list's
@@ -423,11 +429,10 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       const chk = checkTraining(t, c, e.read(0x6da8))
       if (!chk.ok) { checkText(chk.message, 'training'); say(`  ${nameOf(c)}: ${chk.message}`); continue }
       say(`  ${nameOf(c)} trains`)
-      if (train(t, e, c, chk.train)) {
+      if (train(t, e, c, chk.train, false, e.itemsOf(c), e.items ?? undefined)) {
         const choices = newSpellChoices(t, c)
         if (choices.length) c[F.known + choices[pick(choices.length)]] = 1
       }
-      if (e.items) recalc(c, e.itemsOf(c), e.items)
     }
   }
 
@@ -478,17 +483,22 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
               const outcome = b.outcome.bind(b)
               b.outcome = () => {
                 const out = outcome()
-                if (out !== 'destroyed') return out
-                for (const f of b.fighters) if (!f.monster) { f.c[F.status] = 0; f.c[F.inPlay] = 1; f.c[F.hp] = f.c[F.maxHp] }
+                // a flight with members down leaves them behind for good (the aftermath removes them, 0x23CCC),
+                // which an undying party would not do: it stands them up and counts the battle won, as a defeat
+                const left = out === 'fled' && b.fighters.some((f) => !f.monster && f.c[F.status] !== 3)
+                if (out !== 'destroyed' && !left) return out
+                for (const f of b.fighters) if (!f.monster) { if (f.c[F.status]) raised(f.c); f.c[F.status] = 0; f.c[F.inPlay] = 1; f.c[F.hp] = f.c[F.maxHp] }
                 report.route.push(`${step} a battle lost in ${e.block}/${e.area} counted as won`)
                 return 'won'
               }
             }
           })
-          if (o.undying) for (const c of e.party()) if (c[F.status] >= 4 && c[F.status] <= 7) { c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = c[F.maxHp] } // unconscious, dying, dead, stoned
-          // and cured, as a player would have them (Cure Disease, Remove Paralysis): the diseases and the helpless markers go
+          if (o.undying) for (const c of e.party()) if (c[F.status] >= 4 && c[F.status] <= 7) { c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = c[F.maxHp]; raised(c) } // unconscious, dying, dead, stoned
+          // and cured, as a player would have them (Cure Disease, Remove Paralysis, Cure Blindness): the diseases, the
+          // helpless markers and what the game's cure spells take away go (Cause Blindness's 0x21 stacks, one per
+          // cast, and Cure Blindness takes the first: engine/spells.md 37, 38; a final battle replayed piles them up)
           if (o.undying) for (const c of e.party()) {
-            const fx = e.effectsOf(c), gone = new Set([...ids().helpless, ...ids().diseases.flat()])
+            const fx = e.effectsOf(c), gone = new Set([...ids().helpless, ...ids().diseases.flat(), ...cureRemoves])
             for (let i = fx.length - 1; i >= 0; i--) if (gone.has(fx[i].type)) fx.splice(i, 1)
           }
           report.stats.rounds += battle?.round ?? 0
@@ -545,7 +555,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     const diff = dat.findIndex((v, i) => again[i] !== v && i !== sq && i !== sq + 1 && i !== prev)
     if (diff >= 0) fail(`a save loaded and saved again differs at byte ${diff.toString(16)}: ${dat[diff]} then ${again[diff]}`)
     n.party().forEach((c, i) => {
-      if (c.some((v, k) => chars[i].sav[k] !== v)) fail(`${nameOf(c)}'s record changes in a save and load`)
+      // the icon slot is the load's to give (the party list's append, Engine.joinSlot): after an Order it is renumbered
+      if (c.some((v, k) => chars[i].sav[k] !== v && k !== F.iconSlot)) fail(`${nameOf(c)}'s record changes in a save and load`)
       if (characterItemsFile(n.itemsOf(c)).some((v, k) => chars[i].itm[k] !== v)) fail(`${nameOf(c)}'s items change in a save and load`)
       if (effectsFile(n.effectsOf(c)).some((v, k) => chars[i].spc[k] !== v)) fail(`${nameOf(c)}'s effects change in a save and load`)
     })
@@ -700,10 +711,21 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   }
   /** a tour's walk: towards the nearest square of this area not yet stood on, through open passages */
   const edgesTried = new Set<string>()
+  /** the walls of event squares tried: on_move runs on any attempted move, a wall too (engine/ecl.md, vector 0),
+   *  and scripts put stairs and exits by facing there (5/51's roof: the stairs down face a wall north) */
+  const bumped = new Set<string>()
   const tourMove = (): string => {
     const g = e.geo
     if (!g) return 'f'
     const at = (x: number, y: number) => (y & 15) * 16 + (x & 15)
+    if (g.event(e.x, e.y)) {
+      const wall = [0, 1, 2, 3].find((d) => g.passage(e.x, e.y, d) === 0 && !bumped.has(`${place()}/${at(e.x, e.y)}/${d}`))
+      if (wall !== undefined) {
+        const turn = (wall - e.facing + 4) & 3
+        if (turn === 0) bumped.add(`${place()}/${at(e.x, e.y)}/${wall}`)
+        return turn === 0 ? 'f' : turn === 1 ? 'r' : turn === 3 ? 'l' : 'b'
+      }
+    }
     const set = report.squares!.get(place())!
     const from = new Map<number, number>([[at(e.x, e.y), -1]])
     const queue = [at(e.x, e.y)]
@@ -769,6 +791,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       for (const k of [...edgesTried]) if (k.startsWith(`${place()}/`) && chance(0.02)) edgesTried.delete(k)
       // and the doors that turned the party back (a lock it may pick or bash at another try)
       for (const k of [...blocked]) if (k.startsWith(`${place()}/`) && chance(0.02)) blocked.delete(k)
+      // and the walls of event squares (a question answered no, a facing exit whose variables were not yet set)
+      for (const k of [...bumped]) if (k.startsWith(`${place()}/`) && chance(0.02)) bumped.delete(k)
       return explore()
     }
     let n = goal, d = 0
@@ -839,6 +863,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     }
   }
   let reloads = 0, healedAt = -100
+  const flags = (process.env.PLAY_FLAGS ?? '').split(',').filter(Boolean).map(Number)
+  let flagsNow = ''
   const savedAt = new Set<string>()
   for (step = 1; ok && step <= o.steps; step++) {
     if (e.quit) {
@@ -869,17 +895,20 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       if (!ok) break
     }
     watchParty()
-    if (o.undying) for (const c of e.party()) { if (c[F.status] >= 4 && c[F.status] <= 7) { c[F.status] = 0; c[F.inPlay] = 1 } if (c[F.status] === 0) c[F.hp] = c[F.maxHp] }
+    if (o.undying) for (const c of e.party()) { if (c[F.status] >= 4 && c[F.status] <= 7) { c[F.status] = 0; c[F.inPlay] = 1; raised(c) } if (c[F.status] === 0) c[F.hp] = c[F.maxHp] }
     report.stats.areas.add(`${e.block}/${e.area}`)
     if (o.goal?.includes(`${e.block}/${e.area}`)) break
     if (o.watch) { report.watched ??= new Map(); for (const a of o.watch) { if (!report.watched.has(a)) report.watched.set(a, new Set()); report.watched.get(a)!.add(e.read(canonical(game().ecl, a))) } }
     const here = `${e.block}/${e.area}${e.overland ? ' overland' : ''}`
     if (!report.route.length || !report.route[report.route.length - 1].endsWith(` ${here}`)) report.route.push(`${step} ${here}`)
-    const at = `${e.block}/${e.area}`
+    // PLAY_FLAGS: script variables whose changes the route records (a chain's story flags)
+    if (flags.length) { const now = flags.map((a) => `${a.toString(16)}=${e.read(a)}`).join(' '); if (now !== flagsNow) { report.route.push(`${step} ${here}: ${now}`); flagsNow = now } }
+    const sq = `${e.block}/${e.area}@${e.x}:${e.y}`
+    const at = o.saveAt?.areas.includes(sq) ? sq : `${e.block}/${e.area}`
     if (o.saveAt?.areas.includes(at) && !savedAt.has(at) && !e.quit) {
       savedAt.add(at)
       await roundTrip(false)
-      const d = join(o.saveAt.dir, at.replace('/', '-'))
+      const d = join(o.saveAt.dir, at.replace('/', '-').replace('@', '-').replace(':', '-'))
       mkdirSync(d, { recursive: true })
       writeFileSync(join(d, 'SAVGAMA.DAT'), lastSave.dat)
       stemsOf().forEach((st, i) => {
