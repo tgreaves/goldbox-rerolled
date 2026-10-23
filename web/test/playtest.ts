@@ -177,6 +177,9 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     report.stats.menus++
     asked++
     if (!items.length) { fail(`an empty menu${prompt ? ` (${prompt})` : ''}`); return 0 }
+    // a script's menus that go round for ever even on their last choices (a town's edge offering only
+    // LEAVE and SEARCH AREA after a jump): the step is given up as stuck (act's runaway branch)
+    if (stepMenus > STEP_MENUS * 20) throw new Error(`runaway script: ${stepMenus} menus in one step (${items.join('/')})`)
     for (const t of items) { checkText(String(t), 'a menu'); if (/^#\d+$/.test(String(t).trim())) fail(`a menu offers "${t}" (a name not found)`) }
     const n = items.length
     const planned = plan.length ? items.indexOf(plan[0]) : -1

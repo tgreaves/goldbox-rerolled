@@ -364,6 +364,15 @@ is in play (`FUN_10ba_23db`), so a side-0 helper left alone behind a wall keeps 
 falls (the New Phlan tavern brawl, seed 1 step 421). The harness calls them off and lists them. Not covered: rendering, the DOM panels (the
 treasure split, Buy, Memorize), the town and overland menus beyond random play, anything past
 where random play gets (CotAB: Tilverton and the jumped-to areas).
+CotAB played further (2026-10-23: every area from a debug jump with a party that cannot die, 26 areas ×
+2 000 steps, and 16 seeds × 3 000 steps, Tilverton to the overland map, the towns and the ending reached
+from 6/67; a step whose script menus go round 3 000 times even on their last choices, a town's edge after
+a jump, is listed as stuck): found and fixed, after a battle the first member is current (the clean-up
+makes the head of the list current in all three games: PoR 0x1F316, CotAB 0x1EB96, SotSB 0x24878; the
+port kept whoever was current in the battle); CotAB's camp Cast of a combat-only spell printed
+"#combatOnlySpell" (its "can't be cast here..." 0x451DA). Found, kept: a member still charmed when a
+battle ends leaves the party with the monsters (the original's Bug, combat-rules.md "Cleanup"); with the
+whole party charmed the party is empty.
 
 **Secret of the Silver Blades (2026-10-22).** Research started: `spec/A-games/sotsb/README.md` (the
 identity, the working image, the DAX families). Its GAME.OVR has the older TPOV header, which

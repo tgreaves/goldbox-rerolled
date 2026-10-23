@@ -90,6 +90,7 @@ points here.
 | "Funky--" | 0x306D0 | 0x30CB2 | display, unknown | PoR `FUN_3f81_0fbc`; CotAB 0x30DDA |
 | " <No Spell Effects>" | 0x307AF | 0x30DC5 | display, none | PoR `FUN_3f81_0fbc`; CotAB 0x30DDA |
 | "is a combat-only spell..." | 0x3F0DE | — | cast: combat-only | PoR `FUN_4e53_0c20` |
+| "can't be cast here..." | — | 0x451DA | cast: combat-only (CotAB's, on the line under the spell's name) | CotAB 0x45251 (cs:126A at 0x452C2) |
 | "Lose it?" | 0x3F0F8 | 0x451F0 | cast: combat-only, question | PoR `FUN_4e53_0c20`; CotAB 0x45251 |
 | "Rest Time:" | 0x3BA43 | 0x414A8 | rest prompt | PoR `FUN_4b46_05f0`; CotAB 0x414B5 |
 | "As you Leave the Shopkeeper says" | 0x1FBC0 | 0x1F6C9 | shop leave | PoR `FUN_2f70_053e`; CotAB 0x1F747 |

@@ -2710,9 +2710,10 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
   for (const f of b.fighters) {
     if (!f.monster && f.c[F.side] !== 1) continue
     if (!f.c[F.inPlay]) defeated++
-    e.removeEntry(f.c) // 0x23D25 makes each current first (I: what the current is after the battle is not traced)
+    e.removeEntry(f.c) // 0x23D25 makes each current first; afterCleanup then makes the head current
   }
   e.write(0x6dc8, defeated)
+  afterCleanup(e)
   // only the party is left in the list now: the party size follows it (members lost when the party
   // fled, or gone over to the other side, are no longer counted; FUN_417f_3291 lowers it per member)
   if (!e.quit) e.write(0x6e3e, e.nodes.length)
@@ -2749,12 +2750,26 @@ function demoCleanup(e: Engine, b: Battle): { share: number; survived: boolean; 
     e.inventory.delete(f.c)
     e.effects.delete(f.c)
   }
+  afterCleanup(e)
   e.write(0x6e3e, e.nodes.length)
   for (const a of [0x6e70, 0x6e71, 0x6e72, 0x6de3, 0x6de6]) e.write(a, 0)
   e.monstersCleared()
   e.duel = false
   e.duelist = null
   return { share: 0, survived: true, messages: [] }
+}
+
+/**
+ * The clean-up's last act (PoR 0x1F316 in FUN_2e08_11ac, CotAB 0x1EB96, SotSB 0x24878): the head of
+ * the list becomes the current character, so after every battle the first member is current, whoever
+ * was current in it (spec/A-games/engine/combat-rules.md, "Cleanup"). A saved selection (ECL's restore
+ * at EXIT, DS:4430) that left the party, lost when it fled, is the head too: the original would
+ * restore a freed record there (I: not met in play; IMP-082).
+ */
+function afterCleanup(e: Engine) {
+  if (!e.nodes.length) return // the party destroyed: nobody (the original's nil)
+  if (!e.nodes.includes(e.savedCur)) e.savedCur = e.nodes[0]
+  e.cur = e.nodes[0]
 }
 
 /** A signed 16-bit product, as the original multiplies (never large with shipped data). */

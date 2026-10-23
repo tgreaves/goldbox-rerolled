@@ -53,6 +53,7 @@ describe.skipIf(!have)('combat', () => {
     e.loadSave(dat, stems.map((s) => files.get(`${s}.SAV`)!))
     stems.forEach((s, i) => e.attachFiles(i, files.get(`${s}.ITM`), files.get(`${s}.SPC`)))
     await e.start()
+    e.cur = e.savedCur = e.nodes[3] // someone other than the first is current going in
     e.addMonsters(13, 1, 4)
     let battle: import('../src/rules/combat').Battle | null = null
     const ui: CombatUi = {
@@ -67,6 +68,8 @@ describe.skipIf(!have)('combat', () => {
     expect(r.share).toBeGreaterThan(0)
     expect(r.messages).toContain('The party has won.')
     expect(e.nodes.length).toBe(stems.length)
+    // the clean-up makes the head of the list current (0x1F316)
+    expect(e.cur).toBe(e.nodes[0])
   })
 
   it('takes steps straight from the command prompt (IMP-053)', async () => {

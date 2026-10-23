@@ -597,6 +597,7 @@ export const COAB_STRINGS: Strings = {
   noCastHere: 0x300d6, // spell activity; 0x30140
   noCondition: 0x300f6, // spell activity; 0x30140
   noSpells: 0x3025d, // Cast; 0x30275
+  combatOnlySpell: 0x451da, // "can't be cast here..." (cs:126A, 0x452C2): the cast 0x45251, a spell of record byte 7 = 0 out of battle, not from an item (DS:757D = 0); then loseIt, O
   loseIt: 0x451f0, // Cast outside combat; 0x45251
   memorizeThese: 0x306aa, // Memorize; 0x306f5
   memorizeThese2: 0x306dd, // Memorize; 0x306f5
