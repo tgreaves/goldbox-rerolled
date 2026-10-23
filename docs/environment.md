@@ -142,8 +142,11 @@ The 2026-10-22 session (Silver Blades, the first DOSBox checks) ran on Tristan's
   `main` to GitHub (fast-forward only) or fetches it, as a bundle through a throw-away Docker
   container with the host's SSH agent forwarded (Docker Desktop's `/run/host-services/ssh-auth.sock`;
   the remote there is `git@github.com:…`). On the server, plain `git push` works.
-- Browser checks used Playwright with Chrome; the DOSBox checks DOSBox Staging, the same method as
-  `tools/dosbox/`.
+- Browser checks used Playwright with Chrome (Playwright from `web/node_modules`; a fork's worktree
+  symlinks it, never commits it). DOSBox Staging 0.83 (`/opt/homebrew/bin/dosbox-staging`) and NASM 3.02
+  (`/opt/homebrew/bin/nasm`) are installed, so `tools/dosbox/` runs as on the server
+  (`DOSBOX=/opt/homebrew/bin/dosbox-staging NASM=/opt/homebrew/bin/nasm`); several instances can run at
+  once (each run copies the game).
 - The app and accounts server runs there too, for quick testing: the launchd agent
   `~/Library/LaunchAgents/org.goldbox-rerolled.plist` (from `server/goldbox-rerolled.plist`, [server.md](server.md),
   "launchd (macOS)"), on `http://127.0.0.1:8080/` only, plain HTTP, data in `~/.local/share/goldbox-rerolled`,

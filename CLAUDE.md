@@ -106,15 +106,17 @@ close disassemblers (REA's Ghidra sessions) after use, no unbounded background j
   `docs/server.md`: design, API, security, deployment (systemd, Docker); its tests are `web/test/server.test.ts`
   and `sync.test.ts`
 
-## Where the work stands (2026-10-23)
+## Where the work stands (2026-10-23, evening)
 
 - Pool of Radiance plays start to finish. Curse of the Azure Bonds and Secret of the Silver Blades are
   playable at an early stage (their profiles, rules, spells, effects and data in place, step logs in
-  `docs/multi-game.md`; both toured headless area by area, `coabtour`/`sotsbtour`; CotAB's ending, towns,
-  shops, training, overland and a sewer battle, and SotSB's town, camp, battles in later blocks, Join/Halve,
-  training and the demo checked in the browser, `spec/VALIDATION.md` §4), neither played through in order.
-  564 tests pass with all three games' files (`POOLRAD`, `COAB`, `SOTSB`); long headless playthroughs
-  (24 × 1000 steps) show no failures.
+  `docs/multi-game.md`; both toured headless area by area, `coabtour`/`sotsbtour`). CotAB is played in its
+  story order from save A to the ending headless (`coabchain.test.ts`, `COAB_CHAIN=1`), its final battle and
+  ending checked in the browser; SotSB in its order to 2/66 (`sotsbchain.test.ts`), its end (soul chamber,
+  the well) checked from Debug jumps headless and in the browser; block 3 in order is next (`TODO.md`).
+  577 tests pass with all three games' files (`POOLRAD`, `COAB`, `SOTSB`); long headless playthroughs
+  (24 × 1000 steps) show no failures. The play-test harness (`web/test/playtest.ts`) has the options the
+  chains use: `tour`, `undying`, `walls`, `subAreas`, `hints`, `from`/`goal`/`saveAt`, `PLAY_FLAGS`.
 - The spec is the normative source (decisions D1–D6 in `spec/README.md`); steps 1–7 of its work plan
   (`spec/AUDIT.md` §8) are done. Step 8, the clean-room rebuilds that validate it, is **on hold** by
   Tristan's choice (token and session limits): do not start one unasked.
@@ -123,8 +125,14 @@ close disassemblers (REA's Ghidra sessions) after use, no unbounded background j
   A, CotAB's outdoor sky, clouds and sun; PoR walks of up to 160 moves in save A's two areas, by
   day and night, with the original's saves after each piece equal to the port's (`savecompare.py`),
   and its rests and rest counters; CotAB's and SotSB's saves after the same play byte-equal but for memory
-  garbage and dice, and walks in both (Tilverton, blocks 2 and 6; SotSB's town, ruins and mines) exact
+  garbage and dice, and walks in both (Tilverton, blocks 2 and 6; SotSB's town, ruins and mines) exact;
+  PoR's shop Buy, training and temple cure typed from the port's own answers (`scriptcheck.py`), CotAB's
+  temple, shop, Memorize, rest and battle summaries, SotSB's vault file and Fix's rest, all as the port's
   (`spec/VALIDATION.md` §4). No debugger is available.
+- On Tristan's Mac (where the 2026-10-22/23 sessions ran): the server runs as a launchd agent on
+  127.0.0.1:8080 (`docs/environment.md`, "Tristan's Mac"); DOSBox Staging and NASM are installed; git's
+  network operations go through `transfer-repo.sh` (Tristan pushes). Tristan likes to watch browser runs:
+  launch Playwright's Chrome with `headless: false` and a `slowMo`.
 - `server/` (accounts and sync) runs on the dev server's LAN as a systemd user service (port 8080,
   `docs/environment.md`) but is not deployed publicly. It is meant to become a public service with
   open sign-up, so treat every change there as internet-facing (`docs/server.md`, "Running it publicly").

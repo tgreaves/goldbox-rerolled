@@ -7,25 +7,22 @@ that settles it.
 
 ## Next steps (2026-10-23, in order)
 
-1. **More DOSBox comparisons** with `tools/dosbox/` where the port's behaviour rests on **I** items
-   (`spec/open-questions.md`): `viewcheck.py --moves` walks, saves written by the original compared
-   with the port's (`run.py` keeps every file the game changes). PoR's walks, saves and rests are done,
-   and SotSB's saves (the opening, the mines) and walks (the town, the ruins into the town, the temple
-   level) (2026-10-23, `spec/VALIDATION.md` §4).
-2. **Play-throughs** of CotAB and SotSB beyond the opening (headless harness first, then the browser),
-   fixing what they find. SotSB in its order (2026-10-23, `sotsbchain.test.ts`): the town, the ruins'
-   street zones, the mine's levels 0–10 and, through level 10's street maze (route hints from its
-   tables), the hole into 2/64, then 2/65, 2/66 and 2/68, reached as the scripts route them; still to do,
-   from 2/65 on in order: 2/65's event 39 west at (13,9) into 2/66, 2/66's event 31 south into 3/80 (the
-   501 endings there were the B+0x100 read, fixed), block 3 (3/80–82, 96–99) and the Dreadlord. The end
-   itself (3/99's soul chamber, the well's dragon and its message) plays headless and in the browser
-   from Debug jumps; in order the glowing gate needs the well's 0x4C63, which a jumping party lacks
-   ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4, "Silver Blades played in its order").
-   CotAB (2026-10-23): every area toured headless and its towns, hall, shop,
-   temple, overland edge, camp and a battle with spells checked in the browser
-   ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4); the chain in its order (`coabchain.test.ts`) reaches
-   Yulash, Zhentil Keep, Myth Drannor and 6/69 from save A; still to do, Dracandros' tower (6/64–6/67)
-   and the ending by the chain, and the final battle to its end in the browser.
+1. **SotSB in its order from 2/65 on** (`sotsbchain.test.ts`, its hints in `sotsbchain-hints.json`; saves
+   made on entering 2/64 and 2/65 let a run start there): give the harness 2/65's way on (event 39 entered
+   facing west at (13,9)) as a hint, then 2/66's event 31 south into 3/80, block 3 (3/80–82, 96–99) and the
+   Dreadlord; in order the glowing gate needs the well's 0x4C63. Then the final battle and the well in the
+   browser from a chain save, in a visible window (Tristan watches browser runs: `headless: false`,
+   `slowMo`), and the frost giants' village 3/81 drawn as its scripts load it. The end itself already plays
+   from Debug jumps ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4, "Silver Blades played in its order").
+2. **DOSBox comparisons still open** (by game below): PoR's camp menus and a battle with `scriptcheck.py`;
+   CotAB's walk across an area boundary, the Hall of Training's screens and ECL4 #32's tavern door;
+   SotSB's shop and training screens, a battle's summary with monsters and Fix's shortened rest.
+3. **Small leads**: a used-up item's recount in the original (CotAB 0x3F9A8's caller); the undying
+   harness's Charm (below, CotAB).
+
+CotAB is played in its order from save A to the ending headless (`coabchain.test.ts`, `COAB_CHAIN=1`) and
+its final battle and ending checked in the browser; PoR's, CotAB's and SotSB's saves, walks, shops, temple,
+training, Memorize and rests agree with the originals in DOSBox where compared ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
 
 ## Waiting on Tristan
 
