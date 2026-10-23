@@ -231,6 +231,24 @@ the stem table's slack (the whole of each slot past the party count). Not run: t
   NPCs drawn. No page or console errors. Found and fixed: the demo's NPCs drawn as nothing (above), and
   their party cards showed an icon built from parts (now their combat picture, ui-contract.md §4). The demo itself runs in `demo.test.ts`, every picture and icon in the files.
 
+- **Curse of the Azure Bonds played further** (2026-10-23). Headless: the tour (`coabtour.test.ts`, every
+  area of every block by the Debug jump, the sturdy party walking every square it reaches, 2 seeds × 1 500
+  steps each, pictures, icons and the drawn view checked), 24 seeds × 2 000 steps of seeded play and 26
+  areas × 2 000 steps with a party that could not die: no failures besides combat icons the block's CPIC
+  file lacks (TODO.md). Browser (Playwright with headless Chrome against the built app, save A, Debug
+  jumps): the enhanced and the original view in Tilverton's first room and the streets; the temple's
+  healing list; the Cormyr steel shop (Buy, prices, the readied-instead column); the Hall of Training
+  (Not Enough Experience, Human Change Classes' "Pick New Class", Begin back to the street); the
+  Memorize panel for a magic-user and a cleric, rest, "has memorized"; Yulash's edge from block 3
+  (ENTER CITY / JOURNEY ON / CAMP, the overland map with its cursor, camp and back); the guild battle in
+  the sewers (2/2): Magic Missile at thieves from two casters, Cure Light Wounds asked for at the
+  cleric's later turn, allied thieves green in the turn strip. No page or console errors. Found and fixed:
+  with no map, camp and battles redrew the last area's 3D
+  view instead of the overland map; the area map's "Not here." left the map drawn; after a battle the
+  current character was not the first member; camp Cast of a combat-only spell showed
+  "#combatOnlySpell". The hall refusing Begin after the first save (the autosave too) was found here as
+  well; the DOSBox comparison above fixed it.
+
 ## 5. Clean-room runs
 
 None yet (work-plan step 8). The plan, the file sets and the brief are [CLEANROOM.md](CLEANROOM.md).

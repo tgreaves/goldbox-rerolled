@@ -12,7 +12,10 @@ that settles it.
    with the port's (`run.py` keeps every file the game changes), SotSB beyond its view. PoR's walks,
    saves and rests are done (2026-10-23, `spec/VALIDATION.md` §4).
 2. **Play-throughs** of CotAB and SotSB beyond the opening (headless harness first, then the browser),
-   fixing what they find.
+   fixing what they find. CotAB (2026-10-23): every area toured headless and its towns, hall, shop,
+   temple, overland edge, camp and a battle with spells checked in the browser
+   ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4); still to do, the quest chain in its order (not by
+   jumps) and the final battle to its end in the browser.
 
 ## Waiting on Tristan
 
