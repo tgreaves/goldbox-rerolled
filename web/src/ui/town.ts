@@ -13,7 +13,7 @@ import { diseaseTypes } from '../rules/abilities'
 import { heal as healChar, raiseDeadHp } from '../rules/camp'
 
 const memorisedReady = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
-import { appraiseGem, appraiseJewel, COINS, coinPrompt, coinValue, keepAsItem, moneyOf, pay, poolAll, priceStock, receive, share, shopPrice, take, takeOne } from '../rules/money'
+import { appraiseGem, appraiseJewel, COINS, coinPrompt, coinValue, keepAsItem, moneyOf, pay, buy, poolAll, priceStock, receive, share, shopPrice, take, takeOne } from '../rules/money'
 import { msg, hasMsg, menu, ask, type MenuOpts } from '../games/strings'
 import { effectiveStat } from '../rules/effectkinds'
 import { WorldHost } from '../rules/worldfx'
@@ -126,13 +126,9 @@ export async function shop(ui: TownUi) {
         const i = await list(ui, stock.map((it) => `${t.name(it)} — ${price(it)} gp`), { prompt: `${cur(e).name} buys:` })
         if (i >= stock.length) break
         const it = stock[i], buyer = cur(e)
-        const why = canTakeItem(buyer.c, buyer.items, it)
-        if (why) { ui.print(why === msg('takeOverloaded') ? msg('shopOverloaded') : why, false); continue }
-        if (!pay(buyer.c, e.money, price(it), t, buyer.items)) { ui.print(msg('shopNoMoney'), false); continue }
-        const copy = it.copy()
-        buyer.items.push(copy)
-        recalc(buyer.c, buyer.items, t)
-        ui.print(`${buyer.name} buys ${t.name(copy)}.`, false)
+        const r = buy(buyer.c, buyer.items, e.money, price(it), it, t)
+        if ('refused' in r) { ui.print(r.refused === 'noMoney' ? msg('shopNoMoney') : r.refused === 'overloaded' ? msg('shopOverloaded') : r.refused, false); continue }
+        ui.print(`${buyer.name} buys ${t.name(r.copy)}.`, false)
         ui.refresh()
       }
     } else if (o === 'V') await ui.view('shop')
@@ -208,7 +204,7 @@ async function heal(ui: TownUi) {
   }[kind]
   if (reason && !await yes(ui, `${name} ${reason} ${msg('cureAnyway').trimEnd()}`)) return
   if (!await yes(ui, `${s.name}${msg('willOnlyCost')}${s.gp}${msg('goldPieces')} ${msg('payForCure').trimEnd()}`)) return
-  if (!pay(c, e.money, s.gp, t, items)) { ui.print(msg('templeNoMoney'), false); return }
+  if (!pay(c, e.money, s.gp)) { ui.print(msg('templeNoMoney'), false); return }
   // the cures go through the heal routine (PoR FUN_2d14_0401 → FUN_5216_175d, CotAB 0x1CB35 → 0x4CE85):
   // nothing for the dead, the stoned or (PoR) mummy rot, though the fee is paid; someone unconscious is revived
   const hp = (n: number) => { healChar(c, fx, n, false) }

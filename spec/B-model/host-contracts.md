@@ -261,6 +261,7 @@ A **script** is a JSON object:
 | `save` | the save slot letter: `SAVGAM<x>.DAT` and its party's files from the game folder (default `A`) |
 | `jump` | optional `[block, area, x, y, facing]`: the debug jump (§3.1) after play starts |
 | `camp` | optional `true`: run the camp screen on the answers (below) |
+| `town` | optional `true`: run the shop and the temple on the answers (below) |
 | (option) `frame` | render the drawn view at the end of the run (V9, below) |
 | (option) `saveAs` | a slot letter: save the game there, as the Save command writes it, at the camp's Save or else at the end of the run |
 | `commands` | what the player does, in order (below) |
@@ -291,9 +292,11 @@ nothing follows it (no treasure screen). With `camp`, `engine("camp")` runs the 
 rest runs to its end at once, and Save saves into the `saveAs` option's slot (the save counter first
 where the game keeps one, `saves.saveCounter`). `engine("treasure")`, COMBAT without monsters, runs
 the aftermath with the party alone (`treasureAftermath`, [A-games/engine/combat-rules.md, Aftermath](../A-games/engine/combat-rules.md#aftermath-fun_2e08_1527)):
-its experience is given and its summary transcribed (`summary`); the treasure screen is not. Every other
-`engine(what)` hand-over (shops, temples, the vault, camp without `camp`, the party screen, the
-ending) is transcribed and resolves at once.
+its experience is given and its summary transcribed (`summary`); the treasure screen is not. With `town`,
+`engine("shop")` and `engine("temple")` run the port's `ui/town.ts` on the answers, with the original's
+menus and lists (no Buy panel; View does nothing). Every other `engine(what)` hand-over (shops and
+temples without `town`, the vault, camp without `camp`, the party screen, the ending) is transcribed and
+resolves at once.
 
 ### 8.2 The transcript
 
@@ -303,7 +306,7 @@ the order listed.
 | Event | Fields |
 |---|---|
 | `text` | `text`, `clear` (each `print`) |
-| `menu` | `items`, `prompt`, `answer` (the index given): script menus, combat menus, spell and item lists |
+| `menu` | `items`, `prompt`, `answer` (the index given), and where the menu has them `keys` (each item's hot keys, `''` for none) and `vertical` (`true`: a list taken with Home, End and Enter): script menus, combat menus, spell and item lists. `tools/dosbox/scriptcheck.py` types the answers into the original from these |
 | `input` | `kind`, then: `number`, `text`: `answer`; `step`: `left` (movement left), `answer`; `aim`: `prompt`, `targets` (each `name`, `x`, `y`, `ok`), `answer`; `confirm`: `prompt`, `answer` |
 | `picture` | `picture`: the `picture` argument (`{pic}`, `{big}`, `{head, body}` or null) |
 | `sprite` | `sprite`, `picture`, `distance` |

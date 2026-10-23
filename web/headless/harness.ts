@@ -16,6 +16,8 @@ import { saveFiles, type NamedFile } from '../src/store/savefiles'
 import { characterItemsFile } from '../src/data/items'
 import { effectsFile } from '../src/data/effects'
 import { camp, type CampUi } from '../src/ui/camp'
+import { shop, temple, type TownUi } from '../src/ui/town'
+import type { MenuOpts } from '../src/games/strings'
 
 /** One answer: a menu index, a number, a text, a step (0–7, `end`, `undo`), an aim (index or null), a yes/no. */
 export type Answer = number | string | boolean | null
@@ -34,6 +36,8 @@ export interface Script {
   answers?: Answer[]
   /** run the camp screen (ui/camp.ts) on the answers, its Save writing `RunOptions.saveAs`, instead of handing it back at once */
   camp?: boolean
+  /** run the shop and the temple (ui/town.ts, the original's menus and lists) on the answers, instead of handing them back at once */
+  town?: boolean
 }
 
 /** One transcript event (host-contracts.md §8.2): `event` names it, the other members are its fields. */
@@ -44,6 +48,12 @@ class OutOfAnswers extends Error {
   readonly waiting: Record<string, unknown>
   constructor(waiting: Record<string, unknown>) { super('out of answers'); this.waiting = waiting }
 }
+
+/** A menu's transcript event: its items, prompt and answer, and how the original takes it (its hot keys, a vertical list). */
+const menuEvent = (items: string[], opts: MenuOpts | undefined, answer: number): Event => ({
+  event: 'menu', items, prompt: opts?.prompt ?? '', answer,
+  ...(opts?.keys ? { keys: opts.keys } : {}), ...(opts?.vertical ? { vertical: true } : {}),
+})
 
 const nameOf = (c: Uint8Array) => String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + Math.min(c[F.name], 15)))
 
@@ -119,7 +129,7 @@ export async function runScript(o: RunOptions): Promise<RunResult> {
     print: (text) => out({ event: 'combat', text, round: battle?.round ?? 0, current: battle?.current() ? nameOf(battle.current()!) : null }),
     redraw: () => {},
     pause: async () => {},
-    menu: async (items, opts) => { const answer = index(items, opts?.prompt ?? ''); out({ event: 'menu', items, prompt: opts?.prompt ?? '', answer }); return answer },
+    menu: async (items, opts) => { const answer = index(items, opts?.prompt ?? ''); out(menuEvent(items, opts, answer)); return answer },
     step: async (_f, left) => {
       const a = next({ kind: 'step', left })
       if (!(a === 'end' || a === 'undo' || (typeof a === 'number' && Number.isInteger(a) && a >= 0 && a < 8))) throw new Error(`answer ${JSON.stringify(a)} is not a step`)
@@ -162,7 +172,7 @@ export async function runScript(o: RunOptions): Promise<RunResult> {
   let shown: ShownSprite | null = null
   const io: Io = {
     print: (text, clear) => out({ event: 'text', text, clear }),
-    menu: async (items, opts) => { const answer = index(items, opts?.prompt ?? ''); out({ event: 'menu', items, prompt: opts?.prompt ?? '', answer }); return answer },
+    menu: async (items, opts) => { const answer = index(items, opts?.prompt ?? ''); out(menuEvent(items, opts, answer)); return answer },
     inputNumber: async () => {
       const a = next({ kind: 'number' })
       if (typeof a !== 'number' || !Number.isInteger(a) || a < 0 || a > 0xffff) throw new Error(`answer ${JSON.stringify(a)} is not a number 0–65535`)
@@ -186,7 +196,7 @@ export async function runScript(o: RunOptions): Promise<RunResult> {
       if (what === 'camp' && o.script.camp) {
         const ui: CampUi = {
           engine: e,
-          menu: async (items, opts) => { const answer = index(items, opts?.prompt ?? ''); out({ event: 'menu', items, prompt: opts?.prompt ?? '', answer }); return answer },
+          menu: async (items, opts) => { const answer = index(items, opts?.prompt ?? ''); out(menuEvent(items, opts, answer)); return answer },
           print: (text, clear) => out({ event: 'text', text, clear: !!clear }),
           view: async () => {},
           save: async () => { saved = saveNow(); out({ event: 'save', slot: o.saveAs ?? null }) },
@@ -195,6 +205,18 @@ export async function runScript(o: RunOptions): Promise<RunResult> {
           pause: async () => {},
         }
         if (await camp(ui)) e.quit = true
+        return
+      }
+      if ((what === 'shop' || what === 'temple') && o.script.town) {
+        const ui: TownUi = {
+          engine: e,
+          menu: async (items, opts) => { const answer = index(items, opts?.prompt ?? ''); out(menuEvent(items, opts, answer)); return answer },
+          print: (text, clear) => out({ event: 'text', text, clear: !!clear }),
+          inputNumber: async () => io.inputNumber(),
+          view: async () => {},
+          refresh: () => {},
+        }
+        await (what === 'shop' ? shop : temple)(ui)
         return
       }
       if (what === 'treasure') {

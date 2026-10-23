@@ -153,8 +153,15 @@ save A with the rest-encounter chance at 0, camp, rest 1 day 2 hours and 3 days 
 saves equal (the clock, the healing, every record), and an immediate camp and save from save A
 equal. The saves showed what the original writes ([engine/savegame.md](A-games/engine/savegame.md),
 "Files"): no `.SPC` for a member without effects (the port's export writes an empty one, IMP-006),
-the stem table's slack (the whole of each slot past the party count). Not run: the Sell, Share and Appraise
-  checks (no shop from save A; decided not worth a route); register 0x035F (no debugger).
+the stem table's slack (the whole of each slot past the party count). **A shop** (2026-10-23, `scriptcheck.py`,
+[tools/dosbox/README.md](../tools/dosbox/README.md)): from save A, 28 moves to New Phlan's arms shop, Yes,
+Buy, a Hand Axe for 1 gp, Exit, Exit, camp and save in slot B, typed into the original from the port's
+transcript: the saves equal but for the street event's dice (ECL 0x980F, 0x9890) and the axe's name
+cache. It found two things: the original's Buy list opens on the second stock entry (the bridge allows
+for it; the port's panel shows the whole stock, IMP-042), and the buyer's encumbrance is recomputed
+when the copy is given, before the price is taken (588 = 500 + 50 + the 38 coins paid out, where the
+port had recomputed after paying, 553; fixed, `rules/money.ts` `buy`, [engine/town.md](A-games/engine/town.md), "Shop").
+Not run: the Sell, Share and Appraise checks (decided not worth it); register 0x035F (no debugger).
 - **The interface** was checked against part C in headless Chromium (2026-10-21; each part C file's
   "Validation" section says what): every screen class, PoR's game-file save A, the games screen, the
   import, the party screen, the play screen, the panels. Again on 2026-10-22 (Playwright with Chrome,

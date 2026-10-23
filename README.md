@@ -42,7 +42,7 @@ Game files are not included. Point the tools at an extracted `POOLRAD/` folder f
 | `chars.py` | character and monster record decoder |
 | `spells.py` | spell table extractor (from the unpacked `START.EXE`) |
 | `speclinks.py` | checks every link and heading anchor in the repository's Markdown files |
-| `dosbox/` | runs an original game unattended in DOSBox Staging, grabs its screens and compares the 3D view with the port's ([`tools/dosbox/README.md`](tools/dosbox/README.md)) |
+| `dosbox/` | runs an original game unattended in DOSBox Staging, grabs its screens and compares the 3D view and the saves with the port's, typing the port's own scripted play into it (`scriptcheck.py`) ([`tools/dosbox/README.md`](tools/dosbox/README.md)) |
 
 Examples:
 
@@ -77,7 +77,7 @@ docker compose up -d --build                   # or with Docker (docker-compose.
 
 ## Status
 
-What is still to do is in [`TODO.md`](TODO.md); open questions about the originals are in [`spec/open-questions.md`](spec/open-questions.md), and each game's progress in [`docs/multi-game.md`](docs/multi-game.md). The originals run unattended in DOSBox through [`tools/dosbox/`](tools/dosbox/README.md): the drawn 3D view of all three games, CotAB's outdoor sky, scripted walks in PoR (up to 160 moves, frame by frame), in four CotAB areas and in SotSB's town, ruins and mines, the saves the original writes after them (byte for byte, each way in CotAB and SotSB), and PoR's rests and rest counters agree with the port ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
+What is still to do is in [`TODO.md`](TODO.md); open questions about the originals are in [`spec/open-questions.md`](spec/open-questions.md), and each game's progress in [`docs/multi-game.md`](docs/multi-game.md). The originals run unattended in DOSBox through [`tools/dosbox/`](tools/dosbox/README.md): the drawn 3D view of all three games, CotAB's outdoor sky, scripted walks in PoR (up to 160 moves, frame by frame), in four CotAB areas and in SotSB's town, ruins and mines, the saves the original writes after them (byte for byte, each way in CotAB and SotSB), PoR's rests and rest counters, and a Buy in a New Phlan shop agree with the port ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
 
 ## Credits and legal
 

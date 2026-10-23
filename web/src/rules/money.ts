@@ -2,7 +2,7 @@
 // electrum, gold, platinum, gems, jewelry) and the pool, the treasure money table.
 import { COIN_VALUES } from '../data/character'
 import { Item, ITEM_SIZE, type ItemTables } from '../data/items'
-import { capacity, recalc } from './equip'
+import { canTakeItem, capacity, recalc } from './equip'
 import { F } from '../games/fields'
 import { R } from '../games/rules'
 import { msg } from '../games/strings'
@@ -41,15 +41,16 @@ export function coinValue(m: number[]): number {
  * Pay `price` gp from the character's coins, else from the pool, never both
  * (FUN_4c2d_0130 / 0185): the coins left become platinum and gold. The original reads the value as
  * a u16 and loses anything above 65 535 gp; here it is kept (IMP-028). Returns false for "Not enough money.".
+ * The encumbrance char[0x102] is not recomputed for the coins paid out (the setters leave it: a Buy in
+ * DOSBox, PoR save A, kept the 38 coins paid in it, spec/A-games/engine/town.md "Shops").
  */
-export function pay(c: Uint8Array, pool: number[], price: number, t: ItemTables, items: Item[]): boolean {
+export function pay(c: Uint8Array, pool: number[], price: number): boolean {
   const g = coinValue(moneyOf(c))
   if (price <= g) {
     const left = g - price
     for (let i = 0; i < 5; i++) set(c, i, 0)
     set(c, 4, Math.min(0xffff, Math.floor(left / 5)))
     set(c, 3, left % 5)
-    recalc(c, items, t)
     return true
   }
   if (price <= coinValue(pool)) {
@@ -60,6 +61,24 @@ export function pay(c: Uint8Array, pool: number[], price: number, t: ItemTables,
     return true
   }
   return false
+}
+
+/**
+ * Buy (FUN_2f70_0361), in the original's order: the price against the buyer's coins, else the pool
+ * (0x1FACD, 0x1FB0F; "Not enough money"), then the copy given (FUN_2f70_0239: "OverLoaded" if it cannot
+ * be carried, nothing paid), the buyer's encumbrance and stats recomputed there with the coins still held
+ * (FUN_10ba_0bb8, 0x1FA44), then the price paid (0x1FAF3 / 0x1FB4C) without a recompute. Returns the
+ * refusal, or '' with the copy added to `items`.
+ */
+export function buy(c: Uint8Array, items: Item[], pool: number[], price: number, it: Item, t: ItemTables): { refused: 'noMoney' | 'overloaded' | string } | { copy: Item } {
+  if (price > coinValue(moneyOf(c)) && price > coinValue(pool)) return { refused: 'noMoney' }
+  const why = canTakeItem(c, items, it)
+  if (why) return { refused: why === msg('takeOverloaded') ? 'overloaded' : why }
+  const copy = it.copy()
+  items.push(copy)
+  recalc(c, items, t)
+  pay(c, pool, price)
+  return { copy }
 }
 
 /** Members that pool money: player characters (char[0x84] = 0) and NPCs that handle money (0xB3). */

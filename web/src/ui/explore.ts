@@ -40,7 +40,7 @@ import { effectsFile } from '../data/effects'
 import { canTakeItem, capacity, ready, readyItem, recalc, unready, unreadyItem } from '../rules/equip'
 import { WorldHost } from '../rules/worldfx'
 import { drop, halve, join, scribing, trade, unavailable } from '../rules/inventory'
-import { moneyPrompt, COINS, coinValue, dropMoney, moneyOf, pay, poolAll, receive, priceStock, sellOffer, share, shopPrice, take, tradeMoney } from '../rules/money'
+import { moneyPrompt, COINS, coinValue, dropMoney, moneyOf, pay, buy, poolAll, receive, priceStock, sellOffer, share, shopPrice, take, tradeMoney } from '../rules/money'
 import { shop, temple, treasure, vault, type TownUi } from './town'
 import { proposeSplit } from '../rules/treasure'
 import { treasureAftermath } from '../rules/combat'
@@ -1149,14 +1149,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         else if (d.f) filter = d.f as typeof filter
         else if (d.buy) {
           const it = engine.treasure[Number(d.buy)], buyer = engine.cur, items = engine.itemsOf(buyer)
-          const why = canTakeItem(buyer, items, it)
-          if (why) message = why === msg('takeOverloaded') ? msg('shopOverloaded') : why
-          else if (!pay(buyer, engine.money, shopPrice((a) => engine.read(a), it.value), t, items)) message = msg('shopNoMoney')
+          const r = buy(buyer, items, engine.money, shopPrice((a) => engine.read(a), it.value), it, t)
+          if ('refused' in r) message = r.refused === 'noMoney' ? msg('shopNoMoney') : r.refused === 'overloaded' ? msg('shopOverloaded') : r.refused
           else {
-            const copy = it.copy()
-            items.push(copy)
-            recalc(buyer, items, t)
-            message = `${parseCharacter(buyer).name} buys ${t.name(copy)}.`
+            message = `${parseCharacter(buyer).name} buys ${t.name(r.copy)}.`
             print(message, false)
             drawRoster()
           }
@@ -1668,7 +1664,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         again({ message: m || msg('sold') })
       } else if (a === 'id') again({ selected: keep, confirm: 'id' })
       else if (a === 'id-yes') {
-        if (!pay(node, engine.money, R.identifyFee, t, items)) again({ selected: keep, message: msg('idNoMoney') })
+        if (!pay(node, engine.money, R.identifyFee)) again({ selected: keep, message: msg('idNoMoney') })
         else if (it.hidden === 0) again({ selected: keep, message: `${msg('nothingNew')}${t.name(it)}` })
         else { it.hidden = 0; again({ selected: keep, message: `${msg('looksLike')}${t.name(it)}` }) }
       } else if (a === 'halve') again({ selected: keep, message: halve(node, items, it, t) })

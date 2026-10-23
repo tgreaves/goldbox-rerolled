@@ -62,10 +62,11 @@ that settles it.
 
 ## Pool of Radiance
 
-- DOSBox comparisons beyond save A's two areas, and of anything with a menu, a shop or a battle: a walk
-  is typed blind, so it needs the port's answers turned into the original's keys, and the two games'
-  dice differ (a script's random event must be kept out in both, as ECL 0x4A80 does for the slums;
-  `tools/dosbox/README.md`, "Long PoR walks, saves compared").
+- DOSBox comparisons, with `scriptcheck.py` (the port's answers typed as the original's keys; a shop's
+  Buy done, [`spec/VALIDATION.md`](spec/VALIDATION.md) §4): the temple, training, the camp's menus, a
+  battle (its outcome follows the dice: a forced one, or one whose summary the dice cannot change),
+  walks beyond save A's two areas; the two games' dice differ, so a script's random event must be kept
+  out in both (ECL 0x4A80 for the slums; New Phlan's street event, ECL 0x9890, has no such switch yet).
 - Register 0x035F needs a debugger ([`spec/A-games/engine/ecl.md`](spec/A-games/engine/ecl.md), Open).
 - The Sell, Share, Appraise and arrow-weight checks were not run in DOSBox, by decision: they stay
   code-read ([`spec/open-questions.md`](spec/open-questions.md)).

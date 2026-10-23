@@ -118,6 +118,27 @@ python3 tools/dosbox/longwalk.py /path/to/POOLRAD-copy flffflflfflflffrfffrffrfr
 python3 tools/dosbox/savecompare.py por B ORIGINAL_DIR PORT_DIR
 ```
 
+### Menus, shops and the camp: `scriptcheck.py`
+
+`scriptcheck.py por FOLDER SCRIPT.json --slot X` takes a headless script of the port's (with
+`"town": true` and `"camp": true`, ending in the camp's Save), runs it, turns its transcript into the
+original's keys and types them, then compares the two saves with `savecompare.py`. The bridge: a
+command as its arrow (or E for Encamp); a horizontal menu's answer as the item's hot key (the
+transcript's `keys`, else the first capital or digit no earlier item holds: the menu routine chooses the
+first word holding the key); a vertical list's answer as End or Home from the row the list opens on, then
+Enter (PoR's Buy list opens on its second entry, `LIST_START`), or the entry's own key (EXIT's E); the
+camp's Save as the slot letter; a number as its digits and Enter. `--grab` keeps a screen after every key.
+`web/headless/route.ts` (a breadth-first walk with the headless runner until a screen is handed over)
+finds the way to a shop; from save A, `fblfrffrfflfffrffffffflfffff` reaches New Phlan's
+arms shop (block 3 area 0), and `{"town": true, "camp": true, "commands": [the walk, "e"],
+"answers": [0, 0, 0, 1, "EXIT", "EXIT", "SAVE", "NO"]}` buys a Hand Axe and saves in slot B.
+
+Expected differences, besides the dice's: the bought item's name cache (item bytes 0x00–0x29: the
+original leaves the shop's display line in it, `spec/A-games/engine/town.md`, "Shop"). New Phlan's
+streets roll a random event (a rumour with a name, ECL 0x9890) by each game's own dice: when it comes in
+the port's run and not in the original's, its pause key reaches the original's main menu instead, so
+keep such walks short or check the frames (`--grab`).
+
 SotSB (no `--save`): a save past its opening, the original's own or one the port wrote, shortens its walks: copy the game folder, put the save in as slot A (with its
 `CHRDAT<x><n>` files) and give `viewcheck.py` the keys to free play and the port's answers,
 `--start "p down down enter enter down down down down down enter" --answers 0` for SotSB, so that
