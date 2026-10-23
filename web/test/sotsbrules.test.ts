@@ -202,6 +202,28 @@ describe.skipIf(!have)('Silver Blades rules on its files', () => {
     await fix(e, { heal: 0 })
     expect(dead[F.status]).toBe(6)
   })
+
+  it("Fix's rest: the druid term reads the druid's slots (+0x13A), the slots only with WIS above 3 (0x382A1)", async () => {
+    // seen in DOSBox (spec/VALIDATION.md §4): DOMINIC (cleric 8, slots 5 5 4 3) with four memorised Cure
+    // Light Wounds, three members wounded: Fix rests 10 h 15, 360 + 5 × 15 + 3 × 60 minutes
+    const { e } = party()
+    const minutes = () => { const w = (k: number) => e.A[0x49c6 - 0x4900 + k]; return w(1) + 10 * w(2) + 60 * w(3) + 1440 * w(4) }
+    const [guy, paine, , malachite, dominic] = e.party()
+    for (const c of e.party()) { c[F.status] = 0; c[F.hp] = c[F.maxHp]; for (let l = 0; l < 7; l++) c[F.clericSlots + l] = 0; for (let k = 0; k < F.memorisedCount; k++) c[F.memorised + k] = 0 }
+    ;[5, 5, 4, 3].forEach((n, l) => { dominic[F.clericSlots + l] = n })
+    for (let k = 0; k < 4; k++) dominic[F.memorised + k] = 3
+    guy[F.hp] = 40; paine[F.hp] = 30; malachite[F.hp] = 20
+    const before = minutes()
+    await fix(e, { heal: 0 })
+    expect(minutes() - before).toBe(615)
+    // WIS 3: the cleric's slots are not counted, so no rest at all beyond the base of none
+    for (const c of e.party()) c[F.hp] = Math.min(c[F.hp], 10)
+    for (let k = 0; k < 4; k++) dominic[F.memorised + k] = 3
+    dominic[F.stat[2]] = 3
+    const b2 = minutes()
+    await fix(e, { heal: 0 })
+    expect(minutes() - b2).toBe(0)
+  })
 })
 
 describe.skipIf(!have)('Silver Blades training and thief skills', () => {

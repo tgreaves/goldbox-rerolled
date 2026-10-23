@@ -268,6 +268,12 @@ the stem table's slack (the whole of each slot past the party count). Not run: t
   the `vault.dat` written on leaving, with two items, and another with the coins pooled from two members, go
   through the port's `parseVault`/`vaultFile` byte for byte; the item records equal the port's deposit but
   for the display-name cache and the stale next pointer (`vault.test.ts`).
+- **Silver Blades: Fix** (2026-10-23, the same save, three members' hit points lowered and DOMINIC given
+  four memorised Cure Light Wounds in the copy; the port's side the headless runner's `camp`): Encamp, Fix,
+  Save. The original rested to 10:15; the port to 12:45, reading the druid term of the estimate from the
+  cleric's first-level slots instead of the druid's (+0x13A, 0x3834B). Fixed, with the estimate's WIS test
+  (0x3831C, SotSB only); then the clock words are equal, the hit points as the cures' dice give
+  (`sotsbrules.test.ts`).
 
 - **Curse of the Azure Bonds played further** (2026-10-23). Headless: the tour (`coabtour.test.ts`, every
   area of every block by the Debug jump, the sturdy party walking every square it reaches, 2 seeds × 1 500

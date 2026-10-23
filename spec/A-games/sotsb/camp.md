@@ -45,11 +45,16 @@ sharing 0x38692) with more cures and a second pass for conditions:
    counts, adding nothing to the pool, Neutralize Poison (67), Raise Dead (75), Remove Curse (43 and
    89), Stone to Flesh (113), Cure Blindness (37) and Cure Disease (39) (0x38075–0x38131). Spell ids are
    SotSB's ([tables.md](tables.md), names at DS:34AE + 35·(id − 1)).
-2. **The rest estimate** (0x382A1) adds terms for the new slot levels: per Okay member, first-level
-   cleric slots (+0x132) × 15 minutes, a druid term (+0x13A) × 30, fourth-, fifth- and sixth-level
+2. **The rest estimate** (0x382A1) adds terms for the new slot levels: per Okay member **with WIS above 3**
+   (+0x15, 0x3831C; a member below it is passed over as one not Okay), first-level
+   cleric slots (+0x132) × 15 minutes, a druid term (+0x13A, the druid's second-level slots; its count joins
+   the first-level cures' count, 0x3835B) × 30, fourth-, fifth- and sixth-level
    cleric slots (+0x135, +0x136, +0x137) × 60, 75 and 90; the base time 240 for level 1 (and the druid
    term), 360 for levels 4–5, **480 for level 6**; the estimate's weights 0x1B, 0x1B, 0x22/0x4E and 0x5A
-   (**I** for the exact grouping, which follows CotAB's shape).
+   (**I** for the exact grouping, which follows CotAB's shape). Seen in DOSBox (2026-10-23): a level-8 cleric
+   with slots 5 5 4 3 and four memorised Cure Light Wounds, three members wounded: Fix rested 10 h 15 =
+   360 + 5 × 15 + 3 × 60 minutes, the estimate not shortening it (O for those terms; the port had read the
+   druid term from the cleric's first-level slots, 2 h 30 more).
 3. If the rest is not interrupted: the slots' cures (0x38161), then **the conditions** (0x387CE), then
    the sharing of the pool (0x38692), the roster redrawn, the rest vector restored; then a second
    estimate and silent rest (0x38D11, 0x384BC) and, if not interrupted, the conditions again.

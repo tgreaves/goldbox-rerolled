@@ -31,8 +31,8 @@ that settles it.
 - The Debug jump into an area whose wall sets an earlier script loads (the mine levels 2/49–2/51, the
   frost giants' village 3/81) shows the last area's wall sets or none; it loads the area's own map
   (IMP-025) but cannot know which wall sets the scripts on the way would load.
-- DOSBox, not yet compared: Fix's rest estimate with memorised cures (camp.md §3, **I** for its
-  grouping; the headless runner's camp resolves at once, so the port's side needs a driver), a battle's summary with monsters
+- DOSBox, not yet compared: Fix's estimate when it shortens the rest (the weights' grouping, camp.md §3,
+  **I**: a party with few wounds and many slots), a battle's summary with monsters
   (the outcome and treasure lines, read in the code of all three games, seen only without monsters).
 - The vault's sync keeps the newer change and loses the other device's (documented,
   [`docs/server.md`](docs/server.md)); a conflict copy would need a design.

@@ -331,7 +331,8 @@ export async function fix(e: Engine, camp: { heal: number }): Promise<{ messages
   let estimate = start, time = 0
   const count = cures.map(() => 0), last = cures.map(() => 0)
   for (const c of e.party()) {
-    if (okay(c)) cures.forEach((k, i) => { const n = c[F.clericSlots + k.level - 1]; count[i] += n; last[i] = (n * k.minutes) & 0xffff })
+    const wise = R.fix.slotsAboveWis === undefined || c[F.stat[2]] > R.fix.slotsAboveWis // SotSB 0x3831C
+    if (okay(c) && wise) cures.forEach((k, i) => { const n = c[(k.pool === 'druid' ? F.druidSlots : F.clericSlots) + k.level - 1]; count[i] += n; last[i] = (n * k.minutes) & 0xffff })
     let t = 0
     const groups = new Map<number, number>()
     cures.forEach((k, i) => { if (last[i] > 0) { t = Math.max(t, k.base); groups.set(k.group, Math.max(groups.get(k.group) ?? 0, k.weight)) } })

@@ -250,14 +250,16 @@ export interface GameRules {
   /**
    * The camp's Fix (CotAB 0x320D8, spec/A-games/coab/camp.md), one procedure (rules/camp.ts `fix`): the
    * healing the party's cures can give. `cures`: each counted spell (its memorised copies in Okay members,
-   * then, after the rest, one per cleric slot of its `level`), the dice it rolls, the rest minutes per slot
+   * then, after the rest, one per slot of its `level` in its `pool`, the cleric's unless 'druid'), the dice it rolls, the rest minutes per slot
    * (`minutes`), the rest's base when any slot of it is counted (`base`, the larger wins), and the weight it
    * adds to the estimate the rest is shortened by (per `group`, the largest present); `start`: that
    * estimate's first value (CotAB: 14, an uninitialised variable, I). Pool of Radiance has no Fix: its
    * profile gives CotAB's procedure its own cure (IMP-048).
    */
   fix: {
-    cures: { spell: number; level: number; dice: number; sides: number; bonus: number; minutes: number; base: number; group: number; weight: number }[]; start: number
+    cures: { spell: number; level: number; pool?: 'druid'; dice: number; sides: number; bonus: number; minutes: number; base: number; group: number; weight: number }[]; start: number
+    /** the estimate counts an Okay member's slots only with WIS above this (SotSB 3, 0x3831C; absent: no test, CotAB 0x31E8D) */
+    slotsAboveWis?: number
     /**
      * SotSB's condition pass (0x387CE, spec/A-games/sotsb/camp.md §3), none in PoR and CotAB: the spells
      * memorised by Okay members (0x3802C) are counted per entry; after the rest, each member in party order
@@ -752,11 +754,12 @@ export const SOTSB_RULES: GameRules = {
   // (I for the grouping): 15/30/60/75/90 minutes per slot, base 240, 360, 480
   fix: {
     cures: [{ spell: 3, level: 1, dice: 1, sides: 8, bonus: 0, minutes: 15, base: 240, group: 0, weight: 27 },
-      { spell: 98, level: 1, dice: 1, sides: 8, bonus: 0, minutes: 30, base: 240, group: 0, weight: 27 },
+      // the druid's slots of its second level (+0x13A, 0x3834B; DOSBox: a cleric's first-level slots do not count twice)
+      { spell: 98, level: 2, pool: 'druid', dice: 1, sides: 8, bonus: 0, minutes: 30, base: 240, group: 0, weight: 27 },
       { spell: 58, level: 4, dice: 2, sides: 8, bonus: 1, minutes: 60, base: 360, group: 1, weight: 34 },
       { spell: 71, level: 5, dice: 3, sides: 8, bonus: 3, minutes: 75, base: 360, group: 1, weight: 78 },
       { spell: 36, level: 6, dice: 4, sides: 8, bonus: 5, minutes: 90, base: 480, group: 2, weight: 90 }],
-    start: 14,
+    start: 14, slotsAboveWis: 3,
     // 0x387CE, in this order; its messages CS 0x38746–0x387C0; the effects SotSB's numbers
     conditions: [
       { spells: [36], cure: 'heal', msg: 0x38746, needs: 0x44, status: null, removes: [0x44, 0x21], diseases: true, used: true, marks: true, unlessMarked: false },
