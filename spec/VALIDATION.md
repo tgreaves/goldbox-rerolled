@@ -264,7 +264,9 @@ the stem table's slack (the whole of each slot past the party count). Not run: t
   opening, given coins and two items by the port's writers in the copy): the route from (3,3) to the bank
   (block 1 area 16, (7,9), `fffflffffrff`, found headless), DEPOSIT, the vault screen "View Pool Exit", the
   character view "Items Trade Deposit Heal Cure Exit" and the item list "Ready Trade Deposit Halve Join
-  Exit". Deposit put each item in at once, with no question, which the port asked (fixed, records.md §5);
+  Exit", without Use, which the original offers only in game modes 2–5 (town.md, "Items menu"; the port
+  showed it on the sheet in a shop, temple, treasure screen and the vault: fixed); the camp menu "Save View
+  Magic Rest Alter Fix Exit" as the port's. Deposit put each item in at once, with no question, which the port asked (fixed, records.md §5);
   the `vault.dat` written on leaving, with two items, and another with the coins pooled from two members, go
   through the port's `parseVault`/`vaultFile` byte for byte; the item records equal the port's deposit but
   for the display-name cache and the stale next pointer (`vault.test.ts`).

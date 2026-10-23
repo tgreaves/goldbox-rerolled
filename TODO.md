@@ -32,7 +32,8 @@ that settles it.
   frost giants' village 3/81) shows the last area's wall sets or none; it loads the area's own map
   (IMP-025) but cannot know which wall sets the scripts on the way would load.
 - DOSBox, not yet compared: Fix's estimate when it shortens the rest (the weights' grouping, camp.md §3,
-  **I**: a party with few wounds and many slots), a battle's summary with monsters
+  **I**: a party with few wounds and many slots), SotSB's shop and training screens against the port's (not yet grabbed; the town's fights are behind
+  doors or random, so a battle needs a route through a door or a rest encounter), a battle's summary with monsters
   (the outcome and treasure lines, read in the code of all three games, seen only without monsters).
 - The vault's sync keeps the newer change and loses the other device's (documented,
   [`docs/server.md`](docs/server.md)); a conflict copy would need a design.

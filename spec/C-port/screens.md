@@ -221,7 +221,8 @@ it."
 ### 3.3 Item actions
 
 Buttons for the selected item, letters in the original's order, the hotkey letter highlighted
-(IMP-027): **Ready**/**Unready** (R), **Use** (U), **Trade** (T, when the party has another member),
+(IMP-027): **Ready**/**Unready** (R), **Use** (U, not in a shop, temple, treasure screen or the vault, as
+the original's game modes allow it; SotSB's vault in DOSBox), **Trade** (T, when the party has another member),
 **Drop** (D), **Halve** (H), **Join** (J), and in a shop or temple **Sell** (S) and **Id** (I). Each
 runs the original's routine ([town.md, "Items menu"](../A-games/engine/town.md#items-menu-o-fun_4894_0ef8));
 its message stays on the sheet (highlight colour) and the item stays selected where it still exists.
