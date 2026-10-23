@@ -12,8 +12,10 @@ import { parseSave } from '../src/data/save'
 import { fight, type Battle, type CombatUi } from '../src/rules/combat'
 import { Divergence, TapePlayer, TapeRecorder, generator, type Dice, type Tape } from '../src/rules/dice'
 import { renderFrame, type ShownSprite, type ViewFrame } from './frame'
+import { saveFiles, type NamedFile } from '../src/store/savefiles'
 import { characterItemsFile } from '../src/data/items'
 import { effectsFile } from '../src/data/effects'
+import { camp, type CampUi } from '../src/ui/camp'
 
 /** One answer: a menu index, a number, a text, a step (0–7, `end`, `undo`), an aim (index or null), a yes/no. */
 export type Answer = number | string | boolean | null
@@ -30,6 +32,8 @@ export interface Script {
   commands?: string[]
   /** the answers, taken in order by every question the hosts are asked */
   answers?: Answer[]
+  /** run the camp screen (ui/camp.ts) on the answers, its Save writing `RunOptions.saveAs`, instead of handing it back at once */
+  camp?: boolean
 }
 
 /** One transcript event (host-contracts.md §8.2): `event` names it, the other members are its fields. */
@@ -69,7 +73,7 @@ export interface RunOptions {
   out: (e: Event) => void
   /** render the drawn view at the end of the run (V9): `RunResult.frame` and a `frame` event */
   frame?: boolean
-  /** save the game at the end of the run in this slot (A–J), as the port's Save does: `RunResult.saved` */
+  /** save the game in this slot (A–J), as the Save command does, at the camp's Save (`Script.camp`) or else at the end of the run: `RunResult.saved` */
   saveAs?: string
 }
 
@@ -80,8 +84,8 @@ export interface RunResult {
   tape: Tape
   /** the drawn view's frame at the end (with `frame`), null where the party has no 3D view */
   frame?: ViewFrame | null
-  /** with `saveAs`: the saved game's files as the original names them (SAVGAM<x>.DAT, CHRDAT<x><n>.*) */
-  saved?: { name: string; data: Uint8Array }[]
+  /** with `saveAs`: the files the Save command writes (SAVGAM<x>.DAT, CHRDAT<x><n>.SAV and the party files), no sidecar */
+  saved?: NamedFile[]
 }
 
 /** Run a script headless (host-contracts.md §8). */
@@ -140,6 +144,17 @@ export async function runScript(o: RunOptions): Promise<RunResult> {
   }
 
   let e!: Engine
+  /** the files the Save command writes (with `RunOptions.saveAs`): at the camp's Save, else at the end */
+  let saved: NamedFile[] | undefined
+  const saveNow = (): NamedFile[] | undefined => {
+    if (!o.saveAs) return undefined
+    // as the play screen's saveGame (ui/explore.ts): stems CHRDAT<x><n>, the records and their item and effect files
+    const slot = o.saveAs.toUpperCase(), members = e.party()
+    const dat = e.toSave(members.map((_, n) => `CHRDAT${slot}${n + 1}`))
+    return saveFiles({ slot, dat, label: '', savedAt: 0,
+      chars: members.map((c) => ({ sav: c.slice(), itm: characterItemsFile(e.itemsOf(c)), spc: effectsFile(e.effectsOf(c)) })) })
+      .filter((f) => !f.name.toUpperCase().endsWith('.GBR'))
+  }
   /** the encounter sprite over the view, until the view is cleared or a picture replaces it */
   let shown: ShownSprite | null = null
   const io: Io = {
@@ -165,6 +180,20 @@ export async function runScript(o: RunOptions): Promise<RunResult> {
     pause: async () => {},
     async engine(what, info) {
       out({ event: 'screen', what, info: info ?? null })
+      if (what === 'camp' && o.script.camp) {
+        const ui: CampUi = {
+          engine: e,
+          menu: async (items, opts) => { const answer = index(items, opts?.prompt ?? ''); out({ event: 'menu', items, prompt: opts?.prompt ?? '', answer }); return answer },
+          print: (text, clear) => out({ event: 'text', text, clear: !!clear }),
+          view: async () => {},
+          save: async () => { saved = saveNow(); out({ event: 'save', slot: o.saveAs ?? null }) },
+          refresh: () => {},
+          stopper: () => ({ stopped: () => false, done: () => {} }),
+          pause: async () => {},
+        }
+        if (await camp(ui)) e.quit = true
+        return
+      }
       if (what !== 'combat') return // every other screen is handed over and comes back at once (§8.1)
       try {
         const r = await fight(e, combatUi, (b) => { battle = b })
@@ -212,15 +241,7 @@ export async function runScript(o: RunOptions): Promise<RunResult> {
     frame = renderFrame(e, files, shown)
     out({ event: 'frame', block: e.block, area: e.area, x: e.x, y: e.y, facing2: e.facing2, sprite: shown, sha256: frame?.sha256 ?? null })
   }
-  let saved: RunResult['saved']
-  if (o.saveAs && e) {
-    // the files of explore.ts saveGame (IMP-002): the save image, then each member's record, items, effects
-    const slot = o.saveAs.toUpperCase(), members = e.party(), L = g.saves
-    const stems = members.map((_, n) => `CHRDAT${slot}${n + 1}`)
-    saved = [{ name: `SAVGAM${slot}.DAT`, data: e.toSave(stems) }]
-    members.forEach((c, n) => saved!.push({ name: `${stems[n]}.SAV`, data: c.slice() },
-      { name: `${stems[n]}.${L.items}`, data: characterItemsFile(e.itemsOf(c)) }, { name: `${stems[n]}.${L.effects}`, data: effectsFile(e.effectsOf(c)) }))
-  }
+  if (o.saveAs && e && !saved) saved = saveNow()
   out(waiting ? { event: 'end', reason: end, waiting } : { event: 'end', reason: end })
   return { end, tape: recorder.tape(), frame, saved }
 }

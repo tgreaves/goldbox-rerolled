@@ -68,6 +68,21 @@ describe.skipIf(!have)('headless runner', () => {
     expect(c.lines).not.toEqual(a.lines) // another seed, another battle
   })
 
+  it('runs the camp screen on its answers and saves as the original would write it (VALIDATION.md §4)', async () => {
+    const events: Event[] = []
+    const r = await runScript({ files: files(), saveAs: 'B', out: (e) => events.push(e), script: { game: 'por', camp: true, commands: ['e'],
+      answers: ['REST', 'HOURS', 'INC', 'REST', 'SAVE', 'NO', 'EXIT'] } })
+    expect(r.end).toBe('script')
+    expect(events.find((e) => e.event === 'save')).toMatchObject({ slot: 'B' })
+    const names = r.saved!.map((f) => f.name)
+    expect(names).toContain('SAVGAMB.DAT')
+    expect(names).toContain('CHRDATB1.SAV')
+    // the clock (A 0x49C6–0x49CC, savegame.md) an hour on from save A's (too short a rest for an encounter check)
+    const dat = r.saved!.find((f) => f.name === 'SAVGAMB.DAT')!.data, before = readFileSync(join(dir, 'SAVGAMA.DAT'))
+    const word = (d: Uint8Array, w: number) => d[1 + 2 * (w - 0x4900)]
+    expect(word(dat, 0x49c9)).toBe(word(before, 0x49c9) + 1)
+  })
+
   it('ends with a divergence when the run asks what the tape does not have', async () => {
     const a = await run({ seed: 5 })
     const bad: Tape = { ...a.tape, draws: a.tape.draws.map((d, i) => (i === 10 ? [d[0], d[1] + 1, d[0]] : d)) }

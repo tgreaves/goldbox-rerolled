@@ -3,7 +3,7 @@
 the view as loaded, after each of four left turns and after a step forward, both ways, pixel by pixel.
 
 Usage:
-  viewcheck.py por   POOLRAD_DIR [--moves MOVES] [--save X] [--out DIR]
+  viewcheck.py por   POOLRAD_DIR [--moves MOVES] [--save X] [--save-to Y] [--out DIR]
   viewcheck.py coab  CURSE_DIR   [--moves MOVES] [--save X] [--out DIR]
   viewcheck.py sotsb BLADES_DIR  [--moves MOVES] [--out DIR]
 
@@ -15,6 +15,10 @@ Usage:
          dice give and the port's do not, as a square's random rumour, cannot shift the walk). The
          headless runner's transcript shows which menus a walk meets.
 --save   start from save X (B-J) instead of A (PoR and CotAB; a copy of the folder holds it)
+--save-to  (PoR) after the walk, camp and save in slot Y in both (the original: Encamp, Save, Y, not
+         quitting; the port: the same walk, Encamp and the headless runner's --save), then compare the
+         two saves with savecompare.py. A walk saved in Y goes on from it with --save Y in a copy of
+         the folder holding the original's save (longwalk.py), the port then loading the original's own.
 
 Needs what run.py needs (DOSBox Staging, NASM; $DOSBOX, $NASM) and Node for the headless runner.
 Exits 1 if any frame differs.
@@ -37,7 +41,7 @@ WEB = os.path.join(HERE, '..', '..', 'web')
 # typed there (spec/A-games/sotsb/README.md, "The main menu").
 ENTERS = lambda n: ' '.join(['enter'] * n)
 GAMES = {
-    'por': {'start': 'x enter l a', 'answers': [], 'args': 'STING', 'pace': '3'},
+    'por': {'start': 'x enter l a', 'answers': [], 'args': 'STING', 'pace': '3', 'saveTo': 'e s {slot} n'},
     'coab': {'start': 'p numbersign enter l a b enter enter', 'answers': [0, 0], 'args': 'STING', 'pace': '3'},
     'sotsb': {'start': f'p down down enter enter {ENTERS(5).replace("enter", "down")} enter {ENTERS(9)} e n {ENTERS(3)}',
               'answers': [0] * 11, 'args': 'Hoop', 'pace': '5', 'move': 'm'},
@@ -68,7 +72,10 @@ def main(a):
         groups = re.findall(r'[flrb]e*', moves)
         steps = [([m[0] for m in groups[:i]], sum(len(m) - 1 for m in groups[:i])) for i in range(len(groups) + 1)]
         keys = ' '.join(['f12'] + [' '.join([ARROW[m[0]]] + ['p'] * len(m) + ['f12']) for m in groups])
-    typed = ' '.join(filter(None, [start, g.get('move'), keys]))
+    to = a[a.index('--save-to') + 1].lower() if '--save-to' in a else None
+    if to and (len(to) != 1 or to not in 'abcdefghij' or 'saveTo' not in g):
+        raise SystemExit('--save-to takes a slot A-J, for por')
+    typed = ' '.join(filter(None, [start, g.get('move'), keys, g['saveTo'].replace('{slot}', to) if to else None]))
     subprocess.run([sys.executable, os.path.join(HERE, 'run.py'), '--game', folder, '--out', out,
                     '--keys', typed, '--wait', '6', '--pace', g['pace'], '--args', g['args'],
                     '--seconds', str(10 + len(typed.split()) * float(g['pace']) * 1.5)], check=True)
@@ -89,6 +96,16 @@ def main(a):
                             '--view', os.path.join(out, f'view{i}.png')])
         bad += r.returncode != 0
     print(f'{len(steps) - bad} of {len(steps)} frames equal; files in {out}')
+    if to:
+        commands, enters = steps[-1]
+        script = os.path.join(out, 'portsave.json')
+        json.dump({'game': game, 'save': a[a.index('--save') + 1].upper() if '--save' in a else 'A',
+                   'answers': answers + [0] * enters, 'commands': commands + ['e']}, open(script, 'w'))
+        saved = os.path.join(out, 'port-save')
+        subprocess.run(['node', '--import', './headless/node-ts.mjs', 'headless/run.ts', '--files', folder,
+                        '--script', script, '--save', saved, '--slot', to.upper()], cwd=WEB, check=True, stdout=subprocess.DEVNULL)
+        r = subprocess.run([sys.executable, os.path.join(HERE, 'savecompare.py'), game, to, out, saved])
+        bad += r.returncode != 0
     sys.exit(1 if bad else 0)
 
 

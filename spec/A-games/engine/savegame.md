@@ -23,7 +23,16 @@ A save slot is a letter `A`–`J` (`DS:537A` + letter). One slot = one `SAVGAM<x
 
 `n` = 1-based position in the party.
 
-Loading (`FUN_45c5_0aec`) reads `.ITM` and `.SPC` as fixed-size records until end of file and relinks them in memory, clearing each record's stored next pointer (item +0x2A, effect +5), so those pointer bytes are never read back (O). Unused bytes of the stem table (after each Pascal string, and slots beyond the party count) are whatever was in memory.
+Loading (`FUN_45c5_0aec`) reads `.ITM` and `.SPC` as fixed-size records until end of file and relinks them in memory, clearing each record's stored next pointer (item +0x2A, effect +5), so those pointer bytes are never read back (O). Unused bytes of the stem table (after each Pascal string, and the whole of every slot beyond the party count, its length byte included) are whatever was in memory.
+
+For each member the save writes its `CHRDAT<x><n>` files with the character writer `FUN_45c5_069e`
+(call at 0x37D8E), which writes no `.ITM` or `.SPC` for a member with no items or no effects and
+deletes an older one ([input-and-menus.md §2.2](input-and-menus.md#22-character-files-o-fun_45c5_069e-fun_1802_0425)); a load takes a missing file as none.
+Then it **deletes that member's roster files** `<stem>.cha`, `.itm` and `.spc` in the save path, each
+if it exists (0x37DC3–0x37EDB: the stem from the name by `FUN_1802_0425`, a test `FUN_1802_02eb`
+(**I**: that the file exists), then the runtime's Assign and Erase), so a character added from the roster lives on only in saved
+games from then on (O). Checked in DOSBox (2026-10-23, [VALIDATION.md §4](../../VALIDATION.md#4-sweeps-play-tests-and-reference-hashes)): saves written by the
+original after walks from save A equal the port's in every byte a load reads.
 
 Writing back a loaded save therefore reproduces every byte the original reads; the never-read
 bytes carry no meaning. The port's write-back rule and its sidecar file are part C

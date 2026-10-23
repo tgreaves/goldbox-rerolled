@@ -112,15 +112,16 @@ close disassemblers (REA's Ghidra sessions) after use, no unbounded background j
   playable at an early stage (their profiles, rules, spells, effects and data in place, step logs in
   `docs/multi-game.md`; CotAB's ending and
   SotSB's town, camp, a battle with casting, Join/Halve, training and a new game checked in the browser, `spec/VALIDATION.md`
-  §4), neither played through. 551 tests pass with all three games' files (`POOLRAD`, `COAB`, `SOTSB`);
+  §4), neither played through. 557 tests pass with all three games' files (`POOLRAD`, `COAB`, `SOTSB`);
   long headless playthroughs (24 × 1000 steps) show no failures.
 - The spec is the normative source (decisions D1–D6 in `spec/README.md`); steps 1–7 of its work plan
   (`spec/AUDIT.md` §8) are done. Step 8, the clean-room rebuilds that validate it, is **on hold** by
   Tristan's choice (token and session limits): do not start one unasked.
 - The originals run unattended in DOSBox Staging through `tools/dosbox/` (keys typed, screens grabbed,
   saves kept and patched). Exact against the port so far: the drawn view of all three games from save
-  A, CotAB's outdoor sky, clouds and sun, a 24-move PoR walk across an area boundary; PoR's rest
-  counters confirmed (`spec/VALIDATION.md` §4). No debugger is available.
+  A, CotAB's outdoor sky, clouds and sun; PoR walks of up to 160 moves in save A's two areas, by
+  day and night, with the original's saves after each piece equal to the port's (`savecompare.py`),
+  and its rests and rest counters (`spec/VALIDATION.md` §4). No debugger is available.
 - `server/` (accounts and sync) runs on the dev server's LAN as a systemd user service (port 8080,
   `docs/environment.md`) but is not deployed publicly. It is meant to become a public service with
   open sign-up, so treat every change there as internet-facing (`docs/server.md`, "Running it publicly").

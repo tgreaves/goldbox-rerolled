@@ -133,7 +133,27 @@ it (and the port's own party screen after any save); fixed, the original resumes
 empty `.SWG`/`.FX` files included, and saves them again as from its own. Also seen: ECL 0x4BFB ≠ 0
 hides the coordinates and stops Area ([coab/ecl.md](A-games/coab/ecl.md)); HMENU's lone "PRESS
 BUTTON OR RETURN TO CONTINUE." shown as "PRESS <ENTER>/<RETURN> TO CONTINUE". Not crossed yet: an
-area boundary in CotAB (every way out of the walked areas meets a question or a battle). Not run: the Sell, Share and Appraise
+area boundary in CotAB (every way out of the walked areas meets a question or a battle). **Longer PoR walks and saves** (2026-10-23, the Mac,
+`viewcheck.py --save`/`--save-to`, `longwalk.py` and `savecompare.py`, `tools/dosbox/README.md`):
+walks found with the headless runner (`web/headless/walk.ts`) so that nothing but the walk happens, each run in pieces of about 24 moves that
+end by camping and saving in the next slot, the next piece loading the original's own save in both
+(so the port loads every one of them). In save A's slums (block 2 area 20, ECL 0x4A80 set to 15 in a
+copy of the save so that the script's wandering monsters stay away): a 70-move walk (73 frames, 3
+saves) and a 160-move one over 50 squares (167 frames, 7 saves), one 24-move piece again at night
+(the clock's hour set to 15: the black sky, 25 frames, 1 save); in New Phlan's streets (block 3 area
+0, through the gateway): an 83-move walk over 43 squares (87 frames, 4 saves); through the gateway and back, unpatched
+(20 frames, 1 save). The walks, from save A: `flffflflfflflffrfffrffrfrflflfffflffflflffrfrffflfffflffffffrffrfrffrf`,
+`flfffrfffrffrffrfrffrfrfflffflffffbfrfrflffffflffffffrffrfrfflfffflffrfrfrfrfrfrfffrflfflfrfrffflflffflflffflflflflflflffflffflfrfrflfflfrfrfrffrffffffrffrfrfrf`,
+`fblfrffrffflfflffrfflfflffbffrflfrfflffffflfffrffbfflfffrffflffffffffflffflfffrffff` and
+`fblfrffrfffffffrfff`. Every frame exact; every save equal to the port's in every byte a load reads,
+except the script variables that hold a dice result where the original's random generator and the
+port's differ, as they must (ECL 0x980F, the slums' wandering-monster roll; 0x6E79, 0x9802 and the
+name at 0x9890 after New Phlan's street roll came up 19 in the original). **Rests and saves**: from
+save A with the rest-encounter chance at 0, camp, rest 1 day 2 hours and 3 days 5 hours, save: both
+saves equal (the clock, the healing, every record), and an immediate camp and save from save A
+equal. The saves showed what the original writes ([engine/savegame.md](A-games/engine/savegame.md),
+"Files"): no `.SPC` for a member without effects (the port's export writes an empty one, IMP-006),
+the stem table's slack (the whole of each slot past the party count). Not run: the Sell, Share and Appraise
   checks (no shop from save A; decided not worth a route); register 0x035F (no debugger).
 - **The interface** was checked against part C in headless Chromium (2026-10-21; each part C file's
   "Validation" section says what): every screen class, PoR's game-file save A, the games screen, the
@@ -228,9 +248,11 @@ Each run adds a row here, and its findings below.
 
 ## 6. Residual gaps
 
-- **Little DOSBox comparison** of running behaviour yet: the drawn view (all three games), one scripted
-  walk and the rest counters (§4); the **I** items that only the running original can settle are in
-  [open-questions.md](open-questions.md).
+- **Little DOSBox comparison** of running behaviour yet: the drawn view (all three games), walks and
+  saves in PoR (save A's two areas) and CotAB (four areas), rests and PoR's rest counters (§4); no
+  battle, shop or menu beyond a "press Enter" pause, as a walk is typed blind and the two games' dice
+  differ. The **I** items that only the running
+  original can settle are in [open-questions.md](open-questions.md).
 - **The Enhanced (3D) view** is checked by eye only: its tolerance check needs WebGL
   ([exploration-view.md §3.6](C-port/exploration-view.md#36-what-it-must-preserve-the-tolerance)).
 - **V11** needs a black-box mode of the server suites (AP4, [AUDIT.md §6.9](AUDIT.md#69-state-after-work-plan-step-1-2026-10-21)).

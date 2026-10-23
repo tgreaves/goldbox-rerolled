@@ -10,7 +10,9 @@ copied from the player's folder for each run and the copy is thrown away.
 | `grab.asm` | `GRAB.COM`, a small resident program: F12 writes the screen on show (EGA planes from the CRTC start address, attribute palette, DAC) to `FRAMEnn.EGA` in the game's folder |
 | `run.py` | one unattended run: copy the game, build `GRAB.COM`, a `RUN.BAT` with `AUTOTYPE` and `START STING`, DOSBox headless (`SDL_VIDEODRIVER=dummy`), then the frames (with a PNG of each) and every file the game changed |
 | `egaframe.py` | a dump as a PNG, its 88 × 88 view (pixels 24–111), and that view compared with a port frame |
-| `viewcheck.py` | the drawn-view check from save A, PoR, CotAB or SotSB: five frames (as loaded, four left turns, a step) against the headless runner's; with `--moves`, a scripted walk with a frame after each move |
+| `viewcheck.py` | the drawn-view check from save A, PoR, CotAB or SotSB: five frames (as loaded, four left turns, a step) against the headless runner's; with `--moves`, a scripted walk with a frame after each move; `--save X` from another slot; PoR `--save-to Y`: camp and save there in both, the saves compared |
+| `longwalk.py` | a PoR walk in pieces of `viewcheck.py --save-to`, each starting from the original's last save |
+| `savecompare.py` | a save written by the original against the port's, every byte a load reads |
 
 ## Requirements
 
@@ -90,6 +92,31 @@ then `--save` writes its files under the original's names; compare them byte by 
 differences: the bytes past each party stem in `SAVGAM<x>.DAT` (stack garbage in the original), the
 record and effect list pointers in `.SAV` and `.FX` (memory addresses), CotAB's inert 0x3206 and
 whatever the two sides' dice decided.
+
+### Long PoR walks, saves compared by `savecompare.py`
+
+`viewcheck.py por … --save-to Y` ends the walk by camping and saving in slot Y in the original
+(`e s Y n`) and, in the port, by the same walk, Encamp and the headless runner's `--save … --slot Y`;
+then `savecompare.py` compares the two saves byte by byte, leaving out only the bytes a load never
+reads (the in-memory pointers of the records, the stem table's slack; `spec/A-games/engine/savegame.md`)
+and naming each differing byte of `SAVGAM<x>.DAT` by its ECL address, so that a script variable holding
+a dice result is seen for what it is. A walk longer than one `AUTOTYPE` line is run in pieces by
+`longwalk.py` (18 moves each): each piece saves in the next slot, and the next is given a copy of the
+game folder holding the original's save and starts from it (`--save`), so the port loads the original's
+own files. `web/headless/walk.ts` finds walks on which nothing but the walk happens (no menu, text or
+picture), preferring new squares.
+
+Random encounters follow each game's own dice, so a walk must avoid them in both. In save A's part of
+New Phlan (block 2 area 20, the slums) the script skips its wandering monsters once ECL **0x4A80**
+(the fights won there) is 15 or more (ECL2 #20 at 0x9B32): in a copy of the folder, set save A's byte
+**0x301** (A word 0x4A80) to `0F`.
+
+```sh
+cd web && node --import ./headless/node-ts.mjs headless/walk.ts --files /path/to/POOLRAD-copy --moves 70 && cd ..
+python3 tools/dosbox/viewcheck.py por /path/to/POOLRAD-copy --moves flffflflfflflffrff --save-to b
+python3 tools/dosbox/longwalk.py /path/to/POOLRAD-copy flffflflfflflffrfffrffrfrflflfffflffflflffrfrffflfffflffffffrffrfrffrf
+python3 tools/dosbox/savecompare.py por B ORIGINAL_DIR PORT_DIR
+```
 
 ## How GRAB.COM works
 

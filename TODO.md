@@ -9,7 +9,8 @@ that settles it.
 
 1. **More DOSBox comparisons** with `tools/dosbox/` where the port's behaviour rests on **I** items
    (`spec/open-questions.md`): `viewcheck.py --moves` walks, saves written by the original compared
-   with the port's (`run.py` keeps every file the game changes), SotSB beyond its view.
+   with the port's (`run.py` keeps every file the game changes), SotSB beyond its view. PoR's walks,
+   saves and rests are done (2026-10-23, `spec/VALIDATION.md` §4).
 2. **Play-throughs** of CotAB and SotSB beyond the opening (headless harness first, then the browser),
    fixing what they find.
 
@@ -39,6 +40,10 @@ that settles it.
 
 ## Pool of Radiance
 
+- DOSBox comparisons beyond save A's two areas, and of anything with a menu, a shop or a battle: a walk
+  is typed blind, so it needs the port's answers turned into the original's keys, and the two games'
+  dice differ (a script's random event must be kept out in both, as ECL 0x4A80 does for the slums;
+  `tools/dosbox/README.md`, "Long PoR walks, saves compared").
 - Register 0x035F needs a debugger ([`spec/A-games/engine/ecl.md`](spec/A-games/engine/ecl.md), Open).
 - The Sell, Share, Appraise and arrow-weight checks were not run in DOSBox, by decision: they stay
   code-read ([`spec/open-questions.md`](spec/open-questions.md)).
