@@ -7,13 +7,12 @@ that settles it.
 
 ## Next steps (2026-10-23, in order)
 
-1. **SotSB from its code**: settle the patient search and cloud laying (**I**, below) from the binary.
-2. **SotSB in the browser**: casting in a battle and Join/Halve on a real bundle (below), with
+1. **SotSB in the browser**: casting in a battle and Join/Halve on a real bundle (below), with
    Playwright against the built app (`docs/environment.md`, "Browser play-testing").
-3. **More DOSBox comparisons** with `tools/dosbox/` where the port's behaviour rests on **I** items
+2. **More DOSBox comparisons** with `tools/dosbox/` where the port's behaviour rests on **I** items
    (`spec/open-questions.md`): `viewcheck.py --moves` walks, saves written by the original compared
    with the port's (`run.py` keeps every file the game changes), SotSB beyond its view.
-4. **Play-throughs** of CotAB and SotSB beyond the opening (headless harness first, then the browser),
+3. **Play-throughs** of CotAB and SotSB beyond the opening (headless harness first, then the browser),
    fixing what they find.
 
 ## Waiting on Tristan
@@ -28,8 +27,6 @@ that settles it.
 
 - Casting in a battle, and Join/Halve on a real bundle of two or more scrolls, not yet exercised in the
   browser (unit tests cover both: `web/test/sotsbspells.test.ts`, `bundle.test.ts`).
-- The patient search and the cloud laying taking both body marks (0x1C, 0x1E) is **I**
-  ([`spec/A-games/sotsb/combat.md`](spec/A-games/sotsb/combat.md)).
 - The vault's sync keeps the newer change and loses the other device's (documented,
   [`docs/server.md`](docs/server.md)); a conflict copy would need a design.
 - Journal: entry 35's heading kept as printed ("Toom", probably "Tomb"); entry 72's map key has one
@@ -41,6 +38,10 @@ that settles it.
 
 ## Pool of Radiance
 
+- The manual aim does not offer a body lying on a body square, which the original's cursor targets
+  (a body record on cell 0x1F, [`spec/A-games/engine/combat-rules.md`](spec/A-games/engine/combat-rules.md),
+  "Manual"; SotSB on either mark, 0x3426B): `Battle.aimEntries` lists only combatants in play, in
+  every game.
 - Register 0x035F needs a debugger ([`spec/A-games/engine/ecl.md`](spec/A-games/engine/ecl.md), Open).
 - The Sell, Share, Appraise and arrow-weight checks were not run in DOSBox, by decision: they stay
   code-read ([`spec/open-questions.md`](spec/open-questions.md)).

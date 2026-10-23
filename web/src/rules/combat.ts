@@ -1655,7 +1655,8 @@ export class Battle implements FxHost {
    * The patient finder (FUN_3aae_1bf8, CotAB 0x2C34E, the same): over the eight neighbouring squares and
    * its own (T.wallDx / wallDy, 8 the square itself), the wounded ally (HP below maximum) with the
    * fewest HP, the first found on a tie, the caster itself also when under half its HP; on a body
-   * square (0x1F) the body of a fallen character not dead, stoned or gone (status 6–8), the last listed.
+   * square (R.bodyCell: either mark; SotSB 0x32CE7) the body of a fallen character not dead, stoned or gone
+   * (status 6–8), the last listed.
    * The ally if its HP is below 8 or there is no body, else the body. Null: nobody.
    */
   patient(f: Fighter): Fighter | null {
@@ -2116,7 +2117,7 @@ export class Battle implements FxHost {
      * with `cell` if it holds a cell other than 0 that is not a wall; the cell it found is kept, except
      * that on a square already of a `replaced` kind it takes the cell another zone of that list found
      * there (one that laid it; not one of `not`): the last such zone, or with `firstZone` the first zone
-     * that has one (Cloudkill); on a body's square the cell under the last body record there. Then the
+     * that has one (Cloudkill); on a body square (either mark; SotSB 0x4A466, 0x4CB0E) the cell under the last body record there. Then the
      * line, and the occupant check on whoever stands on each square, in square order (a creature on two
      * squares twice); with `dedupe` (CotAB Stinking Cloud 0x46B40) a later square's creature that another
      * square also has is dropped, so each creature is checked once

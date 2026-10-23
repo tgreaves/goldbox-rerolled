@@ -195,4 +195,27 @@ describe.skipIf(!have)('SotSB spells (SOTSB_SPELLS)', () => {
     // the second zone's square held cell 3, but it keeps the first zone's 1
     expect([b.clouds.map((z) => z.cells[0].old), bf.get(8, 12)]).toEqual([[1, 1], 0x1a])
   })
+
+  it('both body marks hide a body from the patient search and the cloud laying (0x32CE7, 0x4A466, 0x4CB0E)', async () => {
+    const { b, bf, add, cast } = game()
+    const priest = add(5, 5, 0, 'PRIEST')
+    // an unconscious ally at (6, 5) under the stoned mark (a zone lift by a stoned owner writes 0x1C)
+    const down = add(6, 5, 0, 'DOWN')
+    down.c[F.status] = 4; down.c[F.inPlay] = 0
+    b.bodies.push({ f: down, x: 6, y: 5, cell: 1 })
+    for (const mark of [0x1c, 0x1e]) {
+      bf.set(5, 6, mark)
+      expect(b.patient(priest), `mark ${mark.toString(16)}`).toBe(down)
+    }
+    down.c[F.status] = 7 // stoned: no patient (the set 6–8 at 0x32B9D)
+    expect(b.patient(priest)).toBe(null)
+    // Stinking Cloud and Cloudkill laid over each mark keep the cell under the body
+    const mage = add(2, 2, 0, 'MAGE')
+    for (const [id, mark] of [[34, 0x1c], [91, 0x1e]]) {
+      bf.set(5, 6, mark)
+      b.clouds.length = 0
+      await cast(mage, id, 9, [down])
+      expect(b.clouds[0].cells.find((q) => q.x === 6 && q.y === 5)?.old, `spell ${id}`).toBe(1)
+    }
+  })
 })

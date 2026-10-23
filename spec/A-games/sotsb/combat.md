@@ -69,7 +69,11 @@ battle start marks a fallen combatant's square with cell 0x1C when its status is
 0x1E (CotAB 0x1F whatever the status; 0x2C42C–0x2C469), and so does the fall when a combatant goes down
 (0x5CE54–0x5CE9B), unless the square is the gas cell 0x1D; the zone lifts put back 0x1C or 0x1E where a
 body lies by the **zone owner's** status, not the body's (0x2E334, 0x2F048, 0x2FF0D, 0x30505; **Bug**)
-(**O** for the writes, **I** for the images). The port: `R.bodyCell` { down 0x1E, stoned 0x1C, liftBy
+(**O** for the writes, **I** for the images). The readers of a body square test both marks, so a body under
+either is found (O): the computer's patient search (0x32CE7; bodies of status 6–8 left out, the set at
+0x32B9D; the last listed), the gas and kill-cloud laying, which keep the cell under the last body listed
+there (0x4A466, 0x4CB0E, after the zone-replacement test of their own cell), and the aiming cursor's pick
+of a body (0x3426B, 0x3436D). The port: `R.bodyCell` { down 0x1E, stoned 0x1C, liftBy
 owner }; PoR and CotAB { 0x1F, 0x1F, body } (PoR 0x2699F, 0x487B5, 0x28073; CotAB 0x267C9, 0x5673A,
 0x280ED, 0x28F89).
 

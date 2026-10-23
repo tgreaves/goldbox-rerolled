@@ -778,7 +778,9 @@ Parameter `bodyCell` `{ down, stoned, liftBy }`: the cell a fallen combatant's s
 and when it goes down (not on the gas `cell`): `stoned` for status 7, else `down`; a zone lifting off a
 square where a body lies puts back the mark by the status of `liftBy`, the body or the zone's owner.
 PoR and CotAB { 0x1F, 0x1F, body }; SotSB { 0x1E, 0x1C, owner } (the owner: a bug of its lifts,
-[sotsb/combat.md](../A-games/sotsb/combat.md)).
+[sotsb/combat.md](../A-games/sotsb/combat.md)). Every reader of a body square takes either mark as one: the
+computer's patient search, the cloud laying (the cell under the body kept) and the aiming cursor's body
+pick (SotSB 0x32CE7, 0x4A466, 0x4CB0E, 0x3426B: `== 0x1E or == 0x1C`).
 
 ### 15.4 Battlefields
 
