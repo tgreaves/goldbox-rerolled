@@ -261,7 +261,15 @@ Not run: the Sell, Share and Appraise checks (decided not worth it); register 0x
   (its south wall, → square 50); 37 of level 10's 60 street states lead there. A random walk had not
   found it by 400 000 steps; with `hints` (the next wall of the shortest way, worked out from those
   tables, for each of level 10's pockets) the hole was taken and 2/64 reached in 47 466 and 88 806
-  steps (2 seeds, no battle lost). Found and fixed on the way: camp Magic's Display with no effects printed the
+  steps (2 seeds, no battle lost). From 2/64 on: its exits to 2/65 and 2/68 lie past teleports
+  (on_move 0x8172: events 8, 9, 18, 19, 28, 29 facing north or south, position tables 0x9D50/0x9D56) in
+  a pocket whose only open edge leads back to the mine, so the chain's tour walks into every wall in
+  reach before taking an edge exit (`walls`); one seed of 400 000 steps then reached 2/65 and 2/66, another
+  wandered back into the mine and town. An undying run no longer answers Yes to "Quit TO DOS" after camp
+  Save (each quit loaded an older save). Kept as the original does: the Ring of Invisibility's effect 56
+  adds a record of 25 lasting 1 at every event 8 and 19 with no de-dupe (engine/effects.md, 3723_1363), so
+  some 40 can stand at once after a long battle; the play-test no longer counts those as a pile-up.
+  Found and fixed on the way: camp Magic's Display with no effects printed the
   placeholder "#noSpellEffects" in SotSB (its text is " <No Magical Effects>", camp.md); a potion or
   wand used up from View left the record's item count one too high, written so into the save (the
   item's removal now works the record out again, as Drop does, spells.md). Not yet played in order: 2/64 onwards (block 2's 64–68, block 3, the

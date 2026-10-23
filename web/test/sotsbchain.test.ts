@@ -1,6 +1,8 @@
 // Secret of the Silver Blades played in its order (test/playtest.ts, `tour` without a jump): the pre-made
-// party from the shipped start, made sturdy, explores area by area and goes on wherever the scripts take
-// it (stairs, teleports, NEW_ECL), so every area it reaches is reached as a player reaches it. Logs the
+// party from the shipped start, made sturdy and undying, explores area by area, walls included (`walls`:
+// SotSB's scripts move the party through walls), its memory kept per sub-area (the ruins' zone, the mine's
+// level and sub-level), and goes on wherever the scripts take it (stairs, teleports, NEW_ECL), so every
+// area it reaches is reached as a player reaches it. Logs the
 // order in which areas are first entered. Needs SOTSB; SOTSB_CHAIN_STEPS (default 3000), SOTSB_CHAIN_SEEDS
 // (default 1), SOTSB_CHAIN_FRESH=1 starts as New Game does (else from save A).
 import { afterAll, describe, expect, it } from 'vitest'
@@ -41,7 +43,7 @@ describe.skipIf(!have)('Secret of the Silver Blades played in its order', () => 
     for (let seed = Number(process.env.SOTSB_CHAIN_SEED0 ?? 1); seed < Number(process.env.SOTSB_CHAIN_SEED0 ?? 1) + seeds; seed++) {
       const from = process.env.SOTSB_CHAIN_FROM ? readSave(process.env.SOTSB_CHAIN_FROM) : undefined
       const hints = JSON.parse(readFileSync(process.env.SOTSB_CHAIN_HINTS ?? join(import.meta.dirname, 'sotsbchain-hints.json'), 'utf8'))
-      const r = await play({ game: SOTSB, files, seed, steps, from, goal, hints, tour: true, undying: true, fresh, watch: (process.env.SOTSB_CHAIN_WATCH ?? '0x4c4b,0x4c69,0x4c6b').split(',').map(Number), subAreas: [0x4c4b, 0x4c69, 0x4c6b], trace: !!process.env.PLAY_TRACE_FILE })
+      const r = await play({ game: SOTSB, files, seed, steps, from, goal, hints, tour: true, undying: true, walls: true, fresh, watch: (process.env.SOTSB_CHAIN_WATCH ?? '0x4c4b,0x4c69,0x4c6b').split(',').map(Number), subAreas: [0x4c4b, 0x4c69, 0x4c6b], trace: !!process.env.PLAY_TRACE_FILE })
       const st = r.stats
       const sq = [...(r.squares ?? new Map<string, Set<number>>())].map(([k, v]) => `${k}:${v.size}`).join(' ')
       appendFileSync(process.env.SOTSB_CHAIN_LOG ?? '/dev/stdout', `seed ${seed}: ${r.steps} steps; areas in order ${[...st.areas].join(' ')}; squares ${sq}; ${st.battles} battles (${st.won} won, ${st.fled} fled, ${st.lost} lost); watched ${[...(r.watched ?? new Map<number, Set<number>>())].map(([a, v]) => `${a.toString(16)}: ${[...v].join(',')}`).join('; ')}; ${st.ended}${r.stuck.length ? `; stuck ${r.stuck.length}: ${r.stuck.slice(0, 3).join(' | ')}` : ''}\n`)

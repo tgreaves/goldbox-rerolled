@@ -83,6 +83,9 @@ export interface PlayOptions {
    *  the party's reach the tour walks there and steps forward facing `facing` (a script's way on, from its
    *  tables, where a random walk would take too long) */
   hints?: { place: string; x: number; y: number; facing: number }[]
+  /** a tour walks into every wall in reach it has not tried before it takes an edge exit (SotSB, whose scripts
+   *  move the party through walls: the ruins' streets, the mine's levels, 2/64's teleports) */
+  walls?: boolean
 }
 
 /** a saved game: the DAT and each member's record, items and effects */
@@ -231,6 +234,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
    */
   const sensible = (items: string[], prompt: string): number => {
     if (/drop from party|gone forever|lose it\?|drop this character/i.test(prompt) && items.includes('NO')) return o.undying || chance(0.95) ? items.indexOf('NO') : pick(items.length)
+    // nor does an undying run quit the game (SotSB's camp Save asks "Quit TO DOS"; the run would load an older save)
+    if (o.undying && /quit to dos/i.test(prompt) && items.includes('NO')) return items.indexOf('NO')
     // choices taken less often at this menu are likelier, so that menu trees are explored and a
     // town's menu loop is left in the end
     const seen = (tried.get(items.join('/')) ?? new Map<string, number>())
@@ -601,7 +606,11 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       }
       // the helpless markers do pile up: Cause Disease's STR (43) adds one at every tick once STR is at its
       // floor (engine/effects.md, type 43: no "if absent", unlike 44), which an undying party outlives
-      const piled = e.effectsOf(c).filter((x) => !ids().helpless.includes(x.type))
+      // and so do the short records a granting effect adds with no de-dupe (56, the Ring of Invisibility:
+      // a record of 25 lasting 1 at every event 8 and 19, engine/effects.md, 3723_1363), until they run out
+      const grants = Object.values(game().effects.handlers).filter((h) => h.b === 'grant') as { type?: number; duration?: number }[]
+      const granted = (x: { type: number; duration: number }) => grants.some((h) => Number(h.type) === x.type && x.duration <= Number(h.duration))
+      const piled = e.effectsOf(c).filter((x) => !ids().helpless.includes(x.type) && !granted(x))
       if (piled.length > 40) fail(`${who} has ${piled.length} effects (types ${[...new Set(piled.map((x) => x.type.toString(16)))].join(' ')})`)
       // coins as 16-bit counts: a payment gone below 0 would show as about 65 000
       for (let i = 0; i < 7; i++) { const v = c[F.money + 2 * i] | (c[F.money + 2 * i + 1] << 8); if (v > 60000) fail(`${who} has ${v} of coin ${i}`) }
@@ -660,6 +669,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   /** how often the tour has walked into each wall (place/square/direction), and how often that left it where it was */
   const wallTries = new Map<string, number>()
   const blockedTries = new Map<string, number>()
+  /** hints that took the party on: each is taken once (else a way back would pull it through again) */
+  const hintsTaken = new Set<string>()
   const STEPS = [[0, -1], [1, 0], [0, 1], [-1, 0]]
   /** the command towards the least visited open neighbour: forward if facing it, else the turn */
   const explore = (): string => {
@@ -718,7 +729,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     }
     // a hint in reach comes before any unseen square: walk to it, face it, step (dropped after three
     // tries that left the party where it was)
-    const hint = o.hints?.find((h) => h.place === place() && from.has(at(h.x, h.y)) && (blockedTries.get(`${place()}/${at(h.x, h.y)}/${h.facing}`) ?? 0) < 3)
+    const hint = o.hints?.find((h) => h.place === place() && from.has(at(h.x, h.y)) && !hintsTaken.has(`${place()}/${at(h.x, h.y)}/${h.facing}`) && (blockedTries.get(`${place()}/${at(h.x, h.y)}/${h.facing}`) ?? 0) < 3)
     if (hint) {
       if (at(hint.x, hint.y) === at(e.x, e.y)) {
         const turn = (hint.facing - e.facing + 4) & 3
@@ -726,6 +737,20 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
         return turn === 0 ? 'f' : turn === 1 ? 'r' : turn === 3 ? 'l' : 'b'
       }
       goal = at(hint.x, hint.y)
+    }
+    if (goal < 0 && o.walls) {
+      // all seen: the nearest wall in reach not yet walked into, and into it
+      for (const [q] of from) {
+        const d = [0, 1, 2, 3].find((k) => g.passage(q & 15, q >> 4, k) === 0 && !wallTries.has(`${place()}/${q}/${k}`))
+        if (d === undefined) continue
+        if (q === at(e.x, e.y)) {
+          const turn = (d - e.facing + 4) & 3
+          if (turn === 0) { lastTry = `${place()}/${q}/${d}`; wallTries.set(lastTry, 1) }
+          return turn === 0 ? 'f' : turn === 1 ? 'r' : turn === 3 ? 'l' : 'b'
+        }
+        goal = q
+        break
+      }
     }
     if (goal < 0 && exit >= 0) {
       // all seen: to the nearest edge exit not yet tried, and through it
@@ -890,6 +915,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       ok = await act(`command ${c}`, () => e.command(c))
       // a step that left the party where it was (a door it cannot open, a script that turns it back)
       if (tried && `${place()}/${(e.y & 15) * 16 + (e.x & 15)}` === was) { blocked.add(tried); blockedTries.set(tried, (blockedTries.get(tried) ?? 0) + 1) }
+      else if (tried && o.hints?.some((h) => `${h.place}/${(h.y & 15) * 16 + (h.x & 15)}/${h.facing}` === tried)) hintsTaken.add(tried)
     } else {
       const c = r < 0.8 ? explore() : r < 0.86 ? 'lrbf'[pick(4)] : r < 0.88 ? 's' : r < 0.94 ? 'L' : 'e'
       ok = await act(`command ${c}`, () => e.command(c))
