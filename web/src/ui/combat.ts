@@ -121,10 +121,10 @@ export async function runBattle(s: BattleScreen) {
     let v = icons.get(f.c)
     if (!v) {
       // a monster's picture from LOAD_MONSTER, or a CotAB NPC's from ADD_NPC (ecl.addNpc.iconPicture)
-      if (e.combatPicture.has(f.c)) {
-        const id = e.combatPicture.get(f.c) ?? 0
-        const pic = (r: number) => { const raw = s.files.picture('CPIC', e.block, r); try { return raw ? parseRecord(raw).frames[0].picture : null } catch { return null } }
-        v = { icon: pic(id), action: pic(id + 128) }
+      const at = e.combatIcon(f.c)
+      if (at !== undefined) {
+        const pic = (r: number) => { const raw = at && s.files.picture('CPIC', at.block, r); try { return raw ? parseRecord(raw).frames[0].picture : null } catch { return null } }
+        v = { icon: at && pic(at.id), action: at && pic(at.id + 128) }
       } else v = { icon: buildIcon(s.files, f.c, false), action: buildIcon(s.files, f.c, true) }
       icons.set(f.c, v)
     }

@@ -270,7 +270,7 @@ All of these walk the party list `DS:5D96`, which **also holds loaded monsters**
 
 | Op | Name | Operands | Semantics | |
 |---|---|---|---|---|
-| 0B | LOAD_MONSTER | val 1 record, val 2 count (0 → 1), val 3 icon record | nothing if 63 monsters are loaded. Load `MON<block>CHA` record, its combat icon (`CPIC` record) into the next icon slot (from 8), and **append** count copies (with items and effects) to the party list | O |
+| 0B | LOAD_MONSTER | val 1 record, val 2 count (0 → 1), val 3 icon record | nothing if 63 monsters are loaded. Load `MON<block>CHA` record, its combat icon (`CPIC<block>` record, read now) into the next icon slot (from 8; the battlefield draws each combatant from its slot, so a monster keeps the icon read when it was loaded, whatever block it is fought in), and **append** count copies (with items and effects) to the party list. A record the `CPIC` file lacks empties the slot (CotAB 0x2371: the old picture freed and its pointer nilled first, 0x239E → 0x3F4C, then no load, 0x23CC) | O |
 | 1C | CLEAR_MONSTERS | — | monster count 0, icon slot 8, money table and treasure list cleared. Does **not** unlink monsters from the party list | O |
 | 0C | SETUP_MONSTER | val 1 sprite, val 2 max distance, val 3 picture | 0x6DC0 = max; distance 0x6DC1 = min(max, open squares ahead, at most 2; always 2 outdoors); draw the `SPRIT` frame for that distance, or the picture at distance 0 | O |
 | 0D | APPROACH | — | if distance > 0: distance − 1, redraw | O |

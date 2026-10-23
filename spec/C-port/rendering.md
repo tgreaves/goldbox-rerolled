@@ -164,7 +164,7 @@ The original's icon build (`FUN_45c5_0482`, [input-and-menus.md §3.2](../A-game
 4. Drawn with colour 0 transparent (on the battlefield and over the portrait) or on black (the cards,
    the sheet, the editor), 24 × 24 logical pixels.
 
-Monsters use their `CPIC<block>` record and record + 128 for the action pose. The cards' and sheet's
+Monsters use the `CPIC` record of their icon slot, from the block they were loaded in, and record + 128 for the action pose. The cards' and sheet's
 icons are cached by the character's icon bytes.
 
 ## 7. Other drawing

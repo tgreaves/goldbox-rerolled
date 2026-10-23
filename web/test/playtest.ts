@@ -327,11 +327,11 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
 
   const tables = () => { const img = e.startImage; return img ? new Tables(img) : null }
   /** a picture the game asks for must be in its files and decode (the front end shows nothing else) */
-  const needPicture = (family: string, id: number, who = '') => {
-    const raw = files.picture(family, e.block, id)
+  const needPicture = (family: string, id: number, who = '', block = e.block) => {
+    const raw = files.picture(family, block, id)
     let ok = !!raw
     if (raw) try { ok = parseRecord(raw, family === 'PIC').frames.length > 0 } catch { ok = false }
-    if (!ok) fail(`no picture ${family} #${id} in block ${e.block}${who ? ` for ${who}` : ''}${raw ? ' (it does not decode)' : ''}`)
+    if (!ok) fail(`no picture ${family} #${id} in block ${block}${who ? ` for ${who}` : ''}${raw ? ' (it does not decode)' : ''}`)
   }
   /** the area the jump put the party in, until it leaves it */
   let jumpedInto = ''
@@ -406,7 +406,13 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
         changedAt = 0
         const ready = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80).length
         say(`  party: ${e.party().map((c) => `${nameOf(c)} ${c[F.hp]}/${c[F.maxHp]} st${c[F.status]} in${c[F.inPlay]} sp${ready(c)}`).join(', ')}`)
-        if (o.tour) for (const [c, id] of e.combatPicture) { needPicture('CPIC', id, nameOf(c)); needPicture('CPIC', id + 128, nameOf(c)) }
+        // each fighter's icon where the battlefield draws it from (a monster's slot, the block it was loaded in)
+        if (o.tour) for (const c of e.nodes) {
+          const at = e.combatIcon(c)
+          if (at === null && !e.iconSlots.has(c[F.iconSlot])) fail(`no picture in the icon slot of ${nameOf(c)}`)
+          else if (at === null) say(`  ${nameOf(c)}: the icon slot is empty (its record is not in the file)`)
+          else if (at) { needPicture('CPIC', at.id, nameOf(c), at.block); needPicture('CPIC', at.id + 128, nameOf(c), at.block) }
+        }
         try {
           // Magic On for the party's Quick members in half the battles (Alt-M), so their spells are cast
           const r = await fight(e, combatUi, (b) => { battle = b; b.magicOn = chance(0.5) })

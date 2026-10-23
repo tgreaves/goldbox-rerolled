@@ -710,6 +710,7 @@ when its table column or sentence names CotAB.
 | 0x18C65 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x18CB0 | coab/tables | coab/tables: 2. Address mapping (every rules table in the data segment) |  |
 | 0x18CB5 | coab/ecl | coab/ecl: Opcodes |  |
+| 0x18D97 | coab/assets | coab/assets: 4. Overland: no tile map |  |
 | 0x19085 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x190C3 | coab/assets, coab/ecl | coab/assets: 5. BIGPIC uses |  |
 | 0x190E5 | coab/ecl | coab/ecl: Open |  |
@@ -744,7 +745,7 @@ when its table column or sentence names CotAB.
 | 0x19936 | coab/ecl | coab/ecl: Instruction encoding |  |
 | 0x19959 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x19978 | coab/ecl | coab/ecl: Opcodes |  |
-| 0x19A90 | coab/ecl | coab/ecl: Opcodes |  |
+| 0x19A90 | coab/assets, coab/ecl | coab/assets: 4. Overland: no tile map |  |
 | 0x19AF9 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x19B7E | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
 | 0x19C09 | coab/ecl | coab/ecl: Opcodes |  |
@@ -1155,6 +1156,7 @@ when its table column or sentence names CotAB.
 | 0x3244B | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) |  |
 | 0x3280D | coab/records | coab/records: 1. Files (diff vs engine/savegame.md "Files" and engine/input-and-menus.md "Character files") |  |
 | 0x32825 | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) |  |
+| 0x33010 | coab/assets | coab/assets: 4. Overland: no tile map |  |
 | 0x33050 | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) |  |
 | 0x33136 | coab/records | coab/records: 1. Files (diff vs engine/savegame.md "Files" and engine/input-and-menus.md "Character files") |  |
 | 0x331BC | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) | `FUN_45c5_069e` |

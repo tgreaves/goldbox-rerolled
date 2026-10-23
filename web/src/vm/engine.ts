@@ -109,8 +109,17 @@ export class Engine {
   nodes: Uint8Array[] = []
   /** each member's items (the .ITM records), keyed by character record */
   readonly inventory = new Map<Uint8Array, Item[]>()
-  /** combat picture (CPIC<block> record) of each loaded monster, from LOAD_MONSTER's third operand */
+  /** combat picture (CPIC record) of each loaded monster (LOAD_MONSTER's third operand), each CotAB/SotSB
+   *  NPC (ADD_NPC) and ROLF; where a monster's icon is drawn from, see combatIcon */
   readonly combatPicture = new Map<Uint8Array, number>()
+  /** the monster icon slots (8 up): the CPIC record LOAD_MONSTER put in each, and the block digit it was read
+   *  with (CotAB 0x18D97 loads it into slot DS:761D at once; the battlefield draws a combatant from its slot,
+   *  DS:65F0 + 8 x char[0x143], 0x33010), so a monster loaded in one block and fought in another keeps the
+   *  icon read in the first; CLEAR_MONSTERS restarts the slots at 8 without emptying them (0x19AA4); null: a
+   *  slot emptied by a record the file lacks */
+  readonly iconSlots = new Map<number, { block: number; id: number } | null>()
+  /** the loaded monsters, whose icon is their slot's */
+  private readonly slotted = new WeakSet<Uint8Array>()
   /** each member's active effects (the .SPC records) */
   readonly effects = new Map<Uint8Array, Effect[]>()
   cur!: Uint8Array
@@ -1093,6 +1102,10 @@ export class Engine {
     const count = Math.max(n, 1)
     const items = this.files.record(`MON${game().ecl.monsterFile ?? this.block}ITM`, id)
     const spc = this.files.record(`MON${game().ecl.monsterFile ?? this.block}SPC`, id)
+    // the slot takes the record from this block's file; the record loader frees the slot's picture first and
+    // returns without one when the file lacks the record (CotAB 0x2371: 0x239E → 0x3F4C nils the pointer,
+    // 0x23CC → 0x24FF), so the slot is then empty: ECL6 #69's phase spiders ask for CPIC6 #66, which no file has
+    this.iconSlots.set(this.iconSlot, this.files.picture('CPIC', this.block, picture) ? { block: this.block, id: picture } : null)
     for (let i = 0; i < count && this.monsters < 63; i++) {
       const m = this.monsterRecord(raw)
       this.scaleForDifficulty(m)
@@ -1101,6 +1114,7 @@ export class Engine {
       this.inventory.set(m, parseItems(items))
       this.effects.set(m, parseEffects(spc))
       this.combatPicture.set(m, picture)
+      this.slotted.add(m)
       this.monsters++
     }
     this.iconSlot++
@@ -1212,6 +1226,15 @@ export class Engine {
       if (ok) return true
     }
     return false
+  }
+
+  /** Where a combatant's combat picture comes from (normal frame id, action frame id + 128): a loaded monster's
+   *  icon slot (null: an empty slot, nothing drawn), an NPC's or ROLF's picture in the current block's file;
+   *  undefined: an icon built from its parts. */
+  combatIcon(c: Uint8Array): { block: number; id: number } | null | undefined {
+    if (this.slotted.has(c)) return this.iconSlots.get(c[F.iconSlot]) ?? null
+    const id = this.combatPicture.get(c)
+    return id === undefined ? undefined : { block: this.block, id }
   }
 
   /**

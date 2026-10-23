@@ -34,3 +34,20 @@ describe('an NPC\'s combat picture after loading', () => {
     expect(e.combatPicture.size).toBe(0)
   })
 })
+
+describe('a monster keeps the icon read when it was loaded (CotAB 0x18D97, 0x33010)', () => {
+  afterAll(() => setGame(POR))
+  it.skipIf(!process.env.COAB || !existsSync(process.env.COAB))('loaded in block 5, fought in block 1: CPIC5; a record no file has: an empty slot', () => {
+    const e = loaded(COAB, process.env.COAB!)
+    e.write(0x6e12, 5) // B + 0x312: the block digit (0x066DC)
+    e.addMonsters(57, 2, 57) // salamanders, CPIC5 #57
+    e.write(0x6e12, 1) // the party travels on, the monsters unfought
+    const sal = e.nodes[e.nodes.length - 1]
+    expect(e.block).toBe(1)
+    expect(e.combatIcon(sal)).toEqual({ block: 5, id: 57 })
+    e.write(0x6e12, 6)
+    e.addMonsters(65, 1, 66) // ECL6 #69's phase spider: CPIC6 has no #66
+    expect(e.combatIcon(e.nodes[e.nodes.length - 1])).toBeNull()
+    expect(e.combatIcon(e.party()[0])).toBeUndefined() // a player character's icon is built
+  })
+})

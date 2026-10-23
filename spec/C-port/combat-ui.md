@@ -50,7 +50,8 @@ In this order, each frame of the window ([combat-visuals.md](../A-games/engine/c
    wilderness field, `WILDCOM` #1 (from tile 0), and `RANDCOM` #1 (from tile 0x22);
 3. the **cursor tile** (`COMSPR` #25) under the combatant whose turn it is;
 4. the **combatants**: the party's built combat icons ([rendering.md §6](rendering.md#6-combat-icons)),
-   monsters' `CPIC<block>` records (*id* ready, *id* + 128 action); the action frame while the rules
+   monsters' `CPIC` records from their icon slot, read in the block they were loaded in (*id* ready, *id* +
+   128 action; an empty slot draws nothing, `Engine.combatIcon`); the action frame while the rules
    pose them; mirrored when facing S, SW, W or NW; colour 0 transparent, colour 13 opaque black; a
    combatant out of play disappears, except one whose skull is still queued, which stays where it
    stood until its skull is shown;

@@ -47,12 +47,8 @@ describe.skipIf(!have)('Curse of the Azure Bonds toured headless', () => {
         }
       }
     }
-    // combat icons the scripts ask for that the block's CPIC file lacks (the original reads CPIC by the
-    // block digit DS:5C08 too, 0x56E91): ECL1 #80's forest patrols pick monsters from a table whose icons
-    // are in other blocks' files, and a few fixed fights do the same; what the original shows is open (TODO.md)
-    const MISSING = /no picture CPIC #((33|49|50|51|52|56|57|161|177|178|179|180|184|185) in block 1|(32|160) in block 3|(19|20|21|147|148|149) in block 4|(66|194) in block 6)\b/
-    const missing = failures.filter((f) => MISSING.test(f)), rest = failures.filter((f) => !MISSING.test(f))
-    if (missing.length) console.log(`pictures the block's files lack: ${[...new Set(missing.map((f) => f.match(MISSING)![0]))].join('; ')}`)
+    // combat icons come from the slot LOAD_MONSTER filled, read with the block digit of that moment (Engine.combatIcon)
+    const rest = failures
     for (const f of rest) console.log(`FAIL ${f}`)
     expect(rest).toEqual([])
   }, 3600000)
