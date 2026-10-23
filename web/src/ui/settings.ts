@@ -18,12 +18,23 @@ const VIEW_KEY = 'poolrad.view'
 export type PartyLayout = 'top' | 'side'
 export type ViewMode = 'original' | 'enhanced'
 
+let webgl2: boolean | undefined
+/** whether this browser can draw the WebGL view (three.js needs WebGL 2), tested once */
+function canDrawWorld(): boolean {
+  if (webgl2 === undefined) {
+    try { webgl2 = !!document.createElement('canvas').getContext('webgl2') } catch { webgl2 = false }
+  }
+  return webgl2
+}
 /**
- * The 3D view (decision D6, spec/C-port/exploration-view.md §1): the original's drawn view, pixel for
- * pixel (the default), or the enhanced WebGL view (IMP-001).
+ * The 3D view (decision D6, spec/C-port/exploration-view.md §1): the enhanced WebGL view (IMP-001, the
+ * default) or the original's drawn view, pixel for pixel; the drawn view whatever the setting where the
+ * browser has no WebGL 2.
  */
 export function viewMode(): ViewMode {
-  try { return localStorage.getItem(VIEW_KEY) === 'enhanced' ? 'enhanced' : 'original' } catch { return 'original' }
+  let stored: string | null = null
+  try { stored = localStorage.getItem(VIEW_KEY) } catch { /* this page only */ }
+  return stored !== 'original' && canDrawWorld() ? 'enhanced' : 'original'
 }
 function setViewMode(v: ViewMode) {
   try { localStorage.setItem(VIEW_KEY, v) } catch { /* this page only */ }
@@ -88,7 +99,7 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
         : '<div class="set-row"><span class="set-label">Sound</span><span class="muted">needs START.EXE among the game files</span></div>'}
       ${gameFontAvailable() ? seg('Font', [['original', 'Original 8×8'], ['modern', 'Modern']], fontChoice()) : ''}
       ${framesAvailable() ? seg<FrameChoice>('Borders', [['original', 'Original rope'], ['modern', 'Plain']], frameChoice()) : ''}
-      ${seg<ViewMode>('View', [['original', 'Original'], ['enhanced', 'Enhanced (3D)']], viewMode())}
+      ${canDrawWorld() ? seg<ViewMode>('View', [['original', 'Original'], ['enhanced', 'Enhanced (3D)']], viewMode()) : ''}
       ${seg<PartyLayout>('Party', [['top', 'Row across the top'], ['side', 'Column beside the view']], partyLayout())}
       ${seg<Motion>('Motion', [['full', 'Full'], ['reduced', 'Reduced (no flashing)']], motionChoice())}
       ${seg<TextSize>('Text size', [['normal', 'Normal'], ['large', 'Large']], textSize())}

@@ -26,12 +26,13 @@ implementation (`web/src/render/drawnview.ts`, `render/viewscene.ts`, `render/wo
 | moves and turns | the frame is redrawn in one go, as the original | slides (IMP-001, IMP-066) |
 | sprites | the original's frame per distance at its fixed place | the nearest frame standing in the scene (IMP-020, IMP-021) |
 | check | pixel-exact against the original (V9) | tolerance against the drawn view (§3.6) |
-| setting | View: **Original** (default) | View: **Enhanced (3D)** |
+| setting | View: **Original** | View: **Enhanced (3D)** (default where the browser has WebGL 2) |
 
 A build that offers both MUST let the player choose with the setting **View**: **Original** (the
-drawn view) or **Enhanced (3D)** (the WebGL view), **Original by default**, because it is the
-original's own picture and the conformance target ([ui-contract.md §9](ui-contract.md#9-settings),
-key `poolrad.view`). A change applies at once, in play: the other view is drawn at the party's position
+drawn view) or **Enhanced (3D)** (the WebGL view). This port defaults to **Enhanced (3D)**
+(Tristan, 2026-10-23); a browser without WebGL 2 gets the drawn view and no View choice
+([ui-contract.md §9](ui-contract.md#9-settings), key `poolrad.view`, unset: enhanced). The drawn view
+stays the conformance target (D6), whichever is the default. A change applies at once, in play: the other view is drawn at the party's position
 with the sprite on show. Both views draw the same moments (every refresh, §7) and answer the same
 calls of the script host ([B-model/host-contracts.md](../B-model/host-contracts.md)): `refresh`,
 `clearView`, `sprite`, `picture`, `clearTop`; the picture layer (§5) lies over either.
