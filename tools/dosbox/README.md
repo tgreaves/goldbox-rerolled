@@ -10,7 +10,7 @@ copied from the player's folder for each run and the copy is thrown away.
 | `grab.asm` | `GRAB.COM`, a small resident program: F12 writes the screen on show (EGA planes from the CRTC start address, attribute palette, DAC) to `FRAMEnn.EGA` in the game's folder |
 | `run.py` | one unattended run: copy the game, build `GRAB.COM`, a `RUN.BAT` with `AUTOTYPE` and `START STING`, DOSBox headless (`SDL_VIDEODRIVER=dummy`), then the frames (with a PNG of each) and every file the game changed |
 | `egaframe.py` | a dump as a PNG, its 88 × 88 view (pixels 24–111), and that view compared with a port frame |
-| `viewcheck.py` | the drawn-view check from save A, PoR, CotAB or SotSB: five frames (as loaded, four left turns, a step) against the headless runner's |
+| `viewcheck.py` | the drawn-view check from save A, PoR, CotAB or SotSB: five frames (as loaded, four left turns, a step) against the headless runner's; with `--moves`, a scripted walk with a frame after each move |
 
 ## Requirements
 
@@ -25,6 +25,7 @@ export DOSBOX=~/opt/dosbox-staging-linux-x86_64-0.83.0-7b400/dosbox NASM=~/opt/n
 python3 tools/dosbox/viewcheck.py por  /home/tmg/poolrad-files      # 5 of 5 frames equal
 python3 tools/dosbox/viewcheck.py coab /home/tmg/coab-files
 python3 tools/dosbox/viewcheck.py sotsb /home/tmg/sotsb-files
+python3 tools/dosbox/viewcheck.py por /home/tmg/poolrad-files --moves fblfrffrfffffffrfffblfff   # 25 of 25
 python3 tools/dosbox/run.py --game /home/tmg/poolrad-files --out out/run1 \
         --keys "x enter l a f12 left f12" --wait 5 --pace 2.5 --seconds 45
 ```

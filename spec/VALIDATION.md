@@ -36,9 +36,10 @@ cross-reference from each spec section to the code is [xref.md](xref.md).
 | Saves | the shipped saves written back byte for byte, both games | agree (`engine.test.ts`, `coabsweep.test.ts`, `savefiles.test.ts`) |
 | The guide | the GameFAQs guide's claims against the code: cheat mode, the rest cap, training, loading | corrected in part A ([open-questions.md, "Cross-checks against the GameFAQs guide"](open-questions.md#cross-checks-against-the-gamefaqs-guide-porreadmemd-external-reference)) |
 
-Against the running original in DOSBox: the drawn view and the rest counters (§4, with the harness
-in `tools/dosbox/`). Not yet: scripted walks and the south-edge exits
-([open-questions.md](open-questions.md)).
+Against the running original in DOSBox: the drawn view of all three games, a scripted walk across
+an area boundary, and the rest counters (§4, with the harness in `tools/dosbox/`). The south-edge
+exits of block 1 area 24 were settled from the map data instead (the squares cannot be entered,
+[open-questions.md](open-questions.md)).
 
 ## 3. Test suites
 
@@ -110,7 +111,10 @@ step): 5 of 5 frames exact; it showed that the original's arrows move only in Mo
 save A out of the inn into Tilverton's street, (6,12), all four facings, with the save's clock (save
 offset 0x193, ECL 0x4BC9) at 0, 3 and 14 in copies of the folder: 12 of 12 frames exact, among them the
 cloud strip (SKY #250) facing north and the sun (#251) facing east at 03:00 behind the wall's edge
-([coab/assets.md](A-games/coab/assets.md) §3); at 14:00 both draw a black sky, so no afternoon sun there. Not run: the Sell, Share and Appraise
+([coab/assets.md](A-games/coab/assets.md) §3); at 14:00 both draw a black sky, so no afternoon sun there. **A scripted walk** (PoR, 2026-10-23,
+`viewcheck.py por --moves fblfrffrfffffffrfffblfff`): 24 moves from save A with no menus on the way,
+through the gateway from New Phlan (block 2 area 20) into the unsettled areas (block 3 area 0) and
+back, a frame after each: 25 of 25 exact. Not run: the Sell, Share and Appraise
   checks (no shop from save A; decided not worth a route); register 0x035F (no debugger).
 - **The interface** was checked against part C in headless Chromium (2026-10-21; each part C file's
   "Validation" section says what): every screen class, PoR's game-file save A, the games screen, the
@@ -165,8 +169,8 @@ Each run adds a row here, and its findings below.
 
 ## 6. Residual gaps
 
-- **Little DOSBox comparison** of running behaviour yet: the drawn view (all three games) and the rest
-  counters only (§4); the **I** items that only the running original can settle are in
+- **Little DOSBox comparison** of running behaviour yet: the drawn view (all three games), one scripted
+  walk and the rest counters (§4); the **I** items that only the running original can settle are in
   [open-questions.md](open-questions.md).
 - **The Enhanced (3D) view** is checked by eye only: its tolerance check needs WebGL
   ([exploration-view.md §3.6](C-port/exploration-view.md#36-what-it-must-preserve-the-tolerance)).

@@ -3,9 +3,14 @@
 the view as loaded, after each of four left turns and after a step forward, both ways, pixel by pixel.
 
 Usage:
-  viewcheck.py por   POOLRAD_DIR [--out DIR]
-  viewcheck.py coab  CURSE_DIR   [--out DIR]
-  viewcheck.py sotsb BLADES_DIR  [--out DIR]
+  viewcheck.py por   POOLRAD_DIR [--moves MOVES] [--out DIR]
+  viewcheck.py coab  CURSE_DIR   [--moves MOVES] [--out DIR]
+  viewcheck.py sotsb BLADES_DIR  [--moves MOVES] [--out DIR]
+
+--moves  a scripted walk instead of the turns: the port's exploration commands f (forward), l, r, b
+         (turn around), one frame before the walk and one after each move. Choose a walk with no
+         menus on the way (the headless runner's transcript shows them): the original is typed only
+         the moves.
 
 Needs what run.py needs (DOSBox Staging, NASM; $DOSBOX, $NASM) and Node for the headless runner.
 Exits 1 if any frame differs.
@@ -35,6 +40,7 @@ GAMES = {
 }
 STEPS = [[], ['l'], ['l', 'l'], ['l', 'l', 'l'], ['l', 'l', 'l', 'l', 'f']]
 KEYS = 'f12 left f12 left f12 left f12 left up f12'
+ARROW = {'f': 'up', 'l': 'left', 'r': 'right', 'b': 'down'}
 
 
 def main(a):
@@ -43,11 +49,19 @@ def main(a):
     game, folder = a[0], os.path.abspath(a[1])
     out = os.path.abspath(a[a.index('--out') + 1]) if '--out' in a else tempfile.mkdtemp(prefix='viewcheck-')
     g = GAMES[game]
+    steps, keys = STEPS, KEYS
+    if '--moves' in a:
+        moves = a[a.index('--moves') + 1]
+        if not moves or set(moves) - ARROW.keys():
+            raise SystemExit('--moves takes f, l, r and b')
+        steps = [list(moves[:i]) for i in range(len(moves) + 1)]
+        keys = ' '.join(['f12'] + [f'{ARROW[m]} f12' for m in moves])
+    typed = ' '.join(filter(None, [g['start'], g.get('move'), keys]))
     subprocess.run([sys.executable, os.path.join(HERE, 'run.py'), '--game', folder, '--out', out,
-                    '--keys', ' '.join(filter(None, [g['start'], g.get('move'), KEYS])), '--wait', '6', '--pace', g['pace'], '--args', g['args'],
-                    '--seconds', str(10 + (len(g['start'].split()) + len(KEYS.split())) * float(g['pace']) * 1.5)], check=True)
+                    '--keys', typed, '--wait', '6', '--pace', g['pace'], '--args', g['args'],
+                    '--seconds', str(10 + len(typed.split()) * float(g['pace']) * 1.5)], check=True)
     bad = 0
-    for i, commands in enumerate(STEPS):
+    for i, commands in enumerate(steps):
         dump = os.path.join(out, f'FRAME{i:02d}.EGA')
         if not os.path.exists(dump):
             print(f'frame {i}: not grabbed (the original did not reach play; see {out}/*.png)')
@@ -61,7 +75,7 @@ def main(a):
         r = subprocess.run([sys.executable, os.path.join(HERE, 'egaframe.py'), dump, '--compare', port,
                             '--view', os.path.join(out, f'view{i}.png')])
         bad += r.returncode != 0
-    print(f'{len(STEPS) - bad} of {len(STEPS)} frames equal; files in {out}')
+    print(f'{len(steps) - bad} of {len(steps)} frames equal; files in {out}')
     sys.exit(1 if bad else 0)
 
 
