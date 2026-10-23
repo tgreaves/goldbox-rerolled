@@ -183,7 +183,15 @@ back, a frame after each: 25 of 25 exact. Not run: the Sell, Share and Appraise
   kept the last area's map, and after a save and load the party could not move (the jump now loads the
   area's own map, IMP-025); SotSB's view closes its edges in areas 0 and 80, not CotAB's 0 and 10
   (assets.md §2); after a flight that lost members the current character could be one of the lost
-  (the remove-current routine's rule now applies, combat-rules.md "Results"; all games). The demo itself runs in `demo.test.ts`, every picture and icon in the files.
+  (the remove-current routine's rule now applies, combat-rules.md "Results"; all games).
+- **Silver Blades in the browser, later blocks** (2026-10-23, Playwright with headless Chrome against
+  the built app, a fresh profile): the title music (8 sound buffers started), save A, the Enhanced
+  view as the default and the Original view after the setting, both walking; a Debug jump to block 3
+  area 80 and a battle there (cloud giants and Black Circle wizards drawn, Quick for all, the
+  treasure screen after it); camp, Save to slot B ("Game saved in slot B.", then "Quit TO DOS" as the
+  original), Quit to the party screen, Load B; Watch the demo to its red dragons' battle with its three
+  NPCs drawn. No page or console errors. Found and fixed: the demo's NPCs drawn as nothing (above), and
+  their party cards showed an icon built from parts (now their combat picture, ui-contract.md §4). The demo itself runs in `demo.test.ts`, every picture and icon in the files.
 
 ## 5. Clean-room runs
 

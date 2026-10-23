@@ -141,7 +141,7 @@ One card per party member, in party order (IMP-045, IMP-061, IMP-063):
 | Part | Content |
 |---|---|
 | portrait | head over body (`HEAD3`/`BODY3` through the game's portrait tables); none in a game without portraits (CotAB) |
-| combat icon | the ready pose ([rendering.md §6](rendering.md#6-combat-icons)) |
+| combat icon | the ready pose ([rendering.md §6](rendering.md#6-combat-icons)); for an NPC that fights under a combat picture (CotAB's and SotSB's ADD_NPC), that picture's first frame, a 48-pixel one fitted to the 24 × 24 cell, as on the battlefield |
 | name | in the NPC colour for an NPC |
 | AC | "AC *n*" (tooltip: what AC means, [port-data.md §9](../D-appendices/port-data.md#9-interface-tooltips)) |
 | HP bar | HP as a share of max HP; highlight colour below half; empty when down |

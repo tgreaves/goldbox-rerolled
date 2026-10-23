@@ -794,12 +794,25 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     })
     roster.querySelectorAll<HTMLElement>('.rcard').forEach((card, i) => {
       const raw = list[i].raw
-      const key = Array.from(raw.subarray(F.iconHead, F.iconColours + 6)).join(',')
+      // an NPC that fights under a combat picture (CotAB and SotSB ADD_NPC) shows it, as on the battlefield
+      const cpic = engine.combatPicture.get(raw)
+      const key = cpic !== undefined ? `cpic${engine.block}:${cpic}` : Array.from(raw.subarray(F.iconHead, F.iconColours + 6)).join(',')
       let img = rosterIcons.get(key)
-      if (img === undefined) { const p = buildIcon(files, raw, false); img = p ? toImageData(p) : null; rosterIcons.set(key, img) }
+      if (img === undefined) {
+        let p: Picture | null | undefined
+        if (cpic !== undefined) { const r = files.picture('CPIC', engine.block, cpic); try { p = r ? parseRecord(r).frames[0]?.picture : null } catch { p = null } }
+        else p = buildIcon(files, raw, false)
+        img = p ? toImageData(p) : null
+        rosterIcons.set(key, img)
+      }
       const g = sizeCanvas(card.querySelector<HTMLCanvasElement>('canvas.rc-icon')!, 24, 24)
       g.fillStyle = '#000'; g.fillRect(0, 0, 24, 24)
-      if (img) blit(g, img, 0, 0)
+      if (img && (img.width > 24 || img.height > 24)) {
+        // a 48-pixel picture fitted to the card's 24 × 24 cell
+        const k = 24 / Math.max(img.width, img.height), c = pixels(img)
+        g.imageSmoothingEnabled = false
+        g.drawImage(c, 0, 0, img.width * k, img.height * k)
+      } else if (img) blit(g, img, 0, 0)
       const portrait = card.querySelector<HTMLCanvasElement>('canvas.rc-portrait')
       if (!portrait) return
       const pg = sizeCanvas(portrait, 88, 88)
