@@ -118,6 +118,11 @@ python3 tools/dosbox/longwalk.py /path/to/POOLRAD-copy flffflflfflflffrfffrffrfr
 python3 tools/dosbox/savecompare.py por B ORIGINAL_DIR PORT_DIR
 ```
 
+SotSB (no `--save`): a save past its opening, the original's own or one the port wrote, shortens its walks: copy the game folder, put the save in as slot A (with its
+`CHRDAT<x><n>` files) and give `viewcheck.py` the keys to free play and the port's answers,
+`--start "p down down enter enter down down down down down enter" --answers 0` for SotSB, so that
+DOSBox's typed line is left to the moves.
+
 ## How GRAB.COM works
 
 F12 (scan code 58h) is taken from INT 09h and never reaches the game. The dump runs at the next

@@ -242,7 +242,12 @@ the stem table's slack (the whole of each slot past the party count). Not run: t
   into ECL A 0x4AFA–0x4AFF in every game, overwriting script variables in CotAB and SotSB (CotAB's won flag
   0x4AFD among them), and wrote an empty wall-set slot's number as its slot; SotSB's camp Save counts saves
   in ECL 0x4A3C (0x390C5). Then equal: `SAVGAMB.DAT` to the last party stem, and every `CHRDATB*.SAV` and
-  `.SFX` but for the run-time pointers the original writes from memory (records.md §4).
+  `.SFX` but for the run-time pointers the original writes from memory (records.md §4). **Walks** from
+  saves past the opening (`viewcheck.py sotsb … --start … --moves …`, a frame after each move): from the
+  original's own save B, 16 moves through the town (block 1 area 16, from (3,3) south to (3,14) and
+  back round), 17 of 17 frames exact; from a save the port wrote after a debug jump to the ruins (block
+  1 area 32, (11,2)), which the original loaded, 18 moves out of the ruins into the town across the area
+  boundary (32 → 16 at (15,8)) and along its street past the temple and the vault, 19 of 19 exact.
 
 - **Curse of the Azure Bonds played further** (2026-10-23). Headless: the tour (`coabtour.test.ts`, every
   area of every block by the Debug jump, the sturdy party walking every square it reaches, 2 seeds × 1 500

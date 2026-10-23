@@ -6,6 +6,7 @@ Usage:
   viewcheck.py por   POOLRAD_DIR [--moves MOVES] [--save X] [--save-to Y] [--out DIR]
   viewcheck.py coab  CURSE_DIR   [--moves MOVES] [--save X] [--out DIR]
   viewcheck.py sotsb BLADES_DIR  [--moves MOVES] [--out DIR]
+  … [--start KEYS --answers N]
 
 --moves  a scripted walk instead of the turns: the port's exploration commands f (forward), l, r, b
          (turn around), one frame before the walk and one after each move; e answers a menu the move
@@ -14,6 +15,10 @@ Usage:
          (P does nothing at the main menu, where Enter would choose Area, so a pause the original's
          dice give and the port's do not, as a square's random rumour, cannot shift the walk). The
          headless runner's transcript shows which menus a walk meets.
+--start  the keys from DOS to free play instead of the game's (with --answers, how many "press Enter"
+         menus the port is answered), for a folder whose save A is past the opening: SotSB's opening
+         takes most of the 250 characters DOSBox's typed line allows, and a save written after it (the
+         original's own or the port's) leaves the line to the moves
 --save   start from save X (B-J) instead of A (PoR and CotAB; a copy of the folder holds it)
 --save-to  (PoR) after the walk, camp and save in slot Y in both (the original: Encamp, Save, Y, not
          quitting; the port: the same walk, Encamp and the headless runner's --save), then compare the
@@ -64,6 +69,9 @@ def main(a):
             raise SystemExit('--save takes a slot A-J, for por and coab')
         if x != 'a':  # a save past the opening: no "press Enter" screens (CotAB), Begin after the load
             start, answers = {'por': f'x enter l {x}', 'coab': f'p numbersign enter l {x} b'}[game], []
+    if '--start' in a:
+        start = a[a.index('--start') + 1]
+        answers = [0] * int(a[a.index('--answers') + 1]) if '--answers' in a else []
     steps, keys = [(st, 0) for st in STEPS], KEYS
     if '--moves' in a:
         moves = a[a.index('--moves') + 1]
