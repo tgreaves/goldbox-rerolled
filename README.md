@@ -76,7 +76,7 @@ docker compose up -d --build                   # or with Docker (docker-compose.
 
 ## Status
 
-What is still to do is in [`TODO.md`](TODO.md); open questions about the originals are in [`spec/open-questions.md`](spec/open-questions.md), and each game's progress in [`docs/multi-game.md`](docs/multi-game.md). Parts of PoR and CotAB have been checked against the originals running in DOSBox (rest counters, the drawn 3D view; [`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
+What is still to do is in [`TODO.md`](TODO.md); open questions about the originals are in [`spec/open-questions.md`](spec/open-questions.md), and each game's progress in [`docs/multi-game.md`](docs/multi-game.md). The originals run unattended in DOSBox through [`tools/dosbox/`](tools/dosbox/README.md): the drawn 3D view of all three games, CotAB's outdoor sky, a scripted PoR walk and PoR's rest counters agree with the port ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
 
 ## Credits and legal
 

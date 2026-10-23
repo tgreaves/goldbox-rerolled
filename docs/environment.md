@@ -8,9 +8,9 @@ holds only the setup they assume.
 
 1. Read [`../CLAUDE.md`](../CLAUDE.md) (rules, method, where things are), then
    [`../spec/README.md`](../spec/README.md) (the spec's conventions).
-2. What is open: [`../spec/open-questions.md`](../spec/open-questions.md),
-   [`multi-game.md`](multi-game.md) ("Backlog", "Tracking to the goal"), and "Where the work stands"
-   in `CLAUDE.md`.
+2. What to do: [`../TODO.md`](../TODO.md) ("Next steps", then everything open by game, and what waits
+   on Tristan); "Where the work stands" in `CLAUDE.md`; questions about the originals in
+   [`../spec/open-questions.md`](../spec/open-questions.md).
 3. Point the tests at the game files (below) and run them once from `web/` before changing anything.
 
 ## The development server

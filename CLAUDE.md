@@ -32,6 +32,11 @@ came first and is playable; Curse of the Azure Bonds (CotAB) is being added. The
    quirks. Before "fixing" anything that looks odd, check the original binary: often it is what the
    game does. Every deliberate departure goes in [`IMPROVEMENTS.md`](IMPROVEMENTS.md) (next IMP
    number) **in the same commit**.
+   - Controls and presentation are deliberately modern (Tristan, 2026-10-23): the spec's part A
+     describes the original's input exactly, quirks included (SotSB's arrows changing the current
+     character outside Move, for instance), and part C and `IMPROVEMENTS.md` describe what the port
+     does instead; the port does not copy the original's input quirks. Escape backs out of every
+     menu (IMP-081); movement is always on the arrows and pad; characters are chosen on the cards.
 3. **Evidence.** Spec statements are marked **O** (observed in the binary or data), **I** (inferred)
    or **?** (unknown), with the routine or address that shows it (the full legend, with **G** and
    **Bug**, is in `spec/README.md`). Code comments cite the routine
@@ -101,24 +106,22 @@ close disassemblers (REA's Ghidra sessions) after use, no unbounded background j
   `docs/server.md`: design, API, security, deployment (systemd, Docker); its tests are `web/test/server.test.ts`
   and `sync.test.ts`
 
-## Where the work stands (2026-10-22)
+## Where the work stands (2026-10-23)
 
-- Pool of Radiance plays start to finish; Curse of the Azure Bonds is playable at an early stage
-  (all 8 steps of `docs/multi-game.md` done, dual-classing included), not yet played through in a
-  browser. About 540 tests pass; long headless playthroughs (24 × 1000 steps) show no failures.
+- Pool of Radiance plays start to finish. Curse of the Azure Bonds and Secret of the Silver Blades are
+  playable at an early stage (their profiles, rules, spells, effects and data in place, step logs in
+  `docs/multi-game.md`; CotAB's ending and
+  SotSB's town, camp, a battle, training and a new game checked in the browser, `spec/VALIDATION.md`
+  §4), neither played through. 541 tests pass with all three games' files (`POOLRAD`, `COAB`, `SOTSB`);
+  long headless playthroughs (24 × 1000 steps) show no failures.
 - The spec is the normative source (decisions D1–D6 in `spec/README.md`); steps 1–7 of its work plan
   (`spec/AUDIT.md` §8) are done. Step 8, the clean-room rebuilds that validate it, is **on hold** by
   Tristan's choice (token and session limits): do not start one unasked.
-- Current focus: bug fixes and gaps (`TODO.md`, `spec/open-questions.md`).
 - The originals run unattended in DOSBox Staging through `tools/dosbox/` (keys typed, screens grabbed,
-  saves kept): PoR's and CotAB's drawn views are pixel-exact against the port, PoR's rest counters
-  confirmed; little else has been compared that way yet (`spec/VALIDATION.md` §4). Browser checks of
-  CotAB and SotSB are recorded there too.
-- Secret of the Silver Blades: researched 2026-10-22 (`spec/A-games/sotsb/`, every subject) and playable at
-  an early stage (`games/sotsb.ts`: its own rules, spells, effects, script variants, items, vault, CotAB
-  import, title music through the OPL2 synthesiser, its own Rules reference text, its printed journal
-  transcribed from a scan); headless playthroughs pass, and a browser play-through of the town, camp,
-  a battle, training, saves and a new game is recorded in `spec/VALIDATION.md` §4; open items in
-  `TODO.md`. Tests take `SOTSB` (the game folder) like POOLRAD and COAB.
-- `server/` (accounts and sync) is built but not deployed. It is meant to become a public service
-  with open sign-up, so treat every change there as internet-facing (`docs/server.md`, "Running it publicly").
+  saves kept and patched). Exact against the port so far: the drawn view of all three games from save
+  A, CotAB's outdoor sky, clouds and sun, a 24-move PoR walk across an area boundary; PoR's rest
+  counters confirmed (`spec/VALIDATION.md` §4). No debugger is available.
+- `server/` (accounts and sync) runs on the dev server's LAN as a systemd user service (port 8080,
+  `docs/environment.md`) but is not deployed publicly. It is meant to become a public service with
+  open sign-up, so treat every change there as internet-facing (`docs/server.md`, "Running it publicly").
+- **What to do next**: [`TODO.md`](TODO.md), "Next steps" first; everything open is listed there by game.
