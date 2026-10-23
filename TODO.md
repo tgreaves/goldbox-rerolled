@@ -48,11 +48,10 @@ that settles it.
   (Tilverton's are steps off the map's edge, B 0x6DD5, with the scripts' menus after), so a walk out needs
   those answers typed as the original's keys ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
 - DOSBox, not yet compared: the Hall of Training's screens (2/1 (5,1) facing south, after a Yes/No).
-- The chain in its order (`coabchain.test.ts`, [`spec/VALIDATION.md`](spec/VALIDATION.md) §4) has not reached
-  6/64–6/67: ECL1 #80 enters 6/64 at wilderness place 13 (ECL 0x4C9B, 0x853C → 0x85C8), which comes from
-  the cell table at 0x9D13 (cell ECL 0x4C9D); the grey man at the standing stones (place 4) counts the
-  three bonds (0x4C59 set in 5/51, 0x4C5A in 4/34, 0x4C5B in 3/18) and, with all three, says "meet me at
-  Myth Drannor" (0x83CF). How place 13 is reached is not yet worked out, so the harness cannot be given it.
+- A potion used up in camp (its last charge) leaves the record's item count (0x14C) and hands (0x185) as
+  they were in the port (`coabchain.test.ts` seed 2, 5/50); Use (0x3F9A8) returns a used flag and its
+  caller spends the charge, not yet traced: whether the original then counts the items again, as after
+  Scribe it does not (camp-and-time.md, Rest), is open.
 - ECL4 #32's tavern: a party that picks the lock east of (13,7) cannot leave ((14,7)'s west side is a wall,
   the bar puts it back where it came from); whether the original traps it too needs a DOSBox look
   ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4, "in its order").

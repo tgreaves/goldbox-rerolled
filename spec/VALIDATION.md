@@ -340,7 +340,18 @@ Not run: the Sell, Share and Appraise checks (decided not worth it); register 0x
   three bonds' flags (0x4C59 = 1, 0x4C5A = 1, 0x4C5B ≠ 0); 0x4C59 is set by beating Dracandros in 5/51's
   courtyard (0x8FB6), which is reached from the roof only by the stairs at (3,1), taken facing the wall
   north (on_move 0x87A3 by the table at 0x9C81): the tour now tries each wall of a square with an event,
-  as on_move runs on a move into a wall too.
+  as on_move runs on a move into a wall too. With that, 3 seeds × 150 000 steps from save A all set the
+  three bonds (Dexam 4/34, 3/18, Dracandros 5/51), take MYTH DRANNOR at the Standing Stones, climb
+  Dracandros' tower 6/64–6/67 and win the final battle (6/67's (6,1), 0x9280: PROGRAM 8, the ending).
+  More harness gaps found on the way and closed: a flight that leaves members down removes them for good
+  (the aftermath, 0x23CCC), which an undying party now counts as a battle won; Cause Blindness's 0x21
+  stacks one per cast (engine/spells.md 37, 38), which a final battle replayed many times piled up, so the
+  run's after-battle cure takes what the game's cure spells remove. One game-data gap, not the port's:
+  ECL5 #51's dark elves are set up with the portrait selector 0x7EE1 = 49 and approach after it is back
+  at 0xFF, so their close-up is PIC5 #49, which the file lacks; the sprite routine 0x1FF50 loads the
+  picture only at distance 0 with the selector of that moment (0x20022), so the original shows none
+  either. Left open: a potion's last charge spent in camp leaves its item count and hands as they were
+  in the port (seed 2); whether the original recounts is in `TODO.md`.
 - **Curse of the Azure Bonds: a battle in DOSBox** (2026-10-23, `tools/dosbox/run.py` on a save the port wrote at
   2/3 (15,0) after a Debug jump, `SAVGAMB.DAT`): one step north, ECL2 #3's otyughs "attack immediately". An
   empty icon slot draws nothing: with LOAD_MONSTER's icon operand (save offset 0x2604) patched to a record

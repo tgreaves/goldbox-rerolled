@@ -66,7 +66,7 @@ export interface PlayOptions {
    * the dice, decides how far a run gets
    */
   undying?: boolean
-  /** on first entering each of these areas ("block/area"), save there and write the files under `dir`
+  /** on first entering each of these areas ("block/area", or "block/area@x:y" for a square), save there and write the files under `dir`
    *  with the game's names (SAVGAMA.DAT and the party's CHRDATAn files), for the browser to load */
   saveAt?: { areas: string[]; dir: string }
 }
@@ -320,6 +320,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
    *  (CotAB 0x4848A: 0x20 and the poisoned marker 0x37), else every poisoning that killed would leave one
    *  more marker behind (the pile-up of 6/69's phase spiders) */
   const raiseRemoves = Object.values(game().spells.handlers).find((x) => x.k === 'raise')?.removes as number[] | undefined ?? []
+  const cureRemoves = Object.values(game().spells.handlers).filter((x) => x.k === 'cure').map((x) => x.effect as number)
   const raised = (c: Uint8Array) => { const fx = e.effectsOf(c); for (let i = fx.length - 1; i >= 0; i--) if (raiseRemoves.includes(fx[i].type)) fx.splice(i, 1) }
   function roundCap() {
     if (!battle || capped) return
@@ -456,7 +457,10 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
               const outcome = b.outcome.bind(b)
               b.outcome = () => {
                 const out = outcome()
-                if (out !== 'destroyed') return out
+                // a flight with members down leaves them behind for good (the aftermath removes them, 0x23CCC),
+                // which an undying party would not do: it stands them up and counts the battle won, as a defeat
+                const left = out === 'fled' && b.fighters.some((f) => !f.monster && f.c[F.status] !== 3)
+                if (out !== 'destroyed' && !left) return out
                 for (const f of b.fighters) if (!f.monster) { if (f.c[F.status]) raised(f.c); f.c[F.status] = 0; f.c[F.inPlay] = 1; f.c[F.hp] = f.c[F.maxHp] }
                 report.route.push(`${step} a battle lost in ${e.block}/${e.area} counted as won`)
                 return 'won'
@@ -464,9 +468,11 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
             }
           })
           if (o.undying) for (const c of e.party()) if (c[F.status] >= 4 && c[F.status] <= 7) { c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = c[F.maxHp]; raised(c) } // unconscious, dying, dead, stoned
-          // and cured, as a player would have them (Cure Disease, Remove Paralysis): the diseases and the helpless markers go
+          // and cured, as a player would have them (Cure Disease, Remove Paralysis, Cure Blindness): the diseases, the
+          // helpless markers and what the game's cure spells take away go (Cause Blindness's 0x21 stacks, one per
+          // cast, and Cure Blindness takes the first: engine/spells.md 37, 38; a final battle replayed piles them up)
           if (o.undying) for (const c of e.party()) {
-            const fx = e.effectsOf(c), gone = new Set([...ids().helpless, ...ids().diseases.flat()])
+            const fx = e.effectsOf(c), gone = new Set([...ids().helpless, ...ids().diseases.flat(), ...cureRemoves])
             for (let i = fx.length - 1; i >= 0; i--) if (gone.has(fx[i].type)) fx.splice(i, 1)
           }
           report.stats.rounds += battle?.round ?? 0
@@ -818,11 +824,12 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     if (!report.route.length || !report.route[report.route.length - 1].endsWith(` ${here}`)) report.route.push(`${step} ${here}`)
     // PLAY_FLAGS: script variables whose changes the route records (a chain's story flags)
     if (flags.length) { const now = flags.map((a) => `${a.toString(16)}=${e.read(a)}`).join(' '); if (now !== flagsNow) { report.route.push(`${step} ${here}: ${now}`); flagsNow = now } }
-    const at = `${e.block}/${e.area}`
+    const sq = `${e.block}/${e.area}@${e.x}:${e.y}`
+    const at = o.saveAt?.areas.includes(sq) ? sq : `${e.block}/${e.area}`
     if (o.saveAt?.areas.includes(at) && !savedAt.has(at) && !e.quit) {
       savedAt.add(at)
       await roundTrip(false)
-      const d = join(o.saveAt.dir, at.replace('/', '-'))
+      const d = join(o.saveAt.dir, at.replace('/', '-').replace('@', '-').replace(':', '-'))
       mkdirSync(d, { recursive: true })
       writeFileSync(join(d, 'SAVGAMA.DAT'), lastSave.dat)
       stemsOf().forEach((st, i) => {
