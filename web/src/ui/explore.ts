@@ -1343,7 +1343,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         for (const line of willBecome(c, chk.train)) print(line, false)
         if (!(await yes({ menu }, msg('wishToTrain').trimEnd()))) continue
         print(msg('congratulations'), false)
-        if (train(t, engine, c, chk.train)) {
+        if (train(t, engine, c, chk.train, false, engine.itemsOf(c), engine.items ?? undefined)) {
           const choices = newSpellChoices(t, c)
           // the original's empty list writes char[0x32] = 1 (max HP 1); skipped here (IMP-028)
           if (choices.length) {
@@ -1352,7 +1352,6 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
             c[F.known + choices[k]] = 1
           }
         }
-        if (engine.items) recalc(c, engine.itemsOf(c), engine.items)
       }
     }
   }

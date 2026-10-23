@@ -397,11 +397,10 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       const chk = checkTraining(t, c, e.read(0x6da8))
       if (!chk.ok) { checkText(chk.message, 'training'); say(`  ${nameOf(c)}: ${chk.message}`); continue }
       say(`  ${nameOf(c)} trains`)
-      if (train(t, e, c, chk.train)) {
+      if (train(t, e, c, chk.train, false, e.itemsOf(c), e.items ?? undefined)) {
         const choices = newSpellChoices(t, c)
         if (choices.length) c[F.known + choices[pick(choices.length)]] = 1
       }
-      if (e.items) recalc(c, e.itemsOf(c), e.items)
     }
   }
 
@@ -519,7 +518,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     const diff = dat.findIndex((v, i) => again[i] !== v && i !== sq && i !== sq + 1 && i !== prev)
     if (diff >= 0) fail(`a save loaded and saved again differs at byte ${diff.toString(16)}: ${dat[diff]} then ${again[diff]}`)
     n.party().forEach((c, i) => {
-      if (c.some((v, k) => chars[i].sav[k] !== v)) fail(`${nameOf(c)}'s record changes in a save and load`)
+      // the icon slot is the load's to give (the party list's append, Engine.joinSlot): after an Order it is renumbered
+      if (c.some((v, k) => chars[i].sav[k] !== v && k !== F.iconSlot)) fail(`${nameOf(c)}'s record changes in a save and load`)
       if (characterItemsFile(n.itemsOf(c)).some((v, k) => chars[i].itm[k] !== v)) fail(`${nameOf(c)}'s items change in a save and load`)
       if (effectsFile(n.effectsOf(c)).some((v, k) => chars[i].spc[k] !== v)) fail(`${nameOf(c)}'s effects change in a save and load`)
     })

@@ -5,11 +5,12 @@ is turned into the original's keys, those are typed into the original in DOSBox,
 script ends with are compared by savecompare.py.
 
 Usage:
-  scriptcheck.py por POOLRAD_DIR SCRIPT.json --slot X [--out DIR] [--grab] [--pace S]
+  scriptcheck.py por POOLRAD_DIR SCRIPT.json --slot X [--out DIR] [--no-grab] [--pace S]
 
 SCRIPT.json is the headless runner's script (host-contracts.md §8.1), with "town": true and
 "camp": true so that the shop, the temple and the camp take their answers, and ending in the camp's
-Save (the original saves only from camp). --grab adds an F12 after every key, so each screen is kept.
+Save (the original saves only from camp). An F12 follows every key, so each screen is kept (FRAMEnn.png,
+nn the key's number) and the original has time for the screens a key brings up; --no-grab leaves them out.
 
 The keys (the original's input, spec/A-games/engine/input-and-menus.md):
 - the exploration commands f l r b as the arrows, e (Encamp) as E;
@@ -88,7 +89,7 @@ def main(a):
     if not any(e['event'] == 'save' for e in events):
         raise SystemExit('the script does not end in the camp\'s Save')
     keys = keys_of(game, events, slot)
-    if '--grab' in a:
+    if '--no-grab' not in a:
         keys = [x for k in keys for x in (k, 'f12')]
     start, args = START[game]
     typed = ' '.join([start.format(save=s.get('save', 'A').lower()), 'f12'] + keys + ['f12'])

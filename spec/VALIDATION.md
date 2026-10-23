@@ -161,6 +161,13 @@ cache. It found two things: the original's Buy list opens on the second stock en
 for it; the port's panel shows the whole stock, IMP-042), and the buyer's encumbrance is recomputed
 when the copy is given, before the price is taken (588 = 500 + 50 + the 38 coins paid out, where the
 port had recomputed after paying, 553; fixed, `rules/money.ts` `buy`, [engine/town.md](A-games/engine/town.md), "Shop").
+**Training** (the same day and way): save A with BROTHER SEAN moved first (his files swapped with
+member 1's), 1600 experience and 200 platinum, ECL 0x4A80 at 15; 26 moves to New Phlan's clerics' hall,
+Yes, Train, Yes, Begin, camp and save: the screens' texts the port's, and the saves equal but for the
+hit-point roll (char[0x32], [0x11B] and the roll counter [0xB1]). It found two things, both fixed: the
+port recomputed the items after training (the encumbrance then lost the 1000 gp paid; the original
+leaves it, 638), and the original renumbers the members' icon slots char[0xBF] by party order when
+they join, a load included (`Engine.joinSlot`, [engine/records.md](A-games/engine/records.md)).
 Not run: the Sell, Share and Appraise checks (decided not worth it); register 0x035F (no debugger).
 - **The interface** was checked against part C in headless Chromium (2026-10-21; each part C file's
   "Validation" section says what): every screen class, PoR's game-file save A, the games screen, the

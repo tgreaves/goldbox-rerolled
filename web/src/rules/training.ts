@@ -109,8 +109,14 @@ export function willBecome(c: Uint8Array, train: number[]): string[] {
   return train.map((k, i) => `${msg(i ? 'andALevel' : 'aLevel')}${c[F.levels + k] + 1} ${CLASSES[k]}`)
 }
 
-/** Steps 9–13: pay, gain levels, recompute, then hit points. Returns true if a new MU spell is due. */
-export function train(t: Tables, dice: Dice, c: Uint8Array, classes: number[], cheat = false): boolean {
+/**
+ * Steps 9–13: pay, gain levels, the recalculation (FUN_51cf_0000, CotAB 0x50836, with the character's
+ * items where it reads the readied ones), then hit points. Returns true if a new MU spell is due. Nothing
+ * else is recomputed: the items' recompute (FUN_10ba_0bb8) is not run, so the encumbrance char[0x102] keeps
+ * the 1000 gp paid (PoR in DOSBox, spec/VALIDATION.md §4) and the item-adjusted figures (AC, THAC0 with the
+ * weapon) wait for the next recompute.
+ */
+export function train(t: Tables, dice: Dice, c: Uint8Array, classes: number[], cheat = false, items?: Item[], itemTables?: ItemTables): boolean {
   if (!cheat) payCoins(c, R.trainingCost)
   const k = classIndices().filter((i) => c[F.levels + i] > 0).length
   const oldMU = c[F.levels + 5]
@@ -121,7 +127,7 @@ export function train(t: Tables, dice: Dice, c: Uint8Array, classes: number[], c
       c[F.drainLevels]--
     }
   }
-  derive(t, c)
+  derive(t, c, items, itemTables)
   // CotAB 0x3BE45: hit points only once the highest level passes the level kept at a dual-class
   // change (+0xE6, 0 for everyone else); PoR has no such byte
   if (F.hpLevel < 0 || s8(c[F.hitDice]) > s8(c[F.hpLevel])) levelHp(t, dice, c, classes, k)

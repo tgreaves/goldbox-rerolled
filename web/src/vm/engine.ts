@@ -205,7 +205,8 @@ export class Engine {
   newGame(party: Uint8Array[]) {
     this.A.fill(0); this.B.fill(0); this.C.fill(0)
     for (const [a, v] of R.newGame) this.write(a, v) // SotSB 0x2CB1D, 0x2CB28: the difficulty, the map flag
-    this.nodes = party.map((c) => c.slice())
+    this.nodes = []
+    for (const c of party) { const r = c.slice(); this.joinSlot(r, this.nodes); this.nodes.push(r) }
     this.cur = this.savedCur = this.nodes[0]
     this.B[PARTY_SIZE - B0] = this.nodes.length
     this.prevMode = 0
@@ -259,7 +260,8 @@ export class Engine {
     this.x = d[pos]; this.y = d[pos + 1]; this.facing2 = d[pos + 2]
     this.prevMode = d[pos + 6] // the loaded game state (CotAB 0x3615C, SotSB 0x41FF7)
     this.speed = Math.min(this.A[0x49fc - A0], 9)
-    this.nodes = party.map((c) => c.slice())
+    this.nodes = []
+    for (const c of party) { const r = c.slice(); this.joinSlot(r, this.nodes); this.nodes.push(r) }
     this.cur = this.savedCur = this.nodes[0]
     // the block: the file digit the save put in B + 0x312, whatever the scripts keep there in play (PoR,
     // CotAB; SotSB 0x41F66: DS:7420 := B[0x624] after the save's first byte was read)
@@ -1278,6 +1280,7 @@ export class Engine {
       // in the demo a few NPCs take another picture (SotSB 0x4181F; startup.ts npcPictures)
       if (how.iconPicture) this.combatPicture.set(c, this.demo?.npcPictures.find(([m]) => m === id)?.[1] ?? id)
       const n = party.length
+      this.joinSlot(c)
       this.nodes.splice(n, 0, c)
       this.B[PARTY_SIZE - B0] = n + 1
       this.inventory.set(c, parseItems(this.files.record(`MON${game().ecl.monsterFile ?? this.block}ITM`, id)))
@@ -1784,12 +1787,25 @@ export class Engine {
   }
 
   /** Party screen → Add: a character joins the end of the party (before any monsters). */
+  /**
+   * The party list's append (PoR FUN_45c5_1446, 0x3710E–0x371B3): a member joining takes the lowest icon slot
+   * 0–7 that no member already in the party holds, so a load, which adds the members in order, numbers them
+   * 0, 1, 2 … (O: a reordered save A loaded and saved in DOSBox; CotAB and SotSB, I, as their saves agree).
+   */
+  private joinSlot(c: Uint8Array, members = this.party()) {
+    const used = new Set(members.map((m) => m[F.iconSlot]))
+    let k = 0
+    while (k < 8 && used.has(k)) k++
+    c[F.iconSlot] = k
+  }
+
   addMember(sav: Uint8Array, itm?: Uint8Array, spc?: Uint8Array) {
     const c = sav.slice()
     // SotSB 0x40FF4 (R.addRefill): a paladin's ability uses set as the roster loader reads the record
     const r = R.addRefill
     if (r && F.abilityUses >= 0 && ((((c[F.levels + r.cls]) << 24) >> 24) > 0 || (F.misc86 >= 0 && c[F.misc86] === r.cls && formerLevelsCount(c)))) c[F.abilityUses] = r.value
     const n = this.party().length
+    this.joinSlot(c)
     this.nodes.splice(n, 0, c)
     this.B[PARTY_SIZE - B0] = n + 1
     this.inventory.set(c, characterItems(itm))

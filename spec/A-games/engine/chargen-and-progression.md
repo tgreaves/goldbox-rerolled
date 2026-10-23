@@ -195,7 +195,10 @@ For the current character. "Cheat" means `DS:470C` ≠ 0 (below).
 12. If the magic-user level (char[0x9B]) rose: pick one new spell (`FUN_4894_299c` mode 4 "Spells to choose from", select type 4), repeated until a spell is picked. The list holds every id 1–56 not yet known whose class and level have a slot (char[0xB1 + class·3 + level] > 0); for a cleric/magic-user the cleric spells are already known, so in practice it lists magic-user spells of the levels just reached. The pick sets char[0x32 + id] = 1. **Bug**: if the list is empty the loop ends with id 0 and writes char[0x32] = 1, i.e. **max HP := 1**, before step 13 adds the gain. A port should reproduce this or record the fix in IMPROVEMENTS.md (GoldBox Rerolled fixes it: IMP-028).
 13. Hit points: R = `FUN_417f_4235(char, train)` (rolls for the trained classes only). char[0xB1] += max(1, R div *k*). C = `FUN_417f_3f31(char)` (CON bonus summed over **all** *k* classes). Gain = max(1, (R + C) div *k*), signed division truncating towards 0. Damage taken is kept: max HP += gain, current HP = max HP − (old max − old current). Both are bytes (wrap above 255).
 
-Training takes no game time. One session gains at most one level per class.
+Training takes no game time. One session gains at most one level per class. Nothing else is recomputed:
+the items' recompute (`FUN_10ba_0bb8`) is not run, so the encumbrance char[0x102] keeps the coins just paid
+and the item-adjusted figures wait for the next recompute (O: BROTHER SEAN trained in DOSBox with 200 pp,
+1000 gp paid, saved with his encumbrance as loaded, 638; [VALIDATION.md](../../VALIDATION.md) §4).
 
 ### Payment (O, `FUN_417f_42ed(gp, char)`)
 

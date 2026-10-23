@@ -127,11 +127,17 @@ command as its arrow (or E for Encamp); a horizontal menu's answer as the item's
 transcript's `keys`, else the first capital or digit no earlier item holds: the menu routine chooses the
 first word holding the key); a vertical list's answer as End or Home from the row the list opens on, then
 Enter (PoR's Buy list opens on its second entry, `LIST_START`), or the entry's own key (EXIT's E); the
-camp's Save as the slot letter; a number as its digits and Enter. `--grab` keeps a screen after every key.
+camp's Save as the slot letter; a number as its digits and Enter. A screen is grabbed after every key
+(which also gives the original time for the screens a key brings up; `--no-grab` leaves them out).
 `web/headless/route.ts` (a breadth-first walk with the headless runner until a screen is handed over)
 finds the way to a shop; from save A, `fblfrffrfflfffrffffffflfffff` reaches New Phlan's
 arms shop (block 3 area 0), and `{"town": true, "camp": true, "commands": [the walk, "e"],
 "answers": [0, 0, 0, 1, "EXIT", "EXIT", "SAVE", "NO"]}` buys a Hand Axe and saves in slot B.
+
+Training the same way, with `"hall": true`: from save A (in a copy whose BROTHER SEAN's files are swapped
+with member 1's, so that he leads, with 1600 experience and 200 platinum, and save byte 0x301 at 15),
+`fblfrffrfflffflffrffflfflf` to New Phlan's clerics' hall and `"answers": [0, 0, "TRAIN CHARACTER", 0,
+"BEGIN ADVENTURING", "SAVE", "NO"]` with `"e"` after the walk.
 
 Expected differences, besides the dice's: the bought item's name cache (item bytes 0x00–0x29: the
 original leaves the shop's display line in it, `spec/A-games/engine/town.md`, "Shop"). New Phlan's

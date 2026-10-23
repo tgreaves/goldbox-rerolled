@@ -262,6 +262,7 @@ A **script** is a JSON object:
 | `jump` | optional `[block, area, x, y, facing]`: the debug jump (§3.1) after play starts |
 | `camp` | optional `true`: run the camp screen on the answers (below) |
 | `town` | optional `true`: run the shop and the temple on the answers (below) |
+| `hall` | optional `true`: run a training hall's party screen on the answers, its Train (the current character) and Begin (below) |
 | (option) `frame` | render the drawn view at the end of the run (V9, below) |
 | (option) `saveAs` | a slot letter: save the game there, as the Save command writes it, at the camp's Save or else at the end of the run |
 | `commands` | what the player does, in order (below) |
@@ -294,7 +295,8 @@ where the game keeps one, `saves.saveCounter`). `engine("treasure")`, COMBAT wit
 the aftermath with the party alone (`treasureAftermath`, [A-games/engine/combat-rules.md, Aftermath](../A-games/engine/combat-rules.md#aftermath-fun_2e08_1527)):
 its experience is given and its summary transcribed (`summary`); the treasure screen is not. With `town`,
 `engine("shop")` and `engine("temple")` run the port's `ui/town.ts` on the answers, with the original's
-menus and lists (no Buy panel; View does nothing). Every other `engine(what)` hand-over (shops and
+menus and lists (no Buy panel; View does nothing). With `hall`, `engine("party screen")` runs the party
+screen's Train and Begin as the play screen's hall does (any other function is an error). Every other `engine(what)` hand-over (shops and
 temples without `town`, the vault, camp without `camp`, the party screen, the ending) is transcribed and
 resolves at once.
 

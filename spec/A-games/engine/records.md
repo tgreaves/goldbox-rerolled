@@ -66,7 +66,7 @@ O = read by the character sheet (`FUN_4894_004a`, `050d`, `0608`, `0901`, `FUN_1
 | 0xB2–0xB4 | u8 ×3 | cleric spell slots, spell levels 1–3 | O |
 | 0xB5–0xB7 | u8 ×3 | magic-user spell slots, spell levels 1–3 | O |
 | 0xB0 | u8 | class bitmask for item use (`ITEMS[t][13] & char[0xB0]`): OR of 0x01 Magic-User, 0x02 Cleric, 0x04 Thief, 0x08 Fighter (pre-made characters: cleric 0x02, C/F/MU 0x0B, F/MU 0x09) | O |
-| 0xBF | u8 | combat icon / picture id for monsters (**I**, set by `LOAD_MONSTER`) | O |
+| 0xBF | u8 | icon slot: a party member's 0–7, the lowest slot no member already in the party holds, given by the party list's append (`FUN_45c5_1446`, 0x3710E–0x371B3) whenever a member joins, a load adding them in order (0, 1, 2 …; O, a reordered save A loaded and saved in DOSBox; an Order in camp does not renumber); a monster's combat icon slot, from 8 (`LOAD_MONSTER`) | O |
 | 0xC7 | u8 | number of carried items (recounted by the recalculation; limit 16) | O |
 | 0xC8 | ptr | item list head (in memory) | O |
 | 0xCC + 4·slot | ptr ×9 | readied item per slot 0–8: 0xCC weapon, 0xD0 shield, 0xD4 body armour, 0xD8 gauntlets, 0xDC helm, 0xE0 belt/necklace, 0xE4 robe, 0xE8 cloak, 0xEC boots | O |

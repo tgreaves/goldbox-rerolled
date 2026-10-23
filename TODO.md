@@ -63,7 +63,7 @@ that settles it.
 ## Pool of Radiance
 
 - DOSBox comparisons, with `scriptcheck.py` (the port's answers typed as the original's keys; a shop's
-  Buy done, [`spec/VALIDATION.md`](spec/VALIDATION.md) §4): the temple, training, the camp's menus, a
+  Buy and a training done, [`spec/VALIDATION.md`](spec/VALIDATION.md) §4): the temple, the camp's menus, a
   battle (its outcome follows the dice: a forced one, or one whose summary the dice cannot change),
   walks beyond save A's two areas; the two games' dice differ, so a script's random event must be kept
   out in both (ECL 0x4A80 for the slums; New Phlan's street event, ECL 0x9890, has no such switch yet).

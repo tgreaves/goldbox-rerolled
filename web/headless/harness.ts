@@ -15,9 +15,12 @@ import { renderFrame, type ShownSprite, type ViewFrame } from './frame'
 import { saveFiles, type NamedFile } from '../src/store/savefiles'
 import { characterItemsFile } from '../src/data/items'
 import { effectsFile } from '../src/data/effects'
-import { camp, type CampUi } from '../src/ui/camp'
+import { camp, yes, type CampUi } from '../src/ui/camp'
 import { shop, temple, type TownUi } from '../src/ui/town'
-import type { MenuOpts } from '../src/games/strings'
+import { ask, entry, msg, type MenuOpts } from '../src/games/strings'
+import { Tables } from '../src/rules/chargen'
+import { unexepack } from '../src/data/exepack'
+import { checkTraining, newSpellChoices, train, willBecome } from '../src/rules/training'
 
 /** One answer: a menu index, a number, a text, a step (0–7, `end`, `undo`), an aim (index or null), a yes/no. */
 export type Answer = number | string | boolean | null
@@ -38,6 +41,8 @@ export interface Script {
   camp?: boolean
   /** run the shop and the temple (ui/town.ts, the original's menus and lists) on the answers, instead of handing them back at once */
   town?: boolean
+  /** run the party screen of a training hall on the answers, its Train and Begin (as ui/explore.ts trainingHall), the current character training */
+  hall?: boolean
 }
 
 /** One transcript event (host-contracts.md §8.2): `event` names it, the other members are its fields. */
@@ -206,6 +211,34 @@ export async function runScript(o: RunOptions): Promise<RunResult> {
         }
         if (await camp(ui)) e.quit = true
         return
+      }
+      if (what === 'party screen' && o.script.hall) {
+        // the party screen's functions as the game names them (explore.ts trainingHall); Train and Begin only
+        const exe = files.get('START.EXE')
+        if (!exe) throw new Error('the hall needs START.EXE')
+        const t = new Tables(unexepack(exe).image)
+        const menuFn = async (items: string[], opts?: MenuOpts) => { const answer = index(items, opts?.prompt ?? ''); out(menuEvent(items, opts, answer)); return answer }
+        for (;;) {
+          const fns = (['partyCreate', 'partyDrop', 'partyModify', 'partyTrain', 'partyView', 'partyAdd', 'partyRemove', 'partySave', 'partyBegin'] as const).map(entry)
+          const k = await ask(menuFn, fns, { prompt: 'Choose a function:' })
+          const c = e.cur
+          if (k === 'B' || k === '') return
+          if (k !== 'T') throw new Error(`the headless hall does Train and Begin, not ${k}`)
+          const chk = checkTraining(t, c, e.read(0x6da8))
+          if (!chk.ok) { out({ event: 'text', text: chk.message, clear: false }); continue }
+          out({ event: 'text', text: `${nameOf(c)}${msg('willBecome')}`, clear: true })
+          for (const line of willBecome(c, chk.train)) out({ event: 'text', text: line, clear: false })
+          if (!(await yes({ menu: menuFn }, msg('wishToTrain').trimEnd()))) continue
+          out({ event: 'text', text: msg('congratulations'), clear: false })
+          if (train(t, e, c, chk.train, false, e.itemsOf(c), e.items ?? undefined)) {
+            const choices = newSpellChoices(t, c)
+            if (choices.length) {
+              const st = e.spells
+              const n = await menuFn(choices.map((id) => (st?.get(id)?.name ?? `#${id}`).toUpperCase()), { prompt: 'Spells to choose from:', vertical: true })
+              c[F.known + choices[n]] = 1
+            }
+          }
+        }
       }
       if ((what === 'shop' || what === 'temple') && o.script.town) {
         const ui: TownUi = {
