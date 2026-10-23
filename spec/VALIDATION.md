@@ -106,7 +106,11 @@ same day, the Mac's not having been committed): `viewcheck.py por|coab` repeats 
 save A (as loaded, four turns, a step), 5 of 5 frames exact for each game. **SotSB** the same way
 (2026-10-23, save A after its opening, block 1 area 16 at (3,3) facing south, four turns in Move and a
 step): 5 of 5 frames exact; it showed that the original's arrows move only in Move
-([sotsb/README.md](A-games/sotsb/README.md), "The main menu"). Not run: the Sell, Share and Appraise
+([sotsb/README.md](A-games/sotsb/README.md), "The main menu"). **CotAB outdoors** (2026-10-23): from
+save A out of the inn into Tilverton's street, (6,12), all four facings, with the save's clock (save
+offset 0x193, ECL 0x4BC9) at 0, 3 and 14 in copies of the folder: 12 of 12 frames exact, among them the
+cloud strip (SKY #250) facing north and the sun (#251) facing east at 03:00 behind the wall's edge
+([coab/assets.md](A-games/coab/assets.md) §3); at 14:00 both draw a black sky, so no afternoon sun there. Not run: the Sell, Share and Appraise
   checks (no shop from save A; decided not worth a route); register 0x035F (no debugger).
 - **The interface** was checked against part C in headless Chromium (2026-10-21; each part C file's
   "Validation" section says what): every screen class, PoR's game-file save A, the games screen, the

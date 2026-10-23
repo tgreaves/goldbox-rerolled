@@ -20,7 +20,6 @@ that settles it.
 
 ## Curse of the Azure Bonds
 
-- Its outdoor sky and clouds not yet compared with the original in DOSBox (only the starting room).
 - Its frame edge is an approximation ([`spec/C-port/rendering.md`](spec/C-port/rendering.md), Open).
 
 ## Pool of Radiance
