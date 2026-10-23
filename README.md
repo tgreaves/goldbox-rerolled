@@ -77,7 +77,7 @@ docker compose up -d --build                   # or with Docker (docker-compose.
 
 ## Status
 
-What is still to do is in [`TODO.md`](TODO.md); open questions about the originals are in [`spec/open-questions.md`](spec/open-questions.md), and each game's progress in [`docs/multi-game.md`](docs/multi-game.md). The originals run unattended in DOSBox through [`tools/dosbox/`](tools/dosbox/README.md): the drawn 3D view of all three games, CotAB's outdoor sky, scripted walks in PoR (up to 160 moves, frame by frame) and in four CotAB areas, the saves the original writes after them (byte for byte, each way in CotAB), and PoR's rests and rest counters agree with the port ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
+What is still to do is in [`TODO.md`](TODO.md); open questions about the originals are in [`spec/open-questions.md`](spec/open-questions.md), and each game's progress in [`docs/multi-game.md`](docs/multi-game.md). The originals run unattended in DOSBox through [`tools/dosbox/`](tools/dosbox/README.md): the drawn 3D view of all three games, CotAB's outdoor sky, scripted walks in PoR (up to 160 moves, frame by frame), in four CotAB areas and in SotSB's town, ruins and mines, the saves the original writes after them (byte for byte, each way in CotAB and SotSB), and PoR's rests and rest counters agree with the port ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
 
 ## Credits and legal
 

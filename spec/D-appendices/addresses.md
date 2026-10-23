@@ -853,11 +853,13 @@ when its table column or sentence names CotAB.
 | 0x1D6E0 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x1D819 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1D912 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x1DA97 | coab/combat, B/procedures | coab/combat: The award's bonus |  |
+| 0x1DBC1 | coab/combat | coab/combat: The award's bonus |  |
 | 0x1DC36 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x1DD03 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1DD2F | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x1DF24 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
-| 0x1E19C | coab/ecl | coab/ecl: Start-up menu and demo |  |
+| 0x1E19C | coab/combat, coab/ecl, B/procedures | coab/combat: The award's bonus |  |
 | 0x1E593 | B/host-contracts | B/host-contracts: 2. The script host (`Io`) |  |
 | 0x1E7A3 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x1EAA7 | coab/ecl | coab/ecl: Start-up menu and demo |  |
@@ -940,6 +942,7 @@ when its table column or sentence names CotAB.
 | 0x236CB | coab/combat, B/procedures | coab/combat: Casting | `FUN_3334_0545` |
 | 0x236E4 | coab/combat | coab/combat: Casting |  |
 | 0x237FB | coab/combat, B/procedures | coab/combat: Cell table | `FUN_3334_0675` |
+| 0x2381E | B/procedures | B/procedures: 15.7 Other combat and game values |  |
 | 0x238DA | coab/combat, B/procedures | coab/combat: Cell table |  |
 | 0x238EE | coab/combat | coab/combat: The computer's probe on clouds |  |
 | 0x239BA | coab/combat | coab/combat: The computer's probe on clouds |  |

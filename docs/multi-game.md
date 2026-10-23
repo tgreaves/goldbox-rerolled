@@ -171,6 +171,11 @@ watch, because each is an alternative path in code:
   current character, its bug; CotAB the caster), CotAB's miscast (effect 0x4A, 1d2) and the first
   memorised slot the computer reads (CotAB 1). Cure Light Wounds' patient test is the spell map's
   `aiTarget`, no longer a spell id in `aiCast`.
+- `R.battleSummary`, `R.xpBonus` (2026-10-23, from a SotSB save written in DOSBox): one aftermath for
+  every game, also for COMBAT without monsters (PoR FUN_2e08_1527, CotAB 0x1EE82, SotSB 0x24C58); where
+  the summary's treasure line goes and the flag that stops the award are data, as is the award's
+  prime-requisite bonus by class (PoR's four classes; CotAB and SotSB add the paladin and the ranger).
+  `saves.saveCounter`: SotSB's camp Save counts saves in an ECL word.
 - Optional content modules switched by data: the PoR commissions panel, the tile wilderness.
 
 **Still hard-coded game knowledge in shared code (the gaps).**

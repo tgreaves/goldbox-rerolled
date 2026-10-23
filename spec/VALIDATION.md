@@ -230,6 +230,19 @@ the stem table's slack (the whole of each slot past the party count). Not run: t
   original), Quit to the party screen, Load B; Watch the demo to its red dragons' battle with its three
   NPCs drawn. No page or console errors. Found and fixed: the demo's NPCs drawn as nothing (above), and
   their party cards showed an icon built from parts (now their combat picture, ui-contract.md §4). The demo itself runs in `demo.test.ts`, every picture and icon in the files.
+- **Silver Blades: a save the original wrote** (2026-10-23, DOSBox Staging on the Mac, `tools/dosbox/run.py`
+  from save A: the opening, Encamp, Save to slot B, "Quit to DOS" No), compared byte for byte with the
+  port's save after the same steps (the headless runner's `--save`, host-contracts.md §8.1). Found and
+  fixed: the opening's mayor's treasure gives experience (2500 each, "EACH CHARACTER RECEIVES 2500
+  EXPERIENCE POINTS. THE PARTY HAS FOUND TREASURE!"), because COMBAT without monsters runs the
+  aftermath in all three games (PoR FUN_29c3_179b, CotAB 0x1A198, SotSB 0x1F722), which the port skipped;
+  the paladin's and the ranger's bonus (CotAB 0x1DA97, SotSB 0x2381E; the port had PoR's four classes);
+  the summary's lines by game (PoR 0x1E9C9, CotAB 0x1E1AD, SotSB 0x23E8B: the outcome only when an enemy
+  was counted, so a won battle in PoR and CotAB has no treasure line); the port's save copied the wall sets
+  into ECL A 0x4AFA–0x4AFF in every game, overwriting script variables in CotAB and SotSB (CotAB's won flag
+  0x4AFD among them), and wrote an empty wall-set slot's number as its slot; SotSB's camp Save counts saves
+  in ECL 0x4A3C (0x390C5). Then equal: `SAVGAMB.DAT` to the last party stem, and every `CHRDATB*.SAV` and
+  `.SFX` but for the run-time pointers the original writes from memory (records.md §4).
 
 - **Curse of the Azure Bonds played further** (2026-10-23). Headless: the tour (`coabtour.test.ts`, every
   area of every block by the Debug jump, the sturdy party walking every square it reaches, 2 seeds × 1 500

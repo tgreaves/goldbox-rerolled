@@ -199,6 +199,34 @@ CotAB's 0x45251 with these differences:
   own strings.
 - The rest (the target hook, forgetting on going off or abort) as CotAB's (I).
 
+## 11a. The aftermath (O, 0x24C58; DOSBox 2026-10-23)
+
+COMBAT with no monsters, vault, shop or temple calls the aftermath (0x1F722 → stub 0x72:0x25 → 0x24C58), as
+PoR and CotAB do: results and experience 0x239B8, then the summary 0x23E77 and the treasure. Seen in
+DOSBox from save A: the mayor's `TREASURE …, #18` and `COMBAT` (ECL1 #16, 0x824B) give each member 2500
+("EACH CHARACTER RECEIVES 2500 EXPERIENCE POINTS. THE PARTY HAS FOUND TREASURE!", then
+"press <enter>/<return>"), the paladin and the ranger 2750 with the bonus, MALACHITE (two classes)
+1250, which the original's save B holds.
+
+- **Experience** (0x234A0): CotAB's money values (cp ÷ 200, sp ÷ 20, ep ÷ 2, gp, pp × 5, gems × 250,
+  jewelry × 2200, DS:87AC) and 400 × plus for each item in the treasure list (DS:87C8, link +0x2A) up to
+  DS:7D40 (0x23745–0x23797), divided by the party size (B 0x67C, ECL 0x6E3E) less the members who get none.
+- **The award** (0x237CB): none at all while A 0x3EA (ECL **0x4AF5**) is not 0 (0x237D5); every member in
+  play and not Animated gets the share, + share ÷ 10 for cleric (class 0) WIS **above 14** (0x2382C), fighter
+  STR, **paladin STR and WIS, ranger STR, INT and WIS**, magic-user INT, thief DEX above 15; the two-class
+  combinations ÷ 2 and the three-class ones ÷ 3 (0x2381E–0x2398D). CotAB's (0x1DA97) is the same but for
+  the cleric's 15.
+- **The summary** (0x23E77): the outcome line ("The party has fled." CS 0x980 with the share shown as 0, or
+  "The party has won." CS 0x994) only when an enemy was counted (DS:59C0) or in a duel (DS:A4BA); then
+  "Each character receives *n*" "experience points." unless ECL 0x4AF5 is set (0x23F8F); then "The party
+  has found treasure!" when the pile holds money or items (0x23FE3 → 0x13C:0x66). PoR and CotAB put that
+  line in the outcome's place when no enemy was counted, whatever the pile holds, and never after it
+  ([engine/combat-rules.md, Award](../engine/combat-rules.md#award-o-fun_2e08_0355)).
+
+The port: `treasureAftermath` (rules/combat.ts) for COMBAT without monsters, `R.battleSummary`
+{ treasureLine 'afterExperience', noExperience 0x4AF5 } and `R.xpBonus`
+([B-model/procedures.md §15](../../B-model/procedures.md#15-combat-procedures)).
+
 ## 12. Draft profile values (informative)
 
 The `GameRules` fields of [B-model/procedures.md §15](../../B-model/procedures.md#15-combat-procedures)

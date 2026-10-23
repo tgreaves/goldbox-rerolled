@@ -16,7 +16,13 @@
 | level (new) | "Novice Squire Veteran Adept Champion" (0xE272) | — |
 | rest | "Rest Days Hours Mins Add Subtract Exit" (0x46F2B) | the same |
 
-The camp screen is 0x38FAF (CotAB 0x321CB, "The party makes camp...", 0x38F66). Neither the camp
+The camp screen is 0x38FAF (CotAB 0x321CB, "The party makes camp...", 0x38F66). **Save** (0x390BE–0x39125,
+O; DOSBox): A word 0x278 (ECL 0x4A3C) += 1 before the save; behind it a test of the count against 30
+(0x390D2) is jumped over (0x390D8 `jmp 0x390F7`), so the code it guards (0x390DA–0x390F2: a call, the
+quit 0x6EF:0 on its answer, the count back to 0) never runs; then the save 0xF8:0x57 and
+"Quit to DOS" Yes No (CS 0x30CE; Y quits). CotAB's Save (0x322BF) has neither. The port: `saveCounter`
+([B-model/records-and-tables.md §4](../../B-model/records-and-tables.md#4-save-files-savefiles)), the
+camp's Save and the save-anywhere of IMP-002 count; the question follows as the original's ([C-port/screens.md §6.1](../../C-port/screens.md#61-the-camp-menu)). Neither the camp
 menu nor Alter's (0x37C92) prints a prompt: the image has no "Camp:" or "Alter:" (O; the port's
 `camp` and `alter` strings are empty).
 

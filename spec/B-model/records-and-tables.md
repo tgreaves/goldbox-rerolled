@@ -272,7 +272,8 @@ The profile's `saves` says what differs:
 | `roster` | extension of a roster character outside a saved game | `CHA` | `GUY` |
 | `saveSize` | `SAVGAM<x>.DAT` size in bytes | 13 137 | 13 149 |
 | `partyAt` | offset of the party count byte; the members' file stems (Pascal `string[40]` each) follow | 0x3208 | 0x3214 |
-| `wallSetsAt` | offset of the wall-set slots 1–3 as (u16 record, u16 slot) pairs; −1 when the save keeps them in ECL A | −1 | 0x3208 |
+| `wallSetsAt` | offset of the wall-set slots 1–3 as (u16 record, u16 slot) pairs, an empty slot as 0xFFFF, 0xFFFF (O: the shipped saves of both, and SotSB's save written in DOSBox); −1 when the save keeps them in ECL A. Only with −1 does the save copy them into A[0x4AFA..0x4AFF]: in the others those words are script variables (CotAB's won flag 0x4AFD) | −1 | 0x3208 |
+| `saveCounter` | the ECL word the camp's Save adds 1 to before writing (SotSB 0x4A3C, 0x390C5, O; its test against 30 is jumped over); null: none | null | null |
 | `exportName` | the port's exported save ZIP is `<exportName>-<x>.zip` ([C-port/storage.md §7.1](../C-port/storage.md#71-export)); port data | `poolrad-save` | `curse-save` |
 
 A save is read and written through these values only; both shipped save files MUST load and save

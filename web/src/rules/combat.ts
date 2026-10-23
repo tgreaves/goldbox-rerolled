@@ -2614,6 +2614,9 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
   const party = b.fighters.filter((f) => !f.monster)
   e.write(0x6dc7, 0)
   let share = 0
+  /** an enemy entry was counted for experience (PoR DS:443A, CotAB DS:4804, SotSB DS:59C0): the summary's outcome line */
+  let beaten = false
+  const S = R.battleSummary
   /** Experience (FUN_2e08_0000) with its loot, and the award (FUN_2e08_0355). */
   const experience = (noXP: number) => {
     if (e.duel && e.read(0x6de6)) return ((e.duelist ?? e.cur)[F.hitDice] * 100) & 0xffff // duel: no loot, no division
@@ -2622,6 +2625,7 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
     for (const f of b.fighters) {
       const c = f.c
       if (c[F.side] !== 1 || c[F.status] === 3) continue
+      beaten = true
       for (let i = 0; i < 7; i++) e.money[i] += u16(c, F.money + 2 * i)
       total += u16(c, F.xpBase) + s8short(c[F.hpRolled] * c[F.xpPerHp])
       if (e.read(0x6de3) !== 1) {
@@ -2632,18 +2636,21 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
     }
     const m = e.money
     total += Math.floor(m[0] / 200) + Math.floor(m[1] / 20) + Math.floor(m[2] / 2) + m[3] + 5 * m[4] + 250 * m[5] + 2200 * m[6]
-    for (const it of loot) if (it.plus > 0) total += 400 * it.plus
+    // the treasure list from its head up to the newest of the party's recovered items (PoR DS:5D9A, SotSB
+    // DS:7D40, 0x23745): the loot, and what a script put in the list unless something was recovered
+    for (const it of b.dropped.length ? loot : [...loot, ...e.treasure]) if (it.plus > 0) total += 400 * it.plus
     e.treasure = [...loot, ...b.dropped, ...e.treasure]
     const eligible = party.length - noXP
     return eligible > 0 ? Math.floor(total / eligible) : 0
   }
   const award = (share: number) => {
+    if (S.noExperience !== null && e.read(S.noExperience) !== 0) return // SotSB 0x237D5
     for (const f of party) {
       const c = f.c
       if (!c[F.inPlay] || c[F.status] === 1) continue
-      const prime: Record<number, number> = { 0: F.stat[2], 2: F.stat[0], 5: F.stat[1], 6: F.stat[3] }
+      const bonus = R.xpBonus.find((b) => b.cls === c[F.cls])
       let add = share
-      if (c[F.cls] in prime) { if (c[prime[c[F.cls]]] > 15) add += Math.floor(share / 10) }
+      if (bonus) { if (bonus.stats.every((s) => c[F.stat[s]] > bonus.over)) add += Math.floor(share / 10) }
       else if ([8, 10, 11, 12, 13, 14, 16].includes(c[F.cls])) add = Math.floor(share / 2)
       else if ([9, 15].includes(c[F.cls])) add = Math.floor(share / 3)
       const xp = (c[F.xp] | (c[F.xp + 1] << 8) | (c[F.xp + 2] << 16) | (c[F.xp + 3] << 24)) >>> 0
@@ -2687,9 +2694,12 @@ export function aftermath(e: Engine, b: Battle, outcome: Outcome): { share: numb
     }
     share = experience(noXP)
     award(share)
-    msgs.push(msg('partyWon'))
-    if (e.treasure.length || e.money.some((v) => v > 0)) msgs.push(msg('foundTreasure'))
-    msgs.push(`${msg('eachReceives')}${share} ${msg('experiencePoints')}`)
+    // the summary (PoR FUN_2e08_0916, CotAB 0x1E19C, SotSB 0x23E77): the outcome only when an enemy was
+    // counted; without one PoR and CotAB say "found Treasure!" in its place, SotSB nothing
+    if (beaten) msgs.push(msg('partyWon'))
+    else if (S.treasureLine === 'insteadOfOutcome') msgs.push(msg('foundTreasure'))
+    if (S.noExperience === null || e.read(S.noExperience) === 0) msgs.push(`${msg('eachReceives')}${share} ${msg('experiencePoints')}`)
+    if (S.treasureLine === 'afterExperience' && (e.treasure.length || e.money.some((v) => v > 0))) msgs.push(msg('foundTreasure'))
   } else if (outcome === 'fled') {
     e.write(0x6dc7, 0x81)
     for (const f of party) {
@@ -2774,6 +2784,17 @@ function afterCleanup(e: Engine) {
 
 /** A signed 16-bit product, as the original multiplies (never large with shipped data). */
 const s8short = (v: number) => ((v & 0xffff) << 16) >> 16
+
+/**
+ * ECL COMBAT with no monsters and no shop, temple or vault (PoR FUN_29c3_179b → FUN_2e08_1527, CotAB
+ * 0x1A198 → 0x1EE82, SotSB 0x1F722 → 0x24C58): the aftermath with the party alone, so the treasure's
+ * value gives experience and the summary is shown; the treasure screen follows (combat-rules.md, Aftermath).
+ */
+export function treasureAftermath(e: Engine): { share: number; survived: boolean; messages: string[] } {
+  const fighters = e.party().map((c) => ({ c, monster: false }))
+  const b = { fighters, dropped: [] as Item[], e, outcome: Battle.prototype.outcome } as unknown as Battle
+  return aftermath(e, b, b.outcome())
+}
 
 /**
  * A whole battle (ECL COMBAT with monsters, FUN_29c3_179b): battlefield, placement, rounds and the

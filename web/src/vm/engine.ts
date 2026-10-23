@@ -317,7 +317,9 @@ export class Engine {
       d[pos + 5] = this.A[NO_OVERLAND - A0] ? 4 : 3
       for (let s = 1; s <= 3; s++) {
         const r = this.walls.records[s], o = L.wallSetsAt + 4 * (s - 1)
-        d[o] = r & 0xff; d[o + 1] = r >> 8; d[o + 2] = s; d[o + 3] = 0
+        // an empty slot's number is 0xFFFF, as the original writes it (CotAB DS:722C, SotSB DS:89DA; VALIDATION.md §4)
+        const n = r === 0xffff ? 0xffff : s
+        d[o] = r & 0xff; d[o + 1] = r >> 8; d[o + 2] = n & 0xff; d[o + 3] = n >> 8
       }
     }
     d[pos + 6] = 2

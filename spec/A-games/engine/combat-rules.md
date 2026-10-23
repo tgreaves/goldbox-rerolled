@@ -62,7 +62,7 @@ departure ([C-port/departures.md](../../C-port/departures.md)).
 
 ### ECL `COMBAT` entry (O, `FUN_29c3_179b`)
 
-1. If no monsters are loaded and no duel is set up, `COMBAT` is a shop, temple or treasure screen instead ([ecl.md](ecl.md)).
+1. If no monsters are loaded and no duel is set up, `COMBAT` is a shop or temple screen instead ([ecl.md](ecl.md)); with neither flag set it runs the aftermath with the party alone (`FUN_2e08_1527`, below; CotAB 0x1A198 → 0x1EE82, SotSB 0x1F722 → 0x24C58): the money and items a script put in the treasure give experience, the summary is shown, then the treasure screen, whatever the pile holds. SotSB checked in DOSBox ([sotsb/combat.md §11a](../sotsb/combat.md#11a-the-aftermath-o-0x24c58-dosbox-2026-10-23)).
 2. `d` = how far monsters can stand in front of the party (`FUN_2fea_0482(x, y, facing)`, 0–2, blocked by walls); if `d` < ECL 0x6DC1 (encounter distance), 0x6DC1 = `d`.
 3. Battle (`FUN_320c_007a`), then aftermath (`FUN_2e08_1527`).
 4. Clear the duel flag `DS:84D4`, set the game mode back (4 in map areas, 3 elsewhere), clear the "Look requested" bit of ECL 0x6DCA, redraw the normal view.
@@ -265,7 +265,7 @@ Every list entry in play (c[0x10D] ≠ 0) and not Animated receives, so in pract
 | 9, 15 (three classes) | share / 3 |
 | 1, 3, 4, 7 | share |
 
-No level-cap check here (training enforces caps, [chargen-and-progression.md](chargen-and-progression.md)). The summary (`FUN_2e08_0916`) shows the share before the bonus or division: "The party has won." / "The party has fled." (shown as 0) / "The party has found Treasure!", or "You have won/lost the duel.", then "Each character receives N experience points." ("The duelist receives …"). Layout: a rope-framed window over the whole screen (`FUN_13f1_02e8`, cells 1–38 × 1–22, style 0), the outcome at row 1, the treasure line at row 3, "Each character receives N" at row 5 and "experience points." at row 7 (colour 10), then the bottom-line prompt "press <enter>/<return> to continue" (O).
+No level-cap check here (training enforces caps, [chargen-and-progression.md](chargen-and-progression.md)). The summary (`FUN_2e08_0916`) shows the share before the bonus or division. Its first line (O, 0x1E9C9): when an enemy was counted (`DS:443A`) or in a duel, "You have lost the duel." (share shown as 0), "You have won the duel." or "The party has won."; otherwise "The party has fled." (shown as 0) when someone ran (`DS:443B`), else "The party has found Treasure!" whatever the pile holds (so a won battle has no treasure line). Then "Each character receives N experience points." ("The duelist receives …"). Layout: a rope-framed window over the whole screen (`FUN_13f1_02e8`, cells 1–38 × 1–22, style 0), the outcome at row 1, the treasure line at row 3, "Each character receives N" at row 5 and "experience points." at row 7 (colour 10), then the bottom-line prompt "press <enter>/<return> to continue" (O).
 
 #### Cleanup (O, `FUN_2e08_11ac`)
 

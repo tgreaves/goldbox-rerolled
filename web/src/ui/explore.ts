@@ -43,6 +43,7 @@ import { drop, halve, join, scribing, trade, unavailable } from '../rules/invent
 import { moneyPrompt, COINS, coinValue, dropMoney, moneyOf, pay, poolAll, receive, priceStock, sellOffer, share, shopPrice, take, tradeMoney } from '../rules/money'
 import { shop, temple, treasure, vault, type TownUi } from './town'
 import { proposeSplit } from '../rules/treasure'
+import { treasureAftermath } from '../rules/combat'
 import { camp, effectNames, type CampUi } from './camp'
 import { runBattle, type BattleControls } from './combat'
 import { clockText, freeSlots, isScroll, knows, memorise, memorised, preparation } from '../rules/camp'
@@ -643,7 +644,20 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         engine.treasure = []
         return
       }
-      if (what === 'shop' || what === 'temple' || what === 'treasure') {
+      if (what === 'treasure') {
+        // COMBAT without monsters: the aftermath with the party alone, its summary, then the treasure
+        // screen with the chest (rules/combat.ts treasureAftermath; game mode 6, FUN_10ba_27d9)
+        const r = treasureAftermath(engine)
+        drawRoster()
+        r.messages.forEach((m, i) => print(m, i === 0))
+        if (r.messages.length && !engine.quit) await menu(['CONTINUE'], { prompt: 'Press Enter to continue' })
+        if (!r.survived) { await gameOver(); return }
+        townMode = 'treasure'
+        showPicture({ pic: 1 })
+        try { await treasure(townUi) } finally { townMode = null; showPicture(null) }
+        return
+      }
+      if (what === 'shop' || what === 'temple') {
         townMode = what
         try { await (what === 'shop' ? shop : what === 'temple' ? temple : treasure)(townUi) } finally { townMode = null }
         return
@@ -678,7 +692,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     } catch { /* storage full or unavailable: the game goes on */ }
   }
 
-  async function saveGame() {
+  /** counted: the camp's Save (and IMP-002's, which stands for it), which adds 1 to the save counter first */
+  async function saveGame(counted = false) {
     if (engine.demo) return
     const saves = await listSaves()
     const slots = [...'ABCDEFGHIJ'].map((slot) => {
@@ -689,6 +704,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const i = await menu(slots, { prompt: 'Save in which slot?', vertical: true, cancel: true })
     if (i < 0) return
     const slot = 'ABCDEFGHIJ'[i]
+    // SotSB's camp Save counts saves in an ECL word before writing (files.saveCounter, 0x390C5)
+    const counter = game().saves.saveCounter
+    if (counted && counter !== null) engine.write(counter, (engine.read(counter) + 1) & 0xffff)
     const members = engine.party()
     const stems = members.map((_, n) => `CHRDAT${slot}${n + 1}`)
     const label = `${parseCharacter(members[0]).name}'s party, block ${engine.block} area ${engine.area}`
@@ -1224,7 +1242,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       sheet(parseCharacter(engine.cur))
       onClose(dialog, () => resolve())
     }),
-    save: () => saveGame(),
+    save: () => saveGame(true),
     memorizePanel: () => memorizePanel(),
     iconEditor: (c) => creatorTools(dialog, files, engine, getTables()).iconEditor(c),
     refresh: () => { drawRoster(); showWhere() },
@@ -2052,7 +2070,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         break
       case 'commissions': commissions(); break
       case 'journal': journal(); break
-      case 'save': act(() => saveGame()); break
+      case 'save': act(() => saveGame(true)); break
       case 'debug': debugMenu(); break
       case 'account': openAccount(dialog); break
       case 'assets': quitAsk(); break

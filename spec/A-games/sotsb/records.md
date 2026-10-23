@@ -304,6 +304,16 @@ Written by 0x421CB, read by 0x419DD in the same order (O, each BlockWrite and Bl
 := 0 (0x41D8A–0x41DBE), as CotAB. Without the code buffer, the area's script is loaded again from
 its `ECL<n>.DAX` record on load (I: not traced).
 
+**Checked against a save the original wrote** (O, DOSBox 2026-10-23, [VALIDATION.md §4](../../VALIDATION.md)):
+save A loaded, the opening played, camp, Save in slot B. An empty wall-set slot is written (0xFFFF,
+0xFFFF); the A words 0x4AFA–0x4AFF are script variables here (the opening's `SAVE #255, [0x4CFD]` is
+ECL 0x4AFD), as in CotAB; the camp's Save first adds 1 to A 0x278 (ECL **0x4A3C**, the save counter,
+[camp.md §1](camp.md#1-menus-o)). Each stem's bytes after its text and the two unused stems hold
+whatever the game's memory held ("Save View Magic Rest Alter Fix Exit" among them): the loader reads
+only the Pascal string. The port's save of the same game is byte for byte the original's but for
+those bytes; its character files differ only in the run-time pointers +0xFB, +0x19D and +0x1A1 and the
+effect records' links (bytes 5–8), which the original writes from memory and clears on load.
+
 ## 5. The vault (`vault.dat`)
 
 A party store in the game folder (O, 0x21CA0–0x221A0; menu "View Take Pool Exit", 0x21C3B; "left in

@@ -287,8 +287,11 @@ answer of the wrong kind ends the run with an error; when the answers run out th
 for each party member the player controls (the computer plays the monsters and those on Quick);
 nothing follows it (no treasure screen). With `camp`, `engine("camp")` runs the camp screen
 (the port's `ui/camp.ts`, with the original's lists and no Memorize panel) on the answers; a
-rest runs to its end at once, and Save saves into the `saveAs` option's slot. Every other
-`engine(what)` hand-over (shops, temples, treasure, camp without `camp`, the party screen, the
+rest runs to its end at once, and Save saves into the `saveAs` option's slot (the save counter first
+where the game keeps one, `saves.saveCounter`). `engine("treasure")`, COMBAT without monsters, runs
+the aftermath with the party alone (`treasureAftermath`, [A-games/engine/combat-rules.md, Aftermath](../A-games/engine/combat-rules.md#aftermath-fun_2e08_1527)):
+its experience is given and its summary transcribed (`summary`); the treasure screen is not. Every other
+`engine(what)` hand-over (shops, temples, the vault, camp without `camp`, the party screen, the
 ending) is transcribed and resolves at once.
 
 ### 8.2 The transcript
@@ -310,6 +313,7 @@ the order listed.
 | `screen` | `what`, `info` (null when none): each `engine(what)` hand-over |
 | `combat` | `text`, `round` (the battle's round counter, 0 in the first round), `current` (the current combatant's name, null before anyone acts): each combat message; at the end of the battle `outcome` (ECL 0x6DC7), `survived`, `round` |
 | `save` | `slot` (the `saveAs` option's, or null): the camp's Save |
+| `summary` | `messages` (the summary's lines), `share`: after a `screen` `treasure` |
 | `frame` | `block`, `area`, `x`, `y`, `facing2`, `sprite` (the sprite on show: `sprite`, `picture`, `distance`, or null), `sha256` (of the frame's indices; null where there is no 3D view): with the frame option, after the run, before `end` |
 | `end` | `reason`: `script` (the commands are done), `quit` (the game ended), `answers` (with `waiting`: the question unanswered, `kind` and its `items`, `prompt` or `left`), `divergence` or `error` (with `message`) |
 

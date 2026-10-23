@@ -9,7 +9,7 @@ import { Engine, type Io } from '../src/vm/engine'
 import { byId, setGame, wants, type GameProfile } from '../src/games/profile'
 import { F } from '../src/games/fields'
 import { parseSave } from '../src/data/save'
-import { fight, type Battle, type CombatUi } from '../src/rules/combat'
+import { fight, treasureAftermath, type Battle, type CombatUi } from '../src/rules/combat'
 import { Divergence, TapePlayer, TapeRecorder, generator, type Dice, type Tape } from '../src/rules/dice'
 import { renderFrame, type ShownSprite, type ViewFrame } from './frame'
 import { saveFiles, type NamedFile } from '../src/store/savefiles'
@@ -150,6 +150,9 @@ export async function runScript(o: RunOptions): Promise<RunResult> {
     if (!o.saveAs) return undefined
     // as the play screen's saveGame (ui/explore.ts): stems CHRDAT<x><n>, the records and their item and effect files
     const slot = o.saveAs.toUpperCase(), members = e.party()
+    // SotSB's camp Save counts saves in an ECL word before writing (files.saveCounter, 0x390C5)
+    const counter = g.saves.saveCounter
+    if (counter !== null) e.write(counter, (e.read(counter) + 1) & 0xffff)
     const dat = e.toSave(members.map((_, n) => `CHRDAT${slot}${n + 1}`))
     return saveFiles({ slot, dat, label: '', savedAt: 0,
       chars: members.map((c) => ({ sav: c.slice(), itm: characterItemsFile(e.itemsOf(c)), spc: effectsFile(e.effectsOf(c)) })) })
@@ -192,6 +195,13 @@ export async function runScript(o: RunOptions): Promise<RunResult> {
           pause: async () => {},
         }
         if (await camp(ui)) e.quit = true
+        return
+      }
+      if (what === 'treasure') {
+        // COMBAT without monsters: the aftermath with the party alone (rules/combat.ts treasureAftermath)
+        const r = treasureAftermath(e)
+        out({ event: 'summary', messages: r.messages, share: r.share })
+        if (!r.survived) e.quit = true
         return
       }
       if (what !== 'combat') return // every other screen is handed over and comes back at once (§8.1)

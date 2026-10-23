@@ -15,7 +15,7 @@ import { F } from '../src/games/fields'
 import { parseSave } from '../src/data/save'
 import { characterItemsFile } from '../src/data/items'
 import { effectsFile } from '../src/data/effects'
-import { fight, footprint, type Battle, type CombatUi } from '../src/rules/combat'
+import { fight, footprint, treasureAftermath, type Battle, type CombatUi } from '../src/rules/combat'
 import { shop, temple, treasure, type TownUi } from '../src/ui/town'
 import { camp, type CampUi } from '../src/ui/camp'
 import { Tables } from '../src/rules/chargen'
@@ -426,7 +426,12 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
         } finally { battle = null }
       } else if (what === 'shop') await shop(townUi())
       else if (what === 'temple') await temple(townUi())
-      else if (what === 'treasure') await treasure(townUi())
+      else if (what === 'treasure') {
+        // COMBAT without monsters: the aftermath with the party alone, then the treasure screen
+        const r = treasureAftermath(e)
+        for (const m of r.messages) { checkText(m, 'the treasure summary'); say(m) }
+        if (r.survived && !e.quit) await treasure(townUi())
+      }
       else if (what === 'camp') await camp(campUi())
       else if (what === 'party screen') await hall()
       else if (what === 'ending') ending = true

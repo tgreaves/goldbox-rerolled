@@ -26,9 +26,12 @@ export interface SaveFiles {
   vault: string | null
   /** the exported save's file name before `-<slot>.zip` (spec/C-port/storage.md §7.1); import takes any name */
   exportName: string
+  /** the ECL word the camp's Save adds 1 to before writing (SotSB 0x4A3C, 0x390C5; its test against 30
+   *  is jumped over), so it is in the file; null: none (PoR, CotAB) */
+  saveCounter: number | null
 }
 
-export const POR_FILES: SaveFiles = { items: 'ITM', effects: 'SPC', itemRecord: 63, bundleType: null, roster: 'CHA', saveSize: 13137, codeSize: 0x1e00, partyAt: 0x3208, wallSetsAt: -1, vault: null, exportName: 'poolrad-save' }
-export const COAB_FILES: SaveFiles = { items: 'SWG', effects: 'FX', itemRecord: 63, bundleType: null, roster: 'GUY', saveSize: 13149, codeSize: 0x1e00, partyAt: 0x3214, wallSetsAt: 0x3208, vault: null, exportName: 'curse-save' }
+export const POR_FILES: SaveFiles = { items: 'ITM', effects: 'SPC', itemRecord: 63, bundleType: null, roster: 'CHA', saveSize: 13137, codeSize: 0x1e00, partyAt: 0x3208, wallSetsAt: -1, vault: null, exportName: 'poolrad-save', saveCounter: null }
+export const COAB_FILES: SaveFiles = { items: 'SWG', effects: 'FX', itemRecord: 63, bundleType: null, roster: 'GUY', saveSize: 13149, codeSize: 0x1e00, partyAt: 0x3214, wallSetsAt: 0x3208, vault: null, exportName: 'curse-save', saveCounter: null }
 // 0x421CB / 0x419DD: CotAB's layout without the code buffer (5 469 = 13 149 − 0x1E00); .WHO/.STF/.SFX (0x3FE44)
-export const SOTSB_FILES: SaveFiles = { items: 'STF', effects: 'SFX', itemRecord: 67, bundleType: 0x49, roster: 'WHO', saveSize: 5469, codeSize: 0, partyAt: 0x1414, wallSetsAt: 0x1408, vault: 'VAULT.DAT', exportName: 'blades-save' }
+export const SOTSB_FILES: SaveFiles = { items: 'STF', effects: 'SFX', itemRecord: 67, bundleType: 0x49, roster: 'WHO', saveSize: 5469, codeSize: 0, partyAt: 0x1414, wallSetsAt: 0x1408, vault: 'VAULT.DAT', exportName: 'blades-save', saveCounter: 0x4a3c }

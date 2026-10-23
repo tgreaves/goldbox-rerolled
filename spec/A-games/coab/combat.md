@@ -299,6 +299,16 @@ Where a dual-class character's former levels count once they do (0x51841), besid
 | the sweep of a creature an effect brings in | 0x27BEE | f·former + fighter level |
 | the locked-door menu | 0x2F185 | Pick and Knock look for a party member with the class, or the former class when it counts |
 
+## The award's bonus (O, 0x1DA97)
+
+The experience award gives share + share ÷ 10 to a cleric with WIS, a fighter with STR, a **paladin
+with STR and WIS**, a **ranger with STR, INT and WIS**, a magic-user with INT and a thief with DEX above
+15 (`cmpb $0xf` on +0x11, +0x13, +0x15, +0x17); the two-class combinations ÷ 2, the three-class ÷ 3
+(0x1DBC1). PoR's (FUN_2e08_0355) has no paladin or ranger. The summary (0x1E19C): the outcome only when
+an enemy was counted (DS:4804) or in a duel (DS:8B70), else "The party has found Treasure!" (CS 0xA39);
+no treasure line after a won battle. The port: `R.xpBonus`, `R.battleSummary`
+([B-model/procedures.md §15](../../B-model/procedures.md#15-combat-procedures)).
+
 ## Open
 
 - ~~Who carries effect 0x4A (the miscast)~~ answered: the Robe of Vermin ("Casting").

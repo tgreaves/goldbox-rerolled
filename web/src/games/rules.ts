@@ -323,6 +323,22 @@ export interface GameRules {
    */
   wildBattle: { kind: 'overlandTile' } | { kind: 'placeFlags'; mapFlag: number; place: number } | { kind: 'none' }
   /**
+   * The after-battle summary (spec/A-games/engine/combat-rules.md, Award): the outcome line only when an
+   * enemy was counted for experience (or in a duel); `treasureLine` where "The party has found
+   * Treasure!" goes: `insteadOfOutcome` when no enemy was counted, whatever the pile holds (PoR
+   * FUN_2e08_0916 0x1E9C9, CotAB 0x1E1AD), or `afterExperience` when the pile holds money or items (SotSB
+   * 0x23E8B, 0x23FE3); `noExperience`: the ECL word that, when not 0, stops the award and its line (SotSB
+   * A 0x3EA = 0x4AF5, 0x237D5 and 0x23F8F), null for none
+   */
+  battleSummary: { treasureLine: 'insteadOfOutcome' | 'afterExperience'; noExperience: number | null }
+  /**
+   * The award's prime-requisite bonus (spec/A-games/engine/combat-rules.md, Award): a member of class `cls`
+   * whose every ability in `stats` (0 STR, 1 INT, 2 WIS, 3 DEX) is above `over` gets share + share/10;
+   * the other single classes the share (PoR FUN_2e08_0355; CotAB 0x1DA97 adds the paladin and the ranger;
+   * SotSB 0x2381E the same with the cleric's WIS above 14)
+   */
+  xpBonus: { cls: number; stats: number[]; over: number }[]
+  /**
    * Movement on the battlefield (spec/B-model/procedures.md §15.5): a step onto a cell costs the cell's
    * move byte (T.battleCells byte 0) × 3 half-squares diagonally, × 2 straight. `test`: what the Move
    * command's "Blocked" (more than the movement left) and the computer's step probe (as much as or more
@@ -471,6 +487,8 @@ export const POR_RULES: GameRules = {
   },
   bolt: { lightning: 8, skipLast: false, mapAreaOnly: false, noRepeatBounce: false, chargeSinceLast: false },
   wildBattle: { kind: 'overlandTile' },
+  battleSummary: { treasureLine: 'insteadOfOutcome', noExperience: null },
+  xpBonus: [{ cls: 0, stats: [2], over: 15 }, { cls: 2, stats: [0], over: 15 }, { cls: 5, stats: [1], over: 15 }, { cls: 6, stats: [3], over: 15 }],
   battleMove: { test: 'byte', shortStep: 'stay' }, // every cell's byte 0 is 1 or 0xFF
   // FUN_34c7_11b4: open ground, river FUN_34c7_0bde (ford FUN_34c7_0b97), trees 0d13, scatter 0e9e, finishing 0000
   wildField: {
@@ -566,6 +584,9 @@ export const COAB_RULES: GameRules = {
   // 0x25D56: the grid builder takes the map generator only when A 0x1CC (ECL 0x4BE6, the engine's 0x49E6)
   // is set; the place is A byte 0x342 (ECL 0x4CA1, the engine's 0x4AA1)
   wildBattle: { kind: 'placeFlags', mapFlag: 0x49e6, place: 0x4aa1 },
+  battleSummary: { treasureLine: 'insteadOfOutcome', noExperience: null },
+  xpBonus: [{ cls: 0, stats: [2], over: 15 }, { cls: 2, stats: [0], over: 15 }, { cls: 3, stats: [0, 2], over: 15 }, { cls: 4, stats: [0, 1, 2], over: 15 },
+    { cls: 5, stats: [1], over: 15 }, { cls: 6, stats: [3], over: 15 }],
   // cells cost 1, 2 (table, tall grass, rocks, ponds) or 4 (water): the step routine 0x2AC98
   battleMove: { test: 'cost', shortStep: 'move' },
   // 0x25C58: open ground, river 0x25690, trees and logs 0x2579B, scatter 0x25ADA (0x25932); no finishing
@@ -701,6 +722,9 @@ export const SOTSB_RULES: GameRules = {
     plural: { oil: null, firstWord: [0x49], ammo: [0x1e, 5, 0x0c], at: 3, except: 0x5d },
   },
   wildBattle: { kind: 'none' }, // 0x2B939 is empty and the map flag is always set: every battle on a map area
+  battleSummary: { treasureLine: 'afterExperience', noExperience: 0x4af5 },
+  xpBonus: [{ cls: 0, stats: [2], over: 14 }, { cls: 2, stats: [0], over: 15 }, { cls: 3, stats: [0, 2], over: 15 }, { cls: 4, stats: [0, 1, 2], over: 15 },
+    { cls: 5, stats: [1], over: 15 }, { cls: 6, stats: [3], over: 15 }],
   // the probe 0x29D53, 0x29DE5; the gas cell 0x1D and the kill cell 0x1B, gas immunity 0x1F and 0x63
   // (spec/A-games/sotsb/effects.md); the kill bands by hit dice (+0xEE) and the poison 0x37 read at
   // 0x5173D–0x51887 (CotAB's: 0–4 no save, 5 at −4, 6 at 0, "is Poisoned", status 6)
