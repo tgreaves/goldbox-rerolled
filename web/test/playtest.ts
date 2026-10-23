@@ -663,6 +663,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   /** where the party is for the walk's memory: block/area, and the sub-area variables' values (o.subAreas) */
   const place = () => `${e.block}/${e.area}${(o.subAreas ?? []).map((a) => `.${e.read(canonical(game().ecl, a))}`).join('')}`
   const key = (x: number, y: number) => `${place()}/${x & 15},${y & 15}`
+  /** a hint's place: block/area alone matches every sub-area there */
+  const inPlace = (p: string) => place() === p || place().startsWith(`${p}.`)
   /** tries that left the party where it was (place/square/direction), and the last forward try */
   const blocked = new Set<string>()
   let lastTry = ''
@@ -709,7 +711,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     /** the nearest open step off the map's edge not yet tried here (a script's exit: the edge flag, B 0x6DD5) */
     let exit = -1
     // the whole reach when there are hints for this place (one may lie beyond the nearest unseen square)
-    const hinted = !!o.hints?.some((h) => h.place === place())
+    const hinted = !!o.hints?.some((h) => inPlace(h.place))
     while (queue.length && (goal < 0 || hinted)) {
       const q = queue.shift()!
       for (const d of [0, 1, 2, 3]) {
@@ -729,7 +731,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     }
     // a hint in reach comes before any unseen square: walk to it, face it, step (dropped after three
     // tries that left the party where it was)
-    const hint = o.hints?.find((h) => h.place === place() && from.has(at(h.x, h.y)) && !hintsTaken.has(`${place()}/${at(h.x, h.y)}/${h.facing}`) && (blockedTries.get(`${place()}/${at(h.x, h.y)}/${h.facing}`) ?? 0) < 3)
+    const hint = o.hints?.find((h) => inPlace(h.place) && from.has(at(h.x, h.y)) && !hintsTaken.has(`${place()}/${at(h.x, h.y)}/${h.facing}`) && (blockedTries.get(`${place()}/${at(h.x, h.y)}/${h.facing}`) ?? 0) < 3)
     if (hint) {
       if (at(hint.x, hint.y) === at(e.x, e.y)) {
         const turn = (hint.facing - e.facing + 4) & 3
@@ -915,7 +917,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       ok = await act(`command ${c}`, () => e.command(c))
       // a step that left the party where it was (a door it cannot open, a script that turns it back)
       if (tried && `${place()}/${(e.y & 15) * 16 + (e.x & 15)}` === was) { blocked.add(tried); blockedTries.set(tried, (blockedTries.get(tried) ?? 0) + 1) }
-      else if (tried && o.hints?.some((h) => `${h.place}/${(h.y & 15) * 16 + (h.x & 15)}/${h.facing}` === tried)) hintsTaken.add(tried)
+      else if (tried && o.hints?.some((h) => tried.startsWith(h.place) && tried.endsWith(`/${(h.y & 15) * 16 + (h.x & 15)}/${h.facing}`))) hintsTaken.add(tried)
     } else {
       const c = r < 0.8 ? explore() : r < 0.86 ? 'lrbf'[pick(4)] : r < 0.88 ? 's' : r < 0.94 ? 'L' : 'e'
       ok = await act(`command ${c}`, () => e.command(c))
