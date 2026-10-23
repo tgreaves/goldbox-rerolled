@@ -57,7 +57,7 @@ implementation's: *done*, or what remains.
 | IMP-046 | one Settings panel | [ui-contract.md §9](ui-contract.md#9-settings) | required | — | done |
 | IMP-047 | sharp scaling | [rendering.md §2](rendering.md#2-scaling) | setting | Graphics: Pixel (default, the original's pixels) / Sharp | done |
 | IMP-050 | the title prompt | [app-flow.md §4](app-flow.md#4-the-title) | required | — | done |
-| IMP-051 | rope frames | [rendering.md §4](rendering.md#4-frames) | setting | Borders: Original rope (default) / Plain | done |
+| IMP-051 | rope frames | [rendering.md §4](rendering.md#4-frames) | setting | Borders: Original (default) / Plain | done |
 | IMP-052 | the battle summary in the log | [combat-ui.md §8](combat-ui.md#8-the-end-of-a-battle) | required | — | done |
 | IMP-057 | the classic look, ☰, ✕ and Esc | [ui-contract.md §2](ui-contract.md#2-colours-as-roles), [§5](ui-contract.md#5-the-command-bar), [§7](ui-contract.md#7-dialogs), [§10](ui-contract.md#10-motion-focus-and-accessibility), [screens.md §2](screens.md#2-the--menu) | setting | Motion: Full / Reduced (no flashing) | done |
 | IMP-060 | autosave, Continue, phone layouts, 44-px controls | [storage.md §5](storage.md#5-saved-games-and-the-autosave), [app-flow.md §7](app-flow.md#7-play-new-game-load-continue), [ui-contract.md §3](ui-contract.md#3-screen-classes) | required | — | done |

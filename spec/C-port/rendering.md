@@ -74,7 +74,7 @@ stretched by the layout to its region. The **Graphics** setting (IMP-047,
 The original draws its windows with frame tiles from `8X8D1` #202 ([input-and-menus.md §1](../A-games/engine/input-and-menus.md#1-start-up-sequence)
 step 6, [coab/assets.md §6](../A-games/coab/assets.md#6-fonts-tiles-screen-frames)). The port draws
 its panels with the same tiles (IMP-051), built in the browser; the **Borders** setting chooses
-**Original rope** (default) or **Plain**.
+**Original** (default: the game's own frame, PoR's and CotAB's rope, SotSB's bars) or **Plain**.
 
 ### 4.1 Which tiles
 

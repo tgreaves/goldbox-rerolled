@@ -98,7 +98,7 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
       ${soundAvailable() ? seg<Device>('Sound', [['pc', 'PC speaker'], ['tandy', 'Tandy / PCjr'], ['off', 'Off']], soundDevice())
         : '<div class="set-row"><span class="set-label">Sound</span><span class="muted">needs START.EXE among the game files</span></div>'}
       ${gameFontAvailable() ? seg('Font', [['original', 'Original 8×8'], ['modern', 'Modern']], fontChoice()) : ''}
-      ${framesAvailable() ? seg<FrameChoice>('Borders', [['original', 'Original rope'], ['modern', 'Plain']], frameChoice()) : ''}
+      ${framesAvailable() ? seg<FrameChoice>('Borders', [['original', 'Original'], ['modern', 'Plain']], frameChoice()) : ''}
       ${canDrawWorld() ? seg<ViewMode>('View', [['original', 'Original'], ['enhanced', 'Enhanced (3D)']], viewMode()) : ''}
       ${seg<PartyLayout>('Party', [['top', 'Row across the top'], ['side', 'Column beside the view']], partyLayout())}
       ${seg<Motion>('Motion', [['full', 'Full'], ['reduced', 'Reduced (no flashing)']], motionChoice())}
