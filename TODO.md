@@ -46,6 +46,14 @@ that settles it.
 - Its frame edge is an approximation ([`spec/C-port/rendering.md`](spec/C-port/rendering.md), Open).
 - DOSBox: no walk across an area boundary yet (every way out of the areas walked meets a question or a
   battle), and no rest that memorises a spell ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
+- The chain in its order (`coabchain.test.ts`, [`spec/VALIDATION.md`](spec/VALIDATION.md) §4) has not reached
+  6/64–6/67: ECL1 #80 enters 6/64 at wilderness place 13 (ECL 0x4C9B, 0x853C → 0x85C8), which comes from
+  the cell table at 0x9D13 (cell ECL 0x4C9D); the grey man at the standing stones (place 4) counts the
+  three bonds (0x4C59 set in 5/51, 0x4C5A in 4/34, 0x4C5B in 3/18) and, with all three, says "meet me at
+  Myth Drannor" (0x83CF). How place 13 is reached is not yet worked out, so the harness cannot be given it.
+- In the undying runs (80 000 steps) a member's effects pass 40 in 6/69 (types 0x21, 0x37, 0x61, 0x1A,
+  0x2F, 0x6B, 0x0C), and seed 1's party fell to one member there; neither is traced yet (the harness
+  cheats, the dice or a leak).
 - ECL4 #32's tavern: a party that picks the lock east of (13,7) cannot leave ((14,7)'s west side is a wall,
   the bar puts it back where it came from); whether the original traps it too needs a DOSBox look
   ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4, "in its order").
