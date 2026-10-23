@@ -150,14 +150,14 @@ Training is refused ("Not Enough Experience" path skipped) when the character is
 
 | Race | Class | Limit |
 |---|---|---|
-| Dwarf | Fighter | 7 (STR < 17), 8 (STR 17), 9 (STR 18) |
+| Dwarf | Fighter | 7 (STR < 17), 8 (STR 17); 9 is not tested (0x34276) |
 | Elf | Fighter | 5 (STR < 17), 6 (STR 17), 7 (STR 18) |
 | Gnome | Fighter | 5 (STR < 18), 6 (STR 18) |
 | Half-Elf | Cleric | 5 |
 | Half-Elf | Fighter | 6 (STR < 17), 7 (STR 17), 8 (STR 18) |
 | Halfling | Fighter | 4 (STR < 17), 5 (STR 17), 6 (STR 18) |
 
-Only these fighter limits and the half-elf cleric limit are coded. The middle rows test STR = 17 exactly and the bottom rows STR < 17 (gnome: < 18), on char[0x10] without exceptional strength, so STR 19 and above behaves like 18. A class at its limit is skipped; the character gets "Not Enough Experience" only if no other class qualifies. The guide's (7.7.3) elf and half-elf magic-user limits are above the game's cap of 6 and need no code.
+Only these fighter limits and the half-elf cleric limit are coded. The middle rows test STR = 17 exactly and the bottom rows STR < 17 (gnome: < 18), on char[0x10] without exceptional strength, so STR 19 and above behaves like 18. Every test is an equality (0x34270–0x34372): a class is refused at the level equal to its band's limit, or at the top limit whatever the ability (`cmp $7,level; je` for the elf), never above it, so a character above its band's limit (STR lowered after training) trains on (O). The dwarf has no top test, which the fighter's cap of 8 makes moot. A class at its limit is skipped; the character gets "Not Enough Experience" only if no other class qualifies. The guide's (7.7.3) elf and half-elf magic-user limits are above the game's cap of 6 and need no code.
 
 ## Training halls (O)
 

@@ -30,6 +30,17 @@ export function levelLimit(c: Uint8Array, k: number): number {
   return rule.limits[v < 17 ? 0 : v === 17 ? 1 : 2]
 }
 
+/**
+ * Whether training refuses class k on its race limit (FUN_417f_29ae; CotAB 0x3B631; SotSB 0x3DD4C):
+ * the level equal to its band's limit or to the top limit, or (`orAbove`) at or above the limit.
+ */
+export function atLevelLimit(c: Uint8Array, k: number): boolean {
+  const rule = R.levelLimits.find((x) => x.race === c[F.race] && x.cls === k)
+  if (!rule) return false
+  const L = c[F.levels + k], lim = levelLimit(c, k)
+  return rule.orAbove ? L >= lim : L === lim || L === rule.limits[2]
+}
+
 /** Coins worth in gp, rounded up (FUN_4894_28be for training). */
 const coinsGp = (c: Uint8Array) => {
   const w = (i: number) => c[F.money + 2 * i] | (c[F.money + 2 * i + 1] << 8)
@@ -76,7 +87,7 @@ export function checkTraining(t: Tables, c: Uint8Array, hallMask: number, cheat 
     const L = c[F.levels + k]
     if (L <= 0) continue
     all |= trainerBit(t, k)
-    if (L >= levelLimit(c, k)) continue
+    if (atLevelLimit(c, k)) continue
     const need = xpFor(t, k, L + 1)
     if (need === 0 || need === 0xffffffff) continue
     if (xp < need && !cheat) continue

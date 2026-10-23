@@ -59,7 +59,7 @@ import { openSettings, reducedMotion, viewMode } from './settings'
 import { accountLabel, openAccount } from './account'
 import { accountStatus, onSettingsPulled } from '../store/account'
 import { unexepack } from '../data/exepack'
-import { checkTraining, levelLimit, newSpellChoices, train, willBecome, xpFor } from '../rules/training'
+import { atLevelLimit, checkTraining, newSpellChoices, train, willBecome, xpFor } from '../rules/training'
 import { changeClass, changeClassChoices, className, offersChangeClass } from '../rules/dualclass'
 import { initSound, play, unlockAudio } from '../audio/sfx'
 import type { DemoMode } from '../games/startup'
@@ -821,7 +821,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     let best: { pct: number; text: string; left: number } | null = null
     for (let k = 0; k < F.classCount; k++) {
       const L = c[F.levels + k]
-      if (L <= 0 || L >= levelLimit(c, k)) continue
+      if (L <= 0 || atLevelLimit(c, k)) continue
       const next = xpFor(t, k, L + 1)
       if (next === 0 || next === 0xffffffff) continue
       const from = L > 1 ? xpFor(t, k, L) : 0
@@ -836,7 +836,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const xp = (c[F.xp] | (c[F.xp + 1] << 8) | (c[F.xp + 2] << 16) | (c[F.xp + 3] << 24)) >>> 0
     for (let k = 0; k < F.classCount; k++) {
       const L = c[F.levels + k]
-      if (L <= 0 || L >= levelLimit(c, k)) continue
+      if (L <= 0 || atLevelLimit(c, k)) continue
       const need = xpFor(t, k, L + 1)
       if (need !== 0 && need !== 0xffffffff && xp >= need) return true
     }

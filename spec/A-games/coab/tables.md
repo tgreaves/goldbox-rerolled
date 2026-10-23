@@ -89,7 +89,7 @@ level caps are cleric **10** (PoR 6), fighter **12** (8), paladin **11** (not pl
 **11** (not playable), magic-user **11** (6), thief **12** (9). The 99-byte class stride holds 13 XP
 dwords, followed by that class's spell-increment rows (§3.5).
 
-Demi-human limits are still code, not a table (O, 3b631–3b7c4; STR char+0x11, INT char+0x13; STR 18/xx counts as 18). New rows are marked \*:
+Demi-human limits are still code, not a table (O, 3b631–3b7c4; STR char+0x11, INT char+0x13; STR 18/xx counts as 18), equality tests as PoR's (refused at the band's limit or the top one, not above it), and the dwarf's 9 is now tested (3b657). New rows are marked \*:
 
 | Race | Class | Limit |
 |---|---|---|

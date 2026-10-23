@@ -7,8 +7,7 @@ that settles it.
 
 ## Next steps (2026-10-23, in order)
 
-1. **SotSB from its code**: check the demi-human training limits (below) against the port; settle the
-   patient search and cloud laying (**I**, below) from the binary.
+1. **SotSB from its code**: settle the patient search and cloud laying (**I**, below) from the binary.
 2. **SotSB in the browser**: casting in a battle and Join/Halve on a real bundle (below), with
    Playwright against the built app (`docs/environment.md`, "Browser play-testing").
 3. **More DOSBox comparisons** with `tools/dosbox/` where the port's behaviour rests on **I** items
@@ -29,8 +28,6 @@ that settles it.
 
 - Casting in a battle, and Join/Halve on a real bundle of two or more scrolls, not yet exercised in the
   browser (unit tests cover both: `web/test/sotsbspells.test.ts`, `bundle.test.ts`).
-- Its demi-human training limits by race, class and prime requisite (0x3DE79–0x3DEF3) not checked
-  against the port.
 - The patient search and the cloud laying taking both body marks (0x1C, 0x1E) is **I**
   ([`spec/A-games/sotsb/combat.md`](spec/A-games/sotsb/combat.md)).
 - The vault's sync keeps the newer change and loses the other device's (documented,

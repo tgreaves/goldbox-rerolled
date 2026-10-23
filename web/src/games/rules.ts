@@ -121,8 +121,12 @@ export interface GameRules {
    *  rolls, and from the stop level (T.hitDiceStop) a fixed amount that replaces the sum so far) */
   hitPoints: { laterDice: number | null; rolls: number; firstLevelMin: [number, number] | null; fixed: (number | null)[] | null }
   /** demi-human level limits: race, base class, the ability that sets the band, and the limit with
-   *  that ability below 17, at 17 and at 18 or more (18/xx counts as 18) */
-  levelLimits: { race: number; cls: number; by: 0 | 1; limits: [number, number, number] }[]
+   *  that ability below 17, at 17 and at 18 or more (18/xx counts as 18). As the originals code them
+   *  (PoR FUN_417f_29ae, CotAB 0x3B631, SotSB 0x3DD4C), a class is refused only when its level
+   *  *equals* its band's limit or the top limit, so a character above its band (an ability lowered
+   *  later) trains on; `orAbove` rows refuse at the limit and every level above it (SotSB's cleric
+   *  rows, 0x3DD86) */
+  levelLimits: { race: number; cls: number; by: 0 | 1; limits: [number, number, number]; orAbove?: true }[]
   /** starting money in one coin (index into the money words): the class dice × 10 shared over the
    *  classes (PoR, gold), or a fixed amount (CotAB 300 platinum; the dice are still rolled, then dropped),
    *  or (`byClass`) only these classes' own dice, summed as they are, and no table dice at all (SotSB
@@ -437,8 +441,9 @@ export const POR_RULES: GameRules = {
   startClericSlots: 1,
   hitPoints: { laterDice: null, rolls: 1, firstLevelMin: [2, 3], fixed: null },
   // spec/A-games/engine/chargen-and-progression.md; races 1 dwarf, 2 elf, 3 gnome, 4 half-elf, 5 halfling; classes 0 cleric, 2 fighter
+  // (0x34276: the dwarf's level 9 is not tested, so no top limit; the fighter's cap of 8 comes first)
   levelLimits: [
-    { race: 1, cls: 2, by: 0, limits: [7, 8, 9] }, { race: 2, cls: 2, by: 0, limits: [5, 6, 7] },
+    { race: 1, cls: 2, by: 0, limits: [7, 8, 255] }, { race: 2, cls: 2, by: 0, limits: [5, 6, 7] },
     { race: 3, cls: 2, by: 0, limits: [5, 5, 6] }, { race: 4, cls: 2, by: 0, limits: [6, 7, 8] },
     { race: 5, cls: 2, by: 0, limits: [4, 5, 6] }, { race: 4, cls: 0, by: 0, limits: [5, 5, 5] },
   ],
@@ -660,13 +665,16 @@ export const SOTSB_RULES: GameRules = {
   },
   extraAttacks: { 2: [6, 12], 3: [6, 12], 4: [7, 14] }, // 0x56A64–0x56AAB: 3, then 4 half-attacks
   hitPoints: { laterDice: 1, rolls: 2, firstLevelMin: null, fixed: [2, null, 3, 3, 2, 1, 2] }, // 0x3DB21; a level-1 cleric's 2 dice are T.hitDiceCount's
-  // CotAB's rows re-keyed to SotSB's race numbers (I: DS:4D9D holds CotAB's rows of the same races)
+  // 0x3DD4C-0x3DEF3: CotAB's rows re-keyed to SotSB's race numbers, and three cleric limits refused
+  // at that level or above (dwarf 0x3DD80, elf 0x3DDF7, gnome 0x3DE2E)
   levelLimits: [
     { race: 3, cls: 2, by: 0, limits: [7, 8, 9] }, { race: 1, cls: 2, by: 0, limits: [5, 6, 7] },
     { race: 4, cls: 2, by: 0, limits: [5, 5, 6] }, { race: 2, cls: 2, by: 0, limits: [6, 7, 8] },
     { race: 5, cls: 2, by: 0, limits: [4, 5, 6] }, { race: 2, cls: 0, by: 0, limits: [5, 5, 5] },
     { race: 1, cls: 5, by: 1, limits: [9, 10, 11] }, { race: 2, cls: 4, by: 0, limits: [6, 7, 8] },
     { race: 2, cls: 5, by: 1, limits: [6, 7, 8] },
+    { race: 3, cls: 0, by: 0, limits: [8, 8, 8], orAbove: true }, { race: 1, cls: 0, by: 0, limits: [7, 7, 7], orAbove: true },
+    { race: 4, cls: 0, by: 0, limits: [7, 7, 7], orAbove: true },
   ],
   // 0x559E6: cleric, or paladin at its full level; druid: ranger − 7; magic-user (class 3): magic-user, or ranger − 8
   casterTerms: { 0: [{ cls: 0, minus: 0 }, { cls: 3, minus: 0 }], 1: [{ cls: 4, minus: 7 }], 3: [{ cls: 5, minus: 0 }, { cls: 4, minus: 8 }] },

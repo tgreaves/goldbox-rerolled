@@ -226,7 +226,7 @@ Values the original holds as code, the same procedure in both games (part A,
 | `clericMultis` | multi-classes with a cleric part, whose WIS is raised to at least 13 | 8, 9, 10, 11, 12 | the same |
 | `startSpells` | spells a new magic-user knows (creation; CotAB's dual-classing too) | 11, 18, 19, 21 (Detect Magic, Read Magic, Shield, Sleep; creation, linear 0x334DF) | 11, 18, **12**, 21 (Detect Magic, Read Magic, Enlarge, Sleep; creation 0x389B7, dual-classing 0x515F9) |
 | `startEffects` | innate effects of a new character, permanent, power 0xFF, flag 0: by race, then by class id | race 1 [0x5A, 0x61, 0x1A, 0x2F], 2 [0x6B], 3 [0x61, 0x12, 0x2F, 0x30], 4 [0x7C], 5 [0x5A, 0x61]; class none | race 1 [0x61, 0x1A, 0x2F], 2 [0x6B], 3 [0x61, 0x12, 0x2F, 0x30], 4 [0x7C], 5 [0x61]; class 3 [8], 4 [0x86], 10 [0x86] |
-| `levelLimits` | demi-human limits: `{ race, cls, by, limits }`: the ability `by` (0 STR, 1 INT) sets the band: below 17, at 17, at 18 or more (18/xx counts as 18); no rule: no limit | dwarf F 7/8/9, elf F 5/6/7, gnome F 5/5/6, half-elf F 6/7/8, halfling F 4/5/6, half-elf C 5/5/5 (all by STR) | PoR's, plus elf MU by INT 9/10/11, half-elf ranger by STR 6/7/8, half-elf MU by INT 6/7/8 |
+| `levelLimits` | demi-human limits: `{ race, cls, by, limits, orAbove? }`: the ability `by` (0 STR, 1 INT) sets the band: below 17, at 17, at 18 or more (18/xx counts as 18); training refuses the class only at the level *equal* to its band's limit or to the top limit (the originals' `==` tests, so a character above its band trains on), or with `orAbove` at the limit and every level above; no rule: no limit (255: that band untested) | dwarf F 7/8/255 (9 untested, 0x34276), elf F 5/6/7, gnome F 5/5/6, half-elf F 6/7/8, halfling F 4/5/6, half-elf C 5/5/5 (all by STR) | PoR's, plus elf MU by INT 9/10/11, half-elf ranger by STR 6/7/8, half-elf MU by INT 6/7/8 |
 | `extraAttacks` | base class → the levels above which it gets one more half-attack each (`attacksBase` 2 + the number passed; 2 where `recalc.attacksReset` and none is passed, §7.1) | fighter [6] | fighter [6], paladin [6], ranger [7] |
 | `trainingCost` | the training fee in gp | 1 000 | 1 000 |
 | `chaReaction` | the reaction value scripts read at B + 0x2CF, by CHA 0–25 | 0 0 0 0 5 10 15 20 25 25 25 25 25 30 35 40 50 55 60 60 60 60 60 60 60 60 | the same |
@@ -235,7 +235,7 @@ The paladin's Cure Disease starts at `paladin.cureDisease.initial` uses when the
 part (§10).
 
 SotSB ([sotsb/chargen-and-progression.md](../A-games/sotsb/chargen-and-progression.md)): races
-renumbered (raceMenu 1–6, levelLimits keyed by the new numbers); startSpells PoR's (0x3B1C8) while
+renumbered (raceMenu 1–6, levelLimits keyed by the new numbers, plus dwarf, elf and gnome clerics refused at 8, 7 and 7 and above, `orAbove`, 0x3DD80/0x3DDF7/0x3DE2E); startSpells PoR's (0x3B1C8) while
 `dualClass.spells` keeps CotAB's 11, 18, 12, 21 (0x578B6; PoR and CotAB: the dual-class spells, where
 the game has dual-classing, are `dualClass.spells`); extraAttacks fighter [6, 12], paladin [6, 12],
 ranger [7, 14] (0x56A64); training's other values CotAB's.

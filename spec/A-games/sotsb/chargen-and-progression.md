@@ -28,8 +28,31 @@ CotAB is gone. So a new character has 2d6 gold if a thief, else none (**O** for 
 later step adds money). Base movement 12 (+0xED), two half-attacks (+0x121 := 2), as CotAB.
 
 Races and classes offered: the race-class table `DS:4DFF` in SotSB's race order ([tables.md §3](tables.md#3-rule-differences-seen-in-the-tables)).
-The level limits by race are the race-limit rows `DS:4D9D`, CotAB's rows of the same races (**I** for
-the port's `levelLimits`, which must be re-keyed to the new race numbers).
+(`DS:4D9D`, the race-limit rows, are the ability limits of creation, not the level limits.)
+
+**Demi-human training limits (O, training 0x3DD06–0x3DEF3).** Code, not a table, as in CotAB
+([coab/tables.md §3.2](../coab/tables.md#32-experience-and-level-caps-o-ds4293--k0x63--l4)): over each class with a level, the race's
+branch sets "refused" and the class is skipped (0x3DEF9 → 0x3E072); STR is char+0x11, INT char+0x13,
+STR 18/xx counts as 18. The level *L* is compared with `==` for the banded rows (refused at the band's
+limit or the top limit, not above them) and with `>=` for the three new cleric rows:
+
+| Race | Class | Refused at | Address |
+|---|---|---|---|
+| Dwarf (3) | Fighter | 7 (STR < 17), 8 (STR 17), 9 | 0x3DD50 |
+| Dwarf | Cleric\* | **8 and above** | 0x3DD80 |
+| Elf (1) | Fighter | 5 (STR < 17), 6 (STR 17), 7 | 0x3DD97 |
+| Elf | Magic-user | 9 (INT < 17), 10 (INT 17), 11 | 0x3DDC7 |
+| Elf | Cleric\* | **7 and above** | 0x3DDF7 |
+| Gnome (4) | Fighter | 5 (STR < 18), 6 | 0x3DE0E |
+| Gnome | Cleric\* | **7 and above** | 0x3DE2E |
+| Half-elf (2) | Cleric | 5 | 0x3DE45 |
+| Half-elf | Fighter and ranger | 6 (STR < 17), 7 (STR 17), 8 | 0x3DE57 |
+| Half-elf | Magic-user | 6 (INT < 17), 7 (INT 17), 8 | 0x3DE8D |
+| Halfling (5) | Fighter | 4 (STR < 17), 5 (STR 17), 6 | 0x3DEC3 |
+
+\* new in SotSB; the rest are CotAB's rows with the races renumbered. Humans have none. A class not
+refused then needs the next level's experience (0x3DEFC–0x3DF64, [tables.md](tables.md)). In the
+port: `levelLimits` with `orAbove` on the cleric rows ([B-model/procedures.md](../../B-model/procedures.md)).
 
 ## 2. Hit points (O, training 0x3DA40: 0x3DA54–0x3DB80)
 
@@ -132,7 +155,7 @@ casterGate: { atLeast: { 0: 1, 5: 1, 4: 8 }, level: 6 },
 dualClass: { race: 6, primeFrom: 9, oldAtLeast: 15, newAtLeast: 17 },
 recalc: { attacksReset: false, classMask: true },
 casting: { /* … combat.md */ allowed: { /* CotAB's, keyed 0, 1, 3; and 3 also a thief above 10 in the cast list */ } },
-levelLimits: [ /* CotAB's rows, races renumbered: elf 1, half-elf 2, dwarf 3, gnome 4, halfling 5 */ ],
+levelLimits: [ /* CotAB's rows, races renumbered: elf 1, half-elf 2, dwarf 3, gnome 4, halfling 5; and the dwarf, elf and gnome cleric rows with orAbove (§1) */ ],
 ```
 
 ## 9. What the port needs beyond values
