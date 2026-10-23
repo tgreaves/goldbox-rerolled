@@ -48,6 +48,8 @@ describe.skipIf(!have)('Secret of the Silver Blades played in its order', () => 
       const sq = [...(r.squares ?? new Map<string, Set<number>>())].map(([k, v]) => `${k}:${v.size}`).join(' ')
       appendFileSync(process.env.SOTSB_CHAIN_LOG ?? '/dev/stdout', `seed ${seed}: ${r.steps} steps; areas in order ${[...st.areas].join(' ')}; squares ${sq}; ${st.battles} battles (${st.won} won, ${st.fled} fled, ${st.lost} lost); watched ${[...(r.watched ?? new Map<number, Set<number>>())].map(([a, v]) => `${a.toString(16)}: ${[...v].join(',')}`).join('; ')}; ${st.ended}${r.stuck.length ? `; stuck ${r.stuck.length}: ${r.stuck.slice(0, 3).join(' | ')}` : ''}\n`)
       failures.push(...r.failures.map((f) => `seed ${seed}: ${f}`))
+      // the route's notable moments (losses with the last texts, reloads, saves), SOTSB_CHAIN_ROUTE=n lines
+      if (process.env.SOTSB_CHAIN_ROUTE) for (const l of r.route.filter((l) => /lost|stuck|win/.test(l)).slice(0, Number(process.env.SOTSB_CHAIN_ROUTE))) appendFileSync(process.env.SOTSB_CHAIN_LOG ?? '/dev/stdout', `  route ${l}\n`)
       if (process.env.SOTSB_CHAIN_SQ) for (const [k, v] of r.squares ?? []) if (k.startsWith(process.env.SOTSB_CHAIN_SQ)) appendFileSync(process.env.SOTSB_CHAIN_LOG ?? '/dev/stdout', `  ${k}: ${[...v].sort((a, b) => a - b).map((q) => `${q & 15},${q >> 4}`).join(' ')}\n`)
       // a seed that reached a goal writes SOTSB_CHAIN_SAVE, the others SOTSB_CHAIN_SAVE.seed<n>
       const reached = !!goal?.some((g) => r.stats.areas.has(g))

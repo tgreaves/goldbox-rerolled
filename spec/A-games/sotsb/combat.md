@@ -222,9 +222,12 @@ DOSBox from save A: the mayor's `TREASURE …, #18` and `COMBAT` (ECL1 #16, 0x82
   has found treasure!" when the pile holds money or items (0x23FE3 → 0x13C:0x66). PoR and CotAB put that
   line in the outcome's place when no enemy was counted, whatever the pile holds, and never after it
   ([engine/combat-rules.md, Award](../engine/combat-rules.md#award-o-fun_2e08_0355)).
+- **The treasure screen** (0x24450) follows the summary only when that pile flag was set (0x24D30: DS:59C2 or
+  DS:59C3), so an empty pile gets none; PoR (0x1F5E9) and CotAB (0x1EF66) show it whatever the pile holds. A
+  flight goes on to the summary and the screen in all three (only a lost party skips them, DS:67E9 here, 0x24D15) (O).
 
 The port: `treasureAftermath` (rules/combat.ts) for COMBAT without monsters, `R.battleSummary`
-{ treasureLine 'afterExperience', noExperience 0x4AF5 } and `R.xpBonus`
+{ treasureLine 'afterExperience', noExperience 0x4AF5, treasureScreen 'whenPile' } and `R.xpBonus`
 ([B-model/procedures.md §15](../../B-model/procedures.md#15-combat-procedures)).
 
 ## 12. Draft profile values (informative)

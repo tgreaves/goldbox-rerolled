@@ -871,6 +871,7 @@ when its table column or sentence names CotAB.
 | 0x1EEA0 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x1EEAC | coab/ecl, B/profile | coab/ecl: Start-up menu and demo |  |
 | 0x1EF4E | coab/ecl, B/profile | coab/ecl: Start-up menu and demo |  |
+| 0x1EF66 | B/procedures | B/procedures: 15.7 Other combat and game values |  |
 | 0x1EFB6 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x1F01E | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1F03F | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |

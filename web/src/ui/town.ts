@@ -377,6 +377,8 @@ export async function vault(ui: TownUi) {
 /** Treasure screen (FUN_2e08_0ecd), after a fight or a scripted TREASURE without monsters. */
 export async function treasure(ui: TownUi) {
   const e = ui.engine, t = e.items
+  // SotSB's aftermath comes here only when the pile holds money or items (0x24D30; R.battleSummary)
+  if (R.battleSummary.treasureScreen === 'whenPile' && !e.money.some((v) => v > 0) && !e.treasure.length) return
   if (ui.treasurePanel && t && (e.money.some((v) => v > 0) || e.treasure.length)) {
     await ui.treasurePanel()
     e.treasure = []

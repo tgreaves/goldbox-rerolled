@@ -330,9 +330,11 @@ export interface GameRules {
    * Treasure!" goes: `insteadOfOutcome` when no enemy was counted, whatever the pile holds (PoR
    * FUN_2e08_0916 0x1E9C9, CotAB 0x1E1AD), or `afterExperience` when the pile holds money or items (SotSB
    * 0x23E8B, 0x23FE3); `noExperience`: the ECL word that, when not 0, stops the award and its line (SotSB
-   * A 0x3EA = 0x4AF5, 0x237D5 and 0x23F8F), null for none
+   * A 0x3EA = 0x4AF5, 0x237D5 and 0x23F8F), null for none; `treasureScreen`: after the summary the treasure
+   * screen comes `always` (PoR 0x1F5E9, CotAB 0x1EF66: whatever the pile holds, after a flight as well) or
+   * only `whenPile` holds money or items (SotSB 0x24D30, the flags DS:59C2/59C3 the summary set, 0x23FE3)
    */
-  battleSummary: { treasureLine: 'insteadOfOutcome' | 'afterExperience'; noExperience: number | null }
+  battleSummary: { treasureLine: 'insteadOfOutcome' | 'afterExperience'; noExperience: number | null; treasureScreen: 'always' | 'whenPile' }
   /**
    * The award's prime-requisite bonus (spec/A-games/engine/combat-rules.md, Award): a member of class `cls`
    * whose every ability in `stats` (0 STR, 1 INT, 2 WIS, 3 DEX) is above `over` gets share + share/10;
@@ -489,7 +491,7 @@ export const POR_RULES: GameRules = {
   },
   bolt: { lightning: 8, skipLast: false, mapAreaOnly: false, noRepeatBounce: false, chargeSinceLast: false },
   wildBattle: { kind: 'overlandTile' },
-  battleSummary: { treasureLine: 'insteadOfOutcome', noExperience: null },
+  battleSummary: { treasureLine: 'insteadOfOutcome', noExperience: null, treasureScreen: 'always' },
   xpBonus: [{ cls: 0, stats: [2], over: 15 }, { cls: 2, stats: [0], over: 15 }, { cls: 5, stats: [1], over: 15 }, { cls: 6, stats: [3], over: 15 }],
   battleMove: { test: 'byte', shortStep: 'stay' }, // every cell's byte 0 is 1 or 0xFF
   // FUN_34c7_11b4: open ground, river FUN_34c7_0bde (ford FUN_34c7_0b97), trees 0d13, scatter 0e9e, finishing 0000
@@ -586,7 +588,7 @@ export const COAB_RULES: GameRules = {
   // 0x25D56: the grid builder takes the map generator only when A 0x1CC (ECL 0x4BE6, the engine's 0x49E6)
   // is set; the place is A byte 0x342 (ECL 0x4CA1, the engine's 0x4AA1)
   wildBattle: { kind: 'placeFlags', mapFlag: 0x49e6, place: 0x4aa1 },
-  battleSummary: { treasureLine: 'insteadOfOutcome', noExperience: null },
+  battleSummary: { treasureLine: 'insteadOfOutcome', noExperience: null, treasureScreen: 'always' },
   xpBonus: [{ cls: 0, stats: [2], over: 15 }, { cls: 2, stats: [0], over: 15 }, { cls: 3, stats: [0, 2], over: 15 }, { cls: 4, stats: [0, 1, 2], over: 15 },
     { cls: 5, stats: [1], over: 15 }, { cls: 6, stats: [3], over: 15 }],
   // cells cost 1, 2 (table, tall grass, rocks, ponds) or 4 (water): the step routine 0x2AC98
@@ -724,7 +726,7 @@ export const SOTSB_RULES: GameRules = {
     plural: { oil: null, firstWord: [0x49], ammo: [0x1e, 5, 0x0c], at: 3, except: 0x5d },
   },
   wildBattle: { kind: 'none' }, // 0x2B939 is empty and the map flag is always set: every battle on a map area
-  battleSummary: { treasureLine: 'afterExperience', noExperience: 0x4af5 },
+  battleSummary: { treasureLine: 'afterExperience', noExperience: 0x4af5, treasureScreen: 'whenPile' },
   xpBonus: [{ cls: 0, stats: [2], over: 14 }, { cls: 2, stats: [0], over: 15 }, { cls: 3, stats: [0, 2], over: 15 }, { cls: 4, stats: [0, 1, 2], over: 15 },
     { cls: 5, stats: [1], over: 15 }, { cls: 6, stats: [3], over: 15 }],
   // the probe 0x29D53, 0x29DE5; the gas cell 0x1D and the kill cell 0x1B, gas immunity 0x1F and 0x63
