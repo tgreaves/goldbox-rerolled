@@ -124,7 +124,10 @@ original's camp save after loading save A, after a reload, and after the area-67
 against the port's save (`headless/run.ts --save`) after the same play and a camp: equal byte for byte
 but for the stack garbage after the party stems, the list pointers in `.SAV` and `.FX`, the inert byte
 0x3206 ([coab/records.md](A-games/coab/records.md) §5) and, on the street, the rumour counter and
-scratch word that follow the dice (ECL 0x4C0C, 0x7F79). They found that every save the port wrote
+scratch word that follow the dice (ECL 0x4C0C, 0x7F79). A camp rest of 1 day 02:15 in the inn room
+(`rules/camp.ts` `restStep` on the port's side) saves the same clock words (0, 5, 1, 2, 1, 0, 0) and the
+same records; with MATHEW's hit points lowered from 49 to 40 in the copied save, both give him 41
+(1 HP a day of rest). They found that every save the port wrote
 set ECL 0x4CFD, the game won, through PoR's wall-set copy into A, so the original refused Begin from
 it (and the port's own party screen after any save); fixed, the original resumes the port's saves,
 empty `.SWG`/`.FX` files included, and saves them again as from its own. Also seen: ECL 0x4BFB ≠ 0

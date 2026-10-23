@@ -231,7 +231,7 @@ Found by sweeping `les DS:4FB2/4FB6; …es:[di+off]` in the full disassembly. "P
 |---|---|---|---|
 | 0x4BC3, 0x4BC4 | 0x25C78, 0x25C84 | overland x, y (I) | 0x49C3/C4 |
 | 0x4BC5 | 0x194F5 (LOAD_AREA) | current GEO record | 0x49C5 |
-| 0x4BC6–0x4BCC | 0x412AD, 0x41317 | game clock, 7 words; carry moduli 10, 10, 6, 24, 30, 12, 256 (DS:3E2C, normaliser 0x411B7) (I: rounds, minutes ×1, ×10, hours, days, months, years) | — |
+| 0x4BC6–0x4BCC | 0x412AD, 0x41317 | game clock, 7 words; carry moduli 10, 10, 6, 24, 30, 12, 256 (DS:3E2C, normaliser 0x411B7): rounds, minutes ×1, ×10, hours, days, months, years (O for minutes to days: a camp rest of 1 day 02:15 from 00:00 saves 0, 5, 1, 2, 1, 0, 0, DOSBox 2026-10-23, as the port; I for rounds, months, years) | — |
 | 0x4BE5 | 0x1FC4A | area flag (no item use) | 0x49E5 |
 | 0x4BE6 | 29 sites | 1 = 3D/dungeon mode, 0 = overland; also drives DS:4FD3 (above) | 0x49E6 |
 | 0x4BE7, 0x4BE8 | 0x1954F, 0x1955B | LOAD_WALLSETS two-slot mode | 0x49E7/E8 |
