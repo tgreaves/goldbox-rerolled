@@ -267,6 +267,12 @@ async function command(e: Engine, c: string) {
   if (/^[flrbsLe]$/.test(verb)) await e.command(verb)
   else if (verb === 'travel') await e.travel(n[0])
   else if (verb === 'monsters') e.addMonsters(n[0], n[1] ?? 1, n[2] ?? 0)
+  else if (verb === 'cur') {
+    // the current character, as Home/End choose it (FUN_4894_27df): the n-th member, from 1
+    const c = e.party()[n[0] - 1]
+    if (!c) throw new Error(`cur: no member ${n[0]}`)
+    e.cur = c
+  }
   else if (verb === 'combat') {
     if (!e.monsters) throw new Error('combat: no monsters loaded')
     await e.combatNow()

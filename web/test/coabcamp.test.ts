@@ -45,3 +45,23 @@ describe.skipIf(!have)('Curse of the Azure Bonds camp Cast', () => {
     expect(c[F.memorised]).toBe(sleep.id)
   })
 })
+
+describe.skipIf(!have)('Curse of the Azure Bonds camp Memorize, as seen in DOSBox (spec/VALIDATION.md §4)', () => {
+  afterAll(() => setGame(POR))
+  it('SHARA: a level without slots left blank, Find Traps, Rest Time 00:04:30', async () => {
+    const { loadFolder, runScript } = await import('../headless/harness')
+    const texts: string[] = [], prompts: string[] = []
+    const r = await runScript({
+      files: loadFolder(COAB, dir), seed: 1,
+      script: { game: 'coab', camp: true, commands: ['cur 5', 'e'], answers: [0, 0, 'MAGIC', 'MEMORIZE', 'FIND TRAPS (CL 2)', 'EXIT', 0, 'REST'] },
+      out: (ev) => {
+        if (ev.event === 'text') texts.push(String(ev.text))
+        if (ev.event === 'end' && ev.waiting) prompts.push(String((ev.waiting as { prompt?: string }).prompt))
+      },
+    })
+    expect(r.end).toBe('answers')
+    expect(texts).toContain('SHARA can memorize:  Cleric Spells: 5 5 2')
+    expect(texts).toContain('SHARA can memorize:  Cleric Spells: 5 4 2')
+    expect(prompts[0]).toBe('Rest Time: 00:04:[30]')
+  })
+})

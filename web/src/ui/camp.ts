@@ -143,7 +143,8 @@ async function memorize(ui: CampUi) {
   let picked = false
   for (;;) {
     const levels = Array.from({ length: R.spells.levels }, (_, i) => i + 1)
-    const row = (cls: number) => levels.map((l) => (slots(c, cls, l) ? String(freeSlots(c, cls, l, st)) : '-')).join(' ')
+    // a level without a slot is left blank (FUN_3f81_05a4; seen in CotAB in DOSBox: "Cleric Spells: 5 5 2")
+    const row = (cls: number) => levels.map((l) => (slots(c, cls, l) ? String(freeSlots(c, cls, l, st)) : '')).join(' ').trimEnd()
     const has = casterClasses().filter((k) => levels.some((l) => slots(c, k.cls, l)))
     if (!has.length) { ui.print(`${nameOf(c)} ${msg('cannotMemorize')}`, false); return }
     ui.print(`${nameOf(c)} can memorize:${has.map((k) => `  ${k.name} Spells: ${row(k.cls)}`).join('')}`, true)

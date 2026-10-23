@@ -45,7 +45,7 @@ that settles it.
 
 - Its frame edge is an approximation ([`spec/C-port/rendering.md`](spec/C-port/rendering.md), Open).
 - DOSBox: no walk across an area boundary yet (every way out of the areas walked meets a question or a
-  battle), and no rest that memorises a spell ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
+  battle) ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
 - The chain in its order (`coabchain.test.ts`, [`spec/VALIDATION.md`](spec/VALIDATION.md) §4) has not reached
   6/64–6/67: ECL1 #80 enters 6/64 at wilderness place 13 (ECL 0x4C9B, 0x853C → 0x85C8), which comes from
   the cell table at 0x9D13 (cell ECL 0x4C9D); the grey man at the standing stones (place 4) counts the

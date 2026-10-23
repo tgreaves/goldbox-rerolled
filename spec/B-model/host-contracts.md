@@ -275,6 +275,7 @@ The run loads the save (`loadSave`, the party's item and effect files attached),
 | `travel d` | `travel(d)` on the tile wilderness |
 | `monsters id count picture` | loads `count` monsters of record `id` of `MON<block>CHA` as LOAD_MONSTER does |
 | `combat` | COMBAT, as a script makes it, with the monsters loaded (an error without any) |
+| `cur n` | makes the party's n-th member (from 1) the current character, as Home/End do (`FUN_4894_27df`) |
 
 **Answers.** A menu (of either host, a spell or item list too) takes a 0-based index (−1 = exit in
 a spell or item list) or the text of an item (compared trimmed); INPUT_NUMBER a number 0–65 535;

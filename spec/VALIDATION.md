@@ -325,6 +325,13 @@ the stem table's slack (the whole of each slot past the party count). Not run: t
   points." with no treasure line, the port's `R.battleSummary` for CotAB. The share itself follows the
   monsters' rolled HP, so it is not compared. Lowering the otyughs' count operand (offset 0x2603) skips the
   fight in both the original and the port.
+- **Curse of the Azure Bonds: Memorize and a rest in DOSBox** (2026-10-23): save A, camp, Magic, End four times
+  to SHARA (the original's Home/End; the headless runner's `cur 5`), Memorize, Enter on the highlighted Find
+  Traps ("Cleric Spells: 5 5 2" then "5 4 2"), Exit, "Memorize these spells? Yes", Rest: both propose "Rest
+  Time: 00:04:30"; Rest, Exit, Save in slot C. The two saves are equal but for what a load never reads (the
+  records' and effects' list pointers, 0x3206, the stem table's slack): the memorised spell and the clock
+  (04:30) alike. Found: the port's list printed "-" for a spell level without slots ("5 5 2 - -"), where the
+  original leaves it blank (FUN_3f81_05a4); fixed.
 
 ## 5. Clean-room runs
 
