@@ -57,7 +57,7 @@ export interface Fighter {
   target: Fighter | null
 }
 
-export interface AimEntry { f: Fighter | null; x: number; y: number; cost: number; ok: boolean; note?: string }
+export interface AimEntry { f: Fighter | null; x: number; y: number; cost: number; ok: boolean; note?: string; body?: boolean }
 
 /** A COMSPR frame: record (0–11, +128 for the second image) and whether it is drawn mirrored. */
 export interface SpriteFrame { rec: number; mirror?: boolean }
@@ -1044,7 +1044,8 @@ export class Battle implements FxHost {
     const thrownStr = !!b && (b.flags & 0x14) === 0x14
     const entries = this.aimEntries(f).map((en) => {
       const d = en.cost >> 1
-      let ok = !!en.f && en.f !== f && d <= rng && this.canTarget(f, en.f)
+      // a weapon refuses self and a body (FUN_3aae_2dfa mode 1: 0x2DB74, 0x2DB84; CotAB 0x2DB9D, SotSB 0x34367)
+      let ok = !!en.f && en.f !== f && !en.body && d <= rng && this.canTarget(f, en.f)
       if (ok && missile) ok = !!ammo && (!adjacentEnemy || thrownStr)
       const odds = ok && en.f ? this.hitOdds(f, en.f) : null
       return { ...en, ok, note: odds ? `≈${Math.round(odds.chance * 100)}% to hit, ${odds.damage}` : undefined }
@@ -1060,10 +1061,24 @@ export class Battle implements FxHost {
     await this.attackF(f, t, false, useAmmo)
   }
 
-  /** Candidates for Aim: everyone in sight, nearest first, orthogonal before diagonal. */
+  /**
+   * Candidates for Aim: everyone in sight, and every body the Manual cursor (FUN_3aae_2dfa, CotAB
+   * 0x2D8E5, SotSB 0x3408D) would find: on a square in sight with nobody on it, whose cell is a body
+   * mark (R.bodyCell, either mark; PoR 0x2DA9E, CotAB 0x2DAAC, SotSB 0x3426B) and whose move byte is
+   * not 0xFF, the last body record listed there, whatever its status (PoR DS:66D6, CotAB DS:6E6C,
+   * SotSB DS:868E). Nearest first, orthogonal before diagonal.
+   */
   aimEntries(f: Fighter): AimEntry[] {
-    const list = this.fighters.filter((o) => this.inPlay(o) && (o === f || this.seesF(f, o)))
+    const list: AimEntry[] = this.fighters.filter((o) => this.inPlay(o) && (o === f || this.seesF(f, o)))
       .map((o) => ({ f: o, x: o.x, y: o.y, cost: this.cost(f.x, f.y, o.x, o.y), ok: false }))
+    const bodies = new Map<string, AimEntry>()
+    for (const b of this.bodies) {
+      const { x, y } = b
+      if (!this.isBodyCell(this.bf.get(y, x)) || !this.passable(x, y, 1) || this.occupied(x, y, 1)) continue
+      if (!footprint(f.size || 1).some(([dx, dy]) => this.sees(f.x + dx, f.y + dy, x, y))) continue
+      bodies.set(`${x},${y}`, { f: b.f, x, y, cost: this.cost(f.x, f.y, x, y), ok: false, body: true })
+    }
+    list.push(...bodies.values())
     list.sort((a, b) => a.cost - b.cost)
     return list
   }

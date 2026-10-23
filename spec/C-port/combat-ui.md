@@ -135,7 +135,9 @@ pointer (§7), and during an area spell's aim the area under it (§6).
 
 ## 6. Aiming and targets
 
-**Aim** (`FUN_3aae_3558`): the candidates are every combatant in sight, nearest first; those the
+**Aim** (`FUN_3aae_3558`): the candidates are every combatant in sight and every body the original's
+Manual cursor finds (the last body on a body square nobody stands on, [combat-rules.md,
+"Manual"](../A-games/engine/combat-rules.md#aim-o-fun_3aae_3558char-rng-mode-allowempty-done-buf)), nearest first; those the
 character can attack (in weapon range, targetable, with ammunition for a missile weapon, no adjacent
 enemy unless the weapon is thrown) are offered:
 
@@ -149,7 +151,7 @@ An ally picked asks "Attack Ally:" first. The odds are worked out from the attac
 temporary spell bonuses, hence "≈" (IMP-058, `hitOdds`).
 
 **Spell targets** (`FUN_3aae_20c3`): "Target for *Spell*:" with the candidates in range ("*Name* (range
-*d*)"); for a spell that may target a square, any square can be tapped ("there (range *d*)"). An **area
+*d*)", a body "*Name* (body, range *d*)"; a weapon never takes a body); for a spell that may target a square, any square can be tapped ("there (range *d*)"). An **area
 spell** (Fireball, Stinking Cloud …) previews the squares it would cover, filled red with the aimed
 square in yellow, as the pointer moves over the field or on a first tap ("Tap the yellow square again
 to cast there."); a second tap on the same square casts (IMP-059). The original draws its template

@@ -35,13 +35,12 @@ that settles it.
 ## Curse of the Azure Bonds
 
 - Its frame edge is an approximation ([`spec/C-port/rendering.md`](spec/C-port/rendering.md), Open).
+- Dimension Door's aim (CotAB and SotSB): the original's Manual cursor refuses any occupied square for
+  it (the flag spell ≠ 0x53, CotAB 0x2DB7D, SotSB 0x3434B; [`spec/A-games/coab/combat.md`](spec/A-games/coab/combat.md),
+  "Casting"), while the port's spell aim offers the combatants and bodies in range as for any spell.
 
 ## Pool of Radiance
 
-- The manual aim does not offer a body lying on a body square, which the original's cursor targets
-  (a body record on cell 0x1F, [`spec/A-games/engine/combat-rules.md`](spec/A-games/engine/combat-rules.md),
-  "Manual"; SotSB on either mark, 0x3426B): `Battle.aimEntries` lists only combatants in play, in
-  every game.
 - Register 0x035F needs a debugger ([`spec/A-games/engine/ecl.md`](spec/A-games/engine/ecl.md), Open).
 - The Sell, Share, Appraise and arrow-weight checks were not run in DOSBox, by decision: they stay
   code-read ([`spec/open-questions.md`](spec/open-questions.md)).

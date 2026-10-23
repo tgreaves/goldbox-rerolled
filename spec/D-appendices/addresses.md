@@ -1090,7 +1090,13 @@ when its table column or sentence names CotAB.
 | 0x2D141 | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x2D4D0 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x2D4FA | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x2D577 | coab/effects | coab/effects: 7. The target hook, bolts and the area template (O unless marked) |  |
+| 0x2D8E5 | coab/combat | coab/combat: Casting |  |
+| 0x2DAAC | coab/combat | coab/combat: Casting |  |
+| 0x2DB7D | coab/combat, coab/effects | coab/combat: Casting |  |
+| 0x2DBA3 | coab/combat | coab/combat: Casting |  |
 | 0x2DBB3 | B/vocabularies | B/vocabularies: 3.4 Targeting and protection |  |
+| 0x2E075 | coab/combat | coab/combat: Casting |  |
 | 0x2E394 | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |
 | 0x2E582 | B/vocabularies | B/vocabularies: 3.7 Holding, draining, engulfing |  |
 | 0x2E842 | coab/effects, B/vocabularies | coab/effects: 2. Handlers (DS:6FC0 + 4·type, filled at 0x29E28 plus 8 slots at 0x4AA3A; types 1–147) |  |

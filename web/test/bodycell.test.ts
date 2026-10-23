@@ -1,14 +1,17 @@
 // The cell marking a fallen combatant's square (R.bodyCell): PoR's and CotAB's 0x1F whatever the status;
 // SotSB's 0x1C for status 7, else 0x1E (the fall 0x5CE5B), not on its gas cell 0x1D; a zone lifting off a
 // body puts back the mark by the zone owner's status in SotSB (0x2E334, a bug), the body's elsewhere.
+// The Manual aim (FUN_3aae_2dfa, CotAB 0x2D8E5, SotSB 0x3408D) finds a body on a body mark with nobody on
+// it: the last body record listed there; a spell may take it, a weapon refuses it.
 import { afterAll, describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { GameFiles } from '../src/store/gamefiles'
 import { Engine, type Io } from '../src/vm/engine'
-import { Battle, type CombatUi, type Fighter } from '../src/rules/combat'
+import { Battle, type AimEntry, type CombatUi, type Fighter } from '../src/rules/combat'
+import type { Spell } from '../src/data/spells'
 import { Battlefield, ROWS, COLS, type CellInfo } from '../src/rules/battlefield'
-import { POR, SOTSB, setGame, wants, type GameProfile } from '../src/games/profile'
+import { POR, COAB, SOTSB, setGame, wants, type GameProfile } from '../src/games/profile'
 import { F } from '../src/games/fields'
 
 const cells: CellInfo[] = Array.from({ length: 0x42 }, () => ({ move: 1, sight: 0, image: 0 }))
@@ -25,7 +28,9 @@ function load(dir: string, g: GameProfile) {
 
 function field(files: GameFiles) {
   const e = new Engine(files, io, 7)
-  const ui = { print: () => {}, redraw: () => {}, pause: async () => {}, sound: () => {} } as unknown as CombatUi
+  const aims: AimEntry[][] = []
+  let choose: (list: AimEntry[]) => AimEntry | null = () => null
+  const ui = { print: () => {}, redraw: () => {}, pause: async () => {}, sound: () => {}, aim: async (_f: Fighter, list: AimEntry[]) => { aims.push(list); return choose(list) } } as unknown as CombatUi
   const bf = new Battlefield(false)
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) bf.set(r, c, OPEN)
   const b = new Battle(e, ui, bf, cells)
@@ -36,12 +41,41 @@ function field(files: GameFiles) {
     b.fighters.push(f)
     return f
   }
-  return { b, bf, add }
+  return { b, bf, add, aims, pick: (fn: typeof choose) => { choose = fn } }
 }
 /** f goes down with `status`: the cell its square is left with */
 const fall = (b: Battle, bf: Battlefield, f: Fighter, status: number) => { f.c[F.status] = status; f.c[F.inPlay] = 0; b.downF(f); return bf.get(f.y, f.x) }
 
-const por = process.env.POOLRAD ?? '', sotsb = process.env.SOTSB ?? ''
+const por = process.env.POOLRAD ?? '', coab = process.env.COAB ?? '', sotsb = process.env.SOTSB ?? ''
+
+/** a one-pick spell (target mode 4) of range 6 */
+const ONE = { id: 1, name: 'Test', target: 4 } as unknown as Spell
+
+/** The aim offers a body on each of `marks`: not under a combatant, nor off a body mark; a weapon refuses it */
+async function aimsAtBodies(dir: string, g: GameProfile, marks: number[]) {
+  const { b, bf, add, aims, pick } = field(load(dir, g))
+  const me = add(2, 2)
+  me.c[F.side] = 0
+  const first = add(4, 2), last = add(4, 2)
+  for (const o of [first, last]) { o.c[F.status] = 6; o.c[F.inPlay] = 0; o.size = 0; b.bodies.push({ f: o, x: 4, y: 2, cell: OPEN }) }
+  for (const mark of marks) {
+    bf.set(2, 4, mark)
+    const body = b.aimEntries(me).filter((en) => en.body)
+    expect(body.map((en) => [en.f, en.x, en.y]), `mark ${mark.toString(16)}`).toEqual([[last, 4, 2]])
+  }
+  // a weapon (mode 1) refuses the body; a spell takes it
+  aims.length = 0
+  await b.playerAim(me)
+  expect(aims[0].find((en) => en.body)?.ok).toBe(false)
+  pick((list) => list.find((en) => en.body && en.ok) ?? null)
+  expect(await b.spellTargets(me, ONE, 6)).toEqual([last])
+  // nobody listed once the square is plain, or someone stands on it
+  bf.set(2, 4, OPEN)
+  expect(b.aimEntries(me).some((en) => en.body)).toBe(false)
+  bf.set(2, 4, marks[0])
+  add(4, 2)
+  expect(b.aimEntries(me).some((en) => en.body)).toBe(false)
+}
 
 describe('body cells', () => {
   afterAll(() => setGame(POR))
@@ -66,4 +100,7 @@ describe('body cells', () => {
     expect(b.clearCloud(owner.c, 0, 0x1d)).toBe(true)
     expect(bf.get(3, 3)).toBe(0x1c)
   })
+  it.skipIf(!por || !existsSync(por))('PoR: the aim offers a body on 0x1F to a spell, not a weapon (0x2DA9E, 0x2DB84)', () => aimsAtBodies(por, POR, [0x1f]))
+  it.skipIf(!coab || !existsSync(coab))('CotAB: the same (0x2DAAC, 0x2DBA3)', () => aimsAtBodies(coab, COAB, [0x1f]))
+  it.skipIf(!sotsb || !existsSync(sotsb))('SotSB: a body under either mark (0x3426B, 0x3436D)', () => aimsAtBodies(sotsb, SOTSB, [0x1e, 0x1c]))
 })

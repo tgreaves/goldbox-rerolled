@@ -361,7 +361,7 @@ export async function runBattle(s: BattleScreen) {
         tap: (ev) => {
           ev.preventDefault()
           const cell = view!.cellAt(ev, focus)
-          const hit = ok.find((x) => x.f && x.f.y === cell.row && x.f.x === cell.col)
+          const hit = ok.find((x) => x.f && x.y === cell.row && x.x === cell.col)
           const pick = hit ?? (allowCell ? { f: null, x: cell.col, y: cell.row, cost: battle!.cost(f.x, f.y, cell.col, cell.row), ok: true } : null)
           if (!pick) return
           if (area && !(previewAt && previewAt.x === pick.x && previewAt.y === pick.y)) {
@@ -378,7 +378,7 @@ export async function runBattle(s: BattleScreen) {
           preview(cell.col, cell.row)
         },
       })
-      const labels = ok.map((x) => `${x.f ? String.fromCharCode(...x.f.c.subarray(F.name + 1, F.name + 1 + x.f.c[F.name])) : 'there'} (range ${x.cost >> 1}${x.note ? `, ${x.note}` : ''})`)
+      const labels = ok.map((x) => `${x.f ? String.fromCharCode(...x.f.c.subarray(F.name + 1, F.name + 1 + x.f.c[F.name])) : 'there'} (${x.body ? 'body, ' : ''}range ${x.cost >> 1}${x.note ? `, ${x.note}` : ''})`)
       // the list replaces the original's Next/Prev/Manual/Center; its Exit is the aim menu's (FUN_3aae_2aa0, CotAB 0x2D577)
       const ex = word('aim', 'E')
       void s.menu([...labels, ex.text.toUpperCase()], { prompt: ok.length ? prompt : `${prompt} nobody in range`, vertical: true, keys: [...labels.map(() => ''), ex.key] })
