@@ -314,6 +314,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const big = engine.viewBackdrop
     if (big !== null && held && engine.overlandHeld) return
     showPicture(big !== null ? { big } : null)
+    drawMinimap() // no map: "Not here."
   }
   function showPicture(p: { pic: number } | { big: number } | { head: number; body: number } | null) {
     stopAnimation()

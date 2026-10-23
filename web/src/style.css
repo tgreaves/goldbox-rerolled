@@ -79,6 +79,7 @@ canvas.pixel { image-rendering: pixelated; background: #000; border: 1px solid v
   display: flex; align-items: center; justify-content: center;
 }
 .game .map canvas { width: 100%; height: 100%; object-fit: contain; display: block; cursor: zoom-in; }
+.game .map canvas[hidden] { display: none; } /* "Not here.": the map goes (the rule above outranks [hidden]) */
 .game .map .nomap { color: var(--muted); margin: 0; }
 .game .party { flex: 0 1 auto; border: 2px solid var(--ega-cyan); border-radius: 4px; overflow: auto; padding: 0.4rem 0.6rem; }
 .game .text {
