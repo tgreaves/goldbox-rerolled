@@ -77,3 +77,31 @@ describe.skipIf(!por || !existsSync(por))('the summary without enemies (PoR FUN_
     expect(e.party().map((c) => parseCharacter(c).exp).some((x, i) => x > before[i])).toBe(true)
   })
 })
+
+// the previous game state byte (CotAB 0x3206, SotSB 0x1406), as the originals wrote it in DOSBox
+// (spec/VALIDATION.md §4): CotAB 0 begun from save A (its state byte 0), SotSB 4 after the opening (its
+// area change entered: 0x2187C), both 2 after loading a save made in camp (the loader: 0x3615C, 0x41FF7)
+describe('the previous game state in a save', () => {
+  const io = new Proxy({}, { get: () => async () => 0 }) as unknown as Io
+  const again = (files: ReturnType<typeof loadFolder>, saved: { name: string; data: Uint8Array }[], dat: Uint8Array) => {
+    const e = new Engine(files, io)
+    e.loadSave(dat, saved.filter((f) => f.name.endsWith('.SAV')).map((f) => f.data))
+    return e.toSave(parseSave(dat).party)
+  }
+  it.skipIf(!sotsb || !existsSync(sotsb))('SotSB: 4 after the opening, 2 after a load', async () => {
+    setGame(SOTSB)
+    const files = loadFolder(SOTSB, sotsb)
+    const r = await runScript({ files, script: { game: 'sotsb', answers: Array(11).fill(0) }, out: () => {}, saveAs: 'B' })
+    const dat = r.saved!.find((f) => f.name === 'SAVGAMB.DAT')!.data
+    expect([dat[0x1406], dat[0x1407]]).toEqual([4, 2])
+    expect(again(files, r.saved!, dat)[0x1406]).toBe(2)
+  })
+  it.skipIf(!coab || !existsSync(coab))('CotAB: 0 from save A, 2 after a load', async () => {
+    setGame(COAB)
+    const files = loadFolder(COAB, coab)
+    const r = await runScript({ files, script: { game: 'coab', answers: [0, 0] }, out: () => {}, saveAs: 'B' })
+    const dat = r.saved!.find((f) => f.name === 'SAVGAMB.DAT')!.data
+    expect([dat[0x3206], dat[0x3207]]).toEqual([0, 2])
+    expect(again(files, r.saved!, dat)[0x3206]).toBe(2)
+  })
+})

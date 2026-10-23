@@ -805,11 +805,12 @@ when its table column or sentence names CotAB.
 | 0x1BBF2 | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x1BE57 | coab/ecl | coab/ecl: Engine entry points | `FUN_29c3_3171` |
 | 0x1BE86 | coab/ecl | coab/ecl: VM state |  |
-| 0x1BEC7 | coab/ecl | coab/ecl: Engine entry points | `FUN_29c3_31b4` |
+| 0x1BEC7 | coab/ecl, coab/records | coab/ecl: Engine entry points | `FUN_29c3_31b4` |
 | 0x1BEF9 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1BF0C | coab/ecl | coab/ecl: Vectors |  |
 | 0x1BF5D | coab/ecl | coab/ecl: Vectors |  |
 | 0x1BF6C | coab/ecl | coab/ecl: Vectors |  |
+| 0x1BFA0 | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
 | 0x1BFA8 | coab/ecl | coab/ecl: Engine entry points | `FUN_29c3_32f8` |
 | 0x1BFD5 | coab/ecl | coab/ecl: CALL targets |  |
 | 0x1BFED | coab/ecl | coab/ecl: Loading |  |
@@ -903,6 +904,7 @@ when its table column or sentence names CotAB.
 | 0x2051F | coab/ecl, B/script-vm-map | coab/ecl: Engine entry points | `FUN_2fea_0a74` |
 | 0x20722 | coab/assets, coab/ecl, B/script-vm-map | coab/assets: Background: the main change | `FUN_2fea_0c77` |
 | 0x20749 | coab/assets, coab/ecl | coab/assets: Background: the main change |  |
+| 0x20763 | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
 | 0x207A3 | coab/ecl | coab/ecl: B as a view of the current character |  |
 | 0x207EE | coab/ecl | coab/ecl: Engine registers |  |
 | 0x20846 | coab/ecl | coab/ecl: CALL targets |  |
@@ -1004,12 +1006,14 @@ when its table column or sentence names CotAB.
 | 0x26B6B | coab/assets | coab/assets: 4. Overland: no tile map |  |
 | 0x26B98 | coab/assets | coab/assets: 4. Overland: no tile map |  |
 | 0x26EE7 | coab/ecl | coab/ecl: Start-up menu and demo |  |
+| 0x26F8F | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
 | 0x26FDB | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x26FE5 | coab/assets | coab/assets: GEO and WALLDEF: unchanged |  |
 | 0x26FF6 | coab/assets | coab/assets: GEO and WALLDEF: unchanged |  |
 | 0x270B5 | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) |  |
 | 0x27135 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x272F0 | coab/effects | coab/effects: 8. Going down 0x4C05B (`e3:66`, `4aab:15ab`, char) |  |
+| 0x27326 | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
 | 0x27350 | coab/records | coab/records: 10. Creation effects and paladin abilities |  |
 | 0x27369 | B/vocabularies | B/vocabularies: 1.1 The shared globals |  |
 | 0x273C1 | coab/spells, B/vocabularies | coab/spells: 1. Dispatch and shared helpers |  |
@@ -1268,6 +1272,7 @@ when its table column or sentence names CotAB.
 | 0x3C6A2 | coab/assets | coab/assets: 8. Config, video, palette, sound |  |
 | 0x3C77B | coab/assets | coab/assets: 8. Config, video, palette, sound |  |
 | 0x3D02C | coab/ecl, B/profile, C/app-flow | coab/ecl: Opcodes | `FUN_4804_02a4` |
+| 0x3D032 | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
 | 0x3D34D | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x3D378 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x3D459 | coab/assets | coab/assets: 5. BIGPIC uses |  |

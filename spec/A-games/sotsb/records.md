@@ -293,7 +293,7 @@ Written by 0x421CB, read by 0x419DD in the same order (O, each BlockWrite and Bl
 | 0x1001 | 0x400 | array C (`DS:67CE`) | same |
 | — | — | **no ECL code buffer** | CotAB stores 0x1E00 bytes here |
 | 0x1401 | 5 | `DS:89D7..89DB`: X, Y, facing, wall, square (I: as CotAB) | same |
-| 0x1406 | 1 | previous game state `DS:67E8`: what it holds when saving (4 after the opening's camp, 2 after a load and a camp; DOSBox); the loader reads it and replaces it at once with the game state (0x41FF4: DS:67E8 := DS:67E7), so its value has no effect (O). The port writes 4 (3 overland) | same |
+| 0x1406 | 1 | previous game state `DS:67E8`: what it holds when saving (4 after the opening's camp, 2 after a load and a camp; DOSBox); the loader reads it and replaces it at once with the game state (0x41FF4: DS:67E8 := DS:67E7), so its value has no effect (O). Its writers, CotAB's (O): 0 for a new game (0x2CD27, 0x2D0DE); the state on a load (0x41FF7); the state when the restart runner 0x2178C (called only when a script asked for a restart, DS:59B5) has entered the area (0x2187C); the state before a changed map flag A 0x4BE6 (0x2681B). The state while exploring is 4 (3D view) or 3 (overland), set by the main loop from A 0x4BE6 (0x21926, 0x2198D) and after a battle (0x1F848); camp makes it 2 for its time (0x38FBC, restored 0x391D2), shops 1, a battle 5. The port keeps it as `Engine.prevMode` and writes it: 4 after the opening, 2 after a load and a camp, as the original (`savecompare.test.ts`) | same |
 | 0x1407 | 1 | game state `DS:67E7` | same |
 | 0x1408 | 12 | 3 × (u16 wall-set record id `DS:89D8+4i`, u16 slot `DS:89DA+4i`), i = 1..3 | same |
 | 0x1414 | 1 | party count | same |

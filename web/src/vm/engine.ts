@@ -154,6 +154,12 @@ export class Engine {
   /** game speed 0 (fastest) to 9 (DS:49E2; saved as ECL 0x49FC); 4 in both shipped saves */
   speed = 4
   areaChanged = false
+  /** the previous game state (CotAB DS:4FD4, SotSB DS:67E8; saved at CotAB 0x3206, SotSB 0x1406): 0 in a new
+   *  game (CotAB 0x26F8F, SotSB 0x2CD27), the loaded state on a load (CotAB 0x3615C, SotSB 0x41FF7: 2, as saves
+   *  are made in camp), and the exploration state (4 the 3D view, 3 the overland map) when a script's area
+   *  change has been entered (CotAB 0x1BFA0, SotSB 0x2187C, the end of enter) or the map flag changes
+   *  (CotAB 0x20763, SotSB 0x2681B). Nothing reads it before the next load replaces it. */
+  prevMode = 0
   quit = false
   /** the demo mode (games/startup.ts) while the demo runs, else null: its flags change a few procedures */
   demo: DemoMode | null = null
@@ -202,6 +208,7 @@ export class Engine {
     this.nodes = party.map((c) => c.slice())
     this.cur = this.savedCur = this.nodes[0]
     this.B[PARTY_SIZE - B0] = this.nodes.length
+    this.prevMode = 0
     const { block, area } = game().ecl.start
     this.setBlock(block)
     this.area = area
@@ -250,6 +257,7 @@ export class Engine {
     const pos = 0x1401 + game().saves.codeSize
     this.code = d.slice(0x1401, pos)
     this.x = d[pos]; this.y = d[pos + 1]; this.facing2 = d[pos + 2]
+    this.prevMode = d[pos + 6] // the loaded game state (CotAB 0x3615C, SotSB 0x41FF7)
     this.speed = Math.min(this.A[0x49fc - A0], 9)
     this.nodes = party.map((c) => c.slice())
     this.cur = this.savedCur = this.nodes[0]
@@ -314,8 +322,8 @@ export class Engine {
     d.set([this.x, this.y, this.facing2, wall, event], pos)
     if (L.wallSetsAt < 0) d[pos + 5] = this.overland ? this.area - 23 : 1 // DS:49FA area kind: 1 map area, 2-4 wilderness
     else {
-      // CotAB: the previous game state (I: 4 the 3D view, 3 the overland map), and the wall sets
-      d[pos + 5] = this.A[NO_OVERLAND - A0] ? 4 : 3
+      // CotAB and SotSB: the previous game state (prevMode), and the wall sets
+      d[pos + 5] = this.prevMode
       for (let s = 1; s <= 3; s++) {
         const r = this.walls.records[s], o = L.wallSetsAt + 4 * (s - 1)
         // an empty slot's number is 0xFFFF, as the original writes it (CotAB DS:722C, SotSB DS:89DA; VALIDATION.md §4)
@@ -449,6 +457,8 @@ export class Engine {
 
   write(a: number, v: number) {
     v &= 0xffff
+    // a changed map flag keeps the state before it as the previous one (CotAB 0x20763, SotSB 0x2681B)
+    if (a === NO_OVERLAND && v !== this.A[NO_OVERLAND - A0]) this.prevMode = this.exploreMode()
     if (a >= A0 && a < 0x4d00) this.A[a - A0] = v
     else if (a >= B0 && a < 0x6f00) {
       this.B[a - B0] = v
@@ -1737,6 +1747,11 @@ export class Engine {
     await this.io.refresh()
   }
 
+  /** the game state while exploring: 4 the 3D view, 3 the overland map (the main loop, SotSB 0x21926/0x2198D) */
+  private exploreMode(): number {
+    return this.A[NO_OVERLAND - A0] ? 4 : 3
+  }
+
   /** FUN_29c3_31b4: re-enter after an area change. */
   async enter() {
     for (;;) {
@@ -1756,7 +1771,8 @@ export class Engine {
       await this.run(this.vectors[0])
       if (!this.areaChanged && !this.quit) await this.run(this.vectors[1])
       await this.io.refresh()
-      if (!this.areaChanged || this.quit) { if (!this.quit) this.trace.entered?.(); return }
+      // the area entered: the previous game state := the state, the exploration one (CotAB 0x1BFA0, SotSB 0x2187C)
+      if (!this.areaChanged || this.quit) { this.prevMode = this.exploreMode(); if (!this.quit) this.trace.entered?.(); return }
     }
   }
 

@@ -462,9 +462,12 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     const again = n.toSave(stems)
     // the position block's wall ahead and square event (0x3204-0x3205 with the code buffer, SotSB's
     // 0x1404-0x1405 without it), which the loader does not read (the map is loaded again from the
-    // saved GEO number, and on the overland map there is none)
+    // saved GEO number, and on the overland map there is none); and, where the save keeps its own wall sets
+    // (CotAB, SotSB), the previous game state after them, which a load replaces with the loaded state
+    // (CotAB 0x3615C, SotSB 0x41FF7: Engine.prevMode)
     const sq = 0x1401 + L.codeSize + 3
-    const diff = dat.findIndex((v, i) => again[i] !== v && i !== sq && i !== sq + 1)
+    const prev = L.wallSetsAt >= 0 ? sq + 2 : -1
+    const diff = dat.findIndex((v, i) => again[i] !== v && i !== sq && i !== sq + 1 && i !== prev)
     if (diff >= 0) fail(`a save loaded and saved again differs at byte ${diff.toString(16)}: ${dat[diff]} then ${again[diff]}`)
     n.party().forEach((c, i) => {
       if (c.some((v, k) => chars[i].sav[k] !== v)) fail(`${nameOf(c)}'s record changes in a save and load`)

@@ -35,9 +35,6 @@ that settles it.
   grouping; the headless runner's camp resolves at once, so the port's side needs a driver), the
   `vault.dat` the original writes against the port's (records.md §5), a battle's summary with monsters
   (the outcome and treasure lines, read in the code of all three games, seen only without monsters).
-- The previous game state byte of a save (0x1406, DS:67E8) is written as 4 or 3; the original writes
-  what the variable holds (2 after a load and a camp). Its loader overwrites it at once, so it has no
-  effect (records.md §4).
 - The vault's sync keeps the newer change and loses the other device's (documented,
   [`docs/server.md`](docs/server.md)); a conflict copy would need a design.
 - Journal: entry 35's heading kept as printed ("Toom", probably "Tomb"); entry 72's map key has one

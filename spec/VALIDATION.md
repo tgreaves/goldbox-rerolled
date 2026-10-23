@@ -257,7 +257,9 @@ the stem table's slack (the whole of each slot past the party count). Not run: t
   there by the original (Encamp, Save to B) and by the port after the same load: the DAT is equal
   but for byte 0x1406, the previous game state (2 in the original's, 4 in the port's), which the
   loader overwrites at once (records.md §4); the character files equal but for the run-time pointers
-  (three of the six written byte for byte as the port's).
+  (three of the six written byte for byte as the port's). The previous-state byte (CotAB 0x3206, SotSB
+  0x1406) is now written as the originals do, from their writers (records.md §4; `Engine.prevMode`): 0 begun
+  from save A, 4 after SotSB's opening, 2 after a load (`savecompare.test.ts`).
 
 - **Curse of the Azure Bonds played further** (2026-10-23). Headless: the tour (`coabtour.test.ts`, every
   area of every block by the Debug jump, the sturdy party walking every square it reaches, 2 seeds × 1 500
