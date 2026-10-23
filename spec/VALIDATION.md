@@ -305,7 +305,15 @@ the stem table's slack (the whole of each slot past the party count). Not run: t
   5/48–5/51 and 5/53, Dracandros 6/64–6/67 and 6/69. Reached, 3 seeds × 30 000 steps: seed 1 Tilverton,
   the Fire Knives, the wilderness, Yulash 3/16–3/18, 6/69, 5/53 and Myth Drannor 5/49–5/51 (231 battles
   won); seed 2 the same as far as Yulash, then 6/69, 3/21, 5/53 and Zhentil Keep 4/32 (212 won); seed 3
-  stays in the sewers. No failures.
+  stays in the sewers. No failures. Further (80 000 steps, the undying run also taking an older save after
+  3 000 steps with nothing new, never dropping a member, and counting a battle it would lose as won, which
+  its levels decide, not the route): all three seeds pass Zhentil Keep (4/32–4/34, 4/37), Yulash
+  (3/16–3/18, 3/21), 6/69, 5/53 and Myth Drannor (5/49–5/51); none reached Dracandros' tower (6/64, place
+  13 of the wilderness, ECL 0x4C9B). Found: ECL4 #32's tavern has a one-way door, (13,7)'s east side a
+  locked door and (14,7)'s west side a wall, and its only other way out (the bar, ECL4 #35's 0x8043) puts
+  the party back on the square it came from, so a party that picks that lock stays inside (the port as
+  the data, I: the original not tried); Scribe's used-up scroll leaves the item count as it was, as the
+  original (camp-and-time.md, Rest).
 
 ## 5. Clean-room runs
 

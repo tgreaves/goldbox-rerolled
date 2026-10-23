@@ -21,8 +21,8 @@ describe.skipIf(!on)('Curse of the Azure Bonds in its order', () => {
     mkdirSync('../out/ccoab', { recursive: true })
     const first = Number(process.env.COAB_CHAIN_SEED ?? 1)
     for (let seed = first; seed < first + seeds; seed++) {
-      const r = await play({ game: COAB, files, seed, steps, tour: true, undying: true, trace: process.env.COAB_CHAIN_TRACE === '1' })
-      writeFileSync(`../out/ccoab/route-${seed}.txt`, [`${r.steps} steps; ${r.stats.battles} battles (${r.stats.won} won, ${r.stats.fled} fled, ${r.stats.lost} lost); ${r.stats.ended}`, ...r.stuck.map((s) => `stuck: ${s}`), ...r.failures.map((f) => `FAIL ${f}`), ...r.route].join('\n') + '\n')
+      const r = await play({ game: COAB, files, seed, steps, tour: true, undying: true, saveAt: process.env.COAB_CHAIN_SAVE_AT ? { areas: process.env.COAB_CHAIN_SAVE_AT.split(','), dir: `../out/ccoab/saves-${seed}` } : undefined, trace: process.env.COAB_CHAIN_TRACE === '1' })
+      writeFileSync(`../out/ccoab/${process.env.COAB_CHAIN_OUT ?? ''}route-${seed}.txt`, [`${r.steps} steps; ${r.stats.battles} battles (${r.stats.won} won, ${r.stats.fled} fled, ${r.stats.lost} lost); ${r.stats.ended}`, ...r.stuck.map((s) => `stuck: ${s}`), ...r.failures.map((f) => `FAIL ${f}`), ...r.route].join('\n') + '\n')
       failures.push(...r.failures)
     }
     expect(failures).toEqual([])

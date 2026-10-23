@@ -179,7 +179,7 @@ Finally erase the window and set `DS:6DDA` = 0.
 
 *Finish one spell* (scribes before memorisations):
 
-1. Scribe (`FUN_4b46_09e7`): the first marked byte (> 0x80) on a scroll, in inventory order, scroll slots 1–3: char[0x32 + id] = 1, remove the spell from the scroll, print "*name* has scribed *spell*". Removal (`FUN_4e53_328a`): clear the last of item[0x3C..0x3E] holding that id, and decrement name word item[0x30] (210 "With 1 Spell", 211 "With 2 Spells", 212 "With 3 Spells"); when it drops below 210 the scroll is deleted from the inventory (`FUN_10ba_1509`).
+1. Scribe (`FUN_4b46_09e7`): the first marked byte (> 0x80) on a scroll, in inventory order, scroll slots 1–3: char[0x32 + id] = 1, remove the spell from the scroll, print "*name* has scribed *spell*". Removal (`FUN_4e53_328a`): clear the last of item[0x3C..0x3E] holding that id, and decrement name word item[0x30] (210 "With 1 Spell", 211 "With 2 Spells", 212 "With 3 Spells"); when it drops below 210 the scroll is deleted from the inventory (`FUN_10ba_1509`, image 0x20A9: it only unlinks and frees the item, 0x2161–0x218C, so the record's item count char[0x14C in CotAB, the `itemCount` field] keeps counting it until the next routine that counts the items again, O).
 2. Only if no scribe was pending, memorise (`FUN_4b46_0925`): the first slot ≥ 0x80 in slot order loses bit 7; print "*name* has memorized *spell*".
 3. The next spell is found the same way (scribes first); its level sets the countdown.
 

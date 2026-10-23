@@ -6,7 +6,7 @@
 // Not a test file itself: coabplay.test.ts and porplay.test.ts run it for each game. PLAY_WATCH=<byte
 // offset> traces every write to that byte of a party record (with the trace on); PLAY_TRACE_FILE=<path>
 // writes the trace there as it goes (console output is lost if the worker dies).
-import { appendFileSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import { appendFileSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { GameFiles } from '../src/store/gamefiles'
 import { Engine, type Io } from '../src/vm/engine'
@@ -66,6 +66,9 @@ export interface PlayOptions {
    * the dice, decides how far a run gets
    */
   undying?: boolean
+  /** on first entering each of these areas ("block/area"), save there and write the files under `dir`
+   *  with the game's names (SAVGAMA.DAT and the party's CHRDATAn files), for the browser to load */
+  saveAt?: { areas: string[]; dir: string }
 }
 
 export interface PlayReport {
@@ -206,7 +209,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
    * with a party of one).
    */
   const sensible = (items: string[], prompt: string): number => {
-    if (/drop from party|gone forever|lose it\?|drop this character/i.test(prompt) && items.includes('NO')) return chance(0.95) ? items.indexOf('NO') : pick(items.length)
+    if (/drop from party|gone forever|lose it\?|drop this character/i.test(prompt) && items.includes('NO')) return o.undying || chance(0.95) ? items.indexOf('NO') : pick(items.length)
     // choices taken less often at this menu are likelier, so that menu trees are explored and a
     // town's menu loop is left in the end
     const seen = (tried.get(items.join('/')) ?? new Map<string, number>())
@@ -219,6 +222,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     return k
   }
   const tried = new Map<string, Map<string, number>>()
+  /** who has had a scroll used up by Scribe since its item count was last right */
+  const scribed = new Set<string>()
   const number = () => [0, 1, 2, 5, 10, 100, pick(1000), pick(65536)][pick(8)]
   const WORDS = ['', 'YES', 'NO', 'TEST', 'TYRANTHRAXUS', 'DRAGON', 'TILVERTON', 'AZURE', 'BOND', 'SWORD', 'KING', 'PHLAN']
 
@@ -234,7 +239,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   const campUi = (): CampUi => ({
     get engine() { return e },
     menu: async (items, opts) => choose(items, opts?.prompt),
-    print: (t) => { checkText(t, 'the camp'); say(t) },
+    print: (t) => { checkText(t, 'the camp'); say(t); const m = / has scribed /.exec(t); if (m) scribed.add(t.slice(0, m.index)) },
     view: async () => { await fiddle() },
     save: async () => { await roundTrip(false) },
     refresh: () => {},
@@ -438,7 +443,22 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
         }
         try {
           // Magic On for the party's Quick members in half the battles (Alt-M), so their spells are cast
-          const r = await fight(e, combatUi, (b) => { battle = b; b.magicOn = chance(0.5) })
+          const r = await fight(e, combatUi, (b) => {
+            battle = b
+            b.magicOn = chance(0.5)
+            // an undying party's lost battle is won: the party stands again (a battle its levels cannot win, a
+            // gaze that stones at a 1 on the die, would else be lost for ever); the route says so
+            if (o.undying) {
+              const outcome = b.outcome.bind(b)
+              b.outcome = () => {
+                const out = outcome()
+                if (out !== 'destroyed') return out
+                for (const f of b.fighters) if (!f.monster) { f.c[F.status] = 0; f.c[F.inPlay] = 1; f.c[F.hp] = f.c[F.maxHp] }
+                report.route.push(`${step} a battle lost in ${e.block}/${e.area} counted as won`)
+                return 'won'
+              }
+            }
+          })
           if (o.undying) for (const c of e.party()) if (c[F.status] >= 4 && c[F.status] <= 7) { c[F.status] = 0; c[F.inPlay] = 1; c[F.hp] = c[F.maxHp] } // unconscious, dying, dead, stoned
           // and cured, as a player would have them (Cure Disease, Remove Paralysis): the diseases and the helpless markers go
           if (o.undying) for (const c of e.party()) {
@@ -505,6 +525,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     })
     if (n.party().length !== party.length) fail(`the party is ${n.party().length} after loading, not ${party.length}`)
     lastSave = { dat, chars }
+    // kept only when something new was seen since the last one kept (a save made inside a trap is no way out)
+    if (seen !== keptSeen) { keptSeen = seen; history.push({ ...lastSave, step }); if (history.length > 40) history.shift() }
     if (!resume) return
     n.speed = e.speed
     n.session = e.session // the same run: a load keeps the start-up-only globals (Engine.session)
@@ -547,7 +569,9 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
         // combat turn)
         const copy = c.slice()
         recalc(copy, items.map((x) => x.copy()), t)
-        for (const k of [F.itemCount, F.hands]) if (copy[k] !== c[k]) fail(`${who}'s record byte ${k.toString(16)} is ${c[k]}, worked out again ${copy[k]}`)
+        // (a scroll used up by Scribe leaves the item count as it was, as in the original: camp-and-time.md, Rest)
+        if (copy[F.itemCount] === c[F.itemCount]) scribed.delete(who)
+        for (const k of [F.itemCount, F.hands]) if (copy[k] !== c[k] && !(k === F.itemCount && scribed.has(who))) fail(`${who}'s record byte ${k.toString(16)} is ${c[k]}, worked out again ${copy[k]}`)
       }
       for (const x of e.effectsOf(c)) {
         if (![x.type, x.power, x.flag].every((v) => Number.isInteger(v) && v >= 0 && v <= 255) || !Number.isInteger(x.duration) || x.duration < 0 || x.duration > 0xffff) {
@@ -571,6 +595,9 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   // ------------------------------------------------------------------- play
   /** the last save made, where a lost party starts again (a player loads it) */
   let lastSave: { dat: Uint8Array; chars: { sav: Uint8Array; itm?: Uint8Array; spc?: Uint8Array }[] }
+  /** the saves made, oldest first: an undying run that finds nothing new for long goes back to an older one */
+  const history: { dat: Uint8Array; chars: { sav: Uint8Array; itm?: Uint8Array; spc?: Uint8Array }[]; step: number }[] = []
+  let newAt = 0, seen = 0, keptSeen = -1
   const dat = files.get('SAVGAMA.DAT')
   if (!dat) throw new Error('no SAVGAMA.DAT')
   const stems = parseSave(dat).party
@@ -735,22 +762,55 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     }
   }
   let reloads = 0, healedAt = -100
+  const savedAt = new Set<string>()
   for (step = 1; ok && step <= o.steps; step++) {
     if (e.quit) {
       // the party was lost: load the last save, as a player would (a few times per run)
-      if (ending || ++reloads > 8) break
+      if (ending || ++reloads > (o.undying ? 500 : 8)) break // an undying run's player tries again until it wins
       say('  <party lost: the last save is loaded>')
+      if (o.undying) report.route.push(`${step} lost in ${e.block}/${e.area}: ${recent.slice(-5).join(' | ')}`)
       e = load(lastSave.dat, lastSave.chars, o.seed * 7919 + step)
       watchEngine()
       ok = await act('load after a loss', () => e.start())
       if (!ok) break
     }
     report.steps = step
+    // nothing new for long (a one-way door into a room whose only way out sends the party back in, ECL4
+    // #32's tavern): load a save from well before, as a player would
+    const nowSeen = [...(report.squares?.values() ?? [])].reduce((a, v) => a + v.size, 0) + report.stats.areas.size * 1000
+    if (nowSeen !== seen) { seen = nowSeen; newAt = step }
+    else if (o.undying && step - newAt > 3000 && history.length > 1) {
+      const back = history[Math.max(0, history.length - 2 - pick(4))]
+      say(`  <nothing new since step ${newAt}: the save of step ${back.step} is loaded>`)
+      report.route.push(`${step} stuck since ${newAt}: back to the save of step ${back.step}`)
+      history.splice(history.indexOf(back) + 1)
+      lastSave = back
+      e = load(back.dat, back.chars, o.seed * 7919 + step)
+      watchEngine()
+      newAt = step
+      ok = await act('load an older save', () => e.start())
+      if (!ok) break
+    }
     watchParty()
     if (o.undying) for (const c of e.party()) { if (c[F.status] >= 4 && c[F.status] <= 7) { c[F.status] = 0; c[F.inPlay] = 1 } if (c[F.status] === 0) c[F.hp] = c[F.maxHp] }
     report.stats.areas.add(`${e.block}/${e.area}`)
     const here = `${e.block}/${e.area}${e.overland ? ' overland' : ''}`
     if (!report.route.length || !report.route[report.route.length - 1].endsWith(` ${here}`)) report.route.push(`${step} ${here}`)
+    const at = `${e.block}/${e.area}`
+    if (o.saveAt?.areas.includes(at) && !savedAt.has(at) && !e.quit) {
+      savedAt.add(at)
+      await roundTrip(false)
+      const d = join(o.saveAt.dir, at.replace('/', '-'))
+      mkdirSync(d, { recursive: true })
+      writeFileSync(join(d, 'SAVGAMA.DAT'), lastSave.dat)
+      stemsOf().forEach((st, i) => {
+        const c = lastSave.chars[i]
+        writeFileSync(join(d, `${st}.SAV`), c.sav)
+        if (c.itm) writeFileSync(join(d, `${st}.${L.items}`), c.itm)
+        if (c.spc) writeFileSync(join(d, `${st}.${L.effects}`), c.spc)
+      })
+      report.route.push(`${step} saved in ${at} to ${d}`)
+    }
     if (report.squares) {
       const k = `${e.block}/${e.area}`
       if (!report.squares.has(k)) report.squares.set(k, new Set())

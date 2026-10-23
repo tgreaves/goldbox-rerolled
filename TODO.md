@@ -46,6 +46,9 @@ that settles it.
 - Its frame edge is an approximation ([`spec/C-port/rendering.md`](spec/C-port/rendering.md), Open).
 - DOSBox: no walk across an area boundary yet (every way out of the areas walked meets a question or a
   battle), and no rest that memorises a spell ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
+- ECL4 #32's tavern: a party that picks the lock east of (13,7) cannot leave ((14,7)'s west side is a wall,
+  the bar puts it back where it came from); whether the original traps it too needs a DOSBox look
+  ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4, "in its order").
 - ECL6 #69's phase spiders ask for CPIC6 #66, which no file holds, so their icon slot is empty (O, 0x2371);
   what the original's battlefield draws for an empty slot (nothing, as the port, or memory at 0000:0000) needs
   a DOSBox look ([`spec/A-games/coab/assets.md`](spec/A-games/coab/assets.md) §4).
