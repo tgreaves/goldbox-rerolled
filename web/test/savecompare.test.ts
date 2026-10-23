@@ -39,11 +39,11 @@ describe.skipIf(!sotsb || !existsSync(sotsb))('SotSB saves in the mines', () => 
     setGame(SOTSB)
     const files = loadFolder(SOTSB, sotsb)
     // block 2's entry record 48 loads the mine's map and wall sets and goes on to the temple level (51)
-    const r = await runScript({ files, script: { game: 'sotsb', answers: Array(19).fill(0), jump: [2, 48, 3, 3, 1] }, out: () => {}, save: 'B' })
-    const dat = r.save!.find((f) => f.name === 'SAVGAMB.DAT')!.data
+    const r = await runScript({ files, script: { game: 'sotsb', answers: Array(19).fill(0), jump: [2, 48, 3, 3, 1] }, out: () => {}, saveAs: 'B' })
+    const dat = r.saved!.find((f) => f.name === 'SAVGAMB.DAT')!.data
     expect([dat[0], dat[0x801 + 2 * 0x312]]).toEqual([2, 2])
     const e = new Engine(files, new Proxy({}, { get: () => async () => 0 }) as unknown as Io)
-    e.loadSave(dat, r.save!.filter((f) => f.name.endsWith('.SAV')).map((f) => f.data))
+    e.loadSave(dat, r.saved!.filter((f) => f.name.endsWith('.SAV')).map((f) => f.data))
     expect([e.block, e.area]).toEqual([2, 51])
   })
 })
