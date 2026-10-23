@@ -152,6 +152,25 @@ back, a frame after each: 25 of 25 exact. Not run: the Sell, Share and Appraise
   per piece (PRINT goes on along the line, host-contracts.md `print`); SotSB's shop factor 16 written
   into its data (Buy 0x25385). Not reached: Cast in a battle (no spells memorised by those at hand)
   and a real bundle of two scrolls (one scroll in the opening).
+- **Silver Blades: casting in a battle and a real bundle** (2026-10-23, Playwright with headless
+  Chrome against the built app, save A). Bundle: the opening's Mage Scroll given to MALACHITE, two
+  more from the debug editor's Add item (now offering the game's scrolls); Join on the first: "Bundle
+  of 3 Scrolls", weight 9 (3², the kept quirk), encumbrance 13 with the 4 gold; Halve: "Bundle of 2
+  Scrolls" (weight 4) and the first scroll after it (the opening's, weight 10); Halve again: the two
+  scrolls, the bundle's second in its place and its first after it (0x4474D); Join again: "Bundle of 3
+  Scrolls"; Use needs it readied ("Must be Readied"), then "Nothing happens." (its spell bytes are
+  cleared, 0x44A44). Casting: DOMINIC (cleric) and MORGAINE (magic-user) memorise on the Memorize
+  panel, rest 9 h ("has memorized" for each), Debug jump to block 2, area 68, Attack the fighter, rest
+  until "YOU ARE SPOTTED BY A PATROL." (three necromancers, six hell hounds); in the battle Cast:
+  the list with each spell's line, Magic Missile aimed at a necromancer (18 and 20 points "from
+  Magic", "lost a spell" when it was casting), Cure Light Wounds ("Begins Casting", the aim at its
+  later turn in the round: self and the adjacent allies only) on DOMINIC ("fully healed") and on
+  MALACHITE ("partially healed", 12 → 13); the turn passes after each. No page or console errors.
+  Found and fixed: the monsters were drawn as nothing in block 2 (SotSB has CPIC1 only; its loaders
+  take CPIC and SPRIT from file 1 and some PIC records from PIC4 and PIC5, assets.md §1: profile
+  `pictureFiles`); the Memorize panel headed a ranger's druid slots "Magic-User spells"; each step of
+  Rest Time added a line to the log (now redrawn, as "Camp:" and "Magic:" coming back); the debug Add
+  item listed nameless types and no scrolls.
 
 ## 5. Clean-room runs
 

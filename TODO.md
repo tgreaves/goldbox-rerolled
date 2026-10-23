@@ -7,12 +7,10 @@ that settles it.
 
 ## Next steps (2026-10-23, in order)
 
-1. **SotSB in the browser**: casting in a battle and Join/Halve on a real bundle (below), with
-   Playwright against the built app (`docs/environment.md`, "Browser play-testing").
-2. **More DOSBox comparisons** with `tools/dosbox/` where the port's behaviour rests on **I** items
+1. **More DOSBox comparisons** with `tools/dosbox/` where the port's behaviour rests on **I** items
    (`spec/open-questions.md`): `viewcheck.py --moves` walks, saves written by the original compared
    with the port's (`run.py` keeps every file the game changes), SotSB beyond its view.
-3. **Play-throughs** of CotAB and SotSB beyond the opening (headless harness first, then the browser),
+2. **Play-throughs** of CotAB and SotSB beyond the opening (headless harness first, then the browser),
    fixing what they find.
 
 ## Waiting on Tristan
@@ -25,8 +23,6 @@ that settles it.
 
 ## Secret of the Silver Blades
 
-- Casting in a battle, and Join/Halve on a real bundle of two or more scrolls, not yet exercised in the
-  browser (unit tests cover both: `web/test/sotsbspells.test.ts`, `bundle.test.ts`).
 - The vault's sync keeps the newer change and loses the other device's (documented,
   [`docs/server.md`](docs/server.md)); a conflict copy would need a design.
 - Journal: entry 35's heading kept as printed ("Toom", probably "Tomb"); entry 72's map key has one
