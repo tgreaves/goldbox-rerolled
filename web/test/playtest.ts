@@ -27,6 +27,9 @@ import { drop, halve, join as joinStacks, trade } from '../src/rules/inventory'
 import { castOutside, itemSpells, spendUse, targetKind } from '../src/rules/magic'
 import { isScroll, knows, memorise } from '../src/rules/camp'
 import { bookSpell } from '../src/games/rules'
+import { sceneOf } from '../src/render/viewscene'
+import { drawView, viewCalls } from '../src/render/drawnview'
+import { parseRecord } from '../src/data/image'
 
 export interface PlayOptions {
   game: GameProfile
@@ -47,6 +50,15 @@ export interface PlayOptions {
    * set (the sweep tests allow the same ones); listed with the run's stuck notes, not failed
    */
   jumpArtifacts?: RegExp[]
+  /** start in this block and area at this square (the debug jump, IMP-025), as `jump` but chosen */
+  jumpTo?: { block: number; area: number; x: number; y: number; facing?: number }
+  /**
+   * a tour: the walk goes to the nearest square of the area not yet stood on (by the map's passages),
+   * the party is made sturdy (more HP, a level's XP and money) so that it lives to see the area, and
+   * every picture, sprite and combat icon the game asks for, and the drawn view at every step, are
+   * checked against the files (failures "no picture …", "the view …")
+   */
+  tour?: boolean
 }
 
 export interface PlayReport {
@@ -56,6 +68,8 @@ export interface PlayReport {
   failures: string[]
   /** scripts that ran out of instructions while still asking (towns waiting on the player) */
   stuck: string[]
+  /** squares stood on, by block/area */
+  squares?: Map<string, Set<number>>
   /** how far it got: areas visited, battles, screens */
   stats: { areas: Set<string>; battles: number; won: number; lost: number; fled: number; rounds: number; saves: number; screens: Map<string, number>; menus: number; ended: string }
 }
@@ -309,6 +323,29 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   }
 
   const tables = () => { const img = e.startImage; return img ? new Tables(img) : null }
+  /** a picture the game asks for must be in its files and decode (the front end shows nothing else) */
+  const needPicture = (family: string, id: number, who = '') => {
+    const raw = files.picture(family, e.block, id)
+    let ok = !!raw
+    if (raw) try { ok = parseRecord(raw, family === 'PIC').frames.length > 0 } catch { ok = false }
+    if (!ok) fail(`no picture ${family} #${id} in block ${e.block}${who ? ` for ${who}` : ''}${raw ? ' (it does not decode)' : ''}`)
+  }
+  /** the area the jump put the party in, until it leaves it */
+  let jumpedInto = ''
+  /** the drawn view now: every wall in sight has its wall set loaded and every tile it names */
+  const checkView = () => {
+    const scene = sceneOf(e, files)
+    if (!scene) return
+    for (const c of viewCalls(scene.geo, scene.x, scene.y, scene.facing2, scene.closed, scene.tables)) {
+      const row = scene.table.subarray((c.type - 1) * 156, c.type * 156)
+      // an area entered by the jump may lack the wall sets the area before it loads (a jump artifact)
+      if (row.every((v) => v === 0) && `${e.block}/${e.area}` === jumpedInto) continue
+      if (row.every((v) => v === 0)) { fail(`the view draws wall type ${c.type}, whose wall set is not loaded (slot ${Math.ceil(c.type / 5)})`); continue }
+      const k = scene.tables.start[c.kind], n = scene.tables.width[c.kind] * scene.tables.height[c.kind]
+      for (let i = k; i < k + n; i++) if (row[i] && !scene.tile(row[i])) { fail(`the view's wall type ${c.type} names tile ${row[i]}, not in the tile bank`); break }
+    }
+    drawView(scene)
+  }
   /** the party screen of a training hall (explore.ts trainingHall): train someone, or begin */
   const hall = async () => {
     const t = tables()
@@ -342,7 +379,18 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     menu: async (items, opts) => choose(items, opts?.prompt),
     inputNumber: async () => number(),
     inputText: async () => WORDS[pick(WORDS.length)],
-    picture: () => {}, sprite: () => {}, clearView: () => {}, clearTop: () => {}, glyphs: () => {},
+    picture: (p) => {
+      if (!o.tour || !p) return
+      if ('big' in p) needPicture('BIGPIC', p.big)
+      else if ('pic' in p) needPicture('PIC', p.pic)
+      else { needPicture('HEAD', p.head); needPicture('BODY', p.body) }
+    },
+    sprite: (sprite, picture, distance) => {
+      if (!o.tour) return
+      needPicture('SPRIT', sprite)
+      if (distance === 0 && picture !== 255) needPicture(e.B[0x6de1 - 0x6b00] === 0xff ? 'PIC' : 'BODY', picture)
+    },
+    clearView: () => {}, clearTop: () => {}, glyphs: () => {},
     river: async () => {}, refresh: async () => {}, pause: async () => {}, sound: () => {},
     async engine(what) {
       screen(what)
@@ -355,6 +403,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
         changedAt = 0
         const ready = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80).length
         say(`  party: ${e.party().map((c) => `${nameOf(c)} ${c[F.hp]}/${c[F.maxHp]} st${c[F.status]} in${c[F.inPlay]} sp${ready(c)}`).join(', ')}`)
+        if (o.tour) for (const [c, id] of e.combatPicture) { needPicture('CPIC', id, nameOf(c)); needPicture('CPIC', id + 128, nameOf(c)) }
         try {
           // Magic On for the party's Quick members in half the battles (Alt-M), so their spells are cast
           const r = await fight(e, combatUi, (b) => { battle = b; b.magicOn = chance(0.5) })
@@ -521,6 +570,37 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     if (turn === 0) { const k = key(e.x + STEPS[d][0], e.y + STEPS[d][1]); visits.set(k, (visits.get(k) ?? 0) + 1) }
     return turn === 0 ? 'f' : turn === 1 ? 'r' : turn === 3 ? 'l' : 'b'
   }
+  /** a tour's walk: towards the nearest square of this area not yet stood on, through open passages */
+  const blocked = new Set<string>()
+  const tourMove = (): string => {
+    const g = e.geo
+    if (!g) return 'f'
+    const at = (x: number, y: number) => (y & 15) * 16 + (x & 15)
+    const set = report.squares!.get(`${e.block}/${e.area}`)!
+    const from = new Map<number, number>([[at(e.x, e.y), -1]])
+    const queue = [at(e.x, e.y)]
+    let goal = -1
+    while (queue.length && goal < 0) {
+      const q = queue.shift()!
+      for (const d of [0, 1, 2, 3]) {
+        const x = q & 15, y = q >> 4
+        if (g.passage(x, y, d) === 0 || blocked.has(`${e.block}/${e.area}/${q}/${d}`)) continue
+        const n = at(x + STEPS[d][0], y + STEPS[d][1])
+        if (from.has(n)) continue
+        from.set(n, q * 4 + d)
+        if (!set.has(n)) { goal = n; break }
+        queue.push(n)
+      }
+    }
+    if (goal < 0) return explore() // all seen: wander (towards the exits, as before)
+    let n = goal, d = 0
+    while (from.get(n)! >= 0 && (from.get(n)! >> 2) !== at(e.x, e.y)) n = from.get(n)! >> 2
+    d = from.get(n)! & 3
+    const turn = (d - e.facing + 4) & 3
+    if (turn === 0) lastTry = `${e.block}/${e.area}/${at(e.x, e.y)}/${d}`
+    return turn === 0 ? 'f' : turn === 1 ? 'r' : turn === 3 ? 'l' : 'b'
+  }
+  let lastTry = ''
   /** one action; false when the run cannot go on */
   const act = async (what: string, f: () => Promise<void>): Promise<boolean> => {
     stepMenus = 0
@@ -546,6 +626,17 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   }
   let ok = await act('start', () => e.start())
   if (ok && o.fresh && !e.quit) await roundTrip(false) // the save to come back to: the new game's start
+  if (ok && o.jumpTo && !e.quit) {
+    const j = o.jumpTo
+    ok = await act(`jump to block ${j.block} area ${j.area}`, () => e.jump(j.block, j.area, j.x, j.y, j.facing ?? 0))
+    jumpedInto = `${e.block}/${e.area}`
+    if (ok && !e.quit) await roundTrip(false)
+  }
+  if (o.tour) {
+    report.squares = new Map()
+    // sturdy: the most HP a record holds, a level's XP to train with and money for the halls
+    for (const c of e.party()) { c[F.maxHp] = 200; if (c[F.status] === 0) c[F.hp] = 200; c[F.money + 8] = 0xe8; c[F.money + 9] = 0x03 }
+  }
   if (ok && o.jump) {
     // a random area with a script, at a random square (the debug jump, IMP-025)
     const areas: [number, number][] = []
@@ -584,6 +675,13 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     report.steps = step
     watchParty()
     report.stats.areas.add(`${e.block}/${e.area}`)
+    if (report.squares) {
+      const k = `${e.block}/${e.area}`
+      if (!report.squares.has(k)) report.squares.set(k, new Set())
+      report.squares.get(k)!.add((e.y & 15) * 16 + (e.x & 15))
+      if (k !== jumpedInto) jumpedInto = ''
+      try { checkView() } catch (err) { fail(`the view: ${(err as Error).message}`) }
+    }
     const r = rnd()
     if (r < 0.02) ok = await act('save and load', () => roundTrip())
     else if (r < 0.04) ok = await act('fiddle with items', fiddle)
@@ -599,7 +697,12 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       ok = await act('camp to heal', () => e.command('e'))
       plan = []
     } else if (e.overland) ok = await act('travel', () => e.travel(pick(4)))
-    else {
+    else if (o.tour && r < 0.9) {
+      const c = tourMove(), was = `${e.block}/${e.area}/${(e.y & 15) * 16 + (e.x & 15)}`, tried = c === 'f' ? lastTry : ''
+      ok = await act(`command ${c}`, () => e.command(c))
+      // a step that left the party where it was (a door it cannot open, a script that turns it back)
+      if (tried && `${e.block}/${e.area}/${(e.y & 15) * 16 + (e.x & 15)}` === was) blocked.add(tried)
+    } else {
       const c = r < 0.8 ? explore() : r < 0.86 ? 'lrbf'[pick(4)] : r < 0.88 ? 's' : r < 0.94 ? 'L' : 'e'
       ok = await act(`command ${c}`, () => e.command(c))
     }

@@ -23,6 +23,9 @@ that settles it.
 
 ## Secret of the Silver Blades
 
+- The Debug jump into an area whose wall sets an earlier script loads (the mine levels 2/49–2/51, the
+  frost giants' village 3/81) shows the last area's wall sets or none; it loads the area's own map
+  (IMP-025) but cannot know which wall sets the scripts on the way would load.
 - The vault's sync keeps the newer change and loses the other device's (documented,
   [`docs/server.md`](docs/server.md)); a conflict copy would need a design.
 - Journal: entry 35's heading kept as printed ("Toom", probably "Tomb"); entry 72's map key has one

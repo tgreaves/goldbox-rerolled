@@ -1215,7 +1215,8 @@ export class Engine {
         c[F.body] = tb(body.at + g * 5 + this.roll(1, 5))
         c[F.head] = tb(T.npcHeads.at + g * 8 + this.roll(1, 8))
       }
-      if (how.iconPicture) this.combatPicture.set(c, id)
+      // in the demo a few NPCs take another picture (SotSB 0x4181F; startup.ts npcPictures)
+      if (how.iconPicture) this.combatPicture.set(c, this.demo?.npcPictures.find(([m]) => m === id)?.[1] ?? id)
       const n = party.length
       this.nodes.splice(n, 0, c)
       this.B[PARTY_SIZE - B0] = n + 1
@@ -1575,6 +1576,14 @@ export class Engine {
     } else {
       this.x = x & 15
       this.y = y & 15
+      // the map of the area's own number, where there is one: the scripts on the way load it (SotSB's
+      // mine levels 2/49–2/51 have it loaded by 2/48's, and LOAD_AREA loads only with ECL 0x49E6 set,
+      // SotSB 0x1E81E), which a jump skips; the area's own LOAD_AREA, if any, replaces it
+      if (this.files.record(`GEO${block}`, area)) {
+        this.A[NO_OVERLAND - A0] = 1
+        this.A[GEO_ID - A0] = area
+        this.loadGeo(area)
+      }
     }
     this.facing2 = (facing & 3) * 2
     this.loadEcl(area)

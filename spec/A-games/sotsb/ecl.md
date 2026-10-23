@@ -236,6 +236,10 @@ Used: 0x2DCB 144 times, 0xB203 6, 0xC01E 2.
 
 The image starts with "May 18,1990" and the start-up menu "Secret of the Silver Blades" / "Play Demo"
 (image 0x40–0x88), as CotAB's. Key D (DS:59A2 = 0x44) sets **DS:67E9 := 1, the demo flag** (0x266).
+In the demo ADD_NPC (0x20D77 → 0x417E3) keeps the monster id in char[0x12B] but loads another combat
+picture for three ids: **0x32 → 0x4D, 0x33 → 0x4C, 0x34 → 0x42** (0x4181F–0x41841; CPIC1 holds 0x4D,
+0x4C and 0x42 but not 0x32–0x34). CotAB's ADD_NPC has no such test (0x3596E–0x3599F). The port:
+`startMenu.demo.npcPictures` (O).
 New game or load (0x21934): when A[0x4BF2] is 0, with the demo flag `19d:0`(1), the area DS:A4C2 := **3**
 and DS:7420 := 1; else DS:7420 := 2, the area := **0x11 = 17** and the current character recomputed
 (`151:2a`); otherwise the saved area. Record 17 is in ECL2 (block 2), record 3 in ECL1 (block 1)

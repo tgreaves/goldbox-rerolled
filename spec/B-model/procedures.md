@@ -928,7 +928,9 @@ are read by the procedures they change, while the engine runs a demo:
   input returns after one read (the host contract, [host-contracts.md §2](host-contracts.md#2-the-script-host-io));
 - `continueBattle` false: a battle whose enemy side is gone does not ask "Continue Battle:";
 - `aftermath` false: after a battle only the monsters leave the list (no outcome, experience, shares
-  or treasure); the party size and the battle variables (ECL 0x6E70–0x6E72, 0x6DE3, 0x6DE6) are reset.
+  or treasure); the party size and the battle variables (ECL 0x6E70–0x6E72, 0x6DE3, 0x6DE6) are reset;
+- `npcPictures`: an NPC that ADD_NPC brings in with one of these monster ids takes the paired combat
+  picture instead of its own (SotSB's demo NPCs 0x32–0x34, whose own CPIC records do not exist).
 
 Nothing is saved, and the party is disbanded after the demo's script ends
 ([host-contracts.md §3](host-contracts.md#3-the-engines-entry-points)).

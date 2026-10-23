@@ -171,6 +171,18 @@ back, a frame after each: 25 of 25 exact. Not run: the Sell, Share and Appraise
   `pictureFiles`); the Memorize panel headed a ranger's druid slots "Magic-User spells"; each step of
   Rest Time added a line to the log (now redrawn, as "Camp:" and "Magic:" coming back); the debug Add
   item listed nameless types and no scrolls.
+- **Silver Blades toured headless** (2026-10-23, `sotsbtour.test.ts`, the play-test's `tour`): every
+  area of the three blocks but the demo's record entered by the Debug jump at the open square nearest
+  the middle, the party made sturdy (200 HP, money), then a walk to the nearest square not yet stood
+  on, with the play-test's fights, camps, shops and saves on the way; every picture, sprite and combat
+  icon asked for, and the drawn view at every step (every wall in sight with its wall set and tiles),
+  checked against the files. 1 500 steps an area: no failures; the mine levels 2/49–2/51 and the
+  ruins 1/32–1/33 are reached by their stairs and teleports, so a walk covers a part of each. Found
+  and fixed: the demo's three NPCs had no combat picture (ADD_NPC swaps their pictures in the demo,
+  ecl.md "Start-up and new game"); a jump into an area whose map an earlier script loads (2/49–2/51)
+  kept the last area's map, and after a save and load the party could not move (the jump now loads the
+  area's own map, IMP-025); SotSB's view closes its edges in areas 0 and 80, not CotAB's 0 and 10
+  (assets.md §2). The demo itself runs in `demo.test.ts`, every picture and icon in the files.
 
 ## 5. Clean-room runs
 

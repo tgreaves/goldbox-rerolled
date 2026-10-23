@@ -1194,6 +1194,7 @@ when its table column or sentence names CotAB.
 | 0x357EF | coab/records | coab/records: 4. Effects: `.FX` (CotAB) vs `.SPC` (PoR) |  |
 | 0x358CF | coab/records | coab/records: 3. Items (diff vs engine/records.md "Item record", "Item types") |  |
 | 0x3593D | coab/ecl, coab/records | coab/ecl: Opcodes | `FUN_45c5_1262` |
+| 0x3596E | B/profile | B/profile: 3.3 The start-up menu and demo (`StartMenu`) |  |
 | 0x35974 | coab/ecl, coab/records, B/script-vm-map | coab/ecl: Opcodes |  |
 | 0x35999 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x3599F | coab/ecl, B/script-vm-map | coab/ecl: Opcodes |  |
@@ -1285,6 +1286,8 @@ when its table column or sentence names CotAB.
 | 0x41647 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x41709 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x41741 | coab/camp | coab/camp: 1. Fix |  |
+| 0x4181F | B/profile | B/profile: 3.3 The start-up menu and demo (`StartMenu`) |  |
+| 0x41841 | B/profile | B/profile: 3.3 The start-up menu and demo (`StartMenu`) |  |
 | 0x41ADE | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x41B6A | coab/camp | coab/camp: 1. Fix |  |
 | 0x41B8F | coab/camp | coab/camp: 1. Fix |  |
@@ -1549,6 +1552,7 @@ when its table column or sentence names CotAB.
 | 0x56E3E | B/procedures | B/procedures: 1. Spell slots |  |
 | 0x578B6 | B/procedures | B/procedures: 7. Creation and training values |  |
 | 0x579C5 | coab/assets | coab/assets: GEO and WALLDEF: unchanged |  |
+| 0x5A507 | B/profile | B/profile: 3.1 The view (`ViewArt`) |  |
 <!-- /generated:coab -->
 
 ## Open

@@ -59,7 +59,7 @@ this order into an 88 × 88 frame of EGA indices:
    [maps-and-view.md, "Drawing order"](../A-games/engine/maps-and-view.md#drawing-order-painters-algorithm):
    the two front-wall walks at depth 2 with their edge pieces, the side walls, the half-walks of depths 1
    and 0; the view's own wall lookup (wrapping by one map; nothing outside the map in the profile's
-   `view.closedEdges` areas, 0 and 10 in both games); each piece cell by cell, clipped to the 11 × 11
+   `view.closedEdges` areas, 0 and 10 in PoR and CotAB, 0 and 80 in SotSB); each piece cell by cell, clipped to the 11 × 11
    cells, tile 0 skipped and tile colour 13 leaving what is under it. The piece tables and direction
    vectors are read from `START.EXE` (`T.viewPieces`, `T.wallDx`, `T.wallDy`,
    [B-model/records-and-tables.md](../B-model/records-and-tables.md)); without it, part A's values.

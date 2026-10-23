@@ -447,6 +447,13 @@ imports (spec/VALIDATION.md §4), with its fixes: no camp or Alter prompt (`camp
 Level left with Escape (`MenuOpts.cancel`), the shop's factor 16 as data, a PRINT going on along
 the line (`Io.print`'s `run`, for all games).
 
+*Toured (2026-10-23)*: `test/sotsbtour.test.ts` (the play-test's `tour`: every area by the Debug jump, a
+sturdy party walking to every square it can reach, every picture, sprite, combat icon and drawn-view
+wall checked against the files; `SOTSB_TOUR_STEPS`, `SOTSB_TOUR_AREAS`) and the demo in
+`test/demo.test.ts`. Fixed on the way: the demo's NPC pictures (`startMenu.demo.npcPictures`, 0x4181F),
+SotSB's closed-edge areas 0 and 80 (`view.closedEdges`, 0x5A507), and the Debug jump loading the area's
+own map (IMP-025).
+
 ## Backlog
 
 Open items, not yet done or not yet checked, are in [`../TODO.md`](../TODO.md).

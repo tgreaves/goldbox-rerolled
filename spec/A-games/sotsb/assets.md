@@ -84,6 +84,9 @@ draw `2bc:9e3`.
   16–103 on both axes (O for the fills). The walls' origin is not traced (**?**). PoR's view was found
   at 24–111 in the running game ([engine/graphics.md](../engine/graphics.md)).
 - The overhead map draws its walls as tile 0x104 + mask (0x59F01), as CotAB.
+- **Closed edges.** The view's wall lookup (0x5A507) and the passage test (0x5A3D8) find no wall and no
+  passage outside the map when the area (`DS:A4C2`) is **0 or 0x50** (0x5A51D–0x5A524, 0x5A3EE–0x5A3F5);
+  elsewhere a coordinate wraps by one map. CotAB's areas are 0 and 10. The port: `view.closedEdges`.
 
 ## 3. BIGPIC and PICTURE (O)
 

@@ -130,6 +130,12 @@ describe.skipIf(!have)('Silver Blades files', () => {
     expect([e2.block, e2.area]).toEqual([2, 17]) // loaded back where it was saved
   })
 
+  it("the view's closed-edge areas are the two the wall lookup tests (0x5A51D, 0x5A524: cmpb $n, DS:A4C2)", () => {
+    const img = mergedImage(new Uint8Array(readFileSync(join(dir, 'START.EXE'))), new Uint8Array(readFileSync(join(dir, 'GAME.OVR'))))
+    const cmp = (at: number) => { expect([...img.subarray(at, at + 4)]).toEqual([0x80, 0x3e, 0xc2, 0xa4]); return img[at + 4] }
+    expect(SOTSB.view.closedEdges).toEqual([cmp(0x5a51d), cmp(0x5a524)])
+  })
+
   it('every message and menu the profile addresses reads as a string of the merged image', () => {
     const t = new GameText(mergedImage(new Uint8Array(readFileSync(join(dir, 'START.EXE'))), new Uint8Array(readFileSync(join(dir, 'GAME.OVR')))))
     const all: [string, number][] = [

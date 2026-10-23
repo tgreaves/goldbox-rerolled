@@ -76,6 +76,9 @@ export const COAB_VIEW: ViewArt = {
 export const SOTSB_VIEW: ViewArt = {
   ...COAB_VIEW,
   bigFrom: 0x70, overlandPicture: null,
+  // the wall lookup 0x5A507 (and the passage test 0x5A3D8) find nothing outside the map in areas 0 and
+  // 0x50 (DS:A4C2; CotAB's 10 is not tested)
+  closedEdges: [0, 0x50],
   frame: { bars: { horizontal: 55, vertical: 53, below: 52, above: 54, mask: 13 } },
   font: { file: '8X8D5', record: 201 },
 }

@@ -23,6 +23,9 @@ export interface DemoMode {
   /** after a battle: outcome, experience, NPC shares and treasure (CotAB 0x1EE98, 0x1EEAC, 0x1EF4E:
    *  in the demo only the monsters leave the list) */
   aftermath: boolean
+  /** ADD_NPC's combat picture (CPIC) for these monster ids in the demo, [id, picture] (SotSB 0x4181F–0x41841:
+   *  0x32 → 0x4D, 0x33 → 0x4C, 0x34 → 0x42 while DS:67E9 is set; the record keeps its id); CotAB none (0x3596E) */
+  npcPictures: [number, number][]
 }
 
 /** A menu after the title sequence: Play goes to the game, the demo key runs the demo. */
@@ -55,7 +58,7 @@ export const COAB_STARTUP: StartMenu = {
   titleAgain: true,
   demo: {
     block: 1, record: 82, speed: 9,
-    keysWait: false, continueBattle: false, aftermath: false,
+    keysWait: false, continueBattle: false, aftermath: false, npcPictures: [],
   },
 }
 
@@ -72,6 +75,7 @@ export const SOTSB_STARTUP: StartMenu = {
   demo: {
     block: 1, record: 3, speed: 9,
     keysWait: false, continueBattle: false, aftermath: false,
+    npcPictures: [[0x32, 0x4d], [0x33, 0x4c], [0x34, 0x42]], // the demo's NPCs, whose own pictures CPIC1 lacks
   },
 }
 

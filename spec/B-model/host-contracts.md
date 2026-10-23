@@ -77,7 +77,7 @@ a host shows it and stays usable.
 | `toSave(stems)` | the save image in the game's layout, the engine's globals first copied into ECL variables as the original's save does ([engine/savegame.md](../A-games/engine/savegame.md)) |
 | `newDemo(demo)` | fresh variables, no party (nobody current until an NPC joins), the demo's block, record and speed |
 | `runDemo()` | the demo record's `on_enter`, then every member leaves; nothing else of the loop runs, nothing is saved |
-| `jump(block, area, x, y, facing)` | the Debug panel's jump (IMP-025): as NEW_ECL to that block and area, then the area entry; a tile-wilderness area takes a wilderness position (ECL 0x49C3/0x49C4, 0x4A9E := 0) |
+| `jump(block, area, x, y, facing)` | the Debug panel's jump (IMP-025): as NEW_ECL to that block and area, then the area entry; a tile-wilderness area takes a wilderness position (ECL 0x49C3/0x49C4, 0x4A9E := 0); another area with a `GEO<block>` record of its number has that map loaded first (ECL 0x49C5 := the area, 0x49E6 := 1), which its own LOAD_AREA may replace |
 
 ### 3.2 Exploration
 

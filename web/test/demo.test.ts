@@ -4,7 +4,7 @@
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { COAB, POR, setGame } from '../src/games/profile'
+import { COAB, POR, SOTSB, setGame } from '../src/games/profile'
 import { startMenuText } from '../src/games/startup'
 import { unexepack } from '../src/data/exepack'
 import { Engine, type Io } from '../src/vm/engine'
@@ -121,5 +121,46 @@ describe.skipIf(!haveCoab)('Curse of the Azure Bonds start-up menu and demo', ()
     expect(e.nodes).toEqual([]) // every member left
     expect(e.party()).toEqual([])
     expect(toSave).not.toHaveBeenCalled()
+  }, 120000)
+})
+
+const sotsb = process.env.SOTSB ?? ''
+const haveSotsb = sotsb !== '' && existsSync(sotsb)
+
+describe.skipIf(!haveSotsb)('Secret of the Silver Blades demo', () => {
+  afterAll(() => setGame(POR))
+
+  it('runs the demo to its end with every picture and combat icon in the files (NPC pictures remapped, 0x4181F)', async () => {
+    setGame(SOTSB)
+    const files = loadFiles(SOTSB, sotsb)
+    const missing: string[] = []
+    const need = (family: string, id: number, who = '') => { if (!files.picture(family, e.block, id)) missing.push(`${family} #${id}${who ? ` (${who})` : ''}`) }
+    const icons: string[] = []
+    let battles = 0
+    const combatUi: CombatUi = {
+      print: () => {}, redraw: () => {}, pause: async () => {},
+      menu: async (items) => items.length - 1, step: async () => 'end', aim: async () => null,
+      confirm: async () => false, view: async () => {}, sound: () => {}, pick: async () => -1,
+    }
+    let e!: Engine
+    const io: Io = {
+      print: () => {}, menu: async () => 0, inputNumber: async () => 0, inputText: async () => '',
+      picture: (p) => { if (p && 'pic' in p) need('PIC', p.pic); else if (p && 'big' in p) need('BIGPIC', p.big) },
+      sprite: (s) => need('SPRIT', s), clearView: () => {}, clearTop: () => {}, glyphs: () => {},
+      refresh: async () => {}, sound: () => {}, pause: async () => {}, nextFrame: () => {},
+      async engine(what) {
+        if (what !== 'combat') throw new Error(`the demo asked for ${what}`)
+        battles++
+        for (const [c, id] of e.combatPicture) { icons.push(`${nameOf(c)} ${id}`); need('CPIC', id, nameOf(c)); need('CPIC', id + 128, nameOf(c)) }
+        await fight(e, combatUi)
+      },
+    }
+    e = new Engine(files, io, 3)
+    e.newDemo(SOTSB.startMenu!.demo)
+    await e.runDemo()
+    expect(battles).toBeGreaterThan(0)
+    expect(missing).toEqual([])
+    // the NPCs that join take CPIC 77, 76 or 66 (their own ids 0x32–0x34 have no picture)
+    expect(icons.filter((s) => / (77|76|66)$/.test(s)).length).toBeGreaterThan(0)
   }, 120000)
 })

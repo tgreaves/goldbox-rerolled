@@ -103,7 +103,7 @@ WebGL view is part C ([§3](../C-port/exploration-view.md#3-the-webgl-view-optio
 | Field | Meaning | Kind | PoR | CotAB |
 |---|---|---|---|---|
 | `bands` | the drawn view's background: view rows (inclusive) and a colour, `sky`, `line`, `band`, `floor` (the backdrop's) or a fixed EGA colour, top to bottom | C | 0–42 sky, 43 line, 44–45 band, 46–87 floor (`FUN_55a0_0174`) | 0–43 sky, 44–45 colour 0, 46–87 floor (0x53824, EGA: `DS:7226` is never written) |
-| `closedEdges` | areas where the view's wall lookup finds no wall outside the map (elsewhere it wraps by one map) | C | 0, 10 (`DS:84DC`, `FUN_55a0_047b`) | 0, 10 (`DS:8B78`, 0x53D42) |
+| `closedEdges` | areas where the view's wall lookup finds no wall outside the map (elsewhere it wraps by one map) | C | 0, 10 (`DS:84DC`, `FUN_55a0_047b`) | 0, 10 (`DS:8B78`, 0x53D42); SotSB 0, 0x50 (`DS:A4C2`, 0x5A507) |
 | `floor` | EGA colour of the floor, in place of the one the floor register (0xC059) gives; null: the register decides (0x0B → 8, 6 → 1, else 6) | C | null | 8 ([coab/assets.md §3](../A-games/coab/assets.md#3-3d-view)) |
 | `ground` | a ground picture: DAX family and record, `at` (the view pixel where the drawn view puts it, after the sky pictures, before the walls) and `mask` (the colour left undrawn); for the WebGL floor the picture rows used and how often they repeat along one square; null: none | C (file, record, at, mask), P (rows, repeat) | null | SKY #252 at (0, 40), mask 13; rows 32–48, repeat 2 |
 | `bigFrom` | script picture ids from this one are full-width `BIGPIC<block>` records; null: none | C | null | 0x78 |
@@ -172,6 +172,7 @@ offers the demo as **Watch the demo** on the party screen instead of the menu (I
 | `demo.keysWait` | key reads wait for a key; false: they take one that is waiting and never wait (and text input stops after one read) | false (0x6819, 0x5514) |
 | `demo.continueBattle` | "Continue Battle:" is asked when the enemy side is gone | false (0x227EF) |
 | `demo.aftermath` | after a battle: outcome, experience, NPC shares and treasure; false: only the monsters leave the list | false (0x1EE98, 0x1EEAC, 0x1EF4E) |
+| `demo.npcPictures` | `[id, picture]` pairs: ADD_NPC gives an NPC of monster `id` the combat picture `picture` in the demo (its record keeps `id`) | none (0x3596E); SotSB `[0x32, 0x4D]`, `[0x33, 0x4C]`, `[0x34, 0x42]` (0x4181F–0x41841, DS:67E9 the demo flag) |
 
 The demo run itself is the engine's ([host-contracts.md §3](host-contracts.md#3-the-engines-entry-points)).
 Each demo flag is read by the procedure it changes; a later game's demo is its profile entry.
