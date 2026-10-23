@@ -296,6 +296,12 @@ Every panel is a modal dialog with the same conventions (IMP-057):
   Exit/Keep, **R** for Reroll; on the party screen a digit 1–9 picks the *n*-th entry of a list;
 - a Yes/No question has **Yes** as the main action; closing it by ✕ or Escape answers No; a list
   closed by ✕ or Escape answers Cancel or Exit;
+- **Escape backs out of menus the same way** (the play screen's menu line and lists, IMP-081): it
+  chooses the menu's **Exit** (the game's own word, as its aim menu has it), answers **No** when the
+  menu is the game's Yes and No, continues a **one-choice** prompt, and for a menu the original leaves
+  on any other key (Alter's level, the Save slot question) gives no choice. A menu with none of these
+  (a story choice, the spells a level brings) ignores Escape. In a battle, while moving, Escape drops a
+  planned path or undoes the last step ([combat-ui.md §5](combat-ui.md#5-input));
 - an action's result appears inside the panel (highlight colour) and the panel stays open; panels
   that change state as you work (sheet, shop, treasure, Memorize) redraw in place, and the cards with
   them.
@@ -412,7 +418,5 @@ for every game ([storage.md §8](storage.md#8-localstorage-keys)).
 
 ## Open
 
-- Escape does nothing in most menus (Aim, for instance; their hot keys work), in every game: whether it
-  should leave a menu as its Exit does is a decision left open (noted 2026-10-22).
 - The party screen's 600-px rule hides columns of a member table that no longer exists (the members
   are cards since IMP-045): dead CSS ([AUDIT.md](../AUDIT.md) §6.9, UI7).

@@ -29,7 +29,3 @@ that settles it.
 - The Sell, Share, Appraise and arrow-weight checks were not run in DOSBox, by decision: they stay
   code-read ([`spec/open-questions.md`](spec/open-questions.md)).
 
-## Every game
-
-- Escape does nothing in most of the port's menus (Aim, for instance; the hot keys work): a behaviour to
-  decide ([`spec/C-port/ui-contract.md`](spec/C-port/ui-contract.md), Open).

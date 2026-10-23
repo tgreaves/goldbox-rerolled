@@ -29,7 +29,8 @@ below):
 | DOSBox | DOSBox Staging 0.83.0 in `~/opt/dosbox-staging-linux-x86_64-0.83.0-7b400/` and NASM 3.01 in `~/opt/nasm/usr/bin/`, for `tools/dosbox/` (below); both installed without root on 2026-10-22 |
 | Browser | Playwright (a `web/` dev dependency) with its headless Chromium in `~/.cache/ms-playwright` |
 | Docker | installed, for trying the server image (`../docker-compose.yml`) |
-| LAN preview | `npm run build && npx vite preview --host --port 8080` in `web/`, then `http://192.168.1.21:8080` from the workstation |
+| App and accounts server | systemd user service `goldbox-rerolled.service` (`~/.config/systemd/user/`): `node server/main.ts` on port 8080, all interfaces, open sign-up, plain HTTP (`COOKIE_SECURE=0`). It serves the built app from `web/dist`, so `npm run build` updates it at once; after a change under `server/`, `systemctl --user restart goldbox-rerolled`. From the workstation: `http://192.168.1.21:8080`. Data in `~/.local/share/goldbox-rerolled` |
+| LAN preview | with the service stopped, `npm run build && npx vite preview --host --port 8080` in `web/` (the app alone, no accounts) |
 
 Resource limits, learnt the hard way: never run Vitest or Vite with `--root /` (it froze the server
 on 2026-10-15); run one Vitest at a time; close REA's Ghidra sessions (`close_binary`) when done;

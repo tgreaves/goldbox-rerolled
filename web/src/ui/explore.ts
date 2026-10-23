@@ -49,7 +49,7 @@ import { clockText, freeSlots, isScroll, knows, memorise, memorised, preparation
 import { castOutside, itemSpells, mayCast, readsScroll, spendUse, targetKind } from '../rules/magic'
 import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
 import { creatorTools } from './creator'
-import { msg, entry, word, ask, type MenuOpts } from '../games/strings'
+import { msg, entry, word, ask, backChoice, type MenuOpts } from '../games/strings'
 import { wordButton, yesNo, listExit } from './sheet'
 import { yes } from './camp'
 import { playEnding } from './ending'
@@ -665,7 +665,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const g = saves.find((x) => x.slot === slot)
       return `${slot}: ${g ? `${g.label} (${new Date(g.savedAt).toLocaleString()})` : 'empty'}`
     })
-    const i = await menu(slots, { prompt: 'Save in which slot?', vertical: true })
+    // Escape cancels, as the original's Esc at "Save Which Game" (FUN_45c5_1d58)
+    const i = await menu(slots, { prompt: 'Save in which slot?', vertical: true, cancel: true })
+    if (i < 0) return
     const slot = 'ABCDEFGHIJ'[i]
     const members = engine.party()
     const stems = members.map((_, n) => `CHRDAT${slot}${n + 1}`)
@@ -2073,7 +2075,12 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     if (pending) {
       const items = pending.items
       if ((e.key === 'Enter' || e.key === ' ') && items.length === 1) { e.preventDefault(); choose(0); return }
-      if (e.key === 'Escape' && pending.cancel) { e.preventDefault(); choose(-1); return }
+      // Escape backs out: the menu's own answer for it, else its Exit, No or only choice (ui-contract.md §7)
+      if (e.key === 'Escape') {
+        const back = pending.cancel ? -1 : backChoice(items)
+        if (back !== null) { e.preventDefault(); choose(back) }
+        return
+      }
       // a key chooses the choice it is a hot key of (the last one, as FUN_53aa_03bd's scan), else the first letter
       const K = e.key.toUpperCase(), keys = pending.keys
       const hot = (j: number) => keys?.[j] || (items[j][0]?.toUpperCase() ?? '')

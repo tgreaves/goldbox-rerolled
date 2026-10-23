@@ -77,6 +77,22 @@ export function entry(id: MenuId): MenuWord {
   return s === null ? { text: text(a), key: '' } : { text: s.trim(), key: s.trim()[0]?.toUpperCase() ?? '' }
 }
 
+/**
+ * The choice Escape makes in a port menu of these labels (spec/C-port/ui-contract.md §7): the menu's way
+ * back, read from the game's own words, never a word of the port's. The game's Exit (the aim menu's,
+ * every game has it); No when the menu is the game's Yes and No; the only choice of a one-choice prompt
+ * ("press any key"). null: the menu has no way back (a story choice, a list of slots) and Escape does
+ * nothing. A menu that the original leaves on any other key passes `cancel` and is answered -1 instead.
+ */
+export function backChoice(labels: string[]): number | null {
+  if (labels.length === 1) return 0
+  const up = labels.map((l) => l.trim().toUpperCase())
+  const exit = up.lastIndexOf(word('aim', 'E').text.toUpperCase())
+  if (exit >= 0) return exit
+  const yes = word('yesNo', 'Y').text.toUpperCase(), no = up.indexOf(word('yesNo', 'N').text.toUpperCase())
+  return no >= 0 && up.includes(yes) ? no : null
+}
+
 /** what a port menu takes: the labels (the game's words in capitals) and their hot keys */
 export const items = (w: MenuWord[]) => ({ labels: w.map((x) => x.text.toUpperCase()), keys: w.map((x) => x.key) })
 

@@ -116,6 +116,10 @@ save A (as loaded, four turns, a step), 5 of 5 frames exact for each game. Not r
   values). Then: CotAB's camp menus (View, Magic, Rest, Alter, Fix) and its final battle on Quick,
   about 25 minutes of rounds without an end (the script refights it while ECL 0x7EC7 > 128). No page
   or console errors.
+- **Escape in menus** (IMP-081, 2026-10-23, headless Chromium against the built app, PoR save A):
+  Encamp, Save, Escape at the slot list (no save; "Quit to DOS" follows, as the original asks it after a
+  cancelled save), Escape answers No, Escape at the camp menu leaves camp. Every menu with the game's
+  Exit backs out through it, in all three games (`escape.test.ts`).
 - **Silver Blades in the browser** (2026-10-22, Playwright with headless Chrome, the GOG folder
   imported). From save A: the title with its music, the party screen, the load, the opening's
   treasure (Take all, the split offered, Confirm); walking, the area map, Look, Search; camp: View,
