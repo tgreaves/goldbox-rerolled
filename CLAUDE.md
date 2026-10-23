@@ -111,8 +111,8 @@ close disassemblers (REA's Ghidra sessions) after use, no unbounded background j
 - Pool of Radiance plays start to finish. Curse of the Azure Bonds and Secret of the Silver Blades are
   playable at an early stage (their profiles, rules, spells, effects and data in place, step logs in
   `docs/multi-game.md`; CotAB's ending and
-  SotSB's town, camp, a battle, training and a new game checked in the browser, `spec/VALIDATION.md`
-  §4), neither played through. 548 tests pass with all three games' files (`POOLRAD`, `COAB`, `SOTSB`);
+  SotSB's town, camp, a battle with casting, Join/Halve, training and a new game checked in the browser, `spec/VALIDATION.md`
+  §4), neither played through. 551 tests pass with all three games' files (`POOLRAD`, `COAB`, `SOTSB`);
   long headless playthroughs (24 × 1000 steps) show no failures.
 - The spec is the normative source (decisions D1–D6 in `spec/README.md`); steps 1–7 of its work plan
   (`spec/AUDIT.md` §8) are done. Step 8, the clean-room rebuilds that validate it, is **on hold** by
