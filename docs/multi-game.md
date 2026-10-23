@@ -470,7 +470,9 @@ sturdy party walking to every square it can reach, every picture, sprite, combat
 wall checked against the files; `SOTSB_TOUR_STEPS`, `SOTSB_TOUR_AREAS`) and the demo in
 `test/demo.test.ts`. Fixed on the way: the demo's NPC pictures (`startMenu.demo.npcPictures`, 0x4181F),
 SotSB's closed-edge areas 0 and 80 (`view.closedEdges`, 0x5A507), and the Debug jump loading the area's
-own map (IMP-025).
+own map (IMP-025). *Played in order*: `test/sotsbchain.test.ts` (the tour with no jump, a `hardy` party,
+the ruins' street zones as `subAreas`; `SOTSB_CHAIN_STEPS`, `SOTSB_CHAIN_SEEDS`), so far from the start
+through the town, the ruins' street maze and the mine levels (spec/VALIDATION.md §4).
 
 ## Backlog
 

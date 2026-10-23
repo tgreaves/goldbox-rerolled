@@ -241,6 +241,16 @@ Not run: the Sell, Share and Appraise checks (decided not worth it); register 0x
   area's own map, IMP-025); SotSB's view closes its edges in areas 0 and 80, not CotAB's 0 and 10
   (assets.md §2); after a flight that lost members the current character could be one of the lost
   (the remove-current routine's rule now applies, combat-rules.md "Results"; all games).
+- **Silver Blades played in its order** (2026-10-23, `sotsbchain.test.ts`: the play-test's `tour` with no
+  jump, `hardy` and `subAreas`): from the shipped start, the party made sturdy and hardy (whole before
+  each battle and at each of its messages, saves on 2 or more, twelve points better to hit and harder
+  to hit) walks on wherever the scripts take it. The ruins 1/32 are eleven street zones over one map
+  (A 0x4C4B, set from tables on entry, 0x80C0): the street walls (types 7 and 8) move the party between
+  them from event squares (on_move 0x811C, the zone tables at 0x99D8 + 0x45·zone, the facing table
+  0x9D0A), so the tour now walks into walls as well as passages, least-tried first, and keeps its
+  memory per zone. 3 × 50 000 steps: the town, the ruins' zones 1–8 and 10, the mine's guard fight and
+  "DO YOU GO INTO THE MINE?" (0x9774), then the mine levels 2/49–2/51 as their stairs take them; no
+  failures.
 - **Silver Blades in the browser, later blocks** (2026-10-23, Playwright with headless Chrome against
   the built app, a fresh profile): the title music (8 sound buffers started), save A, the Enhanced
   view as the default and the Original view after the setting, both walking; a Debug jump to block 3
