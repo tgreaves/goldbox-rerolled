@@ -3,19 +3,23 @@
 the view as loaded, after each of four left turns and after a step forward, both ways, pixel by pixel.
 
 Usage:
-  viewcheck.py por   POOLRAD_DIR [--moves MOVES] [--out DIR]
-  viewcheck.py coab  CURSE_DIR   [--moves MOVES] [--out DIR]
+  viewcheck.py por   POOLRAD_DIR [--moves MOVES] [--save X] [--out DIR]
+  viewcheck.py coab  CURSE_DIR   [--moves MOVES] [--save X] [--out DIR]
   viewcheck.py sotsb BLADES_DIR  [--moves MOVES] [--out DIR]
 
 --moves  a scripted walk instead of the turns: the port's exploration commands f (forward), l, r, b
-         (turn around), one frame before the walk and one after each move. Choose a walk with no
-         menus on the way (the headless runner's transcript shows them): the original is typed only
-         the moves.
+         (turn around), one frame before the walk and one after each move; e answers a menu the move
+         brought up ("PRESS BUTTON OR RETURN" after a square's text: the port answers 0), typed to the
+         original as P, that menu's key, before the move's frame, with one P more after every move
+         (P does nothing at the main menu, where Enter would choose Area, so a pause the original's
+         dice give and the port's do not, as a square's random rumour, cannot shift the walk). The
+         headless runner's transcript shows which menus a walk meets.
+--save   start from save X (B-J) instead of A (PoR and CotAB; a copy of the folder holds it)
 
 Needs what run.py needs (DOSBox Staging, NASM; $DOSBOX, $NASM) and Node for the headless runner.
 Exits 1 if any frame differs.
 """
-import json, os, subprocess, sys, tempfile
+import json, os, re, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WEB = os.path.join(HERE, '..', '..', 'web')
@@ -49,26 +53,35 @@ def main(a):
     game, folder = a[0], os.path.abspath(a[1])
     out = os.path.abspath(a[a.index('--out') + 1]) if '--out' in a else tempfile.mkdtemp(prefix='viewcheck-')
     g = GAMES[game]
-    steps, keys = STEPS, KEYS
+    start, answers = g['start'], list(g['answers'])
+    if '--save' in a:
+        x = a[a.index('--save') + 1].lower()
+        if game == 'sotsb' or len(x) != 1 or x not in 'abcdefghij':
+            raise SystemExit('--save takes a slot A-J, for por and coab')
+        if x != 'a':  # a save past the opening: no "press Enter" screens (CotAB), Begin after the load
+            start, answers = {'por': f'x enter l {x}', 'coab': f'p numbersign enter l {x} b'}[game], []
+    steps, keys = [(st, 0) for st in STEPS], KEYS
     if '--moves' in a:
         moves = a[a.index('--moves') + 1]
-        if not moves or set(moves) - ARROW.keys():
-            raise SystemExit('--moves takes f, l, r and b')
-        steps = [list(moves[:i]) for i in range(len(moves) + 1)]
-        keys = ' '.join(['f12'] + [f'{ARROW[m]} f12' for m in moves])
-    typed = ' '.join(filter(None, [g['start'], g.get('move'), keys]))
+        if not moves or set(moves) - ARROW.keys() - {'e'} or moves[0] == 'e':
+            raise SystemExit('--moves takes f, l, r, b, and e after a move')
+        groups = re.findall(r'[flrb]e*', moves)
+        steps = [([m[0] for m in groups[:i]], sum(len(m) - 1 for m in groups[:i])) for i in range(len(groups) + 1)]
+        keys = ' '.join(['f12'] + [' '.join([ARROW[m[0]]] + ['p'] * len(m) + ['f12']) for m in groups])
+    typed = ' '.join(filter(None, [start, g.get('move'), keys]))
     subprocess.run([sys.executable, os.path.join(HERE, 'run.py'), '--game', folder, '--out', out,
                     '--keys', typed, '--wait', '6', '--pace', g['pace'], '--args', g['args'],
                     '--seconds', str(10 + len(typed.split()) * float(g['pace']) * 1.5)], check=True)
     bad = 0
-    for i, commands in enumerate(steps):
+    for i, (commands, enters) in enumerate(steps):
         dump = os.path.join(out, f'FRAME{i:02d}.EGA')
         if not os.path.exists(dump):
             print(f'frame {i}: not grabbed (the original did not reach play; see {out}/*.png)')
             bad += 1
             continue
         script = os.path.join(out, f'port{i}.json')
-        json.dump({'game': game, 'answers': g['answers'], 'commands': commands}, open(script, 'w'))
+        json.dump({'game': game, 'save': a[a.index('--save') + 1].upper() if '--save' in a else 'A',
+                   'answers': answers + [0] * enters, 'commands': commands}, open(script, 'w'))
         port = os.path.join(out, f'port{i}.png')
         subprocess.run(['node', '--import', './headless/node-ts.mjs', 'headless/run.ts', '--files', folder,
                         '--script', script, '--frame', port], cwd=WEB, check=True, stdout=subprocess.DEVNULL)

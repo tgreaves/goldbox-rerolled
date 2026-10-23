@@ -34,6 +34,9 @@ that settles it.
 ## Curse of the Azure Bonds
 
 - Its frame edge is an approximation ([`spec/C-port/rendering.md`](spec/C-port/rendering.md), Open).
+- DOSBox: no walk across an area boundary yet (every way out of the areas walked meets a question or a
+  battle), nor a rest in camp compared with the port's clock and healing; the clock words' units
+  (ECL 0x4BC6–0x4BCC) stay **I** ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
 
 ## Pool of Radiance
 

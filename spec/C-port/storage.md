@@ -267,7 +267,7 @@ ZIP named **`<saves.exportName>-<x>.zip`** (PoR `poolrad-save-<x>.zip`, CotAB `c
    shorter): `<stem>.SAV`, `<stem>.<saves.items>` and `<stem>.<saves.effects>` (PoR `.ITM` / `.SPC`,
    CotAB `.SWG` / `.FX`). The item and effect files are **always written**, zero bytes long when the
    character has none (the original reads them to the end of the file, so an empty file is an empty
-   list);
+   list; CotAB's original resumes from such a save, DOSBox 2026-10-23, [VALIDATION.md §4](../VALIDATION.md#4-sweeps-play-tests-and-reference-hashes));
 3. `SAVGAM<x>.GBR` when `known` is not empty.
 
 Names are at the root of the ZIP, without folders. Then: "Slot *x* exported: unzip it into the game

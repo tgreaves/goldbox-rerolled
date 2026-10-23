@@ -68,6 +68,29 @@ python3 tools/dosbox/run.py --game /home/tmg/poolrad-files --out out/rest \
 Rest one hour, leave camp, camp, rest one hour: the orcs come at 12:50, the 24th five-minute step
 overall (interval 24 steps), so the step counter `DS:49FB` carries over between camps.
 
+## Walks with pauses, other saves, saves compared
+
+`viewcheck.py --moves` takes `e` after a move for each "press Enter" pause it brings up (a square's
+text): the port answers 0, the original is typed P, that one-item menu's key, and one P more after
+every move. P does nothing at the main menu (Enter there would choose Area and draw the overhead
+map), so a pause the original's dice give and the port's do not, such as Tilverton's random rumours,
+cannot shift the walk. `--save X` starts from save X (PoR, CotAB). The headless runner's transcript
+shows which menus a walk meets; a short script that tries the port's moves breadth first finds
+walks with no other questions on the way. A walk is typed in one `AUTOTYPE` line, so keep it to
+about 15 moves.
+
+To put both sides somewhere else, let the port write the save: `headless/run.ts --script` with a
+`jump` and `--save <folder>/SAVE --slot B` writes `SAVGAMB.DAT` and the party files into a copy of the
+game folder, the original loads it (`p numbersign enter l b b` in CotAB) and so does the port
+(`"save": "B"`).
+
+The saves themselves: the original saves only from the camp menu (CotAB `e s <slot>`), so the port's
+side camps too (the headless `e`, which runs the area's `camp_menu` and its rest-encounter odds),
+then `--save` writes its files under the original's names; compare them byte by byte. Expected
+differences: the bytes past each party stem in `SAVGAM<x>.DAT` (stack garbage in the original), the
+record and effect list pointers in `.SAV` and `.FX` (memory addresses), CotAB's inert 0x3206 and
+whatever the two sides' dice decided.
+
 ## How GRAB.COM works
 
 F12 (scan code 58h) is taken from INT 09h and never reaches the game. The dump runs at the next

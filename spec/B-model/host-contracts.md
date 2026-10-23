@@ -323,9 +323,12 @@ no frame.
 *Informative:* the reference runner is `web/headless/` (`harness.ts`, and `run.ts`, the command line:
 `node --import ./headless/node-ts.mjs headless/run.ts --files <folder> --script <script.json>
 [--tape <tape.json> | --seed <n>] [--record <tape.json>] [--out <transcript.jsonl>] [--frame <view.png>
-[--scale <n>]]`, plain Node 24
+[--scale <n>]] [--save <dir> [--slot <x>]]`, plain Node 24
 with its type stripping; `npm run headless -- …` in `web/`). Without a tape it rolls the reference
-generator (seed 1 unless given) and `--record` writes the tape it made. Transcripts and tapes contain
+generator (seed 1 unless given) and `--record` writes the tape it made. `--save` saves the game at the
+end of the run in slot `--slot` (default B) as the port's Save does and writes the files under the
+original's names (`SAVGAM<x>.DAT`, `CHRDAT<x><n>.*`) to the folder, to set beside what the original
+writes for the same play ([VALIDATION.md §4](../VALIDATION.md#4-sweeps-play-tests-and-reference-hashes)). Transcripts and tapes contain
 game text and stay with the player's files. The play-test harness `web/test/playtest.ts` is a
 different tool: it plays at random to look for broken states.
 

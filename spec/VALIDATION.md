@@ -115,7 +115,22 @@ cloud strip (SKY #250) facing north and the sun (#251) facing east at 03:00 behi
 ([coab/assets.md](A-games/coab/assets.md) §3); at 14:00 both draw a black sky, so no afternoon sun there. **A scripted walk** (PoR, 2026-10-23,
 `viewcheck.py por --moves fblfrffrfffffffrfffblfff`): 24 moves from save A with no menus on the way,
 through the gateway from New Phlan (block 2 area 20) into the unsettled areas (block 3 area 0) and
-back, a frame after each: 25 of 25 exact. Not run: the Sell, Share and Appraise
+back, a frame after each: 25 of 25 exact. **CotAB walks and saves** (2026-10-23): five walks with
+`viewcheck.py coab --save B --moves …` (pauses answered, [tools/dosbox/README.md](../tools/dosbox/README.md)):
+two along Tilverton's streets (block 2 area 1, from (6,12), 12 and 14 moves, past signs, the rumour
+squares and the street texts), and three in areas the port's own save put both sides in after a debug
+jump (block 2 areas 3 and 4, block 6 area 67, 14, 16 and 13 moves): 74 of 74 frames exact. Saves: the
+original's camp save after loading save A, after a reload, and after the area-67 and street walks, each
+against the port's save (`headless/run.ts --save`) after the same play and a camp: equal byte for byte
+but for the stack garbage after the party stems, the list pointers in `.SAV` and `.FX`, the inert byte
+0x3206 ([coab/records.md](A-games/coab/records.md) §5) and, on the street, the rumour counter and
+scratch word that follow the dice (ECL 0x4C0C, 0x7F79). They found that every save the port wrote
+set ECL 0x4CFD, the game won, through PoR's wall-set copy into A, so the original refused Begin from
+it (and the port's own party screen after any save); fixed, the original resumes the port's saves,
+empty `.SWG`/`.FX` files included, and saves them again as from its own. Also seen: ECL 0x4BFB ≠ 0
+hides the coordinates and stops Area ([coab/ecl.md](A-games/coab/ecl.md)); HMENU's lone "PRESS
+BUTTON OR RETURN TO CONTINUE." shown as "PRESS <ENTER>/<RETURN> TO CONTINUE". Not crossed yet: an
+area boundary in CotAB (every way out of the walked areas meets a question or a battle). Not run: the Sell, Share and Appraise
   checks (no shop from save A; decided not worth a route); register 0x035F (no debugger).
 - **The interface** was checked against part C in headless Chromium (2026-10-21; each part C file's
   "Validation" section says what): every screen class, PoR's game-file save A, the games screen, the

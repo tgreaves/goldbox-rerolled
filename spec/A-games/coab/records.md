@@ -218,16 +218,16 @@ Read by `323c:37b5`, written by `323c:3f5e` in the same order (O):
 | 0x801 | 0x800 | array B (`DS:4FB6`) | same |
 | 0x1001 | 0x400 | array C (`DS:4FBA`) | same |
 | 0x1401 | 0x1E00 | ECL code buffer (`DS:4FBE`) | same |
-| 0x3201 | 5 | `DS:7229..722D`: X, Y, facing, wall, square (I: as PoR) | same |
-| 0x3206 | 1 | `DS:4FD4` previous game state | **changed** (PoR area kind `DS:49FA`) |
-| 0x3207 | 1 | `DS:4FD3` game state (I: 2 = camping, the slot prompt allows Esc then, `323c:3f91`) | same role (PoR `DS:49F3`) |
+| 0x3201 | 5 | `DS:7229..722D`: X, Y, facing, wall, square (O: read and written as one block, 0x35DFE, 0x3661A; the port's bytes equal the original's after walks in four areas, DOSBox 2026-10-23) | same |
+| 0x3206 | 1 | `DS:4FD4` previous game state (read 0x35E18, written 0x36632); inert in the file: the load ends with `DS:4FD4` := `DS:4FD3`, the loaded state, and `DS:4FD3` := 0 (0x3615C), so the byte read is replaced before anything reads it. The original writes 0 in a game begun from the start save, 2 after any load (DOSBox, O) | **changed** (PoR area kind `DS:49FA`) |
+| 0x3207 | 1 | `DS:4FD3` game state: always **2**, camping, as the original saves only from the camp menu, which sets it (0x321D8; restored on leaving, 0x32398); the slot prompt allows Esc then, `323c:3f91` (O) | same role (PoR `DS:49F3`) |
 | 0x3208 | 12 | 3 × (u16 wall-set record id `DS:722A+4i`, u16 slot `DS:722C+4i`), i = 1..3 | **new** (PoR stored these in A[0x4AFA..0x4AFF]) |
 | 0x3214 | 1 | party count | moved (PoR 0x3208) |
-| 0x3215 | 8 × 41 | member stems, Pascal string[40], `CHRDAT<x><n>`; slots past the count are stack garbage | moved (PoR 0x3209) |
+| 0x3215 | 8 × 41 | member stems, Pascal string[40], `CHRDAT<x><n>`; the bytes past each stem's length and the slots past the count are stack garbage (O: they differ between two saves of one game; the port writes zeros) | moved (PoR 0x3209) |
 
 13 149 = 13 137 + 12 (O, both arithmetic and `SAVGAMA.DAT`).
 
-Before writing (O, `323c:41a3..41d3`): A[0x1F8] = speed `DS:4FC2`; A[0x1FE] = `DS:4FD7`·2 + `DS:4FD8` (pictures, animations); B[0x624] = block digit. The wall-set copy into A that PoR does is gone. The slot prompt also checks DiskFree ("Can't save. No room on this disk.", `323c:402f`).
+Before writing (O, `323c:41a3..41d3`): A[0x1F8] = speed `DS:4FC2`; A[0x1FE] = `DS:4FD7`·2 + `DS:4FD8` (pictures, animations); B[0x624] = block digit. The wall-set copy into A that PoR does is gone: there A[0x1FA..0x1FF] are the scripts' ECL 0x4CFA–0x4CFF, among them 0x4CFD, the game won, which refuses Begin (0x36DCD). A port that copied the wall sets there as in PoR wrote 1 to 0x4CFD with every save, and the original would not begin from it (DOSBox, 2026-10-23; fixed). The slot prompt also checks DiskFree ("Can't save. No room on this disk.", `323c:402f`).
 
 Loading (O, `323c:37b5`): lists A–J that exist ("Load Which Game: "); reads the fields above; `DS:4FD7` = A[0x1FE] >> 1, `DS:4FD8` = A[0x1FE] & 1, `DS:4FC2` = A[0x1F8], B[0x67C] = 0; for each stem with an existing `<stem>.sav` (`323c:3be5`): allocate 0x1A6, `323c:22a0` (Curse source), add to the party (`323c:360a`); delete every member's roster files; load combat icons (PCs, morale < 0x80) or `CPIC` by id (+0x126); block digit = B[0x624]; if A[0x1CC] ≠ 0 (map area) and the saved state ≠ 0: 3D map A[0x18A] (if slot 1 record > 0) and the wall sets with record > 0 (`536a:1025(record, slot)`); A[0x1CC] = 0 → overland picture 0x79 (`52e0:080c`); finally `DS:4FD4` = `DS:4FD3`, `DS:4FD3` = 0.
 

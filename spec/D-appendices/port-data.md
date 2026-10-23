@@ -393,7 +393,7 @@ Labels the screens use that are not game text (part C defines where they appear)
 | facings | North, East, South, West |
 | caster classes | Cleric (CL), Druid (DR), Magic-User (MU), for the spell classes the game has |
 | base classes on cards and sheets | Cleric, Druid, Fighter, Paladin, Ranger, Magic-User, Thief, Monk |
-| continue prompts recognised | "PRESS <RETURN> OR BUTTON TO CONTINUE", "PRESS <ENTER>/<RETURN> TO CONTINUE" (game text the port matches to show a Continue button) |
+| continue prompts recognised | "PRESS <RETURN> OR BUTTON TO CONTINUE", "PRESS <ENTER>/<RETURN> TO CONTINUE", "PRESS BUTTON OR RETURN TO CONTINUE." (CotAB's scripts; its HMENU shows it as the second, 0x19904) (game text the port matches to show a Continue button) |
 
 *Known gap:* the base-class names duplicate START.EXE's class-name table, which the port should read
 instead (`T.classNames`; [AUDIT.md](../AUDIT.md) §4).

@@ -69,7 +69,8 @@ const STAT_KEYS = ['STR', 'INT', 'WIS', 'DEX', 'CON', 'CHA'] as const
 /** readied slots 0–8 (char 0xCC + 4·slot, spec/A-games/engine/records.md) */
 const SLOT_NAMES = ['Weapon', 'Shield', 'Armour', 'Gauntlets', 'Helm', 'Belt/Necklace', 'Robe', 'Cloak', 'Boots']
 const SLOT_LABEL = (n: number) => n <= 8 ? SLOT_NAMES[n] : n === 9 ? 'Ring' : n === 11 || n === 12 || n === 13 ? 'Scroll' : 'Other'
-const CONTINUE_PROMPTS = ['PRESS <RETURN> OR BUTTON TO CONTINUE', 'PRESS <ENTER>/<RETURN> TO CONTINUE']
+// PoR's, the shown form, and CotAB's (its HMENU swaps that one item for the shown form, 0x19904: CS:1069 → CS:108D)
+const CONTINUE_PROMPTS = ['PRESS <RETURN> OR BUTTON TO CONTINUE', 'PRESS <ENTER>/<RETURN> TO CONTINUE', 'PRESS BUTTON OR RETURN TO CONTINUE.']
 
 const escape = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`)
 

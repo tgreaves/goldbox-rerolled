@@ -258,8 +258,9 @@ the original's answer (*game text*). The full list: [strings.md §3](../D-append
 - The **prompt** goes into the log (game text).
 - **Horizontal** menus: one button per item on the command bar, the label as the game gives it,
   its first letter the hotkey (IMP-010). Focus goes to the first button.
-- **One item**: the main action, a wide filled button. The two continue prompts the game uses
-  ("PRESS <RETURN> OR BUTTON TO CONTINUE", "PRESS <ENTER>/<RETURN> TO CONTINUE", *game text*, matched
+- **One item**: the main action, a wide filled button. The continue prompts the games use
+  ("PRESS <RETURN> OR BUTTON TO CONTINUE", "PRESS <ENTER>/<RETURN> TO CONTINUE", CotAB's "PRESS BUTTON
+  OR RETURN TO CONTINUE.", *game text*, matched
   exactly, [port-data.md §8](../D-appendices/port-data.md#8-interface-labels)) are labelled
   **Continue**.
 - **Vertical** menus (VMENU, spell and item lists, save slots): full-width buttons at the end of the

@@ -742,6 +742,8 @@ when its table column or sentence names CotAB.
 | 0x1978B | coab/ecl | coab/ecl: Instruction encoding |  |
 | 0x19904 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x19936 | coab/ecl | coab/ecl: Instruction encoding |  |
+| 0x19959 | coab/ecl | coab/ecl: Opcodes |  |
+| 0x19978 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x19A90 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x19AF9 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x19B7E | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
@@ -1111,6 +1113,8 @@ when its table column or sentence names CotAB.
 | 0x2F697 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x2F7FC | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x2F853 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x2F865 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x2F896 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x2F8BC | B/vocabularies | B/vocabularies: 3.9 Monster specials (event 14) |  |
 | 0x2FEA0 | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x2FEF5 | coab/records | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
@@ -1142,7 +1146,9 @@ when its table column or sentence names CotAB.
 | 0x320D8 | coab/README, coab/camp, B/procedures, C/screens | coab/README: Curse of the Azure Bonds (CotAB) |  |
 | 0x32118 | coab/camp | coab/camp: 1. Fix |  |
 | 0x321CB | coab/camp, coab/ecl | coab/camp: 1. Fix |  |
+| 0x321D8 | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
 | 0x322D0 | C/screens | C/screens: 6.1 The camp menu |  |
+| 0x32398 | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
 | 0x3243B | coab/records | coab/records: 1. Files (diff vs engine/savegame.md "Files" and engine/input-and-menus.md "Character files") |  |
 | 0x3244B | coab/records | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) |  |
 | 0x3280D | coab/records | coab/records: 1. Files (diff vs engine/savegame.md "Files" and engine/input-and-menus.md "Character files") |  |
@@ -1201,6 +1207,8 @@ when its table column or sentence names CotAB.
 | 0x359CA | coab/ecl, coab/records | coab/ecl: Opcodes |  |
 | 0x35AF6 | coab/chargen-and-progression | coab/chargen-and-progression: 1. The recalculation |  |
 | 0x35B75 | coab/records, B/script-vm-map | coab/records: CotAB records and save files (diff against PoR engine/records.md + engine/savegame.md) | `FUN_45c5_1602` |
+| 0x35DFE | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
+| 0x35E18 | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
 | 0x35EEB | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x35F08 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x35FA5 | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
@@ -1208,17 +1216,20 @@ when its table column or sentence names CotAB.
 | 0x36068 | coab/records, B/script-vm-map | coab/records: 2. Character record: 0x1A6 = 422 bytes |  |
 | 0x360CB | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x3614A | coab/assets | coab/assets: 4. Overland: no tile map |  |
+| 0x3615C | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
 | 0x3631E | coab/ecl, coab/records | coab/ecl: Opcodes | `FUN_45c5_1d58` |
 | 0x36351 | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
 | 0x363EF | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
 | 0x36563 | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
+| 0x3661A | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
+| 0x36632 | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
 | 0x36821 | coab/records | coab/records: 1. Files (diff vs engine/savegame.md "Files" and engine/input-and-menus.md "Character files") |  |
 | 0x36848 | coab/records, B/procedures | coab/records: 9. Joining the party |  |
 | 0x36850 | coab/ecl, C/screens | coab/ecl: Start-up menu and demo |  |
 | 0x36A1C | coab/assets, coab/ecl | coab/assets: 7. Start-up, title, copy protection |  |
 | 0x36A6C | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x36CEF | coab/chargen-and-progression | coab/chargen-and-progression: Where |  |
-| 0x36DCD | coab/ecl, C/app-flow, C/departures | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
+| 0x36DCD | coab/ecl, coab/records, C/app-flow, C/departures | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x36DD5 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x3708F | B/procedures | B/procedures: 7. Creation and training values | `FUN_417f_056c` |
 | 0x371F6 | coab/records | coab/records: 10. Creation effects and paladin abilities |  |

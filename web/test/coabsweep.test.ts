@@ -102,6 +102,11 @@ describe.skipIf(!have)('Curse of the Azure Bonds scripts', () => {
     const again = parseSave(back)
     expect(again.party).toEqual(sv.party)
     expect([saveBlock(again), saveArea(again)]).toEqual([saveBlock(sv), e.area])
+    // no PoR wall-set copy into A (323c:41a3; spec/A-games/coab/records.md §5): those words are the scripts'
+    // 0x4CFA-0x4CFF, and 0x4CFD set would read as the game won, Begin refused (0x36DCD; seen in DOSBox)
+    // (the port numbers CotAB's A as PoR's: its ECL 0x4CFA is the port's 0x4AFA)
+    expect([0x4afa, 0x4afb, 0x4afc, 0x4afd, 0x4afe, 0x4aff].map((a) => e.read(a))).toEqual([0, 0, 0, 0, 0, 0])
+    expect([...back.subarray(1 + 0x1fa * 2, 1 + 0x200 * 2)].every((b) => b === 0)).toBe(true)
   })
 
   it('shows the overland map as a BIGPIC, with the city cursor from its tables', async () => {

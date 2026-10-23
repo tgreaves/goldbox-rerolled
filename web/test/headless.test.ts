@@ -82,6 +82,16 @@ describe.skipIf(!have)('headless runner', () => {
     expect(r.events.at(-1)).toMatchObject({ event: 'end', reason: 'answers', waiting: { kind: 'menu' } })
   })
 
+  it('saves the game at the end of a run as the original names its files (--save)', async () => {
+    const r = await runScript({ files: files(), script: { game: 'por', commands: ['f'] }, seed: 5, out: () => {}, saveAs: 'C' })
+    const names = r.saved!.map((f) => f.name)
+    expect(names[0]).toBe('SAVGAMC.DAT')
+    expect(r.saved![0].data.length).toBe(13137)
+    expect(names).toContain('CHRDATC1.SAV')
+    expect(names).toContain('CHRDATC1.ITM')
+    expect(names).toContain('CHRDATC1.SPC')
+  })
+
   it('runs from the command line with plain node', () => {
     const tmp = mkdtempSync(join(tmpdir(), 'headless-'))
     try {

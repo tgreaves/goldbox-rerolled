@@ -281,7 +281,11 @@ export class Engine {
    * ECL variables first as FUN_45c5_1d58 does. stems: the character file stems for the party.
    */
   toSave(stems: string[]): Uint8Array {
-    for (let s = 1; s <= 3; s++) {
+    const L = game().saves
+    // PoR keeps the wall sets in A[0x4AFA..0x4AFF] (FUN_45c5_1d58); a save with its own wall-set field has
+    // no such copy (CotAB 323c:41a3, SotSB 0x42413: spec/A-games/coab/records.md §5), and there those words
+    // are the scripts' (CotAB ECL 0x4CFD, the game won, refuses Begin: 0x36DCD)
+    if (L.wallSetsAt < 0) for (let s = 1; s <= 3; s++) {
       const r = this.walls.records[s]
       this.A[0x4afa + s - 1 - A0] = r
       this.A[0x4afd + s - 1 - A0] = r === 0xffff ? 0xffff : s
@@ -290,7 +294,6 @@ export class Engine {
     this.A[0x49ff - A0] = 3 // monster pictures and portraits on
     this.A[AREA_ID - A0] = this.area
     if (game().ecl.blockFile.divide === 1) this.B[0x6e12 - B0] = this.block // else B keeps the scripts' value
-    const L = game().saves
     const d = new Uint8Array(L.saveSize)
     d[0] = this.block
     const put = (o: number, words: Uint16Array) => words.forEach((v, i) => { d[o + 2 * i] = v & 0xff; d[o + 2 * i + 1] = v >> 8 })

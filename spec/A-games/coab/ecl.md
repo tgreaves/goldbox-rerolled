@@ -237,7 +237,7 @@ Found by sweeping `les DS:4FB2/4FB6; …es:[di+off]` in the full disassembly. "P
 | 0x4BE7, 0x4BE8 | 0x1954F, 0x1955B | LOAD_WALLSETS two-slot mode | 0x49E7/E8 |
 | 0x4BF0, 0x4BF1 | 0x1C1C8, 0x1C1D5 | party X, Y before the move | 0x49F0/F1 |
 | 0x4BF2 | 0x1944E | current area id (NEW_ECL writes the old one from DS:8B78) | 0x49F2 |
-| 0x4BFB | 0x2F853 | ≠ 0: Area command 'A' answers "Not Here" (I) | 0x49FB |
+| 0x4BFB | 0x2F853 | ≠ 0: Area command 'A' does not toggle the overhead map but prints "Not Here" (CS:08D6, colour 14, 0x2F896), unless a two-character string the code takes at 0x2F865 equals DS:8C94 (I: a developer's switch); the status line then shows no coordinates (O; DOSBox 2026-10-23, the save's A word patched: "E 00:00", no map) | 0x49FB |
 | 0x4BFC, 0x4BFF | 0x35F08, 0x35EEB | save-game copies (I) | 0x49FC/FF |
 | 0x4BFD, 0x4BFE | 0x52D62, 0x52D50 | redraw (write side effect) | 0x49FD/FE |
 | 0x4C00–0x4C1F | 0x1FCDC | per-area, zeroed on entry | 0x4A00–1F |
@@ -329,7 +329,7 @@ n = operand count passed to the reader in the handler (O for every row). Status:
 | 28 | ROB | ROB | 3 | 0x1A7C6 / 1F76 | 1DB1 | = | |
 | 29 | ENCOUNTER_MENU | ENCOUNTER_MENU | 14 | 0x1A90D / 20BD | 1EF8 | ≈ | 97% identical; the menu-variant test now uses 0x4BE6 and DS:72A4 (0x1AA5C–0x1AA96) instead of PoR's distance test: the choice of the PARLAY or ADVANCE menu is PoR's (0x1ABB8, 0x1ABC4); two display flags differ: the picture is animated only when DS:8B7C and DS:8B7D are set, A 0x4BE6 ≠ 0 (a map area) and the picture DS:72A4 ≠ 0x50 (PoR: DS:84E0 and DS:84E1), and the text window is cleared before the text only in a map area (O) |
 | 2A | GET_TABLE | GET_TABLE | 3 | 0x1968F / 0E3F | 0E5E | = | |
-| 2B | HMENU | HMENU | 2+N | 0x19904 / 10B4 | 10D1 | = | count = val 2 |
+| 2B | HMENU | HMENU | 2+N | 0x19904 / 10B4 | 10D1 | = | count = val 2; one item equal to CotAB's wording "PRESS BUTTON OR RETURN TO CONTINUE." (CS:1069) is shown as "PRESS <ENTER>/<RETURN> TO CONTINUE" (CS:108D), as PoR's (0x19959–0x19978, O); its key is P or Enter (DOSBox 2026-10-23) |
 | 2C | PARLAY | PARLAY | 6 | 0x1B007 / 27B7 | 25CB | = | |
 | 2D | CALL | CALL | 1 | 0x1B773 / 2F23 | 2CCF | Δ | target = make_word(lo,hi) − 0x7FFF; new target table below |
 | 2E | DAMAGE | DAMAGE | 5 | 0x1B1A8 / 2958 | 2775 | Δ | as PoR (one roll for all victims of a save mode is PoR's too) plus **flags bit 4 (0x10): a successful save still takes the damage** (0x1B22A, 0x1B2C0, 0x1B329, 0x1B398; the bit is also part of the save bonus); on a wipe no "The END!" (the frame is redrawn, 0x01330), then "The entire party is killed!" and a 3 s delay. Used with bit 4 in ECL5 at 0x8251, 0x83C2, 0x8D55, 0x8E31 |
