@@ -39,6 +39,11 @@ export interface GameProfile {
   stores: { files: string; user: string }
   /** image families the asset viewer shows, in order */
   imageFamilies: string[]
+  /**
+   * picture files the loaders take from a fixed file instead of the block's (`PIC2` in block 2): a
+   * family, the file digit, and the records it applies to (null: all of them). First match wins.
+   */
+  pictureFiles: { family: string; digit: number; records: number[] | null }[]
   /** character record layout */
   fields: CharFields
   /** START.EXE rules tables */

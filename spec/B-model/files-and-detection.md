@@ -93,6 +93,16 @@ lack is left out, and GEO maps follow when present ([C-port/screens.md](../C-por
 A family name stands for its numbered files (`PIC1.DAX` … `PIC8.DAX`); the record formats are part A
 ([engine/graphics.md](../A-games/engine/graphics.md)).
 
+**Which numbered file.** A picture of a family is read from `<family><block>` unless the profile's
+`pictureFiles` names a fixed file for it: a list of `{ family, digit, records }` (records null: every
+record), the first match winning. The 3D view's pictures and sprites, the combat icons and the ending
+read through it.
+
+| Game | `pictureFiles` |
+|---|---|
+| PoR, CotAB | none |
+| SotSB | SPRIT → 1; PIC 0x06, 0x3B, 0x3C, 0x42, 0x45, 0x47, 0x59 → 4; PIC 0x01, 0x11, 0x4D, 0x1B → 5; CPIC → 1 ([sotsb/assets.md §1](../A-games/sotsb/assets.md#1-graphics-inventory-o)) |
+
 ## 5. What is not imported
 
 *Informative.* The GOG release's macOS package (`.pkg`) is not read: the player gives the game's

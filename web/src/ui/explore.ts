@@ -263,7 +263,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   function animFrames(family: string, id: number): { picture: Picture; delay: number }[] | null {
     const key = `${family}${engine.block}#${id}`
     if (!pictureCache.has(key)) {
-      const raw = files.record(`${family}${engine.block}`, id)
+      const raw = files.picture(family, engine.block, id)
       let pics: { picture: Picture; delay: number }[] | null = null
       try {
         if (raw) pics = parseRecord(raw, family === 'PIC').frames.map((f) => ({ picture: f.picture, delay: f.delay }))

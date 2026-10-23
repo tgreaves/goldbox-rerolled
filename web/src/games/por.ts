@@ -31,6 +31,7 @@ export const POR: GameProfile = {
   stores: { files: 'poolrad', user: 'poolrad-user' },
   imageFamilies: ['TITLE', 'PIC', 'FINAL', 'SPRIT', 'HEAD', 'BODY', 'CHEAD', 'CBODY', 'CPIC',
     'ICON', 'COMSPR', 'SQRPACI', 'BACPAC', 'DUNGCOM', 'WILDCOM', 'RANDCOM', '8X8D'],
+  pictureFiles: [],
   fields: POR_FIELDS,
   tables: POR_TABLES,
   ecl: POR_ECL,

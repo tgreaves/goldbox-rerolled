@@ -44,6 +44,20 @@ WALLDEF2 #1, #15 → 8X8D2 #11/12, #151/152; WALLDEF3 #3, #13 → 8X8D3 #31–33
 their own id). The WALLDEF set size is 0x30C (0x5AF0A) and a GEO record must be 0x402 bytes
 (0x5B1DE), as before.
 
+**Which file a picture comes from** (O). The files are named by the block digit `DS:7420`, but two
+loaders override it, so the one-block families serve every block:
+
+- the picture loader (0x595CD–0x597A1, the strings "PIC", "FINAL", "SPRIT", "1", "4", "5" at 0x595E3):
+  digit := Str(`DS:7420`) (0x596CE); a `SPRIT` load takes "1" (0x596ED–0x59707); a `PIC` load of record
+  0x06, 0x3B, 0x3C, 0x42, 0x45, 0x47 or 0x59 takes "4" (0x5970C–0x59755), of record 0x01, 0x11, 0x4D or
+  0x1B "5" (0x5975A–0x59791). The data agree: PIC4 holds exactly the first set and PIC5 the second;
+- the combat-picture loader (0x5D3BF; strings "CHEAD", "CBODY", "COMSPR", "ICON", "CPIC", "1" at
+  0x5D3A0): CHEAD and CBODY (the icon parts) take a path of their own (0x5D427), COMSPR and ICON another (0x5D4F2); for the rest the digit := Str(`DS:7420`) (0x5D59E) and
+  `CPIC` takes "1" (0x5D5BF–0x5D5DA). LOAD_MONSTER calls it with "CPIC" (0x1E0A6 → stub `195:39`).
+
+CotAB's picture loader has no such override (its strings at 0x52EE6 are "PIC", "FINAL", ".dax" only).
+*Port:* the profile's `pictureFiles` ([B-model/files-and-detection.md §4](../../B-model/files-and-detection.md#4-the-asset-viewers-families)), read by `GameFiles.picture`.
+
 **Banks.** `Load8x8D(record, slot)` (stub `20c:2a`): #202 into slot 4, #203 into slot 0 at start-up
 (0x2CD9C–0x2CDAD), as CotAB. The font is loaded from the fixed name `"8X8d5"` (0x5579), record #201
 (0x55A8).

@@ -82,7 +82,7 @@ and makes one active (`setGame`), switching the live objects the rest of the cod
 
 | Module | What it holds | Read as |
 |---|---|---|
-| `profile.ts`, `types.ts` | the game list, detection (config file, marker files), the active game | `game()` |
+| `profile.ts`, `types.ts` | the game list, detection (config file, marker files), the active game; the image families and which numbered file a picture comes from (`pictureFiles`: SotSB's one-block SPRIT and CPIC, its PIC4 and PIC5) | `game()`, `GameFiles.picture` |
 | `fields.ts` | the character record: size and the offset of every named field | `F.hp`, `F.levels + k` |
 | `tables.ts` | START.EXE tables: data segment, address and row size of each (rules, names, frames, temple …) | `T.thac0.at` |
 | `ecl.ts` | the script VM: memory regions, character view, opcode variants, CALL targets, start area | `game().ecl` |

@@ -35,6 +35,7 @@ export const COAB: GameProfile = {
   stores: { files: 'goldbox-coab', user: 'goldbox-coab-user' },
   imageFamilies: ['TITLE', 'BIGPIC', 'SKY', 'PIC', 'SPRIT', 'HEAD', 'BODY', 'CHEAD', 'CBODY', 'CPIC',
     'COMSPR', 'DUNGCOM', 'WILDCOM', 'RANDCOM', 'TILES', '8X8D'],
+  pictureFiles: [], // 0x52EE6: PIC and FINAL from the block's file, as PoR's
   fields: COAB_FIELDS,
   tables: COAB_TABLES,
   ecl: COAB_ECL,

@@ -48,6 +48,20 @@ describe.skipIf(!have)('Silver Blades files', () => {
   const name = (c: Uint8Array) => String.fromCharCode(...c.subarray(F.name + 1, F.name + 1 + c[F.name]))
   const u32 = (c: Uint8Array, o: number) => (c[o] | (c[o + 1] << 8) | (c[o + 2] << 16) | (c[o + 3] << 24)) >>> 0
 
+  it('pictures come from the files the loaders name: SPRIT1 and CPIC1 in every block, PIC4 and PIC5 for theirs (0x596CE, 0x5D59E)', () => {
+    const f = load()
+    for (const block of [1, 2, 3]) {
+      expect(f.picture('CPIC', block, 1)).toBeDefined()
+      expect(f.picture('SPRIT', block, 1)).toBeDefined()
+    }
+    for (const [id, file] of [[0x06, 4], [0x59, 4], [0x01, 5], [0x4d, 5], [0x13, 2]]) {
+      expect(f.picture('PIC', 2, id)).toEqual(f.record(`PIC${file}`, id))
+      expect(f.picture('PIC', 2, id)).toBeDefined()
+    }
+    // every PIC record is reached from some block, and each file holds only the records sent to it
+    for (const n of [4, 5]) for (const { id } of f.dax(`PIC${n}`)!.entries) expect(f.picture('PIC', 1, id)).toEqual(f.record(`PIC${n}`, id))
+  })
+
   it('read the pre-made party through the 439-byte map (spec/A-games/sotsb/records.md §2.1)', () => {
     const want = [
       ['Guy de Valois ', 6, 3, [0, 0, 0, 8, 0, 0, 0], 95, 200000], ['PAINE', 6, 4, [0, 0, 0, 0, 8, 0, 0], 74, 200000],

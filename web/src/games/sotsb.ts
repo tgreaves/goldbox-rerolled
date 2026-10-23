@@ -34,6 +34,14 @@ export const SOTSB: GameProfile = {
   keep: [/\.DAX$/, /^ITEMS$/, /^START\.EXE$/, /^GAME\.OVR$/, /^BLADES\.CFG$/, /\.(WHO|STF|SFX)$/, /^CHRDAT.+\.SAV$/, /^SAVGAM.\.DAT$/, /^VAULT\.DAT$/],
   stores: { files: 'goldbox-sotsb', user: 'goldbox-sotsb-user' },
   imageFamilies: ['TITLE', 'BIGPIC', 'SKY', 'PIC', 'SPRIT', 'CHEAD', 'CBODY', 'CPIC', 'COMSPR', 'DUNGCOM', '8X8D'],
+  // the picture loader 0x596CE: the block's digit, but SPRIT always 1 and these PIC records 4 or 5;
+  // the combat-picture loader 0x5D59E: CPIC always 1 (spec/A-games/sotsb/assets.md §1)
+  pictureFiles: [
+    { family: 'SPRIT', digit: 1, records: null },
+    { family: 'PIC', digit: 4, records: [0x06, 0x3b, 0x3c, 0x42, 0x45, 0x47, 0x59] },
+    { family: 'PIC', digit: 5, records: [0x01, 0x11, 0x4d, 0x1b] },
+    { family: 'CPIC', digit: 1, records: null },
+  ],
   fields: SOTSB_FIELDS,
   tables: SOTSB_TABLES,
   ecl: SOTSB_ECL,

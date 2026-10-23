@@ -63,6 +63,15 @@ export class GameFiles {
     return d && daxRecord(d, id)
   }
 
+  /**
+   * A picture record of a family in a block: from `<family><block>`, or the fixed file the game's
+   * picture loaders name for it (profile `pictureFiles`; SotSB 0x596CE, 0x5D59E).
+   */
+  picture(family: string, block: number, id: number): Uint8Array | undefined {
+    const f = this.game.pictureFiles.find((p) => p.family === family && (p.records === null || p.records.includes(id)))
+    return this.record(`${family}${f ? f.digit : block}`, id)
+  }
+
   /** True when the minimum set for play is present. */
   complete(): boolean {
     return this.game.required.every((n) => this.files.has(n))

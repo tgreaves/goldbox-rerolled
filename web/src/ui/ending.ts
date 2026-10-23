@@ -15,7 +15,7 @@ const TICK_MS = 10
 export async function playEnding(dialog: HTMLDialogElement, files: GameFiles, block: number, partySize: number, speed: number) {
   const script = files.game.ending
   const frames = (id: number, file = 'FINAL'): { delay: number; picture: Picture }[] => {
-    const raw = files.record(`${file}${block}`, id)
+    const raw = files.picture(file, block, id)
     try { return raw ? parseRecord(raw, file !== 'BIGPIC').frames : [] } catch { return [] }
   }
   const ovr = files.get('GAME.OVR') ?? null
