@@ -100,6 +100,9 @@ const TIPS: Record<string, string> = {
   Load: 'Everything carried, weighed in coins (each coin counts 1). Heavier loads lower movement.',
 }
 
+/** each game's program-lifetime globals (Engine.session), by profile id: cleared when the page starts, as the original's at start-up */
+const sessions = new Map<string, Engine['session']>()
+
 export function showExplore(app: HTMLElement, files: GameFiles, start: Start, back: () => void, dice?: Dice) {
 
   app.innerHTML = `
@@ -641,6 +644,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   initSound(files.get('START.EXE'))
   const engine = new Engine(files, io, dice)
+  if (!sessions.has(game().id)) sessions.set(game().id, engine.session)
+  engine.session = sessions.get(game().id)!
   if (start.kind === 'demo') engine.newDemo(start.demo)
   else {
     if (start.kind === 'new') engine.newGame(start.party.map((c) => c.sav))

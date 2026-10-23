@@ -1774,8 +1774,13 @@ export class Engine {
 
   /** set by the camp screen when a rest is interrupted by an encounter */
   campInterrupted = false
-  /** rest-encounter step counter (DS:49FB): not saved, kept between rests and areas */
-  restSteps = 0
+  /**
+   * The engine globals that only the program's start clears, so they outlast a Load or a new game in
+   * the same run (the browser passes one object for the page's life): the rest-encounter step counter
+   * DS:49FB, not saved, kept between rests, camps, areas and loads (its only writers are the start-up,
+   * 0x26FBD, and the check, 0x3C24F; spec/A-games/engine/camp-and-time.md, "Counters").
+   */
+  session = { restSteps: 0 }
 
   /**
    * Encamp (FUN_29c3_2dd3): camp_menu (sets the rest-encounter odds), the camp screen, then

@@ -63,7 +63,7 @@ Part of the [specification](README.md). Ordered by what a browser reimplementati
 - ~~`DS:6DB5`/`DS:6DB7`~~: the last out-of-combat spell target ([engine/camp-and-time.md](A-games/engine/camp-and-time.md#open))
 - ~~Whether `FUN_5216_1656` scales spell durations~~: no, minutes
 - The scroll test `0x96:0x3E` is `FUN_4e53_323d`: `ITEMS` byte 0 in 11–13 (types 61 and 62 in the data), not 11–14
-- ~~Confirm in DOSBox: the rest-encounter counter `DS:49FB` carrying over between rests; the heal counter `DS:6DD8` adding up across rests in one camp~~: both confirmed in DOSBox Staging (2026-10-22, [VALIDATION.md §4](VALIDATION.md#4-sweeps-play-tests-and-reference-hashes)): two 12-hour rests in one camp heal 1 HP, two in separate camps none; with the encounter chance forced to 100, 1 h + leave + camp + 1 h meets the encounter at the 24th step overall. Whether loading a game resets `DS:49FB` is not tested
+- ~~Confirm in DOSBox: the rest-encounter counter `DS:49FB` carrying over between rests; the heal counter `DS:6DD8` adding up across rests in one camp~~: both confirmed in DOSBox Staging (2026-10-22, [VALIDATION.md §4](VALIDATION.md#4-sweeps-play-tests-and-reference-hashes)): two 12-hour rests in one camp heal 1 HP, two in separate camps none; with the encounter chance forced to 100, 1 h + leave + camp + 1 h meets the encounter at the 24th step overall. ~~whether loading a game resets `DS:49FB`~~: no (O, 2026-10-23: its only writers are the start-up, 0x26FBD, and the check, 0x3C24F; [camp-and-time.md](A-games/engine/camp-and-time.md), the counter table; the port keeps it for the page's life, `Engine.session`)
 
 ## Port gaps from the 2026-10-17 audit
 

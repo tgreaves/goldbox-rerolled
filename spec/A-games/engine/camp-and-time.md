@@ -189,7 +189,7 @@ Resulting timing for one character: the base hours, then each spell 15 minutes Ã
 |---|---|
 | `DS:6DD8` (healing, 5-minute steps) | camp entry only: rests within one camp add up towards the 24 hours |
 | `DS:6DCF + n`, hour-tick | start of each rest |
-| `DS:49FB` (encounter steps) | program start and each check. It carries over between rests, camps and areas, and is not saved |
+| `DS:49FB` (encounter steps) | program start (0x26FBD, with the party list) and each check (0x3C24F); its only writers, so it carries over between rests, camps and areas, and past a Load or a new game in the same run; it is not saved (O) |
 
 ### Healing (O, `FUN_5216_175d(char, amount = 1, force = 0)`)
 

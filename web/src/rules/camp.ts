@@ -204,9 +204,9 @@ export async function restStep(e: Engine, r: RestState, camp: { heal: number }):
   // encounter check
   const every = e.read(0x6dd2)
   if (every > 0) {
-    e.restSteps++
-    if (e.restSteps >= every) {
-      e.restSteps = 0
+    e.session.restSteps++
+    if (e.session.restSteps >= every) {
+      e.session.restSteps = 0
       if (e.roll(1, 100) <= e.read(0x6dd3)) return { messages: [...messages, msg('interrupted')], interrupted: true }
     }
   }

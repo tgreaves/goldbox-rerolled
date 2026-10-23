@@ -461,7 +461,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     lastSave = { dat, chars }
     if (!resume) return
     n.speed = e.speed
-    n.restSteps = e.restSteps
+    n.session = e.session // the same run: a load keeps the start-up-only globals (Engine.session)
     e = n
     watchEngine()
     say('  <saved and loaded>')
