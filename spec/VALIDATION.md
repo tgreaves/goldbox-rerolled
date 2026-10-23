@@ -242,30 +242,29 @@ Not run: the Sell, Share and Appraise checks (decided not worth it); register 0x
   (assets.md §2); after a flight that lost members the current character could be one of the lost
   (the remove-current routine's rule now applies, combat-rules.md "Results"; all games).
 - **Silver Blades played in its order** (2026-10-23, `sotsbchain.test.ts`: the play-test's `tour` with no
-  jump, `hardy` and `subAreas`): from the shipped start, the party made sturdy and hardy (whole before
-  each battle and at each of its messages, saves on 2 or more, twelve points better to hit and harder
-  to hit) walks on wherever the scripts take it. The ruins 1/32 are eleven street zones over one map
+  jump, `undying` and `subAreas`): from the shipped start, the party made sturdy and undying (the
+  CotAB chain's option: healed at every round, the fallen raised, nobody dropped) walks on wherever the
+  scripts take it. The ruins 1/32 are eleven street zones over one map
   (A 0x4C4B, set from tables on entry, 0x80C0): the street walls (types 7 and 8) move the party between
   them from event squares (on_move 0x811C, the zone tables at 0x99D8 + 0x45·zone, the facing table
   0x9D0A), so the tour now walks into walls as well as passages, least-tried first, and keeps its
   memory per zone. 3 × 50 000 steps: the town, the ruins' zones 1–8 and 10, the mine's guard fight and
   "DO YOU GO INTO THE MINE?" (0x9774), then the mine levels 2/49–2/51 as their stairs take them; no
   failures. A run can go on from the save another left (`SOTSB_CHAIN_FROM`/`_SAVE`, `_GOAL`): from the
-  shipped start to the mine in 16 888 steps with all six members (the random player no longer drops a
-  member when hardy), then 3 × 400 000 steps in the mine: every level 0–10 and the temple 2/52, no
+  shipped start to the mine in 16 888 steps with all six members, then 3 × 400 000 steps in the mine: every level 0–10 and the temple 2/52, no
   failures. The mine is layered as the ruins are: records 49–51 share GEO2 #49 for levels 0–10
   (A 0x4C69; record 51 takes levels 9 and 10 and the temple level 0, A 0x4C05 = level − 9 and 2 for
   the temple, 0x803C) with a sub-level A 0x4C6B, and its type-1 walls move the party by tables indexed
   by the square's event (2/51 0x8465: 0x9A65/0x9AA1, 0x9ADD/0x9B19, 0x9B55/0x9B91, 0x9BCD/0x9C09). The
   hole to 2/64 (event 62, the east walls at (15,11)–(15,14), 0x8448 → 0x85AF, shut only once A 0x4CD9
   is 1, set by ECL3 #99) is in a pocket entered only from level 10, sub-level 1, event 59 at (0,15)
-  (its south wall, → square 50); 37 of level 10's 60 street states lead there, and the runs had not
-  found it by 400 000 steps. Found and fixed on the way: camp Magic's Display with no effects printed the
+  (its south wall, → square 50); 37 of level 10's 60 street states lead there. A random walk had not
+  found it by 400 000 steps; with `hints` (the next wall of the shortest way, worked out from those
+  tables, for each of level 10's pockets) the hole was taken and 2/64 reached in 47 466 and 88 806
+  steps (2 seeds, no battle lost). Found and fixed on the way: camp Magic's Display with no effects printed the
   placeholder "#noSpellEffects" in SotSB (its text is " <No Magical Effects>", camp.md); a potion or
   wand used up from View left the record's item count one too high, written so into the save (the
-  item's removal now works the record out again, as Drop does, spells.md). Kept as the original does:
-  a last member charmed when the battle ends leaves with the monsters and the party is empty (the
-  play-test loads, as after a loss). Not yet played in order: 2/64 onwards (block 2's 64–68, block 3, the
+  item's removal now works the record out again, as Drop does, spells.md). Not yet played in order: 2/64 onwards (block 2's 64–68, block 3, the
   Dreadlord), TODO.md.
 - **Silver Blades in the browser, later blocks** (2026-10-23, Playwright with headless Chrome against
   the built app, a fresh profile): the title music (8 sound buffers started), save A, the Enhanced

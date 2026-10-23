@@ -14,9 +14,9 @@ that settles it.
    level) (2026-10-23, `spec/VALIDATION.md` §4).
 2. **Play-throughs** of CotAB and SotSB beyond the opening (headless harness first, then the browser),
    fixing what they find. SotSB in its order (2026-10-23, `sotsbchain.test.ts`): the town, the ruins'
-   street zones and the mine's levels 0–10 reached as the scripts route them; still to do, the mine's
-   level-10 street maze to the hole into 2/64 (a route through its tables, or a longer walk), then
-   2/64–2/68, block 3 and the Dreadlord, and the final battle and the well's message in the browser
+   street zones, the mine's levels 0–10 and, through level 10's street maze (route hints from its
+   tables), the hole into 2/64, reached as the scripts route them; still to do, 2/64–2/68, block 3 and
+   the Dreadlord, and the final battle and the well's message in the browser
    ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4, "Silver Blades played in its order").
    CotAB (2026-10-23): every area toured headless and its towns, hall, shop,
    temple, overland edge, camp and a battle with spells checked in the browser
