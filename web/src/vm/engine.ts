@@ -703,6 +703,9 @@ export class Engine {
         this.readops(3)
         this.B[SPRITE_MAX - B0] = this.val(2)
         this.B[SPRITE_DIST - B0] = Math.min(this.val(2), this.ahead())
+        // CotAB 0x1FF88: with no map (the overland state, Engine.viewBackdrop) the sprite and its
+        // picture are not loaded or drawn
+        if (this.viewBackdrop !== null) break
         this.spriteNow = { sprite: this.val(1), picture: this.val(3) }
         this.io.sprite(this.val(1), this.val(3), this.B[SPRITE_DIST - B0])
         break
@@ -725,6 +728,7 @@ export class Engine {
           this.io.picture(null)
         } else if (this.B[PORTRAIT - B0] === 0xff) {
           const big = game().view.bigFrom
+          if (big === null || n < big) this.lastPic = n // CotAB DS:72A4, the PIC loaded last (0x52F03)
           this.io.picture(big !== null && n >= big ? { big: n } : { pic: n }) // CotAB: full-width BIGPIC from 0x78
         }
         else this.io.picture({ head: this.B[PORTRAIT - B0], body: n })
@@ -972,6 +976,23 @@ export class Engine {
   private loadedPastEnd = false
   /** LOAD_AREA or LOAD_WALLSETS has run in this area (CotAB DS:47FB) */
   private wallsLoaded = false
+  /** the PIC drawn last, by a script or a screen (camp, treasure): CotAB DS:72A4, set by 0x52F03 */
+  lastPic = -1
+  /**
+   * The BIGPIC a redraw of the view draws instead of the 3D view, or null: the overland map while there
+   * is no map (ECL 0x49E6 = 0, CotAB DS:4FD3 = 3). RedrawView 0x52D0A never draws the 3D view then: it
+   * draws the overland map (0x52DE0 → 0x5367A), or nothing while the last PIC is the one that holds it
+   * (`overlandHeld`, DS:72A4 = 0x50 clears the flag DS:759A). spec/A-games/coab/assets.md §4.
+   */
+  get viewBackdrop(): number | null {
+    const v = game().view
+    return v.overlandPicture === null || this.A[NO_OVERLAND - A0] !== 0 || this.overland ? null : v.overlandPicture
+  }
+  /** the overland map is not drawn again: the last PIC holds it (CotAB PIC #80, a town's picture) */
+  get overlandHeld(): boolean {
+    const h = game().view.overlandHeldBy
+    return this.viewBackdrop !== null && h !== null && this.lastPic === h
+  }
   private clearPictures() {
     this.pictureDrawn = false
     this.spriteNow = null

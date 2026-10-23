@@ -372,7 +372,11 @@ makes the head of the list current in all three games: PoR 0x1F316, CotAB 0x1EB9
 port kept whoever was current in the battle); CotAB's camp Cast of a combat-only spell printed
 "#combatOnlySpell" (its "can't be cast here..." 0x451DA). Found, kept: a member still charmed when a
 battle ends leaves the party with the monsters (the original's Bug, combat-rules.md "Cleanup"); with the
-whole party charmed the party is empty.
+whole party charmed the party is empty. The SotSB tour mode, run on CotAB (`coabtour.test.ts`, every
+area): with no map (the overland and the towns' menus, ECL 0x49E6 = 0) a redraw after camp or a battle
+showed the last area's 3D view, with walls of a block whose wall sets were not loaded, where the original
+draws the overland map again or nothing (RedrawView 0x52D0A; `Engine.viewBackdrop`); encounter sprites
+are not shown then (0x1FF88). Open: combat icons the block's `CPIC` file lacks (TODO.md).
 
 **Secret of the Silver Blades (2026-10-22).** Research started: `spec/A-games/sotsb/README.md` (the
 identity, the working image, the DAX families). Its GAME.OVR has the older TPOV header, which

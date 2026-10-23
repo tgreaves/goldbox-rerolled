@@ -306,6 +306,15 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     overlay.classList.toggle('wide', w !== h) // a full-width BIGPIC keeps its own shape
     overlay.hidden = pics.length === 0
   }
+  /**
+   * The view drawn again: the 3D view, or with no map the overland map (Engine.viewBackdrop), or with
+   * no map and a town's picture holding it nothing new (`held`: a script's redraw keeps that picture)
+   */
+  function viewBack(held = false) {
+    const big = engine.viewBackdrop
+    if (big !== null && held && engine.overlandHeld) return
+    showPicture(big !== null ? { big } : null)
+  }
   function showPicture(p: { pic: number } | { big: number } | { head: number; body: number } | null) {
     stopAnimation()
     shownPic = null
@@ -334,6 +343,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       return
     }
     if ('pic' in p) {
+      engine.lastPic = p.pic // DS:72A4 (0x52F03), for the overland map's redraw
       const f = animFrames('PIC', p.pic)
       if (!f?.length) return
       let i = 0
@@ -506,7 +516,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     inputText: async () => (noWait() ? (await demoAnswer(), '') : input('text')),
     nextFrame: () => nextFrame(),
     picture: (p) => { topBlank = false; showPicture(p) },
-    clearView: () => { topBlank = false; showPicture(null) },
+    clearView: () => { topBlank = false; viewBack(true) },
     clearTop,
     glyphs,
     river: cleanseRiver,
@@ -567,7 +577,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
             showView(!engine.overland)
             wildview.hidden = !engine.overland
             showPicture({ pic: 1 })
-            try { await treasure(townUi) } finally { showPicture(null) }
+            try { await treasure(townUi) } finally { viewBack() }
           } else await gameOver()
         } catch (err) {
           if (err instanceof DemoLeft) throw err
@@ -604,7 +614,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           townMode = null
           // PROGRAM 0 then redraws the screen for the map (FUN_10ba_27d9) and the script goes on
           // (0x1CA7F): the hall's picture goes and the 3D view is back
-          showPicture(null)
+          viewBack()
           await sync(0)
         }
         return
@@ -614,7 +624,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         townMode = 'camp'
         showPicture({ pic: 29 })
         let quit = false
-        try { quit = await camp(campUi) } finally { townMode = null; showPicture(null) }
+        try { quit = await camp(campUi) } finally { townMode = null; viewBack() }
         // "Quit TO DOS": the game ends there; the port's way out is the party screen (spec/C-port/screens.md §6.1)
         if (quit) { engine.quit = true; setTimeout(leave, 0) }
         return
@@ -1681,7 +1691,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const minimap = app.querySelector<HTMLCanvasElement>('.minimap')!
   const nomap = app.querySelector<HTMLElement>('.nomap')!
   function drawMinimap() {
-    const allowed = engine.A[0x49fb - A0] === 0 && engine.geo && !engine.overland
+    const allowed = engine.A[0x49fb - A0] === 0 && engine.geo && !engine.overland && engine.viewBackdrop === null
     minimap.hidden = !allowed
     nomap.hidden = !!allowed
     if (allowed) drawMap(minimap, engine.geo!, 24, { x: engine.x, y: engine.y, facing: engine.facing }, areaMarks())

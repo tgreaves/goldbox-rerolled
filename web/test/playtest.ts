@@ -338,7 +338,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   /** the drawn view now: every wall in sight has its wall set loaded and every tile it names */
   const checkView = () => {
     const scene = sceneOf(e, files)
-    if (!scene) return
+    if (!scene || e.viewBackdrop !== null) return // no map: the overland map or a town's picture instead (CotAB)
     for (const c of viewCalls(scene.geo, scene.x, scene.y, scene.facing2, scene.closed, scene.tables)) {
       const row = scene.table.subarray((c.type - 1) * 156, c.type * 156)
       // an area entered by the jump may lack the wall sets the area before it loads (a jump artifact)

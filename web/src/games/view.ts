@@ -19,8 +19,12 @@ export interface ViewArt {
   ground: { file: string; record: number; at: [number, number]; mask: number; rows: [number, number]; repeat: number } | null
   /** script pictures from this id are full-width BIGPIC<block> records (null: none) */
   bigFrom: number | null
-  /** the BIGPIC that is the overland map, shown with the city cursor (T.cursorX/Y by ECL 0x4CA1) */
+  /** the BIGPIC that is the overland map, shown with the city cursor (T.cursorX/Y by ECL 0x4CA1); with
+   *  no map (ECL 0x49E6 = 0, the overland state) every redraw of the view draws it instead of the 3D view */
   overlandPicture: number | null
+  /** a PIC that, while it is the last one drawn, keeps the overland map from being drawn again (CotAB
+   *  PIC #80, a town's own picture: DS:72A4 = 0x50) */
+  overlandHeldBy: number | null
   /** areas that are the tile wilderness (PoR's 25–27; spec/A-games/engine/overland.md) */
   tileOverland: number[]
   /** window and screen frames, from 8X8D1 #202: PoR's fixed rope tiles (frame style 0 of
@@ -41,7 +45,7 @@ export const POR_VIEW: ViewArt = {
   // FUN_55a0_0174: sky rows 0–42, the horizon line 43, the band 44–45, the floor 46–87
   bands: [{ rows: [0, 42], colour: 'sky' }, { rows: [43, 43], colour: 'line' }, { rows: [44, 45], colour: 'band' }, { rows: [46, 87], colour: 'floor' }],
   closedEdges: [0, 10],
-  floor: null, ground: null, bigFrom: null, overlandPicture: null, tileOverland: [25, 26, 27],
+  floor: null, ground: null, bigFrom: null, overlandPicture: null, overlandHeldBy: null, tileOverland: [25, 26, 27],
   frame: { rope: { corner: 20, vertical: 21, horizontal: 22 } }, skyArt: null, font: { file: '8X8D1', record: 201 } }
 
 // spec/A-games/coab/assets.md §3: in EGA the floor is colour 8 under SKY #252, the cobbled ground drawn at
@@ -53,7 +57,7 @@ export const COAB_VIEW: ViewArt = {
   bands: [{ rows: [0, 43], colour: 'sky' }, { rows: [44, 45], colour: 0 }, { rows: [46, 87], colour: 'floor' }],
   closedEdges: [0, 10],
   // the ground #252 at screen cell (2, 7), view (0, 40), always, mask 13 (loaded at InitFirst 0x26AA9)
-  floor: 8, ground: { file: 'SKY', record: 252, at: [0, 40], mask: 13, rows: [32, 48], repeat: 2 }, bigFrom: 0x78, overlandPicture: 0x79, tileOverland: [],
+  floor: 8, ground: { file: 'SKY', record: 252, at: [0, 40], mask: 13, rows: [32, 48], repeat: 2 }, bigFrom: 0x78, overlandPicture: 0x79, overlandHeldBy: 0x50, tileOverland: [],
   // 0x1330: tile id 0x11E + table value, bank 4 (#202) starting at 0x100, so tile 30 + value (the white set)
   // the tiles are loaded with mask colour 13 (Load8x8D 0x579C5): those pixels are not drawn
   frame: { tables: { tile0: 30, mask: 13 } },
@@ -75,7 +79,7 @@ export const COAB_VIEW: ViewArt = {
 // tiles, no tables (0x19D0, 0x1A90: glyphs 0x134–0x137, 8X8D1 #202 tiles 52–55; §5); the font in 8X8D5 #201
 export const SOTSB_VIEW: ViewArt = {
   ...COAB_VIEW,
-  bigFrom: 0x70, overlandPicture: null,
+  bigFrom: 0x70, overlandPicture: null, overlandHeldBy: null,
   // the wall lookup 0x5A507 (and the passage test 0x5A3D8) find nothing outside the map in areas 0 and
   // 0x50 (DS:A4C2; CotAB's 10 is not tested)
   closedEdges: [0, 0x50],

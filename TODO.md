@@ -37,6 +37,11 @@ that settles it.
 - Its frame edge is an approximation ([`spec/C-port/rendering.md`](spec/C-port/rendering.md), Open).
 - DOSBox: no walk across an area boundary yet (every way out of the areas walked meets a question or a
   battle), and no rest that memorises a spell ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
+- Combat icons the block's `CPIC` file lacks (`coabtour.test.ts`, MISSING): ECL1 #80's forest patrols
+  pick monsters whose icons are in other blocks' files (dark elves 49–57, a Zhentil mage 33 in block 1),
+  and some fixed fights do the same (block 3 #32, block 4 #19–21, block 6 #66). The original reads
+  `CPIC` + the block digit too (0x56E91); what it shows for a missing record (the slot's last icon,
+  nothing, an error) needs a DOSBox look ([`spec/A-games/coab/assets.md`](spec/A-games/coab/assets.md) §4).
 
 ## Pool of Radiance
 

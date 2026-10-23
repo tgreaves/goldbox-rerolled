@@ -884,6 +884,8 @@ when its table column or sentence names CotAB.
 | 0x1FD01 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x1FD3C | coab/ecl | coab/ecl: Engine entry points |  |
 | 0x1FF13 | coab/ecl | coab/ecl: Opcodes |  |
+| 0x1FF88 | coab/assets | coab/assets: 4. Overland: no tile map |  |
+| 0x1FFAF | coab/assets | coab/assets: 4. Overland: no tile map |  |
 | 0x1FFB7 | coab/ecl | coab/ecl: Open |  |
 | 0x1FFBB | coab/ecl | coab/ecl: CALL targets |  |
 | 0x2002E | coab/ecl | coab/ecl: CALL targets |  |
@@ -1515,6 +1517,7 @@ when its table column or sentence names CotAB.
 | 0x52C98 | coab/assets | coab/assets: Background: the main change |  |
 | 0x52CCC | coab/assets | coab/assets: Background: the main change |  |
 | 0x52D0A | coab/assets | coab/assets: Background: the main change |  |
+| 0x52D10 | coab/assets | coab/assets: 4. Overland: no tile map |  |
 | 0x52D50 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x52D62 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x52D75 | coab/assets | coab/assets: Open |  |
@@ -1561,6 +1564,7 @@ when its table column or sentence names CotAB.
 | 0x56C50 | coab/assets, coab/ecl, B/script-vm-map | coab/assets: 2. Inventory |  |
 | 0x56E15 | B/procedures | B/procedures: 1. Spell slots |  |
 | 0x56E3E | B/procedures | B/procedures: 1. Spell slots |  |
+| 0x56E91 | coab/assets | coab/assets: 4. Overland: no tile map |  |
 | 0x578B6 | B/procedures | B/procedures: 7. Creation and training values |  |
 | 0x579C5 | coab/assets | coab/assets: GEO and WALLDEF: unchanged |  |
 | 0x5A507 | B/profile | B/profile: 3.1 The view (`ViewArt`) |  |

@@ -257,6 +257,10 @@ its overland is `BIGPIC1` #121 (profile `view.overlandPicture`) driven by the sc
   about 0.5 s on and 0.3 s off, while that picture is shown.
 - Travel is the scripts' menus (ENTER CITY, JOURNEY ON …); while such a menu waits, movement keys
   and the pad are ignored as for any pending menu ([ui-contract.md §6.3](ui-contract.md#63-menus-and-prompts)).
+- With no map (ECL 0x49E6 = 0) the view is never the 3D view: every redraw (a script's, after camp, a
+  battle's treasure, the training hall) draws this picture again (`Engine.viewBackdrop`), except that a
+  script's redraw leaves a town's own picture (`view.overlandHeldBy`, PIC #80) where it is; the area map
+  says "Not here."; encounter sprites (SETUP_MONSTER) are not shown ([coab/assets.md §4](../A-games/coab/assets.md#4-overland-no-tile-map-o)).
 
 ## 5. Pictures and the picture layer
 
