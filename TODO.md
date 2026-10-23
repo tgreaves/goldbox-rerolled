@@ -60,10 +60,10 @@ that settles it.
   set, so a member can leave a battle with an NPC's morale (≥ 0x80): its card then draws the combat picture
   of its id, none for a player character (seen on 6/67's chain save in the browser); the harness should end
   the charm as the game does.
-- A potion used up in camp (its last charge) leaves the record's item count (0x14C) and hands (0x185) as
-  they were in the port (`coabchain.test.ts` seed 2, 5/50); Use (0x3F9A8) returns a used flag and its
-  caller spends the charge, not yet traced: whether the original then counts the items again, as after
-  Scribe it does not (camp-and-time.md, Rest), is open.
+- A used-up item (a potion's last charge, a wand's last use): the port now takes it away and works the
+  record out again (item count 0x14C, hands 0x185), in camp and in battle (`spendUse`, `Battle.useItem`;
+  spells.md, **I**). Use (0x3F9A8) returns a used flag and its caller spends the charge; that caller is not
+  yet traced, so whether the original counts the items again (as after Scribe it does not) is open.
 - ECL4 #32's tavern: a party that picks the lock east of (13,7) cannot leave ((14,7)'s west side is a wall,
   the bar puts it back where it came from); whether the original traps it too needs a DOSBox look
   ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4, "in its order").
