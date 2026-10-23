@@ -332,6 +332,13 @@ the stem table's slack (the whole of each slot past the party count). Not run: t
   records' and effects' list pointers, 0x3206, the stem table's slack): the memorised spell and the clock
   (04:30) alike. Found: the port's list printed "-" for a spell level without slots ("5 5 2 - -"), where the
   original leaves it blank (FUN_3f81_05a4); fixed.
+- **Curse of the Azure Bonds: Tilverton's temple and a shop in DOSBox** (2026-10-23, saves the port wrote at 2/1
+  (0,6) and (1,2) facing south): the temple, "Heal View Pool Appraise Exit"; Heal, "MATHEW, how can we help you?"
+  with Cure Blindness, Cure Disease, Cure Light, Serious and Critical Wounds, Heal, Neutralize Poison, Raise
+  Dead, Remove Curse, Stone to Flesh (no prices in the list) and "Heal Exit", the port's list and prompt
+  (`ui/town.ts` heal). The shop: "Good day to you, gentle persons. Do you wish to make a purchase? Yes No",
+  "Buy View Pool Appraise Exit" (the pool empty), Buy: Silver Mirror 25, 1 Flask of Oil 20, the stock the port
+  offers. No boundary walk was typed: Tilverton's ways out are behind the scripts' questions.
 
 ## 5. Clean-room runs
 

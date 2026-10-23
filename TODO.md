@@ -44,8 +44,10 @@ that settles it.
 ## Curse of the Azure Bonds
 
 - Its frame edge is an approximation ([`spec/C-port/rendering.md`](spec/C-port/rendering.md), Open).
-- DOSBox: no walk across an area boundary yet (every way out of the areas walked meets a question or a
-  battle) ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
+- DOSBox: no walk across an area boundary yet. The ways out of the areas walked meet a question or a battle
+  (Tilverton's are steps off the map's edge, B 0x6DD5, with the scripts' menus after), so a walk out needs
+  those answers typed as the original's keys ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
+- DOSBox, not yet compared: the Hall of Training's screens (2/1 (5,1) facing south, after a Yes/No).
 - The chain in its order (`coabchain.test.ts`, [`spec/VALIDATION.md`](spec/VALIDATION.md) §4) has not reached
   6/64–6/67: ECL1 #80 enters 6/64 at wilderness place 13 (ECL 0x4C9B, 0x853C → 0x85C8), which comes from
   the cell table at 0x9D13 (cell ECL 0x4C9D); the grey man at the standing stones (place 4) counts the
