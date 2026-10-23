@@ -269,7 +269,10 @@ Not run: the Sell, Share and Appraise checks (decided not worth it); register 0x
   Save (each quit loaded an older save). Of five seeds from 2/64 at up to 500 000 steps, two reached 2/65
   and 2/66 or 2/68 and 2/65; none block 3 yet. An NPC's wand used up on a battle's last turn left the
   record's item count and hands one too high after the battle (the battle's Use now works the record out
-  again when it removes an item, as spendUse does). Kept as the original does: the Ring of Invisibility's effect 56
+  again when it removes an item, as spendUse does). From the 2/65 save (2 × 300 000 steps, hints for
+  2/65's event 39 west and 2/66's event 31 south, on_move 0x8176 and 0x81B7): one seed went back by 2/64,
+  the other reached 2/66, then its game ended 501 times with no battle lost (the cause not yet traced),
+  so block 3 is not yet reached in order. Kept as the original does: the Ring of Invisibility's effect 56
   adds a record of 25 lasting 1 at every event 8 and 19 with no de-dupe (engine/effects.md, 3723_1363), so
   some 40 can stand at once after a long battle; the play-test no longer counts those as a pile-up.
   Found and fixed on the way: camp Magic's Display with no effects printed the
