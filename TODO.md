@@ -9,8 +9,9 @@ that settles it.
 
 1. **More DOSBox comparisons** with `tools/dosbox/` where the port's behaviour rests on **I** items
    (`spec/open-questions.md`): `viewcheck.py --moves` walks, saves written by the original compared
-   with the port's (`run.py` keeps every file the game changes), SotSB beyond its view. PoR's walks,
-   saves and rests are done (2026-10-23, `spec/VALIDATION.md` §4).
+   with the port's (`run.py` keeps every file the game changes). PoR's walks, saves and rests are done,
+   and SotSB's saves (the opening, the mines) and walks (the town, the ruins into the town, the temple
+   level) (2026-10-23, `spec/VALIDATION.md` §4).
 2. **Play-throughs** of CotAB and SotSB beyond the opening (headless harness first, then the browser),
    fixing what they find. CotAB (2026-10-23): every area toured headless and its towns, hall, shop,
    temple, overland edge, camp and a battle with spells checked in the browser
@@ -30,6 +31,13 @@ that settles it.
 - The Debug jump into an area whose wall sets an earlier script loads (the mine levels 2/49–2/51, the
   frost giants' village 3/81) shows the last area's wall sets or none; it loads the area's own map
   (IMP-025) but cannot know which wall sets the scripts on the way would load.
+- DOSBox, not yet compared: Fix's rest estimate with memorised cures (camp.md §3, **I** for its
+  grouping; the headless runner's camp resolves at once, so the port's side needs a driver), the
+  `vault.dat` the original writes against the port's (records.md §5), a battle's summary with monsters
+  (the outcome and treasure lines, read in the code of all three games, seen only without monsters).
+- The previous game state byte of a save (0x1406, DS:67E8) is written as 4 or 3; the original writes
+  what the variable holds (2 after a load and a camp). Its loader overwrites it at once, so it has no
+  effect (records.md §4).
 - The vault's sync keeps the newer change and loses the other device's (documented,
   [`docs/server.md`](docs/server.md)); a conflict copy would need a design.
 - Journal: entry 35's heading kept as printed ("Toom", probably "Tomb"); entry 72's map key has one
