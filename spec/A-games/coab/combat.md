@@ -306,7 +306,7 @@ with STR and WIS**, a **ranger with STR, INT and WIS**, a magic-user with INT an
 15 (`cmpb $0xf` on +0x11, +0x13, +0x15, +0x17); the two-class combinations ÷ 2, the three-class ÷ 3
 (0x1DBC1). PoR's (FUN_2e08_0355) has no paladin or ranger. The summary (0x1E19C): the outcome only when
 an enemy was counted (DS:4804) or in a duel (DS:8B70), else "The party has found Treasure!" (CS 0xA39);
-no treasure line after a won battle. The port: `R.xpBonus`, `R.battleSummary`
+no treasure line after a won battle (seen in DOSBox, 2026-10-23: ECL2 #3's otyughs beaten, "The party has won.", "Each character receives 1665 experience points.", then the continue line; the "Continue battle: Yes No" question before it with the last otyugh down to 1 HP). The port: `R.xpBonus`, `R.battleSummary`
 ([B-model/procedures.md §15](../../B-model/procedures.md#15-combat-procedures)).
 
 ## Open

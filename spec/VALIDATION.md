@@ -314,6 +314,17 @@ the stem table's slack (the whole of each slot past the party count). Not run: t
   the party back on the square it came from, so a party that picks that lock stays inside (the port as
   the data, I: the original not tried); Scribe's used-up scroll leaves the item count as it was, as the
   original (camp-and-time.md, Rest).
+- **Curse of the Azure Bonds: a battle in DOSBox** (2026-10-23, `tools/dosbox/run.py` on a save the port wrote at
+  2/3 (15,0) after a Debug jump, `SAVGAMB.DAT`): one step north, ECL2 #3's otyughs "attack immediately". An
+  empty icon slot draws nothing: with LOAD_MONSTER's icon operand (save offset 0x2604) patched to a record
+  CPIC2 lacks, the four otyughs fight unseen and the neo-otyugh is drawn, as the port's `combatIcon` null
+  does. The party as loaded (no gear) is destroyed: "The monsters rejoice for the party has been
+  destroyed", "Press any key to continue", as the port's aftermath. With its HP raised to 250 in the copy
+  (`CHRDATB<n>.SAV` 0x78 and 0x1A4) and the game speed 0 (offset 0x1F9), on Quick: "Continue battle: Yes No"
+  with the last otyugh at 1 HP, then "The party has won." and "Each character receives 1665 experience
+  points." with no treasure line, the port's `R.battleSummary` for CotAB. The share itself follows the
+  monsters' rolled HP, so it is not compared. Lowering the otyughs' count operand (offset 0x2603) skips the
+  fight in both the original and the port.
 
 ## 5. Clean-room runs
 
