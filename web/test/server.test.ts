@@ -467,7 +467,7 @@ describe('admin CLI', () => {
     expect(run(d, ['remove-user', 'tristan', '--yes']).stdout).toMatch(/deleted/)
     expect(existsSync(join(d, 'users', 'tristan'))).toBe(false)
     expect(run(d, ['bogus']).status).toBe(2)
-  })
+  }, 30_000) // a dozen CLI processes, each a node start: slow when the machine is busy
 })
 
 describe('session renewal (accounts-and-sync §3.3)', () => {
