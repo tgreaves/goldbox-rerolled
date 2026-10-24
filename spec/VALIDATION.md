@@ -294,7 +294,9 @@ exit to try first, and four seeds reach the mine in 19 000–25 000 steps. Then,
 seed 1 of a 1 000 000-step run went town, ruins, the mine's levels and temple, 2/64, 2/68, 2/65, 2/66
 and into **3/80** at step 945 520 (7 353 battles, none lost by the undying party); seed 2 reached 2/64.
 The saves on entering 2/64–2/66 and the one in 3/80 are kept outside the repository (game data) for
-runs that go on from there (`docs/environment.md`). **The end of the game, by Debug jumps** (not in
+runs that go on from there (`docs/environment.md`). From the 3/80 save (2 × 1 000 000 steps) both seeds
+reached the Frost Giants' village **3/81**, then took its gate back to the Well (1/33) and wandered blocks
+1 and 2 without finding block 3 again; the save on entering 3/81 is kept with the others. **The end of the game, by Debug jumps** (not in
 order): headless, a party jumped beside 3/99's soul chamber (event 6 at (1,2), 0x84B3; 3/99 runs on 3/98's
 map) gets the Dreadlord's image, EXPLORE ROOM, 12 iron golems and 6 medusae (0x85E6), the gem shattered
 and "A GATE BEGINS TO GLOW IN THE NORTHWEST CORNER" ([0x4CD9] := 1, 0x8612); the gate (event 22 at (0,0),

@@ -10,7 +10,10 @@ that settles it.
 1. **SotSB in its order through block 3** (`sotsbchain.test.ts`, hints in `sotsbchain-hints.json`): block
    3 is reached in order since 2026-10-23 (3/80 from the shipped start; the riddles answered, the ruins'
    zone 8 kept, `spec/VALIDATION.md` §4). From the 3/80 save (`/home/tmg/sotsb-saves/3-80`,
-   `SOTSB_CHAIN_FROM`): the crevasses to the Frost Giants' village 3/81 and its king, the castle's three
+   `SOTSB_CHAIN_FROM`): the Frost Giants' village 3/81 is reached (its save in `/home/tmg/sotsb-saves/3-81`),
+   but the runs then take its gate back to the Well and do not find block 3 again: hints for 3/81 (the
+   king, then the castle exit) and a way to keep a run from gates that undo its progress are next; the
+   castle's three
    levels (3/96–3/99: the brass, silver and gold keys from the dungeon mazes, the passwords answered as
    the riddles are) and the Dreadlord; in order the glowing gate needs the well's 0x4C63. The anonymous
    GameFAQs walkthrough (`docs/environment.md`, references) gives the order and where each gate is. Then the final battle and the well in the
