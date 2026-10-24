@@ -10,9 +10,12 @@ that settles it.
 1. **SotSB in its order through block 3** (`sotsbchain.test.ts`, hints in `sotsbchain-hints.json`): block
    3 is reached in order since 2026-10-23 (3/80 from the shipped start; the riddles answered, the ruins'
    zone 8 kept, `spec/VALIDATION.md` §4). From the 3/80 save (`/home/tmg/sotsb-saves/3-80`,
-   `SOTSB_CHAIN_FROM`): the Frost Giants' village 3/81 is reached (its save in `/home/tmg/sotsb-saves/3-81`),
-   but the runs then take its gate back to the Well and do not find block 3 again: hints for 3/81 (the
-   king, then the castle exit) and a way to keep a run from gates that undo its progress are next; the
+   `SOTSB_CHAIN_FROM`): 3/81 and **3/82** are reached (saves in `/home/tmg/sotsb-saves/`; the harness's
+   `forward`, `prefer` and flag-gated hints, `spec/VALIDATION.md` §4). Next: (a) the keys: the chain went
+   through the dungeon mazes without the brass, silver and gold keys (walkthrough: 2/64 (12,15), 2/65
+   (1,8), 2/66 (9,13); confirm in ECL2 #64–66), so rerun from `2-64` with hints for them; (b) 3/82 is a
+   large maze over one map (position [0x4CFD]/[0x4CFE]); the harness needs a way to head for a place in
+   it (walkthrough: east, south at (58,85), then always east to the gates, wall type 9 at (15,11)); the
    castle's three
    levels (3/96–3/99: the brass, silver and gold keys from the dungeon mazes, the passwords answered as
    the riddles are) and the Dreadlord; in order the glowing gate needs the well's 0x4C63. The anonymous

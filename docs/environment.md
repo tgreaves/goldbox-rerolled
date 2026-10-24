@@ -45,7 +45,7 @@ environment variables; tests that need a game skip without it.
 |---|---|---|---|
 | Pool of Radiance (PC 1.3) | `/home/tmg/poolrad-files` | `POOLRAD` | GOG Mac installer `pool_of_radiance_enUS_1_3_31236.pkg` |
 | Curse of the Azure Bonds (1.0) | `/home/tmg/coab-files` | `COAB` | GOG Mac installer `curse_of_the_azure_bonds_enUS_1_0_31854.pkg` (in `/home/tmg`); includes the Manual, Cluebook and Adventurer's Journal PDFs and `COPYCURS.EXE` |
-| Secret of the Silver Blades (saves the story-order run made on entering 2/64, 2/65, 2/66, 3/80 and 3/81: `/home/tmg/sotsb-saves/`, for `SOTSB_CHAIN_FROM`) | `/home/tmg/sotsb-files` (Mac: `~/Downloads/BLADES`) | `SOTSB` | GOG installer `secret_of_the_silver_blades_enUS_1_0_33010.pkg`; unpacked 2026-10-21; research started 2026-10-22 (`spec/A-games/sotsb/`) |
+| Secret of the Silver Blades (saves the story-order run made on entering 2/64, 2/65, 2/66, 3/80, 3/81 and 3/82: `/home/tmg/sotsb-saves/`, for `SOTSB_CHAIN_FROM`) | `/home/tmg/sotsb-files` (Mac: `~/Downloads/BLADES`) | `SOTSB` | GOG installer `secret_of_the_silver_blades_enUS_1_0_33010.pkg`; unpacked 2026-10-21; research started 2026-10-22 (`spec/A-games/sotsb/`) |
 
 ```sh
 cd web

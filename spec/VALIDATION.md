@@ -296,7 +296,16 @@ and into **3/80** at step 945 520 (7 353 battles, none lost by the undying party
 The saves on entering 2/64–2/66 and the one in 3/80 are kept outside the repository (game data) for
 runs that go on from there (`docs/environment.md`). From the 3/80 save (2 × 1 000 000 steps) both seeds
 reached the Frost Giants' village **3/81**, then took its gate back to the Well (1/33) and wandered blocks
-1 and 2 without finding block 3 again; the save on entering 3/81 is kept with the others. **The end of the game, by Debug jumps** (not in
+1 and 2 without finding block 3 again; the save on entering 3/81 is kept with the others. With the
+harness's `forward` (a step back into an earlier block loads the latest save at the furthest one),
+`prefer` (the answers a player who knows the story gives, each read in ECL3 #81: the door's BASH at
+0x8276, the king's TALK at 0x9281 and AGREE TO HELP at 0x93E6, the guards' CASTLE at 0x9A23) and two
+hints (the king, event 39 at (1,15) from the north; the castle exit, event 18 at (15,6) east, only once
+the king's trust [0x4CB7] is 1), a run from 3/81 passes the village and reaches **3/82** at step 649.
+3/82 is a large maze seen through the 16 × 16 map (its own coordinates [0x4CFD]/[0x4CFE], 65,85 on
+entry); the castle gates (wall type 9, (15,11)–(15,12) east, 0x82DD) are not yet found in it, and the
+party has none of the three keys the castle's last level asks for (the dungeon mazes' brass, silver and
+gold keys, "YOU NEED THE BRASS KEY" on returning to 3/80). **The end of the game, by Debug jumps** (not in
 order): headless, a party jumped beside 3/99's soul chamber (event 6 at (1,2), 0x84B3; 3/99 runs on 3/98's
 map) gets the Dreadlord's image, EXPLORE ROOM, 12 iron golems and 6 medusae (0x85E6), the gem shattered
 and "A GATE BEGINS TO GLOW IN THE NORTHWEST CORNER" ([0x4CD9] := 1, 0x8612); the gate (event 22 at (0,0),

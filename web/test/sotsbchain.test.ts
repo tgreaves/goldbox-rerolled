@@ -23,6 +23,10 @@ const fresh = process.env.SOTSB_CHAIN_FRESH === '1'
 // sotsbchain-hints.json: the mine's level 10, each pocket's wall on the shortest way to the hole into 2/64,
 // worked out from 2/51's tables 0x9B55-0x9C09 and the hole's walls, VALIDATION.md §4)
 const goal = process.env.SOTSB_CHAIN_GOAL?.split(',')
+// the menu answers a player who knows the story gives (PlayOptions.prefer), each read in the scripts: the
+// Frost Giants' village (ECL3 #81) door's BASH (0x8276), the king's TALK (0x9281) and AGREE TO HELP (0x93E6),
+// the guards' CASTLE (0x9A23)
+const PREFER = ['BASH', 'TALK', 'AGREE TO HELP', 'CASTLE']
 function readSave(d: string): SaveFiles {
   // a save the run wrote in the game's own files (saveAt: SAVGAMA.DAT and the party's stems)
   if (!existsSync(join(d, 'game.dat')) && existsSync(join(d, 'SAVGAMA.DAT'))) {
@@ -55,7 +59,7 @@ describe.skipIf(!have)('Secret of the Silver Blades played in its order', () => 
       const hints = JSON.parse(readFileSync(process.env.SOTSB_CHAIN_HINTS ?? join(import.meta.dirname, 'sotsbchain-hints.json'), 'utf8'))
       // SOTSB_CHAIN_SAVEAT=2/64,2/66 (dir SOTSB_CHAIN_SAVEAT_DIR): the game saved, in its own files, on first entering each
       const saveAt = process.env.SOTSB_CHAIN_SAVEAT ? { areas: process.env.SOTSB_CHAIN_SAVEAT.split(','), dir: process.env.SOTSB_CHAIN_SAVEAT_DIR ?? '/tmp' } : undefined
-      const r = await play({ game: SOTSB, files, seed, steps, from, goal, hints, saveAt, tour: true, undying: true, walls: true, fresh, watch: (process.env.SOTSB_CHAIN_WATCH ?? '0x4c4b,0x4c69,0x4c6b').split(',').map(Number), subAreas: [0x4c4b, 0x4c69, 0x4c6b], trace: !!process.env.PLAY_TRACE_FILE })
+      const r = await play({ game: SOTSB, files, seed, steps, from, goal, hints, saveAt, tour: true, undying: true, walls: true, forward: process.env.SOTSB_CHAIN_FORWARD === '1', prefer: PREFER, fresh, watch: (process.env.SOTSB_CHAIN_WATCH ?? '0x4c4b,0x4c69,0x4c6b').split(',').map(Number), subAreas: [0x4c4b, 0x4c69, 0x4c6b], trace: !!process.env.PLAY_TRACE_FILE })
       const st = r.stats
       const sq = [...(r.squares ?? new Map<string, Set<number>>())].map(([k, v]) => `${k}:${v.size}`).join(' ')
       log(`seed ${seed}: ${r.steps} steps; areas in order ${[...st.areas].join(' ')}; squares ${sq}; ${st.battles} battles (${st.won} won, ${st.fled} fled, ${st.lost} lost); watched ${[...(r.watched ?? new Map<number, Set<number>>())].map(([a, v]) => `${a.toString(16)}: ${[...v].join(',')}`).join('; ')}; ${st.ended}${r.stuck.length ? `; stuck ${r.stuck.length}: ${r.stuck.slice(0, 3).join(' | ')}` : ''}\n`)

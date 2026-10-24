@@ -81,11 +81,21 @@ export interface PlayOptions {
   goal?: string[]
   /** squares to make for, by sub-area (`place`: block/area and the subAreas' values): where one lies in
    *  the party's reach the tour walks there and steps forward facing `facing` (a script's way on, from its
-   *  tables, where a random walk would take too long) */
-  hints?: { place: string; x: number; y: number; facing: number }[]
+   *  tables, where a random walk would take too long); with `flag` ([ECL address in the game's numbering,
+   *  value]) only once the story has set it (SotSB's village exit to the castle needs the king's trust) */
+  hints?: { place: string; x: number; y: number; facing: number; flag?: [number, number] }[]
   /** a tour walks into every wall in reach it has not tried before it takes an edge exit (SotSB, whose scripts
    *  move the party through walls: the ruins' streets, the mine's levels, 2/64's teleports) */
   walls?: boolean
+  /**
+   * a run in the story's order goes forward: a step or an answer that takes the party back into an earlier
+   * block than the furthest it has reached (SotSB's glowing gateways and the scripts' NEW_ECL #33 back to
+   * the Well from block 3) undoes its progress, so the latest save made at that furthest block is loaded
+   */
+  forward?: boolean
+  /** menu answers a run in the story's order takes when offered, nine times in ten (a script's way on, as
+   *  a player who knows the story answers: SotSB's village door BASH, the king's TALK, AGREE TO HELP, CASTLE) */
+  prefer?: string[]
 }
 
 /** a saved game: the DAT and each member's record, items and effects */
@@ -223,7 +233,9 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     const planned = plan.length ? items.indexOf(plan[0]) : -1
     if (planned >= 0) plan.shift()
     // in a battle Quick comes before the menu limit: the last choice there (DONE, then EXIT) goes round
-    const k = planned >= 0 ? planned : quick && items.includes('QUICK') ? items.indexOf('QUICK') : ++stepMenus > STEP_MENUS ? n - 1 : sensible(items, prompt)
+    const preferred = o.prefer?.find((w) => items.includes(w))
+    const k = planned >= 0 ? planned : quick && items.includes('QUICK') ? items.indexOf('QUICK') : ++stepMenus > STEP_MENUS ? n - 1
+      : preferred && !chance(0.1) ? items.indexOf(preferred) : sensible(items, prompt)
     say(`  [${prompt}] ${items.join('/')} -> ${items[k]}`)
     return k
   }
@@ -562,7 +574,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       if (effectsFile(n.effectsOf(c)).some((v, k) => chars[i].spc[k] !== v)) fail(`${nameOf(c)}'s effects change in a save and load`)
     })
     if (n.party().length !== party.length) fail(`the party is ${n.party().length} after loading, not ${party.length}`)
-    lastSave = { dat, chars }
+    lastSave = { dat, chars, block: n.block }
     // kept only when something new was seen since the last one kept (a save made inside a trap is no way out)
     if (seen !== keptSeen) { keptSeen = seen; history.push({ ...lastSave, step }); if (history.length > 40) history.shift() }
     if (!resume) return
@@ -636,9 +648,10 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
 
   // ------------------------------------------------------------------- play
   /** the last save made, where a lost party starts again (a player loads it) */
-  let lastSave: { dat: Uint8Array; chars: { sav: Uint8Array; itm?: Uint8Array; spc?: Uint8Array }[] }
-  /** the saves made, oldest first: an undying run that finds nothing new for long goes back to an older one */
-  const history: { dat: Uint8Array; chars: { sav: Uint8Array; itm?: Uint8Array; spc?: Uint8Array }[]; step: number }[] = []
+  let lastSave: { dat: Uint8Array; chars: { sav: Uint8Array; itm?: Uint8Array; spc?: Uint8Array }[]; step?: number; block?: number }
+  /** the saves made, oldest first, with the block each was made in: an undying run that finds nothing new
+   *  for long goes back to an older one (and a forward run to one at its furthest block) */
+  const history: { dat: Uint8Array; chars: { sav: Uint8Array; itm?: Uint8Array; spc?: Uint8Array }[]; step: number; block?: number }[] = []
   let newAt = 0, seen = 0, keptSeen = -1
   const dat = files.get('SAVGAMA.DAT')
   if (!dat) throw new Error('no SAVGAMA.DAT')
@@ -719,7 +732,12 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     const g = e.geo
     if (!g) return 'f'
     const at = (x: number, y: number) => (y & 15) * 16 + (x & 15)
-    if (g.event(e.x, e.y)) {
+    /** a hint the tour may still take here: its place, its story flag, not taken, not refused three times */
+    const usable = (h: NonNullable<PlayOptions['hints']>[number]) => inPlace(h.place) && (!h.flag || e.read(canonical(game().ecl, h.flag[0])) === h.flag[1])
+      && !hintsTaken.has(`${place()}/${at(h.x, h.y)}/${h.facing}`) && (blockedTries.get(`${place()}/${at(h.x, h.y)}/${h.facing}`) ?? 0) < 3
+    // an event square's walls first, unless a hint waits here (SotSB's village: the entrance's west wall
+    // leads straight back out, the king lies inside)
+    if (g.event(e.x, e.y) && !o.hints?.some(usable)) {
       const wall = [0, 1, 2, 3].find((d) => g.passage(e.x, e.y, d) === 0 && !bumped.has(`${place()}/${at(e.x, e.y)}/${d}`))
       if (wall !== undefined) {
         const turn = (wall - e.facing + 4) & 3
@@ -754,7 +772,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     }
     // a hint in reach comes before any unseen square: walk to it, face it, step (dropped after three
     // tries that left the party where it was)
-    const hint = o.hints?.find((h) => inPlace(h.place) && from.has(at(h.x, h.y)) && !hintsTaken.has(`${place()}/${at(h.x, h.y)}/${h.facing}`) && (blockedTries.get(`${place()}/${at(h.x, h.y)}/${h.facing}`) ?? 0) < 3)
+    const hint = o.hints?.find((h) => usable(h) && from.has(at(h.x, h.y)))
     if (hint) {
       if (at(hint.x, hint.y) === at(e.x, e.y)) {
         const turn = (hint.facing - e.facing + 4) & 3
@@ -863,7 +881,7 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       out(Array.from({ length: 16 }, (_, x) => ch[g.passage(x, y, 3)] + (g.event(x, y) ? g.event(x, y).toString(16).padStart(2, '0') : '  ')).join('') + ch[g.passage(15, y, 1)])
     }
   }
-  let reloads = 0, healedAt = -100
+  let reloads = 0, healedAt = -100, furthest = 0
   const flags = (process.env.PLAY_FLAGS ?? '').split(',').filter(Boolean).map(Number)
   let flagsNow = ''
   const savedAt = new Set<string>()
@@ -894,6 +912,24 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       newAt = step
       ok = await act('load an older save', () => e.start())
       if (!ok) break
+    }
+    // a forward run back in an earlier block: the latest save at the furthest block, as a player would load it
+    if (o.forward) {
+      lastSave.block ??= e.block
+      if (e.block > furthest) furthest = e.block
+      else if (e.block < furthest) {
+        const back = [...history].reverse().find((h) => (h.block ?? 0) >= furthest) ?? ((lastSave.block ?? 0) >= furthest ? lastSave : undefined)
+        if (back) {
+          report.route.push(`${step} back in ${e.block}/${e.area}: the save of step ${back.step ?? 0} in block ${back.block} is loaded`)
+          if (history.includes(back as typeof history[number])) history.splice(history.indexOf(back as typeof history[number]) + 1)
+          lastSave = back
+          e = load(back.dat, back.chars, o.seed * 7919 + step)
+          watchEngine()
+          newAt = step
+          ok = await act('load after going back', () => e.start())
+          if (!ok) break
+        }
+      }
     }
     watchParty()
     if (o.undying) for (const c of e.party()) { if (c[F.status] >= 4 && c[F.status] <= 7) { c[F.status] = 0; c[F.inPlay] = 1; raised(c) } if (c[F.status] === 0) c[F.hp] = c[F.maxHp] }
