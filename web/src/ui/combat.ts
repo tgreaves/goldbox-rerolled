@@ -219,6 +219,8 @@ export async function runBattle(s: BattleScreen) {
   const lastHp = new Map<Fighter, number>()
   /** those a blow or spell struck since the last message (CombatUi.struck): their number is already shown */
   let struckSince = new Set<Fighter>()
+  /** the message last queued and not yet shown: a struck notice joins its job */
+  let lastPrint: { hits: { f: Fighter; d: number | null }[]; sounds: [number, SoundMode][] } | null = null
   /** who lost or gained HP since the last message queued, by any other means (a script's DAMAGE, an effect):
    *  the rules change HP, then print what happened */
   const hpChanges = (): { f: Fighter; d: number | null }[] => {
@@ -482,9 +484,14 @@ export async function runBattle(s: BattleScreen) {
   const ui: CombatUi = {
     print: (t, hold) => {
       const hits = hpChanges() // now, as the rules print: the change belongs to this message
+      // the blow this message tells of (struck, called right after) joins it: shown with it, before its pause
+      const job = { hits, sounds: [] as [number, SoundMode][] }
+      lastPrint = job
       later(async () => {
+        if (lastPrint === job) lastPrint = null
         s.print(t)
-        floaters(hits)
+        floaters(job.hits)
+        for (const [n, mode] of job.sounds) s.sound(n, mode)
         if (hold?.ms) await s.pause(hold.ms)
       })
     },
@@ -521,7 +528,10 @@ export async function runBattle(s: BattleScreen) {
     // afterwards is not shown again
     struck: (t, damage) => {
       if (damage !== null) struckSince.add(t)
-      later(async () => floaters([{ f: t, d: damage === null ? null : -damage }]))
+      const hit = { f: t, d: damage === null ? null : -damage }
+      // with the message just printed, before its pause; queued on its own only if that has already shown
+      if (lastPrint) lastPrint.hits.push(hit)
+      else later(async () => floaters([hit]))
     },
     look: (at) => later(async () => { focus = { row: at.y, col: at.x }; draw() }),
     redraw: (f) => {
@@ -596,7 +606,9 @@ export async function runBattle(s: BattleScreen) {
     }),
     confirm: (prompt) => yes(s, prompt),
     view: (c) => s.view(c),
-    sound: (n, mode) => s.sound(n, mode),
+    // a sound plays with what it belongs to (IMP-085): the message just printed (the hit's 7, the miss's 9),
+    // else in its turn among the queued animations, never ahead of them
+    sound: (n, mode) => { if (lastPrint) lastPrint.sounds.push([n, mode]); else later(async () => s.sound(n, mode)) },
     pick: async (prompt, items, notes) => {
       if (!items.length) return -1
       // the action bar's spell or item (IMP-083): its own line in the rules' list, else the list as ever

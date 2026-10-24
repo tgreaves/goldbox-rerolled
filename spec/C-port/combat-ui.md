@@ -76,7 +76,10 @@ In this order, each frame of the window ([combat-visuals.md](../A-games/engine/c
    starburst (the rules tell the screen, `CombatUi.struck`, before the HP is taken off); a blow that
    misses shows "MISS" (white) with "and Misses" and sound 9. Any other change of HP (a script's
    DAMAGE, an effect, healing) shows with the next message as the change since the message before.
-   Damage is yellow on an enemy, red on the party; healing "+*n*" green.
+   Damage is yellow on an enemy, red on the party; healing "+*n*" green. The number, its message and its sound show
+   together: a notice or a sound the rules give right after a message joins that message's job, shown
+   before its pause; any other sound waits its turn behind the queued animations rather than playing
+   ahead of them.
 
 Every picture is drawn with the battle palette: EGA colours 0 and 8 swapped (black shows dark grey,
 dark grey black), as the original sets it for the combat screen ([combat-visuals.md, "Palette"](../A-games/engine/combat-visuals.md#palette-o)).
