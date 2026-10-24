@@ -10,6 +10,7 @@ import { SYNCED_SETTINGS } from '../store/account'
 import { localChanged } from '../store/changes'
 import { mountAccount } from './account'
 import { versionHtml } from '../version'
+import { gamepads } from './gamepad'
 
 const SIZE_KEY = 'poolrad.textsize'
 const MOTION_KEY = 'poolrad.motion'
@@ -99,6 +100,15 @@ function setScreen(v: Screen) {
   applyScreen()
 }
 
+/** Controller (IMP-090): what is connected and what its buttons do; nothing to choose */
+function controllerRow(): string {
+  const pads = gamepads()
+  const name = pads[0]?.id.replace(/\s*\(.*$/, '') || ''
+  return `<div class="set-row"><span class="set-label">Controller</span><span class="muted">${pads.length
+    ? `${name.replace(/[<>&]/g, '')}: D-pad or stick move and pick, A choose, B back, X continue, Y character, LB / RB next button, right stick scroll, Start menu, Select All on Quick / Take control in battle`
+    : 'none connected: plug one in or press a button on it'}</span></div>`
+}
+
 export interface SettingsHost {
   /** the game speed 0 (fastest) – 9 (slowest), when a game is running */
   speed?: { get(): number; set(v: number): void }
@@ -127,6 +137,7 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
       ${seg<TextSize>('Text size', [['normal', 'Normal'], ['large', 'Large']], textSize())}
       ${seg<Gfx>('Graphics', [['pixel', 'Pixel (original)'], ['sharp', 'Sharp (even pixels, soft fit)']], savedGfx())}
       ${savedGfx() !== gfxMode() ? '<p class="message">The graphics change takes effect when the page reloads. <button type="button" data-reload="1">Reload now</button> (save first if you are in a game)</p>' : ''}
+      ${controllerRow()}
       <section class="account-sec" aria-label="Account"></section>
       <p class="muted small version">${versionHtml()}</p>
       <form method="dialog"><button class="primary">Done</button></form>`

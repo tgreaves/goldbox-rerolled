@@ -12,6 +12,7 @@ import { installGameFont } from './ui/gamefont'
 import { installFrames } from './ui/frames'
 import { applyPartyLayout, applyScreen, applyTextSize } from './ui/settings'
 import { applyGfxClass } from './render/upscale'
+import { startGamepad } from './ui/gamepad'
 import { initAccount, onSettingsPulled, startAccount } from './store/account'
 import { mountAccount } from './ui/account'
 import { versionHtml } from './version'
@@ -36,6 +37,7 @@ async function start() {
   applyPartyLayout()
   applyScreen()
   applyGfxClass()
+  startGamepad()
   // settings that came with the account (IMP-072): apply what can change without a reload
   onSettingsPulled(() => {
     applyTextSize()

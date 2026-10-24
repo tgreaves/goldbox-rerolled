@@ -369,7 +369,32 @@ No pad, no Debug, no ☰ ([app-flow.md §6](app-flow.md#6-the-demo)).
   "Drag an item onto a name to give it:" is traded to that member by the Trade rules
   ([screens.md §3.3](screens.md#33-item-actions)). Only with a hovering pointer.
 
-### 8.5 Other contexts
+### 8.5 Controllers (IMP-090)
+
+A gamepad with the browser's standard mapping works on every screen without screen code of its own
+(`ui/gamepad.ts`): it is read every animation frame while one is connected (from its
+`gamepadconnected`, i.e. the first button pressed on it), and turned into the keys the screens already
+answer, sent as `keydown` events from the focused element (Space from the page body).
+
+| Control | Sends | Then |
+|---|---|---|
+| D-pad, left stick (past half way) | ArrowUp / Down / Left / Right; two together the diagonals PageUp (up-right), PageDown (down-right), End (down-left), Home (up-left), the battle's ([combat-ui.md §5](combat-ui.md#5-input)) | an arrow that no screen takes (no `preventDefault`) moves the focus to the nearest visible control that way (distance along the direction plus twice the distance across); a diagonal nobody takes does nothing |
+| A | a click on the focused control; with none focused (or a text field), Enter | |
+| B | Escape (§7) | if no screen takes it and a dialog is open, the dialog closes as the browser's Escape would (`requestClose`, else its `cancel` event and `close`) |
+| X | Space | |
+| Y | "v" (the character) | |
+| LB / RB | the previous / next control in page order | |
+| Right stick | scrolls the open dialog, else the page | |
+| Start | ☰ (the Menu button) when it is shown and no dialog is open; otherwise as B | |
+| Select | the battle's **All on Quick** / **Take control** button when shown ([combat-ui.md §10](combat-ui.md#10-quick-and-magic)) | |
+
+The controls reachable are the visible, enabled ones of the open dialog, else of the page. With nothing
+focused, the first one is the game's menu (the prompt's first choice), else a primary button, else the
+first in page order. Directions and LB / RB repeat when held: after 380 ms, then every 150 ms. While the
+controller is in use the focused control has a 3 px ring in the accent colour (`.pad :focus`); a mouse,
+touch or real key press ends it. Settings shows a **Controller** row (§9).
+
+### 8.6 Other contexts
 
 Battles: [combat-ui.md §5](combat-ui.md#5-input). Games screen, title, party screen, ending:
 [app-flow.md](app-flow.md) §2–§7.
@@ -395,6 +420,9 @@ closes.
 | **Screen** | **Clean**, **Scanlines**, **CRT** | `poolrad.screen`: `off`, `scanlines`, `crt`; unset: `off` | IMP-089: an overlay over the page and over every open dialog (`body::after`, `dialog[open]::after`, `pointer-events: none`): Scanlines a dark line (32 %) every 3 px; CRT a slightly darker line, an RGB phosphor grille (1 px stripes, 5 %), corners darkened from 55 % of the way out, canvases at saturate 1.15 / contrast 1.06 / brightness 1.06 and a faint glow on text. Nothing flickers or moves |
 | **Text size** | **Normal**, **Large** | `poolrad.textsize`: `normal`, `large` | text of the play screen, party screen, panels and title at 1.2 × (game font 16 → 24 px) |
 | **Graphics** | **Pixel (original)**, **Sharp (even pixels, soft fit)** | `poolrad.gfx`: `pixel`, `sharp` | IMP-047, [rendering.md §2](rendering.md#2-scaling); read once per page load. While the stored choice differs from the running one: "The graphics change takes effect when the page reloads." **Reload now** "(save first if you are in a game)" |
+
+Then **Controller** (IMP-090, nothing to choose): the name of the connected controller and what its
+buttons do (§8.5), or "none connected: plug one in or press a button on it".
 
 Below the rows: the **Account** section when a server answers
 ([accounts-and-sync.md §6](accounts-and-sync.md#6-the-account-section)), the version line

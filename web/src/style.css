@@ -746,3 +746,6 @@ a.button:hover, a.button:focus-visible { border-color: var(--accent); outline: n
 }
 .screen-crt canvas { filter: saturate(1.15) contrast(1.06) brightness(1.06); }
 .screen-crt body { text-shadow: 0 0 3px rgba(255, 255, 255, 0.28); }
+
+/* controller focus (IMP-090): a clear ring on whatever A would press, only while the controller is in use */
+.pad :focus { outline: 3px solid var(--accent); outline-offset: 2px; }
