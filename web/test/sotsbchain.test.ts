@@ -9,7 +9,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { SOTSB, POR, setGame } from '../src/games/profile'
-import { loadFiles, play, type SaveFiles } from './playtest'
+import { loadFiles, play, type Flag, type SaveFiles } from './playtest'
 import { parseSave } from '../src/data/save'
 
 const dir = process.env.SOTSB ?? ''
@@ -26,7 +26,17 @@ const goal = process.env.SOTSB_CHAIN_GOAL?.split(',')
 // the menu answers a player who knows the story gives (PlayOptions.prefer), each read in the scripts: the
 // Frost Giants' village (ECL3 #81) door's BASH (0x8276), the king's TALK (0x9281) and AGREE TO HELP (0x93E6),
 // the guards' CASTLE (0x9A23)
-const PREFER = ['BASH', 'TALK', 'AGREE TO HELP', 'CASTLE']
+const PREFER = ['BASH', 'TALK', 'AGREE TO HELP', 'CASTLE', 'ATTACK', 'SEARCH']
+// the story's gates (PlayOptions.gates): the mines (block 2) only with the Amulet of Eldamar (A 0x4C53, the
+// old red dragon's lair in the ruins' zone 9, ECL1 #32 0x918C) and the Well cleared (0x4C63, its ancient
+// red dragon, ECL1 #33 0x8CF2); block 3 only with the dungeon mazes' brass, silver and gold keys (0x4CDE,
+// 0x4CDF, 0x4CE0: ECL2 #64 0x94F3, #65 0x91C8, #66 0x9569), which need the amulet, and Oswulf's staff (0x4C86,
+// which Derf in the Temple of Tyr makes from the eight pieces, ECL2 #52 0x8B0D; the castle's gate in 3/82 asks
+// for it, "NONE MAY PASS WITHOUT MY STAFF!", 0x9507)
+const GATES: { block: number; flags: Flag[] }[] = [
+  { block: 2, flags: [[0x4c53, 255], [0x4c63, 255]] },
+  { block: 3, flags: [[0x4cde, 255], [0x4cdf, 255], [0x4ce0, 255], [0x4c86, 1]] },
+]
 function readSave(d: string): SaveFiles {
   // a save the run wrote in the game's own files (saveAt: SAVGAMA.DAT and the party's stems)
   if (!existsSync(join(d, 'game.dat')) && existsSync(join(d, 'SAVGAMA.DAT'))) {
@@ -59,13 +69,13 @@ describe.skipIf(!have)('Secret of the Silver Blades played in its order', () => 
       const hints = JSON.parse(readFileSync(process.env.SOTSB_CHAIN_HINTS ?? join(import.meta.dirname, 'sotsbchain-hints.json'), 'utf8'))
       // SOTSB_CHAIN_SAVEAT=2/64,2/66 (dir SOTSB_CHAIN_SAVEAT_DIR): the game saved, in its own files, on first entering each
       const saveAt = process.env.SOTSB_CHAIN_SAVEAT ? { areas: process.env.SOTSB_CHAIN_SAVEAT.split(','), dir: process.env.SOTSB_CHAIN_SAVEAT_DIR ?? '/tmp' } : undefined
-      const r = await play({ game: SOTSB, files, seed, steps, from, goal, hints, saveAt, tour: true, undying: true, walls: true, forward: process.env.SOTSB_CHAIN_FORWARD === '1', prefer: PREFER, fresh, watch: (process.env.SOTSB_CHAIN_WATCH ?? '0x4c4b,0x4c69,0x4c6b').split(',').map(Number), subAreas: [0x4c4b, 0x4c69, 0x4c6b], trace: !!process.env.PLAY_TRACE_FILE })
+      const r = await play({ game: SOTSB, files, seed, steps, from, goal, hints, saveAt, tour: true, undying: true, walls: true, forward: process.env.SOTSB_CHAIN_FORWARD === '1', prefer: PREFER, gates: process.env.SOTSB_CHAIN_GATES === '0' ? undefined : GATES, fresh, watch: (process.env.SOTSB_CHAIN_WATCH ?? '0x4c4b,0x4c69,0x4c6b').split(',').map(Number), subAreas: [0x4c4b, 0x4c69, 0x4c6b], trace: !!process.env.PLAY_TRACE_FILE })
       const st = r.stats
       const sq = [...(r.squares ?? new Map<string, Set<number>>())].map(([k, v]) => `${k}:${v.size}`).join(' ')
       log(`seed ${seed}: ${r.steps} steps; areas in order ${[...st.areas].join(' ')}; squares ${sq}; ${st.battles} battles (${st.won} won, ${st.fled} fled, ${st.lost} lost); watched ${[...(r.watched ?? new Map<number, Set<number>>())].map(([a, v]) => `${a.toString(16)}: ${[...v].join(',')}`).join('; ')}; ${st.ended}${r.stuck.length ? `; stuck ${r.stuck.length}: ${r.stuck.slice(0, 3).join(' | ')}` : ''}\n`)
       failures.push(...r.failures.map((f) => `seed ${seed}: ${f}`))
       // the route's notable moments (losses with the last texts, reloads, saves), SOTSB_CHAIN_ROUTE=n lines
-      if (process.env.SOTSB_CHAIN_ROUTE) for (const l of r.route.filter((l) => /lost|stuck|win|saved/.test(l)).slice(0, Number(process.env.SOTSB_CHAIN_ROUTE))) log(`  route ${l}\n`)
+      if (process.env.SOTSB_CHAIN_ROUTE) for (const l of r.route.filter((l) => /lost|stuck|win|saved|gate|=/.test(l)).slice(0, Number(process.env.SOTSB_CHAIN_ROUTE))) log(`  route ${l}\n`)
       if (process.env.SOTSB_CHAIN_SQ) for (const [k, v] of r.squares ?? []) if (k.startsWith(process.env.SOTSB_CHAIN_SQ)) log(`  ${k}: ${[...v].sort((a, b) => a - b).map((q) => `${q & 15},${q >> 4}`).join(' ')}\n`)
       // a seed that reached a goal writes SOTSB_CHAIN_SAVE, the others SOTSB_CHAIN_SAVE.seed<n>
       const reached = !!goal?.some((g) => r.stats.areas.has(g))

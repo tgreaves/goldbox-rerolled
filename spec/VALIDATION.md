@@ -305,7 +305,18 @@ the king's trust [0x4CB7] is 1), a run from 3/81 passes the village and reaches 
 3/82 is a large maze seen through the 16 × 16 map (its own coordinates [0x4CFD]/[0x4CFE], 65,85 on
 entry); the castle gates (wall type 9, (15,11)–(15,12) east, 0x82DD) are not yet found in it, and the
 party has none of the three keys the castle's last level asks for (the dungeon mazes' brass, silver and
-gold keys, "YOU NEED THE BRASS KEY" on returning to 3/80). **The end of the game, by Debug jumps** (not in
+gold keys, "YOU NEED THE BRASS KEY" on returning to 3/80). **The story's gates** (2026-10-24, read in the
+scripts): the keys need the Amulet of Eldamar (A 0x4C53, the old red dragon's lair in the ruins' zone 9,
+ECL1 #32 0x918C; event 38 at (7,15), reached through zones 7 and 9 by scripted walls); the final gate needs
+the Well cleared (0x4C63, its ancient red dragon, ECL1 #33 0x8CF2, from (7,9) north); the crevasses' way to
+the castle needs Oswulf's staff (0x4C86, "NONE MAY PASS WITHOUT MY STAFF!", ECL3 #82 0x9507), which Derf
+(2/52, (14,2)) makes from eight pieces (bits of 0x4C84, ECL2 #49 and #50) found with his Ring of Tyr (0x4C85).
+The harness has gates (no block 2 without the amulet and the Well, no block 3 without the keys and the
+staff), hints that wait on flags (masks, several at once, `*` in places) and routes worked out by probing
+every move in the port's engine (the ruins to the lair, gradients to the mine and to the castle gates).
+From the shipped start, 2 × 1 500 000 steps: one seed cleared the Well (step 588), took the amulet (29 772)
+and reached 2/64 (106 506) but not its brass key, which lies beyond 2/64's teleports; the other cleared
+the Well and did not find the lair. The rest of the order is not reached yet. **The end of the game, by Debug jumps** (not in
 order): headless, a party jumped beside 3/99's soul chamber (event 6 at (1,2), 0x84B3; 3/99 runs on 3/98's
 map) gets the Dreadlord's image, EXPLORE ROOM, 12 iron golems and 6 medusae (0x85E6), the gem shattered
 and "A GATE BEGINS TO GLOW IN THE NORTHWEST CORNER" ([0x4CD9] := 1, 0x8612); the gate (event 22 at (0,0),

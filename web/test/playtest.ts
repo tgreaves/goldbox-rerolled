@@ -82,8 +82,13 @@ export interface PlayOptions {
   /** squares to make for, by sub-area (`place`: block/area and the subAreas' values): where one lies in
    *  the party's reach the tour walks there and steps forward facing `facing` (a script's way on, from its
    *  tables, where a random walk would take too long); with `flag` ([ECL address in the game's numbering,
-   *  value]) only once the story has set it (SotSB's village exit to the castle needs the king's trust) */
-  hints?: { place: string; x: number; y: number; facing: number; flag?: [number, number] }[]
+   *  value]) only while the story's flag holds, and then until it no longer does rather than once (SotSB's
+   *  village exit needs the king's trust; the dungeon keys' rooms only while the key is not taken); hints with
+   *  `step` are a route's jumps in order, and of those in reach the furthest along is taken (the ruins' way
+   *  through zones 7 and 9 to the amulet). `flags` lists several conditions, all to hold; a condition's
+   *  optional third number masks the value read (a staff piece's bit). In `place`, `*` matches any value
+   *  of a sub-area variable ("2/49.*.3.0": the mine's level 3, whatever zone of the ruins led there) */
+  hints?: { place: string; x: number; y: number; facing: number; flag?: Flag; flags?: Flag[]; step?: number }[]
   /** a tour walks into every wall in reach it has not tried before it takes an edge exit (SotSB, whose scripts
    *  move the party through walls: the ruins' streets, the mine's levels, 2/64's teleports) */
   walls?: boolean
@@ -96,7 +101,15 @@ export interface PlayOptions {
   /** menu answers a run in the story's order takes when offered, nine times in ten (a script's way on, as
    *  a player who knows the story answers: SotSB's village door BASH, the king's TALK, AGREE TO HELP, CASTLE) */
   prefer?: string[]
+  /** story gates for a run in the story's order: the party may not be in block `block` or beyond until every
+   *  flag ([ECL address in the game's numbering, value]) holds; a step past a closed gate is undone by
+   *  loading the latest save before it (SotSB: the amulet and the cleared Well before the mines, the
+   *  dungeon mazes' three keys before block 3) */
+  gates?: { block: number; flags: Flag[] }[]
 }
+
+/** a story flag's condition: [ECL address in the game's numbering, value, optional mask applied to what is read] */
+export type Flag = [number, number] | [number, number, number]
 
 /** a saved game: the DAT and each member's record, items and effects */
 export interface SaveFiles { dat: Uint8Array; chars: { sav: Uint8Array; itm?: Uint8Array; spc?: Uint8Array }[] }
@@ -688,8 +701,10 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
   /** where the party is for the walk's memory: block/area, and the sub-area variables' values (o.subAreas) */
   const place = () => `${e.block}/${e.area}${(o.subAreas ?? []).map((a) => `.${e.read(canonical(game().ecl, a))}`).join('')}`
   const key = (x: number, y: number) => `${place()}/${x & 15},${y & 15}`
-  /** a hint's place: block/area alone matches every sub-area there */
-  const inPlace = (p: string) => place() === p || place().startsWith(`${p}.`)
+  /** a hint's place: block/area alone matches every sub-area there, and `*` any one value */
+  const inPlace = (p: string) => { const have = place().split('.'), want = p.split('.'); return want.length <= have.length && want.every((w, i) => w === '*' || w === have[i]) }
+  /** a story flag's condition holds now */
+  const holds = ([a, v, m]: Flag) => (e.read(canonical(game().ecl, a)) & (m ?? 0xffff)) === v
   /** tries that left the party where it was (place/square/direction), and the last forward try */
   const blocked = new Set<string>()
   let lastTry = ''
@@ -733,8 +748,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     if (!g) return 'f'
     const at = (x: number, y: number) => (y & 15) * 16 + (x & 15)
     /** a hint the tour may still take here: its place, its story flag, not taken, not refused three times */
-    const usable = (h: NonNullable<PlayOptions['hints']>[number]) => inPlace(h.place) && (!h.flag || e.read(canonical(game().ecl, h.flag[0])) === h.flag[1])
-      && !hintsTaken.has(`${place()}/${at(h.x, h.y)}/${h.facing}`) && (blockedTries.get(`${place()}/${at(h.x, h.y)}/${h.facing}`) ?? 0) < 3
+    const usable = (h: NonNullable<PlayOptions['hints']>[number]) => inPlace(h.place) && (!h.flag || holds(h.flag)) && (h.flags ?? []).every(holds)
+      && (h.flag || h.flags || !hintsTaken.has(`${place()}/${at(h.x, h.y)}/${h.facing}`)) && (blockedTries.get(`${place()}/${at(h.x, h.y)}/${h.facing}`) ?? 0) < 3
     // an event square's walls first, unless a hint waits here (SotSB's village: the entrance's west wall
     // leads straight back out, the king lies inside)
     if (g.event(e.x, e.y) && !o.hints?.some(usable)) {
@@ -772,7 +787,9 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     }
     // a hint in reach comes before any unseen square: walk to it, face it, step (dropped after three
     // tries that left the party where it was)
-    const hint = o.hints?.find((h) => usable(h) && from.has(at(h.x, h.y)))
+    const inReach = o.hints?.filter((h) => usable(h) && from.has(at(h.x, h.y))) ?? []
+    const routed = inReach.filter((h) => h.step !== undefined)
+    const hint = routed.length ? routed.reduce((a, b) => (b.step! > a.step! ? b : a)) : inReach[0]
     if (hint) {
       if (at(hint.x, hint.y) === at(e.x, e.y)) {
         const turn = (hint.facing - e.facing + 4) & 3
@@ -913,22 +930,23 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
       ok = await act('load an older save', () => e.start())
       if (!ok) break
     }
-    // a forward run back in an earlier block: the latest save at the furthest block, as a player would load it
-    if (o.forward) {
-      lastSave.block ??= e.block
-      if (e.block > furthest) furthest = e.block
-      else if (e.block < furthest) {
-        const back = [...history].reverse().find((h) => (h.block ?? 0) >= furthest) ?? ((lastSave.block ?? 0) >= furthest ? lastSave : undefined)
-        if (back) {
-          report.route.push(`${step} back in ${e.block}/${e.area}: the save of step ${back.step ?? 0} in block ${back.block} is loaded`)
-          if (history.includes(back as typeof history[number])) history.splice(history.indexOf(back as typeof history[number]) + 1)
-          lastSave = back
-          e = load(back.dat, back.chars, o.seed * 7919 + step)
-          watchEngine()
-          newAt = step
-          ok = await act('load after going back', () => e.start())
-          if (!ok) break
-        }
+    // a forward run back in an earlier block, or past a story gate still closed: the latest save that is
+    // neither, as a player would load it
+    lastSave.block ??= e.block
+    const closed = o.gates?.find((gt) => e.block >= gt.block && !gt.flags.every(holds))
+    if (o.forward && e.block > furthest && !closed) furthest = e.block
+    if ((o.forward && e.block < furthest) || closed) {
+      const fits = (b: number) => (!o.forward || b >= furthest) && (!closed || b < closed.block)
+      const back = [...history].reverse().find((h) => fits(h.block ?? 0)) ?? (fits(lastSave.block ?? 0) ? lastSave : undefined)
+      if (back) {
+        report.route.push(`${step} ${closed ? `the gate to block ${closed.block} is closed` : 'back'} in ${e.block}/${e.area}: the save of step ${back.step ?? 0} in block ${back.block} is loaded`)
+        if (history.includes(back as typeof history[number])) history.splice(history.indexOf(back as typeof history[number]) + 1)
+        lastSave = back
+        e = load(back.dat, back.chars, o.seed * 7919 + step)
+        watchEngine()
+        newAt = step
+        ok = await act('load after going back', () => e.start())
+        if (!ok) break
       }
     }
     watchParty()
@@ -938,8 +956,8 @@ export async function play(o: PlayOptions): Promise<PlayReport> {
     if (o.watch) { report.watched ??= new Map(); for (const a of o.watch) { if (!report.watched.has(a)) report.watched.set(a, new Set()); report.watched.get(a)!.add(e.read(canonical(game().ecl, a))) } }
     const here = `${e.block}/${e.area}${e.overland ? ' overland' : ''}`
     if (!report.route.length || !report.route[report.route.length - 1].endsWith(` ${here}`)) report.route.push(`${step} ${here}`)
-    // PLAY_FLAGS: script variables whose changes the route records (a chain's story flags)
-    if (flags.length) { const now = flags.map((a) => `${a.toString(16)}=${e.read(a)}`).join(' '); if (now !== flagsNow) { report.route.push(`${step} ${here}: ${now}`); flagsNow = now } }
+    // PLAY_FLAGS: script variables (the game's own numbering, as hints and gates) whose changes the route records (a chain's story flags)
+    if (flags.length) { const now = flags.map((a) => `${a.toString(16)}=${e.read(canonical(game().ecl, a))}`).join(' '); if (now !== flagsNow) { report.route.push(`${step} ${here}: ${now}`); flagsNow = now } }
     const sq = `${e.block}/${e.area}@${e.x}:${e.y}`
     const at = o.saveAt?.areas.includes(sq) ? sq : `${e.block}/${e.area}`
     if (o.saveAt?.areas.includes(at) && !savedAt.has(at) && !e.quit) {
