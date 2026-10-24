@@ -217,28 +217,32 @@ export async function runBattle(s: BattleScreen) {
   }
   /** the HP each combatant had when the last message was queued (IMP-085) */
   const lastHp = new Map<Fighter, number>()
-  /** who lost or gained HP since the last message queued: the rules change HP, then print what happened */
-  const hpChanges = (): { f: Fighter; d: number }[] => {
+  /** those a blow or spell struck since the last message (CombatUi.struck): their number is already shown */
+  let struckSince = new Set<Fighter>()
+  /** who lost or gained HP since the last message queued, by any other means (a script's DAMAGE, an effect):
+   *  the rules change HP, then print what happened */
+  const hpChanges = (): { f: Fighter; d: number | null }[] => {
     if (!battle) return []
-    const out: { f: Fighter; d: number }[] = []
+    const out: { f: Fighter; d: number | null }[] = []
     for (const f of battle.fighters) {
       const hp = f.c[F.hp], was = lastHp.get(f)
       lastHp.set(f, hp)
-      if (was !== undefined && hp !== was) out.push({ f, d: hp - was })
+      if (was !== undefined && hp !== was && !struckSince.has(f)) out.push({ f, d: hp - was })
     }
+    struckSince = new Set()
     return out
   }
   /** the numbers over heads: damage to an enemy yellow, to the party red, healing green; they rise and
    *  fade, or only fade with reduced motion (IMP-057) */
-  const floaters = (hits: { f: Fighter; d: number }[]) => {
+  const floaters = (hits: { f: Fighter; d: number | null }[]) => {
     if (!view || !hits.length || s.canvas.hidden) return
     const host = s.canvas.parentElement!, hr = host.getBoundingClientRect()
     const still = motionChoice() === 'reduced'
     for (const { f, d } of hits) {
       const a = view.cellCentre(f.y, f.x, focus), b = (f.size || 1) > 1 ? view.cellCentre(f.y + 1, f.x + 1, focus) : a
       const el = document.createElement('div')
-      el.className = `floater ${d > 0 ? 'heal' : f.monster ? 'hurt-foe' : 'hurt-ally'}${still ? ' still' : ''}`
-      el.textContent = d > 0 ? `+${d}` : `−${-d}`
+      el.className = `floater ${d === null ? 'miss' : d > 0 ? 'heal' : f.monster ? 'hurt-foe' : 'hurt-ally'}${still ? ' still' : ''}`
+      el.textContent = d === null ? 'MISS' : d > 0 ? `+${d}` : `−${-d}`
       el.style.left = `${(a.x + b.x) / 2 - hr.left}px`
       el.style.top = `${(a.y + b.y) / 2 - hr.top}px`
       host.append(el)
@@ -513,6 +517,12 @@ export async function runBattle(s: BattleScreen) {
     }),
     show: () => later(async () => draw()),
     hold: (ms) => later(async () => { await s.pause(ms) }),
+    // a blow or spell's number with its message and sound, a miss as MISS (IMP-085); the HP it takes off
+    // afterwards is not shown again
+    struck: (t, damage) => {
+      if (damage !== null) struckSince.add(t)
+      later(async () => floaters([{ f: t, d: damage === null ? null : -damage }]))
+    },
     look: (at) => later(async () => { focus = { row: at.y, col: at.x }; draw() }),
     redraw: (f) => {
       if (f) { acting = f; focus = { row: f.y, col: f.x } }

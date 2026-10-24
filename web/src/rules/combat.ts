@@ -106,6 +106,9 @@ export interface CombatUi {
   show?(): void
   /** queued: hold before what follows */
   hold?(ms: number): void
+  /** queued with the message just printed: a blow or a spell struck `target` for `damage` HP, or a blow
+   *  missed it (null); for the numbers over heads (IMP-085), told before the HP is taken off */
+  struck?(target: Fighter, damage: number | null): void
   /** queued: centre the view on a cell (Fireball, FUN_4e53_266b) */
   look?(at: { x: number; y: number }): void
   pause(ms?: number): Promise<void>
@@ -1319,6 +1322,7 @@ export class Battle implements FxHost {
           // a hit: the line, sound 7 and the message pause; weapons have no flash (FUN_3aae_1406)
           // FUN_3aae_02f9's pieces: "(from behind) ", "Hitting for ", n, " point " or " points ", "of damage"
           this.print(`${name(ac)} ${verb} ${name(tc)} ${kind === 1 ? msg('fromBehind') : ''}${msg('hittingFor')}${n}${msg(n === 1 ? 'point' : 'points')}${msg('ofDamage')}`)
+          this.ui.struck?.(t, n)
           this.ui.sound(7, 'transient') // FUN_3aae_1406: transient
           await this.settle() // the target falls after its hit display
           this.inflict(t, n)
@@ -1327,7 +1331,7 @@ export class Battle implements FxHost {
       }
     }
     // all missed: the line, sound 9 and the pause
-    if (!hit) { this.print(`${name(ac)} ${msg('attacks')} ${name(tc)} ${msg('andMisses')}`); this.ui.sound(9, 'transient') }
+    if (!hit) { this.print(`${name(ac)} ${msg('attacks')} ${name(tc)} ${msg('andMisses')}`); this.ui.struck?.(t, null); this.ui.sound(9, 'transient') }
     a.r[5] = 0
     this.recalc(ac)
     await this.settle()
@@ -1411,6 +1415,7 @@ export class Battle implements FxHost {
     if (f && d > 0) {
       // FUN_5216_1344 → FUN_10ba_1feb: the line, the starburst once with sound 3, then the pause
       this.print(damageText(name(c), d, fx.dmgType), { ms: 0 })
+      this.ui.struck?.(f, d)
       this.ui.effect?.(f, 'burst', 1, this.e.speed * 225)
     }
     if (f) this.inflict(f, d)

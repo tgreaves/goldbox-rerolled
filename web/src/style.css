@@ -371,6 +371,7 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 .game .floater.hurt-foe { color: var(--ega-yellow); }
 .game .floater.hurt-ally { color: var(--ega-lred); }
 .game .floater.heal { color: var(--ega-green); }
+.game .floater.miss { color: #fff; font-size: 0.95em; }
 .game .floater.still { animation: floater-fade 1.3s linear forwards; }
 @keyframes floater-rise {
   0% { opacity: 0; transform: translate(-50%, -30%) scale(0.8); }
