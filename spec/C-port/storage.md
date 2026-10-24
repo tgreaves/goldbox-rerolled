@@ -343,6 +343,7 @@ first value listed). "Synced" keys travel with an account
 | `poolrad.view` | `original`, `enhanced` | the 3D view: the original's drawn view, or the WebGL view (IMP-001, D6) | yes |
 | `poolrad.motion` | unset, `full`, `reduced` | reduced motion (IMP-057); unset follows the system's `prefers-reduced-motion` | yes |
 | `poolrad.textsize` | `normal`, `large` | text size | yes |
+| `poolrad.screen` | unset, `off`, `scanlines`, `crt` | the CRT look (IMP-089); unset is `off` | yes |
 | `poolrad.gfx` | `pixel`, `sharp` | picture scaling (IMP-047); read once per page load, so a change applies after a reload | yes |
 | `goldbox.game` | a profile id (`por`, `coab`) | the game played last on this device; written whenever a game is opened | no |
 | `goldbox.account` | an account name | whose data this browser holds: the last account signed in here ([accounts-and-sync.md §5.10](accounts-and-sync.md#510-owners-switching-signing-out-forgetting)) | no |

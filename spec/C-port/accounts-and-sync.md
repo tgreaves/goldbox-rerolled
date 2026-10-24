@@ -573,8 +573,8 @@ synced).
 
 ### 5.9 Settings
 
-The synced settings are eight localStorage keys: `poolrad.sound`, `poolrad.font`, `poolrad.frames`,
-`poolrad.partylayout`, `poolrad.view`, `poolrad.motion`, `poolrad.textsize`, `poolrad.gfx`
+The synced settings are nine localStorage keys: `poolrad.sound`, `poolrad.font`, `poolrad.frames`,
+`poolrad.partylayout`, `poolrad.view`, `poolrad.motion`, `poolrad.textsize`, `poolrad.gfx`, `poolrad.screen`
 ([storage.md §8](storage.md#8-localstorage-keys)). Every other key stays in the browser.
 
 - **Writing to the server**: `docs/settings` with `meta.values` = each of the eight that is set.

@@ -10,7 +10,7 @@ import { showParty } from './ui/party'
 import { setupOffline } from './pwa/register'
 import { installGameFont } from './ui/gamefont'
 import { installFrames } from './ui/frames'
-import { applyPartyLayout, applyTextSize } from './ui/settings'
+import { applyPartyLayout, applyScreen, applyTextSize } from './ui/settings'
 import { applyGfxClass } from './render/upscale'
 import { initAccount, onSettingsPulled, startAccount } from './store/account'
 import { mountAccount } from './ui/account'
@@ -34,11 +34,13 @@ window.addEventListener('keydown', (e) => {
 async function start() {
   applyTextSize()
   applyPartyLayout()
+  applyScreen()
   applyGfxClass()
   // settings that came with the account (IMP-072): apply what can change without a reload
   onSettingsPulled(() => {
     applyTextSize()
     applyPartyLayout()
+    applyScreen()
     let v: string | null = null
     try { v = localStorage.getItem('poolrad.sound') } catch { /* storage unavailable */ }
     setSoundDevice(v === 'tandy' || v === 'off' ? v : v === 'pc' ? 'pc' : soundDevice())

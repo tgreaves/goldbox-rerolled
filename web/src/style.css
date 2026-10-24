@@ -730,3 +730,19 @@ a.button:hover, a.button:focus-visible { border-color: var(--accent); outline: n
 .version a { color: inherit; }
 
 .pcard:not(:has(canvas.pc-portrait)) { grid-template-columns: 1fr auto; }
+
+/* The CRT look (IMP-089), a setting: overlays that take no input, over the page and over every open
+   dialog (dialogs sit in the top layer, above anything the page draws). Scanlines: a dark line every
+   3 px. CRT adds an RGB phosphor grille, darkened corners and a little glow and colour. No flicker. */
+.screen-scan body::after, .screen-scan dialog[open]::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 2147483647;
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.32) 2px 3px);
+}
+.screen-crt body::after, .screen-crt dialog[open]::after {
+  background:
+    radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.5) 100%),
+    repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.36) 2px 3px),
+    repeating-linear-gradient(to right, rgba(255, 0, 0, 0.05) 0 1px, rgba(0, 255, 0, 0.05) 1px 2px, rgba(0, 0, 255, 0.05) 2px 3px);
+}
+.screen-crt canvas { filter: saturate(1.15) contrast(1.06) brightness(1.06); }
+.screen-crt body { text-shadow: 0 0 3px rgba(255, 255, 255, 0.28); }

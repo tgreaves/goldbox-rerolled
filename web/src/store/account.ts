@@ -11,7 +11,7 @@ import { forgetUserData, userLocal } from './user'
 import type { Rec } from './records'
 
 /** Browser settings that travel with the account (the rest, like the last game played, stay per device). */
-export const SYNCED_SETTINGS = ['poolrad.sound', 'poolrad.font', 'poolrad.frames', 'poolrad.partylayout', 'poolrad.view', 'poolrad.motion', 'poolrad.textsize', 'poolrad.gfx']
+export const SYNCED_SETTINGS = ['poolrad.sound', 'poolrad.font', 'poolrad.frames', 'poolrad.partylayout', 'poolrad.view', 'poolrad.motion', 'poolrad.textsize', 'poolrad.gfx', 'poolrad.screen']
 const OWNER_KEY = 'goldbox.account'
 const stateKey = (g: string) => `goldbox.sync.${g}`
 

@@ -1,4 +1,4 @@
-// One Settings panel (IMP-046): game speed (in a game), sound device, font, window borders, the 3D view and text size. Speed is
+// One Settings panel (IMP-046): game speed (in a game), sound device, font, window borders, the 3D view, the CRT look and text size. Speed is
 // the game's own (saved with the game); the rest are per-browser conveniences in localStorage, which travel
 // with an account when signed in (the Account section, IMP-072).
 import { play, setSoundDevice, soundAvailable, soundDevice, unlockAudio, type Device } from '../audio/sfx'
@@ -78,6 +78,27 @@ function setTextSize(s: TextSize) {
   applyTextSize()
 }
 
+const SCREEN_KEY = 'poolrad.screen'
+export type Screen = 'off' | 'scanlines' | 'crt'
+
+/** The CRT look (IMP-089): off, scanlines over everything, or scanlines with a phosphor grille, darkened corners and glow. */
+export function screenChoice(): Screen {
+  try {
+    const v = localStorage.getItem(SCREEN_KEY)
+    if (v === 'scanlines' || v === 'crt') return v
+  } catch { /* storage unavailable */ }
+  return 'off'
+}
+export function applyScreen() {
+  const v = screenChoice(), root = document.documentElement
+  root.classList.toggle('screen-scan', v !== 'off')
+  root.classList.toggle('screen-crt', v === 'crt')
+}
+function setScreen(v: Screen) {
+  try { localStorage.setItem(SCREEN_KEY, v) } catch { /* this page only */ }
+  applyScreen()
+}
+
 export interface SettingsHost {
   /** the game speed 0 (fastest) – 9 (slowest), when a game is running */
   speed?: { get(): number; set(v: number): void }
@@ -102,6 +123,7 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
       ${canDrawWorld() ? seg<ViewMode>('View', [['original', 'Original'], ['enhanced', 'Enhanced (3D)']], viewMode()) : ''}
       ${seg<PartyLayout>('Party', [['top', 'Row across the top'], ['side', 'Column beside the view']], partyLayout())}
       ${seg<Motion>('Motion', [['full', 'Full'], ['reduced', 'Reduced (no flashing)']], motionChoice())}
+      ${seg<Screen>('Screen', [['off', 'Clean'], ['scanlines', 'Scanlines'], ['crt', 'CRT']], screenChoice())}
       ${seg<TextSize>('Text size', [['normal', 'Normal'], ['large', 'Large']], textSize())}
       ${seg<Gfx>('Graphics', [['pixel', 'Pixel (original)'], ['sharp', 'Sharp (even pixels, soft fit)']], savedGfx())}
       ${savedGfx() !== gfxMode() ? '<p class="message">The graphics change takes effect when the page reloads. <button type="button" data-reload="1">Reload now</button> (save first if you are in a game)</p>' : ''}
@@ -128,6 +150,7 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
       else if (d.party) setPartyLayout(d.party as PartyLayout)
       else if (d.view) setViewMode(d.view as ViewMode)
       else if (d.graphics) setGfx(d.graphics as Gfx)
+      else if (d.screen) setScreen(d.screen as Screen)
       else if (d.reload) { location.reload(); return }
       host.changed?.()
       render()
