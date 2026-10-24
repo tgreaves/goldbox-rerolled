@@ -195,7 +195,7 @@ dialog.panel form.jump input { width: 4.5rem; }
   /* a picture replaces the whole view in the original: black around it, not the 3D world */
   box-shadow: 0 0 0 100vmax #000;
 }
-.game .overlay.wide { height: auto; width: 100%; aspect-ratio: auto; }
+.game .overlay.wide { width: 100%; height: 100%; aspect-ratio: auto; object-fit: contain; background: #000; }
 .game .text .screen { padding-top: 0.4rem; border-top: 1px solid var(--line); }
 .game .text .screen:first-child { border-top: none; }
 .game .pad.disabled button { opacity: 0.35; pointer-events: none; }
@@ -278,6 +278,8 @@ table.modify button { min-height: 36px; width: 2.4rem; padding: 0; }
 
 /* the ending (PROGRAM 8): the 120×120 FINAL pictures scaled up */
 .ending-panel canvas.ending { width: min(360px, 80vw); aspect-ratio: 1; image-rendering: pixelated; display: block; margin: 0 auto; }
+.ending-panel canvas.ending.wide { width: min(912px, 100%); } /* a 304 × 120 BIGPIC at up to 3 × (IMP-091) */
+dialog.ending-panel:has(canvas.ending.wide) { max-width: min(62rem, 96vw); width: 100%; }
 .ending-panel .ending-text { min-height: 7.5em; }
 .ending-panel .ending-text p { margin: 0.1em 0; }
 
@@ -749,3 +751,20 @@ a.button:hover, a.button:focus-visible { border-color: var(--accent); outline: n
 
 /* controller focus (IMP-090): a clear ring on whatever A would press, only while the controller is in use */
 .pad :focus { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* A BIGPIC (CotAB, SotSB) as the original places it, across the top of the screen (IMP-091): the view
+   region takes the area map's place too, the party cards stay. Not in battle. */
+.game.bigpic:not(.in-combat) .map, .game.bigpic:not(.in-combat) .where { display: none; }
+.game.bigpic:not(.in-combat) { grid-template-areas: "view view" "text party" "commands commands"; }
+.game.bigpic:not(.in-combat) .side { min-height: 0; overflow: auto; }
+@media (min-width: 761px) and (min-aspect-ratio: 4/5) and (not ((orientation: landscape) and (max-height: 520px))) {
+  .party-top .game.bigpic:not(.in-combat) { grid-template-areas: "party party" "view view" "text text" "commands commands"; }
+}
+/* stacked (phones): the view row as high as the picture, the rest to the text */
+@media (max-width: 760px), (max-aspect-ratio: 4/5) {
+  .game.bigpic:not(.in-combat) { grid-template-areas: "view" "party" "text" "commands"; grid-template-rows: calc((100vw - 1rem) * 120 / 304 + 4px) auto minmax(4rem, 1fr) auto; }
+}
+/* phones held sideways keep the view in its column, the picture across it */
+@media (orientation: landscape) and (max-height: 520px) {
+  .game.bigpic:not(.in-combat) { grid-template-areas: "view party" "view text" "view commands"; }
+}

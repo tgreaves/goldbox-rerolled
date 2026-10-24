@@ -251,7 +251,7 @@ IMP-026) instead of the 3D view:
 CotAB has no tile wilderness ([coab/assets.md §4](../A-games/coab/assets.md#4-overland-no-tile-map-o)):
 its overland is `BIGPIC1` #121 (profile `view.overlandPicture`) driven by the scripts' menus.
 
-- The picture (304 × 120) fills the view region's width, keeping its shape, black above and below.
+- The picture (304 × 120) is shown as every BIGPIC is (§5): across the view region and the area map's place.
 - The **city cursor**: an 8 × 8 white block at cell (`T.cursorX`, `T.cursorY` of ECL 0x4CA1), drawn at
   (x·8 − 8, y·8 − 8) on the picture (the original draws the picture at screen (8, 8)); it blinks,
   about 0.5 s on and 0.3 s off, while that picture is shown.
@@ -270,10 +270,21 @@ whole-pixel scaled, with black around them (a picture replaces the view, as in t
 | `Io.picture` | Drawn |
 |---|---|
 | `{ pic }` | `PIC<block>` record: frame 1, then, for an animated record, the next frame after *delay* × 100 ms (at least 50 ms), wrapping to frame 1; frames after the first are XOR deltas ([graphics.md, "Animation"](../A-games/engine/graphics.md#animation-o)) |
-| `{ big }` | `BIGPIC<block>` record (CotAB ids ≥ 0x78) at its own size, full width (§4.2 for #121) |
+| `{ big }` | `BIGPIC<block>` record (ids from the profile's `view.bigFrom`: CotAB 0x78, SotSB 0x70) keeping its shape, as large as the widened region allows (below; §4.2 for #121) |
 | `{ head, body }` | the portrait: `HEAD<block>` at (0, 0), `BODY<block>` at (0, 40) |
 | null | the layer cleared, its animation and the sprite removed |
 
+- **BIGPIC placement** (IMP-091). The original draws a BIGPIC with its own screen layout (`draw_bigpic`,
+  CotAB 0x5367A, SotSB the same routine): a frame with a divider at text row 16 and the picture at
+  (8, 8)–(311, 127), across the whole top of the screen where the 3D view and the party list were;
+  text in rows 17–23 ([coab/assets.md §4](../A-games/coab/assets.md#4-overland-no-tile-map-o)). The
+  port: while a BIGPIC is shown outside battle, the play screen has the class `bigpic` and the view
+  region takes the area map's place too (party in a row across the top: "party party" / "view view";
+  party beside the view: the view across both columns, the text and the party beside each other
+  under it); the area map and the position line are hidden; the party cards stay (a departure: the
+  original hides its party list). Stacked on a phone, the view row is as high as the picture at the
+  full width; held sideways, the picture is fitted into the view's column. The picture is fitted
+  whole (`object-fit: contain`) on black. The layout comes back when the layer shows anything else.
 - **CALL frame** (CotAB 0x6803, `nextFrame`): the shown `PIC` steps one frame (wrapping) and its
   animation stops.
 - **CLEAR_TOP** (`clearTop`): a 120 × 120 black square over the view (the original blanks the 15 × 15

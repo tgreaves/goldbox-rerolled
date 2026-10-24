@@ -311,6 +311,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     }
     overlay.classList.toggle('wide', w !== h) // a full-width BIGPIC keeps its own shape
     overlay.hidden = pics.length === 0
+    // the original draws a BIGPIC across the top of the screen, over the view and the party list: the view
+    // region takes the area map's place too while one is up (IMP-091)
+    app.querySelector('.game')!.classList.toggle('bigpic', w !== h && pics.length > 0)
   }
   /**
    * The view drawn again: the 3D view, or with no map the overland map (Engine.viewBackdrop), or with

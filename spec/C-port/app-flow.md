@@ -259,7 +259,9 @@ PROGRAM 8 ([B-model/profile.md §3.5](../B-model/profile.md#35-the-ending-ending
 **ending panel** (IMP-036), a dialog over the play screen:
 
 - the game's name as heading; a picture of 120 × 120 (PoR `FINAL<block>`; CotAB `PIC` and `BIGPIC`
-  records at their own sizes) scaled up whole-pixel to at most 360 px and 80 % of the width; the
+  records at their own sizes) scaled up whole-pixel to at most 360 px and 80 % of the width, a BIGPIC
+  (304 × 120, CotAB's #122 at 0x3D459, drawn by the original across the top of the screen as every
+  BIGPIC) keeping its shape at up to 912 px and the panel's width, the panel widened to 62 rem (IMP-091); the
   captions below it, read from `GAME.OVR` by offset (D1: profile `ending`, [strings.md §2](../D-appendices/strings.md#2-game-texts-the-screens-show));
   a **Continue** button.
 - **PoR** (`FUN_4804_02a4`, [por/ending.md](../A-games/por/ending.md)): caption group 1 with `FINAL`

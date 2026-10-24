@@ -71,7 +71,12 @@ export async function playEnding(dialog: HTMLDialogElement, files: GameFiles, bl
         const [x, y] = p.at ?? [0, 0]
         if (!p.at) {
           const w = f[0]?.picture.width ?? 120, h = f[0]?.picture.height ?? 120
-          if (w !== shown) { sizeCanvas(canvas, w, h); shown = w }
+          if (w !== shown) {
+            sizeCanvas(canvas, w, h); shown = w
+            // a BIGPIC keeps its own shape and is shown wider, as the original draws it across the screen (IMP-091)
+            canvas.style.aspectRatio = `${w} / ${h}`
+            canvas.classList.toggle('wide', w > h)
+          }
         }
         if (p.animate) await animate(p.record, x, y, p.loops ?? loops, p.file)
         else draw(f[0]?.picture, x, y)

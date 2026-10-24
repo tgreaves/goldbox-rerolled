@@ -1276,7 +1276,7 @@ when its table column or sentence names CotAB.
 | 0x3D032 | coab/records | coab/records: 5. `SAVGAM<x>.DAT`: 13 149 bytes (diff vs engine/savegame.md) |  |
 | 0x3D34D | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
 | 0x3D378 | coab/ecl | coab/ecl: Engine-visible variables (O: engine code touching the word; meaning I where it rests on the PoR analog) |  |
-| 0x3D459 | coab/assets | coab/assets: 5. BIGPIC uses |  |
+| 0x3D459 | coab/assets, C/app-flow | coab/assets: 5. BIGPIC uses |  |
 | 0x3D530 | coab/chargen-and-progression, coab/records, B/procedures | coab/chargen-and-progression: The former class afterwards |  |
 | 0x3D87C | coab/chargen-and-progression | coab/chargen-and-progression: The former class afterwards |  |
 | 0x3DBC7 | coab/assets | coab/assets: Open |  |
@@ -1542,7 +1542,7 @@ when its table column or sentence names CotAB.
 | 0x53605 | coab/ecl | coab/ecl: Opcodes |  |
 | 0x53606 | coab/assets | coab/assets: 1. Containers |  |
 | 0x5360C | coab/assets, coab/ecl, coab/records | coab/assets: 4. Overland: no tile map |  |
-| 0x5367A | coab/assets | coab/assets: 4. Overland: no tile map |  |
+| 0x5367A | coab/assets, C/exploration-view | coab/assets: 4. Overland: no tile map |  |
 | 0x536A0 | coab/ecl | coab/ecl: Start-up menu and demo |  |
 | 0x536AF | coab/assets | coab/assets: GEO and WALLDEF: unchanged |  |
 | 0x537E4 | coab/assets | coab/assets: GEO and WALLDEF: unchanged |  |
