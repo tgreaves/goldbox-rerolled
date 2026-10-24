@@ -6,6 +6,7 @@ import { GameFiles, wanted } from '../src/store/gamefiles'
 import { Engine, type Io } from '../src/vm/engine'
 import { parseSave } from '../src/data/save'
 import { fight, type CombatUi } from '../src/rules/combat'
+import { F } from '../src/games/fields'
 
 const dir = process.env.POOLRAD ?? ''
 const have = dir !== '' && existsSync(dir)
@@ -142,6 +143,43 @@ describe.skipIf(!have)('combat', () => {
     await done
     expect(back.length).toBeGreaterThan(0)
     expect(e.party().every((c) => c[0x10f] === 0 || c[0x84] >= 0x80)).toBe(true)
+  })
+
+  it('All on Quick (IMP-088) leaves the turn prompt and the computer plays the whole party', async () => {
+    const m = new Map<string, Uint8Array>()
+    for (const n of readdirSync(dir)) if (wanted(n)) m.set(n.toUpperCase(), new Uint8Array(readFileSync(join(dir, n))))
+    const files = new GameFiles(m)
+    const io = { print: () => {}, menu: async () => 0, refresh: async () => {}, pause: async () => {}, sound: () => {},
+      picture: () => {}, sprite: () => {}, engine: async () => {}, inputNumber: async () => 0, inputText: async () => '' } as unknown as Io
+    const dat = files.get('SAVGAMA.DAT')!
+    const stems = parseSave(dat).party
+    const e = new Engine(files, io, 3)
+    e.loadSave(dat, stems.map((s) => files.get(`${s}.SAV`)!))
+    stems.forEach((s, i) => e.attachFiles(i, files.get(`${s}.ITM`), files.get(`${s}.SPC`)))
+    await e.start()
+    e.addMonsters(13, 1, 4)
+    let battle: import('../src/rules/combat').Battle | null = null
+    let turns = 0, after = 0, on: string[] = []
+    const ui: CombatUi = {
+      print: () => {}, redraw: () => {}, pause: async () => {},
+      // the first turn prompt: All on Quick, and the screen leaves the prompt with nothing chosen
+      menu: async (items) => {
+        if (!items.includes('QUICK')) return items.length - 1
+        if (turns++ === 0) { on = battle!.quickAll(); return -1 }
+        after++
+        battle?.debugWin()
+        return items.length - 1
+      },
+      step: async () => 'end', aim: async () => null, confirm: async () => false, view: async () => {}, sound: () => {}, pick: async () => -1,
+    }
+    const done = fight(e, ui, (b) => { battle = b })
+    const b = () => battle as import('../src/rules/combat').Battle | null
+    for (let i = 0; i < 400 && !b()?.ended; i++) await new Promise((r) => setTimeout(r, 0))
+    if (!b()?.ended) b()?.debugWin()
+    await done
+    expect(on.length).toBeGreaterThan(1)
+    expect(after).toBe(0) // no party member was asked for a turn again
+    expect(e.party().every((c) => c[0x10f] === 1 || c[0x84] >= 0x80 || c[F.status] !== 0)).toBe(true)
   })
 
   it('flees off the edge of the battlefield (FUN_3aae_0c6a)', async () => {

@@ -909,15 +909,18 @@ export class Battle implements FxHost {
       this.ui.redraw(f)
       await this.settle()
       let k: string | undefined
+      this.atTurnPrompt = true
       if (this.ui.command && f.r[6] > 1) {
         // IMP-053: no MOVE to choose; a step is taken straight from the command prompt
         const cmds = opts.filter((o) => o[1] !== 'm')
         const r = await this.ui.command(f, cmds.map((o) => o[0]), `${name(c)}: Move Left = ${f.r[6] >> 1}`, f.r[6] >> 1, cmds.map((o) => o[2]))
+        this.atTurnPrompt = false
         if (r === 'end') continue
         if (r === 'undo') { undo(); continue }
         if (typeof r === 'number') { if (await this.moveStep(f, r)) moved = { x: f.x, y: f.y, m: f.r[6], face: f.r[9] }; continue }
         k = cmds[r.choice]?.[1]
       } else k = opts[await this.ui.menu(opts.map((o) => o[0]), { prompt: `${name(c)}:`, keys: opts.map((o) => o[2]) })]?.[1]
+      this.atTurnPrompt = false
       if (k === 'z') { undo(); continue }
       moved = { x: f.x, y: f.y, m: f.r[6], face: f.r[9] }
       if (k === 'm') await this.playerMove(f)
@@ -942,6 +945,8 @@ export class Battle implements FxHost {
       else if (k === 'e') await this.doneAction(f, 'QUIT')
       else if (k === 's') await this.doneAction(f, 'SPEED')
     }
+    // put on Quick during the turn (All on Quick, IMP-088): the computer plays what is left of it
+    if (c[F.quick] && s8(f.r[3]) > 0 && this.inPlay(f) && !this.ended) await this.ai(f)
   }
 
   /** What the Done submenu offers (FUN_320c_0e45): Guard without a non-throwing missile weapon, Bandage while a party member is Dying. */
@@ -2585,6 +2590,25 @@ export class Battle implements FxHost {
    * as a computer-run turn starts (a party member's turn then goes on by hand with initiative 20);
    * here it takes effect at once, so their next turn is played by hand.
    */
+  /**
+   * All on Quick (the port's, IMP-088): every party member in play who is not an NPC goes on Quick, as
+   * QUICK does for one. Returns their names. A turn being played by hand goes on under the computer
+   * once its prompt is left (the screen leaves the turn prompt at once).
+   */
+  quickAll(): string[] {
+    const on: string[] = []
+    for (const f of this.fighters) {
+      const c = f.c
+      if (f.monster || this.side(f) !== 0 || c[F.morale] >= 0x80 || !this.inPlay(f) || c[F.quick]) continue
+      c[F.quick] = 1
+      on.push(name(c))
+    }
+    return on
+  }
+
+  /** set while the turn's command prompt waits for the player (All on Quick may leave it) */
+  atTurnPrompt = false
+
   takeControl(): string[] {
     const back: string[] = []
     for (const f of this.fighters) {

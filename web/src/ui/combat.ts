@@ -51,6 +51,8 @@ export interface BattleScreen {
 export interface BattleControls {
   /** Space: every party member on Quick comes back under the player's control */
   takeControl(): void
+  /** Shift-Q: every party member in play goes on Quick (IMP-088) */
+  quickAll(): void
   /** Alt-M: whether party members on Quick may cast */
   toggleMagic(): void
   state(): { quick: boolean; magic: boolean }
@@ -625,13 +627,20 @@ export async function runBattle(s: BattleScreen) {
   const skipped = new Promise<void>((r) => { skipNow = r })
   const raced = <T,>(p: Promise<T>, v: T): Promise<T> => Promise.race([p, skipped.then(() => { s.cancelMenu(); setInput({}); return v })])
   const [menu0, step0, aim0, confirm0, pick0] = [ui.menu.bind(ui), ui.step.bind(ui), ui.aim.bind(ui), ui.confirm.bind(ui), ui.pick.bind(ui)]
-  ui.menu = (items, opts) => raced(menu0(items, opts), items.length - 1)
+  // All on Quick leaves the turn's prompt with nothing chosen (IMP-088); the rules then hand the turn over
+  let leaveTurn: (() => void) | null = null
+  const leavable = <T,>(p: Promise<T>, none: T): Promise<T> => {
+    let done = false
+    return Promise.race([p, new Promise<T>((r) => { leaveTurn = () => { if (!done) { s.cancelMenu(); setInput({}); r(none) } } })])
+      .finally(() => { done = true; leaveTurn = null })
+  }
+  ui.menu = (items, opts) => raced(battle?.atTurnPrompt ? leavable(menu0(items, opts), -1) : menu0(items, opts), items.length - 1)
   ui.step = (f, left) => raced(step0(f, left), 'end' as const)
   ui.aim = (f, entries, prompt, allowCell, area) => raced(aim0(f, entries, prompt, allowCell, area), null)
   ui.confirm = (prompt) => raced(confirm0(prompt), false)
   ui.pick = (prompt, items, notes) => raced(pick0(prompt, items, notes), -1)
   const command0 = ui.command!.bind(ui)
-  ui.command = (f, items, prompt, left, keys) => raced(command0(f, items, prompt, left, keys), { choice: Math.max(0, items.indexOf('END TURN')) })
+  ui.command = (f, items, prompt, left, keys) => raced(leavable(command0(f, items, prompt, left, keys), 'end' as const), { choice: Math.max(0, items.indexOf('END TURN')) })
   s.onSkip?.(() => { if (battle) { battle.debugWin(); skipNow() } })
   s.canvas.hidden = false
   // the hidden "Magic On/Off" key (DS:6E30): Alt-M, or '2' during a computer-run turn; whether
@@ -644,6 +653,18 @@ export async function runBattle(s: BattleScreen) {
     s.controlsChanged?.()
     s.refreshRoster()
   }
+  /** Shift-Q or the All on Quick button (IMP-088): the computer plays the whole party until Space / Take control */
+  const quickAll = () => {
+    if (!battle) return
+    const on = battle.quickAll()
+    if (!on.length) { s.print('Everyone is already on Quick'); return }
+    s.print('All on Quick: the computer plays the party. Space or TAKE CONTROL to play them yourself.')
+    const casters = battle.fighters.some((f) => !f.monster && f.c[F.quick] && Array.from({ length: F.memorisedCount }, (_, i) => f.c[F.memorised + i]).some((v) => v > 0 && v < 0x80))
+    if (casters) s.print(battle.magicOn ? 'Magic is On: they may cast spells (Alt-M or MAGIC to stop).' : 'Magic is Off: they will not cast spells (Alt-M or MAGIC to allow).')
+    if (battle.atTurnPrompt) leaveTurn?.()
+    s.controlsChanged?.()
+    s.refreshRoster()
+  }
   /** Alt-M (DS:6E30): whether party members on Quick may cast spells */
   const toggleMagic = () => {
     if (!battle) return
@@ -652,7 +673,7 @@ export async function runBattle(s: BattleScreen) {
     s.controlsChanged?.()
   }
   s.onControls?.({
-    takeControl, toggleMagic,
+    takeControl, toggleMagic, quickAll,
     state: () => ({ quick: !!battle && battle.fighters.some((f) => !f.monster && f.c[F.morale] < 0x80 && f.c[F.quick] !== 0), magic: !!battle?.magicOn }),
   })
   const onMagicKey = (ev: KeyboardEvent) => {
@@ -661,6 +682,12 @@ export async function runBattle(s: BattleScreen) {
       ev.preventDefault()
       ev.stopPropagation()
       takeControl()
+      return
+    }
+    if (ev.shiftKey && !ev.altKey && !ev.ctrlKey && !ev.metaKey && ev.key.toLowerCase() === 'q' && !(ev.target instanceof HTMLInputElement)) {
+      ev.preventDefault()
+      ev.stopPropagation()
+      quickAll()
       return
     }
     const altM = ev.altKey && ev.key.toLowerCase() === 'm'

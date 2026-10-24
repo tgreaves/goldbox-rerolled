@@ -118,8 +118,9 @@ step), with movement live (§5); otherwise "*Name*:" and the row alone. A build 
 offers MOVE first and the step prompt "Move/Attack, Move Left = *n*" (*game text*) with END MOVE and
 UNDO, as the original.
 
-Beside the row: **Take control** (only while a party member who is not an NPC is on Quick; tooltip
-"Space. Every character on Quick comes back under your control"), **Magic: On** / **Magic: Off**
+Beside the row: **All on Quick** / **Take control**, one button (tooltip "Shift-Q. The computer plays
+the whole party until you take control", or while a party member who is not an NPC is on Quick
+"Space. Every character on Quick comes back under your control"; §10), **Magic: On** / **Magic: Off**
 (frame colour when On; tooltip "Alt-M. Characters on Quick may cast spells; click to stop them" or
 "Alt-M. Characters on Quick will not cast spells; click to allow it") and **Debug** (not in the demo,
 [screens.md §12](screens.md#12-debug)).
@@ -154,6 +155,7 @@ While a player character's command row or step waits:
 | Enter | ends the steps (only in the classic step mode, where the menu is END MOVE / UNDO) |
 | a command's letter, a click on it | that command ([ui-contract.md §6.3](ui-contract.md#63-menus-and-prompts)); digits are directions while movement is live |
 | Space (focus not on a button or field, no step waiting) | **Take control** (the original's hidden key, `FUN_3334_0fc1`) |
+| Shift-Q (focus not in a field) | **All on Quick** (the port's, IMP-088) |
 | Alt-M; 2 when no step or aim waits | **Magic** on or off (the original's hidden Alt-M and the "2" read during computer turns) |
 | any key, click or tap | ends a running hold early (§9) |
 
@@ -247,8 +249,16 @@ IMP-054. The original's hidden controls, made visible:
   them yourself." and, when the character has spells ready, "Magic is On: they may cast spells
   (Alt-M or MAGIC to stop)." or "Magic is Off: they will not cast spells (Alt-M or MAGIC to allow).";
   the computer plays the rest of the turn. The card shows the **Quick** badge.
+- **All on Quick** (Shift-Q; IMP-088): every party member in play who is not an NPC goes on Quick
+  ("All on Quick: the computer plays the party. Space or TAKE CONTROL to play them yourself.", then
+  the Magic line when any of them has spells ready; "Everyone is already on Quick" when none was
+  left). If a character is waiting at their turn's command prompt, the prompt is left with nothing
+  chosen and the computer plays the rest of that turn (`Battle.quickAll`, `atTurnPrompt`); a
+  character in the middle of a choice (a target, a spell) finishes it and then hands over.
 - **Take control** (Space): every party member on Quick comes back under the player's control:
   "*names*: under your control again" or "Nobody is on Quick".
+- All on Quick and Take control are one button: **All on Quick** while no party member is on Quick,
+  **Take control** (frame colour) while any is.
 - **Magic** (Alt-M, "2"): whether party members on Quick may cast; off at the start of every battle
   (`FUN_34c7_1e31`): "Magic On: characters on Quick may cast spells" / "Magic Off: characters on Quick
   will not cast spells".

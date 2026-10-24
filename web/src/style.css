@@ -148,7 +148,7 @@ dialog.panel form.jump input { width: 4.5rem; }
 .game.in-combat .debug-combat, .game.in-combat .take-control, .game.in-combat .magic-toggle { display: inline-block; }
 .game.demo .pad, .game.demo.in-combat .debug-combat { display: none; }
 .game.in-combat .take-control[hidden], .game.in-combat .magic-toggle[hidden] { display: none; }
-.game .magic-toggle.on { border-color: var(--ega-cyan); color: var(--ega-cyan); }
+.game .magic-toggle.on, .game .take-control.on { border-color: var(--ega-cyan); color: var(--ega-cyan); }
 .rcard .badge.quick { border-color: var(--ega-magenta); color: var(--ega-magenta); }
 
 /* phones and narrow windows: stack view, party, text, commands */

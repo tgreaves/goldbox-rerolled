@@ -169,7 +169,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const menuBar = app.querySelector<HTMLDivElement>('.menu')!
   const pad = app.querySelector<HTMLDivElement>('.pad')!
   app.querySelector<HTMLButtonElement>('.debug-combat')!.addEventListener('click', () => debugMenu())
-  app.querySelector<HTMLButtonElement>('.take-control')!.addEventListener('click', () => battleControls?.takeControl())
+  app.querySelector<HTMLButtonElement>('.take-control')!.addEventListener('click', () => {
+    // one button both ways (IMP-088): All on Quick while nobody is, Take control otherwise
+    if (battleControls?.state().quick) battleControls.takeControl()
+    else battleControls?.quickAll()
+  })
   app.querySelector<HTMLButtonElement>('.magic-toggle')!.addEventListener('click', () => battleControls?.toggleMagic())
   const dialog = app.querySelector<HTMLDialogElement>('dialog.panel')!
   enhancePanel(dialog)
@@ -1835,8 +1839,13 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const magicBtn = app.querySelector<HTMLButtonElement>('.magic-toggle')!
   function drawControls() {
     const st = battleControls?.state()
-    takeBtn.hidden = !st?.quick
+    takeBtn.hidden = !st
     magicBtn.hidden = !st
+    if (st) {
+      takeBtn.textContent = st.quick ? 'Take control' : 'All on Quick'
+      takeBtn.classList.toggle('on', st.quick)
+      takeBtn.title = st.quick ? 'Space. Every character on Quick comes back under your control' : 'Shift-Q. The computer plays the whole party until you take control'
+    }
     if (st) {
       magicBtn.textContent = `Magic: ${st.magic ? 'On' : 'Off'}`
       magicBtn.classList.toggle('on', st.magic)
