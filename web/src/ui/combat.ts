@@ -4,7 +4,8 @@
 // uses an item in one tap; a drag from the acting character plans a walk live and a release walks it.
 // Each goes through the rules' own commands (AIM, CAST, USE and steps), answering their lists. Shown over the
 // field (IMP-084): health bars, the squares in an enemy's reach, the squares a blow would land from behind;
-// a tap on the acting character opens its commands in a ring around it.
+// a tap on the acting character opens its commands in a ring around it. Numbers over heads (IMP-085): each
+// combatant's change of HP since the message before, shown with the message that tells of it.
 import type { Engine } from '../vm/engine'
 import type { GameFiles } from '../store/gamefiles'
 import { parseRecord, type Picture } from '../data/image'
@@ -15,6 +16,7 @@ import type { SoundMode } from '../games/sound'
 import { Line, cycle, fight, footprint, type AimEntry, type Battle, type CombatUi, type Fighter, type Flight, type SpriteFrame } from '../rules/combat'
 import { msg, word, type MenuOpts } from '../games/strings'
 import { yes, list } from './camp'
+import { motionChoice } from './settings'
 
 export interface BattleScreen {
   engine: Engine
@@ -212,6 +214,36 @@ export async function runBattle(s: BattleScreen) {
       at = next
     }
     return { danger, blows }
+  }
+  /** the HP each combatant had when the last message was queued (IMP-085) */
+  const lastHp = new Map<Fighter, number>()
+  /** who lost or gained HP since the last message queued: the rules change HP, then print what happened */
+  const hpChanges = (): { f: Fighter; d: number }[] => {
+    if (!battle) return []
+    const out: { f: Fighter; d: number }[] = []
+    for (const f of battle.fighters) {
+      const hp = f.c[F.hp], was = lastHp.get(f)
+      lastHp.set(f, hp)
+      if (was !== undefined && hp !== was) out.push({ f, d: hp - was })
+    }
+    return out
+  }
+  /** the numbers over heads: damage to an enemy yellow, to the party red, healing green; they rise and
+   *  fade, or only fade with reduced motion (IMP-057) */
+  const floaters = (hits: { f: Fighter; d: number }[]) => {
+    if (!view || !hits.length || s.canvas.hidden) return
+    const host = s.canvas.parentElement!, hr = host.getBoundingClientRect()
+    const still = motionChoice() === 'reduced'
+    for (const { f, d } of hits) {
+      const a = view.cellCentre(f.y, f.x, focus), b = (f.size || 1) > 1 ? view.cellCentre(f.y + 1, f.x + 1, focus) : a
+      const el = document.createElement('div')
+      el.className = `floater ${d > 0 ? 'heal' : f.monster ? 'hurt-foe' : 'hurt-ally'}${still ? ' still' : ''}`
+      el.textContent = d > 0 ? `+${d}` : `−${-d}`
+      el.style.left = `${(a.x + b.x) / 2 - hr.left}px`
+      el.style.top = `${(a.y + b.y) / 2 - hr.top}px`
+      host.append(el)
+      setTimeout(() => el.remove(), 1400)
+    }
   }
   /** a health bar's share and colour (IMP-084): the party's exact, a monster's only in the info box's bands */
   const healthBar = (f: Fighter): { frac: number; colour: string } => {
@@ -445,8 +477,10 @@ export async function runBattle(s: BattleScreen) {
 
   const ui: CombatUi = {
     print: (t, hold) => {
+      const hits = hpChanges() // now, as the rules print: the change belongs to this message
       later(async () => {
         s.print(t)
+        floaters(hits)
         if (hold?.ms) await s.pause(hold.ms)
       })
     },
@@ -641,6 +675,7 @@ export async function runBattle(s: BattleScreen) {
   try {
     const result = await fight(e, ui, (b) => {
       battle = b
+      for (const f of b.fighters) lastHp.set(f, f.c[F.hp])
       view = new CombatView(s.canvas, s.files, b.bf.outdoors) // WILDCOM for a wilderness field, whatever the area
       const r = s.canvas.getBoundingClientRect()
       view.fit(r.width, r.height)

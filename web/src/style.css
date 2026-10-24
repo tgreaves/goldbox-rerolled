@@ -365,6 +365,19 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 .game .radial { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
 .game .radial button { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; font-size: 0.75em; padding: 0.25rem 0.5rem; min-height: 32px; background: rgba(0, 0, 0, 0.88); white-space: nowrap; }
 .game .radial button.radial-centre { border-radius: 50%; width: 2.2rem; height: 2.2rem; padding: 0; min-height: 0; color: var(--muted); }
+/* numbers over heads (IMP-085): HP lost (yellow on an enemy, red on the party) or gained (green) */
+.game .floater { position: absolute; z-index: 6; pointer-events: none; transform: translate(-50%, -50%); font-size: 1.15em; font-weight: 700;
+  text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; animation: floater-rise 1.3s ease-out forwards; }
+.game .floater.hurt-foe { color: var(--ega-yellow); }
+.game .floater.hurt-ally { color: var(--ega-lred); }
+.game .floater.heal { color: var(--ega-green); }
+.game .floater.still { animation: floater-fade 1.3s linear forwards; }
+@keyframes floater-rise {
+  0% { opacity: 0; transform: translate(-50%, -30%) scale(0.8); }
+  15% { opacity: 1; transform: translate(-50%, -70%) scale(1.2); }
+  100% { opacity: 0; transform: translate(-50%, -190%) scale(1); }
+}
+@keyframes floater-fade { 0%, 75% { opacity: 1; } 100% { opacity: 0; } }
 
 /* party cards (IMP-045) */
 .partyscreen .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 0.5rem; }
