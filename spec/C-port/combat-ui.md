@@ -70,6 +70,10 @@ In this order, each frame of the window ([combat-visuals.md](../A-games/engine/c
 7. **health bars** (IMP-084): over every combatant standing, a thin bar on a dark track across the top
    of its square(s): the party's share of HP exactly, a monster's only in the info box's bands (full,
    above two thirds, above one third, below), green from half up, yellow from a quarter, red below.
+8. **numbers over heads** (IMP-085): with each message, every combatant whose HP changed since the
+   message before shows the change over its square(s): "−*n*" yellow on an enemy, red on the party,
+   "+*n*" green for healing; it rises and fades over about 1.3 s, or only fades with reduced motion
+   (ui-contract.md). It is the HP lost, so a blow for more than the HP left shows what was left.
 
 Every picture is drawn with the battle palette: EGA colours 0 and 8 swapped (black shows dark grey,
 dark grey black), as the original sets it for the combat screen ([combat-visuals.md, "Palette"](../A-games/engine/combat-visuals.md#palette-o)).
