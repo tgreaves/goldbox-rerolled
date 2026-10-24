@@ -46,7 +46,7 @@ describe.skipIf(!coab || !existsSync(coab))('CotAB Fix (0x320D8)', () => {
   it('does nothing without wounds', async () => {
     const { e, rolled } = party()
     const t0 = minutes(e)
-    expect(await fix(e, { heal: 0 })).toEqual({ messages: [], interrupted: false })
+    expect(await fix(e, { heal: 0 })).toEqual({ messages: [], interrupted: false, minutes: 0 })
     expect([minutes(e), rolled.length]).toEqual([t0, 0])
   })
 
@@ -97,9 +97,9 @@ describe.skipIf(!por || !existsSync(por))('Pool of Radiance Fix (IMP-048)', () =
     e.write(0x6dd2, 0)
     for (const c of e.party()) c[F.hp] = Math.max(1, c[F.maxHp] - 4)
     const spells = e.party().map(memorised)
-    const shown: string[][] = []
+    const shown: string[][] = [], printed: string[] = []
     const ui = {
-      engine: e, print: () => {}, refresh: () => {}, pause: async () => {},
+      engine: e, print: (t: string) => { printed.push(t) }, refresh: () => {}, pause: async () => {},
       menu: async (items: string[]) => { shown.push(items); return shown.length === 1 ? items.indexOf('FIX') : items.indexOf('EXIT') },
       view: async () => {}, save: async () => {}, stopper: () => ({ stopped: () => false, done: () => {} }),
     }
@@ -107,5 +107,7 @@ describe.skipIf(!por || !existsSync(por))('Pool of Radiance Fix (IMP-048)', () =
     expect(shown[0]).toEqual(['SAVE', 'VIEW', 'MAGIC', 'REST', 'ALTER', 'FIX', 'EXIT'])
     expect(e.party().every((c) => c[F.hp] === c[F.maxHp])).toBe(true)
     expect(e.party().map(memorised)).toEqual(spells)
+    // the port says what Fix did (IMP-086)
+    expect(printed.some((t) => /^The party rests .+ and heals \d+ hit points?\.$/.test(t))).toBe(true)
   })
 })

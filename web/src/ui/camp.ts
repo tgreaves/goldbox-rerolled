@@ -6,7 +6,7 @@ import { spellText } from '../rules/spelltext'
 import type { Engine } from '../vm/engine'
 import { parseCharacter } from '../data/character'
 import type { Spell } from '../data/spells'
-import { clearPending, freeSlots, knows, memorise, memorised, preparation, readableScrolls, restStep, startRest, isScroll, fix as fixParty } from '../rules/camp'
+import { clearPending, freeSlots, knows, memorise, memorised, preparation, readableScrolls, restStep, startRest, isScroll, fix as fixParty, wounds } from '../rules/camp'
 import { castOutside, targetKind, forget, mayCast } from '../rules/magic'
 import { msg, menu, word, ask, type StringId, type MenuOpts, type MenuWord } from '../games/strings'
 import { text } from '../data/gametext'
@@ -261,11 +261,27 @@ export async function rest(ui: CampUi, state: { heal: number }): Promise<boolean
  */
 async function fix(ui: CampUi, state: { heal: number }): Promise<boolean> {
   const e = ui.engine
+  const hp = () => e.party().reduce((a, c) => a + c[F.hp], 0)
+  const before = hp(), hurt = wounds(e)
   const r = await fixParty(e, state)
   for (const m of r.messages) ui.print(m, false)
+  // the original prints nothing of its own; the port says what Fix did (IMP-086)
+  const healed = hp() - before
+  if (!hurt) ui.print('No one needs healing.', false)
+  else if (!r.interrupted) {
+    ui.print(healed > 0 ? `The party rests ${duration(r.minutes)} and heals ${healed} hit point${healed === 1 ? '' : 's'}.`
+      : 'No one in the party can heal: Fix needs healing spells memorised or a cleric with spell slots.', false)
+  }
   ui.refresh()
   if (r.interrupted) e.campInterrupted = true
   return r.interrupted
+}
+
+/** "2 hours 15 minutes", "45 minutes", "no time" */
+function duration(minutes: number): string {
+  const h = Math.floor(minutes / 60), m = minutes % 60
+  const part = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`
+  return [h ? part(h, 'hour') : '', m ? part(m, 'minute') : ''].filter(Boolean).join(' ') || 'no time'
 }
 
 /** Alter (FUN_3f81_1c59, CotAB 0x31AD0): Order, Drop, Speed, Icon, Pics (SotSB: Level for Pics). */

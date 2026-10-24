@@ -308,12 +308,14 @@ export function wounds(e: Engine): number {
  * healing, effects and pending spells as in any rest; 0x41B8F with no prompt); if it is not
  * interrupted, one cure per cleric slot of each cure's level is rolled into the pool (0x31D7D), and
  * the pool is shared out in party order, each member healed by what they lack, as far as it goes
- * (0x32020). Prints nothing of its own. Returns the rest's messages and whether it was interrupted.
+ * (0x32020). Prints nothing of its own. Returns the rest's messages, whether it was interrupted and the
+ * minutes rested.
  */
-export async function fix(e: Engine, camp: { heal: number }): Promise<{ messages: string[]; interrupted: boolean }> {
+export async function fix(e: Engine, camp: { heal: number }): Promise<{ messages: string[]; interrupted: boolean; minutes: number }> {
   const { cures, start } = R.fix
   const messages: string[] = []
-  if (wounds(e) === 0) return { messages, interrupted: false }
+  let rested = 0
+  if (wounds(e) === 0) return { messages, interrupted: false, minutes: 0 }
   const okay = (c: Uint8Array) => c[F.status] === 0 // 0x31CA2
   const cureRoll = (k: (typeof cures)[number]) => e.roll(k.dice, k.sides) + k.bonus
   // 0x31CC2: the memorised cures, member by member, slot by slot
@@ -350,8 +352,9 @@ export async function fix(e: Engine, camp: { heal: number }): Promise<{ messages
   const r = startRest(e, time)
   while (r.minutes > 0) {
     const res = await restStep(e, r, camp)
+    rested += 5
     messages.push(...res.messages)
-    if (res.interrupted) return { messages, interrupted: true }
+    if (res.interrupted) return { messages, interrupted: true, minutes: rested }
   }
   // 0x31D7D: one cure per cleric slot of its level, all of the first cure, then the next
   cures.forEach((k, i) => { for (let n = 0; n < count[i]; n++) pool = (pool + cureRoll(k)) & 0xffff })
@@ -368,12 +371,13 @@ export async function fix(e: Engine, camp: { heal: number }): Promise<{ messages
     const r2 = startRest(e, t2)
     while (r2.minutes > 0) {
       const res = await restStep(e, r2, camp)
+      rested += 5
       messages.push(...res.messages)
-      if (res.interrupted) return { messages, interrupted: true }
+      if (res.interrupted) return { messages, interrupted: true, minutes: rested }
     }
     if (conds.some((n) => n > 0)) messages.push(...(await fixConditions(e, conds)))
   }
-  return { messages, interrupted: false }
+  return { messages, interrupted: false, minutes: rested }
 }
 
 /** SotSB 0x38D11 and 0x384BC (R.fix.second): the second rest's minutes; null without a second pass. */

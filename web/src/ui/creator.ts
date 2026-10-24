@@ -14,21 +14,33 @@ import { F } from '../games/fields'
 import type { Dice } from '../rules/dice'
 
 export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, dice: Dice, tables: Tables | null) {
+  /** "Cleric/Fighter/Magic-User" → "C/F/MU": each class's initials (the full name in the cell's title) */
+  const shortClass = (cls: string) => cls.split('/').map((c) => c.split(/[- ]/).map((w) => w[0] ?? '').join('').toUpperCase()).join('/')
+
+  /** The roster to pick from, a row a character in columns (IMP-087); resolves to the one picked, or null. */
   function chooseFrom(title: string, list: StoredCharacter[]): Promise<StoredCharacter | null> {
     return new Promise((resolve) => {
-      dialog.innerHTML = `<h2>${title}</h2><ol class="pick">${list.map((c, i) => {
+      const rows = list.map((c) => {
         const p = parseCharacter(c.sav)
         // a character seeded from a save slot that came with the game keeps its slot stem (CHRDAT<x><n>): say which
-        const slot = /^CHRDAT([A-J])\d$/i.exec(c.stem)?.[1]
-        return `<li><button data-i="${i}">${escape(p.name)} <span class="muted">${p.race} ${p.cls}, level ${p.levels.map((l) => l.level).join('/')}${slot ? ` · from save ${slot.toUpperCase()}` : ''}</span></button></li>`
-      }).join('')}</ol><form method="dialog"><button>Cancel</button></form>`
+        return { p, slot: /^CHRDAT([A-J])\d$/i.exec(c.stem)?.[1]?.toUpperCase() ?? '' }
+      })
+      // Status and Save only when some row has something to show there
+      const status = rows.some((r) => r.p.raw[F.status] !== 0), slots = rows.some((r) => r.slot)
+      const head = ['Name', 'Race', 'Class', 'Level', 'HP', 'AC', ...(status ? ['Status'] : []), ...(slots ? ['Save'] : [])]
+      const body = rows.map(({ p, slot }, i) => `<tr data-i="${i}">
+        <td class="nm"><button data-i="${i}">${escape(p.name)}</button></td><td>${escape(p.race)}</td><td title="${escape(p.cls)}">${escape(shortClass(p.cls))}</td>
+        <td class="n" data-h="Level">${p.levels.map((l) => l.level).join('/')}</td><td class="n" data-h="HP">${p.hp}/${p.hpMax}</td><td class="n" data-h="AC">${p.ac}</td>
+        ${status ? `<td>${escape(p.status)}</td>` : ''}${slots ? `<td data-h="Save">${slot}</td>` : ''}</tr>`).join('')
+      dialog.innerHTML = `<h2>${title}</h2>${list.length
+        ? `<div class="rosterwrap"><table class="roster"><thead><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`
+        : '<p class="muted">No characters to add.</p>'}<form method="dialog"><button>Cancel</button></form>`
       const stop = onClose(dialog, () => resolve(null))
-      dialog.querySelectorAll<HTMLButtonElement>('ol button').forEach((b) => b.addEventListener('click', () => {
-        stop()
-        dialog.close()
-        resolve(list[Number(b.dataset.i)])
-      }))
+      const choose = (i: number) => { stop(); dialog.close(); resolve(list[i]) }
+      // the whole row picks; the name's button is there for the keyboard
+      dialog.querySelectorAll<HTMLTableRowElement>('tbody tr').forEach((tr) => tr.addEventListener('click', () => choose(Number(tr.dataset.i))))
       dialog.showModal()
+      dialog.querySelector<HTMLButtonElement>('tbody button')?.focus()
     })
   }
 

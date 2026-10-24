@@ -81,10 +81,15 @@ the selected row is highlighted. Footer **Exit** (E) and **Keep** (K, main), the
 
 ### 1.3 Add character
 
-A list "Add character" of the roster characters not in the party, each "*Name* *Race Class*, level
-*a*/*b*", followed by " · from save *X*" for a character seeded from a save slot that came with the game
-(roster key `CHRDAT<X><n>`, [storage.md §4](storage.md#4-roster-seeding): PoR's A and J hold the same six
-names), with **Cancel**. Choosing one checks the joining rules ([B-model/procedures.md](../B-model/procedures.md),
+A table "Add character" of the roster characters not in the party (IMP-087), a row a character: Name,
+Race, Class (the initials of each class, C/F/MU; the full name as the cell's title), Level (*a*/*b*),
+HP (current/maximum), AC; then Status when any listed character's status byte is not 0, and Save, the
+slot letter, when any was seeded from a save slot that came with the game (roster key `CHRDAT<X><n>`,
+[storage.md §4](storage.md#4-roster-seeding): PoR's A and J hold the same six names). A click or tap
+anywhere on a row picks it; the name is a button, focused first, for the keyboard. Below 480 px wide
+the header is hidden and each row is a card: the name on its own line, then race, class and the
+labelled figures ("Level 1/1", "HP 7/7", "AC 4", "Save A"). With no one to add it says "No characters
+to add." **Cancel** closes it. Choosing one checks the joining rules ([B-model/procedures.md](../B-model/procedures.md),
 `R.join`): a refusal is shown as the message ("The party is full.", "paladins do not join with evil
 scum", "too many rangers in party", "*Name* will tolerate no evil!", *game text*); a character already
 in the party is refused silently. Otherwise it joins at the end and becomes current: "*Name* joins the
@@ -472,8 +477,12 @@ Pool of Radiance the port's word and the same procedure with Cure Light Wounds a
 no wounds nothing happens. Otherwise the party rests at once, without the duration prompt or a Stop
 button, as long as the clerics' slots would take to learn again (shortened when the wounds are
 small), and is then healed by the dice of their memorised cures and of one cure per slot, in party
-order. Nothing is cast or used up, and Fix prints nothing of its own; the rest's own lines (natural
-healing, spells learnt, an encounter) go to the log, and an interrupted rest leaves the camp.
+order. Nothing is cast or used up. The rest's own lines (natural healing, spells learnt, an encounter)
+go to the log, and an interrupted rest leaves the camp. The original prints nothing of its own; the
+port then says what Fix did (IMP-086): "No one needs healing." with no wounds; "The party rests *2 hours
+15 minutes* and heals *n* hit points." when it healed (the minutes actually rested); otherwise "No one in
+the party can heal: Fix needs healing spells memorised or a cleric with spell slots." Nothing is added
+after an interrupted rest.
 
 ## 7. Script screens
 
