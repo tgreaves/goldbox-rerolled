@@ -43,6 +43,8 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
   let auto = await readAutosave()
   let party = (await getParty()).filter((s) => roster.some((c) => c.stem === s))
   let current = 0
+  // the page from the top: the title before it leaves the window scrolled to its foot ("press any key")
+  window.scrollTo(0, 0)
   let tables: Tables | null = null
   try {
     const exe = files.get('START.EXE')

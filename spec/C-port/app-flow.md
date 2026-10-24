@@ -79,9 +79,7 @@ Page title "GoldBox Rerolled". One centred column:
    (MS-DOS), for example the game's folder from the GOG release (the data files and `START.EXE`,
    which holds the sound effects and the rules tables). They stay on this device: nothing is
    uploaded, and after importing once the game works offline."
-3. The **Account** box, when a server answers ([accounts-and-sync.md §6](accounts-and-sync.md#6-the-account-section));
-   absent without a server.
-4. One row per game the port knows, in profile order (Pool of Radiance, Curse of the Azure Bonds):
+3. One row per game the port knows, in profile order (Pool of Radiance, Curse of the Azure Bonds):
    the game's name, then in the quiet colour "imported", or "not imported: choose its *FOLDER*
    folder" (the profile's `folder`, `POOLRAD`, `CURSE`), then " · *note*" when the profile has one
    (CotAB: "early: being built, expect gaps"), then " · assets only" for a game that is not
@@ -93,9 +91,12 @@ Page title "GoldBox Rerolled". One centred column:
    | **Import** / **Re-import** | always (Re-import when imported) | "Choose the *FOLDER* folder of *name*.", then the folder picker (§3) |
    | **Remove** (quiet; tooltip "Forget this game's files (characters and saves are kept)") | imported | the confirmation "Remove *name*'s game files from this browser? Its characters and saved games are kept, and come back when you import it again." (OK / Cancel); on OK the game's files database is deleted ([storage.md §10](storage.md#10-removing-data)) and the screen redrawn |
 
-5. **Choose a game folder** (the main action when no game is imported) and **Choose files**
+4. **Choose a game folder** (the main action when no game is imported) and **Choose files**
    (tooltip "For browsers without a folder picker").
-6. A status line (quiet) for the import's progress and errors (§3).
+5. A status line (quiet) for the import's progress and errors (§3).
+6. The **Account** box, when a server answers ([accounts-and-sync.md §6](accounts-and-sync.md#6-the-account-section));
+   absent without a server. It follows the games, which most visitors come for (until 2026-10-24 it
+   came before them).
 7. The version line at the foot ([pwa-and-build.md §6](pwa-and-build.md#6-the-version-stamp)).
 
 First run: no game is imported, so the screen shows only the Import buttons and the two choosers,

@@ -96,7 +96,6 @@ async function showImport() {
       for example the game's folder from the GOG release (the data files and <code>START.EXE</code>,
       which holds the sound effects and the rules tables). They stay on this device:
       nothing is uploaded, and after importing once the game works offline.</p>
-      <section class="account-sec account-top" aria-label="Account"></section>
       <ul class="games">${GAMES.map((g) => `<li>
         <div><strong>${esc(g.name)}</strong> <span class="muted">${stored.get(g.id) ? 'imported' : `not imported: choose its <code>${g.folder}</code> folder`}${g.note ? ` · ${esc(g.note)}` : ''}${g.playable ? '' : ' · assets only'}</span></div>
         <div class="actions">
@@ -106,12 +105,14 @@ async function showImport() {
         </div></li>`).join('')}</ul>
       <div class="actions"><button class="${any ? '' : 'primary'}" id="folder">Choose a game folder</button> <button id="files" title="For browsers without a folder picker">Choose files</button></div>
       <p class="muted" id="status"></p>
+      <section class="account-sec account-top" aria-label="Account"></section>
       <footer class="version muted small">${versionHtml()}</footer>
       <input type="file" id="dirInput" webkitdirectory multiple hidden />
       <input type="file" id="fileInput" multiple hidden />
     </section>`
   const status = app.querySelector<HTMLParagraphElement>('#status')!
-  // sign in or create an account before any game is open (IMP-072); hidden when no server answers
+  // sign in or create an account before any game is open (IMP-072); after the games, which most come for;
+  // hidden when no server answers
   const acct = app.querySelector<HTMLElement>('.account-sec')!
   mountAccount(acct, false)
   void initAccount()

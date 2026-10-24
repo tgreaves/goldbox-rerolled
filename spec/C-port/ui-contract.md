@@ -84,13 +84,16 @@ log** (§6), the **command bar** (§5) and the **pad** (§4.4).
 | W, row | The party cards in one row across the top, members 1–6 left to right, equal widths, scrolling sideways when they do not fit. Below, the view on the left as a square (about half the height) and the area map on its right, filling the rest of the width at the view's height. Below, the text log across the full width, taking the remaining height. At the bottom the command bar on the left and the pad on the right |
 | W, column | The view on the left as a square (about 60 % of the height). On its right a column: the cards stacked, above the area map (the map keeps at least about 40 % of the column). The text log across the full width below; the command bar and pad at the bottom |
 | W, column, very wide | as W column, but the cards and the map stand side by side in the right column, the map a square as tall as the view |
-| N | The view across the top, nearly square (at most about half the height). Below it a band: the cards as a grid of small cards on the left, a small area map on the right. Below, the text log, taking the remaining height. At the bottom the command bar (its buttons stretch to fill their rows) and the pad |
-| L | The view on the left, a square as tall as the screen (at most half the width). On the right, top to bottom: the cards (at most a third of the height), the text log, the command bar and the pad. **The area map is hidden** and **Area** is on the command bar (IMP-061) |
+| N | The view across the top, nearly square (at most about half the height). Below it a band (about 12 em): the six mini cards in two columns of three on the left, the whole party at once, a small area map on the right. Below, the text log, taking the remaining height. At the bottom the command bar, four buttons to a row stretched across the width, and under it the pad as a row of its own across the width |
+| L | The view on the left, a square as tall as the screen (at most half the width). On the right, top to bottom: the mini cards in three columns of two (at most about 44 % of the height), the text log, the command bar and the pad. **The area map is hidden** and **Area** is on the command bar (IMP-061) |
 
-On N and L the cards leave out the portrait, the spell line and the badges. In the W row the cards
-are smaller (three quarters of the text size): the name takes the top line, AC stands beside HP, the
-combat icon overlaps the portrait's lower right corner (or takes the portrait's place in a game
-without portraits), and the spell line is left out.
+On N and L the cards are **mini cards** (about 0.6 of the text size): the name, the HP bar and the HP
+line as "*hp*/*max*" (no "HP" label), nothing else; the portrait, combat icon, AC, experience bar,
+weapon, spells and badges are a tap away on the sheet. A name too long for the card is clipped
+within it. In the W row the cards are smaller (three quarters of the text size): the name takes the
+top line and wraps to a second rather than being cut, AC stands beside HP at the line's right end, the
+weapon may take two lines, the combat icon overlaps the portrait's lower right corner (or takes the
+portrait's place in a game without portraits), and the spell line is left out.
 
 ### 3.2 Battles
 
