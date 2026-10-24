@@ -129,6 +129,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       </div>
       <section class="text" aria-live="polite" aria-label="Messages"></section>
       <nav class="commands" aria-label="Commands">
+        <div class="actionbar" aria-label="Spells and items" hidden></div>
         <div class="menu"></div>
         <button class="take-control" title="Space. Every character on Quick comes back under your control" hidden>Take control</button>
         <button class="magic-toggle" hidden>Magic: Off</button>
@@ -571,7 +572,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
               onClose(dialog, () => resolve())
             }),
             sound: play, pause: (ms) => io.pause!(ms), input: battleInput,
-            info: app.querySelector<HTMLElement>('.combat-info')!, strip: app.querySelector<HTMLElement>('.turnstrip')!, refreshRoster: () => drawRoster(), cancelMenu: () => cancelMenu(), onSkip: (w) => { winBattle = w }, onControls: (c) => { battleControls = c; drawControls() }, controlsChanged: () => drawControls(),
+            info: app.querySelector<HTMLElement>('.combat-info')!, strip: app.querySelector<HTMLElement>('.turnstrip')!, bar: app.querySelector<HTMLElement>('.actionbar')!, refreshRoster: () => drawRoster(), cancelMenu: () => cancelMenu(), onSkip: (w) => { winBattle = w }, onControls: (c) => { battleControls = c; drawControls() }, controlsChanged: () => drawControls(),
           })
           // after a battle (game mode 6) the view shows PIC<block> #1, the treasure chest (FUN_10ba_27d9)
           if (engine.demo && !engine.demo.aftermath) { /* CotAB 0x1EEAC: nothing after the clean-up */ }

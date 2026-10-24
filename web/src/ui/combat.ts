@@ -1,5 +1,8 @@
 // The battle screen: the battlefield in the view panel, combat menus in the command bar, movement by
-// arrow keys or by tapping a neighbouring cell, aiming from a list or by tapping (IMP-033).
+// arrow keys or by tapping a neighbouring cell, aiming from a list or by tapping (IMP-033). For touch and
+// mouse (IMP-083): a tap on an enemy, then a second, attacks it; the action bar casts a memorised spell or
+// uses an item in one tap; a drag from the acting character plans a walk live and a release walks it.
+// Each goes through the rules' own commands (AIM, CAST, USE and steps), answering their lists.
 import type { Engine } from '../vm/engine'
 import type { GameFiles } from '../store/gamefiles'
 import { parseRecord, type Picture } from '../data/image'
@@ -22,7 +25,7 @@ export interface BattleScreen {
   view(c: Uint8Array): Promise<void>
   sound(n: number, mode: SoundMode): void
   /** set while a step or aim waits for a tap or key; the screen routes input here */
-  input: { key?: (e: KeyboardEvent) => boolean; tap?: (e: MouseEvent) => void; hover?: (e: MouseEvent) => void }
+  input: { key?: (e: KeyboardEvent) => boolean; tap?: (e: MouseEvent) => void; hover?: (e: MouseEvent) => void; down?: (e: PointerEvent) => void; move?: (e: PointerEvent) => void }
   refreshRoster(): void
   /** dismiss a menu that a key or tap answered instead */
   cancelMenu(): void
@@ -30,6 +33,8 @@ export interface BattleScreen {
   info?: HTMLElement
   /** the turn-order strip (IMP-044) */
   strip?: HTMLElement
+  /** the action bar: the acting character's spells and items, one tap each (IMP-083) */
+  bar?: HTMLElement
   /** receives the battle's Quick and Magic controls (null when the battle ends) */
   onControls?(c: BattleControls | null): void
   /** the state behind those controls may have changed: redraw the buttons */
@@ -131,7 +136,13 @@ export async function runBattle(s: BattleScreen) {
     return v
   }
   /** a planned walk (IMP-044): the cells to the tapped destination and the directions still to take */
-  let plan: { cells: { x: number; y: number }[]; dirs: number[]; to: { x: number; y: number } } | null = null
+  let plan: { cells: { x: number; y: number }[]; dirs: number[]; to: { x: number; y: number }; danger: { x: number; y: number }[] } | null = null
+  /** IMP-083: the enemy a first tap picked (a second attacks it), the target the next Aim takes, the
+   *  answers the next lists take (the action bar's spell or item), and a drag from the acting character */
+  let armed: Fighter | null = null
+  let presetAim: Fighter | null = null
+  let presetPick: string[] = []
+  let drag: { moved: boolean; key: string } | null = null
   let walking: { dirs: number[]; at: { x: number; y: number } } | null = null
   /** cheapest route for f within its movement (half-squares: each step's cost, Battle.stepCost), free cells only */
   const route = (f: Fighter, tx: number, ty: number): { cells: { x: number; y: number }[]; dirs: number[] } | null => {
@@ -176,6 +187,28 @@ export async function runBattle(s: BattleScreen) {
     }
     return [...best.keys()].filter((k) => k !== key(f.x, f.y)).map((k) => ({ x: k % 64, y: Math.floor(k / 64) }))
   }
+  /** the enemies in play next to a square for f (footprints touching, any size) */
+  const foesNear = (f: Fighter, x: number, y: number): Fighter[] => {
+    if (!battle) return []
+    const mine = footprint(f.size || 1).map(([dx, dy]) => [x + dx, y + dy])
+    return battle.fighters.filter((o) => o !== f && battle!.inPlay(o) && battle!.side(o) !== battle!.side(f) &&
+      footprint(o.size || 1).some(([ox, oy]) => mine.some(([mx, my]) => Math.max(Math.abs(o.x + ox - mx), Math.abs(o.y + oy - my)) <= 1)))
+  }
+  /** a walk with the squares where a step may draw a blow (combat-rules.md, "Attacks of opportunity":
+   *  an enemy left behind strikes at the rear; "Steps" 5: a guard beside the new square strikes once) */
+  const withDanger = (f: Fighter, r: { cells: { x: number; y: number }[]; dirs: number[] }) => {
+    const danger: { x: number; y: number }[] = []
+    let blows = 0
+    let at = { x: f.x, y: f.y }
+    for (const next of r.cells) {
+      const before = foesNear(f, at.x, at.y), after = foesNear(f, next.x, next.y)
+      const left = before.filter((o) => !after.includes(o)).length
+      const guards = after.filter((o) => o.r[7]).length
+      if (left + guards) { danger.push(left ? at : next); blows += left + guards }
+      at = next
+    }
+    return { danger, blows }
+  }
   const figureAt = (row: number, col: number) => battle?.fighters.find((o) => battle!.inPlay(o) &&
     footprint(o.size).some(([dx, dy]) => o.x + dx === col && o.y + dy === row)) ?? null
   const showInfo = (f: Fighter | null, ev?: MouseEvent) => {
@@ -212,10 +245,11 @@ export async function runBattle(s: BattleScreen) {
       const at = falling.get(f) ?? { x: f.x, y: f.y }
       return { row: at.y, col: at.x, icon: ic.icon, action: ic.action, side: f.c[F.side] ? 1 : 0, left: f.r[9] >= 4, pose: poses.has(f) } as Figure
     })
-    const planMarks = plan ? [...plan.cells.map((p) => ({ row: p.y, col: p.x, colour: '#5555ff' })), { row: plan.to.y, col: plan.to.x, colour: '#55ff55' }] : []
+    const planMarks = plan ? [...plan.cells.map((p) => ({ row: p.y, col: p.x, colour: '#5555ff' })), ...plan.danger.map((p) => ({ row: p.y, col: p.x, colour: '#ff5555', fill: 'rgba(255, 85, 85, 0.3)' })), { row: plan.to.y, col: plan.to.x, colour: '#55ff55' }] : []
+    const armedMarks = armed && battle.inPlay(armed) ? footprint(armed.size || 1).map(([dx, dy]) => ({ row: armed!.y + dy, col: armed!.x + dx, colour: '#ffff55' })) : []
     // the grey cursor tile (COMSPR 25) lies under the combatant whose turn it is
     const cursor = acting && battle.inPlay(acting) ? [{ row: acting.y, col: acting.x }] : []
-    view.draw(battle.bf, battle.cells, figures, focus, [...marks, ...planMarks], cursor, sprites)
+    view.draw(battle.bf, battle.cells, figures, focus, [...marks, ...planMarks, ...armedMarks], cursor, sprites)
   }
   type StepResult = number | 'end' | 'undo' | { choice: number }
   /**
@@ -232,6 +266,10 @@ export async function runBattle(s: BattleScreen) {
       }
       walking = null
       plan = null
+      armed = null
+      presetAim = null
+      presetPick = []
+      drag = null
       // every square in reach lightly filled, the neighbouring ones outlined (IMP-059)
       marks = reachable(f).map((p) => ({ row: p.y, col: p.x, colour: '', fill: 'rgba(85, 85, 255, 0.22)' }))
       for (let d = 0; d < 8; d++) {
@@ -245,10 +283,73 @@ export async function runBattle(s: BattleScreen) {
         settled = true
         setInput({})
         marks = []
+        armed = null
+        if (s.bar) s.bar.hidden = true
         if (!fromMenu) s.cancelMenu()
+        draw()
         resolve(v)
       }
+      // the rules' own commands, found by the game's words (FUN_320c_0666's pieces)
+      const command = (id: 'battleViewAim' | 'battleCast' | 'battleUse', key: string) => menu ? menu.items.indexOf(word(id, key).text.toUpperCase()) : -1
+      const by = !f.monster && !f.c[F.quick]
+      // the action bar (IMP-083): the memorised spells and the items Use offers, each a tap away
+      const bar = s.bar
+      if (bar) {
+        const st = e.spells, t = e.items
+        const cast = command('battleCast', 'C'), use = command('battleUse', 'U')
+        const counts = new Map<number, number>()
+        if (st && cast >= 0) for (let k = 0; k < F.memorisedCount; k++) { const v = f.c[F.memorised + k]; if (v > 0 && v < 0x80) counts.set(v, (counts.get(v) ?? 0) + 1) }
+        // Use's own list (Battle.playerUse): readied items with charges, scrolls among them
+        const usable = t && use >= 0 ? e.itemsOf(f.c).filter((it) => it.ready && (it.props[1] > 0 && it.props[2] < 0x80 || (t.baseOf(it)?.slot ?? 0) >= 11 && (t.baseOf(it)?.slot ?? 0) <= 12)) : []
+        const spells = [...counts].map(([id, n]) => ({ name: st!.get(id)?.name ?? `#${id}`, n }))
+        const attr = (v: string) => v.replace(/[&"<>]/g, (ch) => `&#${ch.charCodeAt(0)};`)
+        bar.innerHTML = by && (spells.length || usable.length) ? [
+          ...spells.map((x) => `<button data-cast="${attr(x.name)}" title="Cast ${attr(x.name)}">✦ ${attr(x.name)}${x.n > 1 ? ` ×${x.n}` : ''}</button>`),
+          ...usable.map((it) => `<button data-use="${attr(t!.name(it))}" title="Use ${attr(t!.name(it))}">◆ ${attr(t!.name(it))}</button>`),
+        ].join('') : ''
+        bar.hidden = !bar.innerHTML
+        bar.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => {
+          if (b.dataset.cast) { presetPick = [b.dataset.cast]; done({ choice: cast }) }
+          else if (b.dataset.use) { presetPick = [b.dataset.use]; done({ choice: use }) }
+        }))
+      }
+      /** the walk planned to a square, with its cost and the blows it may draw, told in the log */
+      const planTo = (col: number, row: number, how: string) => {
+        const r = route(f, col, row)
+        if (!r) { plan = null; s.print(`Can't get there (Move Left = ${left})`); draw(); return false }
+        const { danger, blows } = withDanger(f, r)
+        plan = { ...r, to: { x: col, y: row }, danger }
+        const cost = r.dirs.reduce((a, d, i) => a + battle!.stepCost(r.cells[i].x, r.cells[i].y, d), 0)
+        s.print(`Path: ${r.dirs.length} step${r.dirs.length > 1 ? 's' : ''}, ${cost >> 1} of ${left} movement${blows ? `; ${blows} enemy blow${blows > 1 ? 's' : ''} may fall on the way (red)` : ''}. ${how}`)
+        draw()
+        return true
+      }
+      const walkPlan = () => {
+        if (!plan) return
+        const dirs = plan.dirs.slice()
+        plan = null
+        const d = dirs.shift()!
+        walking = { dirs, at: { x: f.x + DIRS[d][0], y: f.y + DIRS[d][1] } }
+        done(d)
+      }
       setInput({
+        // a drag from the acting character plans the walk as it goes; the release walks it (IMP-083)
+        down: (ev) => {
+          if (!by || ev.button > 0) return
+          const cell = view!.cellAt(ev, focus)
+          if (!footprint(f.size || 1).some(([dx, dy]) => f.x + dx === cell.col && f.y + dy === cell.row)) return
+          drag = { moved: false, key: `${cell.col},${cell.row}` }
+          try { s.canvas.setPointerCapture(ev.pointerId) } catch { /* a synthetic event */ }
+        },
+        move: (ev) => {
+          if (!drag) return
+          const cell = view!.cellAt(ev, focus), k = `${cell.col},${cell.row}`
+          if (k === drag.key) return
+          drag.key = k
+          drag.moved = true
+          if (cell.col === f.x && cell.row === f.y) { plan = null; draw(); return }
+          planTo(cell.col, cell.row, 'Let go to walk it.')
+        },
         key: (ev) => {
           if (ev.key in KEY_DIRS) { done(KEY_DIRS[ev.key]); return true }
           if (ev.key === 'Enter' && !menu) { done('end'); return true }
@@ -257,6 +358,8 @@ export async function runBattle(s: BattleScreen) {
         },
         tap: (ev) => {
           ev.preventDefault()
+          // the end of a drag: walk the plan drawn (none when let go on the character or out of reach)
+          if (drag) { const was = drag; drag = null; if (was.moved) { if (plan) walkPlan(); return } }
           const cell = view!.cellAt(ev, focus)
           const dx = cell.col - f.x, dy = cell.row - f.y
           if (Math.max(Math.abs(dx), Math.abs(dy)) === 1) {
@@ -266,22 +369,22 @@ export async function runBattle(s: BattleScreen) {
             return
           }
           // a second tap on the planned square walks there; a first tap plans (IMP-044)
-          if (plan && plan.to.x === cell.col && plan.to.y === cell.row) {
-            const dirs = plan.dirs.slice()
+          if (plan && plan.to.x === cell.col && plan.to.y === cell.row) { walkPlan(); return }
+          const who = figureAt(cell.row, cell.col)
+          // an enemy: the first tap shows it and the odds, the second attacks it through Aim (IMP-083)
+          const aim = command('battleViewAim', 'A')
+          if (who && by && aim >= 0 && battle!.side(who) !== battle!.side(f)) {
+            showInfo(who, ev)
+            if (armed === who) { presetAim = who; done({ choice: aim }); return }
+            armed = who
             plan = null
-            const d = dirs.shift()!
-            walking = { dirs, at: { x: f.x + DIRS[d][0], y: f.y + DIRS[d][1] } }
-            done(d)
+            s.print(`Tap ${nameOf(who.c)} again to attack.`)
+            draw()
             return
           }
-          const who = figureAt(cell.row, cell.col)
           if (who) { showInfo(who, ev); return }
-          const r = route(f, cell.col, cell.row)
-          if (!r) { plan = null; s.print(`Can't get there (Move Left = ${left})`); draw(); return }
-          plan = { ...r, to: { x: cell.col, y: cell.row } }
-          const cost = r.dirs.reduce((a, d, i) => a + battle!.stepCost(r.cells[i].x, r.cells[i].y, d), 0)
-          s.print(`Path: ${r.dirs.length} step${r.dirs.length > 1 ? 's' : ''}, ${cost >> 1} of ${left} movement. Tap the green square again to go.`)
-          draw()
+          armed = null
+          planTo(cell.col, cell.row, 'Tap the green square again to go, or drag from your character.')
         },
       })
       if (menu) void s.menu(menu.items, { prompt: menu.prompt, keys: menu.keys }).then((i) => done({ choice: i }, true))
@@ -337,6 +440,17 @@ export async function runBattle(s: BattleScreen) {
     command: (f, items, prompt, left, keys) => awaitStep(f, left, { items, prompt, keys }),
     aim: (f, entries, prompt, allowCell, area) => new Promise<AimEntry | null>((resolve) => {
       const ok = entries.filter((x) => x.ok)
+      // a target picked by tapping it twice (IMP-083): taken at once when Aim offers it
+      if (presetAim) {
+        const want = presetAim
+        presetAim = null
+        const hit = ok.find((x) => x.f === want)
+        if (hit) { resolve(hit); return }
+        // not in reach with the readied weapon: said, and back to the commands rather than Aim's list
+        s.print(`${nameOf(want.c)} is out of reach for ${nameOf(f.c)} with the weapon readied.`)
+        resolve(null)
+        return
+      }
       const base = ok.map((x) => ({ row: x.y, col: x.x, colour: '#ff5555' }))
       marks = base
       draw()
@@ -389,6 +503,11 @@ export async function runBattle(s: BattleScreen) {
     sound: (n, mode) => s.sound(n, mode),
     pick: async (prompt, items, notes) => {
       if (!items.length) return -1
+      // the action bar's spell or item (IMP-083): its own line in the rules' list, else the list as ever
+      const want = presetPick.shift()
+      const at = want === undefined ? -1 : items.indexOf(want)
+      if (at >= 0) return at
+      presetPick = []
       const i = await list(s, items, { prompt, notes })
       return i < items.length ? i : -1
     },
@@ -444,7 +563,9 @@ export async function runBattle(s: BattleScreen) {
     toggleMagic()
   }
   window.addEventListener('keydown', onMagicKey, true)
+  const onDown = (ev: PointerEvent) => s.input.down?.(ev)
   const onHover = (ev: PointerEvent) => {
+    s.input.move?.(ev)
     if (!view || ev.pointerType === 'touch') return
     s.input.hover?.(ev)
     const cell = view.cellAt(ev, focus)
@@ -456,6 +577,7 @@ export async function runBattle(s: BattleScreen) {
     const cell = view.cellAt(ev, focus)
     showInfo(figureAt(cell.row, cell.col), ev)
   }
+  s.canvas.addEventListener('pointerdown', onDown)
   s.canvas.addEventListener('pointermove', onHover)
   s.canvas.addEventListener('pointerleave', onLeave)
   s.canvas.addEventListener('pointerup', onIdleTap)
@@ -484,11 +606,13 @@ export async function runBattle(s: BattleScreen) {
     s.onControls?.(null)
     resize.disconnect()
     window.removeEventListener('keydown', onMagicKey, true)
+    s.canvas.removeEventListener('pointerdown', onDown)
     s.canvas.removeEventListener('pointermove', onHover)
     s.canvas.removeEventListener('pointerleave', onLeave)
     s.canvas.removeEventListener('pointerup', onIdleTap)
     showInfo(null)
     if (s.strip) s.strip.hidden = true
+    if (s.bar) s.bar.hidden = true
     s.canvas.hidden = true
     setInput({})
   }

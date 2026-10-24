@@ -108,6 +108,15 @@ Beside the row: **Take control** (only while a party member who is not an NPC is
 Computer-controlled turns (monsters, NPCs, Quick characters) show no row; the screen shows their
 actions as they happen (§9).
 
+### 4.1 The action bar (IMP-083)
+
+Above the command row, while a party member played by hand waits for a command: one button per
+memorised spell ("✦ *Name*", "×*n*" for repeats), when CAST is offered, and one per item the rules'
+Use would list (readied, with charges, or a scroll: "◆ *Name*"), when USE is offered; hidden when there
+are none. A button chooses CAST (or USE) and answers the rules' list with its own line, so the spell
+or item goes through `playerCast` / `playerUse` unchanged (a spell the list does not offer, armour for
+instance, leaves the list to the player as before); targets are then picked as §6 says.
+
 ## 5. Input
 
 While a player character's command row or step waits:
@@ -118,7 +127,9 @@ While a player character's command row or step waits:
 | a tap or click on a neighbouring square | the same step |
 | a tap on a farther free square | plans the cheapest walk within the movement left (IMP-044): its squares outlined, "Path: *n* steps, *c* of *L* movement. Tap the green square again to go." in the log; out of reach: "Can't get there (Move Left = *L*)" |
 | a second tap on the planned square | walks the plan step by step through the normal rules; a step that is stopped (an attack of opportunity, a guard, a cloud, a pause from the rules) ends the walk |
-| a tap on a combatant | its information (§7) |
+| a tap on an enemy (a party member played by hand, AIM offered) | its information (§7), outlined in yellow, and "Tap *Name* again to attack."; a second tap chooses AIM and answers it with that enemy (IMP-083); when Aim does not offer it, "*Name* is out of reach for *Name* with the weapon readied." and the command row comes back. A neighbouring enemy is attacked by the first tap, as a step into it |
+| a press on the acting character, then a drag | plans the walk to the square under the pointer as it moves, as a farther tap does, "… Let go to walk it."; letting go walks it; letting go on the character drops it (IMP-083) |
+| a tap on any other combatant | its information (§7) |
 | Escape | drops a plan; with none, undoes the steps since the last other action (UNDO) |
 | Enter | ends the steps (only in the classic step mode, where the menu is END MOVE / UNDO) |
 | a command's letter, a click on it | that command ([ui-contract.md §6.3](ui-contract.md#63-menus-and-prompts)); digits are directions while movement is live |
@@ -127,7 +138,10 @@ While a player character's command row or step waits:
 | any key, click or tap | ends a running hold early (§9) |
 
 **Walk planning**: the cost of a step is 2 half-squares straight and 3 diagonal (the rules' movement
-costs); the plan is the cheapest path over squares that are passable and free for the combatant's
+costs); the plan marks in red the squares where a step may draw a blow (an enemy left behind,
+[combat-rules.md, "Attacks of opportunity"](../A-games/engine/combat-rules.md#attacks-of-opportunity-o-fun_3aae_08b2c-dir);
+a guard beside the next square, "Steps" 5), and the log adds "; *n* enemy blows may fall on the way
+(red)" (an enemy that cannot target the mover does not strike, hence "may"); the plan is the cheapest path over squares that are passable and free for the combatant's
 size, at most the movement left (when several paths tie, any one of them; the reference's Dijkstra
 search keeps the first found). The reachable squares (§3) use the same costs.
 

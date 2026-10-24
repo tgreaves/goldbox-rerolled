@@ -176,7 +176,7 @@ dialog.panel form.jump input { width: 4.5rem; }
 }
 .game .combatview {
   position: absolute; inset: 0; margin: auto; width: 100%; height: 100%; object-fit: contain;
-  image-rendering: pixelated; display: block; background: #000; touch-action: manipulation;
+  image-rendering: pixelated; display: block; background: #000; touch-action: none; /* a drag plans a walk (IMP-083) */
 }
 /* the original's drawn view (D6): its 88 × 88 frame as a square, black around it, as the pictures over it */
 .game .drawnview {
@@ -356,6 +356,11 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 .game .turnstrip .ts.ally { color: var(--ega-green); }
 .game .turnstrip .ts.enemy { color: var(--ega-lred); }
 .game .turnstrip .ts.now { border-color: var(--accent); color: #fff; }
+/* the action bar (IMP-083): the acting character's spells (✦) and items (◆), one tap each, over the commands */
+.game .actionbar { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.game .actionbar[hidden] { display: none; }
+.game .actionbar button { font-size: 0.8em; padding: 0.2rem 0.5rem; min-height: 34px; color: var(--ega-lblue); }
+.game .actionbar button[data-use] { color: var(--ega-cyan); }
 
 /* party cards (IMP-045) */
 .partyscreen .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 0.5rem; }
@@ -614,6 +619,7 @@ dialog.panel .rules-body h3 { color: var(--ega-cyan); margin: 0.8rem 0 0.2rem; f
   .party-top .rcard .badge { font-size: 0.85em; padding: 0 0.25rem; }
   .party-top .rcard canvas.rc-portrait { width: 40px; height: 40px; }
   .party-top .rcard canvas.rc-icon { width: 28px; height: 28px; }
+  .party-top .game.in-combat .rcard canvas.rc-portrait { width: 40px; height: 40px; } /* as exploring: the HP line keeps its room */
   .party-top .roster-cards .rcard { min-width: 9.5rem; }
   /* in the row: the whole top line for the name, AC beside HP, the combat icon over the portrait's corner */
   .party-top .rcard { position: relative; overflow: hidden; grid-template-columns: auto minmax(0, 1fr); }
