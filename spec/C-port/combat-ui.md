@@ -58,9 +58,18 @@ In this order, each frame of the window ([combat-visuals.md](../A-games/engine/c
 5. **sprites** over the field: missiles and spell flights, the sparkle (`COMSPR` 9), the starburst
    (10), the skull (11), from `COMSPR` 0–11 and their +128 mirrors;
 6. the port's **marks**: every square the acting character can reach with its movement left, lightly
-   filled blue; the eight neighbours outlined blue; a planned walk's squares outlined blue and its end
-   green; the targets in reach outlined red during Aim; an area spell's squares filled red and the aimed
+   filled blue, or red where an enemy stands next to it (a step away from there draws a blow, IMP-084);
+   the eight neighbours outlined blue; a planned walk's squares outlined blue, its end green, and the
+   steps that may draw a blow filled red (IMP-083); an enemy tapped once outlined yellow (IMP-083); for a
+   party member played by hand, the free square straight behind each enemy a melee blow would strike
+   from behind, dashed yellow (IMP-084: the enemy engaged twice already, so it will not turn, and its
+   summed angle plus the 4 of a blow from behind over 4, [combat-rules.md, "Engagement and
+   facing"](../A-games/engine/combat-rules.md#engagement-and-facing-o-fun_3aae_17f6-fun_3aae_1884));
+   the targets in reach outlined red during Aim; an area spell's squares filled red and the aimed
    square outlined yellow (IMP-044, IMP-059).
+7. **health bars** (IMP-084): over every combatant standing, a thin bar on a dark track across the top
+   of its square(s): the party's share of HP exactly, a monster's only in the info box's bands (full,
+   above two thirds, above one third, below), green from half up, yellow from a quarter, red below.
 
 Every picture is drawn with the battle palette: EGA colours 0 and 8 swapped (black shows dark grey,
 dark grey black), as the original sets it for the combat screen ([combat-visuals.md, "Palette"](../A-games/engine/combat-visuals.md#palette-o)).
@@ -128,6 +137,7 @@ While a player character's command row or step waits:
 | a tap on a farther free square | plans the cheapest walk within the movement left (IMP-044): its squares outlined, "Path: *n* steps, *c* of *L* movement. Tap the green square again to go." in the log; out of reach: "Can't get there (Move Left = *L*)" |
 | a second tap on the planned square | walks the plan step by step through the normal rules; a step that is stopped (an attack of opportunity, a guard, a cloud, a pause from the rules) ends the walk |
 | a tap on an enemy (a party member played by hand, AIM offered) | its information (§7), outlined in yellow, and "Tap *Name* again to attack."; a second tap chooses AIM and answers it with that enemy (IMP-083); when Aim does not offer it, "*Name* is out of reach for *Name* with the weapon readied." and the command row comes back. A neighbouring enemy is attacked by the first tap, as a step into it |
+| a tap on the acting character (played by hand) | its commands in a ring round it (the command row's own choices, IMP-084), with ✕ in the middle; a choice is that command; ✕, Escape or a tap elsewhere closes the ring |
 | a press on the acting character, then a drag | plans the walk to the square under the pointer as it moves, as a farther tap does, "… Let go to walk it."; letting go walks it; letting go on the character drops it (IMP-083) |
 | a tap on any other combatant | its information (§7) |
 | Escape | drops a plan; with none, undoes the steps since the last other action (UNDO) |
@@ -179,7 +189,8 @@ only for the aimed square.
   status word when not Okay, and "helpless" (effects 31, 51–53), "coughing" (0x1E), "charmed" (0x0B).
   Monsters only roughly: "unhurt", "lightly wounded" (above two thirds), "wounded" (above one third),
   "badly wounded", or the status word, with the same extras. While a party member acts by hand and
-  points at an enemy: " · ≈*p*% to hit, *dice*". It hides when the pointer leaves the field.
+  points at an enemy: " · ≈*p*% to hit, *dice*", and " · open from behind" when a blow from straight
+  behind would strike its rear (§3, IMP-084). It hides when the pointer leaves the field.
 - **The turn strip** (IMP-044): along the bottom of the battlefield, "Round *n*" then the combatant
   acting now (highlighted) and every other combatant in play that still has initiative to act this
   round, highest initiative first; allies in the game-text colour, enemies in the enemy colour.

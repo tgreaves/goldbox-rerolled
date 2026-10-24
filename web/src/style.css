@@ -361,6 +361,10 @@ table.shop button { min-height: 36px; padding: 0.2rem 0.8rem; }
 .game .actionbar[hidden] { display: none; }
 .game .actionbar button { font-size: 0.8em; padding: 0.2rem 0.5rem; min-height: 34px; color: var(--ega-lblue); }
 .game .actionbar button[data-use] { color: var(--ega-cyan); }
+/* the ring of commands round the acting character (IMP-084) */
+.game .radial { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+.game .radial button { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; font-size: 0.75em; padding: 0.25rem 0.5rem; min-height: 32px; background: rgba(0, 0, 0, 0.88); white-space: nowrap; }
+.game .radial button.radial-centre { border-radius: 50%; width: 2.2rem; height: 2.2rem; padding: 0; min-height: 0; color: var(--muted); }
 
 /* party cards (IMP-045) */
 .partyscreen .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 0.5rem; }

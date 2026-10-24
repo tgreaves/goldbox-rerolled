@@ -24,6 +24,8 @@ export interface Figure {
   left?: boolean
   /** shown in its action frame (attacking or casting) */
   pose?: boolean
+  /** a health bar over it (IMP-084): the share of HP (the party's exact, a monster's rough band) and its colour */
+  hp?: { frac: number; colour: string }
 }
 
 /** A COMSPR sprite drawn over the battlefield at a position in grid pixels (spec/A-games/engine/combat-visuals.md, "Combat visuals"). */
@@ -90,7 +92,7 @@ export class CombatView {
   }
 
   draw(bf: Battlefield, cells: CellInfo[], figures: Figure[], focus: { row: number; col: number },
-    marks: { row: number; col: number; colour: string; fill?: string }[] = [], cursor: { row: number; col: number }[] = [], sprites: Sprite[] = []) {
+    marks: { row: number; col: number; colour: string; fill?: string; dash?: boolean }[] = [], cursor: { row: number; col: number }[] = [], sprites: Sprite[] = []) {
     const W = this.cols * CELL, H = this.rows * CELL
     const g = sizeCanvas(this.canvas, W, H)
     const [r0, c0] = this.origin(focus.row, focus.col)
@@ -123,13 +125,35 @@ export class CombatView {
       if (sp.mirror) { g.translate(x + img.width / F, y); g.scale(-1, 1); blitCanvas(g, img, 0, 0) } else blitCanvas(g, img, x, y)
       g.restore()
     }
+    // health bars over the standing (IMP-084): a dark track, the share in its colour, across the top of the figure
+    for (const f of figures) {
+      if (f.down || !f.hp) continue
+      const span = (f.big ? 2 : 1) * CELL, x = (f.col - c0) * CELL + span * 0.1, y = (f.row - r0) * CELL
+      if (x < -2 * CELL || y < -2 * CELL || x > W || y > H) continue
+      g.fillStyle = 'rgba(0, 0, 0, 0.75)'
+      g.fillRect(x - 1, y, span * 0.8 + 2, 4)
+      g.fillStyle = f.hp.colour
+      g.fillRect(x, y + 1, Math.max(1, span * 0.8 * Math.min(1, Math.max(0, f.hp.frac))), 2)
+    }
     for (const m of marks) {
       if (m.fill) { g.fillStyle = m.fill; g.fillRect((m.col - c0) * CELL, (m.row - r0) * CELL, CELL, CELL) }
       if (!m.colour) continue
       g.strokeStyle = m.colour
       g.lineWidth = 2
+      if (m.dash) g.setLineDash([3, 2])
       g.strokeRect((m.col - c0) * CELL + 1, (m.row - r0) * CELL + 1, CELL - 2, CELL - 2)
+      if (m.dash) g.setLineDash([])
     }
+  }
+
+  /** The middle of a grid cell in client pixels, for the window last drawn around `focus` (cellAt's inverse). */
+  cellCentre(row: number, col: number, focus: { row: number; col: number }): { x: number; y: number } {
+    const r = this.canvas.getBoundingClientRect()
+    const [r0, c0] = this.origin(focus.row, focus.col)
+    const W = this.cols * CELL, H = this.rows * CELL
+    const k = Math.min(r.width / W, r.height / H)
+    const ox = (r.width - W * k) / 2, oy = (r.height - H * k) / 2
+    return { x: r.left + ox + (col - c0 + 0.5) * CELL * k, y: r.top + oy + (row - r0 + 0.5) * CELL * k }
   }
 
   /** The grid cell under a pointer event, for the window last drawn around `focus`. */

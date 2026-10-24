@@ -2,7 +2,9 @@
 // arrow keys or by tapping a neighbouring cell, aiming from a list or by tapping (IMP-033). For touch and
 // mouse (IMP-083): a tap on an enemy, then a second, attacks it; the action bar casts a memorised spell or
 // uses an item in one tap; a drag from the acting character plans a walk live and a release walks it.
-// Each goes through the rules' own commands (AIM, CAST, USE and steps), answering their lists.
+// Each goes through the rules' own commands (AIM, CAST, USE and steps), answering their lists. Shown over the
+// field (IMP-084): health bars, the squares in an enemy's reach, the squares a blow would land from behind;
+// a tap on the acting character opens its commands in a ring around it.
 import type { Engine } from '../vm/engine'
 import type { GameFiles } from '../store/gamefiles'
 import { parseRecord, type Picture } from '../data/image'
@@ -78,7 +80,7 @@ export async function runBattle(s: BattleScreen) {
   let battle: Battle | null = null
   let view: CombatView | null = null
   let focus = { row: 12, col: 25 }
-  let marks: { row: number; col: number; colour: string; fill?: string }[] = []
+  let marks: { row: number; col: number; colour: string; fill?: string; dash?: boolean }[] = []
   let acting: Fighter | null = null
   /** combatants shown in their action frame, and COMSPR sprites over the battlefield (spec/A-games/engine/combat-visuals.md, "Combat visuals") */
   const poses = new Set<Fighter>()
@@ -143,6 +145,8 @@ export async function runBattle(s: BattleScreen) {
   let presetAim: Fighter | null = null
   let presetPick: string[] = []
   let drag: { moved: boolean; key: string } | null = null
+  let radial: HTMLElement | null = null
+  const closeRadial = () => { radial?.remove(); radial = null }
   let walking: { dirs: number[]; at: { x: number; y: number } } | null = null
   /** cheapest route for f within its movement (half-squares: each step's cost, Battle.stepCost), free cells only */
   const route = (f: Fighter, tx: number, ty: number): { cells: { x: number; y: number }[]; dirs: number[] } | null => {
@@ -209,6 +213,25 @@ export async function runBattle(s: BattleScreen) {
     }
     return { danger, blows }
   }
+  /** a health bar's share and colour (IMP-084): the party's exact, a monster's only in the info box's bands */
+  const healthBar = (f: Fighter): { frac: number; colour: string } => {
+    const r = f.c[F.hp] / Math.max(1, f.c[F.maxHp])
+    const frac = !f.monster ? r : r >= 1 ? 1 : r > 0.66 ? 0.83 : r > 0.33 ? 0.5 : 0.2
+    return { frac, colour: frac >= 0.5 ? '#55ff55' : frac >= 0.25 ? '#ffff55' : '#ff5555' }
+  }
+  /** an enemy a melee blow from straight behind would strike at rear AC (combat-rules.md, "Engagement and
+   *  facing" and the attack loop's step 5: engaged twice already, so it does not turn, and the angle summed
+   *  with the 4 of a blow from behind over 4) */
+  const openBehind = (o: Fighter) => (o.size || 1) === 1 && o.r[0xf] >= 2 && ((o.r[0x12] + 4) & 7) > 4
+  /** the free squares straight behind the enemies open from behind, for f to strike from (IMP-084) */
+  const rearSquares = (f: Fighter): { x: number; y: number }[] => {
+    if (!battle) return []
+    const b = battle
+    return b.fighters.filter((o) => b.inPlay(o) && b.side(o) !== b.side(f) && openBehind(o)).map((o) => {
+      const [dx, dy] = DIRS[o.r[9] & 7]
+      return { x: o.x - dx, y: o.y - dy }
+    }).filter((p) => (p.x === f.x && p.y === f.y) || (b.passable(p.x, p.y, f.size || 1) && !b.occupied(p.x, p.y, f.size || 1, f)))
+  }
   const figureAt = (row: number, col: number) => battle?.fighters.find((o) => battle!.inPlay(o) &&
     footprint(o.size).some(([dx, dy]) => o.x + dx === col && o.y + dy === row)) ?? null
   const showInfo = (f: Fighter | null, ev?: MouseEvent) => {
@@ -218,7 +241,8 @@ export async function runBattle(s: BattleScreen) {
     // with a party member to act by hand: the odds of hitting an enemy with their weapon (IMP-058)
     const odds = acting && !acting.monster && !acting.c[F.quick] && battle.side(f) !== battle.side(acting) && battle.inPlay(f)
       ? battle.hitOdds(acting, f) : null
-    box.textContent = `${nameOf(f.c)}: ${condition(battle, f)}${odds ? ` · ≈${Math.round(odds.chance * 100)}% to hit, ${odds.damage}` : ''}`
+    const rear = odds && openBehind(f) ? ' · open from behind' : ''
+    box.textContent = `${nameOf(f.c)}: ${condition(battle, f)}${odds ? ` · ≈${Math.round(odds.chance * 100)}% to hit, ${odds.damage}` : ''}${rear}`
     box.className = `combat-info ${battle.side(f) ? 'enemy' : 'ally'}`
     box.hidden = false
     if (ev) {
@@ -243,7 +267,7 @@ export async function runBattle(s: BattleScreen) {
     const figures: Figure[] = battle.fighters.filter((f) => battle!.inPlay(f) || falling.has(f)).map((f) => {
       const ic = iconOf(f)
       const at = falling.get(f) ?? { x: f.x, y: f.y }
-      return { row: at.y, col: at.x, icon: ic.icon, action: ic.action, side: f.c[F.side] ? 1 : 0, left: f.r[9] >= 4, pose: poses.has(f) } as Figure
+      return { row: at.y, col: at.x, icon: ic.icon, action: ic.action, side: f.c[F.side] ? 1 : 0, left: f.r[9] >= 4, pose: poses.has(f), hp: battle!.inPlay(f) ? healthBar(f) : undefined } as Figure
     })
     const planMarks = plan ? [...plan.cells.map((p) => ({ row: p.y, col: p.x, colour: '#5555ff' })), ...plan.danger.map((p) => ({ row: p.y, col: p.x, colour: '#ff5555', fill: 'rgba(255, 85, 85, 0.3)' })), { row: plan.to.y, col: plan.to.x, colour: '#55ff55' }] : []
     const armedMarks = armed && battle.inPlay(armed) ? footprint(armed.size || 1).map(([dx, dy]) => ({ row: armed!.y + dy, col: armed!.x + dx, colour: '#ffff55' })) : []
@@ -271,7 +295,9 @@ export async function runBattle(s: BattleScreen) {
       presetPick = []
       drag = null
       // every square in reach lightly filled, the neighbouring ones outlined (IMP-059)
-      marks = reachable(f).map((p) => ({ row: p.y, col: p.x, colour: '', fill: 'rgba(85, 85, 255, 0.22)' }))
+      // in an enemy's reach (a step away from there draws a blow): red rather than blue (IMP-084)
+      marks = reachable(f).map((p) => ({ row: p.y, col: p.x, colour: '', fill: foesNear(f, p.x, p.y).length ? 'rgba(255, 85, 85, 0.25)' : 'rgba(85, 85, 255, 0.22)' }))
+      if (!f.monster && !f.c[F.quick]) marks.push(...rearSquares(f).map((p) => ({ row: p.y, col: p.x, colour: '#ffff55', fill: 'rgba(255, 255, 85, 0.15)', dash: true })))
       for (let d = 0; d < 8; d++) {
         const [dx, dy] = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]][d]
         marks.push({ row: f.y + dy, col: f.x + dx, colour: '#5555ff' })
@@ -284,6 +310,7 @@ export async function runBattle(s: BattleScreen) {
         setInput({})
         marks = []
         armed = null
+        closeRadial()
         if (s.bar) s.bar.hidden = true
         if (!fromMenu) s.cancelMenu()
         draw()
@@ -312,6 +339,29 @@ export async function runBattle(s: BattleScreen) {
           if (b.dataset.cast) { presetPick = [b.dataset.cast]; done({ choice: cast }) }
           else if (b.dataset.use) { presetPick = [b.dataset.use]; done({ choice: use }) }
         }))
+      }
+      /** the commands in a ring round the acting character (IMP-084), the command row's own choices */
+      const openRadial = () => {
+        closeRadial()
+        if (!menu || !view) return
+        const host = s.canvas.parentElement!, hr = host.getBoundingClientRect()
+        const c = view.cellCentre(f.y, f.x, focus)
+        const ring = document.createElement('div')
+        ring.className = 'radial'
+        const n = menu.items.length, rad = Math.max(64, Math.min(110, 22 * n))
+        const cx = Math.min(hr.width - rad - 40, Math.max(rad + 40, c.x - hr.left)), cy = Math.min(hr.height - rad - 20, Math.max(rad + 20, c.y - hr.top))
+        ring.innerHTML = `<button class="radial-centre" title="Close (Esc)" style="left:${cx}px;top:${cy}px">✕</button>` + menu.items.map((t, i) => {
+          const a = -Math.PI / 2 + (2 * Math.PI * i) / n
+          return `<button data-i="${i}" style="left:${cx + rad * Math.cos(a)}px;top:${cy + rad * Math.sin(a)}px">${t.replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`)}</button>`
+        }).join('')
+        ring.addEventListener('click', (ev) => {
+          const b = (ev.target as HTMLElement).closest<HTMLButtonElement>('button')
+          ev.stopPropagation()
+          if (!b || b.classList.contains('radial-centre')) { closeRadial(); return }
+          done({ choice: Number(b.dataset.i) })
+        })
+        host.append(ring)
+        radial = ring
       }
       /** the walk planned to a square, with its cost and the blows it may draw, told in the log */
       const planTo = (col: number, row: number, how: string) => {
@@ -353,7 +403,7 @@ export async function runBattle(s: BattleScreen) {
         key: (ev) => {
           if (ev.key in KEY_DIRS) { done(KEY_DIRS[ev.key]); return true }
           if (ev.key === 'Enter' && !menu) { done('end'); return true }
-          if (ev.key === 'Escape') { if (plan) { plan = null; draw(); return true } done('undo'); return true }
+          if (ev.key === 'Escape') { if (radial) { closeRadial(); return true } if (plan) { plan = null; draw(); return true } done('undo'); return true }
           return false
         },
         tap: (ev) => {
@@ -371,6 +421,8 @@ export async function runBattle(s: BattleScreen) {
           // a second tap on the planned square walks there; a first tap plans (IMP-044)
           if (plan && plan.to.x === cell.col && plan.to.y === cell.row) { walkPlan(); return }
           const who = figureAt(cell.row, cell.col)
+          if (who === f && by && menu) { if (radial) closeRadial(); else openRadial(); return }
+          closeRadial()
           // an enemy: the first tap shows it and the odds, the second attacks it through Aim (IMP-083)
           const aim = command('battleViewAim', 'A')
           if (who && by && aim >= 0 && battle!.side(who) !== battle!.side(f)) {
@@ -613,6 +665,7 @@ export async function runBattle(s: BattleScreen) {
     showInfo(null)
     if (s.strip) s.strip.hidden = true
     if (s.bar) s.bar.hidden = true
+    closeRadial()
     s.canvas.hidden = true
     setInput({})
   }
