@@ -1114,3 +1114,10 @@ dialog.panel.parchment .mem-sets .set-save input { padding: 0.35rem 0.5rem; min-
 .money-box table.pool { width: auto; min-width: min(28rem, 100%); }
 .money-box input[type=number] { width: 6rem; }
 .shop-buyer button small { font-size: 0.78em; opacity: 0.8; margin-left: 0.25rem; }
+/* the shop and temple windows (IMP-100) */
+.town-ask { border: 1px solid var(--line); padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+.town-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; margin-top: 0.8rem; }
+details.appraise { margin: 0.8rem 0 0; }
+details.appraise summary { cursor: pointer; }
+dialog.panel.parchment .town-ask { border-color: var(--rule); background: #ffffff1f; }
+dialog.panel.parchment details.appraise summary, dialog.panel.parchment details[data-takebox] summary { color: var(--red); font-variant: small-caps; letter-spacing: 0.03em; }

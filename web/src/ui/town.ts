@@ -14,18 +14,12 @@ import { heal as healChar, raiseDeadHp } from '../rules/camp'
 
 const memorisedReady = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
 import { appraiseGem, appraiseJewel, COINS, coinPrompt, coinValue, keepAsItem, moneyOf, pay, buy, poolAll, priceStock, receive, share, shopPrice, take, takeOne } from '../rules/money'
-import { msg, hasMsg, menu, ask, type MenuOpts, type MenuWord } from '../games/strings'
+import { msg, hasMsg, menu, ask, type MenuOpts } from '../games/strings'
 import { effectiveStat } from '../rules/effectkinds'
 import { WorldHost } from '../rules/worldfx'
 import { yes, list } from './camp'
 
 /** A leave question with its routine's own "~Yes ~No" (the ECL menu rule, strings.md §4.1). */
-/**
- * The bar's words without TAKE, POOL and SHARE when the screen's panel handles the money (IMP-099: Buy,
- * Heal); the game's own words otherwise.
- */
-const barWords = (words: MenuWord[], panel: boolean) => (panel ? words.filter((w) => !'TPS'.includes(w.key.toUpperCase())) : words)
-
 const leaveYes = async (ui: Pick<TownUi, 'menu'>, prompt: string, id: 'shopLeaveYesNo' | 'templeLeaveYesNo' | 'treasureLeaveYesNo') =>
   (await ask((l, o) => ui.menu(l, o), menu(id), { prompt })) === 'Y'
 
@@ -34,18 +28,18 @@ export interface TownUi {
   menu(items: string[], opts?: MenuOpts): Promise<number>
   print(text: string, clear?: boolean): void
   inputNumber(): Promise<number>
-  /** the shop's Buy as one panel (IMP-042); without it Buy is the original's list */
-  buy?(): Promise<void>
+  /**
+   * The shop as one window (IMP-042, IMP-099, IMP-100): buying, the pool, Appraise and View in it, the
+   * command bar not used; 'view' to open the sheet (Sell, Id), then the window again. Without it the
+   * original's menus.
+   */
+  shopWindow?(desk: TownDesk): Promise<'view' | 'done'>
+  /** the temple as one window (IMP-097, IMP-099, IMP-100), as the shop's */
+  templeWindow?(desk: TownDesk): Promise<'view' | 'done'>
   /** the treasure after a battle as one panel (IMP-056); without it the original's menus */
   treasurePanel?(): Promise<void>
   /** SotSB's vault as the treasure panel (IMP-099): 'deposit' for the sheet's Deposit, then the panel again */
   vaultPanel?(): Promise<'deposit' | 'done'>
-  /**
-   * Heal's list as a panel (IMP-097): `build` gives, for the current character (the panel may change who
-   * that is), the title, the coins line and each service with its price and why it is not needed; the
-   * index chosen, or -1 for Exit. Without it the original's list.
-   */
-  chooseCure?(build: () => { title: string; coins: string; rows: { name: string; price: string; note: string }[] }): Promise<number>
   /** open the current character's sheet (items menu with Sell/Id in shops) and wait for it to close */
   view(mode: 'shop' | 'temple' | 'treasure' | 'vault'): Promise<void>
   refresh(): void
@@ -81,31 +75,37 @@ async function takeMoney(ui: TownUi) {
   }
 }
 
+/** Appraise one gem (5) or jewel (6) of the current character (FUN_4c2d_19b2): taken from their coins and valued; whether it could be kept as an item. */
+function appraiseOne(e: Engine, kind: 5 | 6): { value: number; canKeep: boolean } {
+  const { c, items } = cur(e)
+  takeOne(c, kind)
+  const value = kind === 5 ? appraiseGem(e.roll(1, 100)) : appraiseJewel(e.roll(1, 100), (n) => e.rand(n))
+  return { value, canKeep: items.length < 16 && canTakeItem(c, items, keepProbe()) === '' }
+}
+
+/** The piece appraised kept (an item) or sold (value div 5 platinum; value mod 5 gp is lost, as the original); the refusal, if any. */
+function settleAppraised(e: Engine, kind: 5 | 6, value: number, keep: boolean): string {
+  const t = e.items!, { c, items } = cur(e)
+  if (keep) { keepAsItem(items, kind, value); recalc(c, items, t); return '' }
+  return receive(c, items, e.money, value - (value % 5), t, false, 'appraiseOverloaded') || ''
+}
+
 /** Appraise (FUN_4c2d_19b2): one gem or jewel at a time; Sell (platinum) or Keep (an item). */
 async function appraise(ui: TownUi) {
-  const e = ui.engine, t = e.items!
-  const { c, items } = cur(e)
-  const m = moneyOf(c)
+  const e = ui.engine
+  const m = moneyOf(cur(e).c)
   if (!m[5] && !m[6]) { ui.print(msg('noGems'), false); return }
   ui.print(`${msg('fineCollection')} ${m[5]}${msg(m[5] === 1 ? 'gemOne' : 'gemsCount')}, ${m[6]}${msg(m[6] === 1 ? 'pieceOfJewelry' : 'piecesOfJewelry')}`, true)
   // the game's "  Gems", "  Jewelry" (each when there is one) and " Exit"
   const pick = await ask((l, o) => ui.menu(l, o), [...(m[5] ? menu('appraiseGems') : []), ...(m[6] ? menu('appraiseJewelry') : []), ...menu('appraiseExit')])
   if (pick !== 'G' && pick !== 'J') return
   const kind = pick === 'G' ? 5 : 6
-  takeOne(c, kind)
-  const value = kind === 5 ? appraiseGem(e.roll(1, 100)) : appraiseJewel(e.roll(1, 100), (n) => e.rand(n))
+  const { value, canKeep } = appraiseOne(e, kind)
   ui.print(`${msg(kind === 5 ? 'gemValued' : 'jewelValued')}${value}${msg('gp')}`, false)
-  const canKeep = items.length < 16 && canTakeItem(c, items, keepProbe()) === ''
   // "Sell Keep", or "Sell" when it cannot be kept
   const choice = await ask((l, o) => ui.menu(l, o), menu(canKeep ? 'sellKeep' : 'sell'), { prompt: msg('youCan').trimEnd() })
-  if (canKeep && choice === 'K') {
-    keepAsItem(items, kind, value)
-    recalc(c, items, t)
-  } else {
-    // value div 5 platinum; value mod 5 gp is lost (original)
-    const msg = receive(c, items, e.money, value - (value % 5), t, false, 'appraiseOverloaded')
-    if (msg) ui.print(msg, false)
-  }
+  const refused = settleAppraised(e, kind, value, canKeep && choice === 'K')
+  if (refused) ui.print(refused, false)
   ui.refresh()
 }
 
@@ -127,13 +127,13 @@ export async function shop(ui: TownUi) {
   const e = ui.engine, t = e.items
   if (!t) { ui.print(`The shop needs the ITEMS file and START.EXE: re-import the ${game().folder} folder.`, false); return }
   e.money = [0, 0, 0, 0, 0, 0, 0]
+  if (ui.shopWindow) return inWindow(ui, 'shop', ui.shopWindow)
   for (;;) {
     const has = e.money.some((v) => v > 0)
     const { name, c } = cur(e)
     ui.print(`${name} has ${coinValue(moneyOf(c))} gp in coins.`, true)
-    const o = await ask((l, op) => ui.menu(l, op), barWords(menu(has ? 'shop' : 'shopNoPool'), !!ui.buy))
-    if (o === 'B' && ui.buy) await ui.buy()
-    else if (o === 'B') {
+    const o = await ask((l, op) => ui.menu(l, op), menu(has ? 'shop' : 'shopNoPool'))
+    if (o === 'B') {
       for (;;) {
         const stock = priceStock(e.treasure)
         const price = (it: Item) => shopPrice((a) => e.read(a), it.value)
@@ -172,11 +172,12 @@ export async function temple(ui: TownUi) {
   const e = ui.engine, t = e.items
   if (!t || !e.startImage) { ui.print(`The temple needs the ITEMS file and START.EXE: re-import the ${game().folder} folder.`, false); return }
   e.money = [0, 0, 0, 0, 0, 0, 0]
+  if (ui.templeWindow) return inWindow(ui, 'temple', ui.templeWindow)
   for (;;) {
     const has = e.money.some((v) => v > 0)
     const { name, c } = cur(e)
     ui.print(`${name} has ${coinValue(moneyOf(c))} gp in coins.`, true)
-    const o = await ask((l, op) => ui.menu(l, op), barWords(menu(has ? 'temple' : 'templeNoPool'), !!ui.chooseCure))
+    const o = await ask((l, op) => ui.menu(l, op), menu(has ? 'temple' : 'templeNoPool'))
     if (o === 'H') await heal(ui)
     else if (o === 'V') await ui.view('temple')
     else if (o === 'T') await takeMoney(ui)
@@ -191,55 +192,57 @@ export async function temple(ui: TownUi) {
   }
 }
 
+/** why `kind` is not needed for `c` (the game's "is not blind." … line), '' when it is */
+function reasonFor(e: Engine, kind: TempleService, c: Uint8Array): string {
+  const fx = e.effectsOf(c), items = e.itemsOf(c), status = c[F.status], I = game().effects.ids
+  const has = (types: number[]) => fx.some((f) => types.includes(f.type))
+  return {
+    blind: has([I.blind]) ? '' : msg('notBlind'),
+    disease: has(diseases(e.startImage!)) ? '' : msg('notDiseased'),
+    clw: '', csw: '', ccw: '', heal: '',
+    poison: has([I.poisoned]) ? '' : msg('notPoisoned'),
+    raise: status === 6 || status === 1 ? '' : msg('notDead'),
+    curse: items.some((x) => x.cursed) || has([I.cursed]) ? '' : msg('notCursed'),
+    stone: status === 7 ? '' : msg('notStoned'),
+  }[kind]
+}
+const healPrompt = (name: string) => hasMsg('templeHowHelp') ? `${name}${msg('templeHowHelp')}` : `Healing for ${name}:`
+
+/** The game's questions before service `i` for the current character: "cure anyway" when it is not needed, then the price (priced temples). */
+function cureQuestions(e: Engine, i: number): string[] {
+  if (R.templeHeal.mode === 'free') return []
+  const s = services(e.startImage!)[i], { c, name } = cur(e), reason = reasonFor(e, s.kind, c)
+  return [...(reason ? [`${name} ${reason} ${msg('cureAnyway').trimEnd()}`] : []),
+    `${s.name}${msg('willOnlyCost')}${s.gp}${msg('goldPieces')} ${msg('payForCure').trimEnd()}`]
+}
+
 /** Heal (FUN_2d14_09d7): the game's services (PoR nine, CotAB ten) for the current character, the list
  *  coming back after each service, cured or not, until its Exit (PoR 0x1DD3D–0x1DD4B). */
 async function heal(ui: TownUi) {
-  while (await healOnce(ui)) { /* the list again */ }
-}
-
-/** One choice from the Heal list; false for its Exit. */
-async function healOnce(ui: TownUi): Promise<boolean> {
-  const e = ui.engine, t = e.items!
-  const cures = services(e.startImage!), DISEASES = diseases(e.startImage!), I = game().effects.ids
-  /** why `kind` is not needed for `c` (the game's "is not blind" … line), '' when it is */
-  const reasonFor = (kind: TempleService, c: Uint8Array) => {
-    const fx = e.effectsOf(c), items = e.itemsOf(c), status = c[F.status]
-    const has = (types: number[]) => fx.some((f) => types.includes(f.type))
-    return {
-      blind: has([I.blind]) ? '' : msg('notBlind'),
-      disease: has(DISEASES) ? '' : msg('notDiseased'),
-      clw: '', csw: '', ccw: '', heal: '',
-      poison: has([I.poisoned]) ? '' : msg('notPoisoned'),
-      raise: status === 6 || status === 1 ? '' : msg('notDead'),
-      curse: items.some((x) => x.cursed) || has([I.cursed]) ? '' : msg('notCursed'),
-      stone: status === 7 ? '' : msg('notStoned'),
-    }[kind]
-  }
-  const promptFor = (name: string) => hasMsg('templeHowHelp') ? `${name}${msg('templeHowHelp')}` : `Healing for ${name}:`
-  const free = R.templeHeal.mode === 'free'
-  let i: number
-  if (ui.chooseCure) {
-    i = await ui.chooseCure(() => {
-      const { c, name } = cur(e)
-      return { title: promptFor(name), coins: `${name} has ${coinValue(moneyOf(c))} gp in coins.`,
-        rows: cures.map((s) => ({ name: s.name, price: free ? 'free' : `${s.gp} gp`, note: reasonFor(s.kind, c).trim() })) }
-    })
-    if (i < 0) return false
-  } else {
+  const e = ui.engine
+  const cures = services(e.startImage!)
+  for (;;) {
     // the list's line is the game's "Heal Exit": a cure is chosen from the list (Heal or Enter), or Exit
     const ex = menu('templeHeal').find((w) => w.key === 'E') ?? { text: 'Exit', key: 'E' }
-    i = await ui.menu([...cures.map((x) => x.name.toUpperCase()), ex.text.toUpperCase()], { prompt: promptFor(cur(e).name), vertical: true, keys: [...cures.map(() => ''), ex.key] })
-    if (i >= cures.length) return false
+    const i = await ui.menu([...cures.map((x) => x.name.toUpperCase()), ex.text.toUpperCase()], { prompt: healPrompt(cur(e).name), vertical: true, keys: [...cures.map(() => ''), ex.key] })
+    if (i >= cures.length) return
+    let go = true
+    for (const q of cureQuestions(e, i)) if (!(go = await yes(ui, q))) break
+    if (go) await performCure(ui, i)
   }
+}
+
+/** Service `i` for the current character once its questions are answered yes: the payment, the cure, the game's lines. */
+async function performCure(ui: TownUi, i: number) {
+  const e = ui.engine, t = e.items!
+  const cures = services(e.startImage!), DISEASES = diseases(e.startImage!), I = game().effects.ids
   const { c, items, name } = cur(e)
   const fx = e.effectsOf(c)
   const remove = (types: number[]) => { for (let i = fx.length - 1; i >= 0; i--) if (types.includes(fx[i].type)) fx.splice(i, 1) }
   const s = cures[i], kind = s.kind
-  if (R.templeHeal.mode === 'free') { await freeCure(ui, s, R.templeHeal.raise); return true }
-  const reason = reasonFor(kind, c)
-  if (reason && !await yes(ui, `${name} ${reason} ${msg('cureAnyway').trimEnd()}`)) return true
-  if (!await yes(ui, `${s.name}${msg('willOnlyCost')}${s.gp}${msg('goldPieces')} ${msg('payForCure').trimEnd()}`)) return true
-  if (!pay(c, e.money, s.gp)) { ui.print(msg('templeNoMoney'), false); return true }
+  if (R.templeHeal.mode === 'free') { await freeCure(ui, s, R.templeHeal.raise); ui.refresh(); return }
+  const reason = reasonFor(e, kind, c)
+  if (!pay(c, e.money, s.gp)) { ui.print(msg('templeNoMoney'), false); return }
   // the cures go through the heal routine (PoR FUN_2d14_0401 → FUN_5216_175d, CotAB 0x1CB35 → 0x4CE85):
   // nothing for the dead, the stoned or (PoR) mummy rot, though the fee is paid; someone unconscious is revived
   const hp = (n: number) => { healChar(c, fx, n, false) }
@@ -267,7 +270,59 @@ async function healOnce(ui: TownUi): Promise<boolean> {
   if (kind === 'curse') recalc(c, items, t)
   ui.print(`${name} ${msg('templeCured')}`, false)
   ui.refresh()
-  return true
+}
+
+/**
+ * What the shop and temple windows (IMP-100) do through the rules: the same steps as the menus above,
+ * their lines returned to the window instead of printed to the log.
+ */
+export interface TownDesk {
+  /** the temple's question for the current character ("*Name*, how can we help you?") */
+  healHeading(): string
+  /** the temple's services for the current character: name, price ("free" in SotSB), why not needed */
+  services(): { name: string; price: string; note: string }[]
+  /** the game's questions before service `i` (each must be answered yes) */
+  cureQuestions(i: number): string[]
+  /** service `i` after its questions: the game's lines */
+  cure(i: number): Promise<string[]>
+  /** the current character's gems and pieces of jewelry */
+  gems(): { gems: number; jewels: number }
+  /** one gem (5) or jewel (6) appraised: its value, the game's line, whether it can be kept */
+  appraise(kind: 5 | 6): { value: number; line: string; canKeep: boolean }
+  /** the piece sold or kept; the refusal, if any */
+  settle(kind: 5 | 6, value: number, keep: boolean): string
+  /** the game's question on leaving with money in the pool (Yes goes back); null when the pool is empty */
+  leaveQuestion(): string | null
+}
+
+/** The shop or temple in its window: View opens the sheet, then the window again; the pool is emptied on leaving, as the menus do. */
+async function inWindow(ui: TownUi, where: 'shop' | 'temple', open: (d: TownDesk) => Promise<'view' | 'done'>) {
+  const e = ui.engine
+  const lines = (f: (cap: TownUi) => Promise<void>) => async () => {
+    const out: string[] = []
+    await f({ ...ui, engine: e, print: (t: string) => { if (t) out.push(t) } })
+    return out
+  }
+  const d: TownDesk = {
+    healHeading: () => healPrompt(cur(e).name),
+    services: () => {
+      const { c } = cur(e), free = R.templeHeal.mode === 'free'
+      return services(e.startImage!).map((s) => ({ name: s.name, price: free ? 'free' : `${s.gp} gp`, note: reasonFor(e, s.kind, c).trim() }))
+    },
+    cureQuestions: (i) => cureQuestions(e, i),
+    cure: (i) => lines((cap) => performCure(cap, i))(),
+    gems: () => { const m = moneyOf(cur(e).c); return { gems: m[5], jewels: m[6] } },
+    appraise: (kind) => {
+      const r = appraiseOne(e, kind)
+      return { ...r, line: `${msg(kind === 5 ? 'gemValued' : 'jewelValued')}${r.value}${msg('gp')}` }
+    },
+    settle: (kind, value, keep) => { const r = settleAppraised(e, kind, value, keep); ui.refresh(); return r },
+    leaveQuestion: () => e.money.some((v) => v > 0)
+      ? (where === 'shop' ? `${msg('shopLeave').trim()} ${msg('shopGoBack')}` : `${msg('templeLeave').trim()} ${msg('templeGoBack')}`) : null,
+  }
+  while (await open(d) === 'view') await ui.view(where)
+  e.money = [0, 0, 0, 0, 0, 0, 0]
+  ui.print('', true)
 }
 
 /**

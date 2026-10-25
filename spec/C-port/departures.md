@@ -110,6 +110,7 @@ implementation's: *done*, or what remains.
 | IMP-097 | the sheet, treasure, shops, Settings and Account in the parchment look; the temple's Heal panel | [screens.md §3](screens.md#3-the-character-sheet), [§4](screens.md#4-treasure), [§5](screens.md#5-shops-and-temples), [§5.3](screens.md#53-heal), [§11](screens.md#11-settings-and-account) | required | done |
 | IMP-098 | spell sets in Memorize | [screens.md §6.4](screens.md#64-memorize), [storage.md §6](storage.md#6-journal-finds-and-the-gbr-sidecar) `loadouts` | required | done |
 | IMP-099 | money on the Buy and Heal panels; the vault as a panel | [screens.md §5](screens.md#5-shops-and-temples), [§5.6](screens.md#56-the-vault-sotsb) | required | done |
+| IMP-100 | shops and temples as one window each | [screens.md §5](screens.md#5-shops-and-temples) | required | done |
 
 ## 4. Combat
 
@@ -158,6 +159,6 @@ the original switches its entry off (0x36DCD).
 
 ## Validation
 
-- Every IMP id of the register appears in §1–§5 (98 ids; IMP-009 unassigned), checked by listing
+- Every IMP id of the register appears in §1–§5 (99 ids; IMP-009 unassigned), checked by listing
   `^| IMP-` in [IMPROVEMENTS.md](../../IMPROVEMENTS.md) against this file (2026-10-25).
 - [CONFORMANCE.md](../CONFORMANCE.md), "Departures".

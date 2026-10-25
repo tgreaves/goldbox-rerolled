@@ -329,16 +329,36 @@ MONEY ITEMS EXIT.
 ## 5. Shops and temples
 
 Opened by a script's COMBAT with the shop or temple flag ([B-model/host-contracts.md §2](../B-model/host-contracts.md#2-the-script-host-io)).
-Buy (IMP-042) and Heal (§5.3) are panels in the parchment look (IMP-097). Both handle the pool themselves
-(IMP-099): each member's button shows their gold ("*Name* *n* gp"); under the buyer's line, **Pool:**
-what the pool holds ("*coins* (*n* gp)", or "empty") with **Pool the party's coins** and, when it holds
-anything, **Share the pool evenly**; a fold "Take from the pool" lists each coin kind with its count, an
-amount (all of it at first) and **Take** for the selected member; a quiet line "A purchase or a cure is
-paid from the buyer's own coins, or from the pool when theirs are short."; the result ("The party's coins
-are pooled here.", "Shared; what nobody could carry is still in the pool.", "*Name* takes *n* *coin*.", the
-take rule's refusal) and Buy's own messages under it. With the panels the command bar leaves out TAKE,
-POOL and SHARE (the game's words, keys T, P, S): the shop's bar is BUY VIEW APPRAISE EXIT, the temple's
-HEAL VIEW APPRAISE EXIT; the leave question for money left in the pool stays.
+**On the play screen each is one window** (IMP-100), opened at once when the script's COMBAT reaches
+it (after the game's own "Can I show you our wares?" or "Do you seek healing?", which are the script's);
+the command bar is empty while it is open. In the parchment look (IMP-097), from the top:
+
+- the heading: "Shop", or the temple's question for the current character ("*Name*, how can we help
+  you?", else "Healing for *Name*:");
+- a button per party member with their gold ("*Name* *n* gp"; choosing one makes it current, as a tap
+  on its card) and "*Name* has *n* gp in coins · carrying *load* of *capacity*";
+- the money (IMP-099): **Pool:** what the pool holds ("*coins* (*n* gp)", or "empty") with **Pool the
+  party's coins** and, when it holds anything, **Share the pool evenly**; a fold "Take from the pool"
+  with each coin kind, its count, an amount (all of it at first) and **Take** for the current member;
+  the quiet line "A purchase or a cure is paid from the buyer's own coins, or from the pool when theirs
+  are short.";
+- the last result ("*Name* buys *item*.", the cure's lines, "The party's coins are pooled here.", the
+  take rule's refusal …);
+- the shop's stock (§5.2) or the temple's services (§5.3);
+- a fold **Appraise gems and jewelry** ([town.md, "Appraise"](../A-games/engine/town.md#appraise-o-fun_4c2d_19b2)):
+  "*Name* has *g* gems and *j* pieces of jewelry." with **Appraise a gem** and **Appraise a piece of
+  jewelry** (each when there is one), or the game's "No Gems or Jewelry"; an appraisal shows the game's
+  value line ("This gem is valued at *n* gp" …) and asks the game's "You can" with **Sell** and, when the
+  member can carry it, **Keep**;
+- **View, sell or identify…** (the temple: **View…**): the character sheet in the shop's or temple's
+  mode (§3), then the window again; and **Exit**.
+
+The game's questions are asked in the window, the rest of it waiting: before a cure its "cure anyway"
+line (when not needed) and its price line, each **Yes** / **No**; on **Exit** (and Escape, ✕) with money
+in the pool the game's leave question ("… you have left some money here. Do you want to go back …?"),
+**Yes** going back to the window and **No** leaving. The pool is emptied on leaving, as the menus do.
+The rules are the menus' own (ui/town.ts). Without the window (the headless runner) the original's
+menus below run on the command bar: the game's words, TAKE, POOL and SHARE among them (§5.4).
 They use the play screen: text in the log, menus on the command bar, the cards to choose whose turn
 it is (IMP-029). The pool (the money laid down here) starts empty.
 
@@ -382,8 +402,8 @@ procedure is [town.md, "Temple"](../A-games/engine/town.md#temple-o-fun_2d14_0d0
 
 ### 5.4 Take, Pool, Share, Appraise
 
-On the command bar only where no panel handles the money (the headless runner); the play screen's Buy
-and Heal panels do it themselves (§5, IMP-099). Appraise stays on the bar.
+On the command bar only without the windows (the headless runner); the play screen's shop and temple
+windows do all of this themselves (§5, IMP-099, IMP-100).
 
 - **TAKE**: "Select type of coin" lists the coin types in the pool (largest first) with EXIT; then "How much
   *coin* will you take?" and a number; the take rule's message (the game's words, strings.md §4).

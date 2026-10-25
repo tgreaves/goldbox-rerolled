@@ -41,7 +41,7 @@ import { canTakeItem, capacity, ready, readyItem, recalc, unready, unreadyItem }
 import { WorldHost } from '../rules/worldfx'
 import { drop, halve, join, scribing, trade, unavailable } from '../rules/inventory'
 import { moneyPrompt, COINS, coinValue, dropMoney, moneyOf, pay, buy, poolAll, receive, priceStock, sellOffer, share, shopPrice, take, tradeMoney } from '../rules/money'
-import { shop, temple, treasure, vault, type TownUi } from './town'
+import { shop, temple, treasure, vault, type TownUi, type TownDesk } from './town'
 import { proposeSplit } from '../rules/treasure'
 import { treasureAftermath } from '../rules/combat'
 import { camp, effectNames, type CampUi } from './camp'
@@ -917,56 +917,13 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       onClose(dialog, () => resolve())
     }),
     refresh: () => drawRoster(),
-    buy: () => shopPanel(),
+    shopWindow: (desk) => townWindow('shop', desk),
+    templeWindow: (desk) => townWindow('temple', desk),
     treasurePanel: () => treasurePanel().then(() => {}),
     vaultPanel: () => treasurePanel({ vault: true }),
-    chooseCure: (build) => templePanel(build),
   }
 
-  /**
-   * The temple's Heal list on one panel (IMP-097): who is healed (any member, as Buy's buyer), their gold,
-   * each service with its price and, quietly, why it is not needed; Heal on a row chooses it, Exit leaves.
-   * The game's own questions (cure anyway, pay) follow in the command bar.
-   */
-  function templePanel(build: Parameters<NonNullable<TownUi['chooseCure']>>[0]): Promise<number> {
-    return new Promise((resolve) => {
-      let done = false, message = ''
-      const render = () => {
-        const b = build(), cur = engine.cur
-        dialog.innerHTML = `<h2>${escape(b.title)}</h2>
-          <div class="shop-buyer">${engine.party().map((c, i) => memberButton(c, i, c === cur)).join('')}</div>
-          <p>${escape(b.coins)}</p>
-          ${moneyBox()}
-          ${message ? `<p class="message" role="status">${escape(message)}</p>` : ''}
-          <table class="shop temple"><thead><tr><th>Service</th><th class="num">Price</th><th></th><th></th></tr></thead><tbody>${b.rows.map((r, i) =>
-            `<tr class="${r.note ? 'unusable' : ''}"><td>${escape(r.name)}</td><td class="num">${escape(r.price)}</td><td class="cmp">${escape(r.note)}</td>
-              <td><button data-cure="${i}">Heal</button></td></tr>`).join('')}</tbody></table>
-          <form method="dialog"><button class="primary">Exit</button></form>`
-      }
-      const onClick = (e: MouseEvent) => {
-        const btn = (e.target as HTMLElement).closest('button')
-        if (!btn || btn.closest('form')) return
-        e.preventDefault()
-        const money = moneyAction(btn.dataset)
-        if (money !== null) { message = money; render() }
-        else if (btn.dataset.who) { engine.cur = engine.party()[Number(btn.dataset.who)]; message = ''; drawRoster(); render() }
-        else if (btn.dataset.cure) { done = true; dialog.close(); resolve(Number(btn.dataset.cure)) }
-      }
-      dialog.classList.add('wide')
-      dialog.addEventListener('click', onClick)
-      onClose(dialog, () => { dialog.removeEventListener('click', onClick); dialog.classList.remove('wide'); if (!done) resolve(-1) })
-      render()
-      parchmentPanel(dialog, 'temple-panel')
-      dialog.showModal()
-      dialog.querySelector<HTMLButtonElement>('button[data-cure]')?.focus()
-    })
-  }
 
-  /**
-   * The shop's Buy on one panel (IMP-042): pick the buyer, filter the stock, see the price, weight,
-   * whether the buyer's class can use it and what readying it in place of the current item would
-   * change; buying follows the original (FUN_4c2d_09ae: room, weight, then payment from the buyer's coins).
-   */
   /** What readying `it` instead of the same-slot item would change (IMP-042, IMP-056), or why it can't be readied. */
   function readyChange(t: ItemTables, c: Uint8Array, items: Item[], it: Item): string {
     return readyCompare(t, c, items, it).text
@@ -1195,70 +1152,129 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   const memberButton = (c: Uint8Array, i: number, on: boolean) =>
     `<button data-who="${i}" class="${on ? 'on' : ''}">${escape(parseCharacter(c).name)} <small>${coinValue(moneyOf(c))} gp</small></button>`
 
-  function shopPanel(): Promise<void> {
+
+  /**
+   * The shop or the temple as one window (IMP-100), opened straight after the game's "Can I show you our
+   * wares?" or "Do you seek healing?": the party with their gold, the money (IMP-099), the stock to buy
+   * (IMP-042) or the services to heal (IMP-097), Appraise, View, Exit. The game's questions (cure anyway,
+   * pay, the money left in the pool) are asked in it; the rules are the menus' own (ui/town.ts).
+   */
+  function townWindow(kind: 'shop' | 'temple', desk: TownDesk): Promise<'view' | 'done'> {
     const t = engine.items!
     let filter: 'all' | 'weapons' | 'armour' | 'other' = 'all'
     let onlyUsable = false
     let message = ''
-    const kind = (it: Item) => {
+    /** a question shown in the window with its buttons; the window's own lists wait under it */
+    let asking: { text: string; lines?: string[]; buttons: { label: string; main?: boolean; act: () => void | Promise<void> }[] } | null = null
+    const itemKind = (it: Item) => {
       const b = t.baseOf(it)
       if (!b) return 'other'
       if (b.slot === 0 || it.type === R.itemTypes.arrows || it.type === R.itemTypes.quarrels) return 'weapons'
       if (b.slot >= 1 && b.slot <= 9) return 'armour'
       return 'other'
     }
-    const compare = (c: Uint8Array, items: Item[], it: Item) => readyChange(t, c, items, it)
     return new Promise((resolve) => {
-      const render = () => {
+      let result: 'view' | 'done' = 'done'
+      const leave = (r: 'view' | 'done') => { result = r; dialog.close() }
+      /** Exit: the game's question when coins are left in the pool (Yes goes back), else out */
+      const exit = () => {
+        const q = desk.leaveQuestion()
+        if (!q) return leave('done')
+        asking = { text: q, buttons: [{ label: 'Yes', main: true, act: () => { asking = null } }, { label: 'No', act: () => leave('done') }] }
+        render()
+      }
+      const stockHtml = () => {
         const buyer = engine.cur, items = engine.itemsOf(buyer), name = parseCharacter(buyer).name
         const gold = coinValue(moneyOf(buyer)), pooled = coinValue(engine.money)
         const stock = priceStock(engine.treasure).map((it, i) => ({ it, i })).filter(({ it }) =>
-          (filter === 'all' || kind(it) === filter) && (!onlyUsable || ((t.baseOf(it)?.classes ?? 0) & buyer[F.itemMask]) !== 0))
+          (filter === 'all' || itemKind(it) === filter) && (!onlyUsable || ((t.baseOf(it)?.classes ?? 0) & buyer[F.itemMask]) !== 0))
         const rows = stock.map(({ it, i }) => {
           const usable = ((t.baseOf(it)?.classes ?? 0) & buyer[F.itemMask]) !== 0
           const cost = shopPrice((a) => engine.read(a), it.value)
           const why = canTakeItem(buyer, items, it) || (cost > gold && cost > pooled ? 'Not enough money' : '')
           return `<tr class="${usable ? '' : 'unusable'}"><td>${escape(t.name(it))}${usable ? '' : '<small class="cant">not for this class</small>'}</td>
-            <td class="num">${cost}</td><td class="num">${it.weight * Math.max(1, it.count)}</td><td class="cmp">${usable ? escape(compare(buyer, items, it)) : ''}</td>
+            <td class="num">${cost}</td><td class="num">${it.weight * Math.max(1, it.count)}</td><td class="cmp">${usable ? escape(readyChange(t, buyer, items, it)) : ''}</td>
             <td><button data-buy="${i}" ${why ? `disabled title="${escape(why)}"` : ''}>Buy</button></td></tr>`
         }).join('')
-        dialog.innerHTML = `<h2>Buy</h2>
+        return `<div class="shop-filter">${(['all', 'weapons', 'armour', 'other'] as const).map((f) => `<button data-f="${f}" class="${f === filter ? 'on' : ''}">${f[0].toUpperCase() + f.slice(1)}</button>`).join('')}
+            <label><input type="checkbox" ${onlyUsable ? 'checked' : ''} data-usable> Only what ${escape(name)} can use</label></div>
+          <table class="shop"><thead><tr><th>Item</th><th class="num">Price</th><th class="num">Weight</th><th>If readied instead</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="5" class="muted">Nothing here.</td></tr>'}</tbody></table>`
+      }
+      const servicesHtml = () => `<table class="shop temple"><thead><tr><th>Service</th><th class="num">Price</th><th></th><th></th></tr></thead><tbody>${desk.services().map((r, i) =>
+        `<tr class="${r.note ? 'unusable' : ''}"><td>${escape(r.name)}</td><td class="num">${escape(r.price)}</td><td class="cmp">${escape(r.note)}</td>
+          <td><button data-cure="${i}">Heal</button></td></tr>`).join('')}</tbody></table>`
+      const appraiseHtml = () => {
+        const g = desk.gems(), name = parseCharacter(engine.cur).name
+        return `<details class="appraise"><summary>Appraise gems and jewelry</summary>
+          <p>${g.gems || g.jewels ? `${escape(name)} has ${g.gems} gem${g.gems === 1 ? '' : 's'} and ${g.jewels} piece${g.jewels === 1 ? '' : 's'} of jewelry.` : escape(msg('noGems'))}
+            ${g.gems ? '<button data-appraise="5">Appraise a gem</button>' : ''}${g.jewels ? '<button data-appraise="6">Appraise a piece of jewelry</button>' : ''}</p></details>`
+      }
+      const render = () => {
+        const buyer = engine.cur, name = parseCharacter(buyer).name
+        const head = kind === 'temple' ? desk.healHeading() : 'Shop'
+        const top = `<h2>${escape(head)}</h2>
           <div class="shop-buyer">${engine.party().map((c, i) => memberButton(c, i, c === buyer)).join('')}</div>
-          <p>${escape(name)} has <strong>${gold}</strong> gp in coins · carrying ${buyer[F.load] | (buyer[F.load + 1] << 8)} of ${capacity(buyer)}</p>
+          <p>${escape(name)} has <strong>${coinValue(moneyOf(buyer))}</strong> gp in coins · carrying ${buyer[F.load] | (buyer[F.load + 1] << 8)} of ${capacity(buyer)}</p>`
+        if (asking) {
+          dialog.innerHTML = `${top}<div class="town-ask">${(asking.lines ?? []).map((l) => `<p>${escape(l)}</p>`).join('')}<p><strong>${escape(asking.text)}</strong></p>
+            <p>${asking.buttons.map((b, i) => `<button data-ask="${i}" class="${b.main ? 'primary' : ''}">${escape(b.label)}</button>`).join(' ')}</p></div>`
+          dialog.querySelector<HTMLButtonElement>('[data-ask="0"]')?.focus()
+          return
+        }
+        dialog.innerHTML = `${top}
           ${moneyBox()}
           ${message ? `<p class="message" role="status">${escape(message)}</p>` : ''}
-          <div class="shop-filter">${(['all', 'weapons', 'armour', 'other'] as const).map((f) => `<button data-f="${f}" class="${f === filter ? 'on' : ''}">${f[0].toUpperCase() + f.slice(1)}</button>`).join('')}
-            <label><input type="checkbox" ${onlyUsable ? 'checked' : ''} data-usable> Only what ${escape(name)} can use</label></div>
-          <table class="shop"><thead><tr><th>Item</th><th class="num">Price</th><th class="num">Weight</th><th>If readied instead</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="5" class="muted">Nothing here.</td></tr>'}</tbody></table>
-          <form method="dialog"><button class="primary">Done</button></form>`
-        dialog.querySelector<HTMLInputElement>('[data-usable]')!.addEventListener('change', (e) => { onlyUsable = (e.target as HTMLInputElement).checked; render() })
+          ${kind === 'shop' ? stockHtml() : servicesHtml()}
+          ${appraiseHtml()}
+          <p class="town-actions"><button data-view="1" title="${kind === 'shop' ? 'The character sheet: sell or identify items there' : 'The character sheet'}">${kind === 'shop' ? 'View, sell or identify…' : 'View…'}</button>
+            <button data-exit="1" class="primary">Exit</button></p>`
+        dialog.querySelector<HTMLInputElement>('[data-usable]')?.addEventListener('change', (e) => { onlyUsable = (e.target as HTMLInputElement).checked; render() })
       }
-      const onClick = (e: MouseEvent) => {
+      /** the questions before service i, each answered in the window; then the cure and its lines */
+      const askCure = (i: number, qs: string[]) => {
+        if (!qs.length) {
+          asking = null
+          void desk.cure(i).then((lines) => { message = lines.join(' '); for (const l of lines) print(l, false); drawRoster(); render() })
+          return
+        }
+        asking = { text: qs[0], buttons: [{ label: 'Yes', main: true, act: () => askCure(i, qs.slice(1)) }, { label: 'No', act: () => { asking = null } }] }
+      }
+      const onClick = async (e: MouseEvent) => {
         const b = (e.target as HTMLElement).closest('button')
-        if (!b || b.closest('form') || b.disabled) return
+        if (!b || b.disabled || b.closest('form')) return
         e.preventDefault()
         const d = b.dataset
+        if (d.ask && asking) { await asking.buttons[Number(d.ask)].act(); if (dialog.open) render(); return }
+        message = ''
         const money = moneyAction(d)
         if (money !== null) message = money
-        else if (d.who) { engine.cur = engine.party()[Number(d.who)]; message = ''; drawRoster() }
+        else if (d.who) { engine.cur = engine.party()[Number(d.who)]; drawRoster() }
         else if (d.f) filter = d.f as typeof filter
         else if (d.buy) {
           const it = engine.treasure[Number(d.buy)], buyer = engine.cur, items = engine.itemsOf(buyer)
           const r = buy(buyer, items, engine.money, shopPrice((a) => engine.read(a), it.value), it, t)
           if ('refused' in r) message = r.refused === 'noMoney' ? msg('shopNoMoney') : r.refused === 'overloaded' ? msg('shopOverloaded') : r.refused
-          else {
-            message = `${parseCharacter(buyer).name} buys ${t.name(r.copy)}.`
-            print(message, false)
-            drawRoster()
-          }
-        }
+          else { message = `${parseCharacter(buyer).name} buys ${t.name(r.copy)}.`; print(message, false); drawRoster() }
+        } else if (d.cure) askCure(Number(d.cure), desk.cureQuestions(Number(d.cure)))
+        else if (d.appraise) {
+          const k = Number(d.appraise) as 5 | 6
+          const r = desk.appraise(k)
+          drawRoster()
+          const settle = (keep: boolean) => () => { const why = desk.settle(k, r.value, keep); message = why || (keep ? 'Kept as an item.' : 'Sold.'); asking = null; drawRoster() }
+          asking = { text: msg('youCan').trim(), lines: [r.line], buttons: [{ label: 'Sell', main: true, act: settle(false) }, ...(r.canKeep ? [{ label: 'Keep', act: settle(true) }] : [])] }
+        } else if (d.view) return leave('view')
+        else if (d.exit) return exit()
         render()
       }
+      // Escape and ✕ are Exit, with its question
+      const onCancel = (e: Event) => { e.preventDefault(); if (asking) { asking = null; render() } else exit() }
       dialog.classList.add('wide')
       dialog.addEventListener('click', onClick)
-      onClose(dialog, () => { dialog.removeEventListener('click', onClick); resolve() })
+      dialog.addEventListener('cancel', onCancel)
+      onClose(dialog, () => { dialog.removeEventListener('click', onClick); dialog.removeEventListener('cancel', onCancel); dialog.classList.remove('wide'); resolve(result) })
       render()
-      parchmentPanel(dialog, 'shop-panel') // Buy in the parchment look (IMP-097)
+      parchmentPanel(dialog, `${kind}-panel`)
+      menuBar.innerHTML = '' // the door's question is answered: nothing is chosen on the bar while the window is open
       dialog.showModal()
     })
   }
