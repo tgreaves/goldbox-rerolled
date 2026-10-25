@@ -3,7 +3,7 @@
 import type { GameFiles } from '../store/gamefiles'
 import { parseCharacter } from '../data/character'
 import type { StoredCharacter } from '../store/user'
-import { escape, onClose, wordButton, listExit } from './sheet'
+import { escape, onClose, wordButton, listExit, parchmentPanel } from './sheet'
 import { word } from '../games/strings'
 import { toImageData, EGA, battlePalette, type Picture } from '../data/image'
 import { blit, sizeCanvas } from '../render/upscale'
@@ -39,6 +39,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, dice: 
       const choose = (i: number) => { stop(); dialog.close(); resolve(list[i]) }
       // the whole row picks; the name's button is there for the keyboard
       dialog.querySelectorAll<HTMLTableRowElement>('tbody tr').forEach((tr) => tr.addEventListener('click', () => choose(Number(tr.dataset.i))))
+      parchmentPanel(dialog, 'newchar-panel') // the party screen's tools in the parchment look (IMP-096)
       dialog.showModal()
       dialog.querySelector<HTMLButtonElement>('tbody button')?.focus()
     })
@@ -48,6 +49,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, dice: 
     return new Promise((resolve) => {
       dialog.innerHTML = `<p>${escape(text)}</p><form method="dialog" class="yn">${wordButton('value="y" class="primary"', word('yesNo', 'Y'))}${wordButton('value="n"', word('yesNo', 'N'))}</form>`
       onClose(dialog, () => resolve(dialog.returnValue === 'y'))
+      parchmentPanel(dialog, 'newchar-panel') // the party screen's tools in the parchment look (IMP-096)
       dialog.showModal()
     })
   }
@@ -65,6 +67,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, dice: 
         dialog.close()
         resolve(Number(b.dataset.i))
       }))
+      parchmentPanel(dialog, 'newchar-panel') // the party screen's tools in the parchment look (IMP-096)
       dialog.showModal()
       dialog.querySelector<HTMLButtonElement>('ol button')?.focus()
     })
@@ -145,6 +148,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, dice: 
         resolve(keep)
       })
       draw()
+      parchmentPanel(dialog, 'newchar-panel') // the party screen's tools in the parchment look (IMP-096)
       dialog.showModal()
     })
   }
@@ -202,6 +206,7 @@ export function creatorTools(dialog: HTMLDialogElement, files: GameFiles, dice: 
         resolve(kept)
       })
       draw()
+      parchmentPanel(dialog, 'newchar-panel') // the party screen's tools in the parchment look (IMP-096)
       dialog.showModal()
     })
   }

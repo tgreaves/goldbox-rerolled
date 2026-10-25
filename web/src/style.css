@@ -520,7 +520,7 @@ dialog.panel form.charedit {
 }
 dialog.panel form.charedit fieldset {
   border: 1px solid var(--line); margin: 0; min-width: 0; display: grid; gap: 0.3rem;
-  grid-template-columns: max-content minmax(0, 1fr);
+  grid-template-columns: max-content minmax(0, 1fr); align-content: start;
 }
 dialog.panel form.charedit label { display: contents; }
 dialog.panel form.charedit input, dialog.panel form.charedit select { width: 100%; min-width: 0; box-sizing: border-box; }
@@ -1006,3 +1006,45 @@ dialog.panel.parchment ul.savelist .kicker { color: var(--red); font-variant: sm
 dialog.panel.parchment ul.savelist strong { font-weight: 600; }
 dialog.panel.parchment ul.savelist small:last-child { color: var(--ink-soft); font-size: 0.85rem; }
 dialog.panel.parchment .skip:hover, dialog.panel.parchment .skip:focus-visible, dialog.panel.parchment form button:focus-visible { border-color: #e8c66a; color: #f6e2a8; }
+
+/* ------------------------------------------------------------ the party screen's tools and Debug on paper (IMP-096)
+   Add character, Modify, the combat-icon editor, character creation, the yes/no questions, Export and
+   the Debug panels: parchment inside the game's frame; the game's pictures black in a gold edge */
+dialog.panel.parchment .message { color: var(--red-deep); }
+dialog.panel.parchment input:not([type=checkbox]), dialog.panel.parchment select {
+  background: #fff6dd; color: var(--ink); border: 1px solid var(--rule); border-radius: 2px; font-family: inherit;
+}
+dialog.panel.parchment input:focus, dialog.panel.parchment select:focus { border-color: var(--red); outline: none; }
+dialog.panel.parchment fieldset { border: 1px solid var(--rule); border-radius: 2px; }
+dialog.panel.parchment legend { color: var(--red); font-variant: small-caps; letter-spacing: 0.04em; font-weight: 600; padding: 0 0.3rem; }
+dialog.panel.parchment button.primary { background: var(--char); color: var(--gold-text); border: 1px solid var(--gold); outline: 1px solid var(--char); outline-offset: 2px; margin: 3px; font-weight: 600; letter-spacing: 0.06em; }
+dialog.panel.parchment canvas.pixel, dialog.panel.parchment canvas.portrait, dialog.panel.parchment canvas.ic { border: 1px solid var(--gold); outline: 1px solid var(--char); background: #000; }
+dialog.panel.parchment ol.pick button { background: #ffffff1f; border: 1px solid var(--rule); color: var(--ink); }
+/* Add character: the roster table */
+dialog.panel.parchment table.roster th { color: var(--red); font-variant: small-caps; letter-spacing: 0.04em; border-bottom-color: var(--rule); background: transparent; }
+dialog.panel.parchment table.roster td { color: var(--ink); }
+dialog.panel.parchment table.roster td.n { color: var(--ink); }
+dialog.panel.parchment table.roster td[data-h]::before { color: var(--ink-soft); }
+dialog.panel.parchment table.roster tbody tr:nth-child(even) { background: #ffffff18; }
+dialog.panel.parchment table.roster tbody tr:hover, dialog.panel.parchment table.roster tbody tr:focus-within { background: #ffffff40; }
+dialog.panel.parchment table.roster td.nm button { color: var(--red); font-variant: small-caps; letter-spacing: 0.03em; border: 0; background: none; }
+/* Modify and creation: the ability table, the choices, the derived line */
+dialog.panel.parchment table.modify th { color: var(--ink-soft); font-variant: small-caps; letter-spacing: 0.04em; }
+dialog.panel.parchment table.modify tr.current th { color: var(--red); }
+dialog.panel.parchment table.modify td.v { color: var(--ink); font-weight: 600; }
+dialog.panel.parchment .nc-label { color: var(--red); font-variant: small-caps; letter-spacing: 0.04em; font-size: 0.95rem; }
+dialog.panel.parchment .nc-opts button:disabled { opacity: 0.35; }
+dialog.panel.parchment .nc-derived { color: var(--ink); font-weight: 600; }
+dialog.panel.parchment .nc-name { color: var(--red); font-variant: small-caps; letter-spacing: 0.04em; }
+dialog.panel.parchment .nc-name input { color: var(--ink); text-transform: uppercase; font-variant: normal; letter-spacing: 0.05em; }
+dialog.panel.parchment .iconctl output { color: var(--ink); font-weight: 600; }
+dialog.panel.parchment .iconctl span, dialog.panel.parchment .palette span { color: var(--ink-soft); }
+dialog.panel.parchment .parts button.on, dialog.panel.parchment .sw.on { outline: 2px solid var(--red); outline-offset: 1px; }
+dialog.panel.parchment .parts button.on { background: var(--char); color: var(--gold-text); border-color: var(--gold); }
+dialog.panel.parchment .sw { border: 1px solid var(--char); }
+dialog.panel.parchment .icons figcaption { color: var(--ink-soft); }
+/* Debug */
+dialog.panel.parchment ul.debug button { background: #ffffff1f; border: 1px solid var(--rule); color: var(--ink); }
+dialog.panel.parchment form.jump label { color: var(--ink-soft); }
+dialog.panel.parchment form.charedit fieldset { border-color: var(--rule); }
+dialog.panel.parchment u { color: var(--red); }

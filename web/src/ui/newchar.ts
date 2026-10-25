@@ -14,7 +14,7 @@ import {
   modifyStep, rollAbilities, setName,
 } from '../rules/chargen'
 import type { Dice } from '../rules/dice'
-import { escape, onClose } from './sheet'
+import { escape, onClose, parchmentPanel } from './sheet'
 import { word } from '../games/strings'
 import { game } from '../games/profile'
 
@@ -206,6 +206,7 @@ export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, dic
     })
     render()
     dialog.returnValue = ''
+    parchmentPanel(dialog, 'newchar-panel') // creation in the parchment look (IMP-096)
     dialog.showModal()
     dialog.querySelector<HTMLInputElement>('.nc-name input')?.focus()
   })

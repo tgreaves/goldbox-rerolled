@@ -1914,6 +1914,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const v = (n: string) => Number((f!.elements.namedItem(n) as HTMLInputElement).value) || 0
       go([v('block'), v('area'), v('x'), v('y'), v('facing')])
     })
+    parchmentPanel(dialog, 'debug-panel') // the port's tools in the parchment look (IMP-096)
     dialog.showModal()
   }
 

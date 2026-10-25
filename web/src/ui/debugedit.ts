@@ -9,7 +9,7 @@ import { buildItem } from '../rules/randitem'
 import { recalc } from '../rules/equip'
 import { derive, levelHp, maxLevel, xpFor } from '../rules/training'
 import { keepBase, type Tables } from '../rules/chargen'
-import { onClose } from './sheet'
+import { onClose, parchmentPanel } from './sheet'
 import { F } from '../games/fields'
 import { game } from '../games/profile'
 
@@ -182,6 +182,7 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
     dialog.addEventListener('submit', onSubmit)
     onClose(dialog, () => { dialog.removeEventListener('click', onClick); dialog.removeEventListener('submit', onSubmit); resolve() })
     render()
+    parchmentPanel(dialog, 'debug-panel') // the port's tools in the parchment look (IMP-096)
     dialog.showModal()
   })
 }

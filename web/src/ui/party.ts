@@ -72,9 +72,9 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
    * Load saved game (IMP-095): a page in the parchment look, a row a save: the slot's letter (↻ for the
    * autosave) as a red initial, then what it is, the party and place, and when. Null when cancelled.
    */
-  function chooseSave(list: { mark: string; kicker: string; title: string; note: string }[]): Promise<number | null> {
+  function chooseSave(list: { mark: string; kicker: string; title: string; note: string }[], title = entry('partyLoad').text): Promise<number | null> {
     return new Promise((resolve) => {
-      dialog.innerHTML = `<h2>${escape(entry('partyLoad').text)}</h2><ul class="savelist">${list.map((s, i) => `<li><button type="button" data-i="${i}">
+      dialog.innerHTML = `<h2>${escape(title)}</h2><ul class="savelist">${list.map((s, i) => `<li><button type="button" data-i="${i}">
         <span class="mark">${escape(s.mark)}</span><span class="sv"><small class="kicker">${escape(s.kicker)}</small><strong>${escape(s.title)}</strong><small>${escape(s.note)}</small></span></button></li>`).join('')}</ul>
         <form method="dialog"><button>Cancel</button></form>`
       parchmentPanel(dialog, 'load-panel')
@@ -160,7 +160,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
     nav2.innerHTML = groups.map((g) => `<section class="fgroup"><h2>${g.title}</h2><div class="fbtns">${g.fns.map(button).join('')}</div></section>`).join('')
   }
 
-  const { chooseFrom, confirm, pick, create, modify } = creatorTools(dialog, files, dice, tables)
+  const { chooseFrom, confirm, create, modify } = creatorTools(dialog, files, dice, tables)
 
   async function act(k: string) {
     if (dialog.open) return
@@ -261,7 +261,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
         // IMP-006: the original's files in one ZIP, for DOSBox or another browser
         const saves = await listSaves()
         if (!saves.length) { say('There are no saved games in this browser.'); break }
-        const i = await pick('Export saved game', saves.map((g) => `${g.slot}: ${g.label} — ${new Date(g.savedAt).toLocaleString()}`))
+        const i = await chooseSave(saves.map((g) => ({ mark: g.slot, kicker: `Slot ${g.slot}`, title: g.label, note: new Date(g.savedAt).toLocaleString() })), 'Export saved game')
         if (i === null) break
         const g = saves[i]
         const blob = new Blob([zip(saveFiles(g)) as Uint8Array<ArrayBuffer>], { type: 'application/zip' })

@@ -29,7 +29,11 @@ are the port's and are listed in [strings.md §6](../D-appendices/strings.md#6-s
 
 The screen, its groups and when each function is enabled: [app-flow.md §5](app-flow.md#5-the-party-screen).
 The functions open these dialogs ([ui-contract.md §7](ui-contract.md#7-dialogs)); their results go to
-the screen's message line.
+the screen's message line. All of them but View character (the sheet, §3, the game's EGA window) are
+pages in the parchment look inside the game's frame (IMP-095, IMP-096; [app-flow.md §2.2](app-flow.md#22-the-games-screen)):
+fields cream with an ink edge, choices outlined in ink with the chosen one a gold-lettered charcoal
+plaque, labels and table headings in red small capitals, the game's pictures (portraits, combat icons)
+black in a gold edge, hot-key letters in red, the main button a charcoal plaque.
 
 ### 1.1 Create character
 
@@ -609,7 +613,8 @@ The Account section also opens as its own panel from the party screen's Account 
 
 ## 12. Debug
 
-IMP-025, not part of the game. A panel "Debug" with "Not part of the game. Now: block *b*, area *a*,
+IMP-025, not part of the game. In the parchment look as the party screen's tools (§1, IMP-096), the
+character editor too. A panel "Debug" with "Not part of the game. Now: block *b*, area *a*,
 *x*,*y* facing *Facing*" (or "wilderness *x*,*y*"):
 
 - **Edit characters…** (outside battles; "abilities, HP, experience, levels, money, items");

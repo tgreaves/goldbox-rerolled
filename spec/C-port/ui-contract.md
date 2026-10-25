@@ -36,7 +36,10 @@ decision D1). Every port-authored text is also listed in
 - **The classic look** (IMP-057): the EGA palette for every colour (§2), square corners, the game's
   own 8 × 8 font and frame tiles by default (two settings switch them off). The exceptions take the
   colours of the games' boxes: the games screen (IMP-093, [app-flow.md §2.2](app-flow.md#22-the-games-screen)),
-  and, inside the game's frame, the party screen and the ☰ menu (IMP-094).
+  and, inside the game's frame, the party screen and the ☰ menu (IMP-094), the port's paper pages
+  (Journal, Rules reference, Commissions, the ending, Load; IMP-095), the party screen's tools and the
+  Debug panels (IMP-096). The play screen, battles, the character sheet, camp, shops, treasure and the
+  scripts' screens stay EGA.
 
 ## 2. Colours as roles
 
