@@ -254,7 +254,9 @@ Then play begins (`start()`: the area's entry, [main-loop.md](../A-games/engine/
 the play screen ([ui-contract.md §3.1](ui-contract.md#31-exploring)) takes commands.
 
 **Saving during play**: ☰ → Save, camp → Save, a training hall's Save: "Save in which slot?" with the
-ten slots ([storage.md §5](storage.md#5-saved-games-and-the-autosave)); "Game saved in slot *x*."
+ten slots ([storage.md §5](storage.md#5-saved-games-and-the-autosave)), a window in the parchment look
+(IMP-102): a row a slot, its letter in gold on charcoal, "Slot *x*" (" · replaces" when it holds a save),
+the save's label or "empty", its date and time; **Cancel** and Escape save nothing; "Game saved in slot *x*."
 Save anywhere is IMP-002.
 
 **The autosave** (IMP-060, [storage.md §5](storage.md#5-saved-games-and-the-autosave)): written after

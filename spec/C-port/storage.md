@@ -169,8 +169,8 @@ CotAB's pre-made party) are in the roster from the first run, under their slot s
 ## 5. Saved games and the autosave
 
 **Slots.** Ten slots `A`–`J` (IMP-002). Saving (☰ → Save, camp → Save, or Save in a training hall's
-party menu) asks "Save in which slot?", each slot shown as `<x>: <label> (<date and time>)` or
-`<x>: empty`, then writes:
+party menu) asks "Save in which slot?", each slot shown with its label and date and time, or empty (a
+window on the play screen, [app-flow.md §7](app-flow.md#7-play-new-game-load-continue)), then writes:
 
 - `dat`: the engine's state in the game's `SAVGAM<x>.DAT` layout, with the party stems
   `CHRDAT<x>1` … `CHRDAT<x><n>`;

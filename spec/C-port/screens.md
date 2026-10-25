@@ -440,6 +440,35 @@ Encamp, PROGRAM 9 (an inn's rest) and scripts open the camp ([camp-and-time.md](
 the view shows `PIC<block>` #29, the campfire, animated. On entry and exit pending memorisations
 without the time to learn them are cleared. "The party makes camp..." starts a new block.
 
+**On the play screen the camp is one window** (IMP-102), opened at once, the command bar empty while
+it is open, in the parchment look; its labels are the game's words for the camp, Magic and Alter menus
+(below). From the top:
+
+- "Camp" and the clock; a ruled card per member: the name (selects them, as a tap on their card), "HP
+  *n*/*m* · *status*", and ▲ ▼ moving them a place (Alter's Order, §6.8);
+- the last lines (what a rest, Fix or a refusal printed; the last six);
+- **Rest**: hours and minutes (5-minute steps; at first the time the party needs to learn what is
+  pending and scribe what is marked, `preparation`), **Rest**, and **Until spells are learned (*h* h
+  *m* min)** when that time is not 0. Resting shows "Resting… *h* h *m* min left" and **Stop resting**
+  (Escape the same) in place of the window's lists, the rest's lines (natural healing, spells learnt)
+  appearing as they come; at its end "The rest is over." or "You stop resting."; an encounter ends
+  the camp at once (the camp's *interrupted*, §6.7). **Fix** (§6.9) with "heal the party with its
+  clerics' cures, resting as long as that takes" and its lines;
+- **Magic: *Name*** for the selected member: **Memorize…** (the Memorize panel, §6.4, then the window
+  again) and **Cast…** (the sheet, whose Spells section casts, §3.5), each after the spell-activity check
+  (its refusal shown instead); the game's **Display**: the member's spell effects, or "<No Spell
+  Effects>"; **Scribe** (§6.5): the scroll spells as buttons, a marked one with ✓ ("copied into the spell
+  book while resting"), a tap marking or unmarking it, with the game's refusals ("already known" …), or
+  "*Name* has no copyable scrolls";
+- **Alter**: Speed − *n* + ("0 fastest, 9 slowest"), **Icon…** (the editor, then the window), SotSB's
+  Level as a list of the game's levels, and **Drop *Name*…** asking the game's question in the window
+  (No: the game's "sigh of relief" line);
+- **Save…** (the slot window, [app-flow.md §7](app-flow.md#7-play-new-game-load-continue); then the
+  window asks the game's "Quit TO DOS" with **No** first, Yes ending the game as the menus' Yes does),
+  **View…** (the sheet) and **Exit** (Escape the same), breaking camp.
+
+The rules are the menus' own (ui/camp.ts); without the window (the headless runner) the menus below.
+
 ### 6.1 The camp menu
 
 "Camp:" and the game's camp menu (*game text*): CotAB's SAVE VIEW MAGIC REST ALTER FIX EXIT; Pool

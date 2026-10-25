@@ -1139,3 +1139,22 @@ dialog.panel.parchment button.primary u { color: #f6e2a8; }
   .hall-member > span { grid-column: 1; }
   .hall-member > button[data-train] { grid-column: 2; grid-row: 2 / 4; }
 }
+/* the camp window (IMP-102) */
+.camp-members { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.35rem; margin: 0.4rem 0 0.6rem; }
+.camp-member { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; gap: 0.1rem 0.5rem; align-items: center; border: 1px solid var(--line); padding: 0.3rem 0.5rem; }
+.camp-member .hall-name { text-align: left; }
+.camp-member > span:not(.order) { grid-column: 1; font-size: 0.9em; }
+.camp-member .order { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; gap: 0.15rem; }
+.camp-member .order button { min-height: 28px; padding: 0 0.5rem; }
+.camp-member.on { border: 2px solid var(--accent); }
+.camp-sec { border-top: 1px solid var(--line); margin-top: 0.6rem; padding-top: 0.1rem; }
+.camp-sec h3 { margin: 0.4rem 0; }
+.camp-rest { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.camp-rest input { width: 5rem; }
+.camp-lines { border-left: 3px solid var(--accent); padding: 0.2rem 0.7rem; margin: 0.5rem 0; }
+.camp-lines p { margin: 0.15rem 0; }
+dialog.panel.parchment .camp-member { border-color: var(--rule); background: #ffffff14; }
+dialog.panel.parchment .camp-member.on { border-color: var(--red); background: #ffffff2e; }
+dialog.panel.parchment .camp-member .hall-name { font-variant: small-caps; letter-spacing: 0.03em; color: var(--red); }
+dialog.panel.parchment .camp-sec { border-top-color: var(--rule); }
+dialog.panel.parchment .camp-lines { border-left-color: var(--red); background: #ffffff14; }

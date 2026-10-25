@@ -44,7 +44,7 @@ import { moneyPrompt, COINS, coinValue, dropMoney, moneyOf, pay, buy, poolAll, r
 import { shop, temple, treasure, vault, type TownUi, type TownDesk } from './town'
 import { proposeSplit } from '../rules/treasure'
 import { treasureAftermath } from '../rules/combat'
-import { camp, effectNames, type CampUi } from './camp'
+import { camp, effectNames, type CampUi, type CampDesk } from './camp'
 import { runBattle, type BattleControls } from './combat'
 import { clockText, freeSlots, isScroll, knows, memorise, memorised, preparation } from '../rules/camp'
 import { castOutside, itemSpells, mayCast, readsScroll, spendUse, targetKind } from '../rules/magic'
@@ -701,18 +701,30 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     } catch { /* storage full or unavailable: the game goes on */ }
   }
 
+  /** "Save in which slot?" as a window (IMP-102): a row a slot A–J with what it holds; null when cancelled */
+  function chooseSlot(saves: { slot: string; label: string; savedAt: number }[]): Promise<string | null> {
+    return new Promise((resolve) => {
+      let picked: string | null = null
+      dialog.innerHTML = `<h2>Save in which slot?</h2><ul class="savelist">${[...'ABCDEFGHIJ'].map((slot) => {
+        const g = saves.find((x) => x.slot === slot)
+        return `<li><button type="button" data-slot="${slot}"><span class="mark">${slot}</span><span class="sv"><small class="kicker">Slot ${slot}${g ? ' · replaces' : ''}</small>
+          <strong>${g ? escape(g.label) : 'empty'}</strong>${g ? `<small>${escape(new Date(g.savedAt).toLocaleString())}</small>` : ''}</span></button></li>`
+      }).join('')}</ul><form method="dialog"><button>Cancel</button></form>`
+      dialog.querySelectorAll<HTMLButtonElement>('[data-slot]').forEach((b) => b.addEventListener('click', () => { picked = b.dataset.slot!; dialog.close() }))
+      onClose(dialog, () => resolve(picked))
+      parchmentPanel(dialog, 'load-panel')
+      dialog.showModal()
+      dialog.querySelector<HTMLButtonElement>('[data-slot]')?.focus()
+    })
+  }
+
   /** counted: the camp's Save (and IMP-002's, which stands for it), which adds 1 to the save counter first */
   async function saveGame(counted = false) {
     if (engine.demo) return
     const saves = await listSaves()
-    const slots = [...'ABCDEFGHIJ'].map((slot) => {
-      const g = saves.find((x) => x.slot === slot)
-      return `${slot}: ${g ? `${g.label} (${new Date(g.savedAt).toLocaleString()})` : 'empty'}`
-    })
-    // Escape cancels, as the original's Esc at "Save Which Game" (FUN_45c5_1d58)
-    const i = await menu(slots, { prompt: 'Save in which slot?', vertical: true, cancel: true })
-    if (i < 0) return
-    const slot = 'ABCDEFGHIJ'[i]
+    // a window of the ten slots (IMP-102); Escape cancels, as the original's Esc at "Save Which Game" (FUN_45c5_1d58)
+    const slot = await chooseSlot(saves)
+    if (!slot) return
     // SotSB's camp Save counts saves in an ECL word before writing (files.saveCounter, 0x390C5)
     const counter = game().saves.saveCounter
     if (counted && counter !== null) engine.write(counter, (engine.read(counter) + 1) & 0xffff)
@@ -1395,6 +1407,138 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       return { stopped: () => stopped, done: () => { menuBar.innerHTML = '' } }
     },
     pause: (ms) => new Promise((r) => setTimeout(r, ms)),
+    campWindow: (desk, askQuit) => campWindow(desk, askQuit),
+  }
+
+  /**
+   * The camp as one window (IMP-102): the party (HP, order), resting with a countdown and Stop, Fix, the
+   * selected member's magic (Memorize, Cast from the sheet, Scribe, Display), Alter (speed, icon, drop,
+   * SotSB's level), Save, View and breaking camp; the rules are the menus' own (ui/camp.ts).
+   */
+  type CampAction = 'memorize' | 'view' | 'icon' | 'save' | 'interrupted' | 'quit' | 'exit'
+  function campWindow(desk: CampDesk, askQuit: boolean): Promise<CampAction> {
+    const word = (list: MenuWord[], key: string, fallback: string) => list.find((x) => x.key.toUpperCase() === key)?.text.trim() || fallback
+    const W = { save: word(desk.words.camp, 'S', 'Save'), view: word(desk.words.camp, 'V', 'View'), rest: word(desk.words.camp, 'R', 'Rest'), exit: word(desk.words.camp, 'E', 'Exit'),
+      cast: word(desk.words.magic, 'C', 'Cast'), memorize: word(desk.words.magic, 'M', 'Memorize'), scribe: word(desk.words.magic, 'S', 'Scribe'), display: word(desk.words.magic, 'D', 'Display'),
+      order: word(desk.words.alter, 'O', 'Order'), drop: word(desk.words.alter, 'D', 'Drop'), speed: word(desk.words.alter, 'S', 'Speed'), icon: word(desk.words.alter, 'I', 'Icon') }
+    const needed = desk.restNeeded()
+    let hours = Math.floor(needed / 60), mins = needed % 60
+    let lines: string[] = []
+    let resting: { left: number; stop: boolean } | null = null
+    let asking: { text: string; buttons: { label: string; main?: boolean; act: () => void }[] } | null = null
+    const hm = (m: number) => `${Math.floor(m / 60)} h ${m % 60} min`
+    return new Promise((resolve) => {
+      let result: CampAction = 'exit'
+      const leave = (r: CampAction) => { result = r; dialog.close() }
+      if (askQuit) asking = { text: desk.questions.quit, buttons: [{ label: 'No', main: true, act: () => { asking = null } }, { label: 'Yes', act: () => leave('quit') }] }
+      const render = () => {
+        const cur = engine.cur, party = engine.party()
+        const head = `<h2>Camp <span class="muted small">${clockText(engine)}</span></h2>`
+        const members = `<div class="camp-members">${party.map((c, i) => {
+          const ch = parseCharacter(c)
+          return `<div class="camp-member${c === cur ? ' on' : ''}"><button data-who="${i}" class="hall-name">${escape(ch.name)}</button>
+            <span>HP ${ch.hp}/${ch.hpMax} · ${escape(ch.status)}</span>
+            <span class="order"><button data-up="${i}" ${i ? '' : 'disabled'} aria-label="${escape(W.order)}: ${escape(ch.name)} up" title="${escape(W.order)}: up">▲</button><button data-down="${i}" ${i < party.length - 1 ? '' : 'disabled'} aria-label="${escape(W.order)}: ${escape(ch.name)} down" title="${escape(W.order)}: down">▼</button></span></div>`
+        }).join('')}</div>`
+        const said = lines.length ? `<div class="camp-lines" role="status">${lines.slice(-6).map((l) => `<p>${escape(l)}</p>`).join('')}</div>` : ''
+        if (asking) {
+          dialog.innerHTML = `${head}${said}<div class="town-ask"><p><strong>${escape(asking.text)}</strong></p>
+            <p>${asking.buttons.map((b, i) => `<button data-ask="${i}" class="${b.main ? 'primary' : ''}">${escape(b.label)}</button>`).join(' ')}</p></div>`
+          dialog.querySelector<HTMLButtonElement>('[data-ask="0"]')?.focus()
+          return
+        }
+        if (resting) {
+          dialog.innerHTML = `${head}${members}<div class="town-ask"><p><strong>Resting… ${hm(resting.left)} left</strong></p>
+            <p><button data-stop="1" class="primary">Stop resting</button></p></div>${said}`
+          return
+        }
+        const name = parseCharacter(cur).name
+        const scrolls = desk.scrolls()
+        const scribeWhy = desk.check('scribeAny')
+        const level = desk.level
+        dialog.innerHTML = `${head}${members}${said}
+          <section class="camp-sec"><h3>${escape(W.rest)}</h3>
+            <p class="camp-rest"><label><input type="number" min="0" max="2399" value="${hours}" data-hours aria-label="Hours"> h</label>
+              <label><input type="number" min="0" max="55" step="5" value="${mins}" data-mins aria-label="Minutes"> min</label>
+              <button data-rest="1" class="primary">${escape(W.rest)}</button>
+              ${needed ? `<button data-preset="1">Until spells are learned (${hm(needed)})</button>` : ''}</p>
+            <p><button data-fix="1">Fix</button> <span class="muted">heal the party with its clerics' cures, resting as long as that takes</span></p></section>
+          <section class="camp-sec"><h3>Magic: ${escape(name)}</h3>
+            <p class="tr-actions"><button data-memorize="1">${escape(W.memorize)}…</button><button data-cast="1" title="Casting is on the character sheet">${escape(W.cast)}…</button></p>
+            <p><strong>${escape(W.display)}:</strong> ${escape(desk.effects().join(', '))}</p>
+            <p><strong>${escape(W.scribe)}:</strong> ${scribeWhy ? escape(scribeWhy) : scrolls.length
+              ? `${scrolls.map((x, i) => `<button data-scribe="${i}" class="${x.marked ? 'on' : ''}" title="${x.marked ? 'Marked: copied into the spell book while resting' : 'Mark to copy into the spell book while resting'}">${escape(x.label)}${x.marked ? ' ✓' : ''}</button>`).join(' ')}`
+              : escape(`${name} ${msg('noScrolls')}`.trim())}</p></section>
+          <section class="camp-sec"><h3>${escape(word(desk.words.camp, 'A', 'Alter'))}</h3>
+            <p class="tr-actions"><span>${escape(W.speed)}: <button data-speed="-1" aria-label="Faster">−</button> <strong>${desk.speed.get()}</strong> <button data-speed="1" aria-label="Slower">+</button> <span class="muted">0 fastest, 9 slowest</span></span>
+              <button data-icon="1">${escape(W.icon)}…</button>
+              ${level ? `<label>Level <select data-level>${level.names.map((n, i) => `<option value="${i}"${i === level.get() ? ' selected' : ''}>${escape(n)}</option>`).join('')}</select></label>` : ''}
+              <button data-drop="1">${escape(W.drop)} ${escape(name)}…</button></p></section>
+          <p class="town-actions"><button data-save="1">${escape(W.save)}…</button><button data-view="1">${escape(W.view)}…</button><button data-exit="1" class="primary">${escape(W.exit)}</button></p>`
+        dialog.querySelector<HTMLSelectElement>('[data-level]')?.addEventListener('change', (e) => { desk.level?.set(Number((e.target as HTMLSelectElement).value)) })
+      }
+      const readTime = () => {
+        hours = Math.max(0, Math.min(2399, Math.floor(Number(dialog.querySelector<HTMLInputElement>('[data-hours]')?.value) || 0)))
+        mins = Math.max(0, Math.min(55, Math.floor((Number(dialog.querySelector<HTMLInputElement>('[data-mins]')?.value) || 0) / 5) * 5))
+      }
+      const onClick = async (e: MouseEvent) => {
+        const b = (e.target as HTMLElement).closest('button')
+        if (!b || b.disabled || b.closest('form')) return
+        e.preventDefault()
+        const d = b.dataset
+        if (d.ask && asking) { asking.buttons[Number(d.ask)].act(); if (dialog.open) render(); return }
+        if (d.stop && resting) { resting.stop = true; return }
+        if (resting) return
+        if (d.who) { engine.cur = engine.party()[Number(d.who)]; drawRoster() }
+        else if (d.up) desk.move(Number(d.up), -1)
+        else if (d.down) desk.move(Number(d.down), 1)
+        else if (d.preset) { hours = Math.floor(desk.restNeeded() / 60); mins = desk.restNeeded() % 60 }
+        else if (d.rest) {
+          readTime()
+          const total = hours * 60 + mins
+          if (total <= 0) { lines = ['Choose how long to rest.']; render(); return }
+          lines = []
+          resting = { left: total, stop: false }
+          render()
+          const r = await desk.rest(total, () => !!resting?.stop, (left, got) => { if (resting) resting.left = left; if (got.length) lines.push(...got); render() })
+          const stopped = resting?.stop
+          resting = null
+          if (r.interrupted) return leave('interrupted')
+          lines.push(stopped ? 'You stop resting.' : 'The rest is over.')
+        } else if (d.fix) {
+          lines = ['Fixing…']; render()
+          const r = await desk.fix()
+          lines = r.lines
+          if (r.interrupted) return leave('interrupted')
+        } else if (d.memorize) { const why = desk.check('memorizeAny'); if (why) lines = [why]; else return leave('memorize') }
+        else if (d.cast) { const why = desk.check('castAny'); if (why) lines = [why]; else return leave('view') }
+        else if (d.scribe) { const why = desk.scribe(Number(d.scribe)); lines = why ? [why] : [] }
+        else if (d.speed) desk.speed.set(desk.speed.get() + Number(d.speed))
+        else if (d.icon) return leave('icon')
+        else if (d.drop) {
+          asking = { text: desk.questions.drop, buttons: [{ label: 'No', main: true, act: () => { asking = null; lines = [msg('sighOfRelief').trim()] } },
+            { label: 'Yes', act: () => { asking = null; lines = desk.drop() } }] }
+        } else if (d.save) return leave('save')
+        else if (d.view) return leave('view')
+        else if (d.exit) return leave('exit')
+        render()
+      }
+      // Escape: stop a rest, back out of a question, else break camp
+      const onCancel = (e: Event) => {
+        e.preventDefault()
+        if (resting) resting.stop = true
+        else if (asking) { asking = null; render() }
+        else leave('exit')
+      }
+      dialog.classList.add('wide')
+      dialog.addEventListener('click', onClick)
+      dialog.addEventListener('cancel', onCancel)
+      onClose(dialog, () => { dialog.removeEventListener('click', onClick); dialog.removeEventListener('cancel', onCancel); dialog.classList.remove('wide'); resolve(result) })
+      render()
+      parchmentPanel(dialog, 'camp-panel')
+      menuBar.innerHTML = ''
+      dialog.showModal()
+    })
   }
 
   /**

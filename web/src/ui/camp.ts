@@ -25,6 +25,116 @@ export interface CampUi {
   memorizePanel?(): Promise<void>
   /** the combat icon editor (FUN_417f_382d, IMP-017) on a character; true when the new icon is kept */
   iconEditor?(c: Uint8Array): Promise<boolean>
+  /**
+   * The camp as one window (IMP-102): resting, Fix, the magic and Alter's functions in it, the command
+   * bar not used. Resolves with what the camp does next: a panel of its own ('memorize', 'view' for the
+   * sheet and its casting, 'icon', 'save'), then the window again (after 'save' with the quit question
+   * first); 'interrupted' when a rest was, 'quit' for Yes to the quit question, 'exit' to break camp.
+   * Without it the original's menus.
+   */
+  campWindow?(desk: CampDesk, askQuit: boolean): Promise<'memorize' | 'view' | 'icon' | 'save' | 'interrupted' | 'quit' | 'exit'>
+}
+
+/** What the camp window (IMP-102) does through the rules: the menus' steps, their lines returned to it. */
+export interface CampDesk {
+  /** the game's words: the camp's, the Magic menu's and Alter's (labels for the window's buttons) */
+  words: { camp: MenuWord[]; magic: MenuWord[]; alter: MenuWord[] }
+  /** the minutes the party needs to learn what is pending and scribe what is marked (the rest's start) */
+  restNeeded(): number
+  /** a rest of `minutes` (5-minute steps): stopped when `stopped()`; `progress` after each step with the minutes left and new lines */
+  rest(minutes: number, stopped: () => boolean, progress: (left: number, lines: string[]) => void): Promise<{ interrupted: boolean }>
+  /** Fix (IMP-048, IMP-086): its lines, and whether its rest was interrupted */
+  fix(): Promise<{ lines: string[]; interrupted: boolean }>
+  /** the spell-activity check for the current character: '' or the game's refusal */
+  check(what: 'castAny' | 'memorizeAny' | 'scribeAny'): string
+  /** the current character's spell effects (Display), or the game's "no spell effects" */
+  effects(): string[]
+  /** the current character's scroll spells: label, marked to be scribed */
+  scrolls(): { label: string; marked: boolean }[]
+  /** mark (or unmark) scroll spell `i` to be scribed while resting: the game's refusal, if any */
+  scribe(i: number): string
+  /** Order: member `i` a step up (-1) or down (1) */
+  move(i: number, d: -1 | 1): void
+  /** Drop the current character from the party (after the game's question): the game's lines */
+  drop(): string[]
+  /** the game's questions: Drop's, and the quit question after Save */
+  questions: { drop: string; quit: string }
+  /** the game speed, 0 fastest – 9 slowest */
+  speed: { get(): number; set(v: number): void }
+  /** SotSB's difficulty (Alter's Level): the names, the current one, set */
+  level: { names: string[]; get(): number; set(i: number): void } | null
+}
+
+/** The camp window's desk (IMP-102) on the rules the menus use. */
+function campDesk(ui: CampUi, state: { heal: number }): CampDesk {
+  const e = ui.engine, t = e.items!, st = e.spells!
+  const d = R.difficulty
+  const capture = (f: (cap: CampUi) => void | Promise<void>) => async () => {
+    const out: string[] = []
+    await f({ ...ui, engine: e, print: (m: string) => { if (m) out.push(m) } })
+    return out
+  }
+  return {
+    words: { camp: menu('camp'), magic: menu('magic'), alter: menu('alter') },
+    restNeeded: () => Math.max(0, ...e.party().map((c) => preparation(c, e.itemsOf(c), t, st))),
+    rest: async (minutes, stopped, progress) => {
+      const r = startRest(e, minutes)
+      let n = 0
+      while (r.minutes > 0) {
+        if (stopped()) break
+        const res = await restStep(e, r, state)
+        progress(r.minutes, res.messages)
+        if (res.messages.length) ui.refresh()
+        if (res.interrupted) { e.campInterrupted = true; ui.refresh(); return { interrupted: true } }
+        if (++n % 12 === 0) { ui.refresh(); await ui.pause(25) }
+      }
+      ui.refresh()
+      return { interrupted: false }
+    },
+    fix: async () => {
+      let interrupted = false
+      const lines = await capture(async (cap) => { interrupted = await fix(cap, state) })()
+      return { lines, interrupted }
+    },
+    check: (what) => {
+      const out: string[] = []
+      return activity({ ...ui, engine: e, print: (m: string) => { out.push(m) } }, what) ? '' : out.join(' ')
+    },
+    effects: () => {
+      const names = effectNames(e, e.cur)
+      return names.length ? names : [msg('noSpellEffects').trim()]
+    },
+    scrolls: () => {
+      const c = e.cur
+      return readableScrolls(c, e.itemsOf(c), e.effectsOf(c), t).flatMap((it) => it.props.map((p) => ({ id: p & 0x7f, mark: p > 0x80 })).filter((x) => x.id > 0))
+        .map((x) => ({ label: st.get(x.id)!.name, marked: x.mark }))
+    },
+    scribe: (i) => {
+      const c = e.cur, items = e.itemsOf(c)
+      const entries = readableScrolls(c, items, e.effectsOf(c), t).flatMap((it) => it.props.map((p, j) => ({ it, j, id: p & 0x7f, mark: p > 0x80 })).filter((x) => x.id > 0))
+      const x = entries[i]
+      if (!x) return ''
+      if (x.mark) { x.it.raw[0x3c + x.j] &= 0x7f; return '' }
+      const s = st.get(x.id)!
+      if (knows(c, x.id)) return msg('knowSpell').trim()
+      if (entries.some((y) => y.mark && y.id === x.id)) return msg('scribingSpell').trim()
+      if (!slots(c, s.cls, s.level)) return msg('cannotScribe').trim()
+      x.it.raw[0x3c + x.j] |= 0x80
+      return ''
+    },
+    move: (i, dir) => { e.moveMember(i, dir); ui.refresh() },
+    drop: () => {
+      const c = e.cur
+      if (e.party().length === 1) return ['The last character cannot leave the party here.']
+      const line = `${nameOf(c)} ${msg(c[F.inPlay] ? 'bidsFarewell' : 'dumpedInDitch')}`
+      e.dropMember(c)
+      ui.refresh()
+      return [line]
+    },
+    questions: { drop: msg('dropFromParty').trimEnd(), quit: msg('quitToDos').trimEnd() },
+    speed: { get: () => e.speed, set: (v) => { e.speed = Math.max(0, Math.min(9, v)) } },
+    level: d ? { names: menu('alterLevel').map((w) => w.text.trim()), get: () => e.read(d.variable), set: (i) => e.write(d.variable, i) } : null,
+  }
 }
 
 const nameOf = (c: Uint8Array) => parseCharacter(c).name
@@ -57,6 +167,23 @@ export async function camp(ui: CampUi): Promise<boolean> {
   // the game's camp menu; Pool of Radiance has no Fix, the port adds the later games' (IMP-048)
   const words: MenuWord[] = [...menu('camp')]
   if (!words.some((w) => w.key === 'F')) words.splice(Math.max(0, words.length - 1), 0, { text: 'Fix', key: 'F' })
+  if (ui.campWindow) {
+    const desk = campDesk(ui, state)
+    let askQuit = false
+    for (;;) {
+      const r = await ui.campWindow(desk, askQuit)
+      askQuit = false
+      if (r === 'memorize') { if (activity(ui, 'memorizeAny')) await (ui.memorizePanel ? ui.memorizePanel() : memorize(ui)) }
+      else if (r === 'view') await ui.view()
+      else if (r === 'icon') { if (ui.iconEditor && (await ui.iconEditor(e.cur))) ui.refresh() }
+      else if (r === 'save') { await ui.save(); askQuit = true }
+      else if (r === 'quit') { quit = true; break }
+      else break // 'interrupted' (campInterrupted is set) or 'exit'
+    }
+    for (const c of e.party()) clearPending(c, e.itemsOf(c), e.items)
+    ui.refresh()
+    return quit
+  }
   for (let again = false; ; again = true) {
     const o = await ask((l, op) => ui.menu(l, op), words, { prompt: msg('camp').trimEnd(), again })
     if (o === 'S') {
