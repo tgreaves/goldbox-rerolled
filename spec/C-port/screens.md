@@ -185,7 +185,8 @@ game's extensions); on an error "Import failed: *message*".
 
 ## 2. The ☰ menu
 
-Opened by **☰ Menu** or Escape while exploring (IMP-057). A panel "Menu" with one button per entry,
+Opened by **☰ Menu** or Escape while exploring (IMP-057). The Journal and the Commissions are on the
+command bar instead (IMP-107, [ui-contract.md §5](ui-contract.md#5-the-command-bar)). A panel "Menu" with one button per entry,
 each with a quiet second line; **Back to the game** at the foot. In the parchment look (IMP-094,
 [app-flow.md §2.2](app-flow.md#22-the-games-screen)) inside the game's frame: the heading in red ink with
 a ◆, each entry a ruled row with its name in red small capitals and the second line in ink, **Back to
@@ -193,8 +194,6 @@ the game** a charcoal plaque lettered in gold; the panels it opens are the game'
 
 | Entry | Shown | Second line |
 |---|---|---|
-| **Journal** | the game has a journal | "*n* found", or what the journal holds: "entries, proclamations and tavern tales" (PoR) / "entries and tavern tales" (CotAB) / "entries" (SotSB) |
-| **Commissions** (with "•" when due) | the game has commissions (PoR) | "a reward is waiting", or "the City Council's commissions and progress" |
 | **Sign in / create account** or **Account: …** | a server answers | "keep your saves on the server and play on any device" / "your saves on the server, sync, password" |
 | **Save** | always | "any time, slots A–J" |
 | **Settings** | always | "speed, sound, font, borders, motion, text size, graphics" |

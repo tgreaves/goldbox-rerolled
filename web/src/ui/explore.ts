@@ -2530,8 +2530,11 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     menuBar.innerHTML = ['A', 'E', 'S', 'L'].map((k) => word('main', k))
       .map(({ text: c, key: k }) => { const j = Math.max(0, c.toUpperCase().indexOf(k))
         return `<button data-cmd="${k}" class="${k === 'A' ? 'area-only' : ''}${k === 'S' && engine.B[0x6dca - 0x6b00] & 1 ? ' on' : ''}">${escape(c.slice(0, j))}<u>${escape(c[j] ?? '')}</u>${escape(c.slice(j + 1))}</button>` }).join('') +
-      // everything that is not a game command sits behind ☰ (IMP-057)
-      `<button class="menu-btn" data-cmd="menu" title="Journal, commissions, save, settings, rules, quit (Esc)">☰ Menu${commissionsDue() ? ' <span class="due">•</span>' : ''}</button>`
+      // the Journal and the Commissions beside them (IMP-107): J, and O as C is Cast
+      (JOURNAL.journal.length ? '<button data-cmd="journal" title="The Adventurer\'s Journal: entries, proclamations, tavern tales (J)"><u>J</u>ournal</button>' : '') +
+      (game().commissions ? `<button data-cmd="commissions" title="The City Council's commissions and progress (O)">C<u>o</u>mmissions${commissionsDue() ? ' <span class="due">•</span>' : ''}</button>` : '') +
+      // everything else that is not a game command sits behind ☰ (IMP-057)
+      `<button class="menu-btn" data-cmd="menu" title="Save, settings, rules, quit (Esc)" aria-label="Menu">☰<span class="mlabel"> Menu</span></button>`
     menuBar.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => command(b.dataset.cmd!)))
   }
 
@@ -2581,13 +2584,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   /** ☰ (IMP-057): the port's own pages and the things around the game. */
   function mainMenu() {
-    const due = commissionsDue()
-    const found = [...known].filter((k) => /^(journal|tale|proc):/.test(k)).length
     const item = (cmd: string, label: string, note: string) => `<li><button data-go="${cmd}">${label}<small>${note}</small></button></li>`
     dialog.innerHTML = `<h2>Menu</h2>
       <ul class="mainmenu">
-        ${!JOURNAL.journal.length ? '' : item('journal', 'Journal', found ? `${found} found` : [JOURNAL.proclamations.length ? 'proclamations' : '', JOURNAL.tales.length ? 'tavern tales' : ''].filter(Boolean).reduce((s, k, i, a) => s + (i === a.length - 1 ? ' and ' : ', ') + k, 'entries'))}
-        ${!game().commissions ? '' : item('commissions', `Commissions${due ? ' <span class="due">•</span>' : ''}`, due ? 'a reward is waiting' : 'the City Council\'s commissions and progress')}
         ${accountStatus().available ? item('account', accountLabel(), accountStatus().user ? 'your saves on the server, sync, password' : 'keep your saves on the server and play on any device') : ''}
         ${item('save', 'Save', 'any time, slots A–J')}
         ${item('settings', 'Settings', 'speed, sound, font, borders, motion, text size, graphics')}
@@ -2649,7 +2648,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     } else if (e.key.length === 1 && 'ACVESL'.includes(e.key.toUpperCase())) {
       e.preventDefault()
       command(e.key.toUpperCase())
-    }
+    } else if (e.key.toUpperCase() === 'J' && JOURNAL.journal.length) { e.preventDefault(); command('journal') }
+    else if (e.key.toUpperCase() === 'O' && game().commissions) { e.preventDefault(); command('commissions') }
   }
   window.addEventListener('keydown', onKey)
   // a View setting that comes with the account applies at once, as the settings panel's does

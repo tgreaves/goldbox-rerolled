@@ -163,8 +163,15 @@ dialog.panel form.jump input { width: 4.5rem; }
   .game .map { flex: none; width: 10rem; min-height: 0; padding: 0.15rem; }
   /* commands four to a row across the width, the movement pad a row of its own under them */
   .game .commands { flex-direction: column; align-items: stretch; gap: 0.35rem; }
-  .game .menu { flex: none; }
-  .game .menu button { flex: 1 1 calc(25% - 0.35rem); padding: 0.3rem 0.3rem; }
+  /* three to a row (IMP-107: Encamp Search Look / Journal Commissions Menu), every button inside the screen */
+  .game .menu { flex: none; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .game .menu button { grid-column: span 2; padding: 0.3rem 0.2rem; min-width: 0; overflow-wrap: anywhere; }
+  .game .menu button.primary:only-child { grid-column: 1 / -1; }
+  /* the second row: Commissions, the longest word, gets half of it, ☰ only its icon */
+  .game .menu button[data-cmd="commissions"] { grid-column: span 3; }
+  .game .menu button.menu-btn { grid-column: span 1; }
+  .game .menu button.menu-btn .mlabel { display: none; }
+  .game .menu button[data-cmd="journal"]:not(:has(+ [data-cmd="commissions"])) { grid-column: span 4; } /* no Commissions (CotAB, SotSB): Journal takes their room */
   .game .pad { grid-template-columns: repeat(4, 1fr); }
   .game.in-combat { grid-template-columns: 1fr; grid-template-rows: min(100vw, 56dvh) auto minmax(4rem, 1fr) auto; }
   .game.in-combat .side { height: auto; max-height: 8rem; }

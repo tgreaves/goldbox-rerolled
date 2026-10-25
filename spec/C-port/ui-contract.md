@@ -217,7 +217,7 @@ The bottom row of the play screen. One of these sets at a time:
 
 | Context | Contents |
 |---|---|
-| exploring, nothing pending | **Area** (class L only), **Encamp**, **Search** (drawn "on", highlight border, while searching), **Look**, **☰ Menu** (followed by a highlight "•" when a commission reward or summons waits, PoR) |
+| exploring, nothing pending | **Area** (class L only), **Encamp**, **Search** (drawn "on", highlight border, while searching), **Look**, **Journal** (when the game has a journal; key J; tooltip "The Adventurer's Journal: entries, proclamations, tavern tales (J)"), **Commissions** (PoR; key O, as C is Cast, the O marked; followed by a highlight "•" when a reward or summons waits; tooltip "The City Council's commissions and progress (O)"; IMP-107), **☰ Menu** |
 | a script menu | its items as buttons ([§6.3](#63-menus-and-prompts)) |
 | a single-item prompt | one wide main button |
 | a vertical menu | nothing (the list is in the text log) |
@@ -229,8 +229,11 @@ Every command shows its label with its hotkey letter (the first) in the highligh
 and **Area** are not on the bar while exploring (IMP-061): a card opens the sheet, the map is on
 screen; the keys V and A still work, and Area is on the bar in class L. **Cast** is not on the bar
 (IMP-062): the key C opens the current character's sheet, which casts. Everything that is not a game
-command is behind **☰ Menu** (IMP-057, [screens.md §2](screens.md#2-the--menu); tooltip "Journal,
-commissions, save, settings, rules, quit (Esc)").
+command, the Journal and the Commissions aside (IMP-107), is behind **☰ Menu** (IMP-057,
+[screens.md §2](screens.md#2-the--menu); tooltip "Save, settings, rules, quit (Esc)"). In class N the bar is a
+grid of six columns: each button two, three to a row (Encamp Search Look / Journal Commissions ☰),
+Commissions three and ☰ one with its icon alone (Journal four in a game without Commissions), a lone
+main button the whole row.
 
 The original's command line ("Area Cast View Encamp Search Look", [main-loop.md, "Command menu"](../A-games/engine/main-loop.md#command-menu-o-fun_3e76_0989))
 is thus split: Encamp, Search, Look on the bar; Area on the map; View on the cards; Cast on the sheet.
