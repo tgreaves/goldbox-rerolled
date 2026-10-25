@@ -104,4 +104,12 @@ export class Overland {
     const row = gy < 2 ? gy : gy < 34 ? 2 : gy < 35 ? 3 : 4
     return { x0: gx - col, y0: gy - row, col, row }
   }
+
+  /**
+   * A view `width` pixels wide, 120 high (IMP-109): its left edge in map pixels, the party's square in
+   * the middle, stopping at the map's edges as the window does. For 120 it is the window's x0 × 24.
+   */
+  static left(gx: number, width: number): number {
+    return Math.max(0, Math.min(WIDTH * 24 - width, gx * 24 + 12 - Math.round(width / 2)))
+  }
 }

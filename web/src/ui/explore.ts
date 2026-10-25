@@ -35,7 +35,7 @@ import { report, revealedBy, type State } from '../rules/commissions'
 import { JOURNAL, journalReveals, revealNote, roman } from '../rules/journal'
 import { spellText } from '../rules/spelltext'
 import { ICONS, landmarks, type Landmark } from '../rules/landmarks'
-import { Overland } from '../rules/overland'
+import { Overland, WIDTH as OVERLAND_WIDTH } from '../rules/overland'
 import { characterItemsFile, type Item, type ItemTables } from '../data/items'
 import { buildIcon } from '../render/icon'
 import { effectsFile } from '../data/effects'
@@ -593,8 +593,12 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           // after a battle (game mode 6) the view shows PIC<block> #1, the treasure chest (FUN_10ba_27d9)
           if (engine.demo && !engine.demo.aftermath) { /* CotAB 0x1EEAC: nothing after the clean-up */ }
           else if (r.survived) {
+            // the battlefield's layout goes first: the chest in the view's own place (IMP-109)
+            app.querySelector('.game')!.classList.remove('in-combat')
             showView(!engine.overland)
             wildview.hidden = !engine.overland
+            wildLayout()
+            if (engine.overland) drawWild()
             showPicture({ pic: 1 })
             try { await treasure(townUi) } finally { viewBack() }
           } else await gameOver()
@@ -758,6 +762,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const outdoors = engine.overland
     showView(!outdoors)
     wildview.hidden = !outdoors || !engine.wild
+    wildLayout()
     padLabels(outdoors)
     if (outdoors) {
       drawWild()
@@ -2197,28 +2202,50 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     try { if (raw) partyFrames.push(asCanvas(spriteImage(parseRecord(raw).frames[0].picture))) } catch { /* missing */ }
   }
   let partyPhase = 0
-  /** The 5x5 view (FUN_54cf_0000, FUN_54fa_0000); the marker advances a frame per redraw. */
+  /**
+   * The wilderness takes the area map's place (IMP-109): the play screen has the class `wilderness`
+   * while the tile view is up, and the view is as wide as its region at five tiles high, the party in
+   * the middle (the original's 5 × 5 where the region is square).
+   */
+  const gameEl = app.querySelector<HTMLElement>('.game')!
+  function wildLayout() {
+    gameEl.classList.toggle('wilderness', engine.overland && !!engine.wild)
+  }
+  /** the view's width in the tiles' pixels, from its region's shape: 120 to the whole map's */
+  function wildWidth(): number {
+    const r = wildview.parentElement!.getBoundingClientRect()
+    const wide = r.height > 0 ? Math.round(120 * r.width / r.height) : 120
+    return Math.max(120, Math.min(OVERLAND_WIDTH * 24, wide))
+  }
+  /** the view drawn last (map pixels), for a tap */
+  let wildWindow = { left: 0, top: 0, width: 120 }
+  /** The 5x5 view (FUN_54cf_0000, FUN_54fa_0000), wider where there is room; the marker advances a frame per redraw. */
   function drawWild(at?: [number, number]) {
     const w = engine.wild
     if (!w) return
-    const g = sizeCanvas(wildview, 120, 120)
+    const width = wildWidth()
+    const g = sizeCanvas(wildview, width, 120)
+    wildview.style.aspectRatio = `${width} / 120`
     const [gx, gy] = at ?? engine.wildPosition
-    const { x0, y0, col, row } = Overland.window(gx, gy)
+    const { y0, row } = Overland.window(gx, gy)
+    const left = Overland.left(gx, width), top = y0 * 24
+    wildWindow = { left, top, width }
     g.fillStyle = '#000'
-    g.fillRect(0, 0, 120, 120)
-    for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) {
-      const t = wildTile(w.tile(x0 + c, y0 + r, (a) => engine.read(a)))
-      if (t) blitCanvas(g, t, c * 24, r * 24)
+    g.fillRect(0, 0, width, 120)
+    for (let r = 0; r < 5; r++) for (let c = Math.floor(left / 24); c * 24 < left + width; c++) {
+      const t = wildTile(w.tile(c, y0 + r, (a) => engine.read(a)))
+      if (t) blitCanvas(g, t, c * 24 - left, r * 24)
     }
     const p = partyFrames[partyPhase % partyFrames.length]
     partyPhase = (partyPhase + 1) % 6
     if (!p) return
+    const px = gx * 24 - left
     g.save()
     if (engine.facing2 > 3) { // facing south or west: mirrored
-      g.translate(col * 24 + 24, row * 24)
+      g.translate(px + 24, row * 24)
       g.scale(-1, 1)
       blitCanvas(g, p, 0, 0)
-    } else blitCanvas(g, p, col * 24, row * 24)
+    } else blitCanvas(g, p, px, row * 24)
     g.restore()
   }
   const padButtons = [...pad.querySelectorAll<HTMLButtonElement>('button')]
@@ -2674,8 +2701,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     if (pending && pending.items.length === 1) return choose(0)
     // tap towards a side of the party's square to walk that way
     const r = wildview.getBoundingClientRect()
-    const { col, row } = Overland.window(...engine.wildPosition)
-    const dx = (e.clientX - r.left) / r.width * 5 - (col + 0.5), dy = (e.clientY - r.top) / r.height * 5 - (row + 0.5)
+    const { left, top, width } = wildWindow
+    const [gx, gy] = engine.wildPosition
+    const dx = ((e.clientX - r.left) / r.width * width + left) / 24 - (gx + 0.5), dy = ((e.clientY - r.top) / r.height * 120 + top) / 24 - (gy + 0.5)
     move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'r' : 'l') : (dy > 0 ? 'b' : 'f'))
   })
   roster.addEventListener('click', (e) => {
@@ -2698,6 +2726,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
   const observer = new ResizeObserver(resize)
   observer.observe(canvas)
+  // the wilderness view's width follows its region's (IMP-109)
+  const wildObserver = new ResizeObserver(() => { if (!wildview.hidden && engine.overland && wildWidth() !== wildWindow.width) drawWild() })
+  wildObserver.observe(wildview.parentElement!)
   resize()
   const loop = (now: number) => {
     if (!running) return
@@ -2742,6 +2773,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     stopAnimation()
     running = false
     observer.disconnect()
+    wildObserver.disconnect()
     window.removeEventListener('keydown', onKey)
     window.removeEventListener('keydown', onTravelKey, true)
     stopSettings()

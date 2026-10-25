@@ -118,6 +118,7 @@ implementation's: *done*, or what remains.
 | IMP-108 | the Quit window | [app-flow.md §7](app-flow.md#7-play-new-game-load-continue) | required | done |
 | IMP-107 | Journal and Commissions on the command bar | [ui-contract.md §5](ui-contract.md#5-the-command-bar) | required | done |
 | IMP-106 | the version on every screen | [pwa-and-build.md §6](pwa-and-build.md#6-the-version-stamp) | required | done |
+| IMP-109 | the wilderness view in the area map's place | [exploration-view.md §4.1](exploration-view.md#41-pool-of-radiance-the-tile-wilderness), [combat-ui.md §8](combat-ui.md#8-the-end-of-a-battle) | required | done |
 | IMP-104 | save lists with a picture, the place, the party and the game's day | [screens.md §1.7](screens.md#17-load-saved-game), [storage.md §6](storage.md#6-journal-finds-and-the-gbr-sidecar) `info` | required | done |
 
 ## 4. Combat
@@ -167,6 +168,6 @@ the original switches its entry off (0x36DCD).
 
 ## Validation
 
-- Every IMP id of the register appears in §1–§5 (107 ids; IMP-009 unassigned), checked by listing
+- Every IMP id of the register appears in §1–§5 (108 ids; IMP-009 unassigned), checked by listing
   `^| IMP-` in [IMPROVEMENTS.md](../../IMPROVEMENTS.md) against this file (2026-10-25).
 - [CONFORMANCE.md](../CONFORMANCE.md), "Departures".

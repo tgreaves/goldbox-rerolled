@@ -776,6 +776,16 @@ a.button:hover, a.button:focus-visible { border-color: var(--accent); outline: n
   .game.bigpic:not(.in-combat) { grid-template-areas: "view party" "view text" "view commands"; }
 }
 
+/* The PoR wilderness takes the area map's place (IMP-109): the tile view across the map's room too, more
+   of the map at the same size (explore.ts wildWidth); a picture keeps the view's square, at its left
+   where the 3D view stands elsewhere, the wilderness still in sight beside it. Not in battle. */
+.game.wilderness:not(.in-combat) .map { display: none; }
+.game.wilderness:not(.in-combat) .wildview { object-fit: contain; }
+.game.wilderness:not(.in-combat) .overlay:not(.wide) { margin-left: 0; box-shadow: none; } /* the wilderness beside it */
+@media (min-width: 761px) and (min-aspect-ratio: 4/5) and (not ((orientation: landscape) and (max-height: 520px))) {
+  .party-top .game.wilderness:not(.in-combat) { grid-template-areas: "party party" "view view" "text text" "commands commands"; }
+}
+
 /* The party screen in the game's own frame (IMP-092): the party panel, then the info line and the
    functions as one framed stack under it, the divider between them the party panel's bottom edge, as
    the original's roster screen; PoR's rope, CotAB's white frame, SotSB's bars (--rope, IMP-051) */

@@ -220,7 +220,8 @@ only for the aimed square.
    is printed as a new block in the text log while the battlefield stays in view, then a single-item
    prompt "Press Enter to continue" with **Continue** (IMP-052). The original shows a framed window
    over the whole screen with "press <enter>/<return> to continue".
-3. Then: after a won or spared battle with survivors, the view shows the chest (`PIC<block>` #1) and
+3. Then: after a won or spared battle with survivors, the play screen leaves the battle layout (the
+   battlefield's width goes: IMP-109), the view shows the chest (`PIC<block>` #1) in its own place and
    the **treasure** panel opens ([screens.md §4](screens.md#4-treasure)); a lost battle goes to the
    game over ([app-flow.md §9](app-flow.md#9-the-party-destroyed-and-the-game-over)); a demo battle
    without aftermath returns to its script.

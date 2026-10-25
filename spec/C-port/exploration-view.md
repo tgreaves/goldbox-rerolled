@@ -229,7 +229,17 @@ IMP-026) instead of the 3D view:
 - A 120 × 120 picture of 5 × 5 tiles of 24 × 24: tile *id* (1–255) is frame *id* − 1 of `SQRPACI` #1
   (ids 1–128) or #2 (129–255), the window as `Overland.window` places it around the party
   ([overland.md, "The view"](../A-games/engine/overland.md#the-view-o-fun_54cf_0000-fun_54fa_0000)).
-  It fills the view region as a square, whole-pixel scaled.
+  It fills the view region as a square, whole-pixel scaled. **IMP-109**: where the region is wider
+  than it is high it is as wide as the region at five tiles high: the play screen has the class
+  `wilderness` while the tile view is up, the area map (which has nothing to show) is hidden and, with
+  the party in a row across the top, the view takes its place ("party party" / "view view"); the
+  picture is `120 × width / height` pixels wide (at most the map's 44 tiles), its left edge in map
+  pixels `Overland.left`: the party's square in the middle, stopping at the map's edges, which at 120
+  is the original window. It is drawn again when the region's shape changes. Party beside the view,
+  stacked on a phone and held sideways, the region stays square: the original 5 × 5.
+- Pictures over the wide view (an encounter, the chest): the layer keeps the view's square at its
+  left, where the 3D view stands elsewhere, without the black around it, the wilderness in sight
+  beside it.
 - The party marker: `ICON` records 0, 128, 1, 129, 2, 130 in turn, one more each redraw, colour 0
   transparent, mirrored when facing south or west.
 - Encounter sprites: the middle frame (frame 2) drawn flat at its header position, as the original
