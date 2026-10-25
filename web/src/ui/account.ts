@@ -6,7 +6,7 @@ import {
   signIn, signOut, signUp, syncNow, type AccountStatus,
 } from '../store/account'
 import { deleteConflict, listConflicts, restoreConflict, type ConflictCopy } from '../store/user'
-import { escape } from './sheet'
+import { escape, parchmentPanel } from './sheet'
 
 type Mode = 'view' | 'signup' | 'recover' | 'password' | 'newcode' | 'delete' | 'privacy' | 'code'
 /** survives the settings panel redrawing itself */
@@ -222,5 +222,6 @@ export function openAccount(dialog: HTMLDialogElement, gameOpen = true) {
   ui.mode = 'view'; ui.message = ''
   dialog.innerHTML = `<section class="account-sec" aria-label="Account"></section><form method="dialog"><button>Close</button></form>`
   mountAccount(dialog.querySelector<HTMLElement>('.account-sec')!, gameOpen)
+  parchmentPanel(dialog, 'account-panel') // IMP-097
   dialog.showModal()
 }

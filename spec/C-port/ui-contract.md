@@ -38,8 +38,8 @@ decision D1). Every port-authored text is also listed in
   colours of the games' boxes: the games screen (IMP-093, [app-flow.md §2.2](app-flow.md#22-the-games-screen)),
   and, inside the game's frame, the party screen and the ☰ menu (IMP-094), the port's paper pages
   (Journal, Rules reference, Commissions, the ending, Load; IMP-095), the party screen's tools and the
-  Debug panels (IMP-096). The play screen, battles, the character sheet, camp, shops, treasure and the
-  scripts' screens stay EGA.
+  Debug panels (IMP-096), the character sheet, treasure, Buy, Heal, Settings and Account (IMP-097).
+  The play screen, battles, camp and the scripts' screens stay EGA.
 
 ## 2. Colours as roles
 

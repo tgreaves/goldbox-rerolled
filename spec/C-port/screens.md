@@ -199,7 +199,9 @@ the slot menu ([app-flow.md §7](app-flow.md#7-play-new-game-load-continue)), [u
 ## 3. The character sheet
 
 The original's View screen and its items menu ([town.md, "Items menu"](../A-games/engine/town.md#items-menu-o-fun_4894_0ef8),
-"View menu") in one wide panel (IMP-041, IMP-027, IMP-062, IMP-058). Opened by a tap on the current
+"View menu") in one wide panel (IMP-041, IMP-027, IMP-062, IMP-058), in the parchment look inside the
+game's frame (IMP-097): its EGA colours keep their meaning in ink (green dark green, yellow amber,
+magenta plum, cyan teal, the highlight red), the portrait and icon black in a gold edge. Opened by a tap on the current
 card, V or C, camp View, a shop's or temple's or treasure's View, and the battle's View (with
 `combat` set: no spells, no money trade).
 
@@ -291,8 +293,8 @@ temple or treasure screen dropped coins go to the pool.
 
 ## 4. Treasure
 
-After a won battle (the view shows `PIC<block>` #1, the chest) and for a script's treasure without
-monsters: the original's treasure screen ([town.md, "Treasure screen"](../A-games/engine/town.md#treasure-screen-o-fun_2e08_0ecd))
+In the parchment look (IMP-097; the selected member a gold-lettered plaque). After a won battle (the
+view shows `PIC<block>` #1, the chest) and for a script's treasure without monsters: the original's treasure screen ([town.md, "Treasure screen"](../A-games/engine/town.md#treasure-screen-o-fun_2e08_0ecd))
 as one wide panel "Treasure" (IMP-056, IMP-029). When there is neither money nor an item the panel is
 skipped.
 
@@ -327,6 +329,7 @@ MONEY ITEMS EXIT.
 ## 5. Shops and temples
 
 Opened by a script's COMBAT with the shop or temple flag ([B-model/host-contracts.md §2](../B-model/host-contracts.md#2-the-script-host-io)).
+Buy (IMP-042) and Heal (§5.3) are panels in the parchment look (IMP-097).
 They use the play screen: text in the log, menus on the command bar, the cards to choose whose turn
 it is (IMP-029). The pool (the money laid down here) starts empty.
 
@@ -356,8 +359,13 @@ Weapons are items of slot 0 and the ammunition types; armour slots 1–9; the re
 ### 5.3 Heal
 
 The temple's services from the game's table (names read from `START.EXE`, PoR nine, CotAB ten; kinds
-and prices from the profile), as a vertical list "Healing for *Name*:" with EXIT (from the list's
-"Heal Exit"). A service the
+and prices from the profile), on a panel in the parchment look (IMP-097): the game's question as the
+heading ("*Name*, how can we help you?", else "Healing for *Name*:"), a button per party member (the one
+healed, as Buy's buyer; choosing one makes it current), "*Name* has *n* gp in coins.", and a table a
+service: its name, its price ("*n* gp"; "free" in SotSB), quietly the game's reason it is not needed
+("is not blind." …), and **Heal**; **Exit** (and Escape) leaves the list. The list comes back after
+each service. Without the panel (the headless runner) the original's vertical list with EXIT (from
+the list's "Heal Exit"). After a choice the game's own questions follow on the command bar: a service the
 character does not need asks "*Name* is not blind. cast cure anyway:" (and "is not Diseased.", "is not
 poisoned.", "is not dead.", "is not cursed.", "is not stoned."); then "*Service* will only cost *n* gold
 pieces. pay for cure?"; "Not enough money." or the cure and "*Name* is cured." All *game text*; the
@@ -610,6 +618,8 @@ description ([port-data.md §1](../D-appendices/port-data.md#1-spell-notes)); wi
 
 [ui-contract.md §9](ui-contract.md#9-settings) and [accounts-and-sync.md §6](accounts-and-sync.md#6-the-account-section).
 The Account section also opens as its own panel from the party screen's Account button and from ☰.
+Both panels are in the parchment look (IMP-097): each setting's name in red small capitals over a
+rule, its choices outlined in ink with the chosen one a gold-lettered charcoal plaque.
 
 ## 12. Debug
 

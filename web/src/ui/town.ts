@@ -32,6 +32,12 @@ export interface TownUi {
   buy?(): Promise<void>
   /** the treasure after a battle as one panel (IMP-056); without it the original's menus */
   treasurePanel?(): Promise<void>
+  /**
+   * Heal's list as a panel (IMP-097): `build` gives, for the current character (the panel may change who
+   * that is), the title, the coins line and each service with its price and why it is not needed; the
+   * index chosen, or -1 for Exit. Without it the original's list.
+   */
+  chooseCure?(build: () => { title: string; coins: string; rows: { name: string; price: string; note: string }[] }): Promise<number>
   /** open the current character's sheet (items menu with Sell/Id in shops) and wait for it to close */
   view(mode: 'shop' | 'temple' | 'treasure' | 'vault'): Promise<void>
   refresh(): void
@@ -186,28 +192,43 @@ async function heal(ui: TownUi) {
 /** One choice from the Heal list; false for its Exit. */
 async function healOnce(ui: TownUi): Promise<boolean> {
   const e = ui.engine, t = e.items!
+  const cures = services(e.startImage!), DISEASES = diseases(e.startImage!), I = game().effects.ids
+  /** why `kind` is not needed for `c` (the game's "is not blind" … line), '' when it is */
+  const reasonFor = (kind: TempleService, c: Uint8Array) => {
+    const fx = e.effectsOf(c), items = e.itemsOf(c), status = c[F.status]
+    const has = (types: number[]) => fx.some((f) => types.includes(f.type))
+    return {
+      blind: has([I.blind]) ? '' : msg('notBlind'),
+      disease: has(DISEASES) ? '' : msg('notDiseased'),
+      clw: '', csw: '', ccw: '', heal: '',
+      poison: has([I.poisoned]) ? '' : msg('notPoisoned'),
+      raise: status === 6 || status === 1 ? '' : msg('notDead'),
+      curse: items.some((x) => x.cursed) || has([I.cursed]) ? '' : msg('notCursed'),
+      stone: status === 7 ? '' : msg('notStoned'),
+    }[kind]
+  }
+  const promptFor = (name: string) => hasMsg('templeHowHelp') ? `${name}${msg('templeHowHelp')}` : `Healing for ${name}:`
+  const free = R.templeHeal.mode === 'free'
+  let i: number
+  if (ui.chooseCure) {
+    i = await ui.chooseCure(() => {
+      const { c, name } = cur(e)
+      return { title: promptFor(name), coins: `${name} has ${coinValue(moneyOf(c))} gp in coins.`,
+        rows: cures.map((s) => ({ name: s.name, price: free ? 'free' : `${s.gp} gp`, note: reasonFor(s.kind, c).trim() })) }
+    })
+    if (i < 0) return false
+  } else {
+    // the list's line is the game's "Heal Exit": a cure is chosen from the list (Heal or Enter), or Exit
+    const ex = menu('templeHeal').find((w) => w.key === 'E') ?? { text: 'Exit', key: 'E' }
+    i = await ui.menu([...cures.map((x) => x.name.toUpperCase()), ex.text.toUpperCase()], { prompt: promptFor(cur(e).name), vertical: true, keys: [...cures.map(() => ''), ex.key] })
+    if (i >= cures.length) return false
+  }
   const { c, items, name } = cur(e)
   const fx = e.effectsOf(c)
-  const has = (types: number[]) => fx.some((f) => types.includes(f.type))
   const remove = (types: number[]) => { for (let i = fx.length - 1; i >= 0; i--) if (types.includes(fx[i].type)) fx.splice(i, 1) }
-  const cures = services(e.startImage!), DISEASES = diseases(e.startImage!), I = game().effects.ids
-  // the list's line is the game's "Heal Exit": a cure is chosen from the list (Heal or Enter), or Exit
-  const ex = menu('templeHeal').find((w) => w.key === 'E') ?? { text: 'Exit', key: 'E' }
-  const prompt = hasMsg('templeHowHelp') ? `${name}${msg('templeHowHelp')}` : `Healing for ${name}:`
-  const i = await ui.menu([...cures.map((x) => x.name.toUpperCase()), ex.text.toUpperCase()], { prompt, vertical: true, keys: [...cures.map(() => ''), ex.key] })
-  if (i >= cures.length) return false
   const s = cures[i], kind = s.kind
   if (R.templeHeal.mode === 'free') { await freeCure(ui, s, R.templeHeal.raise); return true }
-  const status = c[F.status]
-  const reason = {
-    blind: has([I.blind]) ? '' : msg('notBlind'),
-    disease: has(DISEASES) ? '' : msg('notDiseased'),
-    clw: '', csw: '', ccw: '', heal: '',
-    poison: has([I.poisoned]) ? '' : msg('notPoisoned'),
-    raise: status === 6 || status === 1 ? '' : msg('notDead'),
-    curse: items.some((x) => x.cursed) || has([I.cursed]) ? '' : msg('notCursed'),
-    stone: status === 7 ? '' : msg('notStoned'),
-  }[kind]
+  const reason = reasonFor(kind, c)
   if (reason && !await yes(ui, `${name} ${reason} ${msg('cureAnyway').trimEnd()}`)) return true
   if (!await yes(ui, `${s.name}${msg('willOnlyCost')}${s.gp}${msg('goldPieces')} ${msg('payForCure').trimEnd()}`)) return true
   if (!pay(c, e.money, s.gp)) { ui.print(msg('templeNoMoney'), false); return true }

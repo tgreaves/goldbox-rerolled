@@ -190,6 +190,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
       }
       case 'V':
         dialog.innerHTML = sheetHtml(parseCharacter(byStem(cur).sav)) + '<form method="dialog"><button>Close</button></form>'
+        parchmentPanel(dialog, 'sheet-panel') // IMP-097
         dialog.showModal()
         break
       case 'A': {

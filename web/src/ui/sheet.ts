@@ -43,6 +43,7 @@ export function sheetHtml(c: Character): string {
  * rules reference, the port's paper pages, inside the game's frame; `kind` a class for their own rules.
  */
 export function parchmentPanel(dialog: HTMLDialogElement, kind: string) {
+  if (dialog.classList.contains(kind)) return // a panel drawn again while open (the sheet's modes)
   dialog.classList.add('parchment', kind)
   onClose(dialog, () => dialog.classList.remove('parchment', kind))
 }

@@ -4,7 +4,7 @@
 import { play, setSoundDevice, soundAvailable, soundDevice, unlockAudio, type Device } from '../audio/sfx'
 import { fontChoice, gameFontAvailable, setFontChoice } from './gamefont'
 import { frameChoice, framesAvailable, setFrameChoice, type FrameChoice } from './frames'
-import { onClose } from './sheet'
+import { onClose, parchmentPanel } from './sheet'
 import { gfxMode, savedGfx, setGfx, type Gfx } from '../render/upscale'
 import { SYNCED_SETTINGS } from '../store/account'
 import { localChanged } from '../store/changes'
@@ -172,6 +172,7 @@ export function openSettings(dialog: HTMLDialogElement, host: SettingsHost = {})
       if (snapshot() !== before) localChanged('docs/settings')
       resolve()
     })
+    parchmentPanel(dialog, 'settings-panel') // IMP-097
     render()
     dialog.showModal()
   })

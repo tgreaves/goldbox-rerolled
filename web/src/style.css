@@ -1048,3 +1048,51 @@ dialog.panel.parchment ul.debug button { background: #ffffff1f; border: 1px soli
 dialog.panel.parchment form.jump label { color: var(--ink-soft); }
 dialog.panel.parchment form.charedit fieldset { border-color: var(--rule); }
 dialog.panel.parchment u { color: var(--red); }
+
+/* ------------------------------------------------------------ the sheet, treasure, shops, temples, Settings, Account (IMP-097)
+   Inside a parchment dialog the EGA colours these panels use keep their meanings in ink that reads on
+   paper: green (ready, worn, a gain) dark green, yellow (a warning, pending) dark amber, magenta
+   (cursed) plum, cyan (a comparison) teal; the highlight is red ink; lines are the rule colour */
+dialog.panel.parchment {
+  --ega-green: #2f6b1f; --ega-yellow: #8a5300; --ega-magenta: #7a1f6b; --ega-cyan: #1d5e66; --ega-lred: #98130d; --ega-lblue: #23408e;
+  --muted: var(--ink-soft); --text: var(--ink); --line: var(--rule); --accent: var(--red); --panel: transparent; --field: #fff6dd;
+}
+dialog.panel.parchment h3 { color: var(--red); font-variant: small-caps; letter-spacing: 0.04em; font-size: 1.05rem; }
+dialog.panel.parchment canvas:not(.areamap) { border: 1px solid var(--gold); outline: 1px solid var(--char); background: #000; }
+dialog.panel.parchment button:disabled { opacity: 0.45; }
+/* the sheet */
+dialog.panel.parchment .sheet-head h2 { color: var(--red); }
+dialog.panel.parchment .sheet-head p { color: var(--ink-soft); }
+dialog.panel.parchment .sheet th { color: var(--ink-soft); font-variant: small-caps; letter-spacing: 0.03em; }
+dialog.panel.parchment .sheet td { color: var(--ink); font-weight: 600; }
+dialog.panel.parchment .slot { background: #ffffff1f; border: 1px solid var(--rule); border-radius: 2px; color: var(--ega-green); }
+dialog.panel.parchment .slot .slot-name { color: var(--red); font-variant: small-caps; letter-spacing: 0.03em; }
+dialog.panel.parchment .slot.empty { color: var(--ink-soft); }
+dialog.panel.parchment .slot.sel, dialog.panel.parchment .carried.sel { border: 2px solid var(--red); background: #ffffff40; }
+dialog.panel.parchment .carried { background: #ffffff14; border: 1px solid var(--rule); border-radius: 2px; color: var(--ink); }
+dialog.panel.parchment .item-info { border-left-color: var(--red); background: #ffffff1a; }
+dialog.panel.parchment table.items tr.sel td { color: var(--ink); background: #ffffff40; }
+dialog.panel.parchment .spell { background: #ffffff14; border-color: var(--rule); border-radius: 2px; }
+dialog.panel.parchment .badge { border-color: var(--rule); color: var(--ink-soft); }
+dialog.panel.parchment .hpbar { background: #00000030; }
+dialog.panel.parchment .hpbar span { background: #2f6b1f; }
+dialog.panel.parchment .xpbar { background: #00000030; }
+dialog.panel.parchment .xpbar span { background: var(--ega-cyan); }
+dialog.panel.parchment .give-strip .drop-to { border-color: var(--rule); }
+/* shops, treasure, temples */
+dialog.panel.parchment table.shop th { color: var(--red); font-variant: small-caps; letter-spacing: 0.04em; }
+dialog.panel.parchment table.shop td { color: var(--ink); border-top-color: var(--rule); }
+dialog.panel.parchment table.shop td.cmp { color: var(--ink-soft); }
+dialog.panel.parchment table.shop tr.unusable td { color: var(--ink-soft); }
+dialog.panel.parchment .tr-member { background: #ffffff1a; border: 1px solid var(--rule); color: var(--ink); }
+dialog.panel.parchment .tr-member.on { border: 1px solid var(--gold); background: var(--char); color: var(--gold-text); }
+dialog.panel.parchment .tr-member.on small { color: var(--gold-text); opacity: 0.85; }
+dialog.panel.parchment .tr-member strong { color: var(--red); font-variant: small-caps; }
+/* Settings and Account */
+dialog.panel.parchment .set-label { color: var(--red); font-variant: small-caps; letter-spacing: 0.04em; font-weight: 600; }
+dialog.panel.parchment .set-row { border-top: 1px solid #7d6a4555; padding-top: 0.5rem; }
+dialog.panel.parchment .set-row output { color: var(--ink); font-weight: 600; }
+dialog.panel.parchment .version { color: var(--ink-soft); }
+dialog.panel.parchment .account-sec { border-top-color: var(--rule); }
+dialog.panel.parchment button.on { background: var(--char); color: var(--gold-text); border-color: var(--gold); }
+dialog.panel.parchment .account-sec:first-child { border-top: 0; padding-top: 0; }

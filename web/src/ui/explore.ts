@@ -918,6 +918,42 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     refresh: () => drawRoster(),
     buy: () => shopPanel(),
     treasurePanel: () => treasurePanel(),
+    chooseCure: (build) => templePanel(build),
+  }
+
+  /**
+   * The temple's Heal list on one panel (IMP-097): who is healed (any member, as Buy's buyer), their gold,
+   * each service with its price and, quietly, why it is not needed; Heal on a row chooses it, Exit leaves.
+   * The game's own questions (cure anyway, pay) follow in the command bar.
+   */
+  function templePanel(build: Parameters<NonNullable<TownUi['chooseCure']>>[0]): Promise<number> {
+    return new Promise((resolve) => {
+      let done = false
+      const render = () => {
+        const b = build(), cur = engine.cur
+        dialog.innerHTML = `<h2>${escape(b.title)}</h2>
+          <div class="shop-buyer">${engine.party().map((c, i) => `<button data-who="${i}" class="${c === cur ? 'on' : ''}">${escape(parseCharacter(c).name)}</button>`).join('')}</div>
+          <p>${escape(b.coins)}</p>
+          <table class="shop temple"><thead><tr><th>Service</th><th class="num">Price</th><th></th><th></th></tr></thead><tbody>${b.rows.map((r, i) =>
+            `<tr class="${r.note ? 'unusable' : ''}"><td>${escape(r.name)}</td><td class="num">${escape(r.price)}</td><td class="cmp">${escape(r.note)}</td>
+              <td><button data-cure="${i}">Heal</button></td></tr>`).join('')}</tbody></table>
+          <form method="dialog"><button class="primary">Exit</button></form>`
+      }
+      const onClick = (e: MouseEvent) => {
+        const btn = (e.target as HTMLElement).closest('button')
+        if (!btn || btn.closest('form')) return
+        e.preventDefault()
+        if (btn.dataset.who) { engine.cur = engine.party()[Number(btn.dataset.who)]; drawRoster(); render() }
+        else if (btn.dataset.cure) { done = true; dialog.close(); resolve(Number(btn.dataset.cure)) }
+      }
+      dialog.classList.add('wide')
+      dialog.addEventListener('click', onClick)
+      onClose(dialog, () => { dialog.removeEventListener('click', onClick); dialog.classList.remove('wide'); if (!done) resolve(-1) })
+      render()
+      parchmentPanel(dialog, 'temple-panel')
+      dialog.showModal()
+      dialog.querySelector<HTMLButtonElement>('button[data-cure]')?.focus()
+    })
   }
 
   /**
@@ -1107,6 +1143,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       dialog.addEventListener('change', onChange)
       onClose(dialog, () => { dialog.removeEventListener('click', onClick); dialog.removeEventListener('change', onChange); resolve() })
       render()
+      parchmentPanel(dialog, 'treasure-panel') // treasure in the parchment look (IMP-097)
       dialog.showModal()
     })
   }
@@ -1171,6 +1208,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       dialog.addEventListener('click', onClick)
       onClose(dialog, () => { dialog.removeEventListener('click', onClick); resolve() })
       render()
+      parchmentPanel(dialog, 'shop-panel') // Buy in the parchment look (IMP-097)
       dialog.showModal()
     })
   }
@@ -1704,6 +1742,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const left = moneyOf(node).some((v) => v > 0)
       again(left ? { money: { op: m.op, to: m.to }, message } : { message })
     })
+    parchmentPanel(dialog, 'sheet-panel') // the character sheet, also selling, identifying and the temple in the parchment look (IMP-097)
     if (!dialog.open) dialog.showModal()
   }
 
