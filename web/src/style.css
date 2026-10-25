@@ -1096,3 +1096,15 @@ dialog.panel.parchment .version { color: var(--ink-soft); }
 dialog.panel.parchment .account-sec { border-top-color: var(--rule); }
 dialog.panel.parchment button.on { background: var(--char); color: var(--gold-text); border-color: var(--gold); }
 dialog.panel.parchment .account-sec:first-child { border-top: 0; padding-top: 0; }
+
+/* Memorize in the parchment look, with the spell sets (IMP-098) */
+dialog.panel.parchment .mem-level h4 { color: var(--ink); font-variant: small-caps; letter-spacing: 0.03em; margin: 0.5rem 0 0.2rem; }
+dialog.panel.parchment .spell.ready { color: #2f6b1f; border-color: #2f6b1f; background: #ffffff1f; }
+dialog.panel.parchment .spell.pending { color: #8a5300; border-color: #8a5300; background: #ffffff2a; }
+dialog.panel.parchment .spell.empty { color: var(--ink-soft); border-color: var(--rule); }
+dialog.panel.parchment .mem-book button { font-size: 0.95em; }
+dialog.panel.parchment .mem-sets { border-top: 1px solid var(--rule); margin-top: 0.8rem; padding-top: 0.2rem; }
+dialog.panel.parchment .mem-sets p { margin: 0.35rem 0; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+dialog.panel.parchment .mem-sets button[data-apply] { font-variant: small-caps; letter-spacing: 0.03em; font-weight: 600; min-width: 7rem; }
+dialog.panel.parchment .mem-sets .set-del { min-height: 32px; padding: 0 0.6rem; color: var(--ink-soft); }
+dialog.panel.parchment .mem-sets .set-save input { padding: 0.35rem 0.5rem; min-height: 40px; width: 12rem; }

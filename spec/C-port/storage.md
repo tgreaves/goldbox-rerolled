@@ -235,6 +235,7 @@ original files are never extended, and the original game never opens this one.
 | `format` | string | `"goldbox-rerolled-save"`; a file with any other value (or not JSON) is ignored |
 | `version` | number | `1` (`SIDECAR_VERSION`), the version the writer knows; see the version rule below |
 | `known` | string[] | the `known` list; elements that are not strings are dropped on reading |
+| `loadouts` | object, optional | the spell sets (IMP-098, [screens.md §6.4](screens.md#64-memorize)): by character name, `{ "last"?: number[], "sets": [{ "name": string, "spells": number[] }] }`, spell ids 1–127; on reading, malformed entries, ids outside 1–127 and sets beyond 6 are dropped and names cut to 24 characters. Written only when a character has a set (it counts as a kept field for the "written only when" rule). Added in version 1: an older build keeps it as an unknown field |
 
 - It is written only when `known` is not empty or there are kept fields (below): a save without
   finds has no `.GBR`, and a save without one (or with an unreadable one) loads with an empty list.

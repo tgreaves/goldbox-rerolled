@@ -56,6 +56,7 @@ import { yes } from './camp'
 import { playEnding } from './ending'
 import { text } from '../data/gametext'
 import { onClose, parchmentPanel } from './sheet'
+import { applySet, MAX_SETS, plannedSpells, readLoadouts, setText, type Loadouts } from '../rules/loadouts'
 import { openSettings, reducedMotion, viewMode } from './settings'
 import { accountLabel, openAccount } from './account'
 import { accountStatus, onSettingsPulled } from '../store/account'
@@ -1247,9 +1248,20 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         }
         const mins = preparation(c, engine.itemsOf(c), t, st)
         const pendingN = memorised(c).filter((v) => v >= 0x80).length
+        // spell sets (IMP-098): the last set planned and the named ones, each memorised again with one tap
+        const mine = loadouts[name] ?? { sets: [] }
+        const setsHtml = !groups.length ? '' : `<section class="mem-sets"><h3>Spell sets</h3>
+          ${mine.last?.length ? `<p><button type="button" data-apply="last" title="Memorize these again">↺ Last set</button> <span class="muted">${escape(setText(mine.last, st))}</span></p>` : ''}
+          ${mine.sets.map((s, i) => `<p><button type="button" data-apply="${i}" title="Memorize this set">${escape(s.name)}</button> <span class="muted">${escape(setText(s.spells, st)) || 'no spells'}</span>
+            <button type="button" class="set-del" data-del="${i}" aria-label="Forget the set ${escape(s.name)}" title="Forget this set">✕</button></p>`).join('')}
+          ${plannedSpells(c).length && mine.sets.length < MAX_SETS ? `<p class="set-save"><input data-setname maxlength="24" placeholder="Set ${mine.sets.length + 1}" aria-label="Name for the set">
+            <button type="button" data-saveset="1">Keep these spells as a set</button></p>` : ''}
+          ${!mine.last?.length && !mine.sets.length && !plannedSpells(c).length ? '<p class="muted">Memorize spells, then keep them as a set to memorize them again in one go.</p>' : ''}
+        </section>`
         dialog.innerHTML = `<h2>Memorize</h2>
           <div class="shop-buyer">${casters.map((m) => `<button data-who="${engine.party().indexOf(m)}" class="${m === c ? 'on' : ''}">${escape(parseCharacter(m).name)}</button>`).join('')}</div>
           ${groups.length ? `<div class="mem">${groups.join('')}</div>` : `<p class="muted">${escape(name)} cannot memorize any spells.</p>`}
+          ${setsHtml}
           <p>${pendingN ? `${pendingN} spell${pendingN > 1 ? 's' : ''} to learn: rest ${Math.floor(mins / 60)} h ${mins % 60} min to memorize ${pendingN > 1 ? 'them' : 'it'} (Rest in the camp menu).` : 'Nothing pending.'}</p>
           ${message ? `<p class="message">${escape(message)}</p>` : ''}
           <form method="dialog" class="yn">${pendingN ? '<button type="button" data-clearall="1">Clear pending</button>' : ''}<button class="primary">Done</button></form>`
@@ -1262,16 +1274,39 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         e.preventDefault()
         message = ''
         const c = engine.cur
-        if (d.who) { engine.cur = engine.party()[Number(d.who)]; drawRoster() }
+        const who = parseCharacter(c).name
+        if (d.who) { remember(c); engine.cur = engine.party()[Number(d.who)]; drawRoster() }
         else if (d.mem) { const s = st.get(Number(d.mem))!; if (!memorise(c, s, st)) message = 'No free slot of that level.' }
+        else if (d.apply) {
+          const mine = loadouts[who]
+          const set = d.apply === 'last' ? mine?.last : mine?.sets[Number(d.apply)]?.spells
+          if (set) {
+            const r = applySet(c, set, st)
+            message = `${r.added ? `${r.added} spell${r.added > 1 ? 's' : ''} to memorize.` : 'Nothing more to memorize from that set.'}${r.skipped.length ? ` Not memorized (no free slot, or not known): ${r.skipped.join(', ')}.` : ''}`
+          }
+        } else if (d.del) { loadouts[who]?.sets.splice(Number(d.del), 1); keepLoadouts() }
+        else if (d.saveset) {
+          const input = dialog.querySelector<HTMLInputElement>('[data-setname]')
+          const mine = (loadouts[who] ??= { sets: [] })
+          const setName = (input?.value.trim() || `Set ${mine.sets.length + 1}`).slice(0, 24)
+          if (mine.sets.length < MAX_SETS) { mine.sets.push({ name: setName, spells: plannedSpells(c) }); keepLoadouts(); message = `Kept as "${setName}".` }
+        }
         else if (d.clear) { c[F.memorised + Number(d.clear)] = 0; sortSlots(c) }
         else if (d.clearall) for (let k = 0; k < F.memorisedCount; k++) if (c[F.memorised + k] >= 0x80) c[F.memorised + k] = 0
         render()
       }
+      /** the last set: what the character plans when they leave the panel with spells pending (IMP-098) */
+      const remember = (c: Uint8Array) => {
+        if (!memorised(c).some((v) => v >= 0x80)) return
+        const who = parseCharacter(c).name
+        ;(loadouts[who] ??= { sets: [] }).last = plannedSpells(c)
+        keepLoadouts()
+      }
       dialog.classList.add('wide')
       dialog.addEventListener('click', onClick)
-      onClose(dialog, () => { dialog.removeEventListener('click', onClick); resolve() })
+      onClose(dialog, () => { dialog.removeEventListener('click', onClick); remember(engine.cur); resolve() })
       render()
+      parchmentPanel(dialog, 'memorize-panel') // camp in the parchment look (IMP-098)
       dialog.showModal()
     })
   }
@@ -1960,8 +1995,15 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   // ------------------------------------------------------------ commissions
   /** commissions the clerk has offered, and whether the proclamation wall was read (IMP-023) */
   const known = new Set<string>(start.kind === 'load' ? start.known ?? [] : [])
-  /** the loaded sidecar's fields this build does not know, written back with every save (storage.md §6) */
-  const sidecarExtra = start.kind === 'load' ? start.sidecar : undefined
+  /** the loaded sidecar's fields this build does not know, written back with every save (storage.md §6);
+   *  the spell sets (IMP-098) are kept in it as `loadouts` */
+  const sidecarExtra: SidecarExtra = (start.kind === 'load' ? start.sidecar : undefined) ?? { rest: {} }
+  const loadouts: Loadouts = readLoadouts(sidecarExtra.rest.loadouts)
+  const keepLoadouts = () => {
+    for (const k of Object.keys(loadouts)) if (!loadouts[k].last && !loadouts[k].sets.length) delete loadouts[k]
+    if (Object.keys(loadouts).length) sidecarExtra.rest.loadouts = loadouts
+    else delete sidecarExtra.rest.loadouts
+  }
   const commissionReport = () => report((a) => engine.read(a), known)
   function commissionsDue(): boolean {
     if (!game().commissions) return false

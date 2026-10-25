@@ -431,7 +431,8 @@ The list returns after each cast.
 
 ### 6.4 Memorize
 
-One wide panel "Memorize" (IMP-043; the rule is `FUN_3f81_090a`'s):
+One wide panel "Memorize" (IMP-043; the rule is `FUN_3f81_090a`'s), in the parchment look inside the
+game's frame (IMP-098; ready chips dark green, pending amber):
 
 - the casters of the party who are Okay, as buttons (selects the current character);
 - per spell class the character has slots in ("Cleric spells", "Druid spells", "Magic-User spells",
@@ -443,6 +444,21 @@ One wide panel "Memorize" (IMP-043; the rule is `FUN_3f81_090a`'s):
 - "*Name* cannot memorize any spells." for a non-caster;
 - "*n* spells to learn: rest *h* h *m* min to memorize them (Rest in the camp menu)." or "Nothing
   pending.";
+- **Spell sets** (IMP-098; not in the original), for a caster, under a rule:
+  - **↺ Last set** with its spells ("Sleep ×2, Magic Missile") when the character has one: the spells
+    memorised and pending when the panel was last left (or another member chosen) with any pending;
+  - each kept set (at most 6): a button with its name, its spells, and ✕ (forget it);
+  - when the character has spells memorised or pending and fewer than 6 sets: a name field
+    (placeholder "Set *n*", 24 characters) and **Keep these spells as a set**: the spells memorised
+    and pending, by id, in slot order ("Kept as "*name*".");
+  - choosing a set or the last set memorises, by the + buttons' rule, each of its spells the character
+    has not already memorised or pending (a count each: two Sleeps in the set and one ready add one);
+    a spell no longer known, not castable now or without a free slot is skipped: "*n* spells to
+    memorize." or "Nothing more to memorize from that set.", then " Not memorized (no free slot, or not
+    known): *names*." The rest to learn them is the ordinary Rest;
+  - with nothing to show: "Memorize spells, then keep them as a set to memorize them again in one go.";
+  - kept per character name in the save's `.GBR` sidecar, field `loadouts` ([storage.md §6](storage.md#6-journal-finds-and-the-gbr-sidecar)),
+    so they come with the save, its sync and its export;
 - messages ("No free slot of that level."); **Clear pending** (when any) and **Done**.
 
 ### 6.5 Scribe
