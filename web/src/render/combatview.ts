@@ -2,7 +2,7 @@
 // from the game's tile sets (DUNGCOM or WILDCOM, then RANDCOM from image slot 0x22) with the
 // combatants' icons on top. One cell is one 24 x 24 tile.
 import type { GameFiles } from '../store/gamefiles'
-import { COMBAT_EGA, parseRecord, toImageData, spriteImage, type Picture } from '../data/image'
+import { battlePalette, parseRecord, toImageData, spriteImage, type Picture } from '../data/image'
 import { F, blitCanvas, pixels, sizeCanvas } from './upscale'
 import { COLS, ROWS, type Battlefield, type CellInfo } from '../rules/battlefield'
 
@@ -32,8 +32,8 @@ export interface Figure {
 export interface Sprite { x: number; y: number; rec: number; mirror?: boolean }
 
 /** the picture on a canvas, enlarged when smoothing is on (IMP-047); drawn at its logical size */
-function canvasOf(p: Picture, sprite: boolean): HTMLCanvasElement {
-  return pixels(sprite ? spriteImage(p, COMBAT_EGA) : toImageData(p, COMBAT_EGA))
+function canvasOf(p: Picture, sprite: boolean, pal: ReturnType<typeof battlePalette>): HTMLCanvasElement {
+  return pixels(sprite ? spriteImage(p, pal) : toImageData(p, pal))
 }
 
 export class CombatView {
@@ -42,31 +42,34 @@ export class CombatView {
   /** COMSPR records 0–11, 25 and their +128 images (missiles, sparkle, starburst, skull, cursor) */
   private sprites = new Map<number, HTMLCanvasElement>()
   readonly canvas: HTMLCanvasElement
+  /** the battle palette: PoR's and CotAB's swap of colours 0 and 8, or SotSB's plain one (view.combatSwap) */
+  private readonly pal: ReturnType<typeof battlePalette>
   /** visible window in cells */
   cols: number
   rows: number
 
   constructor(canvas: HTMLCanvasElement, files: GameFiles, outdoors: boolean, cols = 15, rows = 9) {
     this.canvas = canvas
+    this.pal = battlePalette(files.game.view.combatSwap)
     this.cols = cols
     this.rows = rows
     sizeCanvas(canvas, cols * CELL, rows * CELL)
     const set = (name: string, from: number) => {
       const raw = files.record(name, 1)
       if (!raw) return
-      parseRecord(raw).frames.forEach((f, i) => { this.tiles[from + i] = canvasOf(f.picture, false) })
+      parseRecord(raw).frames.forEach((f, i) => { this.tiles[from + i] = canvasOf(f.picture, false, this.pal) })
     }
     set(outdoors ? 'WILDCOM' : 'DUNGCOM', 0)
     set('RANDCOM', 0x22)
     for (const r of [...Array(12).keys(), 25]) for (const rec of [r, r + 128]) {
       const raw = files.record('COMSPR', rec)
-      try { if (raw) this.sprites.set(rec, canvasOf(parseRecord(raw).frames[0].picture, true)) } catch { /* missing image */ }
+      try { if (raw) this.sprites.set(rec, canvasOf(parseRecord(raw).frames[0].picture, true, this.pal)) } catch { /* missing image */ }
     }
   }
 
   private icon(p: Picture): HTMLCanvasElement {
     let c = this.iconCache.get(p)
-    if (!c) this.iconCache.set(p, (c = canvasOf(p, true)))
+    if (!c) this.iconCache.set(p, (c = canvasOf(p, true, this.pal)))
     return c
   }
 
@@ -96,7 +99,7 @@ export class CombatView {
     const W = this.cols * CELL, H = this.rows * CELL
     const g = sizeCanvas(this.canvas, W, H)
     const [r0, c0] = this.origin(focus.row, focus.col)
-    g.fillStyle = `rgb(${COMBAT_EGA[0].join(',')})` // colour 0, dark grey under the swap
+    g.fillStyle = `rgb(${this.pal[0].join(',')})` // colour 0: dark grey under PoR's and CotAB's swap, black in SotSB
     g.fillRect(0, 0, W, H)
     for (let r = 0; r < this.rows; r++) for (let c = 0; c < this.cols; c++) {
       const v = bf.get(r0 + r, c0 + c)

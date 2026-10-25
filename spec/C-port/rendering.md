@@ -63,8 +63,10 @@ stretched by the layout to its region. The **Graphics** setting (IMP-047,
   Only EGA is drawn: the original's CGA and Tandy video modes (CGA maps through the image header's
   `cga_map`) are not offered (IMP-077).
 - **The battle palette**: colours 0 and 8 swapped, as the original's combat screen sets the EGA
-  palette registers ([combat-visuals.md, "Palette"](../A-games/engine/combat-visuals.md#palette-o)).
-  Used for the battlefield's tiles, icons and sprites.
+  palette registers ([combat-visuals.md, "Palette"](../A-games/engine/combat-visuals.md#palette-o)),
+  where the profile's `view.combatSwap` is set (PoR, CotAB); SotSB's battles keep the plain palette
+  ([sotsb/assets.md §6.2](../A-games/sotsb/assets.md#62-palette-o)). Used for the battlefield's tiles,
+  icons and sprites.
 - **Palette effects**: the PoR title's lightning changes colour 1 of the picture (9, 11, 15, 11, 9, 1;
   [app-flow.md §4](app-flow.md#4-the-title)); nothing else changes the palette.
 - **The interface's colours** are EGA colours chosen by role ([ui-contract.md §2](ui-contract.md#2-colours-as-roles)).

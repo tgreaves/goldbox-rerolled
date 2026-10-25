@@ -12,6 +12,8 @@ export const EGA: ReadonlyArray<readonly [number, number, number]> = [
  * (FUN_320c_0000 → FUN_577f_0105) puts them back.
  */
 export const COMBAT_EGA: ReadonlyArray<readonly [number, number, number]> = EGA.map((c, i) => (i === 0 ? EGA[8] : i === 8 ? EGA[0] : c))
+/** the palette a game's battles are drawn in (its profile's `view.combatSwap`) */
+export const battlePalette = (swap: boolean) => (swap ? COMBAT_EGA : EGA)
 
 export interface Picture {
   width: number

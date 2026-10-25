@@ -115,7 +115,8 @@ coins. **Close**. (In play the full sheet, §3, is used.)
 The original's editor ([input-and-menus.md §3.2](../A-games/engine/input-and-menus.md#32-combat-icon-editor-fun_417f_382d-also-from-camp-alter-o))
 as one panel "Combat icon" (IMP-017): the old and new icons, each in the ready and action poses
 ("old: ready, action", "new: ready, action"), drawn in the battle palette as the original's editor
-swaps EGA registers 0 and 8 while it runs ([combat-visuals.md, "Palette"](../A-games/engine/combat-visuals.md#palette-o));
+swaps EGA registers 0 and 8 while it runs ([combat-visuals.md, "Palette"](../A-games/engine/combat-visuals.md#palette-o);
+SotSB, which never swaps, in the plain palette);
 Head ◀ ▶ (0–13), Weapon ◀ ▶ (0–31), Size (Small/Large);
 the six parts and the two colour swatches for the selected part; **Exit** (E) restores,
 **Keep** (K, main) keeps. The labels are the editor's own words: Head and Weapon (its level 2), the

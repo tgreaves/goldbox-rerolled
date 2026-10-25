@@ -81,8 +81,10 @@ In this order, each frame of the window ([combat-visuals.md](../A-games/engine/c
    before its pause; any other sound waits its turn behind the queued animations rather than playing
    ahead of them.
 
-Every picture is drawn with the battle palette: EGA colours 0 and 8 swapped (black shows dark grey,
-dark grey black), as the original sets it for the combat screen ([combat-visuals.md, "Palette"](../A-games/engine/combat-visuals.md#palette-o)).
+Every picture is drawn with the battle palette: in PoR and CotAB EGA colours 0 and 8 swapped (black
+shows dark grey, dark grey black), as the original sets it for the combat screen ([combat-visuals.md, "Palette"](../A-games/engine/combat-visuals.md#palette-o));
+in SotSB the plain palette, which its original never changes ([sotsb/assets.md §6.2](../A-games/sotsb/assets.md#62-palette-o)).
+The profile's `view.combatSwap` says which.
 Missile and spell flights move in 8-pixel steps along a Bresenham line on a grid of thirds of a cell,
 *delay* ms per step (at least 8) as the rules give them ([combat-visuals.md, "Missiles and spell flights"](../A-games/engine/combat-visuals.md#missiles-and-spell-flights-o));
 the sparkle and starburst cycle their frames 70 ms each at the combatant's top-left cell; the skull

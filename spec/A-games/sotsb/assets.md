@@ -163,10 +163,22 @@ The image also holds the set-up questions ("SOUND TYPE: [1] AdLib, [2] Tandy 100
 Silent", "ALTERNATE INPUT TYPE: joystick, mouse, neither", "PATH TO SAVE DATA", at 0x218F–0x2390); when
 they are asked is not traced (**?**; I: when BLADES.CFG is missing).
 
-### 6.2 Palette
+### 6.2 Palette (O)
 
-Not traced (**?**). The BIOS calls go through Turbo Pascal's `Intr` (`bdb:b`, 13 calls; those read
-are the cursor and character writes), as in CotAB.
+**SotSB never changes the EGA palette.** Its BIOS video calls go through Turbo Pascal's `Intr($10, regs)`
+(`bdb:b`, the register block at DS:67FA, AH at DS:67FB) from six places, none of them service 10h (set
+palette register): 0x294D get mode (0Fh), 0x2CA0 and 0x6F0F set mode (00h), 0x5476 set page (05h),
+0x6404 set cursor (02h), 0x6428 write character (09h). The two direct `int 10h` sites are the runtime's
+`Intr` helper (0xBD9C) and the sound driver's error exit (0xB314–0xB34B: get mode, set mode, write
+string 13h). No code loads port 3C0h (the attribute controller). CotAB, by contrast, has its set-palette
+routine (0x43A2, AH := 10h at 0x43A5; the raw variant 0x43E2) and the battle swap and restore calls
+(0x557AC–0x5580C); neither the routine nor that call sequence is in SotSB's image.
+
+So **SotSB's battles are drawn in the plain palette**, without PoR's and CotAB's swap of colours 0 and 8
+([engine/combat-visuals.md, "Palette"](../engine/combat-visuals.md#palette-o)). Its `DungCom` tiles are
+drawn for that: floors in colour 8 (dark grey), outlines and mortar in colour 0 (black); the fallen body
+(slot 0x1D), the petrified figure (0x1B) and the clouds (0x1A, 0x1C) the same. The profile:
+`view.combatSwap` false (PoR, CotAB true).
 
 ### 6.3 Sound (O unless marked)
 
@@ -228,7 +240,7 @@ arguments). It plays only at the title, song 0 (0x1D673), and only when the devi
 
 ## Open
 
-- The walls' screen origin in the 3D view (§2); the palette changes (§6.2); the roles of 8X8D1 #202
+- The walls' screen origin in the 3D view (§2); the roles of 8X8D1 #202
   tiles 31–51 and 56–100 (§5).
 - When the set-up questions are asked (§6.1); the meaning of BLADES.CFG lines 6–17.
 - The song driver: how it picks its output, the GLBR parts format, the song list (§6.3).

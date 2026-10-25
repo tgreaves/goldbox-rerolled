@@ -37,6 +37,11 @@ export interface ViewArt {
    *  bit 7 clear: for a facing (0 N … 3 E … 6 W, ×2) and hours, a SKY record at view cell
    *  (col0 + col·hour, row0 + row·hour), 8-pixel cells from the view's top left; masked colour 13 */
   skyArt: { daySky: number; mask: number; rules: { facing2: number; hours: [number, number]; record: number; col: [number, number]; row: [number, number] }[] } | null
+  /** the battle palette: EGA registers 0 and 8 swapped while a battle is drawn, black showing as dark grey
+   *  and dark grey as black (PoR FUN_577f_00e3, CotAB 0x557AC; also the combat-icon editor). SotSB never
+   *  writes the palette (no BIOS service 10h, no port 3C0h in its code): its battles are in the plain
+   *  palette, its tiles drawn for it (dark grey floors, black outlines) */
+  combatSwap: boolean
   /** the 8 × 8 font: DAX family and record (PoR, CotAB 8X8D1 #201; SotSB 8X8D5 #201, loaded by name at 0x5579) */
   font: { file: string; record: number }
 }
@@ -46,7 +51,7 @@ export const POR_VIEW: ViewArt = {
   bands: [{ rows: [0, 42], colour: 'sky' }, { rows: [43, 43], colour: 'line' }, { rows: [44, 45], colour: 'band' }, { rows: [46, 87], colour: 'floor' }],
   closedEdges: [0, 10],
   floor: null, ground: null, bigFrom: null, overlandPicture: null, overlandHeldBy: null, tileOverland: [25, 26, 27],
-  frame: { rope: { corner: 20, vertical: 21, horizontal: 22 } }, skyArt: null, font: { file: '8X8D1', record: 201 } }
+  frame: { rope: { corner: 20, vertical: 21, horizontal: 22 } }, skyArt: null, combatSwap: true, font: { file: '8X8D1', record: 201 } }
 
 // spec/A-games/coab/assets.md §3: in EGA the floor is colour 8 under SKY #252, the cobbled ground drawn at
 // view rows 40–87 in every square, indoors too
@@ -71,6 +76,7 @@ export const COAB_VIEW: ViewArt = {
     { facing2: 4, hours: [13, 15], record: 251, col: [-8, 1], row: [-13, 1] },
     { facing2: 0, hours: [0, 23], record: 250, col: [0, 0], row: [0, 0] },
   ] },
+  combatSwap: true, // 0x557AC–0x5580C, PoR's
   font: { file: '8X8D1', record: 201 },
 }
 
@@ -84,5 +90,7 @@ export const SOTSB_VIEW: ViewArt = {
   // 0x50 (DS:A4C2; CotAB's 10 is not tested)
   closedEdges: [0, 0x50],
   frame: { bars: { horizontal: 55, vertical: 53, below: 52, above: 54, mask: 13 } },
+  // no palette write anywhere (its Intr($10) calls are services 0, 2, 5, 9 and 0Fh): the plain palette
+  combatSwap: false,
   font: { file: '8X8D5', record: 201 },
 }
