@@ -69,6 +69,15 @@ implementation's: *done*, or what remains.
 | IMP-077 | EGA drawing only | [rendering.md §3](rendering.md#3-palettes) | required | — | done |
 | IMP-069 | CotAB's ground in the 3D view | [exploration-view.md §3.2](exploration-view.md#32-textures-and-colours) | optional (D6) | — | done |
 | IMP-074 | the demo on the party screen | [app-flow.md §6](app-flow.md#6-the-demo) | required | — | done |
+| IMP-081 | Escape backs out of every menu | [ui-contract.md §7](ui-contract.md#7-dialogs), [§8](ui-contract.md#8-input-map) | required | — | done |
+| IMP-089 | the CRT look | [ui-contract.md §9](ui-contract.md#9-settings) | setting | Screen: Clean (default) / Scanlines / CRT | done |
+| IMP-090 | controllers | [ui-contract.md §8.5](ui-contract.md#85-controllers-imp-090), [§9](ui-contract.md#9-settings) | required | — | done |
+| IMP-091 | big pictures across the top; the ending's wide picture | [exploration-view.md §5](exploration-view.md#5-pictures-and-the-picture-layer), [app-flow.md §8](app-flow.md#8-the-ending) | required | — | done |
+| IMP-092 | the party screen in the game's frame | [rendering.md §4.2](rendering.md#42-panels) | setting | Borders: Original (default) / Plain | done |
+| IMP-093 | the games screen in the boxes' colours, the covers | [app-flow.md §2.2](app-flow.md#22-the-games-screen), [B-model/profile.md](../B-model/profile.md) `title.cover` | required | — | done |
+| IMP-094 | the party screen and ☰ in the parchment look | [app-flow.md §5](app-flow.md#5-the-party-screen), [screens.md §2](screens.md#2-the--menu) | required | — | done |
+| IMP-095 | the paper pages (Journal, Rules reference, Commissions, the ending, Load); the play screen's surround | [screens.md §8](screens.md#8-the-journal), [§9](screens.md#9-commissions), [§10](screens.md#10-rules-reference), [§1.7](screens.md#17-load-saved-game), [app-flow.md §8](app-flow.md#8-the-ending), [ui-contract.md §3](ui-contract.md#3-screen-classes) | required | — | done |
+| IMP-096 | the party screen's tools and Debug in the parchment look | [screens.md §1](screens.md#1-the-party-screens-functions), [§12](screens.md#12-debug) | required | — | done |
 
 ## 3. Characters, party, town and camp
 
@@ -96,6 +105,11 @@ implementation's: *done*, or what remains.
 | IMP-068 | CotAB's code wheel asks nothing | [coab/ecl.md](../A-games/coab/ecl.md), [app-flow.md §4](app-flow.md#4-the-title) | required | done |
 | IMP-076 | PoR's translation-wheel screen not shown | [title-and-credits.md](../A-games/por/title-and-credits.md), [app-flow.md §4](app-flow.md#4-the-title) | required | done |
 | IMP-073 | the party screen's groups | [app-flow.md §5](app-flow.md#5-the-party-screen) | required | done |
+| IMP-086 | Fix says what it did | [screens.md §6.9](screens.md#69-fix) | required | done |
+| IMP-087 | Add character in columns | [screens.md §1.3](screens.md#13-add-character) | required | done |
+| IMP-097 | the sheet, treasure, shops, Settings and Account in the parchment look; the temple's Heal panel | [screens.md §3](screens.md#3-the-character-sheet), [§4](screens.md#4-treasure), [§5](screens.md#5-shops-and-temples), [§5.3](screens.md#53-heal), [§11](screens.md#11-settings-and-account) | required | done |
+| IMP-098 | spell sets in Memorize | [screens.md §6.4](screens.md#64-memorize), [storage.md §6](storage.md#6-journal-finds-and-the-gbr-sidecar) `loadouts` | required | done |
+| IMP-099 | money on the Buy and Heal panels; the vault as a panel | [screens.md §5](screens.md#5-shops-and-temples), [§5.6](screens.md#56-the-vault-sotsb) | required | done |
 
 ## 4. Combat
 
@@ -109,6 +123,11 @@ implementation's: *done*, or what remains.
 | IMP-054 | one command row, Quick and Magic | [combat-ui.md §4](combat-ui.md#4-the-command-row), [§10](combat-ui.md#10-quick-and-magic) | required | done |
 | IMP-059 | reach, area templates, drag to give | [combat-ui.md §3](combat-ui.md#3-what-is-drawn), [§6](combat-ui.md#6-aiming-and-targets), [ui-contract.md §8.4](ui-contract.md#84-drags) | required | done |
 | IMP-071 | CotAB's Fire Shield menu | [coab/spells.md](../A-games/coab/spells.md) 85 | required | done |
+| IMP-080 | SotSB's Delayed Blast Fireball delay as a menu | [sotsb/spells.md](../A-games/sotsb/spells.md) (`delayedBlast`) | required | done |
+| IMP-083 | tap to attack, the action bar, drag to walk | [combat-ui.md §4.1](combat-ui.md#41-the-action-bar-imp-083), [§5](combat-ui.md#5-input) | required | done |
+| IMP-084 | health bars, danger squares, the radial menu | [combat-ui.md §3](combat-ui.md#3-what-is-drawn), [§7](combat-ui.md#7-information) | required | done |
+| IMP-085 | numbers over heads, MISS | [combat-ui.md §3](combat-ui.md#3-what-is-drawn) | required | done |
+| IMP-088 | All on Quick | [combat-ui.md §10](combat-ui.md#10-quick-and-magic), [§5](combat-ui.md#5-input) | required | done |
 
 ## 5. Sound, saving, platform, development
 
@@ -139,6 +158,6 @@ the original switches its entry off (0x36DCD).
 
 ## Validation
 
-- Every IMP id of the register appears in §1–§5 (76 ids, 79 rows; IMP-009 unassigned), checked by
-  listing `^| IMP-` in [IMPROVEMENTS.md](../../IMPROVEMENTS.md) (2026-10-21).
+- Every IMP id of the register appears in §1–§5 (98 ids; IMP-009 unassigned), checked by listing
+  `^| IMP-` in [IMPROVEMENTS.md](../../IMPROVEMENTS.md) against this file (2026-10-25).
 - [CONFORMANCE.md](../CONFORMANCE.md), "Departures".
