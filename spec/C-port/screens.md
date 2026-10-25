@@ -552,7 +552,10 @@ Without `START.EXE`: "The party screen needs START.EXE: re-import the *FOLDER* f
 
 IMP-055; data and reveal rules in [port-data.md §4](../D-appendices/port-data.md#4-the-journal), storage
 of the finds in [storage.md §6](storage.md#6-journal-finds-and-the-gbr-sidecar). A wide panel
-"Journal":
+"Journal" (at most 48 rem), a page of the printed *Adventurer's Journal* in the parchment look (IMP-095,
+[app-flow.md §2.2](app-flow.md#22-the-games-screen)) inside the game's frame: the tabs in ink, the open
+one a gold-lettered charcoal plaque; each entry under a rule, its heading in red small capitals, its
+text justified in ink with the first letter a red drop capital; the maps in a gold edge:
 
 - tabs, each only when the game's journal has that kind: **Entries (*n* of *N*)**, **Proclamations
   (*n* of *N*)** (PoR), **Tavern tales (*n* of *N*)** (PoR, CotAB), **Background (*N*)** (CotAB, SotSB,
@@ -585,7 +588,9 @@ summoned the party, or a bounty is owed.
 
 ## 10. Rules reference
 
-IMP-058. A wide panel "Rules reference" with tabs **Basics**, **Classes**, **Combat**, **Spells**,
+IMP-058. In the parchment look as the rule book's pages (IMP-095): the tabs as the Journal's, each list's
+heading in red ink with a ◆ over a rule, the entries' names in red small capitals and their text in ink.
+A wide panel "Rules reference" with tabs **Basics**, **Classes**, **Combat**, **Spells**,
 **Keys** (the last tab chosen is kept while the page lives): Basics, Classes, Combat and Keys show the
 profile's `rulesText` as entry–text pairs ([port-data.md §2](../D-appendices/port-data.md#2-rules-reference));
 Spells lists, per caster class and level ("*Class* level *L*"), each book spell with its composed

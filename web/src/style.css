@@ -949,3 +949,30 @@ dialog.panel.parchment ul.mainmenu .due { color: var(--red); }
 dialog.panel.parchment button:hover:not(:disabled), dialog.panel.parchment button:focus-visible { border-color: var(--red); outline: none; }
 dialog.panel.parchment form button { background: var(--char); color: var(--gold-text); border: 1px solid var(--gold); outline: 1px solid var(--char); outline-offset: 2px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; font-size: 0.95em; margin: 3px; }
 dialog.panel.parchment > .panel-close { background: transparent; color: var(--ink); border-color: var(--ink-soft); }
+
+/* ------------------------------------------------------------ the port's paper pages (IMP-095)
+   The journal (the printed Adventurer's Journal) and the rules reference (the rule book) on parchment
+   inside the game's frame: tabs in ink, the open one a gold plaque; headings in red ink; text in ink */
+dialog.panel.parchment .nc-opts button { background: #ffffff1a; color: var(--ink); border: 1px solid var(--ink-soft); border-radius: 2px; font-variant: small-caps; letter-spacing: 0.03em; }
+dialog.panel.parchment .nc-opts button.on { background: var(--char); color: var(--gold-text); border-color: var(--gold); }
+dialog.panel.parchment .muted { color: var(--ink-soft); }
+dialog.panel.parchment a { color: var(--red-deep); }
+dialog.panel.parchment input[type=checkbox] { accent-color: var(--red); }
+dialog.panel.journal-panel { max-width: min(48rem, 96vw); }
+dialog.panel.parchment .journal article { border-top: 1px solid var(--rule); padding-top: 0.7rem; }
+dialog.panel.parchment .journal h3 { color: var(--red); font-variant: small-caps; letter-spacing: 0.04em; font-size: 1.2rem; font-weight: 600; }
+dialog.panel.parchment .journal p { line-height: 1.42; text-align: justify; hyphens: auto; }
+dialog.panel.parchment .journal article > p:first-of-type::first-letter { float: left; font-size: 2.7em; line-height: 0.85; padding: 0.04em 0.08em 0 0; font-weight: 600; color: var(--red-deep); }
+dialog.panel.parchment img.journal-map { border: 2px solid var(--gold); outline: 1px solid var(--char); outline-offset: 2px; margin: 0.7rem auto; }
+dialog.panel.parchment .rules-body h3 { color: var(--red); font-size: 1.1rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 1px solid var(--rule); padding-bottom: 0.15rem; }
+dialog.panel.parchment .rules-body h3::before { content: '◆'; margin-right: 0.45em; font-size: 0.8em; vertical-align: 0.1em; }
+dialog.panel.parchment dl.rules dt { color: var(--red); font-variant: small-caps; letter-spacing: 0.03em; font-weight: 600; }
+dialog.panel.parchment dl.rules dd { color: var(--ink); line-height: 1.38; }
+
+/* ------------------------------------------------------------ the play screen's surround (IMP-095)
+   Charcoal around the play screen; where the window is wider than about 17:10 the screen keeps that
+   shape, centred, with a gold edge either side, like the picture set into the box. Inside: the EGA screen */
+#app:has(> .game) { background: #262626; }
+@media (min-aspect-ratio: 17/10) and (min-height: 521px) {
+  .game { width: min(100%, 165dvh); margin-inline: auto; background: #000; box-shadow: 0 0 0 1px #c9a24f, 0 0 0 4px #1a1816, 0 0 0 5px #7d6a45, 0 0 40px 6px #000; }
+}

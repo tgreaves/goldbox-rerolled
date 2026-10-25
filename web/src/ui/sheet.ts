@@ -38,6 +38,15 @@ export function sheetHtml(c: Character): string {
  * task; when the next step has already reopened the dialog that late event must not end the new
  * step, so an event arriving while the dialog is open is ignored and the listener waits on.
  */
+/**
+ * The parchment look on a shared dialog while it is open (IMP-094, IMP-095): the ☰ menu, the journal, the
+ * rules reference, the port's paper pages, inside the game's frame; `kind` a class for their own rules.
+ */
+export function parchmentPanel(dialog: HTMLDialogElement, kind: string) {
+  dialog.classList.add('parchment', kind)
+  onClose(dialog, () => dialog.classList.remove('parchment', kind))
+}
+
 export function onClose(dialog: HTMLDialogElement, fn: () => void): () => void {
   const h = () => {
     if (dialog.open) return

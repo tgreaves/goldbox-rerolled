@@ -71,6 +71,11 @@ screens (games screen, party screen, panels) are single columns that reflow (§3
 | **Narrow** (N) | width ≤ 760 px, or aspect ratio ≤ 4 : 5 (portrait phones, tall windows) | second |
 | **Wide** (W) | everything else | — |
 
+**The surround** (IMP-095): the page behind the play screen is charcoal (`#262626`). Where the window
+is wider than 17 : 10 (and over 520 px high), the play screen keeps at most that shape (165 dvh wide),
+centred, black inside, with a gold edge either side (a 1-px gold line, 3 px of charcoal, a 1-px darker
+gold line); the screen's layout inside is the class's own.
+
 Within W the **Party** setting (§9) chooses the **row** layout (default, IMP-064) or the **column**
 layout (the original's arrangement); the column layout has a **very wide** variant at width ≥ 1200 px
 and aspect ratio ≥ 4 : 3. A conforming build MAY use other breakpoints as long as a portrait phone

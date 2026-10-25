@@ -55,7 +55,7 @@ import { wordButton, yesNo, listExit } from './sheet'
 import { yes } from './camp'
 import { playEnding } from './ending'
 import { text } from '../data/gametext'
-import { onClose } from './sheet'
+import { onClose, parchmentPanel } from './sheet'
 import { openSettings, reducedMotion, viewMode } from './settings'
 import { accountLabel, openAccount } from './account'
 import { accountStatus, onSettingsPulled } from '../store/account'
@@ -1974,6 +1974,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     dialog.addEventListener('click', onClick)
     dialog.addEventListener('change', onChange)
     onClose(dialog, () => { dialog.removeEventListener('click', onClick); dialog.removeEventListener('change', onChange) })
+    parchmentPanel(dialog, 'journal-panel') // a page of the printed Adventurer's Journal (IMP-095)
     render()
     dialog.showModal()
   }
@@ -2106,8 +2107,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       </ul>
       <form method="dialog"><button>Back to the game</button></form>`
     // the parchment look while it is open (IMP-094); the dialog is shared with the game's own panels
-    dialog.classList.add('parchment', 'mainmenu-panel')
-    dialog.addEventListener('close', () => dialog.classList.remove('parchment', 'mainmenu-panel'), { once: true })
+    parchmentPanel(dialog, 'mainmenu-panel')
     dialog.querySelectorAll<HTMLButtonElement>('[data-go]').forEach((b) => b.addEventListener('click', () => {
       dialog.close()
       const go = b.dataset.go!

@@ -3,7 +3,7 @@
 import { R, bookSpell, casterClasses } from '../games/rules'
 import type { SpellTables } from '../data/spells'
 import { spellText } from '../rules/spelltext'
-import { onClose } from './sheet'
+import { onClose, parchmentPanel } from './sheet'
 import { game } from '../games/profile'
 
 type Tab = 'basics' | 'classes' | 'combat' | 'spells' | 'keys'
@@ -41,6 +41,7 @@ export function rulesReference(dialog: HTMLDialogElement, spells: SpellTables | 
     dialog.addEventListener('click', onClick)
     onClose(dialog, () => { dialog.removeEventListener('click', onClick); resolve() })
     dialog.classList.add('wide')
+    parchmentPanel(dialog, 'rules-panel') // the printed rule book's pages (IMP-095)
     render()
     dialog.showModal()
   })
