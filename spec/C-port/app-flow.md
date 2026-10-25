@@ -72,14 +72,22 @@ game, or the **asset viewer** for one that is not.
 
 ### 2.2 The games screen
 
-Page title "GoldBox Rerolled". One centred column:
+Page title "GoldBox Rerolled". One centred column, in the colours of the games' boxes (IMP-093; the one
+screen not in the EGA palette, since no game's files are behind it): a parchment panel (`#ae9b66`, lighter
+towards the top left) on charcoal (`#262626`), a thick dark-red and a thin red stripe along its top and
+bottom; text in dark ink (`#1c1710`, quiet `#3b301d`) set in EB Garamond (OFL, bundled with the app so it
+works offline; Palatino, Georgia, serif without it); headings in red ink (`#98130d`), upper case with a ◆;
+each game a ruled row, red-edged when imported, its name in red small capitals; the main buttons
+charcoal plaques (`#1a1816`) with gold lettering (`#e2c37a`) and a gold edge, the others outlined in ink;
+focus a red outline. Under 30 rem the page margin narrows and the title's side rules go.
 
-1. The heading "GoldBox Rerolled".
-2. The explanation: "This port plays the SSI Gold Box games from the game files of your own copy
+1. The heading "GoldBox Rerolled" on a charcoal plaque with a gold edge, gold small capitals, a red
+   double rule either side.
+2. The explanation (its first letter a drop capital): "This port plays the SSI Gold Box games from the game files of your own copy
    (MS-DOS), for example the game's folder from the GOG release (the data files and `START.EXE`,
    which holds the sound effects and the rules tables). They stay on this device: nothing is
    uploaded, and after importing once the game works offline."
-3. One row per game the port knows, in profile order (Pool of Radiance, Curse of the Azure Bonds):
+3. The heading "Your games", then one row per game the port knows, in profile order (Pool of Radiance, Curse of the Azure Bonds, Secret of the Silver Blades):
    the game's name, then in the quiet colour "imported", or "not imported: choose its *FOLDER*
    folder" (the profile's `folder`, `POOLRAD`, `CURSE`), then " · *note*" when the profile has one
    (CotAB: "early: being built, expect gaps"), then " · assets only" for a game that is not

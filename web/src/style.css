@@ -794,3 +794,77 @@ a.button:hover, a.button:focus-visible { border-color: var(--accent); outline: n
 .partyscreen { grid-template-columns: minmax(0, 1fr); }
 .partyscreen header { flex-wrap: wrap; gap: 0.5rem; }
 .partyscreen header > span { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+/* ------------------------------------------------------------ the entry screen (IMP-093)
+   In the colours of the games' boxes: a parchment panel on charcoal with red stripes along its top and
+   bottom, a dark plaque with gold capitals for the name, red-ink headings, charcoal buttons lettered in
+   gold. EB Garamond (OFL, bundled, so it works offline). Only this screen: the games keep the EGA look. */
+.entry {
+  --parch: #ae9b66; --parch-hi: #bba978; --ink: #1c1710; --ink-soft: #3b301d; --rule: #7d6a45;
+  --red: #98130d; --red-deep: #6a0806; --gold: #c9a24f; --gold-text: #e2c37a; --char: #1a1816;
+  max-width: none; width: 100%; min-height: 100dvh; margin: 0; padding: 1.5rem 1rem;
+  background: #262626; display: block;
+  font-family: 'EB Garamond', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif; font-size: 1.15rem;
+  color: var(--ink); color-scheme: light;
+}
+.entry .box {
+  max-width: 46rem; margin: 0 auto; padding: 2.2rem clamp(1rem, 4vw, 2.6rem) 1.6rem; display: grid; gap: 1rem;
+  background: radial-gradient(ellipse at 30% 20%, var(--parch-hi), var(--parch) 70%);
+  /* the boxes' red bands: a thick and a thin stripe along the top and the bottom */
+  border-top: 6px solid var(--red-deep); border-bottom: 6px solid var(--red-deep);
+  box-shadow: inset 0 9px 0 -6px var(--parch), inset 0 11px 0 -6px var(--red), inset 0 -9px 0 -6px var(--parch), inset 0 -11px 0 -6px var(--red), 0 0 0 1px #000, 0 10px 30px #000a;
+}
+.entry .muted { color: var(--ink-soft); }
+.entry code { font-family: ui-monospace, monospace; font-size: 0.8em; background: #0000000f; padding: 0 0.2em; }
+.entry a { color: var(--ink); }
+/* the name on a plaque: gold capitals on charcoal, a gold edge, red rules either side */
+.entry .plaque { display: flex; align-items: center; gap: 1rem; justify-content: center; }
+.entry .plaque::before, .entry .plaque::after { content: ''; flex: 1; height: 0; border-top: 2px solid var(--red); border-bottom: 1px solid var(--red); padding-top: 3px; }
+.entry .plaque h1 {
+  margin: 0; padding: 0.35em 0.9em; background: var(--char); color: var(--gold-text);
+  border: 2px solid var(--gold); outline: 1px solid var(--char); outline-offset: 2px; border-radius: 3px;
+  font-weight: 600; font-size: clamp(1.7rem, 6vw, 2.6rem); letter-spacing: 0.06em; font-variant: small-caps; text-align: center;
+  text-shadow: 0 1px 0 #000, 0 0 12px #c9a24f55;
+}
+.entry .plaque h1 span { color: #f0d999; }
+.entry .lede { margin: 0.3rem 0 0; line-height: 1.35; }
+.entry .lede::first-letter { float: left; font-size: 3.2em; line-height: 0.82; padding: 0.06em 0.08em 0 0; font-weight: 600; color: var(--ink); }
+/* red-ink headings with a diamond, as on the boxes' backs */
+.entry .rubric { margin: 0.6rem 0 0; color: var(--red); font-size: 1.15rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.entry .rubric::before { content: '◆'; margin-right: 0.45em; font-size: 0.8em; vertical-align: 0.1em; }
+.entry ul.games { gap: 0.7rem; margin: 0; }
+.entry ul.games li {
+  background: #ffffff1c; border: 1px solid var(--rule); border-left: 4px solid var(--rule); border-radius: 2px; padding: 0.7rem 0.9rem;
+}
+.entry ul.games li.stored { border-left-color: var(--red); background: #ffffff2e; }
+.entry ul.games li strong { color: var(--red); font-variant: small-caps; letter-spacing: 0.03em; font-size: 1.2em; }
+/* buttons: charcoal plaques lettered in gold; the quieter ones outlined in ink */
+.entry button, .entry a.button {
+  background: transparent; color: var(--ink); border: 1px solid var(--ink-soft); border-radius: 2px;
+  font-family: inherit; letter-spacing: 0.04em;
+}
+.entry button:hover:not(:disabled), .entry button:focus-visible { border-color: var(--red); color: var(--red-deep); outline: none; }
+.entry button.primary {
+  background: var(--char); color: var(--gold-text); border: 1px solid var(--gold); outline: 1px solid var(--char); outline-offset: 2px;
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.95em; margin: 3px;
+}
+.entry button.primary:hover:not(:disabled), .entry button.primary:focus-visible { color: #f6e2a8; border-color: #e8c66a; }
+.entry button.muted { color: var(--ink-soft); }
+.entry #status:empty { display: none; }
+.entry #status { color: var(--red-deep); font-style: italic; margin: 0; }
+/* the account: a ruled section on the same parchment */
+.entry .account-sec { border-top: 1px solid var(--rule); padding-top: 0.6rem; }
+.entry .account-top:not(:empty) { border: 1px solid var(--rule); border-radius: 2px; background: #ffffff14; }
+.entry .account-sec h3 { color: var(--red); font-size: 1.15rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.entry .account-sec h3::before { content: '◆'; margin-right: 0.45em; font-size: 0.8em; vertical-align: 0.1em; }
+.entry .acct-field span { color: var(--ink-soft); }
+.entry .acct-field input { background: #fff6dd; color: var(--ink); border: 1px solid var(--rule); border-radius: 2px; }
+.entry .acct-field input:focus { border-color: var(--red); }
+.entry .acct-code strong { color: var(--red-deep); }
+.entry .message { color: var(--red-deep); }
+.entry .version { border-top: 1px solid var(--rule); padding-top: 0.6rem; font-size: 0.85rem; }
+.entry :focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+@media (max-width: 30rem) {
+  .entry { padding: 0.6rem 0.4rem; }
+  .entry .plaque::before, .entry .plaque::after { display: none; }
+}

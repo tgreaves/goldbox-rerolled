@@ -36,7 +36,7 @@ export default defineConfig(({ mode }) => ({
               icons: [{ src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
             },
             // the server's API (spec/C-port/accounts-and-sync.md) is never answered from the cache: the data export is a navigation
-            workbox: { globPatterns: ['**/*.{js,css,html,svg}', 'journal/*.png'], navigateFallbackDenylist: [/\/api\//] },
+            workbox: { globPatterns: ['**/*.{js,css,html,svg,woff2}', 'journal/*.png'], navigateFallbackDenylist: [/\/api\//] },
           }),
         ],
   test: { include: ['test/**/*.test.ts'] },

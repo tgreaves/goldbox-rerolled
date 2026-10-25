@@ -2,6 +2,9 @@ import { installNames } from './data/character'
 import { installText } from './data/gametext'
 import { unexepack } from './data/exepack'
 import './style.css'
+import '@fontsource/eb-garamond/latin-400.css'
+import '@fontsource/eb-garamond/latin-400-italic.css'
+import '@fontsource/eb-garamond/latin-600.css'
 import { GameFiles, readPicked } from './store/gamefiles'
 import { GAMES, lastGame, setGame, type GameProfile } from './games/profile'
 import { showViewer } from './ui/viewer'
@@ -93,14 +96,17 @@ async function showImport() {
   const stored = new Map<string, boolean>()
   for (const g of GAMES) stored.set(g.id, await GameFiles.stored(g).catch(() => false))
   const any = [...stored.values()].some(Boolean)
+  // the entry screen in the colours of the games' boxes (IMP-093): parchment, red ink, gold on charcoal
   app.innerHTML = `
-    <section class="import">
-      <h1>GoldBox Rerolled</h1>
-      <p>This port plays the SSI Gold Box games from the game files of your own copy (MS-DOS),
+    <section class="import entry">
+      <div class="box">
+      <header class="plaque"><h1>GoldBox <span>Rerolled</span></h1></header>
+      <p class="lede">This port plays the SSI Gold Box games from the game files of your own copy (MS-DOS),
       for example the game's folder from the GOG release (the data files and <code>START.EXE</code>,
       which holds the sound effects and the rules tables). They stay on this device:
       nothing is uploaded, and after importing once the game works offline.</p>
-      <ul class="games">${GAMES.map((g) => `<li>
+      <h2 class="rubric">Your games</h2>
+      <ul class="games">${GAMES.map((g) => `<li class="${stored.get(g.id) ? 'stored' : ''}">
         <div><strong>${esc(g.name)}</strong> <span class="muted">${stored.get(g.id) ? 'imported' : `not imported: choose its <code>${g.folder}</code> folder`}${g.note ? ` · ${esc(g.note)}` : ''}${g.playable ? '' : ' · assets only'}</span></div>
         <div class="actions">
           ${stored.get(g.id) ? `<button class="primary" data-play="${g.id}">${g.playable ? 'Play' : 'View'}</button>` : ''}
@@ -111,6 +117,7 @@ async function showImport() {
       <p class="muted" id="status"></p>
       <section class="account-sec account-top" aria-label="Account"></section>
       <footer class="version muted small">${versionHtml()}</footer>
+      </div>
       <input type="file" id="dirInput" webkitdirectory multiple hidden />
       <input type="file" id="fileInput" multiple hidden />
     </section>`
