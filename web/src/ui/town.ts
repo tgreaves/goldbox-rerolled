@@ -14,12 +14,18 @@ import { heal as healChar, raiseDeadHp } from '../rules/camp'
 
 const memorisedReady = (c: Uint8Array) => Array.from({ length: F.memorisedCount }, (_, k) => c[F.memorised + k]).filter((v) => v > 0 && v < 0x80)
 import { appraiseGem, appraiseJewel, COINS, coinPrompt, coinValue, keepAsItem, moneyOf, pay, buy, poolAll, priceStock, receive, share, shopPrice, take, takeOne } from '../rules/money'
-import { msg, hasMsg, menu, ask, type MenuOpts } from '../games/strings'
+import { msg, hasMsg, menu, ask, type MenuOpts, type MenuWord } from '../games/strings'
 import { effectiveStat } from '../rules/effectkinds'
 import { WorldHost } from '../rules/worldfx'
 import { yes, list } from './camp'
 
 /** A leave question with its routine's own "~Yes ~No" (the ECL menu rule, strings.md §4.1). */
+/**
+ * The bar's words without TAKE, POOL and SHARE when the screen's panel handles the money (IMP-099: Buy,
+ * Heal); the game's own words otherwise.
+ */
+const barWords = (words: MenuWord[], panel: boolean) => (panel ? words.filter((w) => !'TPS'.includes(w.key.toUpperCase())) : words)
+
 const leaveYes = async (ui: Pick<TownUi, 'menu'>, prompt: string, id: 'shopLeaveYesNo' | 'templeLeaveYesNo' | 'treasureLeaveYesNo') =>
   (await ask((l, o) => ui.menu(l, o), menu(id), { prompt })) === 'Y'
 
@@ -32,6 +38,8 @@ export interface TownUi {
   buy?(): Promise<void>
   /** the treasure after a battle as one panel (IMP-056); without it the original's menus */
   treasurePanel?(): Promise<void>
+  /** SotSB's vault as the treasure panel (IMP-099): 'deposit' for the sheet's Deposit, then the panel again */
+  vaultPanel?(): Promise<'deposit' | 'done'>
   /**
    * Heal's list as a panel (IMP-097): `build` gives, for the current character (the panel may change who
    * that is), the title, the coins line and each service with its price and why it is not needed; the
@@ -123,7 +131,7 @@ export async function shop(ui: TownUi) {
     const has = e.money.some((v) => v > 0)
     const { name, c } = cur(e)
     ui.print(`${name} has ${coinValue(moneyOf(c))} gp in coins.`, true)
-    const o = await ask((l, op) => ui.menu(l, op), menu(has ? 'shop' : 'shopNoPool'))
+    const o = await ask((l, op) => ui.menu(l, op), barWords(menu(has ? 'shop' : 'shopNoPool'), !!ui.buy))
     if (o === 'B' && ui.buy) await ui.buy()
     else if (o === 'B') {
       for (;;) {
@@ -168,7 +176,7 @@ export async function temple(ui: TownUi) {
     const has = e.money.some((v) => v > 0)
     const { name, c } = cur(e)
     ui.print(`${name} has ${coinValue(moneyOf(c))} gp in coins.`, true)
-    const o = await ask((l, op) => ui.menu(l, op), menu(has ? 'temple' : 'templeNoPool'))
+    const o = await ask((l, op) => ui.menu(l, op), barWords(menu(has ? 'temple' : 'templeNoPool'), !!ui.chooseCure))
     if (o === 'H') await heal(ui)
     else if (o === 'V') await ui.view('temple')
     else if (o === 'T') await takeMoney(ui)
@@ -382,6 +390,13 @@ async function takeFromPile(ui: TownUi, money: boolean, items: boolean) {
  */
 export async function vault(ui: TownUi) {
   const e = ui.engine, t = e.items
+  if (ui.vaultPanel && t) {
+    for (;;) {
+      if (await ui.vaultPanel() === 'deposit') { await ui.view('vault'); continue }
+      ui.print('', true)
+      return
+    }
+  }
   for (;;) {
     const money = e.money.some((v) => v > 0), items = e.treasure.length > 0
     const parts = [money ? moneyLine(e.money) : '', items && t ? e.treasure.map((it) => t.name(it)).join(', ') : ''].filter(Boolean)

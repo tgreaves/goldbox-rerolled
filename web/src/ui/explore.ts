@@ -918,7 +918,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     }),
     refresh: () => drawRoster(),
     buy: () => shopPanel(),
-    treasurePanel: () => treasurePanel(),
+    treasurePanel: () => treasurePanel().then(() => {}),
+    vaultPanel: () => treasurePanel({ vault: true }),
     chooseCure: (build) => templePanel(build),
   }
 
@@ -929,12 +930,14 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
    */
   function templePanel(build: Parameters<NonNullable<TownUi['chooseCure']>>[0]): Promise<number> {
     return new Promise((resolve) => {
-      let done = false
+      let done = false, message = ''
       const render = () => {
         const b = build(), cur = engine.cur
         dialog.innerHTML = `<h2>${escape(b.title)}</h2>
-          <div class="shop-buyer">${engine.party().map((c, i) => `<button data-who="${i}" class="${c === cur ? 'on' : ''}">${escape(parseCharacter(c).name)}</button>`).join('')}</div>
+          <div class="shop-buyer">${engine.party().map((c, i) => memberButton(c, i, c === cur)).join('')}</div>
           <p>${escape(b.coins)}</p>
+          ${moneyBox()}
+          ${message ? `<p class="message" role="status">${escape(message)}</p>` : ''}
           <table class="shop temple"><thead><tr><th>Service</th><th class="num">Price</th><th></th><th></th></tr></thead><tbody>${b.rows.map((r, i) =>
             `<tr class="${r.note ? 'unusable' : ''}"><td>${escape(r.name)}</td><td class="num">${escape(r.price)}</td><td class="cmp">${escape(r.note)}</td>
               <td><button data-cure="${i}">Heal</button></td></tr>`).join('')}</tbody></table>
@@ -944,7 +947,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         const btn = (e.target as HTMLElement).closest('button')
         if (!btn || btn.closest('form')) return
         e.preventDefault()
-        if (btn.dataset.who) { engine.cur = engine.party()[Number(btn.dataset.who)]; drawRoster(); render() }
+        const money = moneyAction(btn.dataset)
+        if (money !== null) { message = money; render() }
+        else if (btn.dataset.who) { engine.cur = engine.party()[Number(btn.dataset.who)]; message = ''; drawRoster(); render() }
         else if (btn.dataset.cure) { done = true; dialog.close(); resolve(Number(btn.dataset.cure)) }
       }
       dialog.classList.add('wide')
@@ -998,8 +1003,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
    * FUN_4c2d_0ceb's limits, Pool and Share as FUN_4c2d_063a, items to anyone who can carry them
    * (16 items, capacity), Detect Magic as the menu's " Detect", the leftover warning.
    */
-  function treasurePanel(): Promise<void> {
+  function treasurePanel(opts: { vault?: boolean } = {}): Promise<'deposit' | 'done'> {
     const t = engine.items!
+    let result: 'deposit' | 'done' = 'done'
     let message = ''
     let split: Map<number, number> | null = null // item index → party index (−1 leave), while the split is shown
     let leaving = false
@@ -1074,9 +1080,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
               ${caster ? `<button data-detect="1">Detect Magic (${escape(nameOf(caster))}): magic items get a *</button>` : ''}
               ${engine.treasure.length || coins.length ? '<button data-propose="1">Take all…</button>' : ''}</p>
             ${engine.treasure.length ? `<h3>Items</h3><table class="shop treasure"><thead><tr><th>Item</th><th class="num">Weight</th><th>Give to</th></tr></thead><tbody>${rows}</tbody></table>` : ''}
-            ${!coins.length && !engine.treasure.length ? '<p class="muted">Nothing left.</p>' : ''}`
+            ${!coins.length && !engine.treasure.length ? `<p class="muted">${opts.vault ? 'The vault is empty.' : 'Nothing left.'}</p>` : ''}
+            ${opts.vault ? '<p class="tr-actions"><button data-deposit="1" title="The character sheet: Drop puts an item or coins in the vault">Deposit…</button></p>' : ''}`
         }
-        dialog.innerHTML = `<h2>Treasure</h2>${body}
+        dialog.innerHTML = `<h2>${opts.vault ? 'Vault' : 'Treasure'}</h2>${body}
           ${message ? `<p class="message">${escape(message)}</p>` : ''}
           ${leaving || split ? '' : '<p><button data-done="1" class="primary">Done</button></p>'}`
       }
@@ -1128,8 +1135,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           split = null
           message = missed.length ? `No room for: ${missed.join(', ')}.` : 'Done.'
           drawRoster()
-        } else if (d.done) {
-          if (leftovers().length) leaving = true
+        } else if (d.deposit) { result = 'deposit'; return finish() }
+        else if (d.done) {
+          // the vault keeps what is left in it: no warning
+          if (leftovers().length && !opts.vault) leaving = true
           else return finish()
         } else if (d.leave === 'yes') return finish()
         else if (d.leave === 'no') leaving = false
@@ -1142,12 +1151,49 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       dialog.classList.add('wide')
       dialog.addEventListener('click', onClick)
       dialog.addEventListener('change', onChange)
-      onClose(dialog, () => { dialog.removeEventListener('click', onClick); dialog.removeEventListener('change', onChange); resolve() })
+      onClose(dialog, () => { dialog.removeEventListener('click', onClick); dialog.removeEventListener('change', onChange); resolve(result) })
       render()
       parchmentPanel(dialog, 'treasure-panel') // treasure in the parchment look (IMP-097)
       dialog.showModal()
     })
   }
+
+  /**
+   * The pool on the panels themselves (IMP-099): what the pool holds, Take per coin kind for the selected
+   * character (FUN_4c2d_0ceb's limits), Pool and Share as FUN_4c2d_063a, in Buy and Heal instead of
+   * the command bar's TAKE, POOL and SHARE. A buyer pays from their own coins, or from the pool when
+   * those are short (rules/money.ts `pay`).
+   */
+  const poolLine = (m: number[]) => COINS.map((n, i) => (m[i] ? `${m[i]} ${n}` : '')).filter(Boolean).join(', ')
+  function moneyBox(): string {
+    const coins = COINS.map((n, i) => ({ n, i, v: engine.money[i] })).filter((x) => x.v > 0)
+    return `<section class="money-box">
+      <p><strong>Pool:</strong> ${coins.length ? `${escape(poolLine(engine.money))} (${coinValue(engine.money)} gp)` : 'empty'}
+        <button data-pool="1">Pool the party's coins</button>${coins.length ? '<button data-share="1">Share the pool evenly</button>' : ''}</p>
+      ${coins.length ? `<details${takeOpen ? ' open' : ''} data-takebox><summary>Take from the pool</summary><table class="shop pool"><tbody>${coins.map(({ n, i, v }) => `<tr><td>${escape(n)}</td><td class="num">${v}</td>
+        <td><input type="number" min="1" max="${v}" value="${v}" data-amount="${i}" aria-label="How much ${escape(n)}"></td><td><button data-coin="${i}">Take</button></td></tr>`).join('')}</tbody></table></details>` : ''}
+      <p class="muted small">A purchase or a cure is paid from the buyer's own coins, or from the pool when theirs are short.</p></section>`
+  }
+  /** whether "Take from the pool" is open, kept across the panel's redraws */
+  let takeOpen = false
+  dialog.addEventListener('toggle', (e) => { if ((e.target as HTMLElement).matches?.('details[data-takebox]')) takeOpen = (e.target as HTMLDetailsElement).open }, true)
+  /** a click on the money section; its message, or null when the click was something else */
+  function moneyAction(d: DOMStringMap): string | null {
+    const t = engine.items!, party = () => engine.party().map((c) => ({ c, items: engine.itemsOf(c) }))
+    if (d.pool) { poolAll(party(), engine.money, t); drawRoster(); return 'The party\'s coins are pooled here.' }
+    if (d.share) { share(party(), engine.money, t); drawRoster(); return engine.money.some((v) => v > 0) ? 'Shared; what nobody could carry is still in the pool.' : 'Shared.' }
+    if (d.coin) {
+      const i = Number(d.coin), c = engine.cur, before = engine.money[i]
+      const n = Number(dialog.querySelector<HTMLInputElement>(`[data-amount="${i}"]`)?.value) || 0
+      const r = take(c, engine.itemsOf(c), engine.money, i, n, t)
+      drawRoster()
+      return r ? (r === msg('moneyOverloaded') || r === msg('takeOverloaded') ? msg('shopOverloaded') : r) : `${parseCharacter(c).name} takes ${before - engine.money[i]} ${COINS[i]}.`
+    }
+    return null
+  }
+  /** a party member's button with their gold (Buy, Heal) */
+  const memberButton = (c: Uint8Array, i: number, on: boolean) =>
+    `<button data-who="${i}" class="${on ? 'on' : ''}">${escape(parseCharacter(c).name)} <small>${coinValue(moneyOf(c))} gp</small></button>`
 
   function shopPanel(): Promise<void> {
     const t = engine.items!
@@ -1177,12 +1223,13 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
             <td><button data-buy="${i}" ${why ? `disabled title="${escape(why)}"` : ''}>Buy</button></td></tr>`
         }).join('')
         dialog.innerHTML = `<h2>Buy</h2>
-          <div class="shop-buyer">${engine.party().map((c) => `<button data-who="${engine.party().indexOf(c)}" class="${c === buyer ? 'on' : ''}">${escape(parseCharacter(c).name)}</button>`).join('')}</div>
-          <p>${escape(name)} has <strong>${gold}</strong> gp in coins${pooled ? ` · ${pooled} gp in the pool` : ''} · carrying ${buyer[F.load] | (buyer[F.load + 1] << 8)} of ${capacity(buyer)}</p>
+          <div class="shop-buyer">${engine.party().map((c, i) => memberButton(c, i, c === buyer)).join('')}</div>
+          <p>${escape(name)} has <strong>${gold}</strong> gp in coins · carrying ${buyer[F.load] | (buyer[F.load + 1] << 8)} of ${capacity(buyer)}</p>
+          ${moneyBox()}
+          ${message ? `<p class="message" role="status">${escape(message)}</p>` : ''}
           <div class="shop-filter">${(['all', 'weapons', 'armour', 'other'] as const).map((f) => `<button data-f="${f}" class="${f === filter ? 'on' : ''}">${f[0].toUpperCase() + f.slice(1)}</button>`).join('')}
             <label><input type="checkbox" ${onlyUsable ? 'checked' : ''} data-usable> Only what ${escape(name)} can use</label></div>
           <table class="shop"><thead><tr><th>Item</th><th class="num">Price</th><th class="num">Weight</th><th>If readied instead</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="5" class="muted">Nothing here.</td></tr>'}</tbody></table>
-          ${message ? `<p class="message">${escape(message)}</p>` : ''}
           <form method="dialog"><button class="primary">Done</button></form>`
         dialog.querySelector<HTMLInputElement>('[data-usable]')!.addEventListener('change', (e) => { onlyUsable = (e.target as HTMLInputElement).checked; render() })
       }
@@ -1191,7 +1238,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         if (!b || b.closest('form') || b.disabled) return
         e.preventDefault()
         const d = b.dataset
-        if (d.who) { engine.cur = engine.party()[Number(d.who)]; message = ''; drawRoster() }
+        const money = moneyAction(d)
+        if (money !== null) message = money
+        else if (d.who) { engine.cur = engine.party()[Number(d.who)]; message = ''; drawRoster() }
         else if (d.f) filter = d.f as typeof filter
         else if (d.buy) {
           const it = engine.treasure[Number(d.buy)], buyer = engine.cur, items = engine.itemsOf(buyer)

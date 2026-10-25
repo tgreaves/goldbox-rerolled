@@ -329,7 +329,16 @@ MONEY ITEMS EXIT.
 ## 5. Shops and temples
 
 Opened by a script's COMBAT with the shop or temple flag ([B-model/host-contracts.md §2](../B-model/host-contracts.md#2-the-script-host-io)).
-Buy (IMP-042) and Heal (§5.3) are panels in the parchment look (IMP-097).
+Buy (IMP-042) and Heal (§5.3) are panels in the parchment look (IMP-097). Both handle the pool themselves
+(IMP-099): each member's button shows their gold ("*Name* *n* gp"); under the buyer's line, **Pool:**
+what the pool holds ("*coins* (*n* gp)", or "empty") with **Pool the party's coins** and, when it holds
+anything, **Share the pool evenly**; a fold "Take from the pool" lists each coin kind with its count, an
+amount (all of it at first) and **Take** for the selected member; a quiet line "A purchase or a cure is
+paid from the buyer's own coins, or from the pool when theirs are short."; the result ("The party's coins
+are pooled here.", "Shared; what nobody could carry is still in the pool.", "*Name* takes *n* *coin*.", the
+take rule's refusal) and Buy's own messages under it. With the panels the command bar leaves out TAKE,
+POOL and SHARE (the game's words, keys T, P, S): the shop's bar is BUY VIEW APPRAISE EXIT, the temple's
+HEAL VIEW APPRAISE EXIT; the leave question for money left in the pool stays.
 They use the play screen: text in the log, menus on the command bar, the cards to choose whose turn
 it is (IMP-029). The pool (the money laid down here) starts empty.
 
@@ -373,6 +382,9 @@ procedure is [town.md, "Temple"](../A-games/engine/town.md#temple-o-fun_2d14_0d0
 
 ### 5.4 Take, Pool, Share, Appraise
 
+On the command bar only where no panel handles the money (the headless runner); the play screen's Buy
+and Heal panels do it themselves (§5, IMP-099). Appraise stays on the bar.
+
 - **TAKE**: "Select type of coin" lists the coin types in the pool (largest first) with EXIT; then "How much
   *coin* will you take?" and a number; the take rule's message (the game's words, strings.md §4).
 - **POOL**, **SHARE**: at once, then "The pool holds *coins*." (or "nothing").
@@ -394,7 +406,11 @@ opens the vault: VAULT.DAT's coins and items become the pool, a line "In the vau
 empty.", the port's), and the game's menu "View", " Take" while the vault holds anything, " Pool Exit"
 (*game text*, SotSB 0x21EC5). View opens the sheet with **Deposit** for Drop (the game's word): an item
 goes into the vault at once, as the original's (no question; DOSBox), coins with
-**Deposit money**; Take and Pool as the treasure screen's. Exit writes the pool back to the vault's file
+**Deposit money**; Take and Pool as the treasure screen's. On the play screen the vault is the treasure
+panel (§4, IMP-099) headed "Vault": the coins with Take, Share and Pool, the items with their give
+buttons, **Deposit…** (the sheet as above, then the panel again), "The vault is empty." when it is, and
+**Done** without the left-behind question, since what stays is kept in the vault; the menu above is
+the headless runner's. Exit writes the pool back to the vault's file
 ([storage.md §3.2](storage.md#32-the-party-and-the-seed-flag)); the coins stay in the pool as in the
 original (**I**: 0x222C3 frees only the item list).
 

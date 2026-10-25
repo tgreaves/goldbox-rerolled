@@ -1108,3 +1108,9 @@ dialog.panel.parchment .mem-sets p { margin: 0.35rem 0; display: flex; flex-wrap
 dialog.panel.parchment .mem-sets button[data-apply] { font-variant: small-caps; letter-spacing: 0.03em; font-weight: 600; min-width: 7rem; }
 dialog.panel.parchment .mem-sets .set-del { min-height: 32px; padding: 0 0.6rem; color: var(--ink-soft); }
 dialog.panel.parchment .mem-sets .set-save input { padding: 0.35rem 0.5rem; min-height: 40px; width: 12rem; }
+
+/* the pool on the Buy and Heal panels (IMP-099) */
+.money-box { border-top: 1px solid var(--line); margin-top: 0.8rem; padding-top: 0.2rem; }
+.money-box table.pool { width: auto; min-width: min(28rem, 100%); }
+.money-box input[type=number] { width: 6rem; }
+.shop-buyer button small { font-size: 0.78em; opacity: 0.8; margin-left: 0.25rem; }
