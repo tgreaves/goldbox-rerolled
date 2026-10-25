@@ -51,14 +51,15 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
     if (exe) tables = new Tables(unexepack(exe).image)
   } catch { /* START.EXE unreadable: Create stays disabled */ }
 
+  // the parchment look (IMP-094) inside the game's own frame; the panels (dialog) stay the game's EGA windows
   app.innerHTML = `
-    <div class="partyscreen">
+    <div class="partyscreen parchment">
       <header><h1>${files.game.name}</h1><span><button data-a="account" hidden></button> <button class="muted" data-a="games" title="Switch game, import another, or remove one">⇄ Games</button> <button class="muted" data-a="settings">⚙ Settings</button> <button class="muted" data-a="assets">Assets</button></span></header>
       <section class="members" aria-label="Party"><h2>Party</h2><div class="cards"></div></section>
       <section class="info" aria-live="polite"></section>
       <nav class="functions" aria-label="Functions"></nav>
-      <dialog class="panel"></dialog>
-    </div>`
+    </div>
+    <dialog class="panel"></dialog>`
   const tbody = app.querySelector<HTMLElement>('.members .cards')!
   const info = app.querySelector<HTMLElement>('.info')!
   const nav2 = app.querySelector<HTMLElement>('.functions')!

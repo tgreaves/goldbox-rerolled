@@ -169,7 +169,10 @@ game's extensions); on an error "Import failed: *message*".
 ## 2. The ☰ menu
 
 Opened by **☰ Menu** or Escape while exploring (IMP-057). A panel "Menu" with one button per entry,
-each with a quiet second line; **Back to the game** at the foot.
+each with a quiet second line; **Back to the game** at the foot. In the parchment look (IMP-094,
+[app-flow.md §2.2](app-flow.md#22-the-games-screen)) inside the game's frame: the heading in red ink with
+a ◆, each entry a ruled row with its name in red small capitals and the second line in ink, **Back to
+the game** a charcoal plaque lettered in gold; the panels it opens are the game's EGA windows.
 
 | Entry | Shown | Second line |
 |---|---|---|

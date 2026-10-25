@@ -2105,6 +2105,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         ${item('assets', 'Quit to the party screen', '')}
       </ul>
       <form method="dialog"><button>Back to the game</button></form>`
+    // the parchment look while it is open (IMP-094); the dialog is shared with the game's own panels
+    dialog.classList.add('parchment', 'mainmenu-panel')
+    dialog.addEventListener('close', () => dialog.classList.remove('parchment', 'mainmenu-panel'), { once: true })
     dialog.querySelectorAll<HTMLButtonElement>('[data-go]').forEach((b) => b.addEventListener('click', () => {
       dialog.close()
       const go = b.dataset.go!

@@ -34,9 +34,9 @@ decision D1). Every port-authored text is also listed in
 - **Responsive** (R6): the layout adapts to the window (§3) instead of scaling a 320 × 200 picture;
   the original's pictures are drawn with whole-pixel scaling ([rendering.md](rendering.md)).
 - **The classic look** (IMP-057): the EGA palette for every colour (§2), square corners, the game's
-  own 8 × 8 font and frame tiles by default (two settings switch them off). The exception is the games
-  screen, before any game is open, which takes the colours of the games' boxes (IMP-093,
-  [app-flow.md §2.2](app-flow.md#22-the-games-screen)).
+  own 8 × 8 font and frame tiles by default (two settings switch them off). The exceptions take the
+  colours of the games' boxes: the games screen (IMP-093, [app-flow.md §2.2](app-flow.md#22-the-games-screen)),
+  and, inside the game's frame, the party screen and the ☰ menu (IMP-094).
 
 ## 2. Colours as roles
 

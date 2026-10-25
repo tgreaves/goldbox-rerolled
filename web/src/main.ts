@@ -100,7 +100,7 @@ async function showImport() {
   const any = [...stored.values()].some(Boolean)
   // the entry screen in the colours of the games' boxes (IMP-093): parchment, red ink, gold on charcoal
   app.innerHTML = `
-    <section class="import entry">
+    <section class="import entry parchment">
       <div class="box">
       <header class="plaque"><h1>GoldBox <span>Rerolled</span></h1></header>
       <p class="lede">This port plays the SSI Gold Box games from the game files of your own copy (MS-DOS),

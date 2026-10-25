@@ -162,6 +162,16 @@ CotAB [coab/assets.md §7](../A-games/coab/assets.md#7-start-up-title-copy-prote
 
 ## 5. The party screen
 
+**Look** (IMP-094): the games screen's parchment (§2.2) inside the game's own frame (IMP-092,
+[rendering.md §4.2](rendering.md#42-panels)): charcoal around; the game's name on the gold-lettered
+charcoal plaque, the header's buttons outlined and lettered in gold; the party, the message line (red
+ink, italic) and the functions on parchment, their headings in red ink with a ◆; each card a ruled
+light panel (the selected one edged in red), the name in red small capitals, the portrait and icon
+black in a gold edge, the HP bar dark green (red when low); the functions outlined in ink with the hot
+key in red, **Begin** (the main action) a charcoal plaque lettered in gold. With Borders: Plain a 2-px
+gold edge replaces the frame. EB Garamond whatever the Font setting; Text size Large 1.4 rem. The
+panels opened from here (Add character, Load, Create, the sheet, Settings) stay the game's EGA windows.
+
 The original's "Choose a function" screen ([input-and-menus.md §2](../A-games/engine/input-and-menus.md#2-party-screen-fun_417f_0161)),
 regrouped (IMP-073). Each time it opens, the roster is seeded from the game files once
 ([storage.md §4](storage.md#4-roster-seeding)), then the roster, the party and the autosave are read
