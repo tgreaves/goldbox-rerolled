@@ -277,7 +277,9 @@ still works.
 ## 8. The ending
 
 PROGRAM 8 ([B-model/profile.md §3.5](../B-model/profile.md#35-the-ending-endingscript)) opens the
-**ending panel** (IMP-036), a dialog over the play screen:
+**ending panel** (IMP-036), a dialog over the play screen, a page in the parchment look inside the game's
+frame (IMP-095): the heading in red ink, the picture set in a gold edge on black, the captions centred in
+ink, **Continue** a gold-lettered charcoal plaque:
 
 - the game's name as heading; a picture of 120 × 120 (PoR `FINAL<block>`; CotAB `PIC` and `BIGPIC`
   records at their own sizes) scaled up whole-pixel to at most 360 px and 80 % of the width, a BIGPIC

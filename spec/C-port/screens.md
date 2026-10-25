@@ -131,14 +131,17 @@ Keep redraws the party cards. Creation has the same controls inline (§1.1). (UI
 
 ### 1.7 Load saved game
 
-A list "Load saved game" (IMP-019, IMP-060, IMP-072), each entry "*title* — *note*", with **Exit**:
+A page "Load saved game" (the game's word; IMP-019, IMP-060, IMP-072) in the parchment look inside the
+game's frame (IMP-095, at most 40 rem wide), with **Cancel** (Escape and ✕ the same). One row a save: the
+mark (the slot's letter, ↻ for the autosave) in gold on a charcoal square, then three lines: what it
+is (red small capitals), the label (bold) and the note (quiet); the first row has the focus:
 
-1. the autosave: "Autosave: *label*" — its date and time;
-2. the browser's slots A–J that hold a save: "*x*: *label*" — date and time;
-3. conflict copies of saves: "*x* (conflict copy, this browser's | another device's): *label*", or
-   "Autosave (conflict copy, …)" — date and time;
-4. the game files' own saves whose party files are all present: "*x* (game files): *Name*'s party" —
-   "block *b* area *a*".
+1. the autosave: ↻, "Autosave", *label*, its date and time;
+2. the browser's slots A–J that hold a save: *x*, "Slot *x*", *label*, date and time;
+3. conflict copies of saves: *x* (↻ for the autosave's), "Slot *x* · conflict copy, this browser's |
+   another device's" (or "Autosave · …"), *label*, date and time;
+4. the game files' own saves whose party files are all present: *x*, "Slot *x* · from the game files",
+   "*Name*'s party", "block *b* area *a*".
 
 No entries: the message "There are no saved games." Choosing one starts play
 ([app-flow.md §7](app-flow.md#7-play-new-game-load-continue)).
@@ -573,7 +576,9 @@ text justified in ink with the first letter a red drop capital; the maps in a go
 ## 9. Commissions
 
 PoR only (profile `commissions`; IMP-023, IMP-039; data and states [port-data.md §5](../D-appendices/port-data.md#5-the-commissions-panel)).
-A panel "Commissions":
+A panel "Commissions", in the parchment look inside the game's frame (IMP-095): each line under a rule,
+its state in small capitals (Reward due and Summoned in red, Open in dark green, Failed struck through,
+Closed quiet), the progress in dark green:
 
 - one row per listed commission or deed: the state ("Reward due", "Summoned" in the highlight colour,
   "Open" in game-text colour, "Failed", "Closed" quiet) and the title, with its detail ("Go and see

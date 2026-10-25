@@ -6,7 +6,7 @@ import { effectsFile } from '../data/effects'
 import { parseCharacter } from '../data/character'
 import { F } from '../games/fields'
 import { deleteCharacter, getParty, listCharacters, seedRoster, setParty } from '../store/user'
-import { escape, sheetHtml } from './sheet'
+import { escape, sheetHtml, onClose, parchmentPanel } from './sheet'
 import { T } from '../games/tables'
 import { unexepack } from '../data/exepack'
 import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
@@ -67,6 +67,29 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
   enhancePanel(dialog)
 
   const byStem = (s: string) => roster.find((c) => c.stem === s)!
+
+  /**
+   * Load saved game (IMP-095): a page in the parchment look, a row a save: the slot's letter (↻ for the
+   * autosave) as a red initial, then what it is, the party and place, and when. Null when cancelled.
+   */
+  function chooseSave(list: { mark: string; kicker: string; title: string; note: string }[]): Promise<number | null> {
+    return new Promise((resolve) => {
+      dialog.innerHTML = `<h2>${escape(entry('partyLoad').text)}</h2><ul class="savelist">${list.map((s, i) => `<li><button type="button" data-i="${i}">
+        <span class="mark">${escape(s.mark)}</span><span class="sv"><small class="kicker">${escape(s.kicker)}</small><strong>${escape(s.title)}</strong><small>${escape(s.note)}</small></span></button></li>`).join('')}</ul>
+        <form method="dialog"><button>Cancel</button></form>`
+      parchmentPanel(dialog, 'load-panel')
+      let done = false
+      const stop = onClose(dialog, () => { if (!done) resolve(null) })
+      dialog.querySelectorAll<HTMLButtonElement>('ul.savelist button').forEach((b) => b.addEventListener('click', () => {
+        done = true
+        stop()
+        dialog.close()
+        resolve(Number(b.dataset.i))
+      }))
+      dialog.showModal()
+      dialog.querySelector<HTMLButtonElement>('ul.savelist button')?.focus()
+    })
+  }
   const say = (t: string) => { info.textContent = t }
 
   function draw() {
@@ -207,15 +230,15 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
         return
       case 'L': {
         // browser saves first, then the saves that came with the game files
-        const saves = (await listSaves()).map((g) => ({ title: `${g.slot}: ${g.label}`, note: new Date(g.savedAt).toLocaleString(),
+        const saves = (await listSaves()).map((g) => ({ mark: g.slot, kicker: `Slot ${g.slot}`, title: g.label, note: new Date(g.savedAt).toLocaleString(),
           start: { kind: 'load' as const, dat: g.dat, party: g.chars, label: `slot ${g.slot}, ${g.label}`, known: g.known, sidecar: g.sidecar } }))
-        if (auto) saves.unshift({ title: `Autosave: ${auto.label}`, note: new Date(auto.savedAt).toLocaleString(),
+        if (auto) saves.unshift({ mark: '↻', kicker: 'Autosave', title: auto.label, note: new Date(auto.savedAt).toLocaleString(),
           start: { kind: 'load' as const, dat: auto.dat, party: auto.chars, label: `autosave, ${auto.label}`, known: auto.known, sidecar: auto.sidecar } })
         // conflict copies the sync kept (IMP-072): the version that lost when two devices saved the same slot
         for (const c of await listConflicts().catch(() => [])) {
           if (!c.save) continue
           const g = c.save, where = c.ofId === 'AUTO' ? 'autosave' : `slot ${c.ofId}`
-          saves.push({ title: `${c.ofId === 'AUTO' ? 'Autosave' : c.ofId} (conflict copy, ${c.from === 'browser' ? "this browser's" : "another device's"}): ${g.label}`, note: new Date(g.savedAt).toLocaleString(),
+          saves.push({ mark: c.ofId === 'AUTO' ? '↻' : c.ofId, kicker: `${c.ofId === 'AUTO' ? 'Autosave' : `Slot ${c.ofId}`} · conflict copy, ${c.from === 'browser' ? "this browser's" : "another device's"}`, title: g.label, note: new Date(g.savedAt).toLocaleString(),
             start: { kind: 'load' as const, dat: g.dat, party: g.chars, label: `conflict copy of ${where}, ${g.label}`, known: g.known, sidecar: g.sidecar } })
         }
         for (const slot of 'ABCDEFGHIJ') {
@@ -225,11 +248,11 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
           const chars = sv.party.map((st) => ({ sav: files.get(`${st}.SAV`)!, itm: files.get(`${st}.${files.game.saves.items}`), spc: files.get(`${st}.${files.game.saves.effects}`) }))
           if (chars.some((c) => !c.sav)) continue
           const names = chars.map((c) => parseCharacter(c.sav).name)
-          saves.push({ title: `${slot} (game files): ${names[0]}'s party`, note: `block ${saveBlock(sv)} area ${saveArea(sv)}`,
+          saves.push({ mark: slot, kicker: `Slot ${slot} · from the game files`, title: `${names[0]}'s party`, note: `block ${saveBlock(sv)} area ${saveArea(sv)}`,
             start: { kind: 'load', dat, party: chars, label: `game-file save ${slot}`, known: undefined, sidecar: undefined } })
         }
         if (!saves.length) { say('There are no saved games.'); break }
-        const i = await pick('Load saved game', saves.map((g) => `${g.title} — ${g.note}`))
+        const i = await chooseSave(saves)
         if (i === null) break
         nav.play(saves[i].start)
         return

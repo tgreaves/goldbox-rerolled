@@ -1988,6 +1988,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       ${r.bounty ? `<p>Graveyard bounty: ${r.bounty} undead slain and not yet paid for. See the City Clerk.</p>` : ''}
       ${r.proclamations ? `<p class="muted">Proclamations to read in the Adventurer's Journal: ${r.proclamations}.</p>` : ''}
       <form method="dialog"><button>Close</button></form>`
+    parchmentPanel(dialog, 'commissions-panel') // the council's notices, on paper (IMP-095)
     dialog.showModal()
   }
 

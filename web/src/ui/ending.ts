@@ -4,6 +4,7 @@
 import type { GameFiles } from '../store/gamefiles'
 import { parseRecord, toImageData, type Picture } from '../data/image'
 import { blit, sizeCanvas } from '../render/upscale'
+import { parchmentPanel } from './sheet'
 
 
 /**
@@ -23,6 +24,8 @@ export async function playEnding(dialog: HTMLDialogElement, files: GameFiles, bl
   dialog.innerHTML = `<h2>${files.game.name}</h2><canvas class="ending" width="120" height="120"></canvas>
     <div class="ending-text"></div><p><button class="skip">Continue</button></p>`
   dialog.classList.add('ending-panel')
+  // a page of the book: the captions in ink, the picture set in a gold edge (IMP-095)
+  parchmentPanel(dialog, 'ending-paper')
   const canvas = dialog.querySelector<HTMLCanvasElement>('canvas')!
   const g = sizeCanvas(canvas, 120, 120)
   const text = dialog.querySelector<HTMLDivElement>('.ending-text')!

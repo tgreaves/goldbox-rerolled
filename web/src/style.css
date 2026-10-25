@@ -976,3 +976,33 @@ dialog.panel.parchment dl.rules dd { color: var(--ink); line-height: 1.38; }
 @media (min-aspect-ratio: 17/10) and (min-height: 521px) {
   .game { width: min(100%, 165dvh); margin-inline: auto; background: #000; box-shadow: 0 0 0 1px #c9a24f, 0 0 0 4px #1a1816, 0 0 0 5px #7d6a45, 0 0 40px 6px #000; }
 }
+
+/* Commissions and the ending on paper too (IMP-095) */
+dialog.panel.parchment ul.commissions li { border-top: 1px solid var(--rule); padding-top: 0.45rem; color: var(--ink); }
+dialog.panel.parchment ul.commissions .state { color: var(--ink-soft); font-variant: small-caps; letter-spacing: 0.04em; font-size: 0.9rem; }
+dialog.panel.parchment ul.commissions small { color: var(--ink-soft); }
+dialog.panel.parchment ul.commissions small.progress { color: #2f6b1f; }
+dialog.panel.parchment ul.commissions li.reward .state, dialog.panel.parchment ul.commissions li.summoned .state { color: var(--red); font-weight: 600; }
+dialog.panel.parchment ul.commissions li.open .state { color: #2f6b1f; font-weight: 600; }
+dialog.panel.parchment ul.commissions li.closed, dialog.panel.parchment ul.commissions li.failed { color: var(--ink-soft); }
+dialog.panel.parchment ul.commissions li.failed .state { text-decoration: line-through; }
+dialog.panel.parchment.ending-panel canvas.ending { border: 2px solid var(--gold); outline: 1px solid var(--char); outline-offset: 2px; background: #000; margin: 0.5rem auto; }
+dialog.panel.parchment .ending-text { color: var(--ink); font-size: 1.1em; line-height: 1.4; text-align: center; margin: 0.6rem 0; }
+dialog.panel.parchment.ending-panel p:has(> .skip) { text-align: center; }
+dialog.panel.parchment .skip { background: var(--char); color: var(--gold-text); border: 1px solid var(--gold); outline: 1px solid var(--char); outline-offset: 2px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; font-size: 0.95em; margin: 3px; }
+/* Load saved game (IMP-095): a row a save on parchment, the slot as a red initial */
+dialog.panel.load-panel { max-width: min(40rem, 96vw); }
+dialog.panel.parchment ul.savelist { list-style: none; margin: 0.6rem 0; padding: 0; display: grid; gap: 0.4rem; }
+dialog.panel.parchment ul.savelist button {
+  width: 100%; display: grid; grid-template-columns: 2.6rem minmax(0, 1fr); gap: 0.8rem; align-items: center; text-align: left;
+  background: #ffffff1f; border: 1px solid var(--rule); border-radius: 2px; color: var(--ink); padding: 0.45rem 0.7rem;
+}
+dialog.panel.parchment ul.savelist .mark {
+  display: grid; place-items: center; width: 2.6rem; height: 2.6rem; background: var(--char); color: var(--gold-text);
+  border: 1px solid var(--gold); font-size: 1.5rem; font-weight: 600; line-height: 1;
+}
+dialog.panel.parchment ul.savelist .sv { display: grid; gap: 0.05rem; min-width: 0; overflow-wrap: anywhere; }
+dialog.panel.parchment ul.savelist .kicker { color: var(--red); font-variant: small-caps; letter-spacing: 0.04em; font-size: 0.85rem; }
+dialog.panel.parchment ul.savelist strong { font-weight: 600; }
+dialog.panel.parchment ul.savelist small:last-child { color: var(--ink-soft); font-size: 0.85rem; }
+dialog.panel.parchment .skip:hover, dialog.panel.parchment .skip:focus-visible, dialog.panel.parchment form button:focus-visible { border-color: #e8c66a; color: #f6e2a8; }
