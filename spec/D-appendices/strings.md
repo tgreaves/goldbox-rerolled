@@ -204,7 +204,7 @@ game texts (§2).
 
 | Text | Where |
 |---|---|
-| Area, Encamp, Search, Look, "☰ Menu", "Journal, commissions, save, settings, rules, quit (Esc)", "Leave demo", "Escape: back to the party screen", "Stop resting", Continue | [ui-contract.md §5](../C-port/ui-contract.md#5-the-command-bar) |
+| Area, Encamp, Search, Look, Journal, Commissions, "The Adventurer's Journal: entries, proclamations, tavern tales (J)", "The City Council's commissions and progress (O)", "☰ Menu", "Save, settings, rules, quit (Esc)", "Leave demo", "Escape: back to the party screen", "Stop resting", Continue | [ui-contract.md §5](../C-port/ui-contract.md#5-the-command-bar) |
 | the pad's names "Turn left", "Forward", "Turn right", "Turn around", "West", "North", "East", "South" | [ui-contract.md §4.4](../C-port/ui-contract.md#44-the-pad) |
 | "*Facing* · *x*,*y* · *clock*", "Wilderness · *x*,*y* · facing *Facing* · *clock*", " · Searching" | [ui-contract.md §4.2](../C-port/ui-contract.md#42-the-view-region) |
 | "Not here.", "Area map (click to enlarge)" | [ui-contract.md §4.3](../C-port/ui-contract.md#43-the-area-map) |
