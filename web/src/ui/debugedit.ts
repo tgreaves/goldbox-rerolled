@@ -1,6 +1,8 @@
 // Debug character editor (IMP-025): change a party member's record directly. Not part of the game.
 // After a change the derived statistics are worked out again with the original rules
-// (FUN_51cf_0000 and the item recalculation), so THAC0, saves, spell slots and AC follow.
+// (FUN_51cf_0000 and the item recalculation), so THAC0, saves, spell slots and AC follow. The abilities
+// step as character creation's Modify does (racial ranges, 18/xx strength for fighters only), on a copy
+// of the record that Apply writes back.
 import { R, bookSpell } from '../games/rules'
 import type { Engine } from '../vm/engine'
 import { ALIGNMENTS, CLASSES, GENDERS, MONEY, STATUS } from '../data/character'
@@ -8,7 +10,8 @@ import { Item } from '../data/items'
 import { buildItem } from '../rules/randitem'
 import { recalc } from '../rules/equip'
 import { derive, levelHp, maxLevel, xpFor } from '../rules/training'
-import { keepBase, type Tables } from '../rules/chargen'
+import { keepBase, modifyStep, type Tables } from '../rules/chargen'
+import { abilityRows } from './newchar'
 import { onClose, parchmentPanel } from './sheet'
 import { F } from '../games/fields'
 import { game } from '../games/profile'
@@ -25,6 +28,8 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
   const party = e.party()
   let who = Math.max(0, party.indexOf(e.cur))
   let message = ''
+  /** the abilities being stepped, written to the record on Apply */
+  let draft = party[who].slice()
   const it = e.items
   // weapons, armour and shields as FUN_4c2d_1010 builds them (types 1–47, 50–59; 48 and 49 are not items);
   // the "+n" word is n1 for armour (types 0x32–0x3A), n2 otherwise
@@ -59,8 +64,7 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
           ${num('Age', 'age', u16(c, F.age), 1, 999)}
         </fieldset>
         <fieldset><legend>Abilities</legend>
-          ${STATS.map((s, i) => num(s, `s${i}`, c[F.stat[i]], 3, 25)).join('')}
-          ${num('STR %', 'pct', c[F.strPct], 0, 100)}
+          ${tables ? `<table class="modify"><tbody>${abilityRows(tables, draft)}</tbody></table>` : `${STATS.map((s, i) => num(s, `s${i}`, c[F.stat[i]], 3, 18)).join('')}`}
         </fieldset>
         <fieldset><legend>Hit points and experience</legend>
           ${num('HP', 'hp', c[F.hp], 0, 255)} ${num('Max HP', 'maxhp', c[F.maxHp], 1, 255)}
@@ -91,6 +95,7 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
   const finish = (c: Uint8Array, msg: string) => {
     if (tables) derive(tables, c)
     if (it) recalc(c, e.itemsOf(c), it)
+    draft = c.slice()
     message = msg
     changed()
     render()
@@ -99,9 +104,17 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
   return new Promise((resolve) => {
     const onClick = (ev: MouseEvent) => {
       const b = (ev.target as HTMLElement).closest('button')
-      if (!b || b.closest('form')) return
+      if (!b) return
+      // an ability step: the copy only, its table redrawn in place so the form's other edits stay
+      if (b.dataset.mod && tables) {
+        modifyStep(tables, draft, Number(b.dataset.mod), Number(b.dataset.d) as 1 | -1)
+        const body = dialog.querySelector('table.modify tbody')
+        if (body) body.innerHTML = abilityRows(tables, draft)
+        return
+      }
+      if (b.closest('form')) return
       const c = party[who]
-      if (b.dataset.who) { who = Number(b.dataset.who); message = ''; render(); return }
+      if (b.dataset.who) { who = Number(b.dataset.who); draft = party[who].slice(); message = ''; render(); return }
       switch (b.dataset.act) {
         case 'heal':
           c[F.hp] = c[F.maxHp]; c[F.status] = 0; c[F.inPlay] = 1
@@ -154,8 +167,10 @@ export function editCharacters(dialog: HTMLDialogElement, e: Engine, tables: Tab
       c[F.alignment] = clamp(v('align'), 0, ALIGNMENTS.length - 1)
       c[F.gender] = clamp(v('gender'), 0, 1)
       set16(c, F.age, clamp(v('age'), 1, 999))
-      for (let i = 0; i < 6; i++) c[F.stat[i]] = clamp(v(`s${i}`), 3, 25)
-      c[F.strPct] = c[F.stat[0]] === 18 ? clamp(v('pct'), 0, 100) : 0
+      if (tables) {
+        for (let i = 0; i < 6; i++) c[F.stat[i]] = draft[F.stat[i]]
+        c[F.strPct] = draft[F.strPct]
+      } else for (let i = 0; i < 6; i++) c[F.stat[i]] = clamp(v(`s${i}`), 3, 18) // no rules tables (START.EXE): plain 3–18
       keepBase(c)
       c[F.maxHp] = clamp(v('maxhp'), 1, 255)
       c[F.hp] = clamp(v('hp'), 0, c[F.maxHp])

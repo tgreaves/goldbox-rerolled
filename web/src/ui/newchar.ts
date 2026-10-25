@@ -29,6 +29,21 @@ const STATS = ['STR', 'INT', 'WIS', 'DEX', 'CON', 'CHA']
  * parts of its level-3 menu in colour-byte order (C1 … C6, Hair and Face as one part), Head and Weapon
  * (level 2), Size and the two colours (level 1), Small and Large.
  */
+/**
+ * The six abilities as Modify steps them (FUN_417f_209f, rules/chargen.ts modifyStep): − value + and the
+ * racial range, strength shown 18/xx where a fighter has exceptional strength. Its buttons carry
+ * data-mod (0–5) and data-d (±1). Also the Debug character editor's (IMP-025).
+ */
+export function abilityRows(t: Tables, c: Uint8Array): string {
+  return STATS.map((n, f) => {
+    const [lo, hi] = abilityRange(t, c, f)
+    const v = c[F.stat[f]]
+    const pct = f === 0 && v === 18 && c[F.strPct] ? `/${String(c[F.strPct] % 100).padStart(2, '0')}` : ''
+    return `<tr><th>${n}</th><td><button type="button" data-mod="${f}" data-d="-1" aria-label="lower ${n}">−</button></td>
+      <td class="v">${v}${pct}</td><td><button type="button" data-mod="${f}" data-d="1" aria-label="raise ${n}">+</button></td><td class="muted">${lo}–${hi}</td></tr>`
+  }).join('')
+}
+
 export function iconWords() {
   const p = (k: string) => word('iconParts', k).text
   return {
@@ -82,13 +97,7 @@ export function createCharacter(dialog: HTMLDialogElement, files: GameFiles, dic
   function render() {
     const ch = parseCharacter(c)
     const classOk = classesFor(t, race), alignOk = alignmentsFor(t, cls)
-    const statRows = STATS.map((n, f) => {
-      const [lo, hi] = abilityRange(t, c, f)
-      const v = c[F.stat[f]]
-      const pct = f === 0 && v === 18 && c[F.strPct] ? `/${String(c[F.strPct] % 100).padStart(2, '0')}` : ''
-      return `<tr><th>${n}</th><td><button type="button" data-mod="${f}" data-d="-1" aria-label="lower ${n}">−</button></td>
-        <td class="v">${v}${pct}</td><td><button type="button" data-mod="${f}" data-d="1" aria-label="raise ${n}">+</button></td><td class="muted">${lo}–${hi}</td></tr>`
-    }).join('')
+    const statRows = abilityRows(t, c)
     const gold = c[F.money + 6] | (c[F.money + 7] << 8)
     dialog.innerHTML = `<h2>Create a character</h2>
       <div class="newchar">

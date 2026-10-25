@@ -530,6 +530,7 @@ dialog.panel form.charedit fieldset {
   grid-template-columns: max-content minmax(0, 1fr); align-content: start;
 }
 dialog.panel form.charedit label { display: contents; }
+dialog.panel form.charedit fieldset > table.modify { grid-column: 1 / -1; margin: 0; } /* the abilities as creation steps them */
 dialog.panel form.charedit input, dialog.panel form.charedit select { width: 100%; min-width: 0; box-sizing: border-box; }
 dialog.panel form.charedit > p { grid-column: 1 / -1; margin: 0; display: flex; justify-content: flex-end; }
 dialog.panel form.additem { display: flex; flex-wrap: wrap; gap: 0.4rem 0.6rem; align-items: center; justify-content: flex-start; margin: 0.5rem 0; }
