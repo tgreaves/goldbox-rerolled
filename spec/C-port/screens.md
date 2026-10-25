@@ -600,6 +600,21 @@ when the selected character may change class, VIEW CHARACTER, ADD CHARACTER TO P
 named below by that word); the cards
 select the character. Load is not offered (this screen never empties the party).
 
+**On the play screen it is one window** (IMP-101), opened at once (the command bar empty while it is
+open), in the parchment look: the heading "Training Hall"; "Training costs *n* gp of the trainee's own
+coins; a hall trains its own class."; the last result; a ruled row per member: the name (a button that
+selects them), "*Race* *Class* · level *a*/*b* · *x* XP · *g* gp", and either "Ready to train: *a level n
+Class* …" (dark green) with **Train**, or the game's refusal ("Training costs 1000 gp.", "We do not
+train that class here.", "Not enough experience." …). The readiness is worked out on a copy of the
+character, as the check proper may cap the experience (the original's step), which happens only on
+**Train**. Train runs the TRAIN row below in the window: "*Name* will become:" and the new levels with
+"Do you wish to train?" **Yes** / **No**; Yes: "Congratulations...", and for a magic-user the spell
+choice as buttons (no way out, as the original's list); "*Name* learns *Spell*.". Under "Party" the other
+functions as buttons in the game's words (hot letter marked); each leaves the window, runs as below and
+opens the window again with its result. **BEGIN ADVENTURING** (or the screen's Exit when Begin is
+refused) leaves; Escape the same, or backs out of a question (not the spell choice). Without the
+window (the headless runner) the menus below.
+
 | Function | Behaviour |
 |---|---|
 | CREATE | the creation panel (§1.1), with the engine's dice; the character goes to the roster: "*Name* has been created. Use Add to put them in the party." |

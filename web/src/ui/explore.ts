@@ -50,7 +50,7 @@ import { clockText, freeSlots, isScroll, knows, memorise, memorised, preparation
 import { castOutside, itemSpells, mayCast, readsScroll, spendUse, targetKind } from '../rules/magic'
 import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
 import { creatorTools } from './creator'
-import { msg, entry, word, ask, backChoice, type MenuOpts } from '../games/strings'
+import { msg, entry, word, ask, backChoice, type MenuOpts, type MenuWord } from '../games/strings'
 import { wordButton, yesNo, listExit } from './sheet'
 import { yes } from './camp'
 import { playEnding } from './ending'
@@ -1411,6 +1411,102 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     }
     return tables
   }
+  /**
+   * The training hall as one window (IMP-101): each member with class, levels, experience and gold, and
+   * whether the hall can train them now (the check made on a copy, as the real one caps experience);
+   * Train asks the game's "will become … Do you wish to train?" in the window, then the new spell for a
+   * magic-user; the hall's other functions as buttons in the game's words, returned to the loop, which
+   * runs them and opens the window again. Escape and Begin leave the hall.
+   */
+  function hallWindow(t: Tables, fns: MenuWord[], begin: boolean, message: string): Promise<string> {
+    const nameOf = (c: Uint8Array) => parseCharacter(c).name
+    const hallMask = () => engine.read(0x6da8)
+    let asking: { text: string; lines?: string[]; buttons: { label: string; main?: boolean; act: () => void }[] } | null = null
+    return new Promise((resolve) => {
+      let result = begin ? 'B' : 'E'
+      const leave = (k: string) => { result = k; dialog.close() }
+      const label = (w: MenuWord) => { const j = w.text.toUpperCase().indexOf(w.key.toUpperCase()); return j < 0 ? escape(w.text) : `${escape(w.text.slice(0, j))}<u>${escape(w.text[j])}</u>${escape(w.text.slice(j + 1))}` }
+      const render = () => {
+        if (asking) {
+          dialog.innerHTML = `<h2>Training Hall</h2><div class="town-ask">${(asking.lines ?? []).map((l) => `<p>${escape(l)}</p>`).join('')}<p><strong>${escape(asking.text)}</strong></p>
+            <p class="ask-buttons">${asking.buttons.map((b, i) => `<button data-ask="${i}" class="${b.main ? 'primary' : ''}">${escape(b.label)}</button>`).join(' ')}</p></div>`
+          dialog.querySelector<HTMLButtonElement>('[data-ask="0"]')?.focus()
+          return
+        }
+        const cards = engine.party().map((c, i) => {
+          const ch = parseCharacter(c), chk = checkTraining(t, c.slice(), hallMask())
+          const status = chk.ok ? `Ready to train: ${willBecome(c, chk.train).join(' ').replace(/^\s*(and )?/, '').trim()}` : chk.message.trim()
+          return `<div class="hall-member${c === engine.cur ? ' on' : ''}">
+            <button data-who="${i}" class="hall-name">${escape(ch.name)}</button>
+            <span>${escape(ch.race)} ${escape(ch.cls)} · level ${ch.levels.map((l) => l.level).join('/')} · ${ch.exp.toLocaleString()} XP · ${coinValue(moneyOf(c))} gp</span>
+            <span class="${chk.ok ? 'ready' : 'muted'}">${escape(status)}</span>
+            ${chk.ok ? `<button data-train="${i}" class="primary">Train</button>` : ''}</div>`
+        }).join('')
+        const others = fns.filter((w) => !['T', 'B', 'E'].includes(w.key.toUpperCase()))
+        const out = fns.find((w) => ['B', 'E'].includes(w.key.toUpperCase()))
+        dialog.innerHTML = `<h2>Training Hall</h2>
+          <p class="muted">Training costs ${R.trainingCost} gp of the trainee's own coins; a hall trains its own class.</p>
+          ${message ? `<p class="message" role="status">${escape(message)}</p>` : ''}
+          <div class="hall-members">${cards}</div>
+          <h3>Party</h3>
+          <p class="tr-actions">${others.map((w) => `<button data-fn="${escape(w.key)}">${label(w)}</button>`).join('')}</p>
+          <p class="town-actions">${out ? `<button data-fn="${escape(out.key)}" class="primary">${label(out)}</button>` : ''}</p>`
+      }
+      /** Train for member i: the check (which may cap experience, as the original's), the question, the training, the spell */
+      const trainOne = (i: number) => {
+        const c = engine.party()[i]
+        engine.cur = c
+        const chk = checkTraining(t, c, hallMask())
+        drawRoster()
+        if (!chk.ok) { message = chk.message.trim(); print(message, false); return }
+        asking = { lines: [`${nameOf(c)}${msg('willBecome')}`, ...willBecome(c, chk.train)], text: msg('wishToTrain').trimEnd(), buttons: [
+          { label: 'Yes', main: true, act: () => {
+            message = msg('congratulations').trim()
+            print(message, false)
+            asking = null
+            if (train(t, engine, c, chk.train, false, engine.itemsOf(c), engine.items ?? undefined)) {
+              const choices = newSpellChoices(t, c)
+              // the original's empty list writes char[0x32] = 1 (max HP 1); skipped here (IMP-028)
+              if (choices.length) {
+                const st = engine.spells
+                asking = { text: 'Spells to choose from:', buttons: choices.map((id) => ({ label: st?.get(id)?.name ?? `#${id}`, act: () => {
+                  c[F.known + id] = 1; asking = null; message = `${nameOf(c)} learns ${st?.get(id)?.name ?? `spell ${id}`}.`; print(message, false)
+                } })) }
+              }
+            }
+            drawRoster()
+          } },
+          { label: 'No', act: () => { asking = null } }] }
+      }
+      const onClick = (e: MouseEvent) => {
+        const b = (e.target as HTMLElement).closest('button')
+        if (!b || b.disabled || b.closest('form')) return
+        e.preventDefault()
+        const d = b.dataset
+        if (d.ask && asking) { asking.buttons[Number(d.ask)].act(); render(); return }
+        message = ''
+        if (d.who) { engine.cur = engine.party()[Number(d.who)]; drawRoster() }
+        else if (d.train) trainOne(Number(d.train))
+        else if (d.fn) return leave(d.fn)
+        render()
+      }
+      // Escape: leave the hall (Begin), or back out of a question (not the spell choice, which the original requires)
+      const onCancel = (e: Event) => {
+        e.preventDefault()
+        if (asking) { if (asking.text !== 'Spells to choose from:') { asking = null; render() } }
+        else leave(begin ? 'B' : 'E')
+      }
+      dialog.classList.add('wide')
+      dialog.addEventListener('click', onClick)
+      dialog.addEventListener('cancel', onCancel)
+      onClose(dialog, () => { dialog.removeEventListener('click', onClick); dialog.removeEventListener('cancel', onCancel); dialog.classList.remove('wide'); resolve(result) })
+      render()
+      parchmentPanel(dialog, 'hall-panel')
+      menuBar.innerHTML = ''
+      dialog.showModal()
+    })
+  }
+
   async function trainingHall() {
     if (tables === undefined) {
       const exe = files.get('START.EXE')
@@ -1420,10 +1516,12 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const t = tables
     const tools = creatorTools(dialog, files, engine, t)
     const nameOf = (c: Uint8Array) => parseCharacter(c).name
+    let hallMessage = ''
+    /** a line to the log and to the window (IMP-101) */
+    const say = (m: string) => { print(m, false); hallMessage = m }
     for (;;) {
       const party = engine.party()
       drawRoster()
-      print(`${nameOf(engine.cur)} is selected (choose from the party list).`, true)
       // the party screen's functions as the game names them (its table, PoR DS:0619, CotAB DS:0553;
       // FUN_417f_0161, CotAB 0x36A1C), the key each one's first letter
       // CotAB's Human Change Classes only for a human who never changed class (0x36A93)
@@ -1433,7 +1531,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       const won = game().ending.after
       const begin = !(won && engine.read(won.won) !== 0 && party.length && !engine.demo)
       const fns = (['partyCreate', 'partyDrop', 'partyModify', 'partyTrain', ...(change ? ['partyChangeClass'] as const : []), 'partyView', 'partyAdd', 'partyRemove', 'partySave', ...(begin ? ['partyBegin'] as const : ['partyExit'] as const)] as const).map(entry)
-      const o = await ask(menu, fns, { prompt: 'Choose a function:' })
+      // the hall as one window (IMP-101): Train in it, the other functions from its buttons
+      const o = await hallWindow(t, fns, begin, hallMessage)
+      hallMessage = ''
       const c = engine.cur
       if (o === 'B' || o === '' || (!begin && o === 'E')) return // with Begin refused, Exit leaves (I: the original's Exit quits to DOS)
       if (o === 'V') await campUi.view()
@@ -1442,45 +1542,45 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         const made = await tools.create(t)
         if (made) {
           await saveCharacter({ stem: fileStem(nameOf(made)), sav: made, spc: effectsFile(startEffects(made)) })
-          print(`${nameOf(made)} has been created. Use Add to put them in the party.`, false)
+          say(`${nameOf(made)} has been created. Use Add to put them in the party.`)
         }
       } else if (o === 'A') {
-        if (party.length >= R.join.members || party.filter((m) => m[F.morale] < 0x80).length >= R.join.pcs) { print('The party is full.', false); continue }
+        if (party.length >= R.join.members || party.filter((m) => m[F.morale] < 0x80).length >= R.join.pcs) { say('The party is full.'); continue }
         const inParty = new Set(party.map(nameOf))
         const roster = (await listCharacters()).filter((r) => !inParty.has(nameOf(r.sav)))
         const pick = await tools.chooseFrom('Add character', roster)
         const refused = pick ? joinRefusal(party, pick.sav) : null
-        if (refused !== null) { if (refused) print(refused, false); continue }
+        if (refused !== null) { if (refused) say(refused); continue }
         if (pick) {
           const added = engine.addMember(pick.sav, pick.itm, pick.spc)
           if (engine.items) recalc(added, engine.itemsOf(added), engine.items)
-          print(`${nameOf(added)} joins the party.`, false)
+          say(`${nameOf(added)} joins the party.`)
         }
       } else if (o === 'R') {
-        if (party.length <= 1) { print('The party needs at least one character.', false); continue }
+        if (party.length <= 1) { say('The party needs at least one character.'); continue }
         await saveCharacter({ stem: fileStem(nameOf(c)), sav: c.slice(), itm: characterItemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })
         engine.dropMember(c)
-        print(`${nameOf(c)} leaves the party (still available to Add).`, false)
+        say(`${nameOf(c)} leaves the party (still available to Add).`)
       } else if (o === 'D') {
-        if (party.length <= 1) { print('The party needs at least one character.', false); continue }
+        if (party.length <= 1) { say('The party needs at least one character.'); continue }
         if (await tools.confirm(`${nameOf(c)} will be gone forever. Drop this character?`)) {
           engine.dropMember(c)
-          print(`${nameOf(c)} has been dropped.`, false)
+          say(`${nameOf(c)} has been dropped.`)
         }
       } else if (o === 'M') {
-        if ((c[F.xp] | c[F.xp + 1] | c[F.xp + 2] | c[F.xp + 3]) !== 0) print(`${nameOf(c)}${msg('cantModify')}`, false)
-        else if (await tools.modify(c)) { if (engine.items) recalc(c, engine.itemsOf(c), engine.items); print(`${nameOf(c)} has been modified.`, false) }
+        if ((c[F.xp] | c[F.xp + 1] | c[F.xp + 2] | c[F.xp + 3]) !== 0) say(`${nameOf(c)}${msg('cantModify')}`)
+        else if (await tools.modify(c)) { if (engine.items) recalc(c, engine.itemsOf(c), engine.items); say(`${nameOf(c)} has been modified.`) }
       } else if (o === 'H' && change) {
         // 0x5135D: the classes allowed, or "doesn't qualify"; the change on Select, nothing on Exit
         const choices = changeClassChoices(t, c)
-        if (!choices.length) { print(`${nameOf(c)}${msg('doesntQualify')}`, false); continue }
+        if (!choices.length) { say(`${nameOf(c)}${msg('doesntQualify')}`); continue }
         const exit = word('listExit', 'E').text.trim().toUpperCase()
         const k = await menu([...choices.map((x) => className(x).toUpperCase()), exit], { prompt: msg('pickNewClass'), vertical: true })
         if (k < 0 || k >= choices.length) continue
         changeClass(t, c, choices[k], engine.itemsOf(c), engine.items ?? undefined)
         if (engine.items) recalc(c, engine.itemsOf(c), engine.items)
         drawRoster()
-        print(`${nameOf(c)}${msg('nowFirstLevel')}${className(choices[k])}${msg('nowFirstLevelEnd')}`, false)
+        say(`${nameOf(c)}${msg('nowFirstLevel')}${className(choices[k])}${msg('nowFirstLevelEnd')}`)
       } else if (o === 'T') {
         const chk = checkTraining(t, c, engine.read(0x6da8))
         drawRoster()

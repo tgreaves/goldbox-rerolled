@@ -1121,3 +1121,21 @@ details.appraise { margin: 0.8rem 0 0; }
 details.appraise summary { cursor: pointer; }
 dialog.panel.parchment .town-ask { border-color: var(--rule); background: #ffffff1f; }
 dialog.panel.parchment details.appraise summary, dialog.panel.parchment details[data-takebox] summary { color: var(--red); font-variant: small-caps; letter-spacing: 0.03em; }
+/* the training hall window (IMP-101): a ruled row per member, the trainable one with its Train button */
+.hall-members { display: grid; gap: 0.35rem; margin: 0.5rem 0 0.8rem; }
+.hall-member { display: grid; grid-template-columns: minmax(8rem, 12rem) minmax(0, 1fr) auto; grid-template-rows: auto auto; gap: 0.1rem 0.8rem; align-items: center; border: 1px solid var(--line); padding: 0.4rem 0.6rem; }
+.hall-member .hall-name { grid-row: 1 / 3; text-align: left; }
+.hall-member > span { grid-column: 2; min-width: 0; overflow-wrap: anywhere; }
+.hall-member > button[data-train] { grid-column: 3; grid-row: 1 / 3; }
+.hall-member .ready { color: var(--ega-green); font-weight: 600; }
+.hall-member.on { border: 2px solid var(--accent); }
+dialog.panel.parchment .hall-member { border-color: var(--rule); background: #ffffff14; }
+dialog.panel.parchment .hall-member.on { border-color: var(--red); background: #ffffff2e; }
+dialog.panel.parchment .hall-member .hall-name { font-variant: small-caps; letter-spacing: 0.03em; color: var(--red); }
+dialog.panel.parchment button.primary u { color: #f6e2a8; }
+@media (max-width: 600px) {
+  .hall-member { grid-template-columns: 1fr auto; }
+  .hall-member .hall-name { grid-row: auto; grid-column: 1 / 3; }
+  .hall-member > span { grid-column: 1; }
+  .hall-member > button[data-train] { grid-column: 2; grid-row: 2 / 4; }
+}
