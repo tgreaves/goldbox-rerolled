@@ -781,6 +781,9 @@ a.button:hover, a.button:focus-visible { border-color: var(--accent); outline: n
    where the 3D view stands elsewhere, the wilderness still in sight beside it. Not in battle. */
 .game.wilderness:not(.in-combat) .map { display: none; }
 .game.wilderness:not(.in-combat) .wildview { object-fit: contain; }
+/* a drag pans the wilderness (IMP-110) */
+.game .wildview { cursor: grab; touch-action: none; }
+.game .wildview.panning { cursor: grabbing; }
 .game.wilderness:not(.in-combat) .overlay:not(.wide) { margin-left: 0; box-shadow: none; } /* the wilderness beside it */
 @media (min-width: 761px) and (min-aspect-ratio: 4/5) and (not ((orientation: landscape) and (max-height: 520px))) {
   .party-top .game.wilderness:not(.in-combat) { grid-template-areas: "party party" "view view" "text text" "commands commands"; }

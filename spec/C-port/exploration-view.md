@@ -237,6 +237,11 @@ IMP-026) instead of the 3D view:
   pixels `Overland.left`: the party's square in the middle, stopping at the map's edges, which at 120
   is the original window. It is drawn again when the region's shape changes. Party beside the view,
   stacked on a phone and held sideways, the region stays square: the original 5 × 5.
+- **IMP-110**: a press and drag on the view pans it over the map, the picture following the pointer
+  (map pixels per screen pixel = picture width / shown width), in both directions, clamped to the
+  map's 44 × 36 squares; the marker does not animate while panning. A press that moves under 6 screen
+  pixels is a tap (below). The pan is dropped, the view back around the party, when the party's
+  square changes. The view has `touch-action: none` and a grab cursor.
 - Pictures over the wide view (an encounter, the chest): the layer keeps the view's square at its
   left, where the 3D view stands elsewhere, without the black around it, the wilderness in sight
   beside it.

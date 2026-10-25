@@ -347,6 +347,7 @@ screen, as the original ([audio.md §2](audio.md#2-device-choice)).
 | pad buttons | as the arrows |
 | tap on the 3D view | left third: turn left; middle: forward; right third: turn right (IMP-003) |
 | tap on the wilderness view | one step towards the tap: along the axis on which the tap is furthest from the party's square (IMP-026) |
+| drag on the wilderness view | pans the view over the map, the party staying put; the next step brings it back (IMP-110) |
 | click or tap on the area map | the large area map |
 | tap on a card | select; on the current card, its sheet (§4.1) |
 | drag a card onto another | reorder the party (§8.4) |
