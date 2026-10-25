@@ -105,6 +105,28 @@ export function checkTraining(t: Tables, c: Uint8Array, hallMask: number, cheat 
   return { ok: train.length > 0, message: train.length ? '' : msg('notEnoughXp'), train }
 }
 
+/** The base classes among `playable` that a hall's mask (ECL 0x6DA8) trains: those whose trainer bit is in it. */
+export function hallClasses(t: Tables, mask: number, playable: number[]): number[] {
+  return playable.filter((k) => (trainerBit(t, k) & mask) !== 0)
+}
+
+/**
+ * For the training hall's window (IMP-101): what stands between `c` and training here, in the order a
+ * player can act on: conscious, the hall's classes, experience, then the fee. Worked out on copies, so
+ * nothing changes (the check proper caps experience, step 4); Train itself runs `checkTraining`, the
+ * original's order (conscious, fee, class, experience).
+ */
+export function trainingStatus(t: Tables, c: Uint8Array, hallMask: number): TrainCheck {
+  if (c[F.status] !== 0) return { ok: false, message: msg('consciousOnly'), train: [] }
+  // the class and experience steps without the fee: a copy with a full purse
+  const rich = c.slice()
+  rich[F.money + 8] = 0xff; rich[F.money + 9] = 0xff
+  const r = checkTraining(t, rich, hallMask)
+  if (!r.ok) return r
+  if (coinsGp(c) < R.trainingCost) return { ok: false, message: msg('trainingCosts'), train: r.train }
+  return r
+}
+
 export function willBecome(c: Uint8Array, train: number[]): string[] {
   return train.map((k, i) => `${msg(i ? 'andALevel' : 'aLevel')}${c[F.levels + k] + 1} ${CLASSES[k]}`)
 }

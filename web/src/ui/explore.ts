@@ -11,7 +11,7 @@ import { game } from '../games/profile'
 import { F } from '../games/fields'
 import { T } from '../games/tables'
 import type { GameFiles } from '../store/gamefiles'
-import { parseCharacter, MONEY, type Character } from '../data/character'
+import { parseCharacter, CLASSES, MONEY, type Character } from '../data/character'
 import { parseRecord, spriteImage, toImageData, type Picture } from '../data/image'
 import { World } from '../render/world'
 import { VIEW, drawView, frameRGBA } from '../render/drawnview'
@@ -48,7 +48,7 @@ import { camp, effectNames, type CampUi, type CampDesk } from './camp'
 import { runBattle, type BattleControls } from './combat'
 import { clockText, freeSlots, isScroll, knows, memorise, memorised, preparation } from '../rules/camp'
 import { castOutside, itemSpells, mayCast, readsScroll, spendUse, targetKind } from '../rules/magic'
-import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
+import { Tables, bodyRecord, classesFor, fileStem, headRecord } from '../rules/chargen'
 import { creatorTools } from './creator'
 import { msg, entry, word, ask, backChoice, type MenuOpts, type MenuWord } from '../games/strings'
 import { wordButton, yesNo, listExit } from './sheet'
@@ -61,7 +61,7 @@ import { openSettings, reducedMotion, viewMode } from './settings'
 import { accountLabel, openAccount } from './account'
 import { accountStatus, onSettingsPulled } from '../store/account'
 import { unexepack } from '../data/exepack'
-import { atLevelLimit, checkTraining, newSpellChoices, train, willBecome, xpFor } from '../rules/training'
+import { atLevelLimit, checkTraining, hallClasses, newSpellChoices, train, trainingStatus, willBecome, xpFor } from '../rules/training'
 import { changeClass, changeClassChoices, className, offersChangeClass } from '../rules/dualclass'
 import { initSound, play, unlockAudio } from '../audio/sfx'
 import type { DemoMode } from '../games/startup'
@@ -1577,9 +1577,14 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
           dialog.querySelector<HTMLButtonElement>('[data-ask="0"]')?.focus()
           return
         }
+        // the hall's classes: those of this game's playable classes whose trainer bit is in its mask
+        const playable = [...new Set(R.raceMenu.flatMap((r) => classesFor(t, r)).flatMap((k) => R.components[k] ?? [k]))].sort((a, b) => a - b)
+        const trained = hallClasses(t, hallMask(), playable)
         const cards = engine.party().map((c, i) => {
-          const ch = parseCharacter(c), chk = checkTraining(t, c.slice(), hallMask())
-          const status = chk.ok ? `Ready to train: ${willBecome(c, chk.train).join(' ').replace(/^\s*(and )?/, '').trim()}` : chk.message.trim()
+          const ch = parseCharacter(c), chk = trainingStatus(t, c, hallMask())
+          const becomes = willBecome(c, chk.train).join(' ').replace(/^\s*(and )?/, '').trim()
+          // the hall's rule first, then experience, then the fee (trainingStatus): ready, or what is missing
+          const status = chk.ok ? `Ready to train: ${becomes}` : chk.train.length ? `${chk.message.trim()} (then ${becomes})` : chk.message.trim()
           return `<div class="hall-member${c === engine.cur ? ' on' : ''}">
             <button data-who="${i}" class="hall-name">${escape(ch.name)}</button>
             <span>${escape(ch.race)} ${escape(ch.cls)} · level ${ch.levels.map((l) => l.level).join('/')} · ${ch.exp.toLocaleString()} XP · ${coinValue(moneyOf(c))} gp</span>
@@ -1589,7 +1594,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         const others = fns.filter((w) => !['T', 'B', 'E'].includes(w.key.toUpperCase()))
         const out = fns.find((w) => ['B', 'E'].includes(w.key.toUpperCase()))
         dialog.innerHTML = `<h2>Training Hall</h2>
-          <p class="muted">Training costs ${R.trainingCost} gp of the trainee's own coins; a hall trains its own class.</p>
+          <p><strong>This hall trains:</strong> ${escape(trained.length ? trained.map((k) => CLASSES[k]).join(', ') : 'no class')} <span class="muted">· ${R.trainingCost} gp a training, from the trainee's own coins</span></p>
           ${message ? `<p class="message" role="status">${escape(message)}</p>` : ''}
           <div class="hall-members">${cards}</div>
           <h3>Party</h3>

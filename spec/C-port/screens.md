@@ -630,13 +630,16 @@ named below by that word); the cards
 select the character. Load is not offered (this screen never empties the party).
 
 **On the play screen it is one window** (IMP-101), opened at once (the command bar empty while it is
-open), in the parchment look: the heading "Training Hall"; "Training costs *n* gp of the trainee's own
-coins; a hall trains its own class."; the last result; a ruled row per member: the name (a button that
-selects them), "*Race* *Class* · level *a*/*b* · *x* XP · *g* gp", and either "Ready to train: *a level n
-Class* …" (dark green) with **Train**, or the game's refusal ("Training costs 1000 gp.", "We do not
-train that class here.", "Not enough experience." …). The readiness is worked out on a copy of the
-character, as the check proper may cap the experience (the original's step), which happens only on
-**Train**. Train runs the TRAIN row below in the window: "*Name* will become:" and the new levels with
+open), in the parchment look: the heading "Training Hall"; "**This hall trains:** *classes*" (the
+game's playable base classes whose trainer bit is in the hall's mask, ECL 0x6DA8: PoR's cleric hall
+"Cleric") with " · *n* gp a training, from the trainee's own coins"; the last result; a ruled row per
+member: the name (a button that selects them), "*Race* *Class* · level *a*/*b* · *x* XP · *g* gp", and
+either "Ready to train: *a level n Class* …" (dark green) with **Train**, or what stands in the way, in
+the order a player can act on (`trainingStatus`): not conscious, then the hall's class (the game's
+"We don't train that class here"), then experience ("Not Enough Experience"), then the fee ("Training
+costs 1000 gp.", followed by "(then *a level n Class*)"). This status is worked out on copies, as the
+check proper may cap the experience (the original's step) and checks the fee before the class; that
+check, in the original's order, runs only on **Train**. Train runs the TRAIN row below in the window: "*Name* will become:" and the new levels with
 "Do you wish to train?" **Yes** / **No**; Yes: "Congratulations...", and for a magic-user the spell
 choice as buttons (no way out, as the original's list); "*Name* learns *Spell*.". Under "Party" the other
 functions as buttons in the game's words (hot letter marked); each leaves the window, runs as below and
