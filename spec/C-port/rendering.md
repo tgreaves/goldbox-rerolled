@@ -106,7 +106,11 @@ From the profile's `view.frame`:
   and the text share its bottom line; in the W column layout the party and the map leave out their left
   edges and the map and text their top edges; in N the party, map and text leave out their top edges
   and the map its left edge.
-- The framed panels: the view, the cards, the area map, the text log, and every dialog.
+- The framed panels: the view, the cards, the area map, the text log, every dialog, and on the party
+  screen (IMP-092) the party panel and, under it, the message line and the functions as one framed stack
+  (the message line leaves out its top and bottom edges, the functions their top edge, so the party
+  panel's bottom edge is the divider, as on the original's roster screen). The game's own frame each
+  time: PoR's rope, CotAB's white frame, SotSB's bars.
 - **Plain**: a 2-px border in the frame colour (EGA 11) with square corners.
 - Without `8X8D1` #202 (or, for CotAB, without `START.EXE`) the borders are Plain and the setting is
   not offered.

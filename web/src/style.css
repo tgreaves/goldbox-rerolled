@@ -768,3 +768,29 @@ a.button:hover, a.button:focus-visible { border-color: var(--accent); outline: n
 @media (orientation: landscape) and (max-height: 520px) {
   .game.bigpic:not(.in-combat) { grid-template-areas: "view party" "view text" "view commands"; }
 }
+
+/* The party screen in the game's own frame (IMP-092): the party panel, then the info line and the
+   functions as one framed stack under it, the divider between them the party panel's bottom edge, as
+   the original's roster screen; PoR's rope, CotAB's white frame, SotSB's bars (--rope, IMP-051) */
+.frames-original .partyscreen { row-gap: 0; }
+.frames-original .partyscreen header { margin-bottom: 0.75rem; }
+.frames-original .partyscreen .members, .frames-original .partyscreen .info, .frames-original .partyscreen .functions {
+  border: 16px solid transparent; border-image: var(--rope) 32 round; border-radius: 0;
+}
+.frames-original .partyscreen .members { padding: 0.5rem 0.75rem; }
+.frames-original .partyscreen .info { border-top-width: 0; border-bottom-width: 0; padding: 0.5rem 0.75rem 0; min-height: 2em; }
+.frames-original .partyscreen .functions { border-top-width: 0; padding: 0.25rem 0.75rem 0.75rem; }
+.frames-original .partyscreen .fgroup h2 { color: var(--ega-cyan); }
+@media (max-width: 760px) {
+  .frames-original .partyscreen .members, .frames-original .partyscreen .info, .frames-original .partyscreen .functions { border-width: 12px; }
+  .frames-original .partyscreen .info, .frames-original .partyscreen .functions { border-top-width: 0; }
+  .frames-original .partyscreen .info { border-bottom-width: 0; }
+}
+/* party-screen cards: long class names ("Cleric/Fighter/Magic-User") wrap inside the card, never past it */
+.pcard { overflow: hidden; min-width: 0; }
+.pc-body { overflow-wrap: anywhere; }
+.pc-body .hpbar { max-width: 100%; }
+/* the party screen's header wraps on a phone rather than widening the page */
+.partyscreen { grid-template-columns: minmax(0, 1fr); }
+.partyscreen header { flex-wrap: wrap; gap: 0.5rem; }
+.partyscreen header > span { display: flex; flex-wrap: wrap; gap: 0.4rem; }
