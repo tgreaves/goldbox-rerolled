@@ -24,8 +24,9 @@ import { enhancePanel } from './panel'
 import { rulesReference } from './rulesref'
 import { Engine, A0, type Io } from '../vm/engine'
 import type { Dice } from '../rules/dice'
-import { drawMap, landmarkAt } from './areamap'
-import type { GeoMap } from '../data/geo'
+import { drawMap, drawRoute, landmarkAt, squareAt } from './areamap'
+import { route, routeSquares } from '../rules/travel'
+import { STEP, type GeoMap } from '../data/geo'
 import { getVaultFile, listCharacters, listSaves, saveCharacter, setVaultFile, writeAutosave, writeSave } from '../store/user'
 import { parseVault, vaultFile } from '../data/vault'
 import { newerSidecarNote, type SidecarExtra } from '../store/savefiles'
@@ -2396,12 +2397,75 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const list = areaMarks()
     const legend = [...new Map(list.map((m) => [m.label, m])).values()]
       .map((m) => `<li><span class="icon">${ICONS[m.kind]}</span>${escape(m.label)}</li>`).join('')
-    dialog.innerHTML = `<h2>Area</h2><canvas class="areamap"></canvas>${legend ? `<ul class="legend">${legend}</ul>` : ''}<form method="dialog"><button>Close</button></form>`
+    // travel (IMP-103): a tap plans the walk to a square and shows it, a second tap (or Walk there) sets off
+    const canTravel = !engine.overland && !engine.demo
+    // one line above the map, the hint and then the plan in it, so the map never moves between the two taps
+    dialog.innerHTML = `<h2>Area</h2>${canTravel ? '<p class="travel-plan muted">Tap a square to see the way there; tap it again to walk.</p>' : ''}
+      <canvas class="areamap"></canvas>${legend ? `<ul class="legend">${legend}</ul>` : ''}<form method="dialog"><button>Close</button></form>`
     const c = dialog.querySelector<HTMLCanvasElement>('canvas')!
-    drawMap(c, engine.geo, 24, { x: engine.x, y: engine.y, facing: engine.facing }, list)
-    c.addEventListener('mousemove', (e) => { c.title = landmarkAt(c, e, list)?.detail ?? '' })
+    const plan = dialog.querySelector<HTMLParagraphElement>('.travel-plan')
+    // a fixed size, so the map stays where it is between the two taps
+    dialog.classList.add('area-panel')
+    onClose(dialog, () => dialog.classList.remove('area-panel'))
+    let target: { x: number; y: number } | null = null
+    const draw = (squares: { x: number; y: number }[] = []) => { drawMap(c, engine.geo!, 24, { x: engine.x, y: engine.y, facing: engine.facing }, list); drawRoute(c, squares) }
+    draw()
+    c.addEventListener('mousemove', (e) => { c.title = landmarkAt(c, e, list)?.detail ?? (canTravel ? 'Tap to plan a walk here' : '') })
+    if (canTravel) c.addEventListener('click', (e) => {
+      const to = squareAt(c, e)
+      if (to.x < 0 || to.x > 15 || to.y < 0 || to.y > 15) return
+      if (target && target.x === to.x && target.y === to.y) { dialog.close(); void travelTo(to); return }
+      const dirs = route(engine.geo!, { x: engine.x, y: engine.y }, to)
+      target = dirs && dirs.length ? to : null
+      draw(dirs ? routeSquares({ x: engine.x, y: engine.y }, dirs) : [])
+      if (!plan) return
+      plan.classList.remove('muted')
+      plan.innerHTML = !dirs ? 'No known way there: a wall or a locked door is in the way.'
+        : !dirs.length ? 'The party is here.'
+        : `${dirs.length} step${dirs.length === 1 ? '' : 's'} to ${to.x},${to.y}. <button type="button" class="primary" data-walk="1">Walk there</button>`
+      plan.querySelector('[data-walk]')?.addEventListener('click', () => { const t = target; dialog.close(); if (t) void travelTo(t) })
+    })
     dialog.showModal()
   }
+
+  /**
+   * Travel (IMP-103): the party walks the planned route a step at a time through the ordinary commands
+   * (turn, then forward), so every step is the game's own: its events, encounters and scripts. The walk
+   * stops when the game wants the player (a menu, a window, a battle), when the party is not where the
+   * route said (a wall, a teleport, another area), at a locked door, or on any key or tap.
+   */
+  let travel: { stop: boolean } | null = null
+  async function travelTo(to: { x: number; y: number }) {
+    if (travel || busy || pending || dialog.open || !engine.geo || engine.overland) return
+    const dirs = route(engine.geo, { x: engine.x, y: engine.y }, to)
+    if (!dirs || !dirs.length) return
+    const t = (travel = { stop: false })
+    const where = `${engine.block}:${engine.area}`
+    const halted = () => t.stop || !!pending || dialog.open || engine.quit || `${engine.block}:${engine.area}` !== where
+      || app.querySelector('.game')!.classList.contains('in-combat')
+    const turn = (d: number) => ['', 'r', 'b', 'l'][(d - engine.facing + 4) % 4]
+    note(`Walking to ${to.x},${to.y}: any key or tap stops.`)
+    try {
+      for (const d of dirs) {
+        const k = turn(d)
+        if (k) { await act(() => engine.command(k)); if (halted()) break }
+        const [x, y] = [engine.x, engine.y]
+        await act(() => engine.command('f'))
+        if (halted()) break
+        if (engine.x !== x + STEP[d][0] || engine.y !== y + STEP[d][1]) break // a wall, a door held, the script moved the party
+        await new Promise((r) => setTimeout(r, reducedMotion() ? 60 : 220)) // the step's slide, seen
+        if (halted()) break
+      }
+    } finally {
+      if (travel === t) travel = null
+    }
+  }
+  // any key or tap during a walk stops it (the step under way finishes)
+  const onTravelKey = (e: KeyboardEvent) => { if (travel) { travel.stop = true; e.preventDefault(); e.stopPropagation() } }
+  window.addEventListener('keydown', onTravelKey, true)
+  app.addEventListener('pointerdown', () => { if (travel) travel.stop = true }, true)
+  // the game wanting the player stops it too: a menu or a window
+  new MutationObserver(() => { if (travel && (pending || dialog.open)) travel.stop = true }).observe(menuBar, { childList: true })
 
   // --------------------------------------------------------------- commands
   let busy = false
@@ -2637,6 +2701,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     running = false
     observer.disconnect()
     window.removeEventListener('keydown', onKey)
+    window.removeEventListener('keydown', onTravelKey, true)
     stopSettings()
     world?.renderer.dispose()
     back()

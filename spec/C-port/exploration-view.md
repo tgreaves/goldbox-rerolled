@@ -371,6 +371,21 @@ its full size, a legend (one line per distinct label: its icon and label), a too
 landmark's text under a hovering pointer, and **Close**. Where the map is refused, the note "Not
 Here." instead.
 
+**Travel** (IMP-103; not in the original): outside the tile wilderness and the demo, a line above the
+map (its height and the panel's width fixed, so the map does not move between taps) says "Tap a square
+to see the way there; tap it again to walk." A tap on a square plans the shortest walk to it
+(`rules/travel.ts` `route`: through open passages only, passage 1 on the side of the square stood on, as
+the step decides; never through a locked door, 2 or 3, and never across the map's edge, which would
+leave the area) and draws it: a dot on each square passed, a ring on the last; the line says "*n*
+steps to *x*,*y*." with **Walk there**, "The party is here.", or "No known way there: a wall or a locked
+door is in the way." A second tap on the same square, or Walk there, closes the panel and walks: the
+note "Walking to *x*,*y*: any key or tap stops.", then for each step the turn it needs (L, R or turning
+round) and a step forward, through the ordinary commands, so the game's events, encounters and scripts
+happen as when walking by hand, about 220 ms apart (60 ms with reduced motion). The walk stops when a
+menu or a panel opens (the game wants the player), when a battle starts, when the area changes or the
+game ends, when the party is not on the square the route said (a wall, a door held, a script moving
+it), or on any key or tap (the step under way finishes); plain lines in the log do not stop it.
+
 ### 6.4 In the asset viewer
 
 The same drawing without a party: squares that carry an event are shaded blue (EGA 1, `#0000aa`) and there are no

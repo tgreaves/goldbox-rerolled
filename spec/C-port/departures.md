@@ -113,6 +113,7 @@ implementation's: *done*, or what remains.
 | IMP-100 | shops and temples as one window each | [screens.md §5](screens.md#5-shops-and-temples) | required | done |
 | IMP-101 | the training hall as one window | [screens.md §7.6](screens.md#76-training-hall) | required | done |
 | IMP-102 | camp as one window; the save slot window | [screens.md §6](screens.md#6-camp), [app-flow.md §7](app-flow.md#7-play-new-game-load-continue) | required | done |
+| IMP-103 | travel on the area map | [exploration-view.md §6.3](exploration-view.md#63-the-large-view) | required | done |
 
 ## 4. Combat
 
@@ -161,6 +162,6 @@ the original switches its entry off (0x36DCD).
 
 ## Validation
 
-- Every IMP id of the register appears in §1–§5 (101 ids; IMP-009 unassigned), checked by listing
+- Every IMP id of the register appears in §1–§5 (102 ids; IMP-009 unassigned), checked by listing
   `^| IMP-` in [IMPROVEMENTS.md](../../IMPROVEMENTS.md) against this file (2026-10-25).
 - [CONFORMANCE.md](../CONFORMANCE.md), "Departures".

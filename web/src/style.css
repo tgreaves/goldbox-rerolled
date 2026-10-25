@@ -1158,3 +1158,7 @@ dialog.panel.parchment .camp-member.on { border-color: var(--red); background: #
 dialog.panel.parchment .camp-member .hall-name { font-variant: small-caps; letter-spacing: 0.03em; color: var(--red); }
 dialog.panel.parchment .camp-sec { border-top-color: var(--rule); }
 dialog.panel.parchment .camp-lines { border-left-color: var(--red); background: #ffffff14; }
+/* travel on the area map (IMP-103): the plan's line keeps its height so the map does not move */
+dialog.panel.area-panel { width: min(46rem, 94vw); }
+dialog.panel .travel-plan { height: 3rem; overflow: hidden; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.3rem 0; }
+dialog.panel .travel-plan button { min-height: 36px; padding: 0.15rem 0.8rem; }
