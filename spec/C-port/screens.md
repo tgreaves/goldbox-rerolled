@@ -222,7 +222,9 @@ card, V or C, camp View, a shop's or temple's or treasure's View, and the battle
   "Space or Take control to play them yourself." (in a battle).
 - **Abilities and numbers** (left, or above on narrow screens): STR … CHA; HP "*hp* / *max*", AC,
   THAC0, Damage, Movement, Experience with " · *left* to level *L* *Class* (*needed*)" or " · highest
-  level reached"; the seven coins. Each label's tooltip explains it (IMP-058,
+  level reached"; a multi-class character instead every class's next level, the one total counting
+  for each: " · *Class* *L* at *needed*" per class, joined by " · " ("*Class* *L*: ready to train"
+  once reached, "*Class* *L*: highest level" at the cap); the seven coins. Each label's tooltip explains it (IMP-058,
   [port-data.md §9](../D-appendices/port-data.md#9-interface-tooltips)).
 - **Equipment** (right): **Equipped**, one cell per slot in this order: Weapon, Shield, Armour,
   Gauntlets, Helm, Belt/Necklace, Robe, Cloak, Boots, Ring, Ring, then any other readied item

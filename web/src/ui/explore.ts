@@ -920,6 +920,20 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     }
     return best ? { pct: best.pct, text: best.text } : null
   }
+  /**
+   * The sheet's line after Experience: one class as xpProgress words it; a multi-class character every
+   * class's next level, "Fighter 2 at 2,001 · Magic-User 2 at 2,501" (the one total counts for each).
+   */
+  function xpLadder(t: Tables, c: Uint8Array): string {
+    const classes = [...Array(F.classCount).keys()].filter((k) => c[F.levels + k] > 0)
+    if (classes.length < 2) { const p = xpProgress(t, c); return p ? p.text.replace(/^[\d,.\s]+XP: /, '') : 'highest level reached' }
+    const xp = (c[F.xp] | (c[F.xp + 1] << 8) | (c[F.xp + 2] << 16) | (c[F.xp + 3] << 24)) >>> 0
+    return classes.map((k) => {
+      const L = c[F.levels + k], next = atLevelLimit(c, k) ? 0 : xpFor(t, k, L + 1)
+      if (next === 0 || next === 0xffffffff) return `${CLASS_NAMES[k]} ${L}: highest level`
+      return xp >= next ? `${CLASS_NAMES[k]} ${L + 1}: ready to train` : `${CLASS_NAMES[k]} ${L + 1} at ${next.toLocaleString()}`
+    }).join(' · ')
+  }
   function canTrain(t: Tables, c: Uint8Array) {
     const xp = (c[F.xp] | (c[F.xp + 1] << 8) | (c[F.xp + 2] << 16) | (c[F.xp + 3] << 24)) >>> 0
     for (let k = 0; k < F.classCount; k++) {
@@ -1851,8 +1865,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       }
     }
     const enc = node[F.load] | (node[F.load + 1] << 8), cap = capacity(node)
-    const tb = getTables(), xpNext = tb ? xpProgress(tb, node) : null
-    const sheetXp = tb ? (xpNext ? xpNext.text.replace(/^[\d,.\s]+XP: /, '') : 'highest level reached') : ''
+    const tb = getTables()
+    const sheetXp = tb ? xpLadder(tb, node) : ''
     // c[0x10F]: Quick (computer control), kept in the record between battles; NPCs are always computer-run
     const quick = node[F.quick] !== 0 && node[F.morale] < 0x80
     dialog.classList.add('wide')
