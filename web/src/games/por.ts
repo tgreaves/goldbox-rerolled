@@ -22,6 +22,8 @@ import { POR_JOURNAL } from './journal'
 export const POR: GameProfile = {
   id: 'por',
   name: 'Pool of Radiance',
+  edition: 'DOS 1.3, as GOG sells it',
+  fingerprints: { 'START.EXE': 'd825df2b174675c9088ba1489488bdeebe66ad2a22943f17d3a198e60b6a07bd', 'GAME.OVR': '872964a32cef0fc32bbf83bab68b15e04ad36d59076f37b00a179dfee7928614' },
   folder: 'POOLRAD',
   config: 'POOL.CFG',
   markers: ['GEO1.DAX', 'SQRPACI.DAX', 'BACPAC.DAX'],

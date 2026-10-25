@@ -107,7 +107,10 @@ Fixed at build time as `{ commit, dirty, date }`:
 - `date`: the build's date, UTC, `YYYY-MM-DD`.
 
 Shown as **`GoldBox Rerolled · version <commit>[ + local changes] · built <date>`** at the foot of
-the games screen and in Settings (IMP-073). A commit of 7 to 40 hexadecimal digits links to
+the games screen and in Settings (IMP-073), and on every screen (IMP-106) as a corner tag
+**`<commit>[+] · <date>`**: top right, 10 px monospace in light grey on a translucent black, taking no
+input; an open dialog, which sits above the page, draws the same tag in the same place
+(`dialog[open]::before`, the text in the CSS variable `--build`), so it is never hidden. A commit of 7 to 40 hexadecimal digits links to
 `https://github.com/tgreaves/goldbox-rerolled/commit/<commit>` (new tab). The Docker build has no
 `.git`, so it shows `version unknown` unless `GIT_COMMIT` is passed in (§7). Code run without a build
 (the tests) shows `version dev`.

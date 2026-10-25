@@ -1173,3 +1173,26 @@ dialog.panel.parchment ul.savelist .save-place { color: var(--ink); }
 dialog.panel.parchment ul.savelist .save-party { color: var(--ink-soft); font-size: 0.85rem; }
 dialog.panel.load-panel { max-width: min(46rem, 96vw); }
 @media (max-width: 30rem) { ul.savelist .save-thumb { width: 52px; height: 52px; } }
+
+/* the imported files' health (IMP-105) */
+.health-list { margin: 0.3rem 0; padding-left: 1.2rem; }
+.health-list li.error { color: var(--ega-lred); }
+.entry details.health { border: 1px solid var(--rule); border-left: 4px solid #8a5300; padding: 0.3rem 0.6rem; background: #ffffff1f; }
+.entry details.health.bad { border-left-color: var(--red); }
+.entry details.health summary { cursor: pointer; color: #6b4000; font-weight: 600; }
+.entry details.health.bad summary { color: var(--red-deep); }
+.entry .health-list li { color: var(--ink); }
+.entry .health-list li.error { color: var(--red-deep); }
+.entry #status .health-list li.error { color: var(--red-deep); }
+
+/* the running version in a corner of every screen (IMP-106): faint, small, never in the way of a tap */
+.buildtag {
+  position: fixed; top: 2px; right: 4px; z-index: 2147483646; pointer-events: none;
+  font: 10px/1.2 ui-monospace, monospace; letter-spacing: 0; color: #aaaaaa; opacity: 0.7;
+  background: #000a; padding: 1px 4px; border-radius: 2px;
+}
+dialog[open]::before {
+  content: var(--build, ''); position: fixed; top: 2px; right: 4px; z-index: 2147483646; pointer-events: none;
+  font: 10px/1.2 ui-monospace, monospace; letter-spacing: 0; color: #aaaaaa; opacity: 0.7; font-variant: normal; text-transform: none;
+  background: #000a; padding: 1px 4px; border-radius: 2px;
+}

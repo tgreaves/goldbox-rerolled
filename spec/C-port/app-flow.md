@@ -124,11 +124,37 @@ flattened. Then, with messages on the status line:
 | no known game in the names ([B-model/files-and-detection.md](../B-model/files-and-detection.md)) | "These are not the files of a game the port knows (Pool of Radiance, Curse of the Azure Bonds)." Stop |
 | a game other than the one whose Import was pressed | "These are *found* files, not *expected*: importing them as *found*." and carry on |
 | a required file missing | "Found *n* *game* files, but not the full set (the .DAX files are needed)." Stop; nothing is stored |
+| the files' health ([§3.1](#31-the-files-health)) shows an error | "These *game* files cannot be used as they are:", the list of problems, "Copy the *FOLDER* folder again from your copy of the game, then import it again." Stop; nothing is stored |
 | storing | "Saving *n* *game* files for offline use…" |
+| warnings | "Imported, with *summary*:" and the list, for 4 s |
 | done | open(game): the title of the imported game |
 
 The kept files replace the game's store as a whole ([storage.md §2](storage.md#2-the-game-files-database)),
 and persistent storage is requested. Nothing is uploaded, with or without an account.
+
+### 3.1 The files' health
+
+IMP-105 (`store/health.ts` `checkImport`). The kept files are checked on import, each time a game is
+opened (before its title), and once on the games screen for a stored game this browser has not checked.
+Each problem is a line saying what is wrong and what it costs in play:
+
+| Level | Found | Line |
+|---|---|---|
+| error | a required file missing | "*FILE* is missing: the game cannot start without it." |
+| error | a file of 0 bytes | "*FILE* is empty (0 bytes): the copy was cut short." |
+| error | a DAX file whose index runs past its end (header longer than the file, or a record's offset + size beyond it) | "*FILE* is damaged: its index points past the end of the file." |
+| error | START.EXE that does not unpack | "START.EXE cannot be read: it is damaged, or not this game's." |
+| error | GAME.OVR without the FBOV or TPOV signature | "GAME.OVR is not an overlay file: it is damaged, or not this game's." |
+| warning | START.EXE missing | "START.EXE is missing: no sound effects, no rules tables (creation, training, shops, spells), and the game's messages show as #codes." |
+| warning | GAME.OVR missing | "GAME.OVR is missing: part of the game's text shows as #codes, and the credits and the ending's captions are blank." |
+| warning | ITEMS missing | "ITEMS is missing: no shops, treasure or item names." |
+| warning | START.EXE or GAME.OVR whose SHA-256 is not the profile's `fingerprints` (the edition the port reads, `edition`: PoR "DOS 1.3, as GOG sells it", CotAB and SotSB "DOS, GOG 1.0"; the hashes of the games' READMEs) | "*FILES* is/are not from the edition the port reads (*edition*): the game's text, rules tables and sounds are read from fixed places in it/them, so some will be missing or wrong." |
+
+Errors come first. An error stops an import (above); a stored game's result is kept per browser
+(`goldbox.health.<id>`, [storage.md §8](storage.md#8-localstorage-keys)) and shown on its games-screen card as a
+fold "⚠ *n* problems, *m* warnings with these files" with the lines and "Re-import the *FOLDER* folder
+from your copy of the game to put it right."; the party screen's message line says "This game's files
+have *summary*: see ⇄ Games for what and how to put it right.". Remove forgets the result.
 
 ## 4. The title
 

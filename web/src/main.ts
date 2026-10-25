@@ -18,7 +18,8 @@ import { applyGfxClass } from './render/upscale'
 import { startGamepad } from './ui/gamepad'
 import { initAccount, onSettingsPulled, startAccount } from './store/account'
 import { mountAccount } from './ui/account'
-import { versionHtml } from './version'
+import { mountVersionTag, versionHtml } from './version'
+import { checkImport, healthSummary, keepHealth, lastHealth } from './store/health'
 import { setSoundDevice, soundDevice, toggleMute } from './audio/sfx'
 import { generator } from './rules/dice'
 import { parseRecord, toImageData } from './data/image'
@@ -38,6 +39,7 @@ window.addEventListener('keydown', (e) => {
 }, true)
 
 async function start() {
+  mountVersionTag()
   applyTextSize()
   applyPartyLayout()
   applyScreen()
@@ -68,6 +70,8 @@ async function open(files: GameFiles) {
   installText(exe, files.get('GAME.OVR')) // the game's messages, read by address (spec/D-appendices/strings.md)
   await installGameFont(files)
   installFrames(files)
+  // the files' health (IMP-105), kept for the games screen and the party screen; a few ms (two hashes)
+  keepHealth(files.game, await checkImport(files).catch(() => null))
   if (files.game.playable) title(files)
   else showViewer(app, files, showImport)
 }
@@ -92,12 +96,26 @@ function party(files: GameFiles) {
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`)
 
+const escapeHtml = (s: string) => s.replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`)
+
+/** A stored game's health on its card (IMP-105): nothing when all is well or not yet checked */
+function healthHtml(g: GameProfile, stored: boolean): string {
+  const p = stored ? lastHealth(g) : null
+  if (!p || !p.length) return ''
+  return `<details class="health${p.some((x) => x.level === 'error') ? ' bad' : ''}"><summary>⚠ ${escapeHtml(healthSummary(p))} with these files</summary>
+    <ul class="health-list">${p.map((x) => `<li class="${x.level}">${escapeHtml(x.text)}</li>`).join('')}</ul>
+    <p>Re-import the ${escapeHtml(g.folder)} folder from your copy of the game to put it right.</p></details>`
+}
+
 /** The games screen: every game the port knows, with Play, Import and Remove; also the first-run import. */
 async function showImport() {
   document.title = 'GoldBox Rerolled'
   const stored = new Map<string, boolean>()
   for (const g of GAMES) stored.set(g.id, await GameFiles.stored(g).catch(() => false))
   const any = [...stored.values()].some(Boolean)
+  // a game stored before the health check (IMP-105), or in another tab: check it once, then draw again
+  const unchecked = GAMES.filter((g) => stored.get(g.id) && lastHealth(g) === null)
+  if (unchecked.length) void Promise.all(unchecked.map(async (g) => keepHealth(g, await checkImport(await GameFiles.load(g)).catch(() => [])))).then(() => { if (app.querySelector('.entry')) showImport() })
   // the entry screen in the colours of the games' boxes (IMP-093): parchment, red ink, gold on charcoal
   app.innerHTML = `
     <section class="import entry parchment">
@@ -111,7 +129,7 @@ async function showImport() {
       <ul class="games">${GAMES.map((g) => `<li class="${stored.get(g.id) ? 'stored' : ''}">
         ${stored.get(g.id) ? `<canvas class="cover" data-cover="${g.id}" width="320" height="200" role="img" aria-label="${esc(g.name)}: the title screen"></canvas>`
           : `<div class="cover blank" aria-hidden="true"><span>◆</span></div>`}
-        <div class="ginfo"><div><strong>${esc(g.name)}</strong> <span class="muted">${stored.get(g.id) ? 'imported' : `not imported: choose its <code>${g.folder}</code> folder`}${g.note ? ` · ${esc(g.note)}` : ''}${g.playable ? '' : ' · assets only'}</span></div>
+        <div class="ginfo">${healthHtml(g, !!stored.get(g.id))}<div><strong>${esc(g.name)}</strong> <span class="muted">${stored.get(g.id) ? 'imported' : `not imported: choose its <code>${g.folder}</code> folder`}${g.note ? ` · ${esc(g.note)}` : ''}${g.playable ? '' : ' · assets only'}</span></div>
         <div class="actions">
           ${stored.get(g.id) ? `<button class="primary" data-play="${g.id}">${g.playable ? 'Play' : 'View'}</button>` : ''}
           <button data-import="${g.id}">${stored.get(g.id) ? 'Re-import' : 'Import'}</button>
@@ -162,8 +180,19 @@ async function showImport() {
       status.textContent = `Found ${picked.size} ${game.name} files, but not the full set (the .DAX files are needed).`
       return
     }
+    // the files' health (IMP-105): an error stops the import, a warning is said before the game opens
+    const problems = await checkImport(files)
+    if (problems.some((p) => p.level === 'error')) {
+      status.innerHTML = `These ${escapeHtml(game.name)} files cannot be used as they are:<ul class="health-list">${problems.map((p) => `<li class="${p.level}">${escapeHtml(p.text)}</li>`).join('')}</ul>Copy the ${escapeHtml(game.folder)} folder again from your copy of the game, then import it again.`
+      return
+    }
     status.textContent = `Saving ${picked.size} ${game.name} files for offline use…`
     await GameFiles.save(game, picked)
+    keepHealth(game, problems)
+    if (problems.length) {
+      status.innerHTML = `Imported, with ${healthSummary(problems)}:<ul class="health-list">${problems.map((p) => `<li class="${p.level}">${escapeHtml(p.text)}</li>`).join('')}</ul>`
+      await new Promise((r) => setTimeout(r, 4000))
+    }
     await open(files)
   }
   const pick = () => { dirInput.value = ''; dirInput.click() }
@@ -183,6 +212,7 @@ async function showImport() {
     const g = GAMES.find((x) => x.id === b.dataset.remove)!
     if (!confirm(`Remove ${g.name}'s game files from this browser? Its characters and saved games are kept, and come back when you import it again.`)) return
     await GameFiles.remove(g)
+    keepHealth(g, null)
     showImport()
   }))
   app.querySelector('#folder')?.addEventListener('click', pick)

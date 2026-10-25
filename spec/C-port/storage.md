@@ -348,6 +348,7 @@ first value listed). "Synced" keys travel with an account
 | `poolrad.screen` | unset, `off`, `scanlines`, `crt` | the CRT look (IMP-089); unset is `off` | yes |
 | `poolrad.gfx` | `pixel`, `sharp` | picture scaling (IMP-047); read once per page load, so a change applies after a reload | yes |
 | `goldbox.game` | a profile id (`por`, `coab`) | the game played last on this device; written whenever a game is opened | no |
+| `goldbox.health.<id>` | JSON, the problems of the files' last check | the stored game's health (IMP-105, [app-flow.md §3.1](app-flow.md#31-the-files-health)); removed with the game's files | no |
 | `goldbox.account` | an account name | whose data this browser holds: the last account signed in here ([accounts-and-sync.md §5.10](accounts-and-sync.md#510-owners-switching-signing-out-forgetting)) | no |
 | `goldbox.sync.<game id>` | JSON | that game's sync bookkeeping ([accounts-and-sync.md §5.2](accounts-and-sync.md#52-sync-state)) | no |
 

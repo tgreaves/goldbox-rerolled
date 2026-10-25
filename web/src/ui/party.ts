@@ -8,6 +8,7 @@ import { F } from '../games/fields'
 import { deleteCharacter, getParty, listCharacters, seedRoster, setParty } from '../store/user'
 import { escape, sheetHtml, onClose, parchmentPanel } from './sheet'
 import { readSaveInfo, saveRowHtml, type SaveRow } from './savelist'
+import { healthSummary, lastHealth } from '../store/health'
 import { T } from '../games/tables'
 import { unexepack } from '../data/exepack'
 import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
@@ -389,6 +390,8 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
     party = (await getParty()).filter((s) => roster.some((c) => c.stem === s))
     if (!dialog.open) draw()
   })
-  say('')
+  // the files' health (IMP-105): said here, the details on the games screen
+  const health = lastHealth(files.game)
+  say(health?.length ? `This game's files have ${healthSummary(health)}: see ⇄ Games for what and how to put it right.` : '')
   draw()
 }

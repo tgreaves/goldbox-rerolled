@@ -24,6 +24,8 @@ import { COAB_JOURNAL } from './journal'
 export const COAB: GameProfile = {
   id: 'coab',
   name: 'Curse of the Azure Bonds',
+  edition: 'DOS, GOG 1.0',
+  fingerprints: { 'START.EXE': '42fcefd6785679568b00bc1fb5b1d81ac2773416be4a35e0363920ddf6b78acd', 'GAME.OVR': 'a894282513c2af0a99081c5f888451af14d5ccca686a4a09b4057749a1da51ef' },
   folder: 'CURSE',
   config: 'CURSE.CFG',
   // no GEO1/WALLDEF1/HEAD1/BODY1, no SQRPACI; SKY, BIGPIC and TILES are new (spec/A-games/coab/assets.md)

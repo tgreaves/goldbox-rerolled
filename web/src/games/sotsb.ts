@@ -23,6 +23,8 @@ import { SOTSB_JOURNAL } from './journal'
 export const SOTSB: GameProfile = {
   id: 'sotsb',
   name: 'Secret of the Silver Blades',
+  edition: 'DOS, GOG 1.0',
+  fingerprints: { 'START.EXE': '8b937984878ec72aa531335dd381a21bda67675408b5fd8e716a35ccd049999e', 'GAME.OVR': 'd4f900391703bbfd5a4f66703871b64782dff2307224cd2560e40e1b60779c80' },
   folder: 'BLADES',
   config: 'BLADES.CFG',
   // SOUND.DAX (the music) is SotSB's alone; GEO1/WALLDEF1 and SKY/BIGPIC it shares with PoR and CotAB

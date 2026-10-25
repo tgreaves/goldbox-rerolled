@@ -25,6 +25,10 @@ export interface GameProfile {
   /** a short id ('por', 'coab', …): a new game adds its own; nothing in shared code tests it */
   id: string
   name: string
+  /** the edition the port is built against (spec/A-games/<game>/README.md), named when the files look like another */
+  edition: string
+  /** that edition's SHA-256 of START.EXE and GAME.OVR (spec/A-games/<game>/README.md): other files are another edition */
+  fingerprints: { 'START.EXE': string; 'GAME.OVR': string }
   /** the game's folder in the GOG release, named in the import help */
   folder: string
   /** the game's own configuration file, which identifies it among imported files */
