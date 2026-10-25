@@ -291,9 +291,11 @@ the game has not ended and it is not the demo, if the party's block and area dif
 autosave's ("new area") or 30 s have passed since the last attempt ("on the way"). A failed write is
 ignored. **Continue** on the party screen and the top of the Load list read it.
 
-**Leaving play**: ☰ → **Quit to the party screen** asks first, a panel "Quit" with "Quit to the party
-screen? The game was last saved automatically *n* s ago; anything since then is lost unless you save
-first." and **Yes** / **No** (No, Esc or ✕ go back to the game); Yes leaves without saving (the last
+**Leaving play**: ☰ → **Quit to the party screen** asks first (IMP-108), a panel in the parchment look
+headed "Quit to the party screen?" with "The game was last saved automatically *n* seconds / minutes /
+hours ago. Anything since then is lost unless you save first." and three buttons: **Save, then quit…**
+(the slot window; a save then leaves, a cancelled one stays in the game), **Quit without saving** (both
+outlined in ink), and **Keep playing** (the main button, focused; Esc and ✕ the same). Quit without saving leaves (the last
 autosave is the way back, **Continue**). A game already over, or the demo, leaves at once. The view, its animation loop and the key
 handlers stop; the party screen opens.
 

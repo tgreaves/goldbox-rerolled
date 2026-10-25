@@ -1203,3 +1203,12 @@ dialog[open]::before {
   font: 10px/1.2 ui-monospace, monospace; letter-spacing: 0; color: #aaaaaa; opacity: 0.7; font-variant: normal; text-transform: none;
   background: #000a; padding: 1px 4px; border-radius: 2px;
 }
+/* the Quit window (IMP-108) */
+dialog.panel.quit-panel { max-width: min(34rem, 94vw); }
+dialog.panel .quit-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; }
+/* only the safe choice, Keep playing, is the plaque; the other two in ink */
+dialog.panel.parchment .quit-actions button:not(.primary) {
+  background: #ffffff1a; color: var(--ink); border: 1px solid var(--ink-soft); outline: none;
+  text-transform: none; letter-spacing: 0.03em; font-weight: normal; font-size: 1em;
+}
+dialog.panel.parchment .quit-actions button:not(.primary):hover, dialog.panel.parchment .quit-actions button:not(.primary):focus-visible { border-color: var(--red); color: var(--red-deep); }

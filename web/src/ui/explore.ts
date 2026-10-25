@@ -728,12 +728,13 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
 
   /** counted: the camp's Save (and IMP-002's, which stands for it), which adds 1 to the save counter first */
-  async function saveGame(counted = false) {
-    if (engine.demo) return
+  /** true when it saved (false: the demo, or the slot choice cancelled) */
+  async function saveGame(counted = false): Promise<boolean> {
+    if (engine.demo) return false
     const saves = await listSaves()
     // a window of the ten slots (IMP-102); Escape cancels, as the original's Esc at "Save Which Game" (FUN_45c5_1d58)
     const slot = await chooseSlot(saves)
-    if (!slot) return
+    if (!slot) return false
     // SotSB's camp Save counts saves in an ECL word before writing (files.saveCounter, 0x390C5)
     const counter = game().saves.saveCounter
     if (counted && counter !== null) engine.write(counter, (engine.read(counter) + 1) & 0xffff)
@@ -743,6 +744,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     await writeSave({ slot, dat: engine.toSave(stems), label, savedAt: Date.now(),
       chars: members.map((c) => ({ sav: c.slice(), itm: characterItemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })), known: [...known], sidecar: sidecarNow() })
     note(`Game saved in slot ${slot}.`)
+    return true
   }
 
   // ------------------------------------------------------------- view sync
@@ -1405,7 +1407,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       sheet(parseCharacter(engine.cur))
       onClose(dialog, () => resolve())
     }),
-    save: () => saveGame(true),
+    save: async () => { await saveGame(true) },
     memorizePanel: () => memorizePanel(),
     iconEditor: (c) => creatorTools(dialog, files, engine, getTables()).iconEditor(c),
     refresh: () => { drawRoster(); showWhere() },
@@ -2573,7 +2575,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
         break
       case 'commissions': commissions(); break
       case 'journal': journal(); break
-      case 'save': act(() => saveGame(true)); break
+      case 'save': act(async () => { await saveGame(true) }); break
       case 'debug': debugMenu(); break
       case 'account': openAccount(dialog); break
       case 'assets': quitAsk(); break
@@ -2718,11 +2720,22 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   /** Quit to the party screen, asked first: what happened since the last autosave or save is lost (a game already over, or the demo, goes at once). */
   function quitAsk() {
     if (engine.quit || engine.demo) { leave(); return }
-    const ago = Math.max(0, Math.round((Date.now() - lastAutosave) / 1000))
-    dialog.innerHTML = `<h2>Quit</h2><p>Quit to the party screen? The game was last saved automatically ${ago} s ago; anything since then is lost unless you save first.</p>
-      <form method="dialog" class="yn">${wordButton('value="y" class="primary"', word('yesNo', 'Y'))}${wordButton('value="n"', word('yesNo', 'N'))}</form>`
-    onClose(dialog, () => { if (dialog.returnValue === 'y') leave() })
+    // the parchment look (IMP-108): what is at stake in words, and the three ways out
+    const s = Math.max(0, Math.round((Date.now() - lastAutosave) / 1000))
+    const ago = s < 60 ? `${s} second${s === 1 ? '' : 's'} ago` : s < 3600 ? `${Math.round(s / 60)} minute${Math.round(s / 60) === 1 ? '' : 's'} ago` : `${Math.round(s / 3600)} hour${Math.round(s / 3600) === 1 ? '' : 's'} ago`
+    dialog.innerHTML = `<h2>Quit to the party screen?</h2>
+      <p>The game was last saved automatically ${ago}. Anything since then is lost unless you save first.</p>
+      <form method="dialog" class="quit-actions"><button value="save">Save, then quit…</button><button value="quit">Quit without saving</button><button value="stay" class="primary">Keep playing</button></form>`
+    dialog.returnValue = ''
+    onClose(dialog, () => {
+      const r = dialog.returnValue
+      // Save, then quit: the slot window; quitting only once it has saved (cancelled: still playing)
+      if (r === 'save') setTimeout(() => { void saveGame(true).then((saved) => { if (saved) leave() }) }, 0)
+      else if (r === 'quit') leave()
+    })
+    parchmentPanel(dialog, 'quit-panel')
     dialog.showModal()
+    dialog.querySelector<HTMLButtonElement>('button[value="stay"]')?.focus()
   }
 
   function leave() {
