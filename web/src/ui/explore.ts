@@ -27,6 +27,7 @@ import type { Dice } from '../rules/dice'
 import { drawMap, drawRoute, landmarkAt, squareAt } from './areamap'
 import { route, routeSquares } from '../rules/travel'
 import { STEP, type GeoMap } from '../data/geo'
+import { readSaveInfo, saveRowHtml, type SaveInfo } from './savelist'
 import { getVaultFile, listCharacters, listSaves, saveCharacter, setVaultFile, writeAutosave, writeSave } from '../store/user'
 import { parseVault, vaultFile } from '../data/vault'
 import { newerSidecarNote, type SidecarExtra } from '../store/savefiles'
@@ -47,7 +48,7 @@ import { proposeSplit } from '../rules/treasure'
 import { treasureAftermath } from '../rules/combat'
 import { camp, effectNames, type CampUi, type CampDesk } from './camp'
 import { runBattle, type BattleControls } from './combat'
-import { clockText, freeSlots, isScroll, knows, memorise, memorised, preparation } from '../rules/camp'
+import { CLOCK, clockText, freeSlots, isScroll, knows, memorise, memorised, preparation } from '../rules/camp'
 import { castOutside, itemSpells, mayCast, readsScroll, spendUse, targetKind } from '../rules/magic'
 import { Tables, bodyRecord, classesFor, fileStem, headRecord } from '../rules/chargen'
 import { creatorTools } from './creator'
@@ -246,7 +247,13 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   let newBlock = true
   /** the line the last PRINT left open (Io.print's `run`): a PRINT that goes on is added to it */
   let openLine: HTMLElement | null = null
+  /** while the party moves (IMP-104), and the game's last line printed then: where they are, for the save lists */
+  let moving = false
+  let lastPlace = ''
   function print(text: string, clear: boolean, kind = '', run?: boolean) {
+    // where the party is, for the save lists (IMP-104): the game's last line printed while moving
+    // only a description of where they are ("YOU ARE …", the games' way), not what someone says there
+    if (moving && !kind && /^\s*(YOU ARE|YOU'RE|YOU STAND|YOU ENTER|YOU HAVE ENTERED|THIS IS)\b/i.test(text)) lastPlace = text.trim()
     if (clear) newBlock = true
     if (!text) { if (run === undefined) openLine = null; return }
     if (run && openLine && !newBlock && openLine === screen?.lastElementChild) {
@@ -695,7 +702,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const members = engine.party()
     if (!members.length || engine.quit || engine.demo) return // the demo saves nothing
     try {
-      await writeAutosave({ slot: 'A', dat: engine.toSave(members.map((_, n) => `CHRDATA${n + 1}`)), savedAt: Date.now(), known: [...known], sidecar: sidecarExtra,
+      await writeAutosave({ slot: 'A', dat: engine.toSave(members.map((_, n) => `CHRDATA${n + 1}`)), savedAt: Date.now(), known: [...known], sidecar: sidecarNow(),
         label: `${parseCharacter(members[0]).name}'s party, block ${engine.block} area ${engine.area} (${why})`,
         chars: members.map((c) => ({ sav: c.slice(), itm: characterItemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })) })
       autosavedAt = `${engine.block}:${engine.area}`
@@ -703,13 +710,14 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   }
 
   /** "Save in which slot?" as a window (IMP-102): a row a slot A–J with what it holds; null when cancelled */
-  function chooseSlot(saves: { slot: string; label: string; savedAt: number }[]): Promise<string | null> {
+  function chooseSlot(saves: { slot: string; label: string; savedAt: number; chars: { sav: Uint8Array }[]; sidecar?: SidecarExtra }[]): Promise<string | null> {
     return new Promise((resolve) => {
       let picked: string | null = null
       dialog.innerHTML = `<h2>Save in which slot?</h2><ul class="savelist">${[...'ABCDEFGHIJ'].map((slot) => {
         const g = saves.find((x) => x.slot === slot)
-        return `<li><button type="button" data-slot="${slot}"><span class="mark">${slot}</span><span class="sv"><small class="kicker">Slot ${slot}${g ? ' · replaces' : ''}</small>
-          <strong>${g ? escape(g.label) : 'empty'}</strong>${g ? `<small>${escape(new Date(g.savedAt).toLocaleString())}</small>` : ''}</span></button></li>`
+        return `<li><button type="button" data-slot="${slot}">${saveRowHtml(g
+          ? { mark: slot, kicker: `Slot ${slot} · replaces`, title: g.label, note: new Date(g.savedAt).toLocaleString(), info: readSaveInfo(g.sidecar?.rest.info), party: g.chars.map((x) => x.sav) }
+          : { mark: slot, kicker: `Slot ${slot}`, title: 'empty', note: '' })}</button></li>`
       }).join('')}</ul><form method="dialog"><button>Cancel</button></form>`
       dialog.querySelectorAll<HTMLButtonElement>('[data-slot]').forEach((b) => b.addEventListener('click', () => { picked = b.dataset.slot!; dialog.close() }))
       onClose(dialog, () => resolve(picked))
@@ -733,7 +741,7 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     const stems = members.map((_, n) => `CHRDAT${slot}${n + 1}`)
     const label = `${parseCharacter(members[0]).name}'s party, block ${engine.block} area ${engine.area}`
     await writeSave({ slot, dat: engine.toSave(stems), label, savedAt: Date.now(),
-      chars: members.map((c) => ({ sav: c.slice(), itm: characterItemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })), known: [...known], sidecar: sidecarExtra })
+      chars: members.map((c) => ({ sav: c.slice(), itm: characterItemsFile(engine.itemsOf(c)), spc: effectsFile(engine.effectsOf(c)) })), known: [...known], sidecar: sidecarNow() })
     note(`Game saved in slot ${slot}.`)
   }
 
@@ -2314,6 +2322,25 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
    *  the spell sets (IMP-098) are kept in it as `loadouts` */
   const sidecarExtra: SidecarExtra = (start.kind === 'load' ? start.sidecar : undefined) ?? { rest: {} }
   const loadouts: Loadouts = readLoadouts(sidecarExtra.rest.loadouts)
+  // the save lists' clues (IMP-104): the last place line, kept from the loaded save until the party moves
+  lastPlace = readSaveInfo(sidecarExtra.rest.info)?.place ?? ''
+  /** what a save made now carries for the lists: the place, the game's day and time, a picture of the view */
+  function saveInfo(): SaveInfo {
+    const day = engine.read(CLOCK + 4)
+    let thumb: string | undefined
+    try {
+      const scene = !engine.overland && engine.geo ? sceneOf(engine, files, null) : null
+      if (scene) {
+        const c = document.createElement('canvas')
+        c.width = c.height = VIEW
+        c.getContext('2d')!.putImageData(new ImageData(frameRGBA(drawView(scene), EGA), VIEW, VIEW), 0, 0)
+        thumb = c.toDataURL('image/png')
+      }
+    } catch { /* no picture */ }
+    return { ...(lastPlace ? { place: lastPlace } : {}), time: `Day ${day + 1} · ${clockText(engine)}`, ...(thumb ? { thumb } : {}) }
+  }
+  /** the sidecar a save made now writes: the game's own kept fields, the spell sets, and this save's clues */
+  const sidecarNow = (): SidecarExtra => ({ ...sidecarExtra, rest: { ...sidecarExtra.rest, info: saveInfo() } })
   const keepLoadouts = () => {
     for (const k of Object.keys(loadouts)) if (!loadouts[k].last && !loadouts[k].sets.length) delete loadouts[k]
     if (Object.keys(loadouts).length) sidecarExtra.rest.loadouts = loadouts
@@ -2448,9 +2475,9 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
     try {
       for (const d of dirs) {
         const k = turn(d)
-        if (k) { await act(() => engine.command(k)); if (halted()) break }
+        if (k) { await act(stepping(() => engine.command(k))); if (halted()) break }
         const [x, y] = [engine.x, engine.y]
-        await act(() => engine.command('f'))
+        await act(stepping(() => engine.command('f')))
         if (halted()) break
         if (engine.x !== x + STEP[d][0] || engine.y !== y + STEP[d][1]) break // a wall, a door held, the script moved the party
         await new Promise((r) => setTimeout(r, reducedMotion() ? 60 : 220)) // the step's slide, seen
@@ -2510,6 +2537,8 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
 
   /** a move pressed while the last one was still sliding: done as soon as that step is over (IMP-066) */
   let queuedMove: string | null = null
+  /** a move through the ordinary commands, its lines counted as the party's whereabouts (IMP-104) */
+  const stepping = (f: () => Promise<void>) => async () => { moving = true; try { await f() } finally { moving = false } }
   function move(c: string) {
     if (engine.quit) return
     if (busy) {
@@ -2521,10 +2550,10 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
       // the arrows are compass directions in the wilderness (FUN_3e76_0989)
       if (!engine.wild) { note(`Wilderness travel needs START.EXE: re-import the ${game().folder} folder.`); return }
       const dir = ({ f: 0, r: 1, b: 2, l: 3 } as Record<string, number>)[c]
-      act(() => engine.travel(dir))
+      act(stepping(() => engine.travel(dir)))
       return
     }
-    act(() => engine.command(c))
+    act(stepping(() => engine.command(c)))
   }
 
   function command(c: string) {
@@ -2724,5 +2753,5 @@ export function showExplore(app: HTMLElement, files: GameFiles, start: Start, ba
   if (start.kind === 'new') note('A new game: Begin Adventuring from the party screen.')
   else note(`Loaded: ${start.label}.`)
   if (start.kind === 'load') { const n = newerSidecarNote(start.sidecar); if (n) note(n) }
-  act(() => engine.start())
+  act(stepping(() => engine.start()))
 }

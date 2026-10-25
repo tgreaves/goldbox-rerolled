@@ -1162,3 +1162,14 @@ dialog.panel.parchment .camp-lines { border-left-color: var(--red); background: 
 dialog.panel.area-panel { width: min(46rem, 94vw); }
 dialog.panel .travel-plan { height: 3rem; overflow: hidden; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.3rem 0; }
 dialog.panel .travel-plan button { min-height: 36px; padding: 0.15rem 0.8rem; }
+/* the save lists' rows (IMP-104): the slot, a picture of the view, then what, where, who and when */
+ul.savelist button, dialog.panel.parchment ul.savelist button { grid-template-columns: 2.6rem auto minmax(0, 1fr); }
+ul.savelist .save-thumb { width: 66px; height: 66px; image-rendering: pixelated; border: 1px solid var(--line); background: #000; display: block; }
+ul.savelist .save-thumb.none { background: transparent; border-style: dashed; opacity: 0.5; }
+ul.savelist .save-place { display: block; font-variant: small-caps; letter-spacing: 0.02em; line-height: 1.25; } /* the game's capitals, read as small capitals: it does not say which words are names */
+ul.savelist .save-party { display: block; }
+dialog.panel.parchment ul.savelist .save-thumb { border-color: var(--gold); outline: 1px solid var(--char); }
+dialog.panel.parchment ul.savelist .save-place { color: var(--ink); }
+dialog.panel.parchment ul.savelist .save-party { color: var(--ink-soft); font-size: 0.85rem; }
+dialog.panel.load-panel { max-width: min(46rem, 96vw); }
+@media (max-width: 30rem) { ul.savelist .save-thumb { width: 52px; height: 52px; } }

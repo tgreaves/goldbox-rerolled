@@ -7,6 +7,7 @@ import { parseCharacter } from '../data/character'
 import { F } from '../games/fields'
 import { deleteCharacter, getParty, listCharacters, seedRoster, setParty } from '../store/user'
 import { escape, sheetHtml, onClose, parchmentPanel } from './sheet'
+import { readSaveInfo, saveRowHtml, type SaveRow } from './savelist'
 import { T } from '../games/tables'
 import { unexepack } from '../data/exepack'
 import { Tables, bodyRecord, fileStem, headRecord } from '../rules/chargen'
@@ -72,10 +73,10 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
    * Load saved game (IMP-095): a page in the parchment look, a row a save: the slot's letter (↻ for the
    * autosave) as a red initial, then what it is, the party and place, and when. Null when cancelled.
    */
-  function chooseSave(list: { mark: string; kicker: string; title: string; note: string }[], title = entry('partyLoad').text): Promise<number | null> {
+  function chooseSave(list: SaveRow[], title = entry('partyLoad').text): Promise<number | null> {
     return new Promise((resolve) => {
-      dialog.innerHTML = `<h2>${escape(title)}</h2><ul class="savelist">${list.map((s, i) => `<li><button type="button" data-i="${i}">
-        <span class="mark">${escape(s.mark)}</span><span class="sv"><small class="kicker">${escape(s.kicker)}</small><strong>${escape(s.title)}</strong><small>${escape(s.note)}</small></span></button></li>`).join('')}</ul>
+      // each row with its picture, place, party and day (IMP-104)
+      dialog.innerHTML = `<h2>${escape(title)}</h2><ul class="savelist">${list.map((s, i) => `<li><button type="button" data-i="${i}">${saveRowHtml(s)}</button></li>`).join('')}</ul>
         <form method="dialog"><button>Cancel</button></form>`
       parchmentPanel(dialog, 'load-panel')
       let done = false
@@ -231,15 +232,15 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
         return
       case 'L': {
         // browser saves first, then the saves that came with the game files
-        const saves = (await listSaves()).map((g) => ({ mark: g.slot, kicker: `Slot ${g.slot}`, title: g.label, note: new Date(g.savedAt).toLocaleString(),
+        const saves = (await listSaves()).map((g) => ({ mark: g.slot, kicker: `Slot ${g.slot}`, title: g.label, note: new Date(g.savedAt).toLocaleString(), info: readSaveInfo(g.sidecar?.rest.info), party: g.chars.map((x) => x.sav),
           start: { kind: 'load' as const, dat: g.dat, party: g.chars, label: `slot ${g.slot}, ${g.label}`, known: g.known, sidecar: g.sidecar } }))
-        if (auto) saves.unshift({ mark: '↻', kicker: 'Autosave', title: auto.label, note: new Date(auto.savedAt).toLocaleString(),
+        if (auto) saves.unshift({ mark: '↻', kicker: 'Autosave', title: auto.label, note: new Date(auto.savedAt).toLocaleString(), info: readSaveInfo(auto.sidecar?.rest.info), party: auto.chars.map((x) => x.sav),
           start: { kind: 'load' as const, dat: auto.dat, party: auto.chars, label: `autosave, ${auto.label}`, known: auto.known, sidecar: auto.sidecar } })
         // conflict copies the sync kept (IMP-072): the version that lost when two devices saved the same slot
         for (const c of await listConflicts().catch(() => [])) {
           if (!c.save) continue
           const g = c.save, where = c.ofId === 'AUTO' ? 'autosave' : `slot ${c.ofId}`
-          saves.push({ mark: c.ofId === 'AUTO' ? '↻' : c.ofId, kicker: `${c.ofId === 'AUTO' ? 'Autosave' : `Slot ${c.ofId}`} · conflict copy, ${c.from === 'browser' ? "this browser's" : "another device's"}`, title: g.label, note: new Date(g.savedAt).toLocaleString(),
+          saves.push({ mark: c.ofId === 'AUTO' ? '↻' : c.ofId, kicker: `${c.ofId === 'AUTO' ? 'Autosave' : `Slot ${c.ofId}`} · conflict copy, ${c.from === 'browser' ? "this browser's" : "another device's"}`, title: g.label, note: new Date(g.savedAt).toLocaleString(), info: readSaveInfo(g.sidecar?.rest.info), party: g.chars.map((x) => x.sav),
             start: { kind: 'load' as const, dat: g.dat, party: g.chars, label: `conflict copy of ${where}, ${g.label}`, known: g.known, sidecar: g.sidecar } })
         }
         for (const slot of 'ABCDEFGHIJ') {
@@ -249,7 +250,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
           const chars = sv.party.map((st) => ({ sav: files.get(`${st}.SAV`)!, itm: files.get(`${st}.${files.game.saves.items}`), spc: files.get(`${st}.${files.game.saves.effects}`) }))
           if (chars.some((c) => !c.sav)) continue
           const names = chars.map((c) => parseCharacter(c.sav).name)
-          saves.push({ mark: slot, kicker: `Slot ${slot} · from the game files`, title: `${names[0]}'s party`, note: `block ${saveBlock(sv)} area ${saveArea(sv)}`,
+          saves.push({ mark: slot, kicker: `Slot ${slot} · from the game files`, title: `${names[0]}'s party`, note: `block ${saveBlock(sv)} area ${saveArea(sv)}`, info: undefined, party: chars.map((x) => x.sav),
             start: { kind: 'load', dat, party: chars, label: `game-file save ${slot}`, known: undefined, sidecar: undefined } })
         }
         if (!saves.length) { say('There are no saved games.'); break }
@@ -262,7 +263,7 @@ export async function showParty(app: HTMLElement, files: GameFiles, dice: Dice, 
         // IMP-006: the original's files in one ZIP, for DOSBox or another browser
         const saves = await listSaves()
         if (!saves.length) { say('There are no saved games in this browser.'); break }
-        const i = await chooseSave(saves.map((g) => ({ mark: g.slot, kicker: `Slot ${g.slot}`, title: g.label, note: new Date(g.savedAt).toLocaleString() })), 'Export saved game')
+        const i = await chooseSave(saves.map((g) => ({ mark: g.slot, kicker: `Slot ${g.slot}`, title: g.label, note: new Date(g.savedAt).toLocaleString(), info: readSaveInfo(g.sidecar?.rest.info), party: g.chars.map((x) => x.sav) })), 'Export saved game')
         if (i === null) break
         const g = saves[i]
         const blob = new Blob([zip(saveFiles(g)) as Uint8Array<ArrayBuffer>], { type: 'application/zip' })

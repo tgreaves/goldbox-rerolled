@@ -140,6 +140,16 @@ game's frame (IMP-095, at most 40 rem wide), with **Cancel** (Escape and ✕ the
 mark (the slot's letter, ↻ for the autosave) in gold on a charcoal square, then three lines: what it
 is (red small capitals), the label (bold) and the note (quiet); the first row has the focus:
 
+Each row also shows (IMP-104, `ui/savelist.ts`): a picture of the party's view when the save was made
+(the original's 88 × 88 view drawn from the save's map, position and facing, whatever the View setting;
+a dashed empty frame without one); where they were, in the game's words, in small capitals (the last
+line the game printed while the party moved that describes the place: it starts "YOU ARE", "YOU'RE",
+"YOU STAND", "YOU ENTER", "YOU HAVE ENTERED" or "THIS IS"; none if no such line); the party, "*Name*
+*class initials* *levels*" for each member and "HP *n*/*m*" for all of them (read from the save's
+characters, so the game's own saves have it too); and after the date and time the game's "Day *d* ·
+*hh*:*mm*". The picture, the place and the day are kept in the save's `.GBR` sidecar, field `info`
+([storage.md §6](storage.md#6-journal-finds-and-the-gbr-sidecar)); a save without them shows the rest.
+
 1. the autosave: ↻, "Autosave", *label*, its date and time;
 2. the browser's slots A–J that hold a save: *x*, "Slot *x*", *label*, date and time;
 3. conflict copies of saves: *x* (↻ for the autosave's), "Slot *x* · conflict copy, this browser's |
