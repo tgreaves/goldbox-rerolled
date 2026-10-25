@@ -142,6 +142,7 @@ The start-up sequence is part A ([engine/input-and-menus.md §1](../A-games/engi
 | `first` | screens always shown: TITLE records at pixel positions, a duration in ms | TITLE #1 at (0, 0), 5 000 ms | the same |
 | `long` | screens shown when line `configLine` (0-based) of the configuration file starts with `F` (case-insensitive, after trimming); also when the file is missing | TITLE #2 at (0, 0), 5 000 ms, with lightning | TITLE #2 at (0, 0) + #3 at (48, 88) for 10 000 ms; then #2 + #3 + #4 at (0, 88) for 10 000 ms with sound 13 at its start |
 | `configLine` | the line that holds the long-intro flag | 4 (POOL.CFG line 5, `DS:49D1`) | 3 (CURSE.CFG line 4, `DS:4FB1`) |
+| `cover` | the title screen with the game's name, the game's cover on the games screen (the port's, IMP-093) | TITLE #2 at (0, 0) | TITLE #2 at (0, 0) + #3 at (48, 88) (#4 is the Forgotten Realms logo); SotSB #2 + #4 at (40, 40) (its #3 is that logo) |
 | `credits.ms` | how long the credits stay | 10 000 | 10 000 |
 | `credits.frame` | rope boxes as text cells (x1, y1, x2, y2), or the screen frame with divider rows | boxes (1, 1)–(38, 3) and (1, 5)–(38, 23) | screen frame, dividers at rows 3 and 8 |
 | `credits.lines` | (row, column, colour, image address of the line's string) per line | [por/title-and-credits.md](../A-games/por/title-and-credits.md#credits-screen-o-290c0206-strings-290c004b01e2) | [coab/assets.md §7](../A-games/coab/assets.md#7-start-up-title-copy-protection-o) step 5 |

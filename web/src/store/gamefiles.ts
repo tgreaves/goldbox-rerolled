@@ -94,6 +94,18 @@ export class GameFiles {
     return new GameFiles(files, game)
   }
 
+  /** Only some of a game's stored files (the games screen's covers read TITLE.DAX alone); null when none is stored */
+  static async loadSome(game: GameProfile, names: string[]): Promise<GameFiles | null> {
+    const db = await openDb(game)
+    const files = new Map<string, Uint8Array>()
+    for (const k of names) {
+      const v = await tx<ArrayBuffer | undefined>(db, 'readonly', (s) => s.get(k))
+      if (v) files.set(k, new Uint8Array(v))
+    }
+    db.close()
+    return files.size ? new GameFiles(files, game) : null
+  }
+
   /** Forget a game's imported files (its roster and saves are kept, in their own database). */
   static async remove(game: GameProfile): Promise<void> {
     await new Promise<void>((resolve, reject) => {

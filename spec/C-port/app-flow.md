@@ -87,7 +87,10 @@ focus a red outline. Under 30 rem the page margin narrows and the title's side r
    (MS-DOS), for example the game's folder from the GOG release (the data files and `START.EXE`,
    which holds the sound effects and the rules tables). They stay on this device: nothing is
    uploaded, and after importing once the game works offline."
-3. The heading "Your games", then one row per game the port knows, in profile order (Pool of Radiance, Curse of the Azure Bonds, Secret of the Silver Blades):
+3. The heading "Your games", then one row per game the port knows, in profile order (Pool of Radiance, Curse of the Azure Bonds, Secret of the Silver Blades),
+   each with its cover on the left (on top under 30 rem): for an imported game its title screen with the
+   game's name (profile `title.cover`, TITLE records drawn at 320 × 200 from the stored `TITLE.DAX` alone,
+   whole-pixel scaled, in a gold-edged frame), else a blank charcoal panel with a ◆ (hidden under 30 rem); then
    the game's name, then in the quiet colour "imported", or "not imported: choose its *FOLDER*
    folder" (the profile's `folder`, `POOLRAD`, `CURSE`), then " · *note*" when the profile has one
    (CotAB: "early: being built, expect gaps"), then " · assets only" for a game that is not

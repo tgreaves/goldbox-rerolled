@@ -868,3 +868,18 @@ a.button:hover, a.button:focus-visible { border-color: var(--accent); outline: n
   .entry { padding: 0.6rem 0.4rem; }
   .entry .plaque::before, .entry .plaque::after { display: none; }
 }
+/* each game's cover (IMP-093): the title screen with its name, from the player's own TITLE.DAX, framed like
+   the picture on a box; a blank charcoal panel until the game is imported */
+.entry ul.games li { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: 0.9rem; align-items: center; justify-content: stretch; }
+.entry .ginfo { display: grid; gap: 0.5rem; min-width: 0; }
+.entry .cover {
+  width: 100%; aspect-ratio: 320 / 200; display: block; image-rendering: pixelated; background: var(--char);
+  border: 2px solid var(--gold); outline: 1px solid var(--char); outline-offset: 2px; margin: 3px;
+}
+.entry canvas.cover:not(.drawn) { opacity: 0.6; }
+.entry .cover.blank { display: grid; place-items: center; color: var(--gold); opacity: 0.55; border-color: var(--rule); font-size: 1.4rem; }
+@media (max-width: 30rem) {
+  .entry ul.games li { grid-template-columns: 1fr; }
+  .entry .cover { max-width: 20rem; justify-self: center; }
+  .entry .cover.blank { display: none; }
+}

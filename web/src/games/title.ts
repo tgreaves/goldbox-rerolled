@@ -18,6 +18,8 @@ export interface TitleScript {
   /** shown when line `configLine` (0-based) of the game's configuration file starts with F */
   long: TitleScreen[]
   configLine: number
+  /** the title screen with the game's name, shown as the game's cover on the games screen (IMP-093) */
+  cover: { record: number; x: number; y: number }[]
   /** music through the title (SotSB 0x1D631: SOUND.DAX record 2, song 0, stopped as the title ends, 0x1D12F) */
   music?: { file: string; record: number; song: number }
   credits: {
@@ -35,6 +37,7 @@ export const POR_TITLE: TitleScript = {
   first: [{ pictures: [{ record: 1, x: 0, y: 0 }], ms: 5000 }],
   long: [{ pictures: [{ record: 2, x: 0, y: 0 }], ms: 5000, lightning: true }],
   configLine: 4, // POOL.CFG line 5 sets DS:49D1, the fixed-disk flag
+  cover: [{ record: 2, x: 0, y: 0 }], // the name over the wall
   credits: {
     ms: 10000,
     frame: { boxes: [[1, 1, 38, 3], [1, 5, 38, 23]] },
@@ -64,6 +67,7 @@ export const COAB_TITLE: TitleScript = {
     { pictures: [{ record: 2, x: 0, y: 0 }, { record: 3, x: 48, y: 88 }, { record: 4, x: 0, y: 88 }], ms: 10000, sound: 13 },
   ],
   configLine: 3, // CURSE.CFG line 4 sets DS:4FB1
+  cover: [{ record: 2, x: 0, y: 0 }, { record: 3, x: 48, y: 88 }], // the name; #4 over it is the Forgotten Realms logo
   credits: {
     ms: 10000,
     frame: { screen: { dividers: [3, 8] } }, // 0x1403: the screen frame (0x1330) plus rows 3 and 8
@@ -97,6 +101,7 @@ export const SOTSB_TITLE: TitleScript = {
   ],
   long: [],
   configLine: 4,
+  cover: [{ record: 2, x: 0, y: 0 }, { record: 4, x: 40, y: 40 }], // the name; #3 is the Forgotten Realms logo
   music: { file: 'SOUND', record: 2, song: 0 },
   credits: {
     ms: 80000,
