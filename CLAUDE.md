@@ -106,7 +106,7 @@ close disassemblers (REA's Ghidra sessions) after use, no unbounded background j
   `docs/server.md`: design, API, security, deployment (systemd, Docker); its tests are `web/test/server.test.ts`
   and `sync.test.ts`
 
-## Where the work stands (2026-10-23, evening)
+## Where the work stands (2026-10-26)
 
 - Pool of Radiance plays start to finish. Curse of the Azure Bonds and Secret of the Silver Blades are
   playable at an early stage (their profiles, rules, spells, effects and data in place, step logs in
@@ -114,9 +114,22 @@ close disassemblers (REA's Ghidra sessions) after use, no unbounded background j
   story order from save A to the ending headless (`coabchain.test.ts`, `COAB_CHAIN=1`), its final battle and
   ending checked in the browser; SotSB in its order to 2/66 (`sotsbchain.test.ts`), its end (soul chamber,
   the well) checked from Debug jumps headless and in the browser; block 3 in order is next (`TODO.md`).
-  577 tests pass with all three games' files (`POOLRAD`, `COAB`, `SOTSB`); long headless playthroughs
+  593 tests pass with all three games' files (`POOLRAD`, `COAB`, `SOTSB`); long headless playthroughs
   (24 × 1000 steps) show no failures. The play-test harness (`web/test/playtest.ts`) has the options the
   chains use: `tour`, `undying`, `walls`, `subAreas`, `hints`, `from`/`goal`/`saveAt`, `PLAY_FLAGS`.
+- 2026-10-24 to 26 were a modern-UX pass, the story chains on hold meanwhile (IMP-087 to IMP-110, each in
+  `IMPROVEMENTS.md` and part C): the parchment look for the entry, party and pre-game screens and every
+  panel (`parchmentPanel`, ui/sheet.ts); shops, temples, training and camp as single windows without the
+  command bar (the headless runner keeps the original menus); spell sets; travel on the area map; save lists
+  with place, time and a picture (`.GBR` field `info`); the imported files' health (SHA-256 fingerprints);
+  the version stamp; controller support; the CRT look; BIGPIC placement; Journal and Commissions on the
+  command bar; the Quit window; PoR's wilderness view in the area map's place, draggable, and the chest after
+  a battle in the view's own place; the Debug editor's abilities stepped as creation's Modify; every class's
+  next level on a multi-class sheet. Browser checks were throw-away Playwright scripts
+  (`docs/environment.md`, "Browser play-testing"); PoR's wilderness is reached from Debug → "Wilderness:
+  north side of the bay", then LEAVE at the city edge.
+- The LAN server (below) now holds a real player's account and saves: never wipe or reset its `DATA_DIR`
+  (`~/.local/share/goldbox-rerolled`) for a test; use a scratch `DATA_DIR`.
 - The spec is the normative source (decisions D1–D6 in `spec/README.md`); steps 1–7 of its work plan
   (`spec/AUDIT.md` §8) are done. Step 8, the clean-room rebuilds that validate it, is **on hold** by
   Tristan's choice (token and session limits): do not start one unasked.

@@ -5,13 +5,13 @@ What is not yet done or not yet checked, across the games. Questions about the o
 log and status are in [`docs/multi-game.md`](docs/multi-game.md). An item leaves this list in the commit
 that settles it.
 
-## Next steps (2026-10-23, in order)
+## Next steps (2026-10-26, in order)
 
 1. **SotSB in its order through block 3** (`sotsbchain.test.ts`, hints in `sotsbchain-hints.json`): block
    3 is reached in order since 2026-10-23 (3/80 from the shipped start; the riddles answered, the ruins'
    zone 8 kept, `spec/VALIDATION.md` §4). From the 3/80 save (`/home/tmg/sotsb-saves/3-80`,
    `SOTSB_CHAIN_FROM`): 3/81 and **3/82** are reached (saves in `/home/tmg/sotsb-saves/`). On hold since
-   2026-10-24 (Tristan: UX work first). The story's gates are read and in the chain test (amulet, Well,
+   2026-10-24 (Tristan: UX work first; that pass ran to 2026-10-26, below). The story's gates are read and in the chain test (amulet, Well,
    keys, staff; `spec/VALIDATION.md` §4); what is left: (a) a route through 2/64 to the brass key
    ((12,14) south, confirmed by probe) past its teleports, and the same for 2/65's silver key (2×2 room at
    (0–1,8–9); a Debug jump into 2/65 from the start misbehaves, so probe from a save) and 2/66's gold key
@@ -34,6 +34,17 @@ that settles it.
 CotAB is played in its order from save A to the ending headless (`coabchain.test.ts`, `COAB_CHAIN=1`) and
 its final battle and ending checked in the browser; PoR's, CotAB's and SotSB's saves, walks, shops, temple,
 training, Memorize and rests agree with the originals in DOSBox where compared ([`spec/VALIDATION.md`](spec/VALIDATION.md) §4).
+
+## The port's UX
+
+The modern-UX pass of 2026-10-24 to 26 (IMP-087 to IMP-110) is done; Tristan picks what comes next.
+
+- On a phone (390 px wide) the command bar's COMMISSIONS breaks inside the word ("COMMISSION / S"): the
+  word gets half the row (IMP-107's grid) and `overflow-wrap: anywhere` splits it.
+- Recommended, not chosen (2026-10-25): quick save and load; a party inventory view; faster computer
+  turns in battle; notes on the area map; a volume slider and SotSB's music; controller vibration;
+  screen-reader support; a colour-blind tint for the battlefield; a first-run guide.
+- CotAB's town pictures on the overland map: their layout is not yet checked in the browser.
 
 ## Waiting on Tristan
 
